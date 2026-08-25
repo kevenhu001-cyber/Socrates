@@ -178,6 +178,7 @@ async function main() {
       try { const { stopScheduler } = await import('./services/scheduler.js'); stopScheduler(); } catch {}
       try { const { stopStatusMonitor } = await import('./services/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await stopRustFetchWorker().catch(() => {});
+      try { const { codexHarness } = await import('./services/codexHarness.js'); await codexHarness.stop(); } catch {}
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
       process.exit(0);

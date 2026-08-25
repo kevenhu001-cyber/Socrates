@@ -6527,3 +6527,273 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
     text-align:center;
   }
 }
+
+/* ── Codex App activity stream refinement ──────────────────────────
+   The execution UI is intentionally open rather than card-stacked. A
+   tool row should read like a quiet event in the assistant's transcript:
+   icon, state label, optional command preview, then an indented detail
+   surface when the row is expanded. */
+:root{
+  --tool-activity-bg:transparent;
+  --tool-activity-border:hsl(var(--border-300)/.26);
+  --tool-activity-text:hsl(var(--text-100));
+  --tool-activity-row:hsl(var(--text-400));
+  --tool-activity-row-hover:hsl(var(--text-200));
+  --tool-activity-focus:hsl(var(--text-300)/.58);
+  --tool-activity-code-bg:hsl(var(--bg-200)/.72);
+  --tool-activity-danger:hsl(0 58% 62%);
+  --tool-activity-danger-bg:hsl(0 58% 50%/.12);
+}
+
+.msg.assistant .msg-body:has(.tool-inline),
+.msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-tool-card){
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:var(--tool-activity-text);
+}
+.msg.assistant .msg-body:has(.tool-inline) p,
+.msg.assistant .msg-body:has(.tool-inline) li,
+.msg.assistant .msg-body:has(.tool-run-group) p,
+.msg.assistant .msg-body:has(.tool-run-group) li,
+.msg.assistant .msg-body:has(.agent-tool-card) p,
+.msg.assistant .msg-body:has(.agent-tool-card) li{color:hsl(var(--text-100))}
+
+/* Live compact rows. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+  display:block;
+  margin:14px 0;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:var(--tool-activity-row);
+  transition:color .16s ease,opacity .16s ease;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:first-child{margin-top:5px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:last-child{margin-bottom:5px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-merged="1"]{display:none}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-height:26px;
+  padding:0;
+  gap:10px;
+  border-radius:7px;
+  background:transparent;
+  color:var(--tool-activity-row);
+  cursor:pointer;
+  list-style:none;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head::-webkit-details-marker{display:none}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:hover,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-head{color:var(--tool-activity-row-hover)}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:focus-visible{
+  outline:2px solid var(--tool-activity-focus);
+  outline-offset:4px;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 19px;
+  width:19px;
+  height:19px;
+  color:currentColor;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{width:17px;height:17px;stroke-width:1.7}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+  min-width:0;
+  flex:0 1 auto;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:inherit;
+  font-size:13.5px;
+  font-weight:450;
+  line-height:1.45;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta{
+  flex:0 0 auto;
+  margin-left:auto;
+  color:hsl(var(--text-500));
+  font:11px/1.3 var(--font-mono);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev{
+  position:relative;
+  flex:0 0 10px;
+  width:9px;
+  height:9px;
+  margin:0 3px 3px 4px;
+  border:solid currentColor;
+  border-width:0 1.4px 1.4px 0;
+  transform:rotate(45deg);
+  transition:transform .16s ease;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-chev{transform:rotate(225deg) translate(-1px,-1px)}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{animation:neutralTextWave 3.2s linear infinite}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-tool-icon,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-label{color:var(--tool-activity-danger)}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
+  margin:9px 0 2px 29px;
+  padding:0 0 0 17px;
+  border:0;
+  border-left:1px solid var(--tool-activity-border);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-title{
+  margin:0 0 6px;
+  color:hsl(var(--text-500));
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.01em;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-value,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-code-preview{
+  margin:0 0 8px;
+  padding:8px 10px;
+  border:1px solid var(--tool-activity-border);
+  border-radius:9px;
+  background:var(--tool-activity-code-bg);
+  color:hsl(var(--text-300));
+  font:12px/1.55 var(--font-mono);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value{
+  border-color:var(--tool-activity-danger-bg);
+  background:var(--tool-activity-danger-bg);
+  color:var(--tool-activity-danger);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src-host,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-empty{color:hsl(var(--text-500))}
+.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src{color:hsl(var(--text-300));text-decoration-color:hsl(var(--text-500)/.6)}
+.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src:hover{color:hsl(var(--text-100));background:transparent}
+
+/* Detailed/history rows use the same anatomy as live rows. The body still
+   contains the existing Input/Output sections, but those sections now feel
+   like an indented execution trace instead of a nested dashboard card. */
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card,
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card{
+  display:block;
+  margin:14px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head{
+  display:flex;
+  align-items:center;
+  min-height:26px;
+  padding:0;
+  gap:10px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:hover{background:transparent;color:var(--tool-activity-row-hover)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:4px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-state-icon{display:none!important}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 19px;
+  width:19px;
+  height:19px;
+  border:0;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:currentColor!important;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon svg{width:17px;height:17px;stroke-width:1.7}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{min-width:0;color:inherit;font-size:13.5px;font-weight:450}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{
+  min-width:0;
+  flex:1 1 auto;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:hsl(var(--text-500));
+  font:12px/1.4 var(--font-mono);
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-status{flex:0 0 auto;color:hsl(var(--text-500));font-size:11px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev{
+  flex:0 0 10px;
+  width:9px;
+  height:9px;
+  margin:0 3px 3px 4px;
+  color:currentColor;
+  font-size:0;
+  transform:none;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev::before{
+  content:"";
+  display:block;
+  width:9px;
+  height:9px;
+  border:solid currentColor;
+  border-width:0 1.4px 1.4px 0;
+  transform:rotate(45deg);
+  transition:transform .16s ease;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card.open .agent-tool-chev::before,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-card.open .agent-tool-chev::before{transform:rotate(225deg) translate(-1px,-1px)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+  margin:9px 0 2px 29px;
+  padding:0 0 0 17px;
+  border:0;
+  border-left:1px solid var(--tool-activity-border);
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-section{margin:0 0 10px;border:0;background:transparent}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section-head,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-section-head{min-height:18px;padding:0 0 5px;color:hsl(var(--text-500));font-size:11px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out{
+  margin:0;
+  border:1px solid var(--tool-activity-border);
+  border-radius:9px;
+  background:var(--tool-activity-code-bg);
+  color:hsl(var(--text-300));
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code{padding:8px 10px;font:12px/1.55 var(--font-mono)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out{padding:8px 10px}
+
+@media(max-width:768px){
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail,
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{margin-left:23px;padding-left:13px}
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev,
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before{transition:none}
+}

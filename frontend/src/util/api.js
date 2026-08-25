@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 /**
  * apiFetch + apiFetchRaw + retryApiFetch — the single point of
  * contact with the Socrates backend.

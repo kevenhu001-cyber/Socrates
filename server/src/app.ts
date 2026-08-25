@@ -34,6 +34,7 @@ import minimaxRouter from './routes/minimaxProxy.js';
 import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
+import codexRouter from './routes/codex.js';
 import statusRouter from './routes/status.js';
 import mobileRouter from './routes/mobile.js';
 import mcpRouter from './routes/mcp.js';
@@ -677,6 +678,12 @@ app.use('/api/knowledge-boundary', knowledgeBoundaryRouter);
    models for accuracy). Auth required so unauthenticated visitors
    can't run arbitrary mmx invocations. */
 app.use('/api/vision', visionRouter);
+
+/* ─── Codex agent runtime (embedded harness) ───
+ * Mounted before the SPA fallback. All routes require auth; the client
+ * never supplies config/policy — the server builds the per-thread
+ * provider + workspace + approval/sandbox overrides from the DB. */
+app.use('/api/codex', codexRouter);
 
 /* ────────────────────────────
    Static SPA — serve the built frontend from frontend/dist/
