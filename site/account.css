@@ -471,7 +471,8 @@
   .ed-plan-price { grid-column: 1 / -1; text-align: left; padding-top: 8px; border-top: 1px dashed var(--ed-line); margin-top: 8px; }
   .ed-pm { grid-template-columns: 40px minmax(0, 1fr); }
   .ed-pm-tag { grid-column: 1 / -1; justify-self: start; }
-  .ed-heatmap { grid-template-columns: 44px repeat(24, 1fr); min-width: 580px; }
+  .ed-heatmap { grid-template-columns: 40px repeat(24, minmax(10px, 1fr)); min-width: 0; overflow-x: auto; }
+  .ed-heatmap-axis { padding-left: 44px; }
 }
 
 /* 2026-08-24 · shared account-surface detail pass */
@@ -524,4 +525,41 @@ html:lang(zh) .ed-app-card-title { font-family: var(--site-serif-cjk, var(--ed-s
   .ed-modal { padding: 26px 20px 20px; }
   .ed-toast-host { right: 12px; bottom: 12px; left: 12px; }
   .ed-toast { width: 100%; min-width: 0; }
+}
+
+/* ── Phone (≤480px): tighten the account surface ───────────── */
+@media (max-width: 480px) {
+  .ed-app-page-title { max-width: 100%; }
+  .ed-app-card { padding: 20px 16px 22px; }
+  .ed-app-card-head { gap: 10px; margin-bottom: 18px; padding-bottom: 16px; }
+  .ed-sub-name { font-size: clamp(30px, 9vw, 42px); }
+  .ed-sub-meta { gap: 16px 22px; }
+  .ed-summary { gap: 14px; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); }
+  .ed-app-side-nav a { padding: 11px 0; }
+  .ed-auth { padding: 28px 18px; }
+  .ed-field input,
+  .ed-field textarea,
+  .ed-field select,
+  .ed-select-trigger { min-height: 46px; }
+  .ed-app-actions .ed-button,
+  .ed-app-card-actions .ed-button { width: 100%; justify-content: center; }
+}
+
+/* Center the account page hero on mobile (clean app-style header).
+   The hero (page title + kicker + subtitle) was flush-left; many
+   mobile account views read better with a centered hero block. */
+@media (max-width: 620px) {
+  .ed-app-page-hero { text-align: center; }
+  .ed-app-page-hero .ed-page-hero-grid { justify-items: center; }
+  .ed-app-page-hero .ed-copy-serif { margin-left: auto; margin-right: auto; }
+}
+
+/* Fix a real centering bug on the account grid: each card's intrinsic
+   min-content is ~365px, wider than the mobile shell column (~358px),
+   so the grid track expands and every card is shifted ~3px right of
+   the true page center. `min-width: 0` on the grid item + grid lets
+   the card shrink to the column instead of forcing the column to grow. */
+@media (max-width: 620px) {
+  .ed-app-card,
+  .ed-app-main { min-width: 0; }
 }
