@@ -354,12 +354,59 @@ fi
 # them via a systemd drop-in so the next `systemctl start` below picks them
 # up. The harness is lazy — it only spawns when a user opens the Codex
 # panel — so a failed install must fail the deploy, not the first request.
+# Detect a host-provided Codex so we don't re-download the pinned package.
+# The deploy may run as root, but the binary is owned/run by the deploy
+# user (ubuntu), so resolve it from that account's PATH. Falls back to a
+# set of well-known install locations, then to a PATH lookup.
+detect_local_codex() {
+  local u="${DEPLOY_USER:-$(id -un)}"
+  local p=""
+  # Prefer the deploy user's login shell PATH (npm-global, volta, …).
+  if command -v sudo >/dev/null 2>&1 && [[ "$u" != "$(id -un)" ]]; then
+    p=$(sudo -u "$u" bash -lc 'command -v codex-app-server || command -v codex' 2>/dev/null || true)
+  fi
+  if [[ -z "$p" ]]; then
+    for cand in \
+      "/home/ubuntu/.npm-global/bin/codex" \
+      "/usr/local/bin/codex" "/usr/local/bin/codex-app-server" \
+      "/usr/bin/codex" "/usr/bin/codex-app-server"; do
+      [[ -x "$cand" ]] && { p="$cand"; break; }
+    done
+  fi
+  if [[ -z "$p" ]]; then
+    p=$(command -v codex-app-server 2>/dev/null || command -v codex 2>/dev/null || true)
+  fi
+  [[ -n "$p" ]] || return 0
+  # Normalize symlinks so the recorded path is stable, then confirm -V works.
+  if command -v readlink >/dev/null 2>&1; then
+    p=$(readlink -f "$p" 2>/dev/null || echo "$p")
+  fi
+  if [[ -x "$p" ]] && "$p" -V >/dev/null 2>&1; then
+    echo "$p"
+  fi
+}
+
 install_codex_harness() {
+  # Auto-detect a locally installed Codex; if present, point the harness at
+  # it and skip the GitHub download entirely.
+  local local_codex
+  local_codex=$(detect_local_codex || true)
+  if [[ -n "$local_codex" ]]; then
+    echo "Detected local Codex at $local_codex — skipping download."
+    export CODEX_APP_SERVER_BIN="$local_codex"
+  else
+    echo "No local Codex found — will download pinned codex-app-server $CODEX_VERSION."
+  fi
+
   echo "Installing Codex harness (codex-app-server $CODEX_VERSION)…"
   if ! "$SERVER_DIR/scripts/install-codex.sh" --install; then
     echo "ERROR: Codex harness install failed" >&2
     return 1
   fi
+
+  # The binary the backend will actually spawn: either the host-provided
+  # local install (CODEX_APP_SERVER_BIN) or the downloaded package.
+  local codex_bin="${CODEX_APP_SERVER_BIN:-${CODEX_INSTALL_DIR}/bin/codex-app-server}"
 
   # systemd drop-in — set after the service unit is already installed so
   # this deploy never edits the unit file itself (upgrades/removals keep
@@ -369,13 +416,13 @@ install_codex_harness() {
   $SUDO tee "$CODEX_DROPIN" >/dev/null <<EOF
 [Service]
 Environment=CODEX_ENABLED=1
-Environment=CODEX_APP_SERVER_BIN=${CODEX_INSTALL_DIR}/bin/codex-app-server
+Environment=CODEX_APP_SERVER_BIN=${codex_bin}
 Environment=CODEX_HOME=${CODEX_HOME}
 Environment=CODEX_WORKSPACE_ROOT=${CODEX_HOME}/workspaces
 Environment=PATH=${CODEX_INSTALL_DIR}/bin:${CODEX_INSTALL_DIR}/codex-path:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
   $SUDO systemctl daemon-reload
-  echo "Codex harness drop-in active (bin=${CODEX_INSTALL_DIR}/bin/codex-app-server, home=${CODEX_HOME})"
+  echo "Codex harness drop-in active (bin=${codex_bin}, home=${CODEX_HOME})"
 }
 
 if [[ "$CODEX_ENABLED" != "0" ]]; then

@@ -5,7 +5,6 @@ import {
   subscribeToAgentRuns,
 } from '../../extensions/agentRunStore';
 import { ExploreStepper } from './ExploreStepper';
-import { AnalyzeWorkbench } from './AnalyzeWorkbench';
 
 const HIDE_DELAY_MS = 1600;
 
@@ -42,14 +41,12 @@ export function WorkflowLayer() {
     event.workflow === 'research' ||
     event.workflow === 'explore' ||
     event.workflow === 'deepResearch';
-  const showWorkbench = event.workflow === 'analyze';
 
-  if (!showStepper && !showWorkbench) return null;
+  if (!showStepper) return null;
 
   return (
     <div className={`workflow-layer${terminal ? ' workflow-layer-done' : ''}`}>
-      {showStepper ? <ExploreStepper /> : null}
-      {showWorkbench ? <AnalyzeWorkbench /> : null}
+      <ExploreStepper />
     </div>
   );
 }

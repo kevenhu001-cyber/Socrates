@@ -315,20 +315,18 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     mountMessageList();
   }
 
-  // Mount the workflow progress layer. The stepper (research/explore
-  // stage progress) and the analyze workbench (live tool-call activity)
-  // both subscribe to the agent-run store and render into this single
-  // always-present host. The host is appended to #appShell as a sibling
-  // of <main> so it stays visible across all panels (chat, library,
-  // projects, plugins, exam, etc.) — mounting it inside #chatView would
-  // hide it whenever the user navigates away from chat.
+  // Mount the workflow progress layer inside the chat flow. It is an
+  // ordinary flex item immediately before the composer, so an active
+  // workflow can never cover the transcript or compete with the keyboard
+  // inset from outside #mainContent.
   const workflowLayer = document.getElementById('workflowLayerReactRoot');
-  const appShell = document.getElementById('appShell');
-  if (appShell && !workflowLayer) {
+  const chatView = document.getElementById('chatView');
+  const chatInputBar = document.getElementById('chatInputBar');
+  if (chatView && chatInputBar && !workflowLayer) {
     const host = document.createElement('div');
     host.id = 'workflowLayerReactRoot';
     host.setAttribute('data-react-migration-runtime', 'workflow-layer');
-    appShell.appendChild(host);
+    chatView.insertBefore(host, chatInputBar);
     const workflowRoot = createRoot(host);
     workflowRoot.render(
       <ErrorBoundary>
