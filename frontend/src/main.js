@@ -3621,6 +3621,9 @@ async function askChatTurn(userText,pendingOverride){
      controller's onInlineTool), so the transient thinking-pill label
      swap ("Searching…" / "已找到 N 条…") is gone. */
   var result=await callAPIStream(msgs,MAX_TOKENS_CHAT,function(delta){ctl.append(delta)},function(t){ctl.appendThinking(t)},{
+    onRetry:function(notice){
+      if(ctl&&typeof ctl.setRetryStatus==="function")ctl.setRetryStatus(notice);
+    },
     onToolUse:function(calls){
       for(var i=0;i<calls.length;i++){
         ctl.recordToolUse(calls[i]);
@@ -6563,6 +6566,15 @@ function doRender(){
       if(thinkCtl&&typeof thinkCtl.finalize==="function"){
         try{thinkCtl.finalize()}catch(_){}
       }
+    },
+    setRetryStatus:function(notice){
+      if(!stillOwnsSlot())return;
+      try{
+        var retryCtl=ensureThinkCtl();
+        if(retryCtl&&typeof retryCtl.setLabel==="function"){
+          retryCtl.setLabel("Retrying · "+notice.retryNumber+"/"+notice.maxRetries+" · 5s");
+        }
+      }catch(_){}
     },
     finish:function(){
       /* P_session-stream-dispose — once an abort() has fired, never

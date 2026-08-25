@@ -76,6 +76,8 @@ export function useAutoHeight(
   useEffect(() => {
     if (!element || typeof ResizeObserver !== 'function') return undefined;
     let anim: { cancel(): void } | null = null;
+    let scheduledFrame = 0;
+    let updatePending = false;
     const reduced = (function () {
       try {
         const hasWindow = typeof window !== 'undefined' && window;
@@ -192,8 +194,9 @@ export function useAutoHeight(
        an animated transition". Called from:
          - the MutationObserver (primary: typing, paste, transactions)
          - the ResizeObserver fallback (window resize, parent reflow)
-       Both call paths share the same lock-and-animate dance so the
-       motion feels identical no matter how the change arrived. */
+       Both call paths share one rAF queue and the same lock-and-animate
+       dance, so bursts of transactions and resize notifications collapse
+       into one measurement instead of competing height animations. */
     function update(target: HTMLElement): void {
       const cap = readHeightCap(target);
       /* Always read the CURRENT lock value as the animation start.
@@ -220,6 +223,16 @@ export function useAutoHeight(
       animateTo(target, current, natural, cap);
     }
 
+    function scheduleUpdate(target: HTMLElement): void {
+      if (updatePending) return;
+      updatePending = true;
+      scheduledFrame = requestAnimationFrame(() => {
+        updatePending = false;
+        scheduledFrame = 0;
+        update(target);
+      });
+    }
+
     /* Initial lock: set the inline height to whatever the browser
        already rendered. This is an invisible change (the rendered
        box stays the same) but ensures the first content change does
@@ -235,7 +248,7 @@ export function useAutoHeight(
        what we need to derive the animation start height from the
        existing lock. */
     const mutation = new MutationObserver(function () {
-      update(element);
+      scheduleUpdate(element);
     });
     mutation.observe(element, {
       childList: true,
@@ -270,7 +283,7 @@ export function useAutoHeight(
       if (!entries.length) return;
       if (anim) return;
       const target = entries[0].target as HTMLElement;
-      requestAnimationFrame(function () { update(target); });
+      scheduleUpdate(target);
     });
     resize.observe(element);
 
@@ -279,6 +292,9 @@ export function useAutoHeight(
         try { anim.cancel(); } catch (_) { /* not animatable */ }
         anim = null;
       }
+      if (scheduledFrame) cancelAnimationFrame(scheduledFrame);
+      scheduledFrame = 0;
+      updatePending = false;
       mutation.disconnect();
       resize.disconnect();
       try { element.style.height = ''; } catch (_) { /* detached */ }

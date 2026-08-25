@@ -199,8 +199,20 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
           composerWrapRef.current?.classList.add('composer-focused');
           return false;
         },
-        blur: (view) => {
-          composerWrapRef.current?.classList.remove('composer-focused');
+        blur: (_view, event) => {
+          const wrap = composerWrapRef.current;
+          const nextTarget = (event as FocusEvent).relatedTarget as Node | null;
+          /* Toolbar, effort and attachment controls all live inside the
+             composer. Moving between them must keep the expanded geometry;
+             only a real focus exit should collapse it. Defer the final check
+             one frame so browsers that update activeElement after blur do not
+             flash the collapsed state. */
+          if (wrap && nextTarget && wrap.contains(nextTarget)) return false;
+          requestAnimationFrame(() => {
+            if (wrap && !wrap.contains(document.activeElement)) {
+              wrap.classList.remove('composer-focused');
+            }
+          });
           return false;
         },
       },
