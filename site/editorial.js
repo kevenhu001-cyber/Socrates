@@ -34,7 +34,7 @@
     var items = [
       { href: prefix + 'research', label: 'Research', key: 'research' },
       { href: prefix + 'product', label: 'Product', key: 'product' },
-      { href: prefix + 'policy', label: 'Principles', key: 'policy' },
+      { href: prefix + 'principles', label: 'Principles', key: 'principles' },
       { href: prefix + 'learn', label: 'Learn', key: 'learn' },
       { href: prefix + 'developers', label: 'Developers', key: 'developers' },
       { href: prefix + 'about', label: 'Company', key: 'about' }

@@ -2,7 +2,7 @@
 
 > Scoped context for AI agents integrating with the Socrates developer surface. For the full Socrates index, see [/llms.txt](https://topodrive.top/llms.txt). For long-form prose, see [/llms-full.txt](https://topodrive.top/llms-full.txt).
 
-This index lists every developer-facing resource that lives under `https://topodrive.top/developers/` and adjacent paths. Reach for the full [/llms.txt](https://topodrive.top/llms.txt) if you need the marketing surface (research, pricing, policy) alongside the developer surface.
+This index lists every developer-facing resource that lives under `https://topodrive.top/developers/` and adjacent paths. Reach for the full [/llms.txt](https://topodrive.top/llms.txt) if you need the marketing surface (research, pricing, principles) alongside the developer surface.
 
 ## Quickstart
 

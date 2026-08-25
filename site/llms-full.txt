@@ -94,7 +94,7 @@ Conversations are private to the user. Socrates does not train on user data. Eve
 - `/pricing` — pricing and plan comparison.
 - `/about` — company and principles.
 - `/product` — the learning loop in detail.
-- `/policy` — product principles.
+- `/principles` — product principles.
 - `/guide` — learning guide.
 - `/learn` — tutorials and lessons.
 - `/research` — research notes and field essays.

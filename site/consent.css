@@ -15,7 +15,7 @@
   border-radius: 10px;
   background: #f7f4ee;
   border: 1px solid var(--ed-line, #d9d0c3);
-  box-shadow: 0 12px 28px rgba(23, 23, 22, 0.10);
+  box-shadow: none;
   color: var(--ed-ink, #171716);
   font-family: var(--ed-sans, inherit);
   font-size: 13px;

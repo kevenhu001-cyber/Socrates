@@ -1,7 +1,7 @@
 ---
 title: Principles — Socrates
 description: The principles we hold to.
-canonical: https://topodrive.top/policy
+canonical: https://topodrive.top/principles
 last-updated: 2026-08-22
 ---
 

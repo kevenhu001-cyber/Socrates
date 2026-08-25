@@ -1,3 +1,81 @@
+/* ── Canonical type system ──────────────────────────────────────────────
+   One set of stacks for the whole site. Sans = Inter (UI, nav, buttons,
+   data), Serif = Newsreader (editorial headlines + long-form body — the
+   original theme serif), Mono = Geist Mono (kickers, meta, code).
+   Source Serif 4 and Geist remain loaded as fallbacks. CJK falls back to
+   Noto Sans SC / Noto Serif SC so Windows hosts never leak Microsoft
+   YaHei / SimSun. Every other stylesheet references these variables. */
+:root {
+  --font-sans: "Inter", "Geist", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+
+/* inter-latin-400-normal */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(media/fonts/inter-latin-400-normal.woff2) format('woff2');
+}
+/* inter-latin-500-normal */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(media/fonts/inter-latin-500-normal.woff2) format('woff2');
+}
+/* inter-latin-600-normal */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(media/fonts/inter-latin-600-normal.woff2) format('woff2');
+}
+/* inter-latin-700-normal */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(media/fonts/inter-latin-700-normal.woff2) format('woff2');
+}
+/* source-serif-4-latin-400-normal */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(media/fonts/source-serif-4-latin-400-normal.woff2) format('woff2');
+}
+/* source-serif-4-latin-400-italic */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  src: url(media/fonts/source-serif-4-latin-400-italic.woff2) format('woff2');
+}
+/* source-serif-4-latin-500-normal */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(media/fonts/source-serif-4-latin-500-normal.woff2) format('woff2');
+}
+/* source-serif-4-latin-600-normal */
+@font-face {
+  font-family: 'Source Serif 4';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(media/fonts/source-serif-4-latin-600-normal.woff2) format('woff2');
+}
+
 /* Local fallback copies of the Google Fonts set (Geist, Geist Mono,
    Newsreader, Noto Sans SC, Noto Serif SC). Pages load the live Google
    Fonts CSS after this file; if Google Fonts is unreachable, these local
