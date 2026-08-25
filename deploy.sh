@@ -34,6 +34,16 @@ STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
 # smaller or larger deployment hosts.
 FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=1024}"
 
+# ─── Codex harness (embedded agent runtime) ─────────────────────────
+# CODEX_ENABLED=0 skips binary install + systemd drop-in + gates.
+# The install itself is idempotent and version-pinned; bump CODEX_VERSION
+# to upgrade the embedded codex-app-server package.
+CODEX_ENABLED="${CODEX_ENABLED:-1}"
+CODEX_VERSION="${CODEX_VERSION:-0.149.1}"
+CODEX_INSTALL_DIR="${CODEX_INSTALL_DIR:-/opt/socrates-codex}"
+CODEX_HOME="${CODEX_HOME:-/var/lib/socrates-codex}"
+CODEX_DROPIN="/etc/systemd/system/socrates-api.service.d/codex.conf"
+
 if ! command -v flock >/dev/null 2>&1; then
   echo "ERROR: flock is required to serialize deployments" >&2
   exit 1
@@ -338,6 +348,49 @@ if [ -f "$STATUS_SRC" ]; then
   echo "  status:  ${STATUS_FILE}"
 fi
 
+# ─── 2c. Codex harness (embedded agent runtime) ──────────────────────
+# Installs the pinned codex-app-server Linux package (idempotent, SHA256-
+# verified) and seeds an independent CODEX_HOME, then points the backend at
+# them via a systemd drop-in so the next `systemctl start` below picks them
+# up. The harness is lazy — it only spawns when a user opens the Codex
+# panel — so a failed install must fail the deploy, not the first request.
+install_codex_harness() {
+  echo "Installing Codex harness (codex-app-server $CODEX_VERSION)…"
+  if ! "$SERVER_DIR/scripts/install-codex.sh" --install; then
+    echo "ERROR: Codex harness install failed" >&2
+    return 1
+  fi
+
+  # systemd drop-in — set after the service unit is already installed so
+  # this deploy never edits the unit file itself (upgrades/removals keep
+  # working, and `systemctl cat socrates-api` shows the split config).
+  echo "Writing systemd drop-in $CODEX_DROPIN…"
+  $SUDO mkdir -p "$(dirname "$CODEX_DROPIN")"
+  $SUDO tee "$CODEX_DROPIN" >/dev/null <<EOF
+[Service]
+Environment=CODEX_ENABLED=1
+Environment=CODEX_APP_SERVER_BIN=${CODEX_INSTALL_DIR}/bin/codex-app-server
+Environment=CODEX_HOME=${CODEX_HOME}
+Environment=CODEX_WORKSPACE_ROOT=${CODEX_HOME}/workspaces
+Environment=PATH=${CODEX_INSTALL_DIR}/bin:${CODEX_INSTALL_DIR}/codex-path:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EOF
+  $SUDO systemctl daemon-reload
+  echo "Codex harness drop-in active (bin=${CODEX_INSTALL_DIR}/bin/codex-app-server, home=${CODEX_HOME})"
+}
+
+if [[ "$CODEX_ENABLED" != "0" ]]; then
+  if ! install_codex_harness; then
+    exit 1
+  fi
+else
+  echo "Codex harness skipped (CODEX_ENABLED=0)"
+  if [[ -f "$CODEX_DROPIN" ]]; then
+    echo "Removing stale Codex drop-in $CODEX_DROPIN…"
+    $SUDO rm -f "$CODEX_DROPIN"
+    $SUDO systemctl daemon-reload
+  fi
+fi
+
 # ─── 3. Build swap: stop first to avoid race with systemd restart ─────
 #
 # Swapping dist/ while the service is running can cause the new process
@@ -492,7 +545,27 @@ else
   GATE_FAILED=1
 fi
 
-# 4.5f. State file: update only on full success so last-known-good is preserved.
+# 4.5f. Codex harness — pinned binary + CODEX_HOME ready, and the backend's
+# codex router is mounted (401 = route exists behind auth; 404 = missing).
+if [[ "$CODEX_ENABLED" != "0" ]]; then
+  if "$SERVER_DIR/scripts/install-codex.sh" --check; then
+    GATE_RESULTS+=("  codex.harness $CODEX_VERSION ok")
+  else
+    echo "GATE FAIL: codex harness check failed (run 'sudo $SERVER_DIR/scripts/install-codex.sh --install')" >&2
+    GATE_FAILED=1
+    GATE_RESULTS+=("  codex.harness INVALID  ← FAIL")
+  fi
+  CODEX_API_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/codex/capabilities || echo 000)
+  if [[ "$CODEX_API_CODE" == "401" ]]; then
+    GATE_RESULTS+=("  codex.api mounted (auth 401)")
+  else
+    echo "GATE FAIL: /api/codex/capabilities returned $CODEX_API_CODE (expected 401)" >&2
+    GATE_FAILED=1
+    GATE_RESULTS+=("  codex.api $CODEX_API_CODE  ← FAIL")
+  fi
+fi
+
+# 4.5g. State file: update only on full success so last-known-good is preserved.
 if [[ $GATE_FAILED -eq 0 ]]; then
   DEPLOY_COMMIT=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
   DEPLOY_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -514,7 +587,9 @@ if [[ $GATE_FAILED -eq 0 ]]; then
       "apiConfigJsonValid": true,
       "backendDirectReachable": true,
       "bundleMd5Integrity": true,
-      "nginxReloaded": $([ "$NGINX_STATUS" = "reloaded" ] && echo true || echo false)
+      "nginxReloaded": $([ "$NGINX_STATUS" = "reloaded" ] && echo true || echo false),
+      "codexHarness": $([ "$CODEX_ENABLED" != "0" ] && echo true || echo false),
+      "codexApiMounted": $([ "$CODEX_ENABLED" != "0" ] && [ "$CODEX_API_CODE" = "401" ] && echo true || echo false)
     }
   }
 }
