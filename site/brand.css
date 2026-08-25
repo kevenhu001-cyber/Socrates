@@ -5561,6 +5561,9 @@ html:lang(zh) body.ed-site .ed-essay-row .ed-essay-title { font-family: var(--fo
     border: 1px solid var(--an-line);
     border-radius: 14px;
     box-shadow: 0 14px 36px rgba(20, 20, 19, .1);
+    min-height: 0;
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
   }
   body.ed-site .ed-header-inner.is-open .ed-nav-links a {
     width: 100%;
@@ -6256,3 +6259,127 @@ body.ed-site .ed-report-end .ed-endmark {
   body.ed-site .ed-report-hero-card { border-radius: 18px; aspect-ratio: 4 / 3; }
   body.ed-site .ed-key-takeaways { padding: 22px 20px; }
 }
+
+/* ═══ RESEARCH — OpenAI-style simplification (scoped to .ed-article) ═══
+   Intent: flatter, neutral, clean sans-serif, generous whitespace.
+   Reversible: delete this whole block to restore the editorial treatment. */
+body.ed-site .ed-article-hero {
+  padding: clamp(64px, 8vw, 104px) 0 clamp(30px, 4vw, 52px);
+  border-bottom: 1px solid var(--ed-line);
+}
+body.ed-site .ed-article-hero-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+body.ed-site .ed-article-hero-media { display: none; }
+body.ed-site .ed-article-hero .ed-page-title {
+  font-family: var(--ed-sans);
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: 1.05;
+  font-size: clamp(34px, 5vw, 52px);
+  color: var(--ed-ink);
+}
+body.ed-site .ed-article-hero .ed-copy-serif {
+  font-family: var(--ed-sans);
+  font-weight: 400;
+  color: var(--ed-ink-soft);
+  max-width: 56ch;
+}
+body.ed-site .ed-article-byline {
+  font-family: var(--ed-sans);
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  color: var(--ed-ink-muted);
+  margin-top: 18px;
+}
+body.ed-site .ed-article-byline strong { font-weight: 600; color: var(--ed-ink); }
+
+/* body copy: clean sans, neutral */
+body.ed-site .ed-article { width: min(720px, calc(100% - 40px)); padding-bottom: clamp(56px, 8vw, 112px); }
+body.ed-site .ed-article p {
+  font-family: var(--ed-sans);
+  color: var(--ed-ink);
+  font-size: clamp(17px, .4vw + 16px, 19px);
+  line-height: 1.74;
+  letter-spacing: 0;
+  margin: 0 0 1.55em;
+}
+body.ed-site .ed-article ul,
+body.ed-site .ed-article ol { font-family: var(--ed-sans); font-size: 17px; line-height: 1.7; color: var(--ed-ink); }
+body.ed-site .ed-article li { margin-bottom: .5em; }
+
+/* lede: plain intro, drop the clay box */
+body.ed-site .ed-article p.lede {
+  border: 0; border-radius: 0; background: none; padding: 0;
+  font-family: var(--ed-sans) !important;
+  font-size: clamp(19px, .6vw + 17px, 22px);
+  line-height: 1.5; color: var(--ed-ink);
+  margin: 0 0 2.4em;
+}
+
+/* headings: simpler, neutral */
+body.ed-site .ed-article h2 {
+  font-family: var(--ed-sans); font-weight: 650; letter-spacing: -.02em;
+  font-size: clamp(22px, 1.6vw, 28px); margin: 2.6em 0 .9em; color: var(--ed-ink);
+}
+body.ed-site .ed-article h3 {
+  font-family: var(--ed-sans); font-weight: 600; letter-spacing: -.01em;
+  font-size: clamp(18px, 1.2vw, 21px); margin: 2.2em 0 .8em; color: var(--ed-ink);
+}
+
+/* blockquote: thin neutral rule, no italic serif */
+body.ed-site .ed-article blockquote {
+  border-left: 2px solid var(--ed-ink); border-radius: 0;
+  font-family: var(--ed-sans); font-style: normal;
+  font-size: 19px; line-height: 1.55; color: var(--ed-ink);
+  padding: 4px 0 4px 20px; margin: 1.9em 0;
+}
+
+/* method note: flatten */
+body.ed-site .ed-article p.ed-method-note {
+  border: 0; border-top: 1px solid var(--ed-line); border-bottom: 1px solid var(--ed-line);
+  border-left: 0; border-radius: 0; background: none;
+  padding: 16px 0; font-family: var(--ed-sans); font-size: 13px; line-height: 1.7;
+}
+body.ed-site .ed-article p.ed-method-note .ed-method-label { font-family: var(--ed-sans); }
+
+/* key takeaways: simple list, no box */
+body.ed-site .ed-key-takeaways { border: 0; background: none; padding: 0; margin: 0 0 2.6em; }
+body.ed-site .ed-key-takeaways h2 {
+  font-family: var(--ed-sans); font-weight: 600; text-transform: uppercase;
+  letter-spacing: .08em; font-size: 13px; color: var(--ed-ink-muted); margin: 0 0 .9em;
+}
+body.ed-site .ed-key-takeaways ul { padding-left: 20px; }
+body.ed-site .ed-key-takeaways li { font-family: var(--ed-sans); font-size: 16px; line-height: 1.6; color: var(--ed-ink); }
+
+/* neutralise warm clay accents -> ink (monochrome, OpenAI-like) */
+body.ed-site .ed-bar-fill { fill: var(--ed-ink) !important; }
+body.ed-site .ed-result-track i { background: var(--ed-ink) !important; }
+body.ed-site .ed-figure-caption,
+body.ed-site .ed-fig-no { color: var(--ed-ink-muted); font-family: var(--ed-sans); }
+
+/* timeline + data table: lighten */
+body.ed-site .ed-timeline { background: none; border: 0; padding: 0; }
+body.ed-site .ed-timeline-row { border-top: 1px solid var(--ed-line); padding: 16px 0; }
+body.ed-site table.ed-data-table { border: 0; }
+body.ed-site table.ed-data-table th,
+body.ed-site table.ed-data-table td { border-bottom: 1px solid var(--ed-line); }
+body.ed-site .ed-article-foot a { border-radius: 10px; }
+/* ═══ END RESEARCH simplification ═══ */
+
+/* ensure research headings read in ink (override later brand rule) */
+body.ed-site .ed-article h2,
+body.ed-site .ed-article h3 { color: var(--ed-ink) !important; }
+
+/* ── Research cleanup pass 2 ──
+   Remove the "方法说明" (Method note) box and its divider,
+   and drop the 01-04 step numbers on the methodology timeline. */
+body.ed-site .ed-article p.ed-method-note { display: none; }
+body.ed-site .ed-article hr:has(+ p.ed-method-note) { display: none; }
+body.ed-site .ed-timeline-step { display: none !important; }
+body.ed-site .ed-timeline-row { grid-template-columns: 1fr; }
+/* ── END Research cleanup pass 2 ── */
