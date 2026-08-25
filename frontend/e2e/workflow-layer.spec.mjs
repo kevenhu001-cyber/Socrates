@@ -21,10 +21,19 @@ async function publish(page, event) {
   }, event);
 }
 
+async function enterChat(page) {
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup')?.classList.add('hidden');
+    document.getElementById('chatView')?.classList.remove('hidden');
+  });
+}
+
 test('workflow layer mounts empty and shows stepper on research planning', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  await enterChat(page);
 
   const layer = page.locator('#workflowLayerReactRoot .workflow-layer');
   await expect(layer).toHaveCount(0);
@@ -49,6 +58,7 @@ test('stepper advances through searching and hides after completed', async ({ pa
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  await enterChat(page);
 
   await publish(page, {
     runId: 'research-smoke-2',
@@ -81,6 +91,7 @@ test('analyze planning does not render a separate analysis workbench', async ({ 
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  await enterChat(page);
 
   await publish(page, {
     runId: 'analyze-smoke',

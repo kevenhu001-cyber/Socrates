@@ -10,7 +10,11 @@
 
 import { apiFetchRaw } from '../util/api.js';
 import { buildChatRequestBody } from './api.js';
-import { shouldRetryInterruptedStream } from './streamRetry.js';
+import {
+  AI_MAX_ATTEMPTS,
+  isUserAbort,
+  waitForAIRetry,
+} from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 
 /* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
@@ -29,14 +33,26 @@ function warnBadFrame(evName,err){
    Used by the 429 toast so the message reads "Try again in 2 min"
    rather than the raw 178s. Anything below 60s collapses to seconds
    so a sub-minute cooldown doesn't read as "0 min". */
-function formatMinutes(seconds) {
-  if (!seconds || !isFinite(seconds) || seconds <= 0) return "a moment";
-  if (seconds < 60) return Math.round(seconds) + "s";
-  var m = Math.ceil(seconds / 60);
-  if (m < 60) return m + " min";
-  var h = Math.floor(m / 60);
-  var rem = m % 60;
-  return rem ? (h + "h " + rem + "m") : (h + "h");
+function makeStreamError(message,status,body) {
+  var error=new Error(String(message||'stream request failed'));
+  if(status!=null)error.status=Number(status);
+  if(body!=null)error.body=body;
+  if(body&&body.code)error.code=body.code;
+  return error;
+}
+
+function bindAbortSignal(parent,child){
+  if(!parent)return function(){};
+  var onAbort=function(){try{child.abort(parent.reason||"aborted")}catch(_) {}};
+  if(parent.aborted)onAbort();
+  else parent.addEventListener("abort",onAbort,{once:true});
+  return function(){try{parent.removeEventListener("abort",onAbort)}catch(_) {}};
+}
+
+function clearActiveChatAbort(){
+  if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
+    window._activeChatAbort=null;
+  }
 }
 
 /* Streaming variant. Calls /api/chat/stream (our backend SSE proxy).
@@ -45,7 +61,7 @@ function formatMinutes(seconds) {
    Stability features (in order of importance):
    - Acks on every chunk via watchdog.touch() so a stalled stream aborts
      after STREAM_HEARTBEAT_MS, not after STREAM_TIMEOUT_MS.
-   - 1 retry on transient 5xx/429/heartbeat/total-timeout.
+   - Five fixed-delay retries on transient 5xx/429/heartbeat/total-timeout.
    - User Stop click returns cancelled:true (not an error). */
 export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* Read main.js globals via window — this module stays independent. */
@@ -53,9 +69,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   var getActiveProvider=window.getActiveProvider;
   var getCsrfToken=window.getCsrfToken;
   var makeAIWatchdog=window.makeAIWatchdog;
-  var sleepBackoff=window.sleepBackoff;
   var offlineGuard=window.offlineGuard;
-  var isReasoningProvider=window.isReasoningProvider;
   /* P_reasoning_budget — pick the silence/total budget per provider.
      Reasoning models stream 30-90s of sparse thinking tokens; a 60s
      heartbeat on them would falsely trip "stalled" and waste a retry. */
@@ -64,8 +78,19 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     : { timeoutMs: window.STREAM_TIMEOUT_MS||240000, heartbeatMs: window.STREAM_HEARTBEAT_MS||45000 });
   var STREAM_TIMEOUT_MS=_budget.timeoutMs;
   var STREAM_HEARTBEAT_MS=_budget.heartbeatMs;
-  var STREAM_RETRYABLE_STATUS=window.STREAM_RETRYABLE_STATUS;
-  var STREAM_MAX_ATTEMPTS=_budget.maxAttempts||window.STREAM_MAX_ATTEMPTS||2;
+  /* Provider-specific timeout/heartbeat budgets remain intact, but retry
+     count is global: five retries after the initial attempt. A small
+     window override is retained for deterministic unit harnesses. */
+  var configuredAttempts=opts&&typeof opts.maxAttempts==='number'
+    ? opts.maxAttempts
+    : window.STREAM_MAX_ATTEMPTS;
+  var STREAM_MAX_ATTEMPTS=(typeof configuredAttempts==='number'&&configuredAttempts>0)
+    ? configuredAttempts
+    : AI_MAX_ATTEMPTS;
+  var retryOptions=Object.assign({},opts||{}, {
+    source:'chat',
+    maxRetries:STREAM_MAX_ATTEMPTS-1,
+  });
 
   var provider=getActiveProvider();
   if(!provider){
@@ -82,17 +107,41 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
 
   var attempt=0;
   var lastErr=null;
-  /* Offline precheck — fail fast (don't waste the 1.5s + 3.5s backoff
+  var turnAbort=new AbortController();
+  var unbindExternal=bindAbortSignal(retryOptions.signal,turnAbort);
+  var unbindAttempt=function(){};
+  var finishTurn=function(){
+    unbindAttempt();
+    unbindExternal();
+    clearActiveChatAbort();
+  };
+  var retryWaitOptions=Object.assign({},retryOptions,{signal:turnAbort.signal});
+  var waitForRetry=async function(retryAttempt,error){
+    try{return await waitForAIRetry(retryAttempt,error,retryWaitOptions)}
+    catch(e){
+      if(isUserAbort(e,turnAbort.signal)||isUserAbort(e,retryOptions.signal))return false;
+      throw e;
+    }
+  };
+  var retryWasCancelled=function(){
+    return turnAbort.signal.aborted&&isUserAbort(null,turnAbort.signal);
+  };
+  /* Offline precheck — fail fast (don't waste the fixed retry delay
      if the OS already knows we have no network). */
   if(offlineGuard()){
     state.lastCallError="offline: you appear to be offline";
+    finishTurn();
     return null;
   }
 
   while(attempt<STREAM_MAX_ATTEMPTS){
     attempt++;
     var ac=new AbortController();
-    window._activeChatAbort=function(reason){try{ac.abort(reason)}catch(_){}};
+    unbindAttempt=bindAbortSignal(turnAbort.signal,ac);
+    window._activeChatAbort=function(reason){
+      try{turnAbort.abort(reason)}catch(_){}
+      try{ac.abort(reason)}catch(_){}
+    };
     window._activeChatAbort._fromThisCall=true;
     var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},STREAM_TIMEOUT_MS);
     var hbTmo=null;
@@ -118,69 +167,50 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       if(hbTmo)clearTimeout(hbTmo);
       var eStatus=e&&e.status;
       var isAbort=(e&&(e.name==="AbortError"||ac.signal.aborted));
-      if(isAbort){
-        /* The Stop button uses a named abort reason so a request that has
-           not produced a response body yet follows the same silent
-           cancelled path as a mid-stream stop. */
-        if(ac.signal.reason==="user-stop"){
-          if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
-            window._activeChatAbort=null;
-          }
-          return {text:"",html:null,widgets:[],cancelled:true};
-        }
-        lastErr="request timed out after "+(STREAM_TIMEOUT_MS/1000)+"s";
-        /* Total budget exhausted — stop retrying. */
-        break;
+      var requestError=makeStreamError(
+        isAbort
+          ? (ac.signal.reason==="heartbeat"
+            ? "stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)"
+            : "request timed out or was interrupted")
+          : (eStatus?eStatus+" ":"network: ")+(e&&e.message||e),
+        eStatus,
+        e&&e.body,
+      );
+      requestError.code=e&&e.code;
+      requestError.reason=ac.signal.reason;
+      if(isUserAbort(e,ac.signal)||isUserAbort(e,turnAbort.signal)){
+        finishTurn();
+        return {text:"",html:null,widgets:[],cancelled:true};
       }
-      if(eStatus===401){
-        /* 401 was already surfaced via handleAuthExpired by apiFetchRaw
-         * (gated on the grace window). Set lastCallError and exit. */
-        state.lastCallError="401: session expired";
-        return null;
-      }
-      if(eStatus===429){
-        /* 429 can mean either rate-limiting (try again later) or monthly
-         * quota exhaustion (Beagle token limit reached — won't reset
-         * until next billing cycle). Distinguish via the server's code. */
-        if (e && (e.code === 'MONTHLY_LIMIT' || (e.body && e.body.code === 'MONTHLY_LIMIT'))) {
-          var msg429 = 'Monthly Beagle usage limit reached. ' + ((e.body && e.body.message) || 'Upgrade your plan or wait until next month.');
-          state.lastCallError = msg429;
-          try { showToast && showToast(msg429, 8000); } catch (_) {}
-          return null;
-        }
-        /* Rate limit — surface the server cooldown immediately. The stream
-           retry budget is for transport failures, not a shared quota bucket. */
-        var retryAfterSec429 = null;
-        if (e && e.body && typeof e.body.retryAfterSeconds === "number") {
-          retryAfterSec429 = e.body.retryAfterSeconds;
-        }
-        lastErr = "Rate limited (429). Try again in " + (retryAfterSec429 ? formatMinutes(retryAfterSec429) : "a moment") + ".";
-        /* P_chat-429-no-storm — this is our shared server bucket. An
-           immediate stream retry only consumes the same budget again. */
-        state.lastCallError=lastErr;
-        return null;
-      }
-      /* P_network_retry — network errors (no HTTP status, e.g. DNS/TLS
-         failures, mid-stream socket reset) are transient and should be
-         retried. Also retry on HTTP retryable status codes (5xx/408/429). */
-      var isRetryable=STREAM_RETRYABLE_STATUS[eStatus]||(!eStatus&&attempt<STREAM_MAX_ATTEMPTS);
-      if(isRetryable&&attempt<STREAM_MAX_ATTEMPTS){
-        lastErr=eStatus?eStatus+" "+(e.message||"error"):"network: "+(e&&e.message||e);
-        var retryAfterHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
-        await sleepBackoff(attempt,retryAfterHdr);
+      if(await waitForRetry(attempt,requestError)){
+        lastErr=requestError;
+        unbindAttempt();
         continue;
       }
-      lastErr=(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
+      if(retryWasCancelled()){
+        finishTurn();
+        return {text:"",html:null,widgets:[],cancelled:true};
+      }
+      lastErr=requestError;
       console.error("[API stream] request failed:",e);
-      /* P_error_preserve — don't overwrite a richer lastCallError already
-         captured from event:error SSE frames upstream. */
-      if(!state.lastCallError)state.lastCallError=lastErr;
+      state.lastCallError=requestError.message;
+      finishTurn();
       return null;
     }
     clearTimeout(tmo);
 
     if(!resp.body||!resp.body.getReader){
-      state.lastCallError="no stream body";
+      lastErr=makeStreamError("no stream body");
+      if(await waitForRetry(attempt,lastErr)){
+        unbindAttempt();
+        continue;
+      }
+      if(retryWasCancelled()){
+        finishTurn();
+        return {text:"",html:null,widgets:[],cancelled:true};
+      }
+      state.lastCallError=lastErr.message;
+      finishTurn();
       return null;
     }
 
@@ -207,6 +237,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        caller. Retrying after text/reasoning/tool events have already mutated
        the bubble replays the whole turn and duplicates both prose and tools. */
     var semanticActivity=false;
+    var streamError=null;
     var heartbeatFired=false;   /* used instead of e.message to detect heartbeat abort */
     /* Parse ONE SSE frame (the text between two "\n\n" delimiters, or the
        leftover buffer flushed at stream end). Extracted so the same logic
@@ -232,26 +263,29 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           /* Route tool-calling events before touching the data: payload.
              The backend emits `event: tool_use` and `event: tool_result`
              with a single JSON data: line per frame. */
-          if(evName==="tool_use"&&opts&&typeof opts.onToolUse==="function"&&dataParts.length){
+          if(evName==="tool_use"){
             semanticActivity=true;
-            try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_use",e)}
+            if(opts&&typeof opts.onToolUse==="function"&&dataParts.length){
+              try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_use",e)}
+            }
             return;
           }
-          if(evName==="tool_result"&&opts&&typeof opts.onToolResult==="function"&&dataParts.length){
+          if(evName==="tool_result"){
             semanticActivity=true;
-            try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_result",e)}
+            if(opts&&typeof opts.onToolResult==="function"&&dataParts.length){
+              try{opts.onToolResult(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_result",e)}
+            }
             return;
           }
-          /* P_error_event — the backend emits `event: error` with
-             a JSON `data:` line containing the real error message.
-             Capture it in state.lastCallError so the caller surfaces
-             it to the user instead of a generic "stream interrupted". */
+          /* P_error_event — retain the structured upstream error until the
+             attempt has closed. If no semantic output was emitted, the
+             shared retry policy can replay the request safely. */
           if(evName==="error"&&dataParts.length){
             try{
               var errData=JSON.parse(dataParts.join("\n"));
-              state.lastCallError=errData.error||errData.message||JSON.stringify(errData);
+              streamError=makeStreamError(errData.error||errData.message||JSON.stringify(errData),errData.status,errData);
             }catch(_){
-              state.lastCallError=dataParts.join(" ").slice(0,200);
+              streamError=makeStreamError(dataParts.join(" ").slice(0,200));
             }
             return;
           }
@@ -260,17 +294,21 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              stdout/stderr and phase markers. Routing is per-call so
              the caller can update the matching .agent-tool-card
              with a spinner + live text. */
-          if(evName==="tool_progress"&&opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
+          if(evName==="tool_progress"){
             semanticActivity=true;
-            try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_progress",e)}
+            if(opts&&typeof opts.onToolProgress==="function"&&dataParts.length){
+              try{opts.onToolProgress(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_progress",e)}
+            }
             return;
           }
           /* P_execution_sse — execution_start carries the executionId
              that the frontend uses to connect to the independent
              execution SSE endpoint for real-time progress. */
-          if(evName==="execution_start"&&opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
+          if(evName==="execution_start"){
             semanticActivity=true;
-            try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("execution_start",e)}
+            if(opts&&typeof opts.onExecutionStart==="function"&&dataParts.length){
+              try{opts.onExecutionStart(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("execution_start",e)}
+            }
             return;
           }
           /* P_tool_stream — forward the live tool_call_delta frames
@@ -280,9 +318,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
              the tool's arguments (e.g. Python source). The frontend
              uses them to render the code in the tool card
              progressively, not as a single reveal at finish_reason. */
-          if(evName==="tool_call_delta"&&opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
+          if(evName==="tool_call_delta"){
             semanticActivity=true;
-            try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_call_delta",e)}
+            if(opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
+              try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_call_delta",e)}
+            }
             return;
           }
           if(dataParts.length===0)return;
@@ -308,6 +348,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
               var probe=JSON.parse(payload);
               if(probe&&typeof probe.html==="string"){
                 formattedHtml=probe;
+                semanticActivity=true;
                 return;
               }
             }catch(_){}
@@ -315,16 +356,21 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           /* Some upstreams send "event: error" frames; surface them. */
           try{
             var obj=JSON.parse(payload);
-            if(obj.error){throw new Error(typeof obj.error==="string"?obj.error:(obj.error.message||"upstream error"))}
+            if(obj.error){
+              streamError=makeStreamError(typeof obj.error==="string"?obj.error:(obj.error.message||"upstream error"),obj.status,obj);
+              return;
+            }
             var delta=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.content;
             /* Reasoning field (DeepSeek R1 / QwQ / o1-style): some
                upstreams surface the chain-of-thought as a separate
                `reasoning_content` field on the delta. Route it to the
                thinking pill (if the caller subscribed). */
             var reasoning=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.reasoning_content;
-            if(typeof reasoning==="string"&&reasoning.length>0&&typeof onThinking==="function"){
+            if(typeof reasoning==="string"&&reasoning.length>0){
               semanticActivity=true;
-              try{onThinking(reasoning)}catch(_){}
+              if(typeof onThinking==="function"){
+                try{onThinking(reasoning)}catch(_){}
+              }
             }
             /* P_inline_think — split delta on <think>/</think> boundaries.
                The default built-in provider (M3) puts its chain-of-thought
@@ -478,9 +524,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                as a JSON key, not just the word "error" in prose). */
             if((payload.indexOf('"error"')>=0||payload.indexOf("'error'")>=0)
                && /error|fail|unavailable/i.test(payload)){
-              state.lastCallError=payload.slice(0,200);
-              try{reader.cancel()}catch(_){}
-              cancelled=true;
+              streamError=makeStreamError(payload.slice(0,200));
               return;
             }
           }
@@ -569,43 +613,44 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       console.error("[API stream] read error:",e);
       if(hbTmo){clearTimeout(hbTmo);hbTmo=null}
       if(e&&(e.name==="AbortError"||e.code===20)){
-        cancelled=true;
-        /* Heartbeat-timeouts are retriable; total-timeout is not. */
         var isHeartbeat=heartbeatFired;
-        if(shouldRetryInterruptedStream({
-          isHeartbeat:isHeartbeat,
-          semanticActivity:semanticActivity,
-          attempt:attempt,
-          maxAttempts:STREAM_MAX_ATTEMPTS
-        })){
-          lastErr="stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)";
-          console.warn("[API stream]",lastErr+", retrying before visible output");
-          await sleepBackoff(attempt);
+        var attemptError=makeStreamError(isHeartbeat
+          ?"stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)"
+          :"stream request timed out or was interrupted");
+        attemptError.reason=ac.signal.reason;
+        if(!isUserAbort(e,ac.signal)&&!isUserAbort(e,turnAbort.signal)
+           &&!semanticActivity&&await waitForRetry(attempt,attemptError)){
+          lastErr=attemptError;
+          console.warn("[API stream]",attemptError.message+", retrying before visible output");
+          try{await reader.cancel()}catch(_){}
+          try{reader.releaseLock()}catch(_){}
+          unbindAttempt();
           continue;
         }
         if(isHeartbeat&&semanticActivity){
-          lastErr="stream stalled after partial output; automatic replay suppressed";
+          lastErr=attemptError.message+" after partial output; automatic replay suppressed";
         }
         /* User Stop click — return a cancelled result with whatever
            text already streamed, so the bubble cleans up silently
            instead of showing an error. */
-        if(!isHeartbeat&&(ac.signal.reason==="user-stop"||!ac.signal.reason)){
+        if(isUserAbort(e,ac.signal)||isUserAbort(e,turnAbort.signal)
+           ||(!isHeartbeat&&!semanticActivity&&(!ac.signal.reason||ac.signal.reason==="user-stop"))){
           /* A named user stop is preferred. The no-reason fallback keeps
              compatibility with browsers that expose AbortError without the
              custom reason attached. */
-          if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
-            window._activeChatAbort=null;
-          }
+          finishTurn();
           return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:true};
         }
-        state.lastCallError=isHeartbeat?lastErr:"cancelled (timeout or user)";
+        state.lastCallError=lastErr||attemptError.message;
       }else{
         state.lastCallError=String(e&&e.message||e);
       }
+      finishTurn();
       return null;
     }
     if(cancelled){
       if(!state.lastCallError)state.lastCallError="Stream cancelled (parse error)";
+      finishTurn();
       return null;
     }
     /* P_final_cleanup — drop refs to the read-side resources so the
@@ -616,6 +661,20 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     try{resp.body&&resp.body.cancel&&resp.body.cancel().catch(function(){})}catch(_){}
     resp=null;
     reader=null;
+    if(streamError){
+      if(!semanticActivity&&await waitForRetry(attempt,streamError)){
+        lastErr=streamError;
+        unbindAttempt();
+        continue;
+      }
+      if(retryWasCancelled()){
+        finishTurn();
+        return {text:"",html:null,widgets:[],cancelled:true};
+      }
+      state.lastCallError=streamError.message||'stream request failed';
+      finishTurn();
+      return null;
+    }
     /* Empty stream — server returned 200 but no body. Treat as
        retriable (rare, but happens on flaky upstreams).
        P_silence_fix — preserve any real error already captured from
@@ -624,49 +683,48 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        "response interrupted: empty stream" even when the real
        cause was "LLM stream stalled: no data for 60s". */
     if(!gotAnyData&&!full&&!formattedHtml){
-      if(state.lastCallError){
-        /* Real error already set (from event:error or upstream
-           abort) — propagate it and do NOT retry. */
-        return null;
-      }
-      lastErr="empty stream ("+bytesReceived+" bytes received)";
-      if(attempt<STREAM_MAX_ATTEMPTS){
-        console.warn("[API stream]",lastErr+", retrying");
-        await sleepBackoff(attempt);
+      lastErr=makeStreamError("empty stream ("+bytesReceived+" bytes received)");
+      if(await waitForRetry(attempt,lastErr)){
+        console.warn("[API stream]",lastErr.message+", retrying");
+        unbindAttempt();
         continue;
       }
-      state.lastCallError=lastErr;
+      if(retryWasCancelled()){
+        finishTurn();
+        return {text:"",html:null,widgets:[],cancelled:true};
+      }
+      state.lastCallError=lastErr.message;
+      finishTurn();
       return null;
     }
     if(!full&&!formattedHtml){
-      if(state.lastCallError){
-        /* Real error already set — preserve it instead of
-           overwriting with generic "empty stream". */
-        return null;
-      }
-      lastErr="empty stream (server returned no content)";
-      if(attempt<STREAM_MAX_ATTEMPTS){
-        console.warn("[API stream]",lastErr+", retrying");
-        await sleepBackoff(attempt);
+      lastErr=makeStreamError("empty stream (server returned no content)");
+      if(await waitForRetry(attempt,lastErr)){
+        console.warn("[API stream]",lastErr.message+", retrying");
+        unbindAttempt();
         continue;
       }
-      state.lastCallError=lastErr;
+      if(retryWasCancelled()){
+        finishTurn();
+        return {text:"",html:null,widgets:[],cancelled:true};
+      }
+      state.lastCallError=lastErr.message;
+      finishTurn();
       return null;
     }
     /* P_global_handle_cleanup — drop the global abort handle so
        a future "session-switch" or "user-stop" call doesn't fire
        a closure that pins this call's AbortController for the
        remaining watchdog window. */
-    if(window._activeChatAbort&&window._activeChatAbort._fromThisCall){
-      window._activeChatAbort=null;
-    }
+    finishTurn();
     return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false};
   }
-  /* Both attempts failed with the same retryable condition.
+  /* All six attempts failed with the same retryable condition.
      Ensure lastCallError is always set even if lastErr is
      falsy — otherwise the caller (generateFollowUpStream /
      askChatTurn) falls through to a mock response, silently
      replacing the AI reply with a generic question. */
-  state.lastCallError=lastErr||"Stream failed after all retries";
+  state.lastCallError=lastErr&&lastErr.message||"Stream failed after all retries";
+  finishTurn();
   return null;
 }

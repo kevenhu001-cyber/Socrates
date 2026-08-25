@@ -82,11 +82,11 @@ function isReasoningProvider() {
 
 function pickStreamBudgets() {
   var active = apiConfig.activeId;
-  if (!active) return { timeoutMs: 300000, heartbeatMs: 60000, maxAttempts: 3, retryable: [429, 503] };
+  if (!active) return { timeoutMs: 300000, heartbeatMs: 60000, maxAttempts: 6, retryable: [429, 503] };
   var p = (apiConfig.providers || []).find(function (x) { return x && x.id === active; });
-  if (!p) return { timeoutMs: 300000, heartbeatMs: 60000, maxAttempts: 3, retryable: [429, 503] };
+  if (!p) return { timeoutMs: 300000, heartbeatMs: 60000, maxAttempts: 6, retryable: [429, 503] };
   var isReasoning = _isReasoningForActive();
-  return { timeoutMs: isReasoning ? 600000 : 300000, heartbeatMs: isReasoning ? 120000 : 60000, maxAttempts: 5, retryable: [429, 500, 502, 503] };
+  return { timeoutMs: isReasoning ? 600000 : 300000, heartbeatMs: isReasoning ? 120000 : 60000, maxAttempts: 6, retryable: [429, 500, 502, 503] };
 }
 
 function hasUsableActive() {

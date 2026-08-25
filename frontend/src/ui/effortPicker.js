@@ -172,15 +172,21 @@ function _positionMenu(picker) {
   menu.style.position = "fixed";
   menu.style.bottom = "auto";
   menu.style.right = "auto";
+  var viewport = window.visualViewport;
+  var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
+  var viewportHeight = viewport ? viewport.height : (window.innerHeight || 0);
+  var viewportBottom = viewportTop + viewportHeight;
+  var viewportWidth = viewport ? viewport.width : (window.innerWidth || document.documentElement.clientWidth);
+  menu.style.maxHeight = Math.max(120, viewportHeight - 16) + "px";
   /* Measure after it's displayed (data-open drives display:flex). */
   var mh = menu.offsetHeight || 240;
   var mw = menu.offsetWidth || 200;
   var gap = 6;
   var top = r.top - mh - gap;
-  if (top < 8) top = 8; /* clamp to top of viewport */
+  if (top < viewportTop + 8) top = r.bottom + gap;
+  top = Math.max(viewportTop + 8, Math.min(viewportBottom - mh - 8, top));
   var left = r.left;
-  var vw = window.innerWidth || document.documentElement.clientWidth;
-  if (left + mw > vw - 8) left = vw - 8 - mw;
+  if (left + mw > viewportWidth - 8) left = viewportWidth - 8 - mw;
   if (left < 8) left = 8;
   menu.style.top = top + "px";
   menu.style.left = left + "px";
@@ -255,6 +261,14 @@ if (typeof document !== "undefined") {
     if (e.key === "Escape") _closeAll();
   });
   window.addEventListener("resize", function () { _closeAll(); });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", function () {
+      if (_openPicker) _positionMenu(_openPicker);
+    });
+    window.visualViewport.addEventListener("scroll", function () {
+      if (_openPicker) _positionMenu(_openPicker);
+    });
+  }
   window.addEventListener("DOMContentLoaded", function () { try { syncEffortUI(); } catch (_) {} });
   if (document.readyState !== "loading") { try { syncEffortUI(); } catch (_) {} }
 }

@@ -234,7 +234,8 @@ export function smoothScrollToBottom(list, opts){
    single browser-native smoothScrollToBottom() call dispatched from
    keyboardViewport.js, so the CSS padding-bottom transition owns
    the visual motion and the JS no longer resets scrollTop every
-   frame mid-animation. */
+     frame mid-animation. The bounded composer-follow sequence below only
+     runs while a focus/keyboard transition is active. */
 export function initChatComposerReserve(options){
   options=options||{};
   var list=options.list||document.getElementById("msgList");
@@ -243,20 +244,9 @@ export function initChatComposerReserve(options){
   var contentFrame=0;
   var pinSlack=96;
   var lastMetrics=null;
-  /* P_composer-geometry-pin — remembers whether the reader was pinned at
-     their last scroll / metrics baseline, so a viewport shrink caused by
-     composer growth or keyboard inset can re-pin without depending on
-     lastMetrics still holding the pre-shrink geometry (a late
-     content-follow callback can refresh lastMetrics mid-shrink). */
   var lastPinned=false;
-  var lastChatViewHeight=0;
-  /* Bottom position (scrollTop max) at the moment the reader was last
-     known to be pinned. Used by the composer-geometry watch to decide
-     whether the reader is still sitting at the old bottom (and should be
-     re-snapped) or the app/user deliberately moved the viewport elsewhere
-     (send-time anchor, retry anchor, manual scroll) — those must not be
-     overridden by the composer pin. */
-  var lastPinnedBottom=0;
+  var composerFollowFrame=0;
+  var composerFollowUntil=0;
 
   function readMetrics(){
     if(!list)return null;
@@ -276,166 +266,104 @@ export function initChatComposerReserve(options){
   function rememberMetrics(){
     var current=readMetrics();
     if(!current)return;
-    /* P_composer-geometry-pin — a metrics refresh can land AFTER the
-       composer/viewport shrank (late rAF or mutation callback). The reader
-       did not scroll; only clientHeight changed. Preserve the pinned
-       intent so the geometry watch can still re-pin to the new bottom. */
-    if(lastPinned&&lastMetrics
-       && current.clientHeight<lastMetrics.clientHeight-1
-       && current.scrollHeight===lastMetrics.scrollHeight
-       && Math.abs(current.scrollTop-lastMetrics.scrollTop)<=1){
-      lastMetrics=current;
-      return;
-    }
+    var previous=lastMetrics;
+    var geometryOnly=lastPinned&&previous&&
+      current.scrollHeight===previous.scrollHeight&&
+      current.clientHeight!==previous.clientHeight&&
+      Math.abs(current.scrollTop-previous.scrollTop)<=1;
     lastMetrics=current;
+    /* A composer/keyboard resize changes the list's viewport height before
+       the border-box observer can re-anchor it. Keep the previous intent
+       through that geometry-only sample; otherwise the transient distance
+       from the old bottom looks like a manual scroll and the next observer
+       delivery is skipped. */
+    if(geometryOnly)return;
     lastPinned=!!current&&wasPinned(current);
-    if(lastPinned)lastPinnedBottom=current.scrollHeight-current.clientHeight;
   }
   function rememberScrollPosition(){
     var current=readMetrics();
     if(!current)return;
-    /* A scroll event can be dispatched after content has already resized but
-       before ResizeObserver reports that resize. Keep the previous geometry
-       baseline and update only scrollTop, otherwise late image/tool growth
-       becomes indistinguishable from an ordinary user scroll. */
     var previousTop=lastMetrics?lastMetrics.scrollTop:current.scrollTop;
-    if(lastMetrics){
-      lastMetrics.scrollTop=current.scrollTop;
-    }else{
-      lastMetrics=current;
-    }
-    /* Same protection as rememberMetrics: if the only change is a smaller
-       viewport while scrollTop stayed put, keep the pinned intent. */
-    if(lastPinned
-       && current.clientHeight<lastMetrics.clientHeight-1
-       && Math.abs(current.scrollTop-previousTop)<=1){
-      return;
-    }
+    var previousHeight=lastMetrics&&lastMetrics.clientHeight;
+    lastMetrics=current;
+    /* A flex-layout resize can dispatch a scroll event without user input.
+       If scrollTop did not move, keep the old bottom-follow intent and let
+       the layout observer below settle the new bottom. */
+    if(lastPinned&&previousHeight!=null
+       && current.clientHeight<previousHeight-1
+       && Math.abs(current.scrollTop-previousTop)<=1)return;
     lastPinned=wasPinned(current);
-    if(lastPinned)lastPinnedBottom=current.scrollHeight-current.clientHeight;
   }
 
-  /* P_composer-geometry-pin — composer growth (focus expansion, taller
-     wrap/attachments) and keyboard-inset changes make .chat-view taller,
-     which shrinks the transcript's viewport without changing its content.
-     A reader pinned to the bottom before that growth must follow the new
-     bottom; a reader who scrolled away keeps their exact position.
-     Geometry can change through CSS custom properties (--keyboard-inset),
-     class toggles (composer-focused), inline styles, or React child
-     updates, so we arm a short-lived watch on those mutation signals
-     (plus ResizeObserver as a production fallback). While an in-flight
-     auto-scroll owns the list (data-auto-scrolling), we keep watching and
-     correct the final position once the motion settles. */
+  /* A CSS focus transition can resize the flex viewport between two
+     ResizeObserver deliveries. Keep the bottom anchor alive only for the
+     short, observable composer transition; this is a bounded rAF sequence,
+     not a permanent measurement loop or a height reserve. Any wheel/touch
+     intent flips _userScrolledAway and stops it on the next frame. */
+  function stopComposerFollow(){
+    if(composerFollowFrame){cancelAnimationFrame(composerFollowFrame);composerFollowFrame=0;}
+    composerFollowUntil=0;
+  }
+  function runComposerFollow(){
+    composerFollowFrame=0;
+    if(!list||userScrolledAway()||!lastPinned||
+       (list.querySelector&&list.querySelector(".turn-viewport-anchor"))){
+      stopComposerFollow();
+      return;
+    }
+    smoothScrollToBottom(list,{smooth:false});
+    rememberMetrics();
+    if(Date.now()<composerFollowUntil){
+      composerFollowFrame=requestAnimationFrame(runComposerFollow);
+    }else{
+      composerFollowUntil=0;
+    }
+  }
+  function armComposerFollow(){
+    if(!list||userScrolledAway()||!lastPinned)return;
+    composerFollowUntil=Date.now()+420;
+    if(!composerFollowFrame)composerFollowFrame=requestAnimationFrame(runComposerFollow);
+  }
+
+  /* Composer geometry is now owned by flex layout and keyboardViewport.
+     Observe the resulting chat-column resize once per layout notification;
+     this keeps a reader who was already at the bottom at the new bottom on
+     desktop focus expansion, while never moving a reader who scrolled away.
+     There is intentionally no interval or CSS-variable height measurement;
+     the short transition-bound follow sequence only writes scrollTop while
+     the composer is visibly changing size. */
   var chatView=typeof document!=="undefined"
     ?document.querySelector("#chatView, .chat-view")
     :null;
-  var composerPinTimer=0;
-  var composerWatchUntil=0;
-  var lastKeyboardInset=0;
-  function currentKeyboardInset(){
-    try{
-      return parseFloat(getComputedStyle(document.documentElement)
-        .getPropertyValue('--keyboard-inset'))||0;
-    }catch(_){return 0;}
+  var followComposerResize=function(){
+      if(!list||userScrolledAway()||!lastPinned)return;
+      if(list.dataset.autoScrolling==='true')return;
+      /* ResizeObserver runs after the flex layout has committed. Snap in
+         that same delivery rather than waiting another frame: during a
+         focus/keyboard transition a second frame can expose a short-lived
+         1–3px gap and let the scroll-intent listener misclassify the reader
+         before the next notification arrives. scrollTop writes do not change
+         the observed border-box, so this is not a ResizeObserver loop. */
+      smoothScrollToBottom(list,{smooth:false});
+      rememberMetrics();
+      armComposerFollow();
+    };
+  var composerResizeObserver=typeof ResizeObserver==="function"&&chatView
+    ?new ResizeObserver(followComposerResize)
+    :null;
+  if(composerResizeObserver){
+    try{composerResizeObserver.observe(chatView,{box:"border-box"});}
+    catch(_){composerResizeObserver.observe(chatView);}
+    try{composerResizeObserver.observe(list,{box:"border-box"});}
+    catch(_){composerResizeObserver.observe(list);}
   }
-  /* The reader is still sitting at the bottom position they were pinned
-     to before the composer grew — either they are still near the current
-     bottom, or they have not moved from the OLD bottom. Send-time / retry
-     anchors deliberately move the viewport elsewhere; those must not be
-     overridden by the composer pin. */
-  function readerStillAtOldBottom(){
-    if(!list||lastPinnedBottom<=0)return false;
-    var distance=list.scrollHeight-list.scrollTop-list.clientHeight;
-    return distance<=pinSlack||list.scrollTop>=lastPinnedBottom-pinSlack;
+  function onComposerTransition(event){
+    var target=event&&event.target;
+    if(target&&target.closest&&target.closest(".chat-input-wrap"))armComposerFollow();
   }
-  function snapToBottom(){
-    if(!list)return;
-    list.scrollTop=list.scrollHeight;
-    lastPinnedBottom=list.scrollHeight-list.clientHeight;
-  }
-  function composerPinTick(){
-    if(!chatView||!list){
-      if(composerPinTimer){clearInterval(composerPinTimer);composerPinTimer=0;}
-      return;
-    }
-    var now=typeof performance!=="undefined"?performance.now():Date.now();
-    var height=chatView.getBoundingClientRect().height;
-    if(height<=1){
-      /* Chat view hidden — nothing to keep pinned. */
-      if(composerPinTimer){clearInterval(composerPinTimer);composerPinTimer=0;}
-      return;
-    }
-    /* Send-time / retry turn anchors deliberately own the viewport (prompt
-       pinned to the top with a reserve). The composer-geometry pin must
-       not fight them. */
-    if(list.querySelector(".turn-viewport-anchor"))return;
-    var inset=currentKeyboardInset();
-    var keyboardAnimating=Math.abs(inset-lastKeyboardInset)>0.5;
-    lastKeyboardInset=inset;
-    var grew=height>lastChatViewHeight+1;
-    var collapsed=height<lastChatViewHeight-1;
-    if(list.dataset.autoScrolling==='true'){
-      if(keyboardAnimating||!grew){
-        /* keyboardViewport's JS-driven motion owns the scroll and moves it
-           in lockstep with the CSS animation (its inset value is still
-           changing), or this chat-view height did not change so the
-           in-flight motion is an unrelated content-follow. Either way, do
-           not fight it; keep watching and let it finish. */
-        composerWatchUntil=now+300;
-        return;
-      }
-      /* The chat view grew while a content-follow motion was in flight.
-         Content-follow only runs for a reader who was pinned, so snap is
-         safe even if the motion's own scroll events have not refreshed
-         lastPinned yet. Cancel the stale motion and land on the new
-         bottom immediately. */
-      cancelScrollAnimationFor(list);
-      lastChatViewHeight=height;
-      composerWatchUntil=now+300;
-      if(!userScrolledAway()&&readerStillAtOldBottom()){
-        snapToBottom();
-      }
-      return;
-    }
-    if(grew){
-      lastChatViewHeight=height;
-      composerWatchUntil=now+300;
-    }else if(collapsed){
-      lastChatViewHeight=height;
-    }
-    if(!userScrolledAway()&&lastPinned&&readerStillAtOldBottom()){
-      /* Snap to the new bottom while the watch is active and the reader
-         is still at the old bottom; the composer animates via CSS, and
-         re-applying the snap each frame keeps the transcript edge glued
-         to the composer while it grows (and corrects the final few
-         pixels after the transition settles). Setting scrollTop to the
-         same value is a no-op, so this only writes while the bottom is
-         actually moving. */
-      snapToBottom();
-    }
-    if(now>=composerWatchUntil){
-      if(composerPinTimer){clearInterval(composerPinTimer);composerPinTimer=0;}
-    }
-  }
-  function armComposerPinWatch(){
-    if(!chatView||!list)return;
-    var now=typeof performance!=="undefined"?performance.now():Date.now();
-    composerWatchUntil=Math.max(composerWatchUntil,now+600);
-    if(composerPinTimer)return;
-    composerPinTimer=setInterval(composerPinTick,32);
-    composerPinTick();
-  }
-  var composerGeometryObserver=null;
-  if(typeof MutationObserver==="function"&&chatView){
-    composerGeometryObserver=new MutationObserver(function(){
-      /* Also fires on every --keyboard-inset / --app-vh write; the tick
-         ignores frames owned by an in-flight auto-scroll. */
-      armComposerPinWatch();
-    });
-    try{
-      composerGeometryObserver.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
-      composerGeometryObserver.observe(chatView,{subtree:true,attributes:true,attributeFilter:["class","style"],childList:true});
-    }catch(_){composerGeometryObserver=null;}
+  if(chatView){
+    chatView.addEventListener("transitionrun",onComposerTransition);
+    chatView.addEventListener("transitionstart",onComposerTransition);
   }
 
   /* Rich content can keep changing size after the stream has finished:
@@ -516,10 +444,6 @@ export function initChatComposerReserve(options){
       }
     })
     :null;
-  var viewportResizeObserver=typeof ResizeObserver==="function"&&chatView
-    ?new ResizeObserver(function(){armComposerPinWatch();})
-    :null;
-  if(viewportResizeObserver)viewportResizeObserver.observe(chatView);
   function observeLastMessage(){
     if(!list||!messageResizeObserver)return;
     var messages=list.querySelectorAll(":scope > .msg");
@@ -552,11 +476,14 @@ export function initChatComposerReserve(options){
 
   return function(){
     if(contentFrame)cancelAnimationFrame(contentFrame);
-    if(composerPinTimer)clearInterval(composerPinTimer);
+    stopComposerFollow();
     if(messageResizeObserver)messageResizeObserver.disconnect();
     if(messageSubtreeObserver)messageSubtreeObserver.disconnect();
-    if(composerGeometryObserver)composerGeometryObserver.disconnect();
-    if(viewportResizeObserver)viewportResizeObserver.disconnect();
+    if(composerResizeObserver)composerResizeObserver.disconnect();
+    if(chatView){
+      chatView.removeEventListener("transitionrun",onComposerTransition);
+      chatView.removeEventListener("transitionstart",onComposerTransition);
+    }
     if(messageMutationObserver)messageMutationObserver.disconnect();
     list.removeEventListener("scroll",rememberScrollPosition);
   };

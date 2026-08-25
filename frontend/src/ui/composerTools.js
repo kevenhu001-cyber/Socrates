@@ -125,6 +125,7 @@ function position(el, trigger) {
   var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
   var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;
   var viewportWidth = viewport ? viewport.width : window.innerWidth;
+  el.style.maxHeight = Math.max(120, viewportBottom - viewportTop - 16) + "px";
   el.style.left = "0px";
   el.style.top = "0px";
   var width = el.offsetWidth || 260;
@@ -132,8 +133,9 @@ function position(el, trigger) {
   var left = Math.max(8, Math.min(r.left, viewportWidth - width - 8));
   var top = r.top - height - 10;
   if (top < viewportTop + 8) top = Math.min(viewportBottom - height - 8, r.bottom + 10);
+  top = Math.max(viewportTop + 8, Math.min(viewportBottom - height - 8, top));
   el.style.left = left + "px";
-  el.style.top = Math.max(viewportTop + 8, top) + "px";
+  el.style.top = top + "px";
 }
 
 function reposition() {

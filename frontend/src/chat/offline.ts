@@ -3,10 +3,10 @@
 // and the in-page streaming code paths in main.js.
 //
 //   STREAM_TIMEOUT_MS / STREAM_HEARTBEAT_MS / STREAM_MAX_ATTEMPTS /
-//   STREAM_RETRY_DELAYS / STREAM_RETRYABLE_STATUS — tuning constants.
+//   STREAM_RETRYABLE_STATUS — compatibility constants.
 //   makeAIWatchdog(totalMs, heartbeatMs, onTimeout)
 //   offlineGuard()                              — navigator.onLine check
-//   sleepBackoff(attempt, retryAfterHeader)     — exponential backoff
+//   sleepBackoff()                              — fixed five-second delay
 //
 // Window exposures (window.offlineGuard / sleepBackoff /
 // STREAM_TIMEOUT_MS / STREAM_HEARTBEAT_MS / STREAM_MAX_ATTEMPTS /
@@ -14,12 +14,13 @@
 
 export const STREAM_TIMEOUT_MS    = 300000;   /* 5 min — balances reasoning models vs perceived hangs */
 export const STREAM_HEARTBEAT_MS  = 60000;    /* 60 s silence before we treat as stall */
-export const STREAM_MAX_ATTEMPTS  = 5;
-export const STREAM_RETRY_DELAYS  = [600, 1500, 3500];   /* ms, per attempt index */
+/* Six attempts = the initial request plus five fixed-delay retries. */
+export const STREAM_MAX_ATTEMPTS  = 6;
+export const STREAM_RETRY_DELAYS  = [5000];              /* legacy export; policy is fixed */
 /* P_524-no-retry — HTTP 524 is "A Timeout Occurred" (Cloudflare / EdgeOne
    origin timeout). It's structural — the CDN closed the upstream socket
    because the origin exceeded the response-time budget. Retrying within
-   600ms–3.5s backoff (the rest of STREAM_RETRY_DELAYS) just opens fresh
+   five-second backoff just opens fresh
    connections that hit the same wall, amplifying load on an already-
    overloaded upstream and producing duplicate 524s. Surface it as a
    terminal error so the user sees a clear "upstream timed out" toast
@@ -95,28 +96,21 @@ export function makeAIWatchdog(totalMs: number, heartbeatMs: number, onTimeout?:
 
 /* Returns true if we know the network is unreachable. Callers should
    short-circuit their fetch attempts in that case (no point waiting
-   for the 1.5s/3.5s retry backoff). */
+   for the fixed retry delay). */
 export function offlineGuard(): boolean {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
   return false;
 }
 
-/* Backoff sleep: prefer the Retry-After header if the server sent one
-   (capped at 15 s), otherwise fall back to STREAM_RETRY_DELAYS based
-   on the attempt index, then add a 0-200 ms jitter to avoid
-   thundering-herd retries. */
-export function sleepBackoff(attempt: number, retryAfterHeader?: string | null): Promise<void> {
-  let delay: number | undefined;
-  if (retryAfterHeader) {
-    const n = parseFloat(retryAfterHeader);
-    if (!isNaN(n) && n > 0) {
-      delay = Math.min(n * 1000, 15000);
-    }
-  }
-  if (!delay) {
-    delay = STREAM_RETRY_DELAYS[Math.min(attempt - 1, STREAM_RETRY_DELAYS.length - 1)] || 3500;
-  }
-  /* Add a small random jitter (0-200ms) to avoid thundering-herd. */
-  delay += Math.floor(Math.random() * 200);
-  return new Promise(function (r) { setTimeout(r, delay); });
+/* Compatibility shim for older window consumers. Model retries now use the
+   shared policy, so Retry-After and jitter are intentionally ignored. */
+export function sleepBackoff(_attempt?: number, _retryAfterHeader?: string | null, signal?: AbortSignal): Promise<void> {
+  return new Promise(function (resolve, reject) {
+    if (signal?.aborted) { reject(new Error('retry cancelled')); return; }
+    const timer = setTimeout(resolve, 5000);
+    signal?.addEventListener('abort', function () {
+      clearTimeout(timer);
+      reject(new Error('retry cancelled'));
+    }, { once: true });
+  });
 }

@@ -23,6 +23,11 @@
 import { apiFetch, apiFetchRaw } from '../util/api.js';
 import { formatMsg, formatMsgProgressive } from '../render/markdown.js';
 import { esc } from '../render/helpers.js';
+import {
+  AI_MAX_ATTEMPTS,
+  isUserAbort,
+  waitForAIRetry,
+} from '../chat/retryPolicy.ts';
 
 /* Same frame splitter as packages/core (kept local so this module stays
    out of the checked TS module graph — it's a stable 10-line pure fn). */
@@ -503,9 +508,12 @@ function ensurePanel() {
   return panel;
 }
 
-function setStatus(running) {
+function setStatus(running, runningLabel) {
   if (!state.statusEl) return;
   state.statusEl.classList.toggle('running', running);
+  if (running && state.statusLabelEl) {
+    state.statusLabelEl.dataset.running = runningLabel || 'running';
+  }
 }
 
 function hideEmpty() {
@@ -710,43 +718,136 @@ async function startTurn(text) {
 
   const controller = new AbortController();
   state.controller = controller;
+  let assistant = null;
+  let finalError = null;
   try {
     if (!state.threadId) {
       const created = await apiFetch('/api/codex/threads', { method: 'POST', body: {} });
       state.threadId = created.threadId;
     }
 
-    const assistant = beginAssistant();
-    let sawCompletion = false;
-    const resp = await apiFetchRaw(`/api/codex/threads/${state.threadId}/turns`, {
-      method: 'POST',
-      body: { input: text },
-      signal: controller.signal,
-      timeoutMs: STREAM_TIMEOUT_MS,
-    });
+    assistant = beginAssistant();
+    for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt += 1) {
+      let sawCompletion = false;
+      let terminalHandled = false;
+      let semanticActivity = false;
+      let pendingError = null;
+      try {
+        const resp = await apiFetchRaw(`/api/codex/threads/${state.threadId}/turns`, {
+          method: 'POST',
+          body: { input: text },
+          signal: controller.signal,
+          timeoutMs: STREAM_TIMEOUT_MS,
+        });
+        if (!resp.body || typeof resp.body.getReader !== 'function') {
+          throw Object.assign(new Error('Codex stream has no response body'), { code: 'EMPTY_STREAM' });
+        }
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer = consumeSseBuffer(buffer + decoder.decode(value, { stream: true }), (frame) => {
-        const { event, data } = parseFrame(frame);
-        if (data == null) return;
-        let payload = data;
-        try { payload = JSON.parse(data); } catch { /* keep string */ }
-        if (event === 'codex_turn_completed') sawCompletion = true;
-        handleEvent(event, payload, assistant);
-      });
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        const processFrame = (frame) => {
+          const { event, data } = parseFrame(frame);
+          if (data == null) return;
+          let payload = data;
+          try { payload = JSON.parse(data); } catch { /* keep string */ }
+
+          if (event === 'codex_error') {
+            const message = payload && typeof payload === 'object'
+              ? payload.message || payload.error || 'Codex stream error'
+              : payload || 'Codex stream error';
+            const error = new Error(String(message));
+            if (payload && typeof payload === 'object') {
+              if (payload.status != null) error.status = payload.status;
+              if (payload.code) error.code = payload.code;
+              error.body = payload;
+            }
+            if (!semanticActivity) {
+              pendingError = error;
+              return;
+            }
+            terminalHandled = true;
+            handleEvent(event, payload, assistant);
+            return;
+          }
+
+          if (event === 'codex_turn_completed'
+              && payload && payload.status === 'failed'
+              && !semanticActivity) {
+            const error = new Error(payload.error || 'Codex turn failed');
+            if (payload.code) error.code = payload.code;
+            if (payload.statusCode != null) error.status = payload.statusCode;
+            error.body = payload;
+            pendingError = error;
+            return;
+          }
+
+          if (event === 'codex_turn_completed') sawCompletion = true;
+          if (event === 'codex_delta'
+              || event === 'codex_reasoning'
+              || event === 'codex_tool'
+              || event === 'codex_tool_output'
+              || event === 'codex_approval') {
+            semanticActivity = true;
+          }
+          handleEvent(event, payload, assistant);
+        };
+
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer = consumeSseBuffer(buffer + decoder.decode(value, { stream: true }), processFrame);
+          }
+          buffer += decoder.decode();
+          if (buffer.trim()) processFrame(buffer);
+        } finally {
+          try { reader.releaseLock(); } catch { /* ignore */ }
+        }
+
+        if (pendingError) {
+          if (!semanticActivity && await waitForAIRetry(attempt, pendingError, {
+            source: 'codex',
+            signal: controller.signal,
+            onRetry: (notice) => setStatus(true, `retrying · ${notice.retryNumber}/${notice.maxRetries} · 5s`),
+          })) continue;
+          finalError = pendingError;
+          break;
+        }
+        if (!sawCompletion && !terminalHandled) {
+          const error = new Error('Codex stream ended before completion');
+          if (!semanticActivity && await waitForAIRetry(attempt, error, {
+            source: 'codex',
+            signal: controller.signal,
+            onRetry: (notice) => setStatus(true, `retrying · ${notice.retryNumber}/${notice.maxRetries} · 5s`),
+          })) continue;
+          finalError = error;
+        }
+        break;
+      } catch (err) {
+        if (isUserAbort(err, controller.signal)) throw err;
+        if (!semanticActivity && await waitForAIRetry(attempt, err, {
+          source: 'codex',
+          signal: controller.signal,
+          onRetry: (notice) => setStatus(true, `retrying · ${notice.retryNumber}/${notice.maxRetries} · 5s`),
+        })) continue;
+        finalError = err;
+        break;
+      }
     }
-    if (!sawCompletion) assistant.finalize();
+
+    if (finalError) {
+      appendInfo(finalError.message || 'Codex request failed');
+      assistant.finalize();
+    } else if (assistant) {
+      assistant.finalize();
+    }
   } catch (err) {
     if (err && err.name === 'AbortError') {
       // user pressed stop; nothing to render
     } else {
       appendInfo((err && err.message) || 'Codex request failed');
-      if (state.assistant) state.assistant.finalize();
+      if (assistant) assistant.finalize();
     }
   } finally {
     state.busy = false;

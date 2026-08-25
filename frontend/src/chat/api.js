@@ -7,6 +7,50 @@
    window globals + ~750 lines of streaming state). */
 
 import { apiFetchRaw } from '../util/api.js';
+import {
+  AI_MAX_ATTEMPTS,
+  AI_MAX_RETRIES,
+  isUserAbort,
+  waitForAIRetry,
+} from './retryPolicy.ts';
+
+function makeAIError(message, status, body) {
+  var error = new Error(String(message || 'model request failed'));
+  if (status != null) error.status = Number(status);
+  if (body != null) error.body = body;
+  if (body && body.code) error.code = body.code;
+  return error;
+}
+
+function errorMessage(error, fallback) {
+  return String(error && error.message || error || fallback || 'model request failed');
+}
+
+function monthlyLimitMessage(error) {
+  var body = error && error.body;
+  var code = String(error && error.code || body && body.code || '').toUpperCase();
+  if (code !== 'MONTHLY_LIMIT') return '';
+  return 'Monthly Beagle usage limit reached. '
+    + String(body && body.message || 'Upgrade your plan or wait until next month.');
+}
+
+function bindAbortSignal(parent, child) {
+  if (!parent) return function () {};
+  var onAbort = function () {
+    try { child.abort(parent.reason || 'aborted'); } catch (_) {}
+  };
+  if (parent.aborted) onAbort();
+  else parent.addEventListener('abort', onAbort, { once: true });
+  return function () { try { parent.removeEventListener('abort', onAbort); } catch (_) {} };
+}
+
+async function waitForRetry(attempt, error, options) {
+  try { return await waitForAIRetry(attempt, error, options); }
+  catch (abortError) {
+    if (isUserAbort(abortError, options && options.signal)) return false;
+    throw abortError;
+  }
+}
 
 /* Local copy of the Retry-After formatter — chat/stream.js has the same
    helper but extracting it to a shared util for two callsites is more
@@ -14,16 +58,6 @@ import { apiFetchRaw } from '../util/api.js';
    callers use the formatter in different places (sync non-stream error
    surfacing vs. streaming 429 toasts), so unifying them is a future
    refactor rather than a current necessity. */
-function formatMinutesApi(seconds) {
-  if (!seconds || !isFinite(seconds) || seconds <= 0) return "a moment";
-  if (seconds < 60) return Math.round(seconds) + "s";
-  var m = Math.ceil(seconds / 60);
-  if (m < 60) return m + " min";
-  var h = Math.floor(m / 60);
-  var rem = m % 60;
-  return rem ? (h + "h " + rem + "m") : (h + "h");
-}
-
 /* P_request_body_singleton — single source of truth for the chat request
    payload. Shared by callAPI (sync, built-in + custom providers) and
    callAPIStream so the two paths cannot drift on reasoning knobs,
@@ -75,84 +109,141 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
 /* Non-streaming variant of callAPIStream for round-1 detection.
    Returns the same {text,html,widgets,cancelled} shape (or null on failure).
    Reuses the streaming call but accumulates without rendering. */
-export async function callAPIChat(messages,maxTokens,timeoutMs){
-  /* state, getActiveProvider live in main.js — read them via window
-     so this module stays independent. main.js sets these up at boot
-     and they are stable for the page lifetime. */
+export async function callAPIChat(messages,maxTokens,timeoutMs,options){
+  /* Non-streaming probe calls share the same six-attempt policy as the
+     visible chat stream. A probe never exposes partial text, so each
+     attempt accumulates into a private buffer and is committed only after
+     a complete response. */
   var state=window.state;
   var getActiveProvider=window.getActiveProvider;
+  var retryOptions=Object.assign({},options||{}, { source:'probe' });
   if(!getActiveProvider()){state.lastCallError="no provider";return null}
   state.lastCallError=null;
-  var ac=new AbortController();
-  /* Caller-supplied timeout caps this round's wait. Default 15s —
-     long enough for the model to declare "I'll search" or "no I
-     won't", short enough that the user doesn't wait minutes for a
-     tool-detection phase. */
-  var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},timeoutMs||15000);
-  var r;
-  try{
-    /* Use apiFetchRaw so CSRF/credentials/401→handleAuthExpired
-     * are handled centrally. Throws on non-2xx. Pass body as an object
-     * so apiFetchRaw stringifies it and sets Content-Type: application/json.
-     * Pre-stringified bodies cause express.json() to skip parsing. */
-    r=await apiFetchRaw("/api/chat/stream",{
-      method:"POST",
-      body:buildChatRequestBody(messages,maxTokens,0.2),
-      signal:ac.signal
-    });
-  }catch(e){
-    clearTimeout(tmo);
-    state.lastCallError=(e&&e.status?e.status+" ":"")+(e&&e.message||e);
-    return null;
-  }
-  clearTimeout(tmo);
-  if(!r.body||!r.body.getReader){state.lastCallError="no stream body";return null}
-  var reader=r.body.getReader();
-  var decoder=new TextDecoder("utf-8");
-  var buf="";var full="";
-  while(true){
-    var step=await reader.read();
-    if(step.done)break;
-    buf+=decoder.decode(step.value,{stream:true});
-    var idx;
-    while((idx=buf.indexOf("\n\n"))>=0){
-      var frame=buf.slice(0,idx);buf=buf.slice(idx+2);
-      var lines=frame.split("\n");
-      for(var li=0;li<lines.length;li++){
-        var line=lines[li];
-        if(line.indexOf("data:")!==0)continue;
-        var payload=line.slice(5).trim();
-        if(!payload||payload==="[DONE]")continue;
-        try{
-          var obj=JSON.parse(payload);
-          var d=obj.choices&&obj.choices[0]&&obj.choices[0].delta&&obj.choices[0].delta.content;
-          if(typeof d==="string")full+=d;
-        }catch(_){}
+  var maxAttempts=(retryOptions.maxRetries==null?AI_MAX_RETRIES:Math.max(0,retryOptions.maxRetries))+1;
+  var effectiveTimeout=timeoutMs||15000;
+  var lastErr=null;
+
+  for(var attempt=1;attempt<=maxAttempts;attempt++){
+    var ac=new AbortController();
+    var unbind=bindAbortSignal(retryOptions.signal,ac);
+    var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},effectiveTimeout);
+    var reader=null;
+    var full="";
+    var semanticActivity=false;
+    var streamError=null;
+    try{
+      var response=await apiFetchRaw("/api/chat/stream",{
+        method:"POST",
+        body:buildChatRequestBody(messages,maxTokens,0.2),
+        signal:ac.signal
+      });
+      if(!response.body||!response.body.getReader){
+        throw makeAIError('no stream body');
       }
+      reader=response.body.getReader();
+      var decoder=new TextDecoder("utf-8");
+      var buf="";
+      var processFrame=function(frame){
+        var lines=frame.split(/\r?\n/);
+        var data=[];
+        var eventName='';
+        for(var i=0;i<lines.length;i++){
+          if(lines[i].indexOf('event:')===0) eventName=lines[i].slice(6).trim();
+          if(lines[i].indexOf('data:')===0) data.push(lines[i].slice(5).trim());
+        }
+        if(eventName==='error'&&data.length){
+          var payload=data.join('\n');
+          try{
+            var errorData=JSON.parse(payload);
+            streamError=makeAIError(errorData.error||errorData.message||payload,errorData.status,errorData);
+          }catch(_){ streamError=makeAIError(payload); }
+          return;
+        }
+        if(eventName==='tool_use'||eventName==='tool_result'||eventName==='tool_progress'||eventName==='execution_start'||eventName==='tool_call_delta'){
+          semanticActivity=true;
+          return;
+        }
+        for(var j=0;j<data.length;j++){
+          var raw=data[j];
+          if(!raw||raw==='[DONE]')continue;
+          try{
+            var obj=JSON.parse(raw);
+            if(obj&&obj.error){
+              streamError=makeAIError(typeof obj.error==='string'?obj.error:(obj.error.message||'upstream error'),obj.status,obj);
+              continue;
+            }
+            var choice=obj&&obj.choices&&obj.choices[0];
+            var delta=choice&&choice.delta;
+            var content=delta&&delta.content;
+            var reasoning=delta&&delta.reasoning_content;
+            if(typeof content==='string'&&content){full+=content;semanticActivity=true;}
+            if(typeof reasoning==='string'&&reasoning){semanticActivity=true;}
+          }catch(_){
+            /* Ignore keep-alive/unknown frames; a response with no usable
+               payload is handled as a retryable malformed response below. */
+          }
+        }
+      };
+      while(true){
+        var step=await reader.read();
+        if(step.done)break;
+        buf+=decoder.decode(step.value,{stream:true});
+        var split;
+        while((split=buf.indexOf('\n\n'))>=0){
+          processFrame(buf.slice(0,split));
+          buf=buf.slice(split+2);
+        }
+      }
+      buf+=decoder.decode();
+      if(buf&&buf.indexOf('data:')>=0)processFrame(buf);
+      try{reader.releaseLock()}catch(_){}
+      reader=null;
+      if(streamError){
+        lastErr=streamError;
+        if(!semanticActivity&&await waitForRetry(attempt,streamError,retryOptions))continue;
+        throw streamError;
+      }
+      if(!full){
+        lastErr=makeAIError('empty or malformed stream');
+        if(!semanticActivity&&await waitForRetry(attempt,lastErr,retryOptions))continue;
+        throw lastErr;
+      }
+      return{text:full,html:null,widgets:[],cancelled:false};
+    }catch(e){
+      lastErr=e;
+      if(isUserAbort(e,retryOptions.signal)||isUserAbort(e,ac.signal)){
+        state.lastCallError='request cancelled';
+        return null;
+      }
+      if(!semanticActivity&&await waitForRetry(attempt,e,retryOptions))continue;
+      state.lastCallError=errorMessage(e,'probe request failed');
+      return null;
+    }finally{
+      clearTimeout(tmo);
+      unbind();
+      try{if(reader)await reader.cancel()}catch(_){}
     }
   }
-  return{text:full,html:null,widgets:[],cancelled:false};
+  state.lastCallError=errorMessage(lastErr,'probe request failed');
+  return null;
 }
 
 /* Main non-streaming chat API call. Routes to either:
    - /api/minimax/v1/chat/completions for built-in Beagle (server can't route there)
    - /api/chat for non-built-in providers
    Both paths use the same retry/timeout pattern. */
-export async function callAPI(messages,maxTokens,timeoutMs){
+export async function callAPI(messages,maxTokens,timeoutMs,options){
   /* state, getActiveProvider, makeAIWatchdog, STREAM_TIMEOUT_MS,
-     STREAM_HEARTBEAT_MS, getCsrfToken, STREAM_RETRYABLE_STATUS,
-     sleepBackoff live in main.js — read them via window so this module
-     stays independent. Built-in identity + custom-instructions
-     prepending is centralized in buildChatRequestBody. */
+     STREAM_HEARTBEAT_MS, and getCsrfToken live in main.js — read them via
+     window so this module stays independent. */
   var state=window.state;
   var getActiveProvider=window.getActiveProvider;
   var makeAIWatchdog=window.makeAIWatchdog;
   var getCsrfToken=window.getCsrfToken;
-  var sleepBackoff=window.sleepBackoff;
   var apiFetch=window.apiFetch;
   var STREAM_TIMEOUT_MS=window.STREAM_TIMEOUT_MS;
   var STREAM_HEARTBEAT_MS=window.STREAM_HEARTBEAT_MS;
-  var STREAM_RETRYABLE_STATUS=window.STREAM_RETRYABLE_STATUS;
+  var retryOptions=Object.assign({},options||{}, { source:(options&&options.source)||'chat' });
 
   /* U-H3 — optional per-call total-timeout override. Diagnostic
      generation passes a shorter budget for the first question so the
@@ -175,15 +266,17 @@ export async function callAPI(messages,maxTokens,timeoutMs){
        take 2-4 minutes to think before producing the answer. The
        previous 90s hard timeout cut off the call mid-think and the
        caller fell back to mock — visible to the user as a sudden
-       truncation. Use the same 10-minute total budget + 2-retry
-       pattern as the streaming path so a slow first attempt has a
+       truncation. Use the same total budget and five fixed-delay
+       retries as the streaming path so a slow first attempt has a
        chance to recover. */
-    var BEAGLE_NONSTREAM_MAX=4;
+    var BEAGLE_NONSTREAM_MAX=(retryOptions.maxRetries==null?AI_MAX_ATTEMPTS:Math.max(0,retryOptions.maxRetries)+1);
     var beagleAttempt=0;
     var lastBeagleErr=null;
     while(beagleAttempt<BEAGLE_NONSTREAM_MAX){
       beagleAttempt++;
+      var unbindBeagle=function(){};
       var wdB=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdB&&wdB.stop("beagle-watchdog")}catch(_){}});
+      unbindBeagle=bindAbortSignal(retryOptions.signal,wdB.ac);
       try{
         /* Make sure a fresh csrf cookie exists before we read it.
            The boot path calls /api/auth/csrf-token once, but if the
@@ -213,18 +306,21 @@ export async function callAPI(messages,maxTokens,timeoutMs){
         try{respText=await resp.text()}catch(_){}
         wdB.stop("done");
         if(!resp.ok){
-          lastBeagleErr=resp.status+" "+(respText||"").slice(0,200);
-          if(STREAM_RETRYABLE_STATUS[resp.status]&&beagleAttempt<BEAGLE_NONSTREAM_MAX){
-            await sleepBackoff(beagleAttempt,resp.headers.get("Retry-After"));
-            continue;
-          }
-          state.lastCallError=lastBeagleErr;
+          var beagleBody=null;
+          try{beagleBody=JSON.parse(respText)}catch(_){}
+          lastBeagleErr=makeAIError(resp.status+" "+(respText||"").slice(0,200),resp.status,beagleBody);
+          var beagleQuota=monthlyLimitMessage(lastBeagleErr);
+          if(beagleQuota){state.lastCallError=beagleQuota;return null;}
+          if(await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;
+          state.lastCallError=errorMessage(lastBeagleErr,'Beagle request failed');
           return null;
         }
         var json=null;
         try{json=JSON.parse(respText)}catch(_){}
-        if(!json||!json.choices||!json.choices[0]||!json.choices[0].message){
-          state.lastCallError="malformed response";
+        if(!json||!json.choices||!json.choices[0]||!json.choices[0].message||typeof json.choices[0].message.content!=='string'){
+          lastBeagleErr=makeAIError("malformed response");
+          if(await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;
+          state.lastCallError=errorMessage(lastBeagleErr,'malformed response');
           return null;
         }
         return json.choices[0].message.content;
@@ -234,35 +330,44 @@ export async function callAPI(messages,maxTokens,timeoutMs){
         var isAbort=(e&&(e.name==="AbortError"||e.code===20));
         var isHeartbeat=wdReason.indexOf("heartbeat")>=0;
         var isTotal=wdReason.indexOf("total-timeout")>=0;
-        lastBeagleErr=isAbort
+        var beagleMessage=isAbort
           ?(isHeartbeat?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
              isTotal?"request timed out after "+(EFFECTIVE_TIMEOUT_MS/1000)+"s":
              "request aborted")
           :String(e&&e.message||e);
-        var userCancelled=isAbort&&!wdB.isStopped();
-        if(!userCancelled&&(isHeartbeat||isTotal)&&beagleAttempt<BEAGLE_NONSTREAM_MAX){
-          await sleepBackoff(beagleAttempt,null);
-          continue;
-        }
-        state.lastCallError=lastBeagleErr;
+      lastBeagleErr=makeAIError(beagleMessage,e&&e.status,e&&e.body);
+      lastBeagleErr.code=e&&e.code;
+      lastBeagleErr.reason=wdReason;
+      var caughtBeagleQuota=monthlyLimitMessage(lastBeagleErr);
+      if(caughtBeagleQuota){state.lastCallError=caughtBeagleQuota;return null;}
+      var userCancelled=isUserAbort(e,retryOptions.signal)
+          ||wdReason==="user-stop"||wdReason==="user_stop";
+        if(!userCancelled&&await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;
+        state.lastCallError=errorMessage(lastBeagleErr,'Beagle request failed');
         return null;
+      }finally{
+        unbindBeagle();
       }
     }
     state.lastCallError=lastBeagleErr||"Beagle non-stream request failed";
     return null;
   }
   /* Non-built-in provider: same retry logic, same timeouts. */
-  var NONSTREAM_MAX=4;
+  var NONSTREAM_MAX=(retryOptions.maxRetries==null?AI_MAX_ATTEMPTS:Math.max(0,retryOptions.maxRetries)+1);
   var nsAttempt=0;
   var lastNsErr=null;
   while(nsAttempt<NONSTREAM_MAX){
     nsAttempt++;
+    var unbindNonBuiltin=function(){};
     var wdN=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdN&&wdN.stop("non-builtin-watchdog")}catch(_){}});
+    unbindNonBuiltin=bindAbortSignal(retryOptions.signal,wdN.ac);
     try{
       var resp=await apiFetch("/api/chat",{method:"POST",body:buildChatRequestBody(messages,maxTokens,0.7),signal:wdN.ac.signal,timeoutMs:EFFECTIVE_TIMEOUT_MS});
       wdN.stop("done");
       if(!resp||typeof resp.content!=="string"){
-        state.lastCallError="malformed response";
+        lastNsErr=makeAIError("malformed response");
+        if(await waitForRetry(nsAttempt,lastNsErr,retryOptions))continue;
+        state.lastCallError=errorMessage(lastNsErr,'malformed response');
         return null;
       }
       return resp.content;
@@ -273,43 +378,26 @@ export async function callAPI(messages,maxTokens,timeoutMs){
       var isHbN=wdReasonN.indexOf("heartbeat")>=0;
       var isTotN=wdReasonN.indexOf("total-timeout")>=0;
       var eStatus=e&&e.status;
-      lastNsErr=isAbortN
+      var nsMessage=isAbortN
         ?(isHbN?"request stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)":
            isTotN?"request timed out after "+(EFFECTIVE_TIMEOUT_MS/1000)+"s":
            "request aborted")
         :(eStatus?eStatus+" ":"network: ")+(e&&e.message||e);
-      var userCancelledN=isAbortN&&!wdN.isStopped();
-      if(eStatus===429){
-        /* Check for monthly quota before generic rate-limit message */
-        var code429 = e && e.code;
-        var body429 = e && e.body;
-        if (code429 === 'MONTHLY_LIMIT' || (body429 && body429.code === 'MONTHLY_LIMIT')) {
-          state.lastCallError = 'Monthly Beagle usage limit reached. ' + (body429 && body429.message || 'Upgrade your plan or wait until next month.');
-          try { showToast && showToast(state.lastCallError, 8000); } catch (_) {}
-          return null;
-        }
-        /* Regular rate limit — surface the server cooldown immediately.
-           Replaying the same request inside this loop only amplifies the
-           shared bucket. */
-        var retryAfterN = e && e.body && typeof e.body.retryAfterSeconds === "number" ? e.body.retryAfterSeconds : null;
-        lastNsErr = "Rate limited (429). Try again in " + formatMinutesApi(retryAfterN) + ".";
-        /* P_chat-429-no-storm — a server rate limit is a shared bucket,
-           not a transient transport failure. Retrying four times here
-           only amplifies the limit and makes background callers such as
-           title/search rewriting compete with the user's turn. */
-        state.lastCallError=lastNsErr;
-        return null;
-      }
-      if(!userCancelledN&&(isHbN||isTotN||STREAM_RETRYABLE_STATUS[eStatus])&&nsAttempt<NONSTREAM_MAX){
-        var raHdr=e&&e.body&&e.body.headers?e.body.headers.get("Retry-After"):null;
-        await sleepBackoff(nsAttempt,raHdr);
-        continue;
-      }
+      lastNsErr=makeAIError(nsMessage,eStatus,e&&e.body);
+      lastNsErr.code=e&&e.code;
+      lastNsErr.reason=wdReasonN;
+      var caughtNsQuota=monthlyLimitMessage(lastNsErr);
+      if(caughtNsQuota){state.lastCallError=caughtNsQuota;return null;}
+      var userCancelledN=isUserAbort(e,retryOptions.signal)
+        ||wdReasonN==="user-stop"||wdReasonN==="user_stop";
+      if(!userCancelledN&&await waitForRetry(nsAttempt,lastNsErr,retryOptions))continue;
       console.error("[API] call failed:",e);
-      state.lastCallError=lastNsErr;
+      state.lastCallError=errorMessage(lastNsErr,'non-stream request failed');
       return null;
+    }finally{
+      unbindNonBuiltin();
     }
   }
-  state.lastCallError=lastNsErr||"non-stream request failed";
+  state.lastCallError=errorMessage(lastNsErr,'non-stream request failed');
   return null;
 }
