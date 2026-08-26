@@ -9,7 +9,7 @@ function _publishScheduledState(overrides) {
     if (bridge && typeof bridge.publish === "function") {
       bridge.publish({
         tasks: (workspaceCache.tasks || []).map(function (t) {
-          return { id: t.id, title: t.title, prompt: t.prompt || "", frequency: t.frequency || "once", nextRunAt: t.nextRunAt || null, status: t.status || "active", lastRunAt: t.lastRunAt || null, runCount: t.runCount || 0 };
+          return { id: t.id, title: t.title, prompt: t.prompt || "", frequency: t.frequency || "once", nextRunAt: t.nextRunAt || null, status: t.status || "active", lastRunAt: t.lastRunAt || null, runCount: t.runCount || 0, projectId: t.projectId || null, agentKind: t.agentKind || "native", lastRunId: t.lastRunId || null, runPolicy: t.runPolicy || {}, notificationConfig: t.notificationConfig || {} };
         }),
         loading: !!(overrides && overrides.loading),
         error: (overrides && overrides.error) || null,
@@ -32,6 +32,9 @@ function _publishWorkspaceState() {
         projectsData: workspaceCache.projects || [],
         pluginsData: workspaceCache.connectors || [],
         projectConnectorConfigured: !!workspaceCache.projectConnectorConfigured,
+        mcpData: workspaceCache.mcp || [],
+        mcpConfigured: !!workspaceCache.mcpConfigured,
+        mcpProjectId: workspaceCache.mcpProjectId || null,
         loading: false,
         error: null,
       });
@@ -73,7 +76,7 @@ const CONNECTOR_OFFLINE_SVG = {
 };
 
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "more"];
-var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [] };
+var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null };
 var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam" };
 
 function byId(id) { return document.getElementById(id); }
@@ -453,13 +456,20 @@ async function renderPlugins() {
   /* #pluginsList is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
-    var res = await api("/api/project-connectors");
+    var projectId = (window.state && window.state.currentProjectId) || null;
+    var res = await api("/api/project-connectors").catch(function () { return {}; });
+    var mcp = await api("/api/agent-mcp" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")).catch(function () { return { enabled: false, configured: false, servers: [] }; });
     workspaceCache.connectors = (res && res.connectors) || [];
     workspaceCache.projectConnectorConfigured = !!(res && res.configured);
+    workspaceCache.mcp = (mcp && mcp.servers) || [];
+    workspaceCache.mcpConfigured = !!(mcp && mcp.configured);
+    workspaceCache.mcpProjectId = (mcp && mcp.projectId) || projectId || null;
     paintPlugins();
     _publishWorkspaceState();
   } catch (err) {
     workspaceCache.connectors = [];
+    workspaceCache.mcp = [];
+    workspaceCache.mcpConfigured = false;
     _publishWorkspaceState();
     toast(err && err.status === 401
       ? "Sign in to connect apps."
@@ -469,6 +479,23 @@ async function renderPlugins() {
 function paintPlugins() {
   return;
 }
+
+window.toggleCodexMcp = async function (key, enabled) {
+  try {
+    var projectId = workspaceCache.mcpProjectId || (window.state && window.state.currentProjectId) || null;
+    await api("/api/agent-mcp/" + encodeURIComponent(key), { method: "PATCH", body: { enabled: !!enabled, projectId: projectId || null } });
+    await renderPlugins();
+    toast(enabled ? "Codex tool enabled" : "Codex tool disabled");
+  } catch (error) { toast((error && error.message) || "Could not update Codex tool"); }
+};
+
+window.checkCodexMcpHealth = async function (key) {
+  try {
+    var projectId = workspaceCache.mcpProjectId || (window.state && window.state.currentProjectId) || null;
+    await api("/api/agent-mcp/" + encodeURIComponent(key) + "/health", { method: "POST", body: { projectId: projectId || null } });
+    await renderPlugins();
+  } catch (error) { toast((error && error.message) || "Could not check MCP server"); }
+};
 window.connectProjectConnector = async function (id) {
   try {
     var result = await api("/api/project-connectors/" + encodeURIComponent(id) + "/connect", { method: "POST" });
@@ -540,12 +567,110 @@ function openProjectForm(project) {
   byId("projectForm").addEventListener("submit", async function (event) { event.preventDefault(); var data = Object.fromEntries(new FormData(event.currentTarget)); try { if (editing) await api("/api/projects/" + project.id, { method: "PATCH", body: data }); else await api("/api/projects", { method: "POST", body: data }); closeWorkspaceDialog(); renderProjects(); toast(editing ? t("toast.projectUpdated", "Project updated") : t("toast.projectCreated", "Project created")); } catch (_) { toast(t("toast.projectSaveFailed", "Could not save project")); } });
 }
 window.deleteProject = async function (id) { if (!(await confirmAction(t("confirm.deleteProject.title", "Delete this project?"), t("confirm.deleteProject.msg", "This permanently deletes the project's chats, files, artifacts, and memories. This cannot be undone.")))) return; try { await api("/api/projects/" + id, { method: "DELETE" }); workspaceCache.projects = (workspaceCache.projects || []).filter(function (project) { return project.id !== id; }); if (Array.isArray(window.__projectsCache)) window.__projectsCache = window.__projectsCache.filter(function (project) { return project.id !== id; }); closeWorkspaceDialog(); renderProjects(); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); toast(t("toast.projectDeleted", "Project deleted")); } catch (_) { toast(t("toast.projectDeleteFailed", "Could not delete project")); } };
-window.openProjectWorkspace = function (id) { var project = workspaceCache.projects.filter(function (item) { return item.id === id; })[0]; if (!project) return; showDialog('<div class="workspace-dialog-title"><div><h2>' + esc(project.name) + '</h2><p>' + esc(project.description || t("dialog.project.defaultDesc", "A focused place for related work.")) + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div class="project-workspace-actions"><button class="workspace-primary" onclick="startProjectChat(\'' + esc(id) + '\')">' + t("dialog.project.newChat", "New chat in project") + '</button><button class="workspace-secondary" onclick="moveCurrentChatToProject(\'' + esc(id) + '\')">' + t("dialog.project.moveCurrent", "Move current chat here") + '</button></div><p class="workspace-note">' + t("dialog.project.note", "Project instructions are saved with the project. Files and chats remain available as shared context for future work.") + '</p>'); };
+function agentRunStatusLabel(status) {
+  var labels = { completed: "Completed", running: "Running", starting: "Starting", planning: "Planning", awaiting_approval: "Needs approval", disconnected: "Ready to resume", failed: "Failed", interrupted: "Stopped" };
+  return labels[String(status || "")] || String(status || "Unknown");
+}
+function agentRunTime(value) {
+  if (!value) return "";
+  var date = new Date(value);
+  return isNaN(date.getTime()) ? "" : date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+function renderProjectRunHistory(projectId) {
+  var host = byId("projectRunHistory");
+  if (!host) return;
+  host.innerHTML = '<div class="workspace-loading">' + esc(t("dialog.project.runsLoading", "Loading Codex runs…")) + '</div>';
+  api("/api/agent-runs?projectId=" + encodeURIComponent(projectId) + "&limit=8").then(function (result) {
+    var runs = result && Array.isArray(result.runs) ? result.runs : [];
+    var current = byId("projectRunHistory");
+    if (!current) return;
+    current.innerHTML = "";
+    var heading = document.createElement("div");
+    heading.className = "project-runtime-heading";
+    heading.textContent = t("dialog.project.runsTitle", "Codex workspace runs");
+    current.appendChild(heading);
+    if (!runs.length) {
+      var empty = document.createElement("p");
+      empty.className = "workspace-note";
+      empty.textContent = t("dialog.project.runsEmpty", "Runs, approvals, and generated artifacts will appear here.");
+      current.appendChild(empty);
+      return;
+    }
+    runs.forEach(function (run) {
+      var row = document.createElement("div");
+      row.className = "project-run-row";
+      var copy = document.createElement("div");
+      copy.className = "project-run-copy";
+      var task = document.createElement("strong");
+      task.textContent = run.task || t("dialog.project.untitledRun", "Untitled Codex task");
+      var meta = document.createElement("span");
+      meta.textContent = agentRunStatusLabel(run.status) + (agentRunTime(run.startedAt) ? " · " + agentRunTime(run.startedAt) : "");
+      copy.appendChild(task);
+      copy.appendChild(meta);
+      var open = document.createElement("button");
+      open.type = "button";
+      open.className = "workspace-row-action project-run-open";
+      open.textContent = t("dialog.project.viewRun", "View run");
+      open.addEventListener("click", function () { window.openAgentRunDetails(run.id); });
+      row.appendChild(copy);
+      row.appendChild(open);
+      current.appendChild(row);
+    });
+  }).catch(function () {
+    var current = byId("projectRunHistory");
+    if (current) current.innerHTML = '<p class="workspace-note">' + esc(t("dialog.project.runsFailed", "Run history is unavailable right now.")) + '</p>';
+  });
+}
+window.openAgentRunDetails = async function (runId) {
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + t("dialog.project.runDetails", "Codex run") + '</h2><p>' + t("dialog.project.runDetailsLoading", "Loading the execution record…") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div id="agentRunDetails" class="agent-run-details"><div class="workspace-loading">' + esc(t("dialog.project.runsLoading", "Loading Codex runs…")) + '</div></div>');
+  try {
+    var result = await api("/api/agent-runs/" + encodeURIComponent(runId));
+    var host = byId("agentRunDetails");
+    if (!host) return;
+    host.innerHTML = "";
+    var run = result && result.run || {};
+    var summary = document.createElement("p");
+    summary.className = "agent-run-details-summary";
+    summary.textContent = (run.summary || run.error || t("dialog.project.noRunSummary", "No summary was saved."));
+    host.appendChild(summary);
+    var status = document.createElement("div");
+    status.className = "agent-run-details-status";
+    status.textContent = agentRunStatusLabel(run.status) + (agentRunTime(run.startedAt) ? " · " + agentRunTime(run.startedAt) : "");
+    host.appendChild(status);
+    var artifacts = result && Array.isArray(result.artifacts) ? result.artifacts : [];
+    if (artifacts.length) {
+      var artifactTitle = document.createElement("strong");
+      artifactTitle.className = "agent-run-details-section-title";
+      artifactTitle.textContent = t("dialog.project.artifacts", "Created artifacts");
+      host.appendChild(artifactTitle);
+      var artifactList = document.createElement("ul");
+      artifactList.className = "agent-run-artifacts";
+      artifacts.forEach(function (artifact) { var item = document.createElement("li"); item.textContent = artifact.name || artifact.id; artifactList.appendChild(item); });
+      host.appendChild(artifactList);
+    }
+    var events = result && Array.isArray(result.events) ? result.events : [];
+    if (events.length) {
+      var activity = document.createElement("details");
+      activity.className = "agent-run-details-activity";
+      var activityTitle = document.createElement("summary");
+      activityTitle.textContent = t("dialog.project.activity", "Activity");
+      activity.appendChild(activityTitle);
+      var list = document.createElement("ol");
+      events.slice(-40).forEach(function (event) { var item = document.createElement("li"); var payload = event.data || {}; item.textContent = String(event.event || "event") + (payload.command ? ": " + payload.command : payload.delta ? ": " + String(payload.delta).slice(0, 160) : ""); list.appendChild(item); });
+      activity.appendChild(list);
+      host.appendChild(activity);
+    }
+  } catch (error) {
+    var failed = byId("agentRunDetails");
+    if (failed) failed.textContent = (error && error.message) || t("dialog.project.runsFailed", "Run history is unavailable right now.");
+  }
+};
+window.openProjectWorkspace = function (id) { var project = workspaceCache.projects.filter(function (item) { return item.id === id; })[0]; if (!project) return; showDialog('<div class="workspace-dialog-title"><div><h2>' + esc(project.name) + '</h2><p>' + esc(project.description || t("dialog.project.defaultDesc", "A focused place for related work.")) + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div class="project-workspace-actions"><button class="workspace-primary" onclick="startProjectChat(\'' + esc(id) + '\')">' + t("dialog.project.newChat", "New chat in project") + '</button><button class="workspace-secondary" onclick="moveCurrentChatToProject(\'' + esc(id) + '\')">' + t("dialog.project.moveCurrent", "Move current chat here") + '</button></div><p class="workspace-note">' + t("dialog.project.note", "Project instructions are saved with the project. Files and chats remain available as shared context for future work.") + '</p><div id="projectRunHistory" class="project-run-history"></div>'); renderProjectRunHistory(id); };
 window.startProjectChat = async function (id) { window._nextProjectId = id; window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; closeWorkspaceDialog(); if (typeof window.resetApp === "function") await window.resetApp(); };
 window.moveCurrentChatToProject = async function (id) { var state = window.state; if (!state) return; state.currentProjectId = id; window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; var sessionId = state.currentSessionId; try { if (sessionId) await api("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: id } }); closeWorkspaceDialog(); toast(t("toast.chatMoved", "Current chat moved to project")); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); } catch (_) { toast(t("toast.chatMoveFailed", "Could not move the current chat")); } };
 
-window.openCreateScheduledTask = function () { openTaskForm(null); };
-window.openEditScheduledTask = function (id) { openTaskForm(workspaceCache.tasks.filter(function (task) { return task.id === id; })[0] || null); };
+window.openCreateScheduledTask = function () { openAgentTaskForm(null); };
+window.openEditScheduledTask = function (id) { openAgentTaskForm(workspaceCache.tasks.filter(function (task) { return task.id === id; })[0] || null); };
 /* datetime-local inputs expect wall-clock LOCAL time; toISOString()
    would render the stored timestamp shifted by the UTC offset. */
 function toLocalDateTimeValue(value) {
@@ -560,6 +685,34 @@ function openTaskForm(task) {
   showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.note", "Tasks run in the background. Each result is saved as a chat in Recents.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : "") + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + "</button></div></form>");
   var select = byId("taskForm").elements.frequency; select.value = (task && task.frequency) || "once";
   byId("taskForm").addEventListener("submit", async function (event) { event.preventDefault(); var data = Object.fromEntries(new FormData(event.currentTarget)); /* datetime-local strings carry no timezone — convert to ISO so the server never re-interprets them in its own zone. An empty field means "start now" on create and "clear" on edit. */ if (data.nextRunAt) { var when = new Date(data.nextRunAt); data.nextRunAt = isNaN(when.getTime()) ? null : when.toISOString(); } else if (editing) { data.nextRunAt = null; } else { delete data.nextRunAt; } try { if (editing) await api("/api/scheduled-tasks/" + task.id, { method: "PATCH", body: data }); else await api("/api/scheduled-tasks", { method: "POST", body: data }); closeWorkspaceDialog(); renderScheduled(); toast(editing ? t("toast.taskUpdated", "Task updated") : t("toast.taskScheduled", "Task scheduled")); } catch (_) { toast(t("toast.taskSaveFailed", "Could not save task")); } });
+}
+/* Codex-aware scheduled task editor. Keep the legacy form above as a
+   compatibility fallback for older embedded shells, while the current
+   Scheduled page always reaches this first-class runtime form. */
+function openAgentTaskForm(task) {
+  var editing = !!task;
+  var next = task && task.nextRunAt ? toLocalDateTimeValue(task.nextRunAt) : "";
+  var activeProjectId = (task && task.projectId) || (window.state && window.state.currentProjectId) || "";
+  var projectOptions = '<option value="">' + esc(t("dialog.task.noProject", "No project")) + '</option>';
+  (workspaceCache.projects || []).forEach(function (project) { projectOptions += '<option value="' + esc(project.id) + '">' + esc(project.name) + '</option>'; });
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.agent", "Agent") + '</span><select name="agentKind"><option value="native">' + t("dialog.task.nativeAgent", "Socrates · native tools") + '</option><option value="codex">' + t("dialog.task.codexAgent", "Codex · project workspace") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.project", "Project") + '</span><select name="projectId">' + projectOptions + '</select></label></div><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.codexNote", "Codex scheduled runs share the selected project workspace. Read-only work runs unattended; file changes, commands, and network side effects pause for approval.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : '') + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + '</button></div></form>');
+  var form = byId("taskForm");
+  form.elements.frequency.value = (task && task.frequency) || "once";
+  form.elements.agentKind.value = (task && task.agentKind) || "native";
+  form.elements.projectId.value = activeProjectId;
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    var data = Object.fromEntries(new FormData(event.currentTarget));
+    if (data.nextRunAt) { var when = new Date(data.nextRunAt); data.nextRunAt = isNaN(when.getTime()) ? null : when.toISOString(); }
+    else if (editing) data.nextRunAt = null;
+    else delete data.nextRunAt;
+    if (!data.projectId) data.projectId = null;
+    try {
+      if (editing) await api("/api/scheduled-tasks/" + task.id, { method: "PATCH", body: data });
+      else await api("/api/scheduled-tasks", { method: "POST", body: data });
+      closeWorkspaceDialog(); renderScheduled(); toast(editing ? t("toast.taskUpdated", "Task updated") : t("toast.taskScheduled", "Task scheduled"));
+    } catch (_) { toast(t("toast.taskSaveFailed", "Could not save task")); }
+  });
 }
 window.toggleScheduledTask = async function (id, pause) { try { await api("/api/scheduled-tasks/" + id, { method: "PATCH", body: { status: pause ? "paused" : "active" } }); renderScheduled(); toast(pause ? t("toast.taskPaused", "Task paused") : t("toast.taskResumed", "Task resumed")); } catch (_) { toast(t("toast.taskUpdateFailed", "Could not update task")); } };
 window.runScheduledTask = async function (id) { toast(t("toast.taskRunStarted", "Running task…")); try { await api("/api/scheduled-tasks/" + id + "/run", { method: "POST" }); renderScheduled(); if (typeof window.refreshServerSessions === "function") try { window.refreshServerSessions(); } catch (_) {} toast(t("toast.taskRunDone", "Task ran — see Recents for the result")); } catch (_) { renderScheduled(); toast(t("toast.taskRunFailed", "Could not run task")); } };

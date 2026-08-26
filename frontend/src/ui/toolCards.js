@@ -31,6 +31,7 @@ import { formatToolOutput } from '../render/toolOutput.js';
    Only tools the backend toolRegistry actually emits are listed;
    unknown names fall back to { letter: "?", short: toolName }. */
 export var TOOL_META = {
+  workspace_agent:    { letter: "C", cls: "codex", short: "Codex", tone: "purple" },
   render_visualization: { letter: "V", cls: "tool-visual", short: "Visual", tone: "purple" },
   web_search:        { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
   web_fetch:         { letter: "F", cls: "webfetch",  short: "Fetch",  tone: "teal"   },
@@ -79,6 +80,7 @@ export function toolFormatInput(name, inp) {
       const first = ((inp.code || "").split("\n")[0] || "").slice(0, 80);
       return `${inp.language || "python"}  -  ${first}`;
     }
+    case "workspace_agent": return inp.task || "project workspace task";
     case "arxiv_search":       return inp.query || "";
     case "zotero_search":      return inp.query || "(all items)";
     case "notion_search_pages": return inp.query || "";

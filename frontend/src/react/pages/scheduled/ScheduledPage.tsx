@@ -34,6 +34,7 @@ function statusLabel(status: string, active: boolean): string {
   if (status === 'failed') return i18n('scheduled.failed', 'Failed');
   if (status === 'completed') return i18n('scheduled.completed', 'Complete');
   if (status === 'paused') return i18n('scheduled.paused', 'Paused');
+  if (status === 'awaiting_approval') return i18n('scheduled.awaitingApproval', 'Needs approval');
   return active ? i18n('scheduled.active', 'Active') : status;
 }
 
@@ -77,8 +78,9 @@ function ScheduledPage() {
               </button>
             </div>
             {tasks.map((task) => {
-              const active = task.status !== 'paused' && task.status !== 'completed' && task.status !== 'failed';
+              const active = task.status === 'pending' || task.status === 'active';
               const detailParts = [
+                task.agentKind === 'codex' ? 'Codex' : null,
                 statusLabel(task.status, active) + ' · ' + i18n('scheduled.freq.' + (task.frequency || 'once'), task.frequency || 'once'),
                 active ? formatTime(task.nextRunAt) : null,
                 task.lastRunAt

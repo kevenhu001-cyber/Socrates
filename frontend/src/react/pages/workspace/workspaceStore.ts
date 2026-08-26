@@ -4,6 +4,7 @@ import type {
   LibraryItem,
   ProjectItem,
   PluginItem,
+  McpServerItem,
 } from './types';
 
 type Listener = () => void;
@@ -14,6 +15,9 @@ const INITIAL: WorkspaceSnapshot = {
   projectsData: [],
   pluginsData: [],
   projectConnectorConfigured: false,
+  mcpData: [],
+  mcpConfigured: false,
+  mcpProjectId: null,
   loading: false,
   error: null,
   revision: 0,
@@ -32,6 +36,7 @@ function commit(next: Omit<WorkspaceSnapshot, 'revision'>): void {
     libraryData: Object.freeze(cloneLibraryData(next.libraryData)),
     projectsData: Object.freeze([...next.projectsData]),
     pluginsData: Object.freeze([...next.pluginsData]),
+    mcpData: Object.freeze([...next.mcpData]),
     revision: snapshot.revision + 1,
   });
   listeners.forEach((listener) => listener());

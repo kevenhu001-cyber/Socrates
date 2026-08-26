@@ -3628,6 +3628,26 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   .wsr-url{white-space:normal;overflow-wrap:anywhere}
 }
 
+/* Codex project workspace history — intentionally compact so the project
+   dialog stays useful on a phone as well as on desktop. */
+.project-run-history{margin-top:16px;padding-top:13px;border-top:0.5px solid hsl(var(--border-300)/.28)}
+.project-runtime-heading{margin-bottom:7px;color:hsl(var(--text-200));font-size:12px;font-weight:600}
+.project-run-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}
+.project-run-row:last-child{border-bottom:0}
+.project-run-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}
+.project-run-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:12px;font-weight:520}
+.project-run-copy span{color:hsl(var(--text-500));font-size:10.5px}
+.project-run-open{opacity:1;flex:0 0 auto}
+.agent-run-details{display:flex;flex-direction:column;gap:10px}
+.agent-run-details-summary{margin:0;color:hsl(var(--text-200));font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.agent-run-details-status{color:hsl(var(--text-500));font-size:11px}
+.agent-run-details-section-title{margin-top:4px;color:hsl(var(--text-300));font-size:11px}
+.agent-run-artifacts{display:flex;flex-direction:column;gap:4px;margin:0;padding-left:18px;color:hsl(var(--accent-000));font:11px var(--font-mono)}
+.agent-run-details-activity{margin-top:3px;border-top:0.5px solid hsl(var(--border-300)/.25);padding-top:8px;color:hsl(var(--text-400));font-size:11px}
+.agent-run-details-activity summary{cursor:pointer;color:hsl(var(--text-300));font-weight:550}
+.agent-run-details-activity ol{display:flex;max-height:220px;flex-direction:column;gap:5px;overflow:auto;margin:8px 0 0;padding-left:18px;font-family:var(--font-mono);font-size:10px;line-height:1.45}
+@media(max-width:480px){.project-run-row{align-items:flex-start}.project-run-open{padding-inline:4px}.agent-run-details-activity ol{max-height:180px}}
+
 /* Tool cards — clean, minimal ChatGPT-style disclosure.
    The chat content is primary; tool details are available on demand. */
 .agent-tool-card,.agent-tool-card.code,.agent-tool-card.codeint{
@@ -4563,6 +4583,39 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
 }
 .tool-inline-src-host{flex:0 0 auto;font-size:12px;color:hsl(var(--text-500))}
+
+/* P_codex-approval — inline, reviewable approval surface for the unified
+   workspace agent. It intentionally sits inside the tool row so the user
+   sees the exact action in the same conversation without a modal detour. */
+.tool-inline-approval{
+  margin:2px 10px 10px;
+  padding:12px;
+  border:1px solid color-mix(in srgb, hsl(38 90% 52%) 38%, var(--tool-card-border));
+  border-radius:var(--tool-card-radius-sm);
+  background:color-mix(in srgb, hsl(38 90% 52%) 8%, var(--tool-card-bg-sunken));
+  color:hsl(var(--text-300));
+}
+.tool-inline-approval-heading{display:flex;align-items:center;gap:8px;font-size:13px;color:hsl(var(--text-200))}
+.tool-inline-approval-dot{width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:hsl(38 90% 52%);box-shadow:0 0 0 4px hsl(38 90% 52%/.12)}
+.tool-inline-approval-copy{margin:7px 0 9px;color:hsl(var(--text-500));font-size:12px;line-height:1.45}
+.tool-inline-approval-fact{display:flex;gap:8px;align-items:baseline;min-width:0;margin-top:5px;font-size:11.5px}
+.tool-inline-approval-fact-label{flex:0 0 54px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;font-size:10px}
+.tool-inline-approval-fact-value{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:pre-wrap;overflow-wrap:anywhere;color:hsl(var(--text-300));font:11.5px/1.4 var(--font-mono)}
+.tool-inline-approval-status{margin-top:10px;color:hsl(var(--text-500));font-size:11.5px}
+.tool-inline-approval[data-state="accepted"] .tool-inline-approval-status{color:hsl(145 45% 38%)}
+.tool-inline-approval[data-state="declined"],.tool-inline-approval[data-state="stopped"]{border-color:color-mix(in srgb, hsl(0 58% 52%) 28%, var(--tool-card-border));background:color-mix(in srgb, hsl(0 58% 52%) 5%, var(--tool-card-bg-sunken))}
+.tool-inline-approval-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tool-inline-approval-action{min-height:30px;padding:5px 10px;border:1px solid var(--tool-card-border-strong);border-radius:999px;background:transparent;color:hsl(var(--text-400));font:500 11.5px/1 var(--font-sans);cursor:pointer;transition:background .14s ease,border-color .14s ease,color .14s ease}
+.tool-inline-approval-action:hover{border-color:hsl(var(--accent-000));color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.08)}
+.tool-inline-approval-action.primary{border-color:hsl(var(--accent-000)/.5);background:hsl(var(--accent-000)/.1);color:hsl(var(--accent-000))}
+.tool-inline-approval-action:disabled{opacity:.5;cursor:default}
+.tool-inline-approval-action:focus-visible{outline:2px solid hsl(var(--accent-000)/.55);outline-offset:2px}
+
+@media(max-width:520px){
+  .tool-inline-approval{margin-left:7px;margin-right:7px;padding:10px}
+  .tool-inline-approval-actions{display:grid;grid-template-columns:1fr 1fr}
+  .tool-inline-approval-action{width:100%}
+}
 /* Anchored host for a tool run's visual output (charts, image
    artifacts). Sits immediately after the .tool-inline row so the
    output stays embedded at the point in the answer where the tool
@@ -5246,6 +5299,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   font-weight:var(--tool-card-title-weight)
 }
 .connector-connect.workspace-secondary:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
+.codex-mcp-card{margin:0 0 14px;padding:14px;border:0.5px solid hsl(var(--border-300)/.38);border-radius:10px;background:hsl(var(--bg-100)/.72)}.codex-mcp-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.codex-mcp-heading h2{margin-top:3px;color:hsl(var(--text-100));font-family:var(--font-display);font-size:18px;font-weight:550}.workspace-eyebrow{color:hsl(var(--accent-000));font-size:10px;font-weight:650;letter-spacing:.08em;text-transform:uppercase}.codex-mcp-badge{padding:4px 7px;border-radius:6px;background:hsl(var(--bg-200));color:hsl(var(--text-500));font-size:10px}.codex-mcp-list{display:flex;flex-direction:column;gap:6px;margin-top:12px}.codex-mcp-row{display:flex;align-items:center;gap:10px;padding:9px;border:0.5px solid hsl(var(--border-300)/.24);border-radius:8px;background:hsl(var(--bg-000)/.38)}.codex-mcp-row.is-enabled{border-color:hsl(var(--accent-000)/.35)}.codex-mcp-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}.codex-mcp-copy strong{color:hsl(var(--text-200));font-size:12px;font-weight:600}.codex-mcp-copy span,.codex-mcp-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-500));font-size:10px;line-height:1.35}.codex-mcp-copy small{color:hsl(var(--text-600));}.codex-mcp-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}.codex-mcp-health{min-height:26px;padding:4px 8px;font-size:10px}.codex-mcp-toggle{min-width:42px;min-height:26px;padding:4px 8px;border:0.5px solid hsl(var(--border-300)/.42);border-radius:99px;background:hsl(var(--bg-200));color:hsl(var(--text-500));font-size:10px;font-weight:650}.codex-mcp-toggle.is-on{border-color:hsl(var(--accent-000)/.52);background:hsl(var(--accent-000)/.16);color:hsl(var(--accent-000))}.codex-mcp-toggle:focus-visible,.codex-mcp-health:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}.codex-mcp-empty{margin-top:10px;padding:10px;border-radius:7px;background:hsl(var(--bg-200)/.6);color:hsl(var(--text-500));font-size:11px;line-height:1.45}
 
 /* Skills / shortcuts and slash-command entries */
 .prompt-templates-body{padding:18px 20px 20px;gap:10px}

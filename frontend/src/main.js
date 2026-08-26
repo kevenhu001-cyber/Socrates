@@ -3392,11 +3392,19 @@ function toolCallbacksForStream(ctl){
     },
     onToolResult:function(result){
       ctl.recordToolResult(result);
+      if(result&&result.runId){var _agentWaiting=result.status==="awaiting_approval";publishWorkspaceAgentEvent(result.runId,_agentWaiting?"awaiting_approval":result.ok===false?"failed":"completed",_agentWaiting?"running":result.ok===false?"failed":"succeeded",{message:result.error||(_agentWaiting?"Approval required":"Codex workspace run finished")});}
       if(result&&result.id&&_activeTemplate&&_activeTemplate.runId){
         publishActiveWorkflowEvent("reading","running",{message:"Reading results…",toolCallIds:[result.id]});
       }
     },
-    onToolProgress:function(progress){if(ctl.recordToolProgress)ctl.recordToolProgress(progress)},
+    onToolApproval:function(approval){
+      if(ctl&&typeof ctl.recordToolApproval==="function")ctl.recordToolApproval(approval);
+      if(approval&&approval.runId)publishWorkspaceAgentEvent(approval.runId,"awaiting_approval","running",{message:"Approval required"});
+    },
+    onToolProgress:function(progress){
+      if(ctl.recordToolProgress)ctl.recordToolProgress(progress);
+      if(progress&&progress.runId)publishWorkspaceAgentEvent(progress.runId,progress.phase==="planning"?"planning":"working","running",{message:progress.event||progress.phase||"Working"});
+    },
     onExecutionStart:function(event){if(ctl.recordExecutionStart)ctl.recordExecutionStart(event)},
     onToolCallDelta:function(delta){if(delta&&ctl.recordToolCallDelta)ctl.recordToolCallDelta(delta)}
   };
@@ -3635,11 +3643,19 @@ async function askChatTurn(userText,pendingOverride){
     },
     onToolResult:function(r){
       ctl.recordToolResult(r);
+      if(r&&r.runId){var _agentWaiting2=r.status==="awaiting_approval";publishWorkspaceAgentEvent(r.runId,_agentWaiting2?"awaiting_approval":r.ok===false?"failed":"completed",_agentWaiting2?"running":r.ok===false?"failed":"succeeded",{message:r.error||(_agentWaiting2?"Approval required":"Codex workspace run finished")});}
       if(r&&r.id&&_activeTemplate&&_activeTemplate.runId){
         publishActiveWorkflowEvent("reading","running",{message:"Reading results…",toolCallIds:[r.id]});
       }
     },
-    onToolProgress:function(p){if(ctl.recordToolProgress)ctl.recordToolProgress(p)},
+    onToolApproval:function(approval){
+      if(ctl&&typeof ctl.recordToolApproval==="function")ctl.recordToolApproval(approval);
+      if(approval&&approval.runId)publishWorkspaceAgentEvent(approval.runId,"awaiting_approval","running",{message:"Approval required"});
+    },
+    onToolProgress:function(p){
+      if(ctl.recordToolProgress)ctl.recordToolProgress(p);
+      if(p&&p.runId)publishWorkspaceAgentEvent(p.runId,p.phase==="planning"?"planning":"working","running",{message:p.event||p.phase||"Working"});
+    },
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
     /* P_tool_stream — forward the live tool_call_delta frames to
        the streaming controller so the code / query inside each
@@ -3755,6 +3771,18 @@ function publishActiveWorkflowEvent(stage,status,extra){
 function publishActiveWorkflowFinish(ok){
   publishActiveWorkflowEvent(ok?"completed":"failed",ok?"succeeded":"failed",
     {message:ok?"Done":((window.state&&window.state.lastCallError)||"No response")});
+}
+/* P_codex-agent-store — Codex runs use the same lightweight agent-run
+ * bridge as Explore/Research. The inline tool row remains the primary
+ * affordance; this event stream lets the optional desktop drawer and mobile
+ * sheet subscribe without coupling them to the legacy chat DOM. */
+function publishWorkspaceAgentEvent(runId,stage,status,extra){
+  if(!runId)return;
+  var bridge=window.__socratesAgentRunBridge;
+  if(!bridge||typeof bridge.publish!=="function")return;
+  var ev={runId:String(runId),workflow:"agent",stage:stage,status:status};
+  if(extra)for(var k in extra)if(Object.prototype.hasOwnProperty.call(extra,k))ev[k]=extra[k];
+  try{bridge.publish(ev)}catch(_){/* optional bridge */}
 }
 /* Strip the template body's leading prefix from the user-typed
    text, so the LLM sees only the user's actual content instead
@@ -6496,6 +6524,7 @@ function doRender(){
     recordToolCallDelta:toolRuntime.recordToolCallDelta,
     recordExecutionStart:toolRuntime.recordExecutionStart,
     recordToolResult:toolRuntime.recordToolResult,
+    recordToolApproval:toolRuntime.recordToolApproval,
     append:function(delta){
       /* P_session-stream-dispose — primary entry-point guard. The
          stream.js reader keeps draining already-buffered SSE chunks
@@ -9930,6 +9959,8 @@ window.__socratesLegacy = {
     connectProjectConnector: window.connectProjectConnector,
     refreshProjectConnector: window.refreshProjectConnector,
     openProjectConnectorForm: window.openProjectConnectorForm,
+    toggleCodexMcp: window.toggleCodexMcp,
+    checkCodexMcpHealth: window.checkCodexMcpHealth,
     openArxivSearch: window.openArxivSearch,
     openZoteroLibrary: window.openZoteroLibrary,
   },

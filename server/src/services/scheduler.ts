@@ -16,6 +16,7 @@ import { getDb } from '../db/index.js';
 import { scheduledTasks, sessions, messages, users } from '../db/schema.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm.js';
+import { CODEX_BACKGROUND_ENABLED, createAgentRun, runAgentTurn } from './agentRuntime.js';
 import {
   SERVER_SYSTEM_POLICY,
   appendFinalOutputConstraints,
@@ -73,10 +74,52 @@ export function computeNextRunAt(frequency: string | null | undefined, from: Dat
  * runs of the same task append to the same session so the history of
  * a recurring briefing stays in one place.
  */
-async function executeTask(task: ScheduledTaskRow): Promise<void> {
+async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; awaitingApproval?: boolean }> {
   const db = getDb();
+  let codexRunId: string | undefined;
+  let content = '';
+  if (task.agentKind === 'codex') {
+    if (!CODEX_BACKGROUND_ENABLED) throw new Error('Codex background runs are disabled');
+    /* Scheduled Codex tasks share the project workspace and durable run
+     * history. `stopOnApproval` makes unattended side effects pause the job
+     * and notify through the run/event surface instead of holding the poller
+     * open until a human appears. The approval continuation watcher in the
+     * Agent Runtime resumes the same turn after a decision. */
+    const created = await createAgentRun({
+      userId: task.userId,
+      task: (task.prompt || '').trim() || task.title,
+      sessionId: task.sessionId,
+      projectId: task.projectId,
+      kind: 'scheduled',
+      source: 'scheduled',
+    });
+    codexRunId = created.run.id;
+    const rawPolicy = task.runPolicy && typeof task.runPolicy === 'object' && !Array.isArray(task.runPolicy)
+      ? task.runPolicy as Record<string, unknown>
+      : {};
+    const policyDuration = Number(rawPolicy.maxDurationMs);
+    const controller = new AbortController();
+    const policyTimer = Number.isFinite(policyDuration) && policyDuration >= 60_000
+      ? setTimeout(() => controller.abort('scheduled_policy_timeout'), Math.min(policyDuration, 900_000))
+      : null;
+    policyTimer?.unref?.();
+    let result;
+    try {
+      result = await runAgentTurn(codexRunId, task.userId, undefined, controller.signal, { stopOnApproval: true });
+    } finally {
+      if (policyTimer) clearTimeout(policyTimer);
+    }
+    if (result.status === 'awaiting_approval') {
+      await db.update(scheduledTasks).set({ lastRunId: codexRunId, status: 'paused', nextRunAt: null, lastRunAt: new Date(), updatedAt: new Date() }).where(eq(scheduledTasks.id, task.id));
+      console.info(`[scheduler] task ${task.id} paused for Codex approval (run ${codexRunId})`);
+      return { runId: codexRunId, awaitingApproval: true };
+    }
+    if (result.status !== 'completed') throw new Error(result.error || `Codex run ${result.status}`);
+    content = (result.output || result.summary || '').trim();
+    if (!content) throw new Error('Codex returned an empty response');
+  }
   const provider = await getActiveApiKey(task.userId);
-  if (!provider || !provider.keyPlaintext) {
+  if (task.agentKind !== 'codex' && (!provider || !provider.keyPlaintext)) {
     throw new Error('No active LLM provider for user');
   }
 
@@ -105,17 +148,19 @@ async function executeTask(task: ScheduledTaskRow): Promise<void> {
   }
   chatMessages = appendFinalOutputConstraints(chatMessages);
 
-  const result = await callChatCompletion({
-    apiBase: (provider.url || '').replace(/\/+$/, ''),
-    apiKey: provider.keyPlaintext,
-    model: provider.model,
-    messages: chatMessages,
-    maxTokens: 8000,
-    temperature: 0.5,
-  });
+  if (task.agentKind !== 'codex') {
+    const result = await callChatCompletion({
+      apiBase: (provider!.url || '').replace(/\/+$/, ''),
+      apiKey: provider!.keyPlaintext!,
+      model: provider!.model,
+      messages: chatMessages,
+      maxTokens: 8000,
+      temperature: 0.5,
+    });
 
-  const content = (result.content || '').trim();
-  if (!content) throw new Error('LLM returned an empty response');
+    content = (result.content || '').trim();
+    if (!content) throw new Error('LLM returned an empty response');
+  }
 
   // Reuse the task's session when it still exists; otherwise create one.
   let sessionId = task.sessionId;
@@ -152,8 +197,10 @@ async function executeTask(task: ScheduledTaskRow): Promise<void> {
     content,
     rawText: content,
     type: 'assistant',
-    model: provider.model || null,
+    model: provider?.model || null,
+    agentRunId: codexRunId || null,
   });
+  return { runId: codexRunId };
 }
 
 /**
@@ -171,9 +218,13 @@ export async function runScheduledTaskNow(
   const recurringNext = computeNextRunAt(task.frequency, new Date());
   let status: string;
   let nextRunAt: Date | null | undefined;
+  let outcome: { runId?: string; awaitingApproval?: boolean } = {};
   try {
-    await executeTask(task);
-    if (recurringNext) {
+    outcome = await executeTask(task);
+    if (outcome.awaitingApproval) {
+      status = 'paused';
+      nextRunAt = null;
+    } else if (recurringNext) {
       status = 'active';
       nextRunAt = opts.reschedule ? recurringNext : undefined;
     } else {
@@ -198,6 +249,7 @@ export async function runScheduledTaskNow(
       lastRunAt: new Date(),
       runCount: (task.runCount || 0) + 1,
       updatedAt: new Date(),
+      ...(outcome.runId ? { lastRunId: outcome.runId } : {}),
       ...(nextRunAt !== undefined ? { nextRunAt } : {}),
     })
     .where(eq(scheduledTasks.id, task.id))

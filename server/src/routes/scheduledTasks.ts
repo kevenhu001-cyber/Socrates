@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { eq, and, desc } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { scheduledTasks } from '../db/schema.js';
+import { projects, scheduledTasks, sessions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
+import { CODEX_BACKGROUND_ENABLED } from '../services/agentRuntime.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -35,7 +36,7 @@ router.get('/', async (req, res, next) => {
 /* POST /api/scheduled-tasks — create */
 router.post('/', async (req, res, next) => {
   try {
-    const { title, prompt, sessionId, cronExpression, frequency, nextRunAt } = req.body;
+    const { title, prompt, sessionId, projectId, cronExpression, frequency, nextRunAt, agentKind, runPolicy, notificationConfig } = req.body;
     if (!title || !String(title).trim()) throw new BadRequest('title is required');
     const freq = frequency || 'once';
     if (!FREQUENCIES.includes(freq)) throw new BadRequest('frequency must be one of: ' + FREQUENCIES.join(', '));
@@ -44,11 +45,41 @@ router.post('/', async (req, res, next) => {
        of sitting dormant forever with a NULL nextRunAt. */
     const firstRun = parseNextRunAt(nextRunAt) || new Date();
     const db = getDb();
+    const normalizedAgentKind = agentKind === 'codex' ? 'codex' : 'native';
+    if (normalizedAgentKind === 'codex' && !CODEX_BACKGROUND_ENABLED) {
+      throw new BadRequest('Codex background runs are disabled');
+    }
+    if (sessionId) {
+      const [session] = await db.select({ id: sessions.id }).from(sessions)
+        .where(and(eq(sessions.id, String(sessionId)), eq(sessions.userId, req.userId!))).limit(1);
+      if (!session) throw new NotFound('Session not found');
+    }
+    if (projectId) {
+      const [project] = await db.select({ id: projects.id }).from(projects)
+        .where(and(eq(projects.id, String(projectId)), eq(projects.userId, req.userId!))).limit(1);
+      if (!project) throw new NotFound('Project not found');
+    }
+    /* Scheduled policy is server-owned. A client may request a small,
+       declarative allowlist, but cannot set Codex's sandbox, cwd, provider,
+       or approval policy. Unattended runs still pause on side effects. */
+    const safePolicy = runPolicy && typeof runPolicy === 'object' && !Array.isArray(runPolicy)
+      ? {
+          allowedActions: Array.isArray(runPolicy.allowedActions) ? runPolicy.allowedActions.slice(0, 30).map(String) : [],
+          maxDurationMs: Number.isFinite(Number(runPolicy.maxDurationMs)) ? Math.min(900_000, Math.max(60_000, Number(runPolicy.maxDurationMs))) : null,
+        }
+      : {};
+    const safeNotifications = notificationConfig && typeof notificationConfig === 'object' && !Array.isArray(notificationConfig)
+      ? { enabled: notificationConfig.enabled !== false, channels: Array.isArray(notificationConfig.channels) ? notificationConfig.channels.slice(0, 5).map(String) : [] }
+      : { enabled: true, channels: [] };
     const [task] = await db.insert(scheduledTasks).values({
       userId: req.userId!,
       title: String(title).trim(),
       prompt: prompt || '',
       sessionId: sessionId || null,
+      projectId: projectId || null,
+      agentKind: normalizedAgentKind,
+      runPolicy: safePolicy,
+      notificationConfig: safeNotifications,
       cronExpression: cronExpression || null,
       frequency: freq,
       status: 'active',
@@ -67,8 +98,36 @@ router.patch('/:id', async (req, res, next) => {
       .limit(1);
     if (!existing) throw new NotFound('Scheduled task not found');
     const patch: Record<string, unknown> = {};
-    for (const key of ['title', 'prompt', 'sessionId', 'cronExpression', 'frequency', 'status']) {
+    for (const key of ['title', 'prompt', 'sessionId', 'projectId', 'cronExpression', 'frequency', 'status', 'agentKind']) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
+    }
+    if (patch.agentKind !== undefined && patch.agentKind !== 'native' && patch.agentKind !== 'codex') {
+      throw new BadRequest('agentKind must be native or codex');
+    }
+    if (patch.agentKind === 'codex' && !CODEX_BACKGROUND_ENABLED) {
+      throw new BadRequest('Codex background runs are disabled');
+    }
+    if (patch.projectId) {
+      const [project] = await db.select({ id: projects.id }).from(projects)
+        .where(and(eq(projects.id, String(patch.projectId)), eq(projects.userId, req.userId!))).limit(1);
+      if (!project) throw new NotFound('Project not found');
+    }
+    if (patch.sessionId) {
+      const [session] = await db.select({ id: sessions.id }).from(sessions)
+        .where(and(eq(sessions.id, String(patch.sessionId)), eq(sessions.userId, req.userId!))).limit(1);
+      if (!session) throw new NotFound('Session not found');
+    }
+    if (req.body.runPolicy !== undefined) {
+      const policy = req.body.runPolicy;
+      patch.runPolicy = policy && typeof policy === 'object' && !Array.isArray(policy)
+        ? { allowedActions: Array.isArray(policy.allowedActions) ? policy.allowedActions.slice(0, 30).map(String) : [], maxDurationMs: Number.isFinite(Number(policy.maxDurationMs)) ? Math.min(900_000, Math.max(60_000, Number(policy.maxDurationMs))) : null }
+        : {};
+    }
+    if (req.body.notificationConfig !== undefined) {
+      const notifications = req.body.notificationConfig;
+      patch.notificationConfig = notifications && typeof notifications === 'object' && !Array.isArray(notifications)
+        ? { enabled: notifications.enabled !== false, channels: Array.isArray(notifications.channels) ? notifications.channels.slice(0, 5).map(String) : [] }
+        : { enabled: true, channels: [] };
     }
     if (patch.frequency !== undefined && !FREQUENCIES.includes(String(patch.frequency))) {
       throw new BadRequest('frequency must be one of: ' + FREQUENCIES.join(', '));

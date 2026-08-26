@@ -270,21 +270,73 @@ function ConnectorMark({ id, name }: { id: string; name: string }) {
   return fallbackMark(name);
 }
 
-function PluginsView({ plugins, configured, dispatch }: {
+function CodexMcpView({ servers, configured, dispatch }: {
+  servers: ReadonlyArray<{ key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: string; healthStatus?: string; lastError?: string | null }>;
+  configured: boolean;
+  dispatch: ReturnType<typeof useWorkspaceDispatch>;
+}) {
+  return (
+    <section className="codex-mcp-card" aria-labelledby="codex-mcp-title">
+      <div className="codex-mcp-heading">
+        <div>
+          <span className="workspace-eyebrow">{i18n('plugins.codexWorkspace', 'Codex workspace')}</span>
+          <h2 id="codex-mcp-title">{i18n('plugins.codexProjectTools', 'Project tools')}</h2>
+        </div>
+        <span className="codex-mcp-badge">{configured ? i18n('plugins.codexServerManaged', 'Server managed') : i18n('plugins.codexNotConfigured', 'Not configured')}</span>
+      </div>
+      <p className="workspace-note">{i18n('plugins.codexMcpPolicy', 'Choose which approved MCP servers Codex may use in this project. URLs, credentials, sandbox, and approval rules stay under server control.')}</p>
+      {!configured ? (
+        <div className="codex-mcp-empty">{i18n('plugins.codexMcpEmpty', 'No MCP servers have been configured by the administrator.')}</div>
+      ) : servers.length === 0 ? (
+        <div className="codex-mcp-empty">{i18n('plugins.codexMcpUnavailable', 'No approved MCP servers are available for this account.')}</div>
+      ) : (
+        <div className="codex-mcp-list">
+          {servers.map((server) => {
+            const enabled = !!server.enabled;
+            const health = server.healthStatus === 'reachable' ? i18n('plugins.codexMcpHealthy', 'Healthy') : server.healthStatus === 'unavailable' ? i18n('plugins.codexMcpUnavailableStatus', 'Unavailable') : i18n('plugins.codexMcpNotChecked', 'Not checked');
+            return (
+              <div className={'codex-mcp-row' + (enabled ? ' is-enabled' : '')} key={server.key}>
+                <div className="codex-mcp-copy">
+                  <strong>{server.name}</strong>
+                  <span>{server.description || i18n('plugins.codexMcpTools', 'MCP tools')} · {server.endpointHost || i18n('plugins.codexServerManaged', 'server-managed')} · {server.scope === 'project' ? i18n('plugins.codexProjectOverride', 'Project override') : i18n('plugins.codexGlobalDefault', 'Global default')}</span>
+                  <small>{health}{server.lastError ? ' · ' + server.lastError : ''}</small>
+                </div>
+                <div className="codex-mcp-actions">
+                  <button type="button" className="workspace-secondary codex-mcp-health" onClick={() => dispatch.checkCodexMcpHealth(server.key)}>{i18n('plugins.codexCheck', 'Check')}</button>
+                  <button type="button" className={'codex-mcp-toggle' + (enabled ? ' is-on' : '')} role="switch" aria-checked={enabled} onClick={() => dispatch.toggleCodexMcp(server.key, !enabled)}>
+                    {enabled ? i18n('common.on', 'On') : i18n('common.off', 'Off')}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function PluginsView({ plugins, configured, mcp, mcpConfigured, dispatch }: {
   plugins: ReadonlyArray<{ id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null }>;
   configured: boolean;
+  mcp: ReadonlyArray<{ key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: string; healthStatus?: string; lastError?: string | null }>;
+  mcpConfigured: boolean;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
   if (plugins.length === 0) {
     return (
-      <div className="workspace-empty">
-        <strong>{i18n('plugins.unavailable', 'Apps are unavailable')}</strong>
-        <span>{i18n('plugins.unavailableDesc', 'Refresh and try again.')}</span>
-      </div>
+      <>
+        <CodexMcpView servers={mcp} configured={mcpConfigured} dispatch={dispatch} />
+        <div className="workspace-empty">
+          <strong>{i18n('plugins.unavailable', 'Apps are unavailable')}</strong>
+          <span>{i18n('plugins.unavailableDesc', 'Refresh and try again.')}</span>
+        </div>
+      </>
     );
   }
   return (
     <>
+      <CodexMcpView servers={mcp} configured={mcpConfigured} dispatch={dispatch} />
       {plugins.map((connector) => {
         const connection = connector.connection || null;
         const connected = connection && connection.status === 'connected';
@@ -334,7 +386,7 @@ function WorkspacePage({ page }: { page: string }) {
     case 'projects':
       return <ProjectsView projects={snap.projectsData} dispatch={dispatch} />;
     case 'plugins':
-      return <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} dispatch={dispatch} />;
+      return <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} mcp={snap.mcpData} mcpConfigured={snap.mcpConfigured} dispatch={dispatch} />;
     default:
       return null;
   }

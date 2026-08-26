@@ -98,6 +98,7 @@ export function toolCategory(name: string): string {
   if (name === 'render_visualization') return 'visual';
   if (name === 'create_plan') return 'plan';
   if (name === 'create_spec') return 'spec';
+  if (name === 'workspace_agent') return 'agent';
   if (name === 'Read' || name === 'Glob' || name === 'Grep') return 'read';
   if (name === 'Write' || name === 'Edit' || name === 'Bash') return 'write';
   return 'other';
@@ -127,6 +128,7 @@ export function updateInlineToolLabel(row: HTMLElement, text: string): void {
 }
 
 function runningLabel(name: string): string {
+  if (name === 'workspace_agent') return translate('tool.actionCodex', 'Working in the Codex workspace…');
   if (SEARCH_TOOLS.has(name)) return translate('tool.actionSearch', 'Searching the web…');
   if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionCode', 'Executing code…');
   if (name === 'render_visualization') return translate('tool.actionVisual', 'Creating a visual');
@@ -139,6 +141,7 @@ function runningLabel(name: string): string {
 }
 
 function doneLabel(name: string, result: InlineToolResult | null): string {
+  if (result && result.status === 'awaiting_approval') return translate('tool.awaitingApproval', 'Waiting for your decision');
   if (SEARCH_TOOLS.has(name)) {
     const n = result && Array.isArray(result.results) ? result.results.length : 0;
     if (n > 0) return translate('tool.searchDone', 'Found {n} web results').replace('{n}', String(n));
@@ -149,6 +152,7 @@ function doneLabel(name: string, result: InlineToolResult | null): string {
   if (name === 'web_fetch') return translate('tool.doneFetch', 'Read the page');
   if (name === 'create_plan') return translate('tool.donePlan', 'Drafted a plan');
   if (name === 'create_spec') return translate('tool.doneSpec', 'Drafted a spec');
+  if (name === 'workspace_agent') return translate('tool.doneCodex', 'Completed the Codex workspace task');
   if (name === 'Read' || name === 'Glob' || name === 'Grep' || name === 'WebFetch') return translate('tool.doneRead', 'Read files');
   if (name === 'Write' || name === 'Edit' || name === 'Bash') return translate('tool.doneWrite', 'Updated files');
   return translate('tool.doneDefault', 'Finished using tool');
@@ -157,6 +161,7 @@ function doneLabel(name: string, result: InlineToolResult | null): string {
 function errorLabel(name: string, result: InlineToolResult | null): string {
   if (result && result.status === 'timeout') return translate('tool.statusTimeout', 'Timeout');
   if (SEARCH_TOOLS.has(name)) return translate('tool.searchFailed', 'Web search failed');
+  if (name === 'workspace_agent') return translate('tool.codexFailed', 'Codex workspace task failed');
   return translate('tool.actionFailed', 'Tool call failed');
 }
 
@@ -693,6 +698,7 @@ function runningIconHtml(): string {
    stroke, currentColor) so a tool looks the same in both the inline row and
    the expandable card. Falls back to a generic tool glyph for unknown names. */
 const TOOL_INLINE_ICONS: Record<string, string> = {
+  workspace_agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l-3 3 3 3"/><path d="M13 15l3-3-3-3"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg>',
   render_visualization: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="0.5"/><rect x="12" y="6" width="3" height="11" rx="0.5"/><rect x="17" y="13" width="3" height="4" rx="0.5"/></svg>',
   web_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
   web_fetch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
@@ -872,8 +878,9 @@ export function settleInlineToolRow(
 ): void {
   const name = row.dataset.tool || '';
   const cancelled = !!(opts && opts.cancelled);
+  const awaitingApproval = !!result && result.status === 'awaiting_approval';
   const failed = !cancelled && !!result && result.ok === false;
-  const state = cancelled ? 'stopped' : failed ? 'error' : 'done';
+  const state = cancelled ? 'stopped' : awaitingApproval ? 'awaiting' : failed ? 'error' : 'done';
   row.dataset.state = state;
   /* Replace the running spinner with the tool-type icon when the tool
      settles so the glyph stabilises alongside the new label. */
@@ -884,6 +891,7 @@ export function settleInlineToolRow(
     label.classList.remove('shimmer-text');
     label.textContent = cancelled
       ? translate('tool.statusStopped', 'Stopped')
+      : awaitingApproval ? translate('tool.awaitingApproval', 'Waiting for your decision')
       : failed ? errorLabel(name, result) : doneLabel(name, result);
   }
   const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;

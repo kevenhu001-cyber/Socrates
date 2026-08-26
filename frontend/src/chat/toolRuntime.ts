@@ -39,6 +39,7 @@ import type { ToolRun } from './toolRunState.js';
 import { createLiveOutputBuffer, renderLivePreview } from './liveOutput.js';
 import type { LiveOutputBufferHandle } from './liveOutput.js';
 import { getSocratesWasm } from '../lib/socratesWasm.js';
+import { apiFetch } from '../util/api.js';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -68,12 +69,14 @@ interface ToolCallEntry {
   _progressPhase?: string;
   /** Bounded live-output buffer for the running stream (client-only). */
   _liveBuffer?: LiveOutputBufferHandle;
+  approval?: ToolApproval;
 }
 
 interface ToolMessage {
   toolCalls?: ToolCallEntry[];
   _orphanDeltas?: Record<string, ToolCallDelta[]>;
   _orphanProgress?: Record<string, ToolProgress[]>;
+  _orphanApprovals?: Record<string, ToolApproval[]>;
 }
 
 interface ToolProgress {
@@ -81,6 +84,20 @@ interface ToolProgress {
   phase: string;
   elapsedMs?: number;
   chunk?: string;
+}
+
+interface ToolApproval {
+  id?: string;
+  runId: string;
+  approvalId: string;
+  requestId?: string;
+  kind?: string;
+  reason?: string | null;
+  command?: string | null;
+  cwd?: string | null;
+  changes?: unknown;
+  availableDecisions?: string[];
+  status?: string;
 }
 
 interface ToolCallDelta {
@@ -179,6 +196,7 @@ export interface ToolRuntime {
   recordToolCallDelta: (delta: ToolCallDelta) => void;
   recordExecutionStart: (event: ExecutionEvent) => void;
   recordToolResult: (result: ToolResult) => void;
+  recordToolApproval: (approval: ToolApproval) => void;
   /** Called when text streams after a tool row so live grouping breaks. */
   noteTextDelta: () => void;
   cancel: () => void;
@@ -213,6 +231,7 @@ function translate(key: string, fallback: string): string {
 
 function activeToolLabel(entry: ToolCallEntry | null): string {
   const name = entry && entry.name;
+  if (name === 'workspace_agent') return translate('tool.actionCodex', 'Working in the Codex workspace');
   if (name === 'web_search' || name === 'arxiv_search' || name === 'zotero_search' || name === 'notion_search_pages') {
     return translate('tool.actionSearch', 'Searching the web');
   }
@@ -330,6 +349,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     settled: boolean;
   }
   let liveGroup: LiveGroupState | null = null;
+  let postFinishApprovalMessage: ToolMessage | null = null;
 
   function mountInlineRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
@@ -543,7 +563,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   }
 
   function activeMessage(): ToolMessage | null {
-    if (disposed || !stillOwnsSlot()) return null;
+    if (disposed) return null;
+    if (postFinishApprovalMessage) {
+      const current = getMessage() || null;
+      return current === postFinishApprovalMessage ? current : null;
+    }
+    if (!stillOwnsSlot()) return null;
     return getMessage() || null;
   }
 
@@ -560,6 +585,224 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   function findCard(id: string): Element | null {
     if (!body || !id) return null;
     return body.querySelector('[data-tcid="' + cssEscape(id) + '"]');
+  }
+
+  function approvalSummary(approval: ToolApproval): string {
+    if (approval.kind === 'commandExecution') return translate('tool.codexCommandApproval', 'Codex wants to run a command');
+    if (approval.kind === 'fileChange') return translate('tool.codexFileApproval', 'Codex wants to change files');
+    return translate('tool.codexApproval', 'Codex needs your approval');
+  }
+
+  function appendApprovalFact(panel: HTMLElement, label: string, value: unknown): void {
+    if (value == null || value === '') return;
+    const fact = document.createElement('div');
+    fact.className = 'tool-inline-approval-fact';
+    const key = document.createElement('span');
+    key.className = 'tool-inline-approval-fact-label';
+    key.textContent = label;
+    const text = document.createElement('code');
+    text.className = 'tool-inline-approval-fact-value';
+    text.textContent = typeof value === 'string' ? value : JSON.stringify(value);
+    fact.appendChild(key);
+    fact.appendChild(text);
+    panel.appendChild(fact);
+  }
+
+  function approvalPanels(approvalId: string): HTMLElement[] {
+    if (!approvalId || typeof document === 'undefined' || !document.querySelectorAll) return [];
+    return Array.from(document.querySelectorAll('.tool-inline-approval')).filter((panel) => (
+      (panel as HTMLElement).dataset.approvalId === String(approvalId)
+    )) as HTMLElement[];
+  }
+
+  function setApprovalUi(approvalId: string, text: string, state?: string, disabled = true): void {
+    approvalPanels(approvalId).forEach((panel) => {
+      if (state) panel.dataset.state = state;
+      const status = panel.querySelector('.tool-inline-approval-status') as HTMLElement | null;
+      if (status) status.textContent = text;
+      panel.querySelectorAll('button[data-approval-action]').forEach((button) => {
+        (button as HTMLButtonElement).disabled = disabled;
+      });
+    });
+  }
+
+  async function submitApprovalAction(
+    approval: ToolApproval,
+    entryId: string,
+    decision: string,
+  ): Promise<void> {
+    if (!approval || !approval.runId || !approval.approvalId) return;
+    setApprovalUi(approval.approvalId, translate('tool.sendingApproval', 'Saving your decision…'));
+    try {
+      if (decision === 'stop') {
+        await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/interrupt', { method: 'POST', body: {} });
+        setApprovalUi(approval.approvalId, translate('tool.runStopped', 'Stop requested'), 'stopped');
+        return;
+      }
+      await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/approvals/' + encodeURIComponent(approval.approvalId), {
+        method: 'POST',
+        body: { decision },
+      });
+      setApprovalUi(
+        approval.approvalId,
+        decision === 'decline'
+          ? translate('tool.approvalDeclined', 'Declined')
+          : translate('tool.approvalAccepted', 'Approved'),
+        decision === 'decline' ? 'declined' : 'accepted',
+      );
+      const message = activeMessage();
+      const entry = findEntry(message, entryId);
+      if (entry) entry.approval = { ...entry.approval, ...approval, status: decision };
+      if (decision !== 'decline') {
+        const startedAt = Date.now();
+        const poll = async (): Promise<void> => {
+          if (Date.now() - startedAt > 120_000) return;
+          try {
+            const response = await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId));
+            const run = response && response.run;
+            if (run && ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))) {
+              recordToolResult({
+                id: entryId,
+                name: entry ? entry.name : 'workspace_agent',
+                ok: run.status === 'completed',
+                status: run.status,
+                output: run.summary || '',
+                error: run.error || null,
+                artifacts: response.artifacts || [],
+              });
+              return;
+            }
+          } catch (_) { /* a refresh/reconnect can retry on the next tick */ }
+          window.setTimeout(() => { void poll(); }, 900);
+        };
+        window.setTimeout(() => { void poll(); }, 900);
+      }
+    } catch (err) {
+      setApprovalUi(
+        approval.approvalId,
+        (err as Error).message || translate('tool.approvalFailed', 'Could not save the decision. Try again.'),
+        undefined,
+        false,
+      );
+      throw err;
+    }
+  }
+
+  function renderApproval(approval: ToolApproval): void {
+    const message = activeMessage();
+    if (!message || !approval || !approval.runId || !approval.approvalId) return;
+    let entry = findEntry(message, String(approval.id || ''));
+    if (!entry) {
+      /* The normal path carries the tool call id in `id`; keep a small
+       * fallback scan for harnesses that only provide runId/requestId. */
+      const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
+      entry = calls.find((candidate) => candidate.approval && candidate.approval.runId === approval.runId) || null;
+    }
+    if (!entry) return;
+    entry.approval = { ...approval, status: approval.status || 'pending' };
+    let card = findCard(entry.id) as HTMLElement | null;
+    if (!card && entry._groupHeadId) card = findCard(entry._groupHeadId) as HTMLElement | null;
+    if (!card) {
+      if (!message._orphanApprovals) message._orphanApprovals = {};
+      const key = entry.id;
+      message._orphanApprovals[key] = message._orphanApprovals[key] || [];
+      message._orphanApprovals[key].push(approval);
+      return;
+    }
+    const selector = '[data-approval-id="' + cssEscape(String(approval.approvalId)) + '"]';
+    let panel = card.querySelector(selector) as HTMLElement | null;
+    if (panel) return;
+    panel = document.createElement('div');
+    panel.className = 'tool-inline-approval';
+    panel.dataset.approvalId = String(approval.approvalId);
+    panel.dataset.runId = String(approval.runId);
+    panel.setAttribute('role', 'alert');
+    panel.setAttribute('aria-live', 'polite');
+
+    const heading = document.createElement('div');
+    heading.className = 'tool-inline-approval-heading';
+    const dot = document.createElement('span');
+    dot.className = 'tool-inline-approval-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    const title = document.createElement('strong');
+    title.textContent = approvalSummary(approval);
+    heading.appendChild(dot);
+    heading.appendChild(title);
+    panel.appendChild(heading);
+    const copy = document.createElement('p');
+    copy.className = 'tool-inline-approval-copy';
+    copy.textContent = translate('tool.codexApprovalCopy', 'Review the action before it continues.');
+    panel.appendChild(copy);
+    appendApprovalFact(panel, translate('tool.action', 'Action'), approval.command || approval.changes || approval.kind);
+    appendApprovalFact(panel, translate('tool.reason', 'Reason'), approval.reason);
+    appendApprovalFact(panel, translate('tool.path', 'Workspace'), approval.cwd || '[workspace]');
+
+    const status = document.createElement('div');
+    status.className = 'tool-inline-approval-status';
+    status.textContent = translate('tool.awaitingApproval', 'Waiting for your decision');
+    panel.appendChild(status);
+    const actions = document.createElement('div');
+    actions.className = 'tool-inline-approval-actions';
+    const actionSpecs = [
+      { decision: 'accept', label: translate('tool.approveOnce', 'Allow once'), primary: true },
+      { decision: 'acceptForSession', label: translate('tool.approveRun', 'Allow this run'), primary: false },
+      { decision: 'decline', label: translate('tool.decline', 'Decline'), primary: false },
+      { decision: 'stop', label: translate('tool.stopRun', 'Stop run'), primary: false },
+    ];
+    const buttons: HTMLButtonElement[] = [];
+    const runAction = async (decision: string, button: HTMLButtonElement) => {
+      try {
+        await submitApprovalAction(approval, entry!.id, decision);
+      } catch (err) {
+        button.focus();
+      }
+    };
+    actionSpecs.forEach((spec) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tool-inline-approval-action' + (spec.primary ? ' primary' : '');
+      button.dataset.approvalAction = spec.decision;
+      button.textContent = spec.label;
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void runAction(spec.decision, button);
+      });
+      buttons.push(button);
+      actions.appendChild(button);
+    });
+    panel.appendChild(actions);
+    /* Approval must remain visible even though the surrounding tool row is a
+     * <details>. Open the row and place the card after the summary so it
+     * stays in the normal message flow on desktop and mobile. */
+    if (card.tagName.toLowerCase() === 'details') (card as HTMLDetailsElement).open = true;
+    card.appendChild(panel);
+  }
+
+  /* P_approval-delegation — finish() serializes inline rows with outerHTML,
+   * which intentionally drops listeners attached directly to approval
+   * buttons. Keep one listener on the stable message body so approvals stay
+   * actionable after the stream hands off to the persisted HTML. */
+  const approvalDelegatedClick = (event: Event): void => {
+    const target = event.target as Element | null;
+    const button = target && target.closest
+      ? target.closest('button[data-approval-action]') as HTMLButtonElement | null
+      : null;
+    if (!button) return;
+    const panel = button.closest('.tool-inline-approval') as HTMLElement | null;
+    const row = button.closest('[data-tcid]') as HTMLElement | null;
+    const message = activeMessage();
+    const entry = row && message ? findEntry(message, row.dataset.tcid || '') : null;
+    if (!panel || !entry || !entry.approval) return;
+    event.preventDefault();
+    event.stopPropagation();
+    void submitApprovalAction(entry.approval, entry.id, button.dataset.approvalAction || '').catch(() => { /* UI already shows the error */ });
+  };
+  if (body && typeof body.addEventListener === 'function') {
+    body.addEventListener('click', approvalDelegatedClick);
+  }
+  if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    document.addEventListener('click', approvalDelegatedClick);
   }
 
   function renderProgress(progress: ToolProgress, skipQueuedDrain?: boolean): void {
@@ -925,12 +1168,46 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         renderProgress(orphanProgress[progressIndex], true);
       }
     }
+    const orphanApprovals = message._orphanApprovals?.[entry.id];
+    if (orphanApprovals) delete message._orphanApprovals![entry.id];
+    if (Array.isArray(orphanApprovals)) {
+      for (let approvalIndex = 0; approvalIndex < orphanApprovals.length; approvalIndex++) {
+        renderApproval({ ...orphanApprovals[approvalIndex], id: entry.id });
+      }
+    }
     if (call.name === 'code_interpreter' && call.executionId) {
       entry.executionId = call.executionId;
       connectExecution(call.executionId, entry.id);
     }
     updateRunSummary(message);
     return output as HTMLElement | null;
+  }
+
+  function recordToolApproval(approval: ToolApproval): void {
+    const message = activeMessage();
+    if (!message || !approval || !approval.runId || !approval.approvalId) return;
+    let entry: ToolCallEntry | null = approval.id ? findEntry(message, String(approval.id)) : null;
+    if (!entry && Array.isArray(message.toolCalls)) {
+      /* A provider adapter may omit the presentation id. Attach the approval
+       * to the most recent active workspace-agent call in this message. */
+      for (let index = message.toolCalls.length - 1; index >= 0; index--) {
+        const candidate = message.toolCalls[index];
+        if (candidate && candidate.name === 'workspace_agent' && !candidate._toolResultApplied) {
+          entry = candidate;
+          break;
+        }
+      }
+    }
+    if (!entry) {
+      if (!message._orphanApprovals) message._orphanApprovals = {};
+      const key = String(approval.id || approval.runId);
+      message._orphanApprovals[key] = message._orphanApprovals[key] || [];
+      message._orphanApprovals[key].push(approval);
+      return;
+    }
+    const normalized = { ...approval, id: entry.id };
+    entry.approval = normalized;
+    renderApproval(normalized);
   }
 
   function recordToolProgress(progress: ToolProgress): void {
@@ -1007,13 +1284,18 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       for (let progressIndex = 0; progressIndex < queuedProgress.length; progressIndex++) renderProgress(queuedProgress[progressIndex], true);
     }
 
+    const awaitingApproval = result.status === 'awaiting_approval';
     let statusText = '';
     let statusClass = '';
     const duration = result.durationMs != null && result.durationMs > 0
       ? ' [' + (result.durationMs / 1000).toFixed(1) + 's]'
       : '';
     let display = '';
-    if (result.ok === false) {
+    if (awaitingApproval) {
+      statusText = translate('tool.awaitingApproval', 'Waiting for your decision');
+      statusClass = 'warn';
+      display = translate('tool.codexApprovalCopy', 'Review the action before it continues.');
+    } else if (result.ok === false) {
       if (result.status === 'timeout') {
         statusText = translate('tool.statusTimeout', 'Timeout');
         statusClass = 'warn';
@@ -1059,7 +1341,9 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       display = (result.output || '(no output)') + (result.stderr ? '\n[stderr]\n' + result.stderr : '') + duration;
     }
 
-    const terminalPhase = result.ok === false
+    const terminalPhase = awaitingApproval
+      ? TOOL_RUN_PHASES.running
+      : result.ok === false
       ? (result.status === 'timeout'
         ? TOOL_RUN_PHASES.timed_out
         : result.status === 'cancelled' ? TOOL_RUN_PHASES.cancelled : TOOL_RUN_PHASES.failed)
@@ -1129,11 +1413,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         if (result.visualization && result.visualization.version === 1) {
           mountVisualization(result.visualization, attachmentHost, { toolCallId: entry.id });
         }
-        entry._toolResultApplied = true;
+        if (!awaitingApproval) entry._toolResultApplied = true;
       }
       return;
     }
-    entry._toolResultApplied = true;
+    if (!awaitingApproval) entry._toolResultApplied = true;
     const liveProgress = output.querySelector('.agent-tool-progress');
     if (liveProgress) liveProgress.remove();
     const toolName = entry.name || result.name || '';
@@ -1182,7 +1466,29 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
   function dispose(): void {
     if (disposed) return;
+    const message = getMessage();
+    const hasPendingApproval = !!(message && Array.isArray(message.toolCalls) && message.toolCalls.some((entry) => (
+      !!(entry && entry.approval && (!entry.approval.status || entry.approval.status === 'pending'))
+    )));
+    if (hasPendingApproval) {
+      /* The stream can finish while a Codex turn is paused for approval.
+       * Keep the stable body listener and runtime state alive so the
+       * serialized approval card remains actionable after finish() replaces
+       * the row's DOM with outerHTML. */
+      postFinishApprovalMessage = message;
+      liveGroup = null;
+      pendingDeltas.length = 0;
+      Array.from(executionConnections.values()).forEach(closeConnection);
+      executionConnections.clear();
+      return;
+    }
     disposed = true;
+    if (body && typeof body.removeEventListener === 'function') {
+      body.removeEventListener('click', approvalDelegatedClick);
+    }
+    if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
+      document.removeEventListener('click', approvalDelegatedClick);
+    }
     liveGroup = null;
     pendingDeltas.length = 0;
     if (deltaFrame != null) {
@@ -1242,6 +1548,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     recordToolCallDelta,
     recordExecutionStart,
     recordToolResult,
+    recordToolApproval,
     noteTextDelta,
     cancel,
     dispose,

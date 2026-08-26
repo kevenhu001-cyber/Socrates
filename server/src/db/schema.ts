@@ -160,6 +160,7 @@ export const messages = pgTable('messages', {
      the live stream ends. Default to [] so existing rows read back as
      "no tool calls" without a migration rewrite. */
   toolCalls: jsonb('tool_calls').default([]),
+  agentRunId: uuid('agent_run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
   editedAt: timestamp('edited_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -172,6 +173,7 @@ export const messages = pgTable('messages', {
      front-end generated id), and Postgres treats NULLs as distinct
      in unique indexes, so multiple NULL-clientId messages coexist. */
   uniqueIndex('messages_session_client_id_idx').on(table.sessionId, table.clientId),
+  index('messages_agent_run_id_idx').on(table.agentRunId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -281,12 +283,14 @@ export const files = pgTable('files', {
      code-interpreter tool (PNG charts, CSV exports, etc). ON DELETE CASCADE
      so reaping an execution row drops its artifacts too. */
   executionId: uuid('execution_id').references(() => executions.id, { onDelete: 'cascade' }),
+  agentRunId: uuid('agent_run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('files_user_id_idx').on(table.userId),
   index('files_sha256_idx').on(table.sha256),
   index('files_session_id_idx').on(table.sessionId),
   index('files_execution_id_idx').on(table.executionId),
+  index('files_agent_run_id_idx').on(table.agentRunId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -320,6 +324,10 @@ export const artifacts = pgTable('artifacts', {
   sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
   messageId: uuid('message_id').references(() => messages.id, { onDelete: 'set null' }),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  /* P_codex-runtime — generated files and reports stay attached to the
+   * execution that produced them so a project/session can surface them
+   * without scraping assistant prose. */
+  agentRunId: uuid('agent_run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
   visibility: text('visibility').notNull().default('private'),
   shareToken: text('share_token'),
   version: integer('version').notNull().default(1),
@@ -330,6 +338,7 @@ export const artifacts = pgTable('artifacts', {
   index('artifacts_session_id_idx').on(table.sessionId),
   index('artifacts_message_id_idx').on(table.messageId),
   index('artifacts_project_id_idx').on(table.projectId),
+  index('artifacts_agent_run_id_idx').on(table.agentRunId),
 ]);
 
 export const artifactVersions = pgTable('artifact_versions', {
@@ -412,20 +421,152 @@ export const notificationTokens = pgTable('notification_tokens', {
 ]);
 
 /* ──────────────────────────────────────────────
+   Codex workspaces
+
+   The filesystem path is deliberately not exposed to clients. `workspaceKey`
+   is a server-owned stable identifier that lets the runtime derive the path
+   below CODEX_WORKSPACE_ROOT while keeping project isolation explicit.
+   ────────────────────────────────────────────── */
+export const codexWorkspaces = pgTable('codex_workspaces', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  workspaceKey: text('workspace_key').notNull(),
+  status: text('status').notNull().default('active'), // active | archived | expired
+  policy: jsonb('policy').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('codex_workspaces_user_key_idx').on(table.userId, table.workspaceKey),
+  index('codex_workspaces_user_id_idx').on(table.userId),
+  index('codex_workspaces_project_id_idx').on(table.projectId),
+]);
+
+/* ──────────────────────────────────────────────
    Agent Runs
    ────────────────────────────────────────────── */
 export const agentRuns = pgTable('agent_runs', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  threadId: text('thread_id'),
+  workspaceId: uuid('workspace_id').references(() => codexWorkspaces.id, { onDelete: 'set null' }),
   task: text('task').notNull(),
   status: text('status').notNull().default('planning'),
+  mode: text('mode').notNull().default('workspace'), // workspace | native
+  kind: text('kind').notNull().default('chat'), // chat | tutor | scheduled | retry
+  source: text('source').notNull().default('chat'), // chat | tutor | scheduled | api
+  providerMode: text('provider_mode'), // user | server
+  model: text('model'),
+  summary: text('summary'),
+  error: text('error'),
+  usage: jsonb('usage').default({}),
   plan: jsonb('plan').default([]),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
 }, (table) => [
   index('agent_runs_user_id_idx').on(table.userId),
   index('agent_runs_session_id_idx').on(table.sessionId),
+  index('agent_runs_project_id_idx').on(table.projectId),
+  index('agent_runs_thread_id_idx').on(table.threadId),
+  index('agent_runs_status_idx').on(table.status),
+]);
+
+export const codexThreads = pgTable('codex_threads', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  workspaceId: uuid('workspace_id').notNull().references(() => codexWorkspaces.id, { onDelete: 'cascade' }),
+  threadId: text('thread_id').notNull().unique(),
+  status: text('status').notNull().default('active'), // active | paused | completed | disconnected
+  model: text('model'),
+  providerMode: text('provider_mode'),
+  lastTurnId: text('last_turn_id'),
+  metadata: jsonb('metadata').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('codex_threads_user_id_idx').on(table.userId),
+  index('codex_threads_project_id_idx').on(table.projectId),
+  index('codex_threads_session_id_idx').on(table.sessionId),
+  index('codex_threads_workspace_id_idx').on(table.workspaceId),
+]);
+
+export const agentRunEvents = pgTable('agent_run_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id').notNull().references(() => agentRuns.id, { onDelete: 'cascade' }),
+  sequence: integer('sequence').notNull(),
+  event: text('event').notNull(),
+  payload: jsonb('payload').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('agent_run_events_run_sequence_idx').on(table.runId, table.sequence),
+  index('agent_run_events_run_id_idx').on(table.runId),
+]);
+
+export const agentApprovals = pgTable('agent_approvals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id').notNull().references(() => agentRuns.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  threadId: text('thread_id').notNull(),
+  requestId: text('request_id').notNull(),
+  kind: text('kind').notNull(),
+  status: text('status').notNull().default('pending'), // pending | accepted | accepted_for_session | declined | cancelled
+  decision: text('decision'),
+  payload: jsonb('payload').default({}),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('agent_approvals_run_request_idx').on(table.runId, table.requestId),
+  index('agent_approvals_user_status_idx').on(table.userId, table.status),
+  index('agent_approvals_thread_id_idx').on(table.threadId),
+]);
+
+export const agentJobs = pgTable('agent_jobs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  runId: uuid('run_id').notNull().references(() => agentRuns.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull().default('run'), // run | resume | retry
+  status: text('status').notNull().default('queued'), // queued | leased | running | awaiting_approval | completed | failed
+  availableAt: timestamp('available_at', { withTimezone: true }).notNull().defaultNow(),
+  leaseUntil: timestamp('lease_until', { withTimezone: true }),
+  attempts: integer('attempts').notNull().default(0),
+  maxAttempts: integer('max_attempts').notNull().default(3),
+  error: text('error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('agent_jobs_status_available_idx').on(table.status, table.availableAt),
+  index('agent_jobs_user_id_idx').on(table.userId),
+  index('agent_jobs_run_id_idx').on(table.runId),
+]);
+
+/* ──────────────────────────────────────────────
+   Codex MCP settings — server-owned MCP catalog selections.
+   The URL and transport come from the server catalog; users can only
+   enable/disable a known server globally or for one of their projects.
+   `scopeKey` avoids PostgreSQL's nullable-column unique-index semantics for
+   the global (projectId = null) scope.
+   ────────────────────────────────────────────── */
+export const agentMcpSettings = pgTable('agent_mcp_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  scopeKey: text('scope_key').notNull(), // global | project:<uuid>
+  serverKey: text('server_key').notNull(),
+  enabled: boolean('enabled').notNull().default(true),
+  healthStatus: text('health_status').notNull().default('unknown'), // unknown | reachable | unavailable
+  lastError: text('last_error'),
+  lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('agent_mcp_settings_scope_server_idx').on(table.userId, table.scopeKey, table.serverKey),
+  index('agent_mcp_settings_user_id_idx').on(table.userId),
+  index('agent_mcp_settings_project_id_idx').on(table.projectId),
 ]);
 
 /* ──────────────────────────────────────────────
@@ -595,6 +736,11 @@ export const scheduledTasks = pgTable('scheduled_tasks', {
   title: text('title').notNull(),
   prompt: text('prompt').notNull().default(''),
   sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  agentKind: text('agent_kind').notNull().default('native'), // native | codex
+  runPolicy: jsonb('run_policy').default({}),
+  notificationConfig: jsonb('notification_config').default({}),
+  lastRunId: uuid('last_run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
   cronExpression: text('cron_expression'),
   /* once | hourly | daily | weekly | monthly | custom */
   frequency: text('frequency').notNull().default('once'),
@@ -609,6 +755,8 @@ export const scheduledTasks = pgTable('scheduled_tasks', {
   index('scheduled_tasks_user_id_idx').on(table.userId),
   index('scheduled_tasks_next_run_at_idx').on(table.nextRunAt),
   index('scheduled_tasks_status_idx').on(table.status),
+  index('scheduled_tasks_project_id_idx').on(table.projectId),
+  index('scheduled_tasks_last_run_id_idx').on(table.lastRunId),
 ]);
 
 /* ──────────────────────────────────────────────

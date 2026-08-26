@@ -7,6 +7,11 @@ export interface ScheduledTask {
   status: string;
   lastRunAt: string | null;
   runCount: number;
+  projectId?: string | null;
+  agentKind?: 'native' | 'codex' | string;
+  lastRunId?: string | null;
+  runPolicy?: Record<string, unknown>;
+  notificationConfig?: Record<string, unknown>;
 }
 
 export interface ScheduledSnapshot {

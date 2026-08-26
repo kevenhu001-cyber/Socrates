@@ -2265,6 +2265,215 @@ paths:
     post:
       tags: [agents]
       summary: EXISTING — SSE agent run
+  /api/agent-runs/capabilities:
+    get:
+      tags: [codex]
+      operationId: getUnifiedAgentCapabilities
+      summary: Return the unified native/Codex runtime capabilities and fixed policy
+      responses:
+        '200':
+          description: Runtime capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  background: { type: boolean }
+                  adapters: { type: array, items: { type: string, enum: [native, codex] } }
+                  mcp: { type: object, additionalProperties: true }
+                  policy: { type: object, additionalProperties: true }
+  /api/agent-runs:
+    get:
+      tags: [codex]
+      operationId: listAgentRuns
+      summary: List durable agent runs owned by the caller
+      parameters:
+        - { in: query, name: sessionId, schema: { type: string, format: uuid } }
+        - { in: query, name: projectId, schema: { type: string, format: uuid } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        '200':
+          description: Agent runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs: { type: array, items: { $ref: '#/components/schemas/AgentRuntimeRun' } }
+    post:
+      tags: [codex]
+      operationId: createAgentRun
+      summary: Create a durable project workspace run
+      description: The server resolves the session/project owner, provider, workspace, sandbox, MCP catalog, and approval policy. The client cannot supply cwd, credentials, or policy overrides.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task]
+              properties:
+                task: { type: string, maxLength: 20000 }
+                sessionId: { type: string, format: uuid, nullable: true }
+                projectId: { type: string, format: uuid, nullable: true }
+                kind: { type: string, enum: [chat, tutor, scheduled, retry] }
+                source: { type: string, enum: [chat, tutor, scheduled, api] }
+      responses:
+        '201':
+          description: Durable run created; start a turn with the returned id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run: { $ref: '#/components/schemas/AgentRuntimeRun' }
+                  workspace: { type: object, properties: { id: { type: string, format: uuid, nullable: true } } }
+  /api/agent-runs/{runId}:
+    parameters:
+      - { $ref: '#/components/parameters/AgentRunId' }
+    get:
+      tags: [codex]
+      operationId: getAgentRun
+      summary: Read a durable run, replayable events, approvals, and artifacts
+      responses:
+        '200':
+          description: Agent run details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run: { $ref: '#/components/schemas/AgentRuntimeRun' }
+                  approvals: { type: array, items: { $ref: '#/components/schemas/AgentApproval' } }
+                  artifacts: { type: array, items: { $ref: '#/components/schemas/Artifact' } }
+                  events: { type: array, items: { $ref: '#/components/schemas/AgentRuntimeEvent' } }
+  /api/agent-runs/{runId}/events:
+    get:
+      tags: [codex]
+      operationId: streamAgentRunEvents
+      summary: Replay and follow normalized Agent Runtime events over SSE
+      parameters:
+        - { $ref: '#/components/parameters/AgentRunId' }
+        - { in: query, name: after, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: text/event-stream of agent_event frames }
+  /api/agent-runs/{runId}/turns:
+    post:
+      tags: [codex]
+      operationId: startUnifiedAgentTurn
+      summary: Start or continue a unified workspace turn over SSE
+      parameters:
+        - { $ref: '#/components/parameters/AgentRunId' }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input: { type: string, maxLength: 20000, nullable: true }
+      responses:
+        '200': { description: text/event-stream containing agent_event, agent_result, and agent_done frames }
+  /api/agent-runs/{runId}/approvals/{approvalId}:
+    post:
+      tags: [codex]
+      operationId: decideAgentApproval
+      summary: Apply an idempotent approval decision to a unified run
+      parameters:
+        - { $ref: '#/components/parameters/AgentRunId' }
+        - { in: path, name: approvalId, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [accept, acceptForSession, decline, cancel] }
+      responses:
+        '200': { description: Decision persisted and forwarded to Codex }
+  /api/agent-runs/{runId}/interrupt:
+    post:
+      tags: [codex]
+      operationId: interruptAgentRun
+      parameters: [{ $ref: '#/components/parameters/AgentRunId' }]
+      responses:
+        '200': { description: Interrupt requested }
+  /api/agent-runs/{runId}/resume:
+    post:
+      tags: [codex]
+      operationId: resumeAgentRun
+      parameters: [{ $ref: '#/components/parameters/AgentRunId' }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { input: { type: string, maxLength: 20000 } } }
+      responses:
+        '200': { description: Resumed run }
+  /api/agent-runs/{runId}/retry:
+    post:
+      tags: [codex]
+      operationId: retryAgentRun
+      parameters: [{ $ref: '#/components/parameters/AgentRunId' }]
+      responses:
+        '202': { description: Retry run accepted }
+  /api/agent-runs/{runId}/rehydrate:
+    post:
+      tags: [codex]
+      operationId: rehydrateAgentThread
+      parameters: [{ $ref: '#/components/parameters/AgentRunId' }]
+      responses:
+        '200': { description: Persisted Codex thread reconnected }
+  /api/agent-mcp:
+    get:
+      tags: [codex]
+      operationId: listAgentMcpServers
+      summary: List server-approved MCP entries and effective project overrides
+      parameters:
+        - { in: query, name: projectId, schema: { type: string, format: uuid, nullable: true } }
+      responses:
+        '200':
+          description: MCP catalog selection; credentials and full endpoint URLs are not returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  configured: { type: boolean }
+                  projectId: { type: string, format: uuid, nullable: true }
+                  servers: { type: array, items: { $ref: '#/components/schemas/AgentMcpServer' } }
+  /api/agent-mcp/{serverKey}:
+    patch:
+      tags: [codex]
+      operationId: setAgentMcpServerEnabled
+      parameters:
+        - { in: path, name: serverKey, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+                projectId: { type: string, format: uuid, nullable: true }
+      responses:
+        '200': { description: MCP selection saved }
+  /api/agent-mcp/{serverKey}/health:
+    post:
+      tags: [codex]
+      operationId: checkAgentMcpHealth
+      parameters:
+        - { in: path, name: serverKey, required: true, schema: { type: string } }
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { projectId: { type: string, format: uuid, nullable: true } } }
+      responses:
+        '200': { description: MCP reachability result }
   /api/web-search:
     post:
       tags: [search]
@@ -2563,6 +2772,11 @@ components:
     ThreadId:
       in: path
       name: threadId
+      required: true
+      schema: { type: string, format: uuid }
+    AgentRunId:
+      in: path
+      name: runId
       required: true
       schema: { type: string, format: uuid }
 
@@ -3030,6 +3244,64 @@ components:
           items: { $ref: '#/components/schemas/FileDiff' }
         startedAt: { type: string, format: date-time }
         completedAt: { type: string, format: date-time, nullable: true }
+
+    AgentRuntimeRun:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid, nullable: true }
+        projectId: { type: string, format: uuid, nullable: true }
+        workspaceId: { type: string, format: uuid, nullable: true, description: Opaque workspace id; never a filesystem path }
+        threadId: { type: string, nullable: true }
+        task: { type: string }
+        status: { type: string, enum: [planning, starting, running, awaiting_approval, completed, failed, interrupted, disconnected] }
+        mode: { type: string, enum: [workspace, native] }
+        kind: { type: string, enum: [chat, tutor, scheduled, retry] }
+        source: { type: string, enum: [chat, tutor, scheduled, api] }
+        providerMode: { type: string, enum: [user, server], nullable: true }
+        model: { type: string, nullable: true }
+        summary: { type: string, nullable: true }
+        error: { type: string, nullable: true }
+        usage: { type: object, additionalProperties: true }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time, nullable: true }
+
+    AgentRuntimeEvent:
+      type: object
+      properties:
+        runId: { type: string, format: uuid }
+        sequence: { type: integer }
+        event: { type: string }
+        data: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+
+    AgentApproval:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        runId: { type: string, format: uuid }
+        threadId: { type: string }
+        requestId: { type: string }
+        kind: { type: string, enum: [commandExecution, fileChange] }
+        status: { type: string, enum: [pending, accepted, accepted_for_session, declined, cancelled] }
+        payload: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+        decidedAt: { type: string, format: date-time, nullable: true }
+
+    AgentMcpServer:
+      type: object
+      properties:
+        key: { type: string }
+        name: { type: string }
+        description: { type: string }
+        transport: { type: string, enum: [streamable_http] }
+        endpointHost: { type: string }
+        enabled: { type: boolean }
+        scope: { type: string, enum: [global, project] }
+        healthStatus: { type: string, enum: [unknown, reachable, unavailable] }
+        lastError: { type: string, nullable: true }
+        lastCheckedAt: { type: string, format: date-time, nullable: true }
 
     AgentStep:
       type: object
