@@ -7004,11 +7004,12 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   gap:0;
   /* P_topic-lower — shift the centered group slightly below true center
      so the greeting + input doesn't feel "too high" on tall viewports.
-     The 4vh bias pushes the visual center down without breaking the
-     centered flex layout. */
-  padding-top:clamp(24px, 4vh, 64px);
+     The 6vh bias pushes the visual center down (was 4vh; bumped so the
+     greeting + input sits closer to the optical center, not the
+     geometric center). */
+  padding-top:clamp(32px, 6vh, 80px);
   padding-right:max(12px,env(safe-area-inset-right,0px));
-  padding-bottom:max(32px,env(safe-area-inset-bottom,0px));
+  padding-bottom:max(40px,env(safe-area-inset-bottom,0px));
   padding-left:max(12px,env(safe-area-inset-left,0px));
   scroll-padding-top:16px;
   scroll-padding-bottom:calc(var(--keyboard-inset,0px) + 24px);
@@ -7074,12 +7075,13 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   }
   .topic-setup{
     justify-content:flex-start;
-    /* P_topic-lower-mobile — increase top offset so the greeting + input
-       group sits further down the viewport, giving more breathing room
-       above and preventing overlap with the disclaimer at the bottom on
-       short screens. The old 9vh was too tight on phones <700px tall. */
-    padding-top:clamp(72px,13vh,120px);
-    padding-bottom:max(48px,calc(var(--keyboard-inset,0px) + env(safe-area-inset-bottom,0px) + 32px));
+    /* P_topic-lower-mobile — push the greeting + input group further
+       down the viewport. Previous clamp(72px,13vh,120px) still sat
+       too high on tall phones; bumped to clamp(96px,17vh,140px) so
+       the greeting aligns closer to the optical center, leaving a
+       generous gutter for the disclaimer pinned to the bottom. */
+    padding-top:clamp(96px,17vh,140px);
+    padding-bottom:max(64px,calc(var(--keyboard-inset,0px) + env(safe-area-inset-bottom,0px) + 40px));
   }
   .topic-title.greeting{
     font-size:calc(clamp(1.8rem,7vw,2.35rem) * var(--app-font-scale,1));
@@ -7093,11 +7095,18 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .topic-input-wrap{border-radius:24px}
   .topic-input-wrap .start-btn{width:40px;min-width:40px;height:40px;min-height:40px}
   .topic-footer{padding-inline:10px}
-  /* P_mobile-overlap — hide the disclaimer on mobile when the keyboard
-     is open or the viewport is very short, preventing it from overlapping
-     with the topic input wrap. */
+  /* P_mobile-overlap — hide the disclaimer on mobile when ANY of these
+     is true:
+       ① the soft keyboard is open (data-keyboard-open on <html>),
+       ② the viewport is shorter than 700px (the disclaimer would
+         crowd the topic input even with the new top padding),
+       ③ the topic input is focused (so the disclaimer doesn't sit
+         between the input and the keyboard as it animates).
+     The original rule only covered ① and ②@500px, which left a
+     500–700px window where the disclaimer could overlap the input. */
   :root[data-keyboard-open="true"] #topicDisclaimer{display:none}
-  @media(max-height:500px){
+  :root[data-topic-composer-focused="true"] #topicDisclaimer{display:none}
+  @media(max-height:700px){
     #topicDisclaimer{display:none}
   }
 
