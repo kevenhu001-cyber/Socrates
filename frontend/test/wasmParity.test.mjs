@@ -15,6 +15,8 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
+import fc from 'fast-check';
+
 import {
   TOOL_RUN_PHASES,
   isTerminalToolPhase,
@@ -288,4 +290,124 @@ test('wasm LiveOutputBuffer matches TS fallback across chunk sequences', async (
       assert.deepEqual(wasmText, tsText, `render mismatch for chunks=${JSON.stringify(chunks)}`);
     }
   }
+});
+
+// ---------------------------------------------------------------------------
+// Feature: chat-experience-revamp, Property 6: WASM and TypeScript tool-run
+// paths agree — for any sequence of phase-transition events and any set of
+// runs, the WASM path and the TS fallback produce identical phases and
+// summaries (transitionToolRun / summarizeToolRuns).
+//
+// This is a differential / model-based comparison. The imports above load the
+// wasm module directly (not through lib/socratesWasm.js), so the global
+// wasmApi stays null and transitionToolRun / summarizeToolRuns take their
+// pure-TS fallback path. We independently drive the wasm entry points
+// (w.transition_run / w.is_terminal_phase / w.summarize_runs) as the "model"
+// and assert the two paths agree at every step.
+// ---------------------------------------------------------------------------
+
+const PARITY_RUNS = 200;
+
+// All phases the state machine knows about, plus a few unknowns that must pass
+// through untouched (matching transition_run's "unknown phases pass through").
+const KNOWN_PHASES = Object.values(TOOL_RUN_PHASES);
+const parityPhase = () => fc.oneof(
+  fc.constantFrom(...KNOWN_PHASES),
+  // Unknown / edge phases exercised by the existing example cases.
+  fc.constantFrom('', 'preparing', 'mystery', 'Succeeded', 'RUNNING', 'unknown'),
+);
+
+/**
+ * Fold a sequence of next-phase events through the WASM entry points, applying
+ * the same first-terminal-wins latch that transitionToolRun applies in TS.
+ * Returns the phase after each event so we can compare step-by-step.
+ */
+function wasmFoldPhases(w, initialPhase, events) {
+  // Mirror transitionToolRun exactly: it holds a run object whose phase starts
+  // at initialPhase, latches on the first terminal phase, and otherwise routes
+  // the CURRENT phase (as-is, no default substitution) through w.transition_run.
+  let phase = initialPhase;
+  const trace = [];
+  for (const next of events) {
+    if (!w.is_terminal_phase(String(phase || ''))) {
+      phase = w.transition_run(String(phase || ''), String(next || ''));
+    }
+    trace.push(phase);
+  }
+  return trace;
+}
+
+/**
+ * Fold the same sequence through the TS transitionToolRun (which is on its
+ * pure-TS fallback path here because the global wasm is null).
+ */
+function tsFoldPhases(initialPhase, events) {
+  let run = { id: 'run', tool: 'tool', phase: initialPhase, startedAt: 0 };
+  const trace = [];
+  for (const next of events) {
+    run = transitionToolRun(run, next, { startedAt: 1 });
+    trace.push(run.phase);
+  }
+  return trace;
+}
+
+test('Feature: chat-experience-revamp, Property 6: WASM and TypeScript tool-run paths agree (transitionToolRun sequences)', async (t) => {
+  const w = await loadWasm(t);
+  if (!w) return;
+
+  fc.assert(
+    fc.property(
+      parityPhase(),
+      fc.array(parityPhase(), { minLength: 0, maxLength: 25 }),
+      (initialPhase, events) => {
+        const wasmTrace = wasmFoldPhases(w, initialPhase, events);
+        const tsTrace = tsFoldPhases(initialPhase, events);
+        assert.deepEqual(
+          wasmTrace,
+          tsTrace,
+          `phase-sequence mismatch for initial=${JSON.stringify(initialPhase)} events=${JSON.stringify(events)}`,
+        );
+        // Once terminal, every later phase in the trace must be that same
+        // terminal phase — a latch invariant both paths must share.
+        const firstTerminal = tsTrace.findIndex((p) => isTerminalToolPhase(p));
+        if (firstTerminal !== -1) {
+          const latched = tsTrace[firstTerminal];
+          for (let i = firstTerminal; i < tsTrace.length; i++) {
+            assert.equal(tsTrace[i], latched, 'TS trace did not latch terminal phase');
+            assert.equal(wasmTrace[i], latched, 'WASM trace did not latch terminal phase');
+          }
+        }
+      },
+    ),
+    { numRuns: PARITY_RUNS },
+  );
+});
+
+test('Feature: chat-experience-revamp, Property 6: WASM and TypeScript tool-run paths agree (summarizeToolRuns over any run set)', async (t) => {
+  const w = await loadWasm(t);
+  if (!w) return;
+
+  // A single run is either null (skipped by both paths) or an object with a
+  // phase drawn from the known + edge phase space.
+  const runEntry = () => fc.oneof(
+    fc.constant(null),
+    parityPhase().map((phase) => ({ id: 'r', tool: 't', phase, startedAt: 0 })),
+    // Runs with no phase at all — summarizeToolRuns skips these in TS; the
+    // wasm summarizer must agree.
+    fc.constant({ id: 'r', tool: 't', startedAt: 0 }),
+  );
+
+  fc.assert(
+    fc.property(
+      fc.array(runEntry(), { minLength: 0, maxLength: 30 }),
+      (runs) => {
+        assert.deepEqual(
+          w.summarize_runs(runs),
+          summarizeToolRuns(runs),
+          `summary mismatch for runs=${JSON.stringify(runs)}`,
+        );
+      },
+    ),
+    { numRuns: PARITY_RUNS },
+  );
 });

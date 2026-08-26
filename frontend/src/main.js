@@ -24,7 +24,7 @@ import './state.js';
 import './i18n.js';
 import { initCookieConsent } from './cookieConsent.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
-import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned, smoothScrollToBottom } from './ui/scroll.js';
+import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned, smoothScrollToBottom, isPinnedToBottom, shouldAutoScroll } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
@@ -56,6 +56,7 @@ import { batchSetItem, batchRemoveItem } from './batchStorage.js';
 import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
 import { findInlineToolBoundary, getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
+import { createStreamScheduler } from './render/streamScheduler.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import {
   getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
@@ -5067,6 +5068,8 @@ function addMessage(role,text,type,actions,attachmentsArg){
         _oldAnchors[_oai].style.minHeight="";
         _oldAnchors[_oai].style.marginTop="";
       }
+      var _activeTurnList=document.getElementById("msgList");
+      if(_activeTurnList)delete _activeTurnList.__socratesTurnViewportOwner;
     }catch(_){}
   }
   /* P1.1 — push to the authoritative state.messages first; the DOM
@@ -5126,6 +5129,45 @@ function addMessage(role,text,type,actions,attachmentsArg){
 
 var _chatStopMode=false;
 var _chatStreaming=false;
+/* Task 4.1 — non-persisted TurnUiState. Drives Stop-vs-Resend visibility:
+   Stop is shown while a turn is in progress (setChatStopState mirrors this),
+   Resend is offered on the stopped/finished assistant bubble. lastUserMessageId
+   is the clientId of the most recent user message and is the Resend target. */
+var _turnUi={inProgress:false,lastUserMessageId:null};
+/* Snapshot the most recent user message clientId into _turnUi and mark the
+   turn in progress. Called when a streaming turn starts. */
+function markTurnInProgress(){
+  var lastUserId=null;
+  for(var i=state.messages.length-1;i>=0;i--){
+    if(state.messages[i]&&state.messages[i].role==="user"){lastUserId=state.messages[i].clientId;break;}
+  }
+  _turnUi.inProgress=true;
+  _turnUi.lastUserMessageId=lastUserId;
+}
+/* Mark the turn as no longer in progress (finish/abort/error). Keeps
+   lastUserMessageId so a later Resend can target the same user message. */
+function markTurnEnded(){
+  _turnUi.inProgress=false;
+}
+/* Re-run the send path from the most recent user message with a fresh turn
+   (Req 2.7). Reuses askChatTurn's existing AbortController/isUserAbort path —
+   no new retry logic. Returns true if a resend was dispatched. */
+function resendLastUserMessage(){
+  var text=null;
+  for(var i=state.messages.length-1;i>=0;i--){
+    if(state.messages[i]&&state.messages[i].role==="user"){
+      text=state.messages[i].rawText||state.messages[i].content||null;
+      break;
+    }
+  }
+  if(text&&typeof window.askChatTurn==="function"){
+    window.askChatTurn(text);
+    return true;
+  }
+  try{showToast(t("toast.noRetryTarget"))}catch(_){}
+  return false;
+}
+window.resendLastUserMessage=resendLastUserMessage;
 var _pendingStreamRetryViewport=null;
 var _pendingRetryPressViewport=null;
 var _stableStreamRetryViewport=null;
@@ -5149,9 +5191,12 @@ function scrollMainToBottom(opts){
   if(!opts.force&&state._userScrolledAway)return;
   var sc=scrollContainer();
   if(!sc)return;
-  var slack=64;
-  var atBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight<=slack;
-  if(opts.force||atBottom){
+  /* Centralise the pin decision behind the pure shouldAutoScroll predicate
+     (slack = SCROLL_SLACK = 64) so the "auto-scroll only when pinned and the
+     reader has not scrolled away" rule is defined once and unit-tested in
+     scrollDecision.ts. A forced scroll (send, keyboard-open) bypasses it. */
+  var distanceFromBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight;
+  if(opts.force||shouldAutoScroll(distanceFromBottom,state._userScrolledAway)){
     /* Delegate to smoothScrollToBottom() so the same browser-native
        scrollTo({behavior}) pipeline handles send, keyboard-open, and
        content-growth follow. Previously this path toggled a
@@ -5309,6 +5354,28 @@ function settleRetryErrorViewport(list,clientId,onOffset){
 }
 
 function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
+  var normalAnchorSettling=false;
+  /* The composer can still be in its short focus/keyboard transition when
+     the stream bubble is mounted. Keep the submitted prompt at the target
+     offset while that bounded layout change settles; stop immediately when
+     the reader expresses upward intent. This is intentionally a send-time
+     convergence loop, not a permanent streaming scroll owner. */
+  function settleNormalTurnAnchor(targetOffset,deadline){
+    if(!list||!assistant||!assistant.isConnected||state._userScrolledAway)return;
+    var users=list.querySelectorAll&&list.querySelectorAll(".msg.user");
+    var anchor=users&&users.length?users[users.length-1]:null;
+    if(!anchor||!anchor.isConnected)return;
+    var actualOffset=anchor.getBoundingClientRect().top-list.getBoundingClientRect().top;
+    var delta=actualOffset-targetOffset;
+    if(Math.abs(delta)>1){
+      var maxScroll=Math.max(0,list.scrollHeight-list.clientHeight);
+      var nextTop=Math.max(0,Math.min(maxScroll,list.scrollTop+delta));
+      if(Math.abs(nextTop-list.scrollTop)>0.5)list.scrollTop=nextTop;
+    }
+    if(Date.now()<deadline)requestAnimationFrame(function(){
+      settleNormalTurnAnchor(targetOffset,deadline);
+    });
+  }
   function position(){
       if(!list||!assistant||!assistant.isConnected)return;
       var styles=getComputedStyle(list);
@@ -5341,6 +5408,7 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
       }
       assistant.classList.add("turn-viewport-anchor");
       assistant.dataset.viewportAnchor=retryViewport?"retry":"turn";
+      if(!retryViewport)list.__socratesTurnViewportOwner=true;
       assistant.dataset.viewportTarget=String(targetOffset);
       assistant.style.minHeight=reserve+"px";
       if(msgIdx>=0&&state.messages[msgIdx]){
@@ -5383,6 +5451,12 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
         },0);
       }
       state._userScrolledAway=false;
+      if(!retryViewport&&!normalAnchorSettling){
+        normalAnchorSettling=true;
+        requestAnimationFrame(function(){
+          settleNormalTurnAnchor(targetOffset,Date.now()+420);
+        });
+      }
   }
   /* A retry bubble is already mounted in the legacy list and its target
      offset is known. Position it synchronously so the first visible frame
@@ -5668,6 +5742,12 @@ function addStreamingMessage(opts){
   function cancelScheduledRender(){
     if(pendingRender){cancelAnimationFrame(pendingRender);pendingRender=null}
     if(pendingRenderTimer){clearTimeout(pendingRenderTimer);pendingRenderTimer=null}
+    /* Task 2.4 — clear the coalescing scheduler's internal "scheduled"
+       latch too, so a frame cancelled here doesn't leave the scheduler
+       believing a flush is still pending (which would drop the next
+       push). Guarded because cancelScheduledRender() can run during the
+       first delta before _streamScheduler is assigned. */
+    if(typeof _streamScheduler!=="undefined"&&_streamScheduler){_streamScheduler.dispose()}
   }
   /* P-H4 — skip an entire render pass when no new characters have
      arrived since the last one (e.g. the trailing rAF the throttle
@@ -5925,6 +6005,8 @@ function addStreamingMessage(opts){
      the stream. setChatStopState(false) on finish/abort. */
   _chatStreaming=true;
   try{setChatStopState(true)}catch(_){}
+  /* Task 4.1 — record turn-in-progress + Resend target (latest user msg). */
+  try{markTurnInProgress()}catch(_){}
   var thinkStarted=Date.now();
   /* Elapsed-second counter so the user sees progress while waiting. */
   var _elapsedTick=null;
@@ -6122,8 +6204,18 @@ function doRender(){
        from non-scrollable to scrollable; scrollContainer() otherwise
        switches surfaces at that boundary and loses the bottom anchor. */
     var _streamScroller=list||scrollContainer();
-    var _wasPinned=!state._userScrolledAway&&!!_streamScroller&&
-      (_streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight<=96);
+    /* Route the streaming auto-scroll decision through the pure predicate in
+       scrollDecision.ts. The streaming path uses a wider 96px pin slack than
+       the 64px SCROLL_SLACK default (a single tall Markdown/code delta can
+       jump the bottom by more than 64px between frames), so pass the slack
+       explicitly to isPinnedToBottom and AND in the scroll-away intent the
+       same way shouldAutoScroll does. Keeping the decision behind the shared
+       predicate makes it testable while preserving the 96px behavior. */
+    var _wasPinned=!!_streamScroller&&
+      isPinnedToBottom(
+        _streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight,
+        96
+      )&&!state._userScrolledAway;
 
     /* P0 — chat-template artifact strip. The upstream LLM (Beagle,
      * DeepSeek, MiniMax M2, etc.) can leak <|im_start|>...<|im_end|>,
@@ -6381,21 +6473,23 @@ function doRender(){
   var cursor=null;
   /* P_arch typewriter — no chunked bookkeeping needed. The streaming
      surface is a single text node; new deltas are appended by
-     overwriting streamContent.textContent on each rAF frame. */
-  function scheduleRender(){
-    if(pendingRender||pendingRenderTimer||finished)return;
-    var elapsed=performance.now()-_lastRenderAt;
-    var wait=Math.max(0,getStreamRenderInterval(full.length)-elapsed);
-    if(wait<=1){
-      pendingRender=requestAnimationFrame(function(){doRender()});
-      return;
-    }
-    pendingRenderTimer=setTimeout(function(){
-      pendingRenderTimer=null;
-      if(finished||_disposed)return;
-      pendingRender=requestAnimationFrame(function(){doRender()});
-    },wait);
-  }
+     overwriting streamContent.textContent on each rAF frame.
+
+     Task 2.4 — the steady-state coalescing is now owned by
+     createStreamScheduler (render/streamScheduler.ts). push(delta)
+     accumulates network deltas and rAF-gates a single coalesced paint
+     at getStreamRenderInterval(acc.length); paint() delegates to
+     doRender(), which performs the stable-prefix split promotion.
+     The scheduler's rAF seam is bound to the shared `pendingRender`
+     slot so the existing cancelScheduledRender() teardown (called on
+     abort / finish / segment freeze) cancels a scheduler-queued frame
+     as before. doRender()'s own finished/_disposed and _lastParsedLen
+     guards keep a stray flush cheap and inert. */
+  var _streamScheduler=createStreamScheduler(
+    function(){doRender()},
+    function(){return performance.now()},
+    function(cb){pendingRender=requestAnimationFrame(cb)}
+  );
 
   /* First delta renders immediately so the user sees content right away */
   var firstDelta=true;
@@ -6452,6 +6546,18 @@ function doRender(){
          a partial <think> structure would be more disruptive than retaining
          the raw offset for that rare case. */
       if(thinkState.startIdx!==-1)_toolOffset=full.length;
+      /* P_inline-tools-paint-race — a fast SSE response can deliver the
+         first content delta and tool_use in the same turn, before the
+         first rAF has painted the text segment. Materialize that segment
+         before freezing it so the completed prose remains before the row.
+         cancelScheduledRender() also cancels the stale rAF; the next
+         segment will schedule its own render below the newly inserted row. */
+      if(full.length>_oldSegBase&&(!segHost||!segHost.isConnected)){
+        cancelScheduledRender();
+        ensureSegHost();
+        try{doRender()}catch(_){}
+      }
+      _oldSegHost=segHost;
       freezeCurrentSegment();
       if(_toolOffset<full.length&&_oldSegHost&&_oldSegHost.isConnected){
         try{
@@ -6579,7 +6685,9 @@ function doRender(){
         cancelScheduledRender();
         pendingRender=requestAnimationFrame(function(){doRender()});
       }else{
-        scheduleRender();
+        /* Task 2.4 — coalesce this delta through the shared scheduler
+           instead of the old per-chunk scheduleRender(). */
+        _streamScheduler.push(delta);
       }
     },
     /* Append reasoning deltas (DeepSeek R1 / QwQ style
@@ -6650,6 +6758,13 @@ function doRender(){
         return;
       }
       if(finished)return;
+      /* Task 2.4 — turn end: force the coalescing scheduler to paint the
+         final accumulated text synchronously before we flip `finished`
+         (which makes doRender bail). This closes the cadence window where
+         the last delta was still sitting in the scheduler's rAF queue,
+         guaranteeing the live tail is current before finish() runs its
+         own single formatMsg pass below. */
+      _streamScheduler.flushNow();
       finished=true;
       _disposed=true;
       _publishThinkingPanelEnd();
@@ -7088,6 +7203,7 @@ function doRender(){
         if(window._activeChatCtl===ret){
           _chatStreaming=false;
           try{setChatStopState(false)}catch(_){}
+          try{markTurnEnded()}catch(_){}
           /* P1.4 — clearing the global abort handle on natural finish
              keeps the closure (and DOM refs) eligible for GC. */
           window._activeChatCtl=null;
@@ -7464,6 +7580,7 @@ function doRender(){
       if(window._activeChatCtl===ret){
         _chatStreaming=false;
         try{setChatStopState(false)}catch(_){}
+        try{markTurnEnded()}catch(_){}
       }
       /* Stop the independent execution stream and any queued delta
          frame before this message can lose ownership of its slot. */
@@ -7513,11 +7630,33 @@ function doRender(){
         }catch(_){
           try{stoppedHtml=formatMsgProgressive(stoppedRaw)}catch(__){stoppedHtml="<p>"+esc(visibleStoppedRaw)+"</p>"}
         }
+        /* Task 4.1 — Resend affordance. After a user Stop, offer a
+           Resend control on the stopped bubble that re-runs the send path
+           from the most recent user message with a fresh turn (Req 2.6/2.7).
+           Mirrors the recovered-stream `data-stream-retry` pattern: the
+           button lives in the message HTML and clicks are delegated on the
+           React-owned list. Reuses askChatTurn's AbortController/isUserAbort
+           path — no new retry logic. */
+        var resendHtml='<div class="msg-error msg-resend" style="margin-top:8px">'+
+          '<span class="msg-error-text">'+esc(t("chat.stopped")||"Response stopped")+'</span>'+
+          '<button type="button" class="msg-retry-btn chat-resend-btn" data-chat-resend>'+esc(t("chat.resend")||"Resend")+'</button>'+
+          '</div>';
+        stoppedHtml=stoppedHtml+resendHtml;
         abortedMessage.rawText=stoppedRaw;
         abortedMessage.html=stoppedHtml;
         abortedMessage.type="assistant";
         abortedMessage.state="stopped";
         if(!_reactAbortHandoff)body.innerHTML=stoppedHtml;
+        /* Delegate the Resend click on the list (button DOM is React-owned
+           after the next paint in React mode, and legacy body in legacy mode
+           both bubble to `list`). One-shot: detaches after firing. */
+        var _resendDelegated=function(ev){
+          var tgt=ev.target;
+          if(!(tgt&&tgt.closest&&tgt.closest("[data-chat-resend]")))return;
+          try{list.removeEventListener("click",_resendDelegated)}catch(_){}
+          resendLastUserMessage();
+        };
+        try{list.addEventListener("click",_resendDelegated)}catch(_){}
         try{saveCurrentSession()}catch(_){ }
         try{updateChatStats()}catch(_){ }
       }
@@ -7644,6 +7783,7 @@ function doRender(){
        if(window._activeChatCtl===ret){
          _chatStreaming=false;
          try{setChatStopState(false)}catch(_){}
+         try{markTurnEnded()}catch(_){}
        }
        /* Drop the legacy bubble so the next snapshot-driven re-render
           doesn't duplicate the finalized error bubble. (Same bug as
