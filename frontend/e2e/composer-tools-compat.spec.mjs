@@ -31,7 +31,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'write', 'research', 'explore', 'deepResearch', 'analyze', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'write', 'research', 'explore', 'deepResearch', 'analyze', 'codex', 'exam', 'skills']);
 });
 
 test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {
