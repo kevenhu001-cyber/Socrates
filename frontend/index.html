@@ -716,6 +716,11 @@
           </button>
         </div>
         <div class="chat-input-bar" id="chatInputBar">
+          <!-- P_pill-anchor-composer — moved inside chat-input-bar so the
+               pill anchors to the composer's top edge instead of
+               chat-view's top edge. The CSS rule `.chat-input-bar >
+               .new-reply-pill` keys off this parent. -->
+          <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
           <div class="chat-input-wrap" id="chatInputWrap">
             <!-- P_attachments — chip strip above the textarea. Each
                  chip is rendered by renderAttachmentChips() in main.js;
@@ -754,7 +759,6 @@
             </div>
           </div>
         </div>
-        <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
       </div>
     <!-- #msgList is a direct child of #mainContent so the chat-view
          can own one vertical flex column (transcript + composer). The

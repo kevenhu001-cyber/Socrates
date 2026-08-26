@@ -938,9 +938,14 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .new-reply-pill:hover{filter:brightness(1.08);transform:translateY(-2px) scale(1);box-shadow:0 6px 20px -2px hsl(var(--shadow-color,0 0% 0%)/0.32),0 2px 4px hsl(var(--shadow-color,0 0% 0%)/0.14)}
 .new-reply-pill:active{transform:translateY(0) scale(.96)}
 .new-reply-pill:focus-visible{outline:2px solid hsl(var(--accent-200));outline-offset:2px}
-/* The pill lives inside chatView so its bottom edge can track the real
-   composer height, including focus expansion and keyboard padding. */
-.chat-view > .new-reply-pill{right:20px;bottom:calc(100% + 12px)}
+/* P_pill-anchor-composer — anchor the new-reply pill to the composer's
+   top edge instead of chat-view's top edge. Earlier the pill floated
+   relative to chat-view (the composer + find-bar wrapper), which meant
+   when find-bar opened the pill ended up 40+px above the composer with
+   empty space between them. Anchoring to chat-input-bar (the composer's
+   own row) keeps the pill tracking focus expansion and keyboard inset
+   without depending on find-bar visibility. */
+.chat-input-bar > .new-reply-pill{right:20px;bottom:calc(100% + 12px)}
 .main-content{
   flex:1 1 0%;
   min-height:0;
@@ -2014,6 +2019,10 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .chat-input-bar{
   width:100%;
   flex-shrink:0;
+  /* P_pill-anchor-composer — become the positioning ancestor for the
+     new-reply pill, which was moved inside this bar so it tracks the
+     composer's top edge instead of chat-view's. */
+  position:relative;
   /* P_chat-reserve — composer is now part of the flex column flow.
      Its height is whatever the chip strip + wrap + footer naturally
      add up to, so flex-shrink on the sibling `.msg-list` (flex:1 1 auto)
@@ -2047,11 +2056,15 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
      Focus feedback stays on the edge/shadow; the composer remains fixed in place. */
   transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);margin:0 12px;
   will-change:min-height;
-  /* contain isolates the focus-expansion relayout to this subtree, so each
-     animation frame relayouts the wrap's children only, not the document. */
-  /* Paint containment keeps the shadow and controls local without blocking
-     the editor's intrinsic size from reaching the composer shell. */
-  contain:paint;
+  /* P_contain-scope — layout containment isolates the focus-expansion
+     relayout to this subtree, so each animation frame relayouts the wrap's
+     children only, not the document. We deliberately do NOT use
+     `contain:paint`: it would clip absolutely-positioned descendants
+     (effort-picker menu, slash command palette) to the wrap's bounds, so
+     opening the effort menu on mobile would hide the upper ~360px of the
+     dropdown. The composer shell is small enough that the missing paint
+     containment is not measurable. */
+  contain:layout;
   box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
 .chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:24px;max-height:120px;overflow-y:auto;font-family:var(--font-sans);padding:5px 14px 7px}@supports (scrollbar-width:none){#chatInputArea{scrollbar-width:none}}
@@ -4289,7 +4302,9 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   .profile-overlay{padding:20px 12px}
   .sidebar{width:var(--app-sidebar-width,16rem);min-width:var(--app-sidebar-width,16rem)}
   .new-reply-pill{right:10px;bottom:calc(96px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px) + 12px);font-size:11px;padding:4px 10px}
-  .chat-view > .new-reply-pill{right:10px;bottom:calc(100% + 10px)}
+  /* P_pill-anchor-composer — keep parity with the desktop rule above:
+     anchor to chat-input-bar so the pill tracks the composer. */
+  .chat-input-bar > .new-reply-pill{right:10px;bottom:calc(100% + 10px)}
 }
 
 /* ────── Responsive: large screens ≥ 1200 px ────── */
@@ -4892,9 +4907,21 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
        resizes in lockstep with the wrap instead of snapping. */
     transition:background-color .18s ease,color .18s ease,min-height var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),padding var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),border-radius var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease)}
    .rich-composer[data-surface="chat"] .tiptap{
-     min-height:42px;max-height:var(--composer-editor-max-mobile);padding:9px 48px 9px 46px;font-size:16px;
+    min-height:42px;max-height:var(--composer-editor-max-mobile);
+    /* P_mobile-overlay-reserve — collapsed state floats the send/attach
+       buttons over the editor via transform:translateY(-40px) on the
+       footer. Padding was 9/48/9/46, which reserved LEFT/RIGHT gutters for
+       the buttons but let them sit on top of the text as the user typed
+       past one line. Reserve the bottom 40px instead so the visible text
+       stays in the top portion of the editor and the button overlay sits
+       BELOW the text region, not on top of it. Focused state below
+       overrides this back to symmetric padding since the footer slides
+       into its own row. */
+    padding:9px 9px 40px;font-size:16px;
     /* Same duration/curve as .chat-input-wrap so the editor grows in
-       lockstep with its shell instead of finishing early. */
+       lockstep with its shell instead of finishing early. The padding
+       transition glides the text region during the collapsed↔focused
+       swap instead of snapping the content 38px sideways. */
     transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
    .chat-input-wrap.composer-focused{
@@ -4923,6 +4950,23 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    .chat-input-wrap.composer-focused .chat-input-footer .send-btn{order:1;margin-left:0}
   .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
     min-height:62px;max-height:var(--composer-editor-max-mobile);padding:12px 8px 8px;
+  }
+  /* P_kb-cap-editor — when the virtual keyboard is open, the available
+     space above the keyboard shrinks by --keyboard-inset. With many
+     attachment chips + a full multi-line editor + the 44px footer the
+     focused wrap can exceed that space, and main-content's overflow:hidden
+     clips the bottom (the send button + the last editor line). Cap the
+     editor to a viewport-relative size so wrap + chips + footer always
+     fit. The cap stays above 132px (≈ 4 lines) so single-screen messages
+     remain fully readable. */
+  :root[data-keyboard-open="true"] .rich-composer[data-surface="chat"] .tiptap{
+    max-height:min(var(--composer-editor-max-mobile), calc(var(--app-vh, 100dvh) * .32));
+  }
+  :root[data-keyboard-open="true"] .chat-input-wrap .attachment-chips{
+    /* Shrink the chip strip under the keyboard so the wrap doesn't
+       overflow. The chips keep their own overflow-y:auto so the user
+       can still see all attachments by scrolling the strip. */
+    max-height:64px;
   }
   .chat-input-wrap.composer-focused .chat-input-footer .effort-trigger{
     min-height:38px;padding:7px 8px;border-radius:18px;
