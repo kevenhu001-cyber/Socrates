@@ -170,9 +170,12 @@ test('Feature: chat-experience-revamp, Property 12: JSON output round-trips and 
       assert.equal(rich, true, `JSON document should be rich: ${serialized}`);
 
       // The decoded code content is the pretty-printed JSON; it must parse
-      // back to a value deep-equal to the original.
+      // back to the same document. Compare against the parsed serialization
+      // rather than the generated value: JSON has no signed zero, so a
+      // generated -0 is already 0 in `serialized`, and comparing to `v`
+      // would fail on a difference the renderer never saw.
       const decoded = decodedCodeContent(html);
-      assert.deepEqual(JSON.parse(decoded), v);
+      assert.deepEqual(JSON.parse(decoded), JSON.parse(serialized));
     }),
     { numRuns: RUNS },
   );

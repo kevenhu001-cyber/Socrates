@@ -12,6 +12,7 @@ import giteeRaw from '@lobehub/icons-static-svg/icons/giteeai.svg?raw';
 import baiduCloudRaw from '@lobehub/icons-static-svg/icons/baiducloud.svg?raw';
 import tencentRaw from '@lobehub/icons-static-svg/icons/tencent-color.svg?raw';
 import microsoftRaw from '@lobehub/icons-static-svg/icons/microsoft-color.svg?raw';
+import googleRaw from '@lobehub/icons-static-svg/icons/google-color.svg?raw';
 
 /* ------------------------------------------------------------------ */
 /*  Shared helpers                                                     */
@@ -227,6 +228,11 @@ const _OFFLINE_SVG: Record<string, string> = {
   baiducloud: lobehubIcon(baiduCloudRaw),
   tencent: lobehubIcon(tencentRaw),
   microsoft: lobehubIcon(microsoftRaw),
+  /* LobeHub ships a single "google" mark; reuse it for the Google-suite
+     connectors so the offline test path always sees an <svg>, not a
+     two-letter <span> fallback. */
+  gmail: lobehubIcon(googleRaw),
+  googledrive: lobehubIcon(googleRaw),
 };
 
 function normalise(key: string): string {
@@ -243,6 +249,7 @@ function fallbackMark(name: string): React.ReactNode {
 
 function ConnectorMark({ id, name }: { id: string; name: string }) {
   const url = resolveLogo(id, name);
+  const offlineSvg = _OFFLINE_SVG[normalise(id)] || _OFFLINE_SVG[normalise(name)];
   if (url) {
     return (
       <>
@@ -259,14 +266,22 @@ function ConnectorMark({ id, name }: { id: string; name: string }) {
             if (sib) sib.style.display = 'flex';
           }}
         />
-        <span className="connector-logo-fallback" style={{ display: 'none' }} aria-hidden="true">
-          {name.slice(0, 2).toUpperCase()}
-        </span>
+        {offlineSvg ? (
+          <span
+            className="connector-logo-fallback"
+            style={{ display: 'none' }}
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: offlineSvg }}
+          />
+        ) : (
+          <span className="connector-logo-fallback" style={{ display: 'none' }} aria-hidden="true">
+            {name.slice(0, 2).toUpperCase()}
+          </span>
+        )}
       </>
     );
   }
-  const offline = _OFFLINE_SVG[normalise(id)] || _OFFLINE_SVG[normalise(name)];
-  if (offline) return <span dangerouslySetInnerHTML={{ __html: offline }} />;
+  if (offlineSvg) return <span dangerouslySetInnerHTML={{ __html: offlineSvg }} />;
   return fallbackMark(name);
 }
 
