@@ -4214,7 +4214,13 @@ async function submitChatMessage(textOverride,opts){
   if(isComposerSubmit){
     addMessage("user",text,null,null,immediateAttList);
     clearComposer("chat");updateSendBtn();
-    scheduleScrollMainToBottom({force:true,smooth:true});
+    /* React scrolls after its MessageList commit. Keep the two-frame
+       fallback only for legacy/share surfaces where React does not own the
+       transcript, so send never has two independent scroll writers. */
+    var msgListEl=document.getElementById("msgList");
+    if(!msgListEl||msgListEl.dataset.msgListReactHydrated!=="1"){
+      scheduleScrollMainToBottom({force:true,smooth:true});
+    }
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
        visuals. Enter-send keeps the classic keep-typing flow by
@@ -5092,11 +5098,11 @@ function addMessage(role,text,type,actions,attachmentsArg){
   /* React owns the visible message list — the state push above is the
      authoritative write and React re-renders from the snapshot. The
      side effects below mirror the legacy DOM path's bookkeeping. */
+  /* React's MessageList owns the post-commit scroll for finalized user
+     messages. The legacy rAF write used to run before React committed and
+     then race the smooth send scroll, causing a one-frame snap during
+     composer collapse. Keep no second scroll owner here. */
   try{
-    var scR=scrollContainer();
-    if(scR&&role==="user"){
-      requestAnimationFrame(function(){scR.scrollTop=scR.scrollHeight});
-    }
     if(role==="user"||role==="assistant"){
       try{appendLocalMemory(role,text)}catch(_){}
     }

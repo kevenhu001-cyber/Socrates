@@ -336,7 +336,19 @@ export function initChatComposerReserve(options){
     ?document.querySelector("#chatView, .chat-view")
     :null;
   var followComposerResize=function(){
-      if(!list||userScrolledAway()||!lastPinned)return;
+      if(!list||userScrolledAway())return;
+      /* A programmatic scrollTop write dispatches its scroll event after the
+         current task. If a keyboard/layout change arrives in that same task,
+         lastPinned can still describe the pre-message position. Compare the
+         current top against the previous viewport metrics to recover the
+         user's pre-resize bottom intent without adding another scroll owner. */
+      var previous=lastMetrics;
+      var current=readMetrics();
+      var pinnedBeforeResize=lastPinned;
+      if(!pinnedBeforeResize&&previous&&current){
+        pinnedBeforeResize=previous.scrollHeight-current.scrollTop-previous.clientHeight<=pinSlack;
+      }
+      if(!pinnedBeforeResize)return;
       if(list.dataset.autoScrolling==='true')return;
       /* ResizeObserver runs after the flex layout has committed. Snap in
          that same delivery rather than waiting another frame: during a

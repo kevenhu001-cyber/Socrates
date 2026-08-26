@@ -284,21 +284,84 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      remove it so the shell resumes tracking 100dvh. When the window
      width changes (rotation, split-screen) the cached value is
      invalidated and the next focus re-measures. */
+  const isSmallViewport = () => {
+    try {
+      if (typeof window.matchMedia === 'function') {
+        return window.matchMedia('(max-width: 768px)').matches;
+      }
+    } catch (_) { /* fall through to the numeric check */ }
+    return window.innerWidth <= 768;
+  };
+
+  const clearStableVh = () => {
+    if (appliedStableVh === -1) return;
+    root.style.removeProperty('--app-vh');
+    appliedStableVh = -1;
+    stableVhWidth = -1;
+  };
+
   const applyStableVh = (focused) => {
-    const width = window.innerWidth;
-    if (focused) {
-      if (!shouldRefreezeAppVh(appliedStableVh, stableVhWidth, width)) return;
-      const height = appShellHeight();
-      if (height <= 0) return;
-      root.style.setProperty('--app-vh', `${Math.round(height)}px`);
-      appliedStableVh = Math.round(height);
-      stableVhWidth = width;
-    } else {
-      if (appliedStableVh === -1) return;
-      root.style.removeProperty('--app-vh');
-      appliedStableVh = -1;
-      stableVhWidth = -1;
+    /* Desktop focus must never freeze the app shell. Apart from being
+       unnecessary there, the old unconditional focusin handler also froze
+       the shell when a modal or sidebar control received focus. */
+    if (!focused || !isSmallViewport()) {
+      clearStableVh();
+      return;
     }
+    const width = window.innerWidth;
+    if (!shouldRefreezeAppVh(appliedStableVh, stableVhWidth, width)) return;
+    const height = appShellHeight();
+    if (height <= 0) return;
+    root.style.setProperty('--app-vh', `${Math.round(height)}px`);
+    appliedStableVh = Math.round(height);
+    stableVhWidth = width;
+  };
+
+  /* The topic landing is its own scroll container. When a resize-mode
+     keyboard covers the lower part of the frozen shell, lifting the whole
+     landing page would move the greeting and create a visible jump. Instead,
+     move only the topic scroller when the focused editor falls outside the
+     visual viewport. */
+  const ensureTopicComposerVisible = () => {
+    const active = typeof document !== 'undefined' ? document.activeElement : null;
+    if (!active) return;
+    let tracked = null;
+    for (let i = 0; i < trackedInputs.length; i += 1) {
+      const candidate = trackedInputs[i];
+      if (!candidate) continue;
+      try {
+        if (candidate === active || candidate.contains?.(active)) {
+          tracked = candidate;
+          break;
+        }
+      } catch (_) { /* detached composer */ }
+    }
+    if (!tracked) return;
+    const topic = tracked.closest?.('#topicSetup, .topic-setup');
+    if (!topic || typeof topic.getBoundingClientRect !== 'function') return;
+    const composer = tracked.closest?.('.topic-input-wrap') || tracked;
+    if (!composer || typeof composer.getBoundingClientRect !== 'function') return;
+
+    const offsetTop = viewport ? Math.max(0, Number(viewport.offsetTop) || 0) : 0;
+    const viewportHeight = viewport ? Number(viewport.height) : Number(window.innerHeight);
+    if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) return;
+    const visibleTop = offsetTop + 8;
+    const visibleBottom = offsetTop + viewportHeight - 16;
+    const rect = composer.getBoundingClientRect();
+    let delta = 0;
+    if (rect.bottom > visibleBottom) delta = rect.bottom - visibleBottom;
+    else if (rect.top < visibleTop) delta = rect.top - visibleTop;
+    if (Math.abs(delta) < 1) return;
+    topic.scrollTop = Math.max(0, topic.scrollTop + delta);
+  };
+
+  let topicEnsureFrame = 0;
+  const scheduleTopicEnsure = () => {
+    if (topicEnsureFrame || typeof window.requestAnimationFrame !== 'function') return;
+    topicEnsureFrame = window.requestAnimationFrame(() => {
+      topicEnsureFrame = 0;
+      if (isInputFocused()) ensureTopicComposerVisible();
+    });
   };
 
   const update = () => {
@@ -316,6 +379,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
         : 0,
     );
+    if (focused) scheduleTopicEnsure();
   };
 
   const schedule = () => {
@@ -334,9 +398,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      focusin fires before the keyboard opens, so this sync write locks
      the keyboard-closed shell height first; the later update() call
      hits the `appliedStableVh > 0 && width === stableVhWidth` cache and
-     leaves it untouched. */
-  const onFocusIn = () => {
-    applyStableVh(true);
+     leaves it untouched. Only a tracked composer focus may enter this path. */
+  const onFocusIn = (event) => {
+    if (isTrackedInputFocused(trackedInputs, event?.target)) {
+      applyStableVh(true);
+    }
     schedule();
   };
 
@@ -376,6 +442,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   return () => {
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
+    if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     if (insetCancel) { try { insetCancel.cancel(); } catch (_) {} insetCancel = null; }
     try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }

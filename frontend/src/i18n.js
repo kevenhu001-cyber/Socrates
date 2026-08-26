@@ -1686,7 +1686,7 @@ function applyI18n(){
   var tp=document.getElementById("topicComposerRoot");
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
-  if(sb)sb.textContent=t("topic.start");
+  if(sb)sb.setAttribute("aria-label",t("topic.start"));
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
   /* Exam content is generated dynamically, so static data-i18n scanning

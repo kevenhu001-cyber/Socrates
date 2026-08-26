@@ -6747,3 +6747,287 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .msg.assistant .msg-body:has(.tool-inline) .tool-inline-label.shimmer-text,
   .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon::before{animation:none!important}
 }
+
+
+/* ─── Final conversational surface contract ─────────────────────────────
+   Keep this block last so the landing and composer geometry have one
+   authoritative responsive definition. Earlier rules remain as compatibility
+   shims for legacy markup, but must not re-introduce overlay positioning or
+   flex-order swaps into the live rich composer. */
+
+/* ChatGPT-like empty state: quiet background, centered greeting, and a
+   single broad composer that reads as the primary action. */
+.main:has(#topicSetup:not(.hidden)) .main-bg{opacity:.1}
+.top-bar{
+  padding-top:max(8px,env(safe-area-inset-top,0px));
+  padding-left:max(14px,env(safe-area-inset-left,0px));
+  padding-right:max(14px,env(safe-area-inset-right,0px));
+}
+.topic-setup{
+  box-sizing:border-box;
+  justify-content:center;
+  gap:0;
+  padding-top:0;
+  padding-right:max(12px,env(safe-area-inset-right,0px));
+  padding-bottom:max(32px,env(safe-area-inset-bottom,0px));
+  padding-left:max(12px,env(safe-area-inset-left,0px));
+  scroll-padding-top:16px;
+  scroll-padding-bottom:calc(var(--keyboard-inset,0px) + 24px);
+  overscroll-behavior-y:contain;
+}
+.topic-title.greeting{
+  margin:0 0 10px;
+  letter-spacing:-.025em;
+}
+.topic-sub{
+  max-width:min(640px,100%);
+  margin:0 0 22px;
+  white-space:normal;
+}
+.topic-input-wrap{
+  max-width:760px;
+  margin-top:0;
+  border-radius:28px;
+  border-color:hsl(var(--border-300)/.38);
+  box-shadow:0 8px 30px -12px hsl(var(--always-black)/.28),0 1px 2px hsl(var(--always-black)/.08);
+}
+.topic-input-wrap:hover{border-color:hsl(var(--border-300)/.58)}
+.topic-input-wrap.composer-focused,
+.topic-input-wrap:focus-within{
+  border-color:hsl(var(--accent-000)/.58);
+  box-shadow:0 0 0 3px hsl(var(--accent-000)/.09),0 12px 34px -14px hsl(var(--always-black)/.34);
+}
+.topic-input-wrap .attachment-chips{padding:8px 14px 0;max-height:132px}
+.topic-footer{
+  gap:8px;
+  padding:8px 12px max(10px,env(safe-area-inset-bottom,0px));
+}
+.topic-footer .footer-left-group{gap:2px}
+.topic-input-wrap .start-btn{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  min-height:42px;
+  padding:0;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.topic-input-wrap .start-btn svg{width:18px;height:18px}
+
+/* Chat composer: safe-area aware, in-flow, and bounded by its real content.
+   The transcript remains a sibling flex item, so it can never be covered by
+   a composer whose height changes after focus or attachment loading. */
+.chat-input-bar{
+  padding-inline:max(12px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-right,0px));
+}
+.chat-input-wrap{
+  box-sizing:border-box;
+  will-change:min-height;
+}
+
+@media(max-width:768px){
+  .sidebar-header{
+    padding-top:max(8px,env(safe-area-inset-top,0px));
+    padding-left:max(12px,env(safe-area-inset-left,0px));
+    padding-right:max(8px,env(safe-area-inset-right,0px));
+  }
+  .topic-setup{
+    justify-content:flex-start;
+    padding-top:clamp(54px,9vh,96px);
+    padding-bottom:max(32px,calc(var(--keyboard-inset,0px) + env(safe-area-inset-bottom,0px) + 24px));
+  }
+  .topic-title.greeting{
+    font-size:calc(clamp(1.8rem,7vw,2.35rem) * var(--app-font-scale,1));
+    margin-bottom:8px;
+  }
+  .topic-sub{
+    padding-inline:8px;
+    margin-bottom:18px;
+    font-size:calc(13px * var(--app-font-scale,1));
+  }
+  .topic-input-wrap{border-radius:24px}
+  .topic-input-wrap .start-btn{width:40px;min-width:40px;height:40px;min-height:40px}
+  .topic-footer{padding-inline:10px}
+
+  /* One flex item owns the entire mobile composer body. The editor and
+     footer use explicit grid tracks rather than changing flex-basis/order;
+     that removes the transient width collapse which used to make the input
+     jump sideways while focus was entering. */
+  .chat-input-bar{
+    padding-top:14px;
+    padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
+    padding-inline:max(8px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-right,0px));
+  }
+  .chat-input-wrap{
+    width:100%;
+    min-height:0;
+    padding:6px;
+    gap:0;
+    flex-direction:column;
+    flex-wrap:nowrap;
+    align-items:stretch;
+    border-radius:26px;
+    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),
+      padding var(--composer-motion-duration) var(--composer-motion-ease),
+      border-radius var(--composer-motion-duration) var(--composer-motion-ease),
+      box-shadow var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .attachment-chips{
+    order:0;
+    flex:0 0 auto;
+    width:100%;
+    max-height:96px;
+  }
+  .chat-input-wrap .chat-composer-body{
+    order:1;
+    position:relative;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:44px 0px;
+    flex:0 0 auto;
+    width:100%;
+    min-width:0;
+    min-height:0;
+    align-items:stretch;
+    transition:grid-template-rows var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .composer-editor-root{
+    order:initial;
+    grid-column:1;
+    grid-row:1;
+    width:100%;
+    min-width:0;
+    min-height:0;
+    flex:none;
+  }
+  .rich-composer[data-surface="chat"]{
+    min-height:44px;
+    display:flex;
+    align-items:stretch;
+  }
+  .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
+  .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
+  .rich-composer[data-surface="chat"] .tiptap{
+    min-height:44px;
+    max-height:var(--composer-editor-max-mobile);
+    padding:9px 9px 40px;
+    font-size:16px;
+    line-height:1.5;
+    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),
+      padding var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .chat-input-footer{
+    grid-column:1;
+    grid-row:2;
+    display:flex;
+    align-items:center;
+    width:100%;
+    min-height:44px;
+    padding:0 2px 6px;
+    transform:translateY(-40px);
+    pointer-events:none;
+    transition:transform var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
+  .chat-input-wrap .chat-input-footer .footer-left-group{
+    display:flex;
+    align-items:center;
+    gap:2px;
+    margin-right:auto;
+    order:0;
+  }
+  .chat-input-wrap .chat-input-footer .send-btn{order:1;margin-left:auto}
+  .chat-input-wrap .chat-input-footer .chat-input-hint{display:none}
+  .chat-input-wrap .footer-left-group .effort-picker{
+    position:absolute;
+    right:48px;
+    top:50%;
+    z-index:5;
+    display:none;
+    margin:0;
+    transform:translateY(-50%);
+    pointer-events:none;
+  }
+  .chat-input-wrap .chat-input-footer .send-btn{width:40px;height:40px}
+  .chat-input-wrap .chat-input-footer .attach-btn{width:38px;height:38px}
+  .chat-input-wrap.composer-focused{
+    min-height:0;
+    padding:8px;
+    gap:0;
+    border-radius:26px;
+    align-content:initial;
+  }
+  .chat-input-wrap.composer-focused .chat-composer-body{
+    order:1;
+    flex:0 0 auto;
+    width:100%;
+    min-width:0;
+    max-width:none;
+    grid-template-rows:minmax(64px,auto) 44px;
+  }
+  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
+    min-height:64px;
+    max-height:var(--composer-editor-max-mobile);
+    padding:10px 8px 8px;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer{
+    transform:translateY(0);
+    pointer-events:auto;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{
+    display:flex;
+    margin-right:auto;
+  }
+  .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
+    position:static;
+    display:block;
+    margin-left:auto;
+    margin-right:8px;
+    transform:none;
+    pointer-events:auto;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .attach-btn{order:0}
+  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{order:1;margin-left:0}
+
+  /* Older engines use the same two-stage shape with a height transition
+     rather than attempting to interpolate grid tracks. The footer remains
+     anchored to the bottom in both states, so it never changes the body's
+     positioning mode during the animation. */
+  .composer-anim-no-fr .chat-input-wrap .chat-composer-body{
+    display:block;
+    min-height:44px;
+    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .composer-anim-no-fr .chat-input-wrap.composer-focused .chat-composer-body{min-height:108px}
+  .composer-anim-no-fr .chat-input-wrap .chat-input-footer{
+    position:absolute;
+    left:2px;
+    right:2px;
+    bottom:0;
+    transform:translateY(-40px);
+  }
+  .composer-anim-no-fr .chat-input-wrap.composer-focused .chat-input-footer{
+    position:absolute;
+    bottom:0;
+    transform:translateY(0);
+  }
+
+  /* Only the active topic surface receives extra scroll room. The shell
+     itself stays frozen while the keyboard opens; keyboardViewport.js may
+     move this local scroller when the focused editor would be covered. */
+  :root[data-keyboard-open="true"] .topic-setup{
+    scroll-padding-bottom:calc(var(--keyboard-inset,0px) + 24px + env(safe-area-inset-bottom,0px));
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .topic-input-wrap,
+  .chat-input-wrap,
+  .chat-input-wrap .chat-composer-body,
+  .chat-input-wrap .chat-input-footer,
+  .rich-composer[data-surface="chat"] .tiptap{
+    transition:none!important;
+  }
+}
