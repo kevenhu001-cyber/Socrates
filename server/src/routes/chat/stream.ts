@@ -138,9 +138,26 @@ export function registerStreamRoute(router: Router) {
    * gated identically. */
   router.post('/stream', requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
     try {
-      const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
+      let sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
       if (sessionIdFromQuery) {
-        await requireOwnedSession(getDb(), sessionIdFromQuery, req.userId!);
+        /* P_session-race — the client's Begin flow saves the session
+           (POST /api/sessions) then immediately sends the stream request.
+           On slow networks or under load, the session row may not exist
+           yet when this check runs. Instead of hard-failing with 404
+           "Session not found" (which surfaces as "Save failed" in the
+           UI), downgrade to a warning and proceed without the session
+           binding. The stream still works; only partial-content survival
+           on disconnect is lost for that turn. */
+        try {
+          await requireOwnedSession(getDb(), sessionIdFromQuery, req.userId!);
+        } catch (ownershipErr: any) {
+          if (ownershipErr?.status === 404) {
+            console.warn(`[chat/stream] session ${sessionIdFromQuery} not found yet (race); proceeding without binding`);
+            sessionIdFromQuery = null;
+          } else {
+            throw ownershipErr;
+          }
+        }
       }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
       /* P_agent-mode — an explicit composer switch, not a policy change: it

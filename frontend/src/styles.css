@@ -7002,7 +7002,11 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   box-sizing:border-box;
   justify-content:center;
   gap:0;
-  padding-top:0;
+  /* P_topic-lower — shift the centered group slightly below true center
+     so the greeting + input doesn't feel "too high" on tall viewports.
+     The 4vh bias pushes the visual center down without breaking the
+     centered flex layout. */
+  padding-top:clamp(24px, 4vh, 64px);
   padding-right:max(12px,env(safe-area-inset-right,0px));
   padding-bottom:max(32px,env(safe-area-inset-bottom,0px));
   padding-left:max(12px,env(safe-area-inset-left,0px));
@@ -7070,8 +7074,12 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   }
   .topic-setup{
     justify-content:flex-start;
-    padding-top:clamp(54px,9vh,96px);
-    padding-bottom:max(32px,calc(var(--keyboard-inset,0px) + env(safe-area-inset-bottom,0px) + 24px));
+    /* P_topic-lower-mobile — increase top offset so the greeting + input
+       group sits further down the viewport, giving more breathing room
+       above and preventing overlap with the disclaimer at the bottom on
+       short screens. The old 9vh was too tight on phones <700px tall. */
+    padding-top:clamp(72px,13vh,120px);
+    padding-bottom:max(48px,calc(var(--keyboard-inset,0px) + env(safe-area-inset-bottom,0px) + 32px));
   }
   .topic-title.greeting{
     font-size:calc(clamp(1.8rem,7vw,2.35rem) * var(--app-font-scale,1));
@@ -7085,6 +7093,13 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .topic-input-wrap{border-radius:24px}
   .topic-input-wrap .start-btn{width:40px;min-width:40px;height:40px;min-height:40px}
   .topic-footer{padding-inline:10px}
+  /* P_mobile-overlap — hide the disclaimer on mobile when the keyboard
+     is open or the viewport is very short, preventing it from overlapping
+     with the topic input wrap. */
+  :root[data-keyboard-open="true"] #topicDisclaimer{display:none}
+  @media(max-height:500px){
+    #topicDisclaimer{display:none}
+  }
 
   /* One flex item owns the entire mobile composer body. The editor and
      footer use explicit grid tracks rather than changing flex-basis/order;
