@@ -256,6 +256,36 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
 
+  /* P_topic-disclaimer-hide — set data-topic-composer-focused on <html>
+     when the topic-setup composer (not the in-chat one) holds focus, so
+     CSS can hide the bottom-pinned disclaimer while the topic input is
+     active. The previous disclaimer-hide rule fired only on keyboard
+     open or ≤500px viewports; a focused-but-not-yet-keyboard-open state
+     left the disclaimer overlapping the topic input on mid-size
+     phones. The data attribute is owned by this module because
+     initKeyboardViewport is already the source of truth for focus-
+     driven layout attributes (it owns data-keyboard-open). */
+  const topicComposerRoot = (typeof document !== 'undefined')
+    ? document.getElementById('topicComposerRoot')
+    : null;
+  const topicInputWrap = (typeof document !== 'undefined')
+    ? document.getElementById('topicInputWrap')
+    : null;
+  const applyTopicComposerFocused = (focused) => {
+    try {
+      const active = typeof document !== 'undefined' ? document.activeElement : null;
+      let topicFocused = false;
+      if (focused && active) {
+        if (topicComposerRoot && (active === topicComposerRoot || topicComposerRoot.contains?.(active))) {
+          topicFocused = true;
+        } else if (topicInputWrap && (active === topicInputWrap || topicInputWrap.contains?.(active))) {
+          topicFocused = true;
+        }
+      }
+      root.dataset.topicComposerFocused = topicFocused ? 'true' : 'false';
+    } catch (_) { /* detached — leave attribute untouched */ }
+  };
+
   /* Current rendered height of the app shell in CSS pixels. Used both
      for the frozen --app-vh (below) and the keyboard inset. */
   const appShellHeight = () => {
@@ -379,6 +409,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
         : 0,
     );
+    applyTopicComposerFocused(focused);
     if (focused) scheduleTopicEnsure();
   };
 
@@ -404,6 +435,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       applyStableVh(true);
     }
     schedule();
+    /* Mirror the focus state to data-topic-composer-focused synchronously
+       so the disclaimer disappears on the same frame the topic input
+       takes focus (the deferred schedule() runs after a rAF, which is
+       enough to flicker the disclaimer across the screen during a fast
+       tap-to-focus on iOS). */
+    applyTopicComposerFocused(isInputFocused());
   };
 
   const onBlur = () => {
