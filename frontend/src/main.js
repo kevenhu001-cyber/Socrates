@@ -2997,8 +2997,14 @@ async function startSession(){
      initial save carries the topic but no messages; subsequent saves
      (from finishAfterRender / proceedToTeaching) fill in the content.
      MUST run AFTER the message-clearing block above so the empty
-     state is what gets persisted. */
-  saveCurrentSession();
+     state is what gets persisted.
+     P_session-race — AWAIT the save so the server has the session row
+     before /api/chat/stream's requireOwnedSession() runs. Without this,
+     the stream request fires (via setTimeout(0) below) before the POST
+     /api/sessions round-trip completes, and the server returns 404
+     "Session not found". The await guarantees the session exists
+     server-side before the first chat turn is sent. */
+  await saveCurrentSession();
   /* F2b — flush cross-round transients (search cache, call metadata,
      composer draft, plan fields, _pendingChat*). Placed BEFORE the
      new-session abort so even if the abort fires during the helper,
