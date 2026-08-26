@@ -195,7 +195,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       },
       handleDOMEvents: {
         focus: (view) => {
-          composerWrapRef.current = view.dom.closest('.chat-input-wrap');
+          composerWrapRef.current = view.dom.closest('.chat-input-wrap, .topic-input-wrap');
           composerWrapRef.current?.classList.add('composer-focused');
           return false;
         },
