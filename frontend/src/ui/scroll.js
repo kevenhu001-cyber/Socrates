@@ -1,4 +1,12 @@
 import { planMotionForUser, easeOutQuint } from './motion.js';
+import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
+
+/* Re-export the pure auto-scroll decision predicates through scroll.js so
+   the DOM-wiring callers (main.js) import the "where do I scroll" surface
+   and the "should I scroll" decision from one place. The predicates stay
+   pure in scrollDecision.ts (unit/property tested there); scroll.js and
+   main.js only apply them to live DOM geometry. */
+export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 
 // src/ui/scroll.js — Phase 1.4 extraction (main.js A.4)
 // scrollContainer() returns whichever element is currently the
@@ -177,6 +185,14 @@ export function velocityScrollTo(list, targetTop, opts){
 
     const tick = function(now){
       if (cancelled) return;
+      /* P_send-anchor-ownership — a keyboard/composer scroll animation can
+         outlive the focus event that started it. Once the send path marks
+         the new turn as the viewport owner, stop the older bottom-follow
+         animation before it pulls the prompt back under the top edge. */
+      if (list.dataset && list.dataset.turnViewportOwner === 'turn') {
+        stop();
+        return;
+      }
       if (typeof window !== 'undefined' && window.state && window.state._userScrolledAway) {
         stop();
         return;
@@ -348,8 +364,17 @@ export function initChatComposerReserve(options){
       if(!pinnedBeforeResize&&previous&&current){
         pinnedBeforeResize=previous.scrollHeight-current.scrollTop-previous.clientHeight<=pinSlack;
       }
-      if(!pinnedBeforeResize)return;
-      if(list.dataset.autoScrolling==='true')return;
+      var externalKeyboardInsetOpen=false;
+      if(typeof document!=="undefined"&&document.documentElement){
+        var rootStyle=document.documentElement.style;
+        externalKeyboardInsetOpen=(parseFloat(rootStyle.getPropertyValue("--keyboard-inset"))||0)>0&&
+          document.documentElement.dataset.keyboardOpen!=="true";
+      }
+      if(!pinnedBeforeResize&&!externalKeyboardInsetOpen)return;
+      /* A newly submitted turn deliberately owns the prompt's viewport
+         offset while the composer changes height. The send path marks that
+         ownership on the live list; history/layout-only updates do not. */
+      if(list.__socratesTurnViewportOwner===true)return;
       /* ResizeObserver runs after the flex layout has committed. Snap in
          that same delivery rather than waiting another frame: during a
          focus/keyboard transition a second frame can expose a short-lived
@@ -368,6 +393,29 @@ export function initChatComposerReserve(options){
     catch(_){composerResizeObserver.observe(chatView);}
     try{composerResizeObserver.observe(list,{box:"border-box"});}
     catch(_){composerResizeObserver.observe(list);}
+  }
+  /* Some WebViews update --keyboard-inset from an external keyboard bridge
+     without producing a reliable ResizeObserver delivery for the flex
+     column. Cover that edge with one coalesced style-attribute fallback,
+     but only for an inset that is visibly open while the app's own keyboard
+     flag is still closed. keyboardViewport.js sets the flag before its
+     animated writes, so normal keyboard motion keeps its single scroll
+     owner and is not re-snapped by this observer. */
+  var keyboardStyleFollowFrame=0;
+  var keyboardStyleObserver=typeof MutationObserver==="function"&&
+    typeof document!=="undefined"&&document.documentElement
+    ?new MutationObserver(function(){
+      var rootEl=document.documentElement;
+      var inset=parseFloat(rootEl.style.getPropertyValue("--keyboard-inset"))||0;
+      if(inset<=0||rootEl.dataset.keyboardOpen==="true"||keyboardStyleFollowFrame)return;
+      keyboardStyleFollowFrame=requestAnimationFrame(function(){
+        keyboardStyleFollowFrame=0;
+        followComposerResize();
+      });
+    })
+    :null;
+  if(keyboardStyleObserver){
+    keyboardStyleObserver.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
   }
   function onComposerTransition(event){
     var target=event&&event.target;
@@ -492,6 +540,8 @@ export function initChatComposerReserve(options){
     if(messageResizeObserver)messageResizeObserver.disconnect();
     if(messageSubtreeObserver)messageSubtreeObserver.disconnect();
     if(composerResizeObserver)composerResizeObserver.disconnect();
+    if(keyboardStyleFollowFrame)cancelAnimationFrame(keyboardStyleFollowFrame);
+    if(keyboardStyleObserver)keyboardStyleObserver.disconnect();
     if(chatView){
       chatView.removeEventListener("transitionrun",onComposerTransition);
       chatView.removeEventListener("transitionstart",onComposerTransition);
@@ -510,7 +560,7 @@ export function scrollToBottomIfPinned(){
   var sc=scrollContainer();
   if(!sc)return;
   var slack=80; /* pixels from bottom considered "pinned" */
-  var wasPinned=(sc.scrollHeight-sc.scrollTop-sc.clientHeight)<=slack;
+  var wasPinned=isPinnedToBottom(sc.scrollHeight-sc.scrollTop-sc.clientHeight,slack);
   /* Do the scroll on the next frame so the new font-size / width has
      been applied to the layout. */
   requestAnimationFrame(function(){

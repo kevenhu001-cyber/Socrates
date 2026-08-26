@@ -20,13 +20,22 @@
 
 let wasmApi = null;
 let wasmInitPromise = null;
+let wasmInitFailed = false;
 
 /**
  * Loads and instantiates the wasm module (idempotent). Resolves to the
  * module (or null when loading failed); never rejects.
  */
 export function initSocratesWasm(opts = {}) {
+  const hasExplicitBytes = Boolean(opts && opts.bytes);
   if (wasmInitPromise) return wasmInitPromise;
+  // A browser/file-based load failure is terminal for this page instance. The
+  // synchronous callers intentionally fall back to TypeScript, so retrying on
+  // every tool event only creates a noisy, unbounded stream of rejected fetches.
+  // An explicit byte-backed load is still allowed to recover (for Node tests or
+  // a caller that has supplied a known-good WASM payload).
+  if (wasmInitFailed && !hasExplicitBytes) return Promise.resolve(null);
+  if (hasExplicitBytes) wasmInitFailed = false;
   wasmInitPromise = (async () => {
     const mod = await import('../../wasm/socrates_wasm.js');
     const init = mod.default || mod.init;
@@ -38,6 +47,7 @@ export function initSocratesWasm(opts = {}) {
     wasmApi = mod;
     return wasmApi;
   })().catch((err) => {
+    wasmInitFailed = true;
     wasmInitPromise = null; // allow a later retry
     console.warn('[socrates-wasm] init failed; falling back to TS logic:', err);
     return null;

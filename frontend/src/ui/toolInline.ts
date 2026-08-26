@@ -12,6 +12,62 @@
 import { esc } from '../render/helpers.js';
 import { formatToolOutput } from '../render/toolOutput.js';
 import { getSocratesWasm } from '../lib/socratesWasm.js';
+import { toolCardView } from './toolCardView.js';
+
+/* ============================================================
+   RUNNING-ROW ELAPSED TIMER (task 6.3, Req 3.2 / 3.3)
+   Inline rows share a single ~250ms interval that recomputes the
+   elapsed time via toolCardView(run, Date.now()) and writes it into
+   the row's .tool-inline-meta while data-state === "running". The
+   interval stops once no running rows remain. settleInlineToolRow /
+   settleInlineToolGroupRow flip data-state to a terminal value and
+   write the final duration, so the timer simply unregisters the row
+   on its next observation. */
+const RUNNING_INLINE_ROWS = new Set<HTMLElement>();
+let INLINE_ROW_TIMER: ReturnType<typeof setInterval> | null = null;
+const INLINE_ROW_TICK_MS = 250;
+
+function inlineRowIsRunning(row: HTMLElement): boolean {
+  return row.dataset.state === 'running';
+}
+
+function stopInlineRowTimer(row?: HTMLElement | null): void {
+  if (row) RUNNING_INLINE_ROWS.delete(row);
+  if (RUNNING_INLINE_ROWS.size === 0 && INLINE_ROW_TIMER != null) {
+    clearInterval(INLINE_ROW_TIMER);
+    INLINE_ROW_TIMER = null;
+  }
+}
+
+/** Stop timing a row when its owning runtime is disposed before a result
+ * arrives (for example, a cancelled test or an interrupted stream). */
+export function stopInlineToolRowTimer(row: HTMLElement | null | undefined): void {
+  stopInlineRowTimer(row);
+}
+
+function tickInlineRows(): void {
+  const now = Date.now();
+  RUNNING_INLINE_ROWS.forEach((row) => {
+    const connected = (row as HTMLElement & { isConnected?: boolean }).isConnected;
+    if (connected === false) { stopInlineRowTimer(row); return; }
+    if (!inlineRowIsRunning(row)) { stopInlineRowTimer(row); return; }
+    const startedAt = Number(row.dataset.startedAt) || now;
+    const view = toolCardView({ id: '', tool: '', phase: 'running', startedAt }, now);
+    const meta = row.querySelector('.tool-inline-meta');
+    // Only own the meta text while running; the settle path writes the
+    // authoritative final duration from result.durationMs.
+    if (meta) meta.textContent = view.timeLabel;
+  });
+}
+
+function startInlineRowTimer(row: HTMLElement): void {
+  if (!row || RUNNING_INLINE_ROWS.has(row)) return;
+  if (!row.dataset.startedAt) row.dataset.startedAt = String(Date.now());
+  RUNNING_INLINE_ROWS.add(row);
+  if (INLINE_ROW_TIMER == null && typeof setInterval === 'function') {
+    INLINE_ROW_TIMER = setInterval(tickInlineRows, INLINE_ROW_TICK_MS);
+  }
+}
 
 export interface InlineToolEntry {
   id: string;
@@ -600,6 +656,8 @@ export function settleInlineToolGroupRow(
   const state = cancelled ? 'stopped' : failed ? 'error' : 'done';
   row.dataset.state = state;
   row.dataset.groupSettled = '1';
+  // Group head reached a terminal aggregate — leave the shared timer.
+  stopInlineRowTimer(row);
   const toolIcon = row.querySelector('.tool-inline-tool-icon');
   if (toolIcon) toolIcon.innerHTML = toolTypeIconHtml(name);
   const label = row.querySelector('.tool-inline-label');
@@ -750,7 +808,11 @@ export function createInlineToolRow(entry: InlineToolEntry): HTMLElement {
     + '</summary>'
     + '<div class="tool-inline-detail"></div>';
   (row as HTMLElement & { _toolInput?: unknown })._toolInput = entry.input;
+  row.dataset.startedAt = String(Date.now());
   renderInlineDetails(row, entry.input, null, 'running');
+  // Join the shared elapsed timer (Req 3.2): the live meta shows the
+  // running duration until the row settles to its final total (Req 3.3).
+  startInlineRowTimer(row);
   return row;
 }
 
@@ -882,6 +944,10 @@ export function settleInlineToolRow(
   const failed = !cancelled && !!result && result.ok === false;
   const state = cancelled ? 'stopped' : awaitingApproval ? 'awaiting' : failed ? 'error' : 'done';
   row.dataset.state = state;
+  // Terminal reached — drop out of the shared elapsed timer so it can
+  // stop once no running rows remain (Req 3.3). The final duration is
+  // written below from result.durationMs.
+  stopInlineRowTimer(row);
   /* Replace the running spinner with the tool-type icon when the tool
      settles so the glyph stabilises alongside the new label. */
   const toolIcon = row.querySelector('.tool-inline-tool-icon');
@@ -893,6 +959,23 @@ export function settleInlineToolRow(
       ? translate('tool.statusStopped', 'Stopped')
       : awaitingApproval ? translate('tool.awaitingApproval', 'Waiting for your decision')
       : failed ? errorLabel(name, result) : doneLabel(name, result);
+  }
+  // Write the final total duration into the meta (Req 3.3): prefer the
+  // backend's authoritative durationMs; fall back to the wall-clock span
+  // the live timer was tracking so a settled row never shows a stale
+  // mid-run value.
+  const meta = row.querySelector('.tool-inline-meta');
+  if (meta) {
+    const backend = durationText(result);
+    if (backend) {
+      meta.textContent = backend;
+    } else if (cancelled || !awaitingApproval) {
+      const startedAt = Number(row.dataset.startedAt) || Date.now();
+      meta.textContent = toolCardView(
+        { id: '', tool: '', phase: 'succeeded', startedAt, endedAt: Date.now() },
+        Date.now(),
+      ).timeLabel;
+    }
   }
   const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
   renderInlineDetails(row, input, result, state);

@@ -13,6 +13,7 @@ import {
   appendToolModule,
   renderToolTextOutput,
   renderWebSearchResults,
+  stopToolCardTimerForCard,
   updateToolCardCode,
 } from '../ui/toolCards.js';
 import {
@@ -20,6 +21,7 @@ import {
   replaceLiveInlineToolRow,
   settleInlineToolGroupRow,
   settleInlineToolRow,
+  stopInlineToolRowTimer,
   toolCategory,
   updateInlineToolCodePreview,
   updateInlineToolGroupLabel,
@@ -350,6 +352,8 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   }
   let liveGroup: LiveGroupState | null = null;
   let postFinishApprovalMessage: ToolMessage | null = null;
+  const ownedInlineRows = new Set<HTMLElement>();
+  const ownedToolCards = new Set<HTMLElement>();
 
   function mountInlineRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
@@ -358,6 +362,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       name: entry.name,
       input: entry.input,
     });
+    ownedInlineRows.add(row);
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
     const resolved = typeof offset === 'number' ? offset : null;
@@ -402,6 +407,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       name: entry.name,
       input: entry.input,
     });
+    ownedInlineRows.add(row);
     if (merged && liveSingleCardSlot) {
       /* Merge: hidden sibling inside the slot; the visible row keeps the
          running label and gains the group count. */
@@ -1123,7 +1129,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       output = appendToolModule(entry.name, entry.input || {}, ensureToolContainer());
       if (!output) return null;
       const card = output.closest('.agent-tool-card');
-      if (card) card.setAttribute('data-tcid', entry.id);
+      if (card) {
+        card.setAttribute('data-tcid', entry.id);
+        ownedToolCards.add(card as HTMLElement);
+      }
     } else if (mergedInto) {
       /* Merged member: no new visible row; the head row carries the
          aggregate count and the member's own textOffset is inherited. */
@@ -1483,6 +1492,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       return;
     }
     disposed = true;
+    ownedInlineRows.forEach((row) => stopInlineToolRowTimer(row));
+    ownedInlineRows.clear();
+    ownedToolCards.forEach((card) => stopToolCardTimerForCard(card));
+    ownedToolCards.clear();
     if (body && typeof body.removeEventListener === 'function') {
       body.removeEventListener('click', approvalDelegatedClick);
     }

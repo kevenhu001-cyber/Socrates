@@ -7031,3 +7031,114 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
     transition:none!important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   chat-experience-revamp §7 — ChatGPT-style visual alignment (Task 8.1)
+
+   A thin `--chat-*` token layer plus rules for message rhythm/bubbles, the
+   code-block header + copy chrome, and tool-card collapsible/running/terminal
+   states. Every colour resolves through the existing `--bg-*` / `--text-*` /
+   `--accent-*` / `--border-*` families (HSL triplets consumed via
+   `hsl(var(--token))`), so the `socrates` light/dark themes keep working with
+   no per-rule overrides. Selectors target the real DOM: `.msg` / `.msg-body`,
+   `.agent-tool-card` (collapse via `.open`, phase via `data-tool-state`), and
+   `.msg-body .code-block-header`.
+   ───────────────────────────────────────────────────────────────────────── */
+:root{
+  --chat-bubble-radius:20px;
+  --chat-bubble-pad-y:10px;
+  --chat-bubble-pad-x:16px;
+  --chat-msg-gap:20px;               /* vertical rhythm between turns */
+  --chat-assistant-line-height:1.6;
+  --chat-code-bg:hsl(var(--bg-300));
+  --chat-code-radius:12px;
+  --chat-code-header-pad-y:6px;
+  --chat-code-header-pad-x:12px;
+  --chat-tool-running:hsl(var(--accent-000));
+  --chat-tool-error:hsl(0 70% 55%);
+}
+
+/* Message rhythm + bubbles. `.msg-list` already sets a 12px gap higher up;
+   this promotes it to the roomier ChatGPT rhythm. Bubble surface/radius stay
+   on the brand `--bg-*` token so themes adapt automatically. */
+.msg-list{gap:var(--chat-msg-gap)}
+.msg.user .msg-body{
+  background:hsl(var(--bg-000));
+  border-radius:var(--chat-bubble-radius);
+  padding:var(--chat-bubble-pad-y) var(--chat-bubble-pad-x);
+}
+.msg.assistant .msg-body{
+  max-width:100%;
+  line-height:var(--chat-assistant-line-height);
+}
+
+/* Code blocks — header + copy affordance (ChatGPT look). The header already
+   exists atop `<pre>` blocks in assistant markdown (`.code-block-header`); the
+   copy control (`.code-block-copy`, added by the markdown post-render pass in
+   Task 7.1) is styled here as a quiet button that flips to the accent on a
+   successful copy and to the danger hue when the clipboard write fails. */
+.msg-body .code-block-header{background:var(--chat-code-bg)}
+.msg-body .code-block-header + pre{
+  background:var(--chat-code-bg);
+  border-radius:0 0 var(--chat-code-radius) var(--chat-code-radius);
+}
+.code-block-copy{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  height:22px;
+  padding:0 7px;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  color:hsl(var(--text-400));
+  font:inherit;
+  font-family:var(--font-sans);
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  line-height:1;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:color .12s,background .12s;
+}
+.code-block-copy:hover,
+.code-block-copy:focus-visible{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.code-block-copy:focus-visible{outline:2px solid hsl(var(--text-400)/.4);outline-offset:1px}
+.code-block-copy svg{width:12px;height:12px;display:block}
+.code-block-copy.copied{color:hsl(var(--accent-000))}
+.code-block-copy.copy-failed{color:var(--chat-tool-error)}
+
+/* Tool card — collapsible chrome, running shimmer, terminal states.
+   Collapse is driven by the `.open` class (the card head is a toggle button
+   with `aria-expanded`); the body/code/out only show while open. Phase comes
+   from `data-tool-state` set by the run-state wiring. */
+.agent-tool-card:not(.open) .agent-tool-body,
+.agent-tool-card:not(.open) .agent-tool-out,
+.agent-tool-card:not(.open) .agent-tool-toolbar{display:none}
+
+/* Elapsed / duration readout lives in `.agent-tool-status`; keep it tabular
+   so a live-updating running timer doesn't jitter the header width. */
+.agent-tool-card .agent-tool-status{font-variant-numeric:tabular-nums}
+
+/* Running: shimmer the tool name so an in-flight run reads as active. Pairs
+   with the pulsing dot already drawn on `.agent-tool-status::before`. */
+.agent-tool-card[data-tool-state="running"] .agent-tool-name{
+  background:linear-gradient(90deg,hsl(var(--text-300)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-300)) 65%);
+  background-size:200% 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  animation:textShimmer 2.4s linear infinite;
+}
+.agent-tool-card[data-tool-state="running"] .agent-tool-status{color:var(--chat-tool-running)!important}
+
+/* Terminal: settle the header colour by phase. `done` reads on the accent,
+   `error` on the danger hue, `cancelled` stays muted. */
+.agent-tool-card[data-tool-state="done"] .agent-tool-status{color:hsl(var(--accent-000))!important}
+.agent-tool-card[data-tool-state="error"] .agent-tool-status{color:var(--chat-tool-error)!important}
+.agent-tool-card[data-tool-state="cancelled"] .agent-tool-status{color:hsl(var(--text-500))!important}
+.agent-tool-card[data-tool-state="error"] .agent-tool-state-icon{color:var(--chat-tool-error)}
+.agent-tool-card[data-tool-state="done"] .agent-tool-state-icon{color:hsl(var(--accent-000))}
+
+@media (prefers-reduced-motion:reduce){
+  .agent-tool-card[data-tool-state="running"] .agent-tool-name{animation:none;color:hsl(var(--text-200));-webkit-text-fill-color:currentColor}
+}
