@@ -23,6 +23,7 @@ STATUS_PUBLIC_URL="${STATUS_PUBLIC_URL:-https://status.topodrive.top}"
 # or Express rewrites it to the canonical `/api` routes internally.
 MOBILE_API_BASE_URL="${MOBILE_API_BASE_URL:-${APP_PUBLIC_URL%/}/api/v2}"
 NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.top}"
+NGINX_APP_CONF="${NGINX_APP_CONF:-/etc/nginx/sites-available/app.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
 # P_build-heap — the legacy 4 GB ceiling was needed because Rollup walked
@@ -92,20 +93,30 @@ repair_node_modules_ownership() {
 repair_node_modules_ownership "$SERVER_DIR"
 repair_node_modules_ownership "$FRONTEND_DIR"
 
-# Backup previous deployment so a bad build can be reverted with a
-# single `cp -a .previous/* .` . The .previous/ folder is created on
-# the first deploy and rotated on each subsequent one (so we keep
-# just the immediately previous copy, not an unbounded history).
+# Backup previous deployment so a bad build can be reverted. The
+# .previous/ folder holds the prior filename + content pair so a
+# rollback restores the exact bundle the previous deploy shipped
+# (matching the nginx try_files sed target).
+#
+# For the SPA (app.topodrive.top) the active file is a versioned
+# `index.<TS>.html` written by this deploy script; the previous
+# filename will differ. We copy every `index.*.html` in the webroot
+# to .previous/ using its existing name so the rollback path
+# `cp -a .previous/index.<old-ts>.html .` followed by `sed` to
+# repoint nginx try_files is symmetric with the deploy path.
 backup_previous() {
   local web_root="$1"
   [[ -d "$web_root" ]] || return 0
-  if [[ -f "$web_root/index.html" ]]; then
-    $SUDO mkdir -p "$web_root/.previous"
-    $SUDO cp -a "$web_root/index.html" "$web_root/.previous/index.html"
-    if [[ -d "$web_root/assets" ]]; then
-      $SUDO rm -rf "$web_root/.previous/assets"
-      $SUDO cp -a "$web_root/assets" "$web_root/.previous/assets"
-    fi
+  $SUDO mkdir -p "$web_root/.previous"
+  # Stable-name files (e.g. /var/www/topodrive.top/index.html) copy as
+  # themselves; versioned files (index.<TS>.html) keep their timestamp.
+  for f in "$web_root"/index*.html "$web_root"/status*.html; do
+    [[ -f "$f" ]] || continue
+    $SUDO cp -a "$f" "$web_root/.previous/$(basename "$f")"
+  done
+  if [[ -d "$web_root/assets" ]]; then
+    $SUDO rm -rf "$web_root/.previous/assets"
+    $SUDO cp -a "$web_root/assets" "$web_root/.previous/assets"
   fi
 }
 
@@ -207,14 +218,22 @@ $SUDO systemctl stop socrates-api 2>/dev/null || true
 
 # ─── 1. Build the frontend (Vite) ─────────────────────────────────────
 if [[ "${1:-}" != "" && -f "${1}" ]]; then
-  # Legacy mode: deploy a single index.html file directly.
+  # Legacy mode: deploy a single index.html file directly. Mirror the
+  # production-mode versioning so the nginx try_files sentinel can be
+  # rewritten to a real filename even in this path.
   LEGACY_SRC="$1"
   echo "Legacy mode: deploying single file $LEGACY_SRC"
   backup_previous "$APP_WEB_ROOT"
-  $SUDO install -m 644 -o www-data -g www-data "$LEGACY_SRC" "$APP_WEB_ROOT/index.html"
+  APP_TS=$(date +%s)
+  APP_FILE="index.${APP_TS}.html"
+  $SUDO install -m 644 -o www-data -g www-data "$LEGACY_SRC" "$APP_WEB_ROOT/$APP_FILE"
+  if ! $SUDO sed -i "s|/__APP_INDEX__|/$APP_FILE|" "$NGINX_APP_CONF"; then
+    echo "ERROR: failed to rewrite nginx try_files sentinel in $NGINX_APP_CONF" >&2
+    exit 1
+  fi
   SRC_DESC="$LEGACY_SRC"
-  SRC_SIZE=$(stat -c%s "$LEGACY_SRC")
-  SRC_MD5=$(md5sum "$LEGACY_SRC" | cut -d' ' -f1)
+  SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/$APP_FILE")
+  SRC_MD5=$(md5sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
 else
   # Production mode: build the Vite bundle and copy dist/* into the web root.
   echo "Installing frontend dependencies from package-lock.json…"
@@ -228,15 +247,25 @@ else
     exit 1
   fi
 
-  # Snapshot the previous bundle so the operator can roll back with
-  # `sudo cp -a /var/www/app.topodrive.top/.previous/* /var/www/app.topodrive.top/`
-  # if the new build has a regression.
+  # Snapshot the previous bundle (filename + content) so a rollback can
+  # restore the exact prior version. See the rollback block at the end
+  # of this script for the restore + nginx re-point sequence.
   backup_previous "$APP_WEB_ROOT"
 
-  # Wipe + copy the bundle (index.html + assets/) so we don't leave
-  # stale hash-named JS files behind after a code change.
+  # Versioned SPA entry. Writes the freshly-built index.html to
+  # `index.<TS>.html` (timestamp seconds since epoch) so each deploy
+  # gets a fresh CDN cache key on the SPA HTML response, and so the
+  # nginx `try_files` sentinel (/__APP_INDEX__) below can be sed-
+  # rewritten to point at exactly this file. The sentinel pattern in
+  # $NGINX_APP_CONF must exist as a unique substring — see that file's
+  # P_cdn-bust comment for the rationale.
+  APP_TS=$(date +%s)
+  APP_FILE="index.${APP_TS}.html"
+
+  # Wipe + copy the bundle (versioned index.<TS>.html + assets/) so we
+  # don't leave stale hash-named JS files behind after a code change.
   $SUDO rm -rf "$APP_WEB_ROOT/assets"
-  $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html" "$APP_WEB_ROOT/index.html"
+  $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html" "$APP_WEB_ROOT/$APP_FILE"
   $SUDO mkdir -p "$APP_WEB_ROOT/assets"
   # Copy top-level asset files only. install(1) returns non-zero when its
   # source list contains a directory ("omitting directory"), which under
@@ -263,9 +292,19 @@ else
     $SUDO install -m 644 -o www-data -g www-data "$f" "$APP_WEB_ROOT/$fname"
   done
 
-  SRC_DESC="vite build → $APP_WEB_ROOT/"
-  SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/index.html")
-  SRC_MD5=$(md5sum "$APP_WEB_ROOT/index.html" | cut -d' ' -f1)
+  # Repoint the nginx SPA-fallback `try_files` sentinel at the freshly
+  # deployed versioned file. Run before the nginx reload further down
+  # so the reload picks up the matching config. Use a fixed-string
+  # replacement (`||` after the sed) so an accidental prior run that
+  # already substituted the sentinel doesn't fail this deploy.
+  if ! $SUDO sed -i "s|/__APP_INDEX__|/$APP_FILE|" "$NGINX_APP_CONF"; then
+    echo "ERROR: failed to rewrite nginx try_files sentinel in $NGINX_APP_CONF" >&2
+    exit 1
+  fi
+
+  SRC_DESC="vite build → $APP_WEB_ROOT/$APP_FILE"
+  SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/$APP_FILE")
+  SRC_MD5=$(md5sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
 fi
 
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
@@ -534,9 +573,13 @@ gate_check() {
 }
 
 # 4.5a. Frontend bundle integrity: md5 of just-built == md5 on disk.
-if [[ -n "${DIST_DIR:-}" && -f "${DIST_DIR}/index.html" && -f "$APP_WEB_ROOT/index.html" ]]; then
+# The deployed file is the versioned `index.<TS>.html` written by this
+# deploy; we look it up via $APP_FILE if set, otherwise fall back to
+# the legacy stable-name `index.html` (legacy single-file mode).
+APP_DEPLOYED_PATH="$APP_WEB_ROOT/${APP_FILE:-index.html}"
+if [[ -n "${DIST_DIR:-}" && -f "${DIST_DIR}/index.html" && -f "$APP_DEPLOYED_PATH" ]]; then
   BUILT_MD5=$(md5sum "$DIST_DIR/index.html" | cut -d' ' -f1)
-  DEPLOYED_MD5=$(md5sum "$APP_WEB_ROOT/index.html" | cut -d' ' -f1)
+  DEPLOYED_MD5=$(md5sum "$APP_DEPLOYED_PATH" | cut -d' ' -f1)
   if [[ "$BUILT_MD5" == "$DEPLOYED_MD5" ]]; then
     GATE_RESULTS+=("  bundle.md5 match ($DEPLOYED_MD5)")
   else
@@ -682,16 +725,26 @@ if [[ $GATE_FAILED -eq 0 ]]; then
   echo "─── gate ───"
   printf '%s\n' "${GATE_RESULTS[@]}"
   echo "────────────"
-  echo "  frontend rollback: sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/"
+  # Rollback path for the versioned SPA entry. .previous/ holds the
+  # prior index.<TS>.html filename + content, so the restore must also
+  # repoint the nginx try_files sentinel to that filename and reload.
+  echo "  frontend rollback:"
+  echo "    ls $APP_WEB_ROOT/.previous/index.*.html  # pick the prior TS"
+  echo "    sudo cp -a \$TS_FILE $APP_WEB_ROOT/"
+  echo "    sudo sed -i 's|/index\\.[0-9]\\+\\.html|/\${TS}|' $NGINX_APP_CONF"
+  echo "    sudo nginx -s reload"
   echo "  backend rollback build: $BACKEND_PREVIOUS"
 else
   echo "✗ DEPLOY GATE FAILED ($GATE_FAILED check(s))" >&2
   echo "─── gate ───"
   printf '%s\n' "${GATE_RESULTS[@]}" >&2
   echo "────────────" >&2
-  echo "The previous bundle is preserved at $APP_WEB_ROOT/.previous/" >&2
+  echo "The previous bundle (versioned filename + content) is preserved at $APP_WEB_ROOT/.previous/" >&2
   echo "The backend build was restored automatically when a previous build was available." >&2
-  echo "To restore the frontend: sudo cp -a $APP_WEB_ROOT/.previous/* $APP_WEB_ROOT/" >&2
+  echo "To restore the frontend, copy the prior index.<TS>.html back and re-point nginx:" >&2
+  echo "    sudo cp -a $APP_WEB_ROOT/.previous/index.<old-ts>.html $APP_WEB_ROOT/" >&2
+  echo "    sudo sed -i 's|/index\\.[0-9]\\+\\.html|/index.<old-ts>.html|' $NGINX_APP_CONF" >&2
+  echo "    sudo nginx -s reload" >&2
   echo "State file $STATE_FILE was NOT updated — last known-good deploy is still recorded there." >&2
   exit 1
 fi
