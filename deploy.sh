@@ -169,6 +169,31 @@ if [[ ! -f "$BACKEND_CANDIDATE/index.runtime.js" ]]; then
   exit 1
 fi
 
+# ─── 0.4. Database migrations ─────────────────────────────────────────
+# The backend code expects columns / tables that only exist after the
+# matching Drizzle migration has run. Without this step, the running
+# API throws `Failed query: column "..." does not exist` on every
+# request that touches a freshly-added schema surface (sessions POST,
+# scheduled_tasks poll, agent_runs restart, etc.) and the SPA surfaces
+# it as a 500 with the error stack in journalctl.
+#
+# We run migrations AFTER the backend npm ci (tsx needs the runtime
+# deps) but BEFORE stopping the live service. The script invokes
+# `db:migrate`, which uses `drizzle-orm/node-postgres/migrator` and
+# is idempotent — already-applied migrations (matching hash +
+# created_at in drizzle.__drizzle_migrations) are skipped silently.
+#
+# Skip with SKIP_DB_MIGRATE=1 if the operator already ran migrations
+# out-of-band (e.g. a manual `psql` patch). Default is to migrate.
+if [[ "${SKIP_DB_MIGRATE:-0}" != "1" ]]; then
+  echo "Running database migrations…"
+  if ! (cd "$SERVER_DIR" && npm run db:migrate); then
+    echo "ERROR: database migration failed; aborting deploy before swap" >&2
+    echo "  → fix the migration error and re-run, or set SKIP_DB_MIGRATE=1 if the schema is already current" >&2
+    exit 1
+  fi
+fi
+
 # ─── 0.5. Memory pressure mitigation ─────────────────────────────────
 # Stop the running backend before the heavy frontend build so both
 # don't contend for the same ~3.7 GB of RAM.  Vite + Rollup needs up
