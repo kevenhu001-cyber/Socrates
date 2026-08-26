@@ -17,6 +17,7 @@ import { esc } from '../render/helpers.js';
 import { sanitizeUrl } from '../util/safe.js';
 import { formatToolOutput } from '../render/toolOutput.js';
 import { toolCardView } from './toolCardView.js';
+import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
 
 /* ============================================================
    RUNNING-CARD ELAPSED TIMER (task 6.3, Req 3.2 / 3.3)
@@ -154,40 +155,29 @@ function startToolCardTimer(card) {
    several tools run in sequence. The `short` label is what appears
    in the collapsed header; `tone` controls the accent colour.
    Only tools the backend toolRegistry actually emits are listed;
-   unknown names fall back to { letter: "?", short: toolName }. */
+   unknown names fall back to { short: toolName } and the generic
+   stroke icon. Single-letter glyphs are deliberately gone: the shared
+   monochrome icon set (ui/icons/toolIcons.ts) carries identity in both
+   the inline row and this card. */
 export var TOOL_META = {
-  workspace_agent:    { letter: "C", cls: "codex", short: "Codex", tone: "purple" },
-  render_visualization: { letter: "V", cls: "tool-visual", short: "Visual", tone: "purple" },
-  web_search:        { letter: "Q", cls: "websearch", short: "Search", tone: "teal"   },
-  web_fetch:         { letter: "F", cls: "webfetch",  short: "Fetch",  tone: "teal"   },
-  create_plan:       { letter: "P", cls: "planner",   short: "Plan",   tone: "green"  },
-  create_spec:       { letter: "S", cls: "spec",      short: "Spec",   tone: "green"  },
-  code_interpreter:  { letter: "{}", cls: "codeint", short: "Code", tone: "python" },
-  arxiv_search:      { letter: "X", cls: "arxiv",    short: "arXiv",  tone: "red"    },
-  zotero_search:     { letter: "Z", cls: "zotero",   short: "Zotero", tone: "blue"   },
-  notion_search_pages: { letter: "N", cls: "notion", short: "Notion", tone: "gray"   },
-  github_list_repos: { letter: "GH", cls: "github",   short: "GitHub", tone: "gray"   },
-  gitee_list_repos:  { letter: "GL", cls: "gitee",    short: "Gitee",  tone: "orange" },
+  workspace_agent:    { cls: "codex", short: "Codex", tone: "purple" },
+  render_visualization: { cls: "tool-visual", short: "Visual", tone: "purple" },
+  web_search:        { cls: "websearch", short: "Search", tone: "teal"   },
+  web_fetch:         { cls: "webfetch",  short: "Fetch",  tone: "teal"   },
+  create_plan:       { cls: "planner",   short: "Plan",   tone: "green"  },
+  create_spec:       { cls: "spec",      short: "Spec",   tone: "green"  },
+  code_interpreter:  { cls: "codeint", short: "Code", tone: "python" },
+  arxiv_search:      { cls: "arxiv",    short: "arXiv",  tone: "red"    },
+  zotero_search:     { cls: "zotero",   short: "Zotero", tone: "blue"   },
+  notion_search_pages: { cls: "notion", short: "Notion", tone: "gray"   },
+  github_list_repos: { cls: "github",   short: "GitHub", tone: "gray"   },
+  gitee_list_repos:  { cls: "gitee",    short: "Gitee",  tone: "orange" },
 };
 
-/* Monochrome stroke icons for the chat-facing tools. Single-letter
-   glyphs read as noise when several tool cards stack; a consistent
-   line-icon set (viewBox 24, currentColor, matching the sidebar nav's
-   visual language) is closer to how ChatGPT/Claude label tool calls.
-   Tools not listed here fall back to their TOOL_META `letter`. */
-export var TOOL_ICONS = {
-  render_visualization: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7" rx="0.5"/><rect x="12" y="6" width="3" height="11" rx="0.5"/><rect x="17" y="13" width="3" height="4" rx="0.5"/></svg>',
-  web_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
-  web_fetch: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
-  create_plan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-  create_spec: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4M9 9h1"/></svg>',
-  code_interpreter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-  arxiv_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
-  zotero_search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v4H6.5A2.5 2.5 0 0 1 4 20.5z"/></svg>',
-  notion_search_pages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 12h8M8 16h8M8 8h2"/></svg>',
-  github_list_repos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>',
-  gitee_list_repos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>',
-};
+/* Kept as a named export for callers that render a tool glyph outside a
+   card. Delegates to the shared set so there is exactly one icon per tool
+   in the whole app. */
+export var TOOL_ICONS = STROKE_ICONS;
 
 /* Extract the human-readable input preview shown in the collapsed
    header. Keeps the header a single line so multiple tool cards stack
@@ -418,7 +408,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
     div.appendChild(body);
     list2.appendChild(div);
   }
-  const meta = TOOL_META[toolName] || { letter: "?", cls: "", short: toolName, tone: "neutral" };
+  const meta = TOOL_META[toolName] || { cls: "", short: toolName, tone: "neutral" };
 
   const card = document.createElement("div");
   const detailId = "tool-detail-" + Math.random().toString(36).slice(2, 10);
@@ -433,7 +423,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   card.innerHTML = `
     <div class="agent-tool-head" role="button" tabindex="0" aria-expanded="false" aria-controls="${detailId}">
       <span class="agent-tool-state-icon" aria-hidden="true"></span>
-      <span class="agent-tool-icon" aria-hidden="true">${TOOL_ICONS[toolName] || meta.letter}</span>
+      <span class="agent-tool-icon" aria-hidden="true">${toolIcon(toolName)}</span>
       <span class="agent-tool-name"></span>
       <span class="agent-tool-input"></span>
       <span class="agent-tool-status" role="status" aria-live="polite"></span>

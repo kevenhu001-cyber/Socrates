@@ -750,6 +750,17 @@
                       <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
                     </div>
                   </div>
+                  <!-- P_agent-mode — explicit Agent switch. Hidden until the
+                       server reports the Codex workspace runtime as enabled
+                       (see ui/agentMode.js); when on, the next turn starts in
+                       the workspace agent instead of waiting for the model to
+                       choose it. -->
+                  <button class="agent-mode-btn" id="agentModeBtn" type="button" hidden
+                          data-action="toggleAgentMode" aria-pressed="false"
+                          aria-label="Agent" title="Agent">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"/></svg>
+                    <span class="agent-mode-label" data-i18n-key="agent.modeShort">Agent</span>
+                  </button>
                 </div>
                 <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
                 <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">

@@ -3407,6 +3407,11 @@ function toolCallbacksForStream(ctl){
       if(progress&&progress.runId)publishWorkspaceAgentEvent(progress.runId,progress.phase==="planning"?"planning":"working","running",{message:progress.event||progress.phase||"Working"});
     },
     onExecutionStart:function(event){if(ctl.recordExecutionStart)ctl.recordExecutionStart(event)},
+    /* P_codex-steps — Codex activity is rendered as its own step list in
+       the message flow (运行了命令 / 编辑了文件 / 读取了文件 / 更新了计划),
+       so the agent is no longer an opaque single card. */
+    onAgentStep:function(step){if(step&&ctl.recordAgentStep)ctl.recordAgentStep(step)},
+    onAgentPlan:function(plan){if(plan&&ctl.recordAgentPlan)ctl.recordAgentPlan(plan)},
     onToolCallDelta:function(delta){if(delta&&ctl.recordToolCallDelta)ctl.recordToolCallDelta(delta)}
   };
 }
@@ -3658,6 +3663,11 @@ async function askChatTurn(userText,pendingOverride){
       if(p&&p.runId)publishWorkspaceAgentEvent(p.runId,p.phase==="planning"?"planning":"working","running",{message:p.event||p.phase||"Working"});
     },
     onExecutionStart:function(ev){if(ctl.recordExecutionStart)ctl.recordExecutionStart(ev)},
+    /* P_codex-steps — see toolCallbacksForStream: each Codex thread item
+       becomes a step row, and its todo list a plan card that updates in
+       place. */
+    onAgentStep:function(step){if(step&&typeof ctl.recordAgentStep==="function")ctl.recordAgentStep(step)},
+    onAgentPlan:function(plan){if(plan&&typeof ctl.recordAgentPlan==="function")ctl.recordAgentPlan(plan)},
     /* P_tool_stream — forward the live tool_call_delta frames to
        the streaming controller so the code / query inside each
        tool card streams in real time, instead of appearing all at
@@ -6637,6 +6647,8 @@ function doRender(){
     recordExecutionStart:toolRuntime.recordExecutionStart,
     recordToolResult:toolRuntime.recordToolResult,
     recordToolApproval:toolRuntime.recordToolApproval,
+    recordAgentStep:toolRuntime.recordAgentStep,
+    recordAgentPlan:toolRuntime.recordAgentPlan,
     append:function(delta){
       /* P_session-stream-dispose — primary entry-point guard. The
          stream.js reader keeps draining already-buffered SSE chunks
@@ -6983,6 +6995,18 @@ function doRender(){
                   }catch(_){}
                 }
                 _parts2.push(_r.row.outerHTML);
+                /* P_codex-steps-persist — the Codex step list lives in an
+                   anchored host near the agent's row so it reads in the flow
+                   of the answer. Serialize it with the row, or a reload would
+                   show the agent call with no visible work. Look it up by
+                   anchor id: an attachment host (charts, artifacts) can be
+                   inserted between the row and this host. */
+                try{
+                  var _agentHost=body.querySelector(
+                    '.agent-run-host[data-agent-anchor="'+
+                    (window.CSS&&CSS.escape?CSS.escape(String(_r.id)):String(_r.id))+'"]');
+                  if(_agentHost)_parts2.push(_agentHost.outerHTML);
+                }catch(_){}
               }
               _prev=_r.offset;
             }
@@ -7033,7 +7057,7 @@ function doRender(){
         var _liveScaffoldNeedsUpgrade=!!(
           _reactHandoff&&body.querySelector('[data-scaffold-live]')&&
           !body.querySelector('.think-block,.tool-run-group,.tool-inline,'+
-            '.agent-tool-card,.tool-inline-attachments,.exec-artifact,.visualization-card')
+            '.agent-tool-card,.tool-inline-attachments,.agent-run-host,.exec-artifact,.visualization-card')
         );
         if(_reactHandoff){
           if(_liveScaffoldNeedsUpgrade){

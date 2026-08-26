@@ -5563,6 +5563,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 
 .msg.assistant .msg-body:has(.tool-inline),
 .msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-run-host),
 .msg.assistant .msg-body:has(.agent-tool-card){
   box-sizing:border-box;
   margin:2px 0 4px;
@@ -5918,6 +5919,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 @media(max-width:768px){
   .msg.assistant .msg-body:has(.tool-inline),
   .msg.assistant .msg-body:has(.tool-run-group),
+  .msg.assistant .msg-body:has(.agent-run-host),
   .msg.assistant .msg-body:has(.agent-tool-card){
     padding:18px 16px 20px;
     border-radius:14px;
@@ -5937,6 +5939,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
    look like a user bubble and broke the visual hierarchy of the page. */
 .msg.assistant .msg-body:has(.tool-inline),
 .msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-run-host),
 .msg.assistant .msg-body:has(.agent-tool-card){
   margin:0;
   padding:0;
@@ -6465,6 +6468,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 
 .msg.assistant .msg-body:has(.tool-inline),
 .msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-run-host),
 .msg.assistant .msg-body:has(.agent-tool-card){
   margin:0;
   padding:0;
@@ -6746,6 +6750,237 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .msg.assistant .msg-body:has(.tool-inline) .tool-inline-spinner,
   .msg.assistant .msg-body:has(.tool-inline) .tool-inline-label.shimmer-text,
   .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon::before{animation:none!important}
+}
+
+/* ── Codex agent step stream ────────────────────────────────────────
+   A workspace-agent turn is a sequence of small actions (ran a command,
+   edited files, read files, updated the plan). They belong in the reading
+   flow at the point they happened, so they reuse the activity surface's
+   tokens and geometry rather than introducing a second card language:
+   no fills, no borders, a monochrome stroke icon, a muted label, and an
+   optional monospace excerpt. Anything worth inspecting (full command,
+   output tail, changed paths) hides behind the row's native disclosure.
+
+   A message that only contains agent steps must get the same quiet
+   surface as one containing tool rows, hence :has(.agent-run-host) in the
+   surface selectors above being mirrored here. */
+.msg.assistant .msg-body:has(.agent-run-host){
+  box-sizing:border-box;
+  color:var(--tool-activity-text);
+}
+.agent-run-host{display:block;margin:2px 0 0}
+.agent-run{
+  display:block;
+  margin:6px 0 10px;
+  padding:0 0 0 3px;
+  border-left:1px solid var(--tool-activity-border);
+  color:var(--tool-activity-row);
+}
+.agent-run-shell{display:block;border:0;background:none}
+.agent-run-summary{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-height:24px;
+  padding:0 0 0 11px;
+  list-style:none;
+  cursor:pointer;
+  color:hsl(var(--text-500));
+  font-size:12.5px;
+  line-height:1.4;
+}
+.agent-run-summary::-webkit-details-marker{display:none}
+.agent-run-summary::marker{content:""}
+.agent-run-summary:hover{color:var(--tool-activity-row-hover)}
+.agent-run-summary:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:3px;border-radius:6px}
+.agent-run-chev{
+  width:8px;height:8px;
+  border:solid currentColor;
+  border-width:0 1.3px 1.3px 0;
+  transform:rotate(45deg) translateY(-1px);
+  transition:transform .16s ease;
+  opacity:.75;
+}
+.agent-run-shell[open] > .agent-run-summary .agent-run-chev{transform:rotate(225deg) translate(-1px,-1px)}
+.agent-run[data-state="running"] .agent-run-elapsed{color:hsl(var(--accent-000)/.85)}
+.agent-run[data-state="failed"] .agent-run-elapsed{color:var(--tool-activity-danger)}
+.agent-run-steps{display:flex;flex-direction:column;gap:2px;padding:2px 0 0 11px}
+
+.agent-step{display:block;border:0;background:none;color:inherit}
+.agent-step-head{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:26px;
+  padding:1px 0;
+  list-style:none;
+  cursor:pointer;
+  color:var(--tool-activity-row);
+  transition:color .16s ease;
+}
+.agent-step-head::-webkit-details-marker{display:none}
+.agent-step-head::marker{content:""}
+.agent-step-head:hover{color:var(--tool-activity-row-hover)}
+.agent-step-head:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:3px;border-radius:6px}
+.agent-step.is-flat > .agent-step-head{cursor:default}
+.agent-step-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 17px;width:17px;height:17px;
+  color:currentColor;opacity:.9;
+}
+.agent-step-icon svg{width:16px;height:16px;stroke-width:1.5}
+.agent-step-label{
+  flex:0 0 auto;
+  font-size:13.5px;
+  font-weight:450;
+  line-height:1.45;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.agent-step-cmd{
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding:0;
+  border:0;
+  background:none;
+  color:hsl(var(--text-500));
+  font:12px/1.45 var(--font-mono);
+}
+.agent-step-meta{
+  flex:0 0 auto;
+  margin-left:auto;
+  color:hsl(var(--text-500));
+  font:11px/1.3 var(--font-mono);
+  white-space:nowrap;
+}
+/* The activity surface gives every <code> a filled chip, which turns the
+   inline command excerpt into a wide block. A step's excerpt is prose-level
+   detail, so it stays unfilled and sits directly next to the label. */
+.msg.assistant .msg-body:has(.agent-run-host) .agent-step-cmd,
+.msg.assistant .msg-body:has(.tool-inline) .agent-step-cmd{
+  padding:0;
+  border-radius:0;
+  background:none;
+  color:hsl(var(--text-500));
+  font:12px/1.45 var(--font-mono);
+}
+.agent-step[data-state="running"] .agent-step-icon{opacity:1;color:hsl(var(--accent-000)/.9)}
+.agent-step[data-state="failed"] .agent-step-icon,
+.agent-step[data-state="failed"] .agent-step-label,
+.agent-step[data-state="failed"] .agent-step-meta{color:var(--tool-activity-danger)}
+.agent-step-body{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  margin:1px 0 6px;
+  padding:0 0 0 26px;
+}
+.agent-step-pre{
+  max-height:200px;
+  margin:0;
+  padding:6px 9px;
+  overflow:auto;
+  border-radius:7px;
+  background:var(--tool-activity-code-bg);
+  color:hsl(var(--text-400));
+  font:11.5px/1.5 var(--font-mono);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.agent-step-pre[data-kind="command"]{color:hsl(var(--text-300))}
+.agent-step-paths{
+  display:flex;flex-direction:column;gap:2px;
+  margin:0;padding:0;
+  list-style:none;
+  color:hsl(var(--text-400));
+  font:11.5px/1.5 var(--font-mono);
+}
+
+/* The agent's own todo list. One card per run, rewritten in place as
+   Codex re-sends the whole list, so the reader watches items tick over
+   instead of scrolling through repeated snapshots. */
+.agent-plan{
+  display:block;
+  margin:2px 0 8px;
+  padding:9px 12px 10px;
+  border-radius:10px;
+  background:var(--tool-activity-code-bg);
+}
+.agent-plan-head{display:flex;align-items:center;gap:8px;color:var(--tool-activity-text);font-size:13px;font-weight:500}
+.agent-plan-icon{display:inline-flex;flex:0 0 16px;width:16px;height:16px}
+.agent-plan-icon svg{width:15px;height:15px;stroke-width:1.5}
+.agent-plan-list{
+  display:flex;flex-direction:column;gap:4px;
+  margin:7px 0 0;padding:0;
+  list-style:none;
+  counter-reset:agent-plan;
+}
+.agent-plan-item{
+  display:flex;align-items:flex-start;gap:8px;
+  color:hsl(var(--text-400));
+  font-size:13px;line-height:1.5;
+}
+.agent-plan-mark{
+  position:relative;
+  flex:0 0 13px;width:13px;height:13px;
+  margin-top:3px;
+  border:1.3px solid hsl(var(--border-300));
+  border-radius:4px;
+}
+.agent-plan-item[data-status="in_progress"]{color:hsl(var(--text-200))}
+.agent-plan-item[data-status="in_progress"] .agent-plan-mark{
+  border-color:hsl(var(--accent-000)/.7);
+  background:hsl(var(--accent-000)/.12);
+}
+.agent-plan-item[data-status="done"]{color:hsl(var(--text-500))}
+.agent-plan-item[data-status="done"] .agent-plan-text{text-decoration:line-through;text-decoration-thickness:1px}
+.agent-plan-item[data-status="done"] .agent-plan-mark{
+  border-color:hsl(var(--accent-000)/.4);
+  background:hsl(var(--accent-000)/.24);
+}
+.agent-plan-item[data-status="done"] .agent-plan-mark::after{
+  content:"";
+  position:absolute;left:3.2px;top:1px;
+  width:4px;height:7px;
+  border:solid hsl(var(--accent-000)/.9);
+  border-width:0 1.4px 1.4px 0;
+  transform:rotate(42deg);
+}
+.agent-plan-note{margin:7px 0 0;color:hsl(var(--text-500));font-size:12px;line-height:1.5}
+
+/* Composer Agent switch: quiet by default, accent only while armed, so the
+   composer keeps one visual emphasis (the send button). */
+.agent-mode-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  height:30px;
+  padding:0 10px;
+  border:1px solid transparent;
+  border-radius:9px;
+  background:transparent;
+  color:hsl(var(--text-400));
+  font-size:12.5px;
+  font-weight:450;
+  cursor:pointer;
+  transition:background .15s ease,color .15s ease,border-color .15s ease;
+}
+.agent-mode-btn svg{width:15px;height:15px;stroke-width:1.5}
+.agent-mode-btn:hover{background:hsl(var(--text-500)/.1);color:hsl(var(--text-200))}
+.agent-mode-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.6);outline-offset:2px}
+.agent-mode-btn[aria-pressed="true"]{
+  border-color:hsl(var(--accent-000)/.45);
+  background:hsl(var(--accent-000)/.14);
+  color:hsl(var(--accent-000));
+}
+@media(max-width:640px){
+  .agent-mode-btn .agent-mode-label{display:none}
+  .agent-mode-btn{padding:0 8px}
+}
+@media(prefers-reduced-motion:reduce){
+  .agent-run-chev,.agent-mode-btn{transition:none}
 }
 
 

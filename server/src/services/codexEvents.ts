@@ -36,7 +36,7 @@ export function mapCodexNotification(
         case 'fileChange':
           return { event: 'tool', data: { itemId: item.id, type: item.type, changes: item.changes, status: item.status } };
         case 'mcpToolCall':
-          return { event: 'tool', data: { itemId: item.id, type: item.type, name: item.name, status: item.status } };
+          return { event: 'tool', data: { itemId: item.id, type: item.type, name: item.name, server: item.server ?? null, tool: item.tool ?? null, status: item.status } };
         case 'webSearch':
           return { event: 'tool', data: { itemId: item.id, type: item.type, query: item.query, status: item.status } };
         case 'agentMessage':
@@ -49,8 +49,41 @@ export function mapCodexNotification(
     }
     case 'item/completed': {
       const item = params.item || {};
-      return { event: 'item_completed', data: { itemId: item.id, type: item.type, status: item.status, text: item.text ?? null, changes: item.changes ?? null } };
+      return {
+        event: 'item_completed',
+        data: {
+          itemId: item.id,
+          type: item.type,
+          status: item.status,
+          text: item.text ?? null,
+          changes: item.changes ?? null,
+          /* Command/tool metadata the step UI needs: the command that ran,
+             how it ended, and how long it took. Absent for item types that
+             do not carry them. */
+          command: item.command ?? null,
+          cwd: item.cwd ?? null,
+          exitCode: item.exitCode ?? null,
+          durationMs: item.durationMs ?? null,
+          aggregatedOutput: item.aggregatedOutput ?? null,
+          server: item.server ?? null,
+          tool: item.tool ?? null,
+          query: item.query ?? null,
+        },
+      };
     }
+    /* Codex reports the model's own todo list for the turn. It is the same
+       information the Codex UI shows as a checklist, so Socrates surfaces it
+       as a plan card that updates in place. */
+    case 'turn/plan/updated':
+      return {
+        event: 'plan',
+        data: {
+          threadId: params.threadId,
+          turnId: params.turnId,
+          plan: Array.isArray(params.plan) ? params.plan : [],
+          explanation: params.explanation ?? null,
+        },
+      };
     case 'item/commandExecution/requestApproval':
       return {
         event: 'approval_required',

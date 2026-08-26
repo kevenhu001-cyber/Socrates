@@ -44,10 +44,15 @@ import {
 } from '../../services/agentRuntime.js';
 import {
   normalizeToolCalls,
-  parseToolArguments,
+  repairToolArguments,
+  resolveToolName,
   sanitizeToolCallForProtocol,
   wrapUntrustedToolResult,
+  type JsonSchemaNode,
 } from '../../services/toolCallSafety.js';
+import { buildToolErrorFeedback, canonicalToolExampleJson } from '../../services/toolErrorFeedback.js';
+import { createToolTurnPolicy, hashToolArguments } from '../../services/toolTurnPolicy.js';
+import { projectAgentEvent } from '../../services/agentStepProjection.js';
 import { executeConnectorTool, CONNECTOR_TOOL_NAMES } from '../../services/connectorTools.js';
 import { executeProjectConnectorTool, PROJECT_CONNECTOR_TOOL_NAMES } from '../../services/projectConnectorTools.js';
 import { estimateMessageTokens, estimateTokens, recordUsage } from '../../services/usageTracker.js';
@@ -87,6 +92,8 @@ type ToolResult = {
   retryable?: boolean;
   userMessage?: string | null;
   detail?: unknown;
+  /** Schema + example text handed to the model when a call was rejected. */
+  correction?: string | null;
   output?: string;
   stdout?: string;
   stderr?: string;
@@ -136,6 +143,10 @@ export function registerStreamRoute(router: Router) {
         await requireOwnedSession(getDb(), sessionIdFromQuery, req.userId!);
       }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
+      /* P_agent-mode — an explicit composer switch, not a policy change: it
+         only pins the first hop's tool choice. The model still decides what
+         to do after the agent returns, and a disabled runtime ignores it. */
+      const agentModeRequested = req.body?.agentMode === true;
 
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
@@ -227,20 +238,24 @@ export function registerStreamRoute(router: Router) {
       });
 
       /* ─── Tool-calling loop ─────────────────────────────────────────
-       * The LLM may decide mid-stream to call the code_interpreter
-       * tool. We run streamChatCompletion, and on finish_reason ===
-       * 'tool_calls' we:
+       * The LLM may decide mid-stream to call a native tool. We run
+       * streamChatCompletion, and on finish_reason === 'tool_calls' we:
        *   1. Emit `event: tool_use` so the client can render a card.
-       *   2. Execute each tool call sequentially.
+       *   2. Execute each tool call (concurrently where safe).
        *   3. Emit `event: tool_result` with the outcome.
        *   4. Append the tool result as a `role:'tool'` message and
        *      stream another chat completion that wraps up the answer.
        *
-       * MAX_TOOL_ITERATIONS guards against the model getting stuck in
-       * a tool-call loop; on overflow we emit a structured error event
-       * and end the response cleanly.
+       * createToolTurnPolicy owns every limit for the turn: the iteration
+       * budget, the per-round call cap, the absolute call and wall-clock
+       * ceilings, the duplicate-call guard, and per-tool failure
+       * accounting. A failing tool now only withdraws itself — the turn
+       * keeps the rest of its toolset, which is the behaviour users
+       * previously lost whenever one malformed argument object appeared
+       * twice. Every threshold is environment-tunable.
        * ───────────────────────────────────────────────────────────── */
-      const MAX_TOOL_ITERATIONS = 4;
+      const toolPolicy = createToolTurnPolicy();
+      const MAX_TOOL_ITERATIONS = toolPolicy.maxIterations;
       const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
 
       // Fetch the user's connector connections so the tool registry can
@@ -272,31 +287,47 @@ export function registerStreamRoute(router: Router) {
        * guidance aligned with the current tool registry after additions or
        * connector changes. */
       const toolNames = toolDefs.map((tool) => (tool as { function?: { name?: string } }).function?.name || '');
+      /** The `parameters` schema for a tool, used for repair and feedback. */
+      const schemaForTool = (name: string): JsonSchemaNode | null => {
+        const definition = toolDefs.find((tool) => (
+          (tool as { function?: { name?: string } }).function?.name === name
+        )) as { function?: { parameters?: JsonSchemaNode } } | undefined;
+        return definition?.function?.parameters || null;
+      };
+      /* One canonical example per callable tool, shared by the system-prompt
+       * contract and the correction text a rejected call receives, so the
+       * two can never disagree. */
+      const toolExamples: Record<string, string> = {};
+      for (const name of toolNames) {
+        if (!name) continue;
+        const example = canonicalToolExampleJson(name, schemaForTool(name));
+        if (example) toolExamples[name] = example;
+      }
+      /* Side-effecting tools never accept a fuzzy name match: acting on a
+       * guess is worse than returning a correction to the model. */
+      const FUZZY_SAFE = (name: string) => name !== 'code_interpreter' && name !== 'workspace_agent';
       type StreamMessage =
         | (typeof finalMessages)[number]
         | { role: 'assistant'; content: string; tool_calls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
         | { role: 'tool'; tool_call_id: string; content: string };
       let workingMessages: StreamMessage[] = finalMessages;
-      let visualizationValidationFailures = 0;
-      let planningValidationFailures = 0;
-      /* A malformed argument gets one structured correction opportunity. If
-         the model emits malformed arguments again, stop offering tools for
-         the next hop so the turn can finish in prose instead of displaying
-         the same error four times. */
-      let invalidToolArgumentFailures = 0;
-      /* P_exec-retry-cap — mirrors the visualization/planning counters.
-         A model stuck on the same Python error (e.g. SyntaxError: 'await'
-         outside function) would otherwise ping-pong through all four
-         iterations re-emitting the same code. After 3 consecutive
-         failures we tell the model to stop retrying and explain instead. */
-      let codeInterpreterValidationFailures = 0;
 
       const writeSse = (payload: string) => {
         if (abortController.signal.aborted) return;
         try { res.write(payload); try { (res as { flush?: () => void }).flush?.(); } catch {} } catch { /* socket closed — abortController handles cleanup */ }
       };
       for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
-        const toolsAllowed = iter < MAX_TOOL_ITERATIONS && invalidToolArgumentFailures < 2;
+        const toolsAllowed = toolPolicy.toolsAllowed(iter);
+        toolPolicy.noteIteration();
+        /* Withdrawn tools are removed from both the request and the prompt,
+         * so the model is never invited to call something the loop will
+         * reject. Everything else stays available. */
+        const activeToolNames = toolsAllowed ? toolPolicy.enabledToolNames(toolNames) : [];
+        const activeToolDefs = toolsAllowed
+          ? toolDefs.filter((tool) => activeToolNames.includes(
+            (tool as { function?: { name?: string } }).function?.name || '',
+          ))
+          : [];
         /* The model-facing contract must describe the same capability set as
          * this request. In the final, tools-disabled hop the upstream gets no
          * `tools` field, so do not leave the initial registry list in the
@@ -304,15 +335,20 @@ export function registerStreamRoute(router: Router) {
         let requestMessages = appendToolRoutingHints(
           appendNativeToolContract(
             workingMessages,
-            toolsAllowed ? toolNames : [],
+            activeToolNames,
+            {
+              limits: toolsAllowed ? toolPolicy.snapshot() : null,
+              disabledTools: toolPolicy.disabledTools(),
+              examples: toolExamples,
+            },
           ),
-          toolsAllowed ? toolNames : [],
+          activeToolNames,
         );
         /* Keep the code-runtime appendix aligned with the executable tool
          * list. In particular, the final tools-disabled hop must not tell
          * the model that code_interpreter is callable. The helper inserts
          * the appendix before FINAL_OUTPUT_CONSTRAINTS and is idempotent. */
-        if (toolsAllowed && toolNames.includes('code_interpreter')) {
+        if (toolsAllowed && activeToolNames.includes('code_interpreter')) {
           requestMessages = await prependCodeInterpreterPrompt(requestMessages);
         }
         let iterFinishReason: string | null = null;
@@ -330,7 +366,16 @@ export function registerStreamRoute(router: Router) {
             signal: abortController.signal,
             reasoning_effort,
             extra_body: safeExtraBody,
-            ...(toolsAllowed && toolDefs.length > 0 ? { tools: toolDefs, tool_choice: 'auto' } : {}),
+            ...(toolsAllowed && activeToolDefs.length > 0
+              ? {
+                tools: activeToolDefs,
+                /* Pin the agent only on the opening hop: later hops must be
+                   free to answer in prose or use another tool. */
+                tool_choice: agentModeRequested && iter === 0 && activeToolNames.includes('workspace_agent')
+                  ? { type: 'function', function: { name: 'workspace_agent' } }
+                  : 'auto',
+              }
+              : {}),
           } as Parameters<typeof streamChatCompletion>[0],
           // onChunk
           (chunk: string) => {
@@ -409,7 +454,7 @@ export function registerStreamRoute(router: Router) {
 
         const boundedToolCalls = normalizeToolCalls(toolCallsThisTurn, {
           iteration: iter,
-          maxCalls: 4,
+          maxCalls: toolPolicy.maxCallsPerIteration,
         }) as ToolCall[];
 
         /* Keep the raw calls for execution and diagnostics, but only echo a
@@ -430,16 +475,80 @@ export function registerStreamRoute(router: Router) {
           break;
         }
 
+        /* ── Resolve names and repair arguments once per batch ──────────
+         * Models address tools by synonyms (`search`, `functions.web_search`)
+         * and mis-shape arguments in a few repeatable ways. Both are fixed
+         * here, before dispatch, so scheduling hints, the tool_use frame the
+         * client renders, and execution all agree on one canonical name and
+         * one canonical argument object. Anything that cannot be explained
+         * becomes a structured rejection carrying the tool's schema and a
+         * copy-ready example. */
+        interface PreparedCall {
+          call: ToolCall;
+          /** Canonical registry name when resolved, else the requested name. */
+          toolName: string;
+          registryEntry: ReturnType<typeof toolRegistry.get>;
+          args: Record<string, any>;
+          rejection: { code: string; retryable: boolean; hint?: string } | null;
+        }
+        const prepared: PreparedCall[] = boundedToolCalls.map((call) => {
+          const requestedName = call.function?.name || '';
+          const resolved = resolveToolName(requestedName, toolNames, {
+            allowFuzzy: FUZZY_SAFE(requestedName),
+          });
+          const toolName = resolved.name || requestedName;
+          if (resolved.name && resolved.match !== 'exact') {
+            console.info('[tool-resolve]', JSON.stringify({
+              requested: requestedName, resolved: resolved.name, match: resolved.match,
+            }));
+          }
+          const registryEntry = resolved.name ? toolRegistry.get(resolved.name) : null;
+          const schema = resolved.name ? schemaForTool(resolved.name) : null;
+          const repaired = repairToolArguments(call.function?.arguments, schema || undefined);
+          if (repaired.ok && repaired.repairs.length > 0) {
+            /* Log the repair kinds only — never the argument values. */
+            console.info('[tool-repair]', JSON.stringify({
+              name: toolName, repairs: repaired.repairs.slice(0, 12),
+            }));
+          }
+          const args = (repaired.ok ? repaired.value : {}) as Record<string, any>;
+
+          let rejection: PreparedCall['rejection'] = null;
+          if (!resolved.name) {
+            rejection = { code: 'unknown_tool', retryable: false };
+          } else if (!registryEntry || !registryEntry.enabled) {
+            rejection = { code: 'tool_not_available', retryable: false };
+          } else if (toolPolicy.disabledReason(resolved.name)) {
+            rejection = {
+              code: 'tool_not_available',
+              retryable: false,
+              hint: `\`${resolved.name}\` was withdrawn for the rest of this turn (${toolPolicy.disabledReason(resolved.name)}).`,
+            };
+          } else if (!repaired.ok) {
+            rejection = {
+              code: 'invalid_tool_arguments',
+              retryable: toolPolicy.remainingRetries(resolved.name) > 1,
+            };
+          } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
+            rejection = {
+              code: 'duplicate_tool_call',
+              retryable: true,
+              hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+            };
+          }
+          if (resolved.name && !rejection) {
+            toolPolicy.registerCall(resolved.name, hashToolArguments(args));
+          }
+          return { call, toolName, registryEntry, args, rejection };
+        });
+
         // Emit tool_use event for the client to render cards.
         writeSse(`event: tool_use\ndata: ${JSON.stringify(
-          boundedToolCalls.map((t) => {
-            const parsed = parseToolArguments(t.function && t.function.arguments);
-            return {
-              id: t.id,
-              name: t.function && t.function.name,
-              input: parsed.ok ? parsed.value : {},
-            };
-          }),
+          prepared.map((entry) => ({
+            id: entry.call.id,
+            name: entry.toolName,
+            input: entry.args,
+          })),
         )}\n\n`);
 
         // Echo the assistant's tool_calls back as a role:'assistant'
@@ -468,52 +577,56 @@ export function registerStreamRoute(router: Router) {
         // while retaining the original result order for the provider hop.
         // SSE frames from independent tools may interleave, but the client
         // correlates every frame by tool_call id.
-        const runToolCall = async (tc: ToolCall): Promise<StreamMessage> => {
+        const runToolCall = async (entry: PreparedCall): Promise<StreamMessage> => {
+          const tc = entry.call;
           let result: ToolResult;
-          let toolName: string | undefined = undefined;
+          const toolName: string = entry.toolName;
+          /* Branches that need the post-failure retry count record their own
+             outcome; everything else is recorded once below. */
+          let outcomeRecorded = false;
           try {
-            toolName = tc.function && tc.function.name;
-            const parsedArgs = parseToolArguments(tc.function && tc.function.arguments);
-            const registryEntry = toolRegistry.get(toolName || '');
-            const args = (parsedArgs.ok ? parsedArgs.value : {}) as Record<string, any>;
-            if (parsedArgs.ok && registryEntry?.enabled) invalidToolArgumentFailures = 0;
+            const args = entry.args;
 
-            if (!parsedArgs.ok) {
-              invalidToolArgumentFailures += 1;
-              console.warn('[chat/stream] invalid tool arguments', JSON.stringify({
-                id: tc.id,
-                name: toolName || 'unknown_tool',
-                length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
-                attempt: invalidToolArgumentFailures,
-              }));
-              const retryable = invalidToolArgumentFailures < 2;
-              writeSse(`event: tool_result\ndata: ${JSON.stringify({
-                id: tc.id, ok: false, status: 'failed',
-                output: '', stderr: '', artifacts: [],
-                error: 'invalid_tool_arguments',
-                errorCode: 'invalid_tool_arguments', retryable,
-                userMessage: retryable
-                  ? '工具参数格式无效，正在请求模型修正。'
-                  : '工具参数连续无效，本轮将停止自动重试。',
-                detail: 'Expected one JSON object matching the supplied schema, with no Markdown fence or extra wrapper.',
-              })}\n\n`);
-              result = {
-                status: 'failed',
-                error: 'invalid_tool_arguments',
-                errorCode: 'invalid_tool_arguments',
+            if (entry.rejection) {
+              /* One rejection path for every pre-execution failure. The model
+               * gets the field errors, the tool's schema, and a copy-ready
+               * example call; the card gets the same detail so a user can see
+               * exactly what was wrong. */
+              const { code, retryable, hint } = entry.rejection;
+              const feedback = buildToolErrorFeedback({
+                toolName,
+                schema: schemaForTool(toolName),
+                errorCode: code,
                 retryable,
-                detail: 'Send one JSON object matching the supplied schema. Do not use Markdown fences, comments, or an extra input/arguments wrapper.',
-              };
-            } else if (!registryEntry || !registryEntry.enabled) {
+                hint: hint || null,
+                availableTools: activeToolNames,
+              });
+              if (code === 'invalid_tool_arguments') {
+                console.warn('[chat/stream] invalid tool arguments', JSON.stringify({
+                  id: tc.id,
+                  name: toolName || 'unknown_tool',
+                  length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
+                  remainingRetries: toolPolicy.remainingRetries(toolName),
+                }));
+              }
+              /* A duplicate is a routing mistake rather than a tool defect, so
+               * it must not push the tool towards being withdrawn. */
+              if (code !== 'duplicate_tool_call') toolPolicy.recordResult(toolName, false, code);
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
-                id: tc.id, ok: false, status: 'failed',
+                id: tc.id, name: toolName, ok: false, status: 'failed',
                 output: '', stderr: '', artifacts: [],
-                error: 'tool_not_available',
-                errorCode: 'tool_not_available', retryable: false,
-                userMessage: '该工具未启用或不可用。', detail: 'tool_not_available',
+                error: code, errorCode: code, retryable,
+                userMessage: feedback.userMessage,
+                detail: feedback.detail,
               })}\n\n`);
-              result = { status: 'failed', error: 'tool_not_available', errorCode: 'tool_not_available', retryable: false };
-            } else if (toolName === 'workspace_agent') {
+              return {
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: wrapUntrustedToolResult(toolName, feedback.modelMessage),
+              };
+            }
+
+            if (toolName === 'workspace_agent') {
               /* Unified Codex adapter — create the durable run before
                * starting the turn so the browser can render a stable run id,
                * reconnect to /events, and answer approvals after a refresh.
@@ -564,6 +677,23 @@ export function registerStreamRoute(router: Router) {
                       availableDecisions: data.availableDecisions || ['accept', 'decline'],
                     })}\n\n`);
                   } else {
+                    /* Step-level streaming: each Codex thread item becomes an
+                       `agent_step` frame the chat renders as its own row
+                       (运行了命令 / 编辑了文件 / 读取了文件 …), and the
+                       model's todo list becomes an `agent_plan` frame that
+                       updates one card in place. `tool_progress` is still
+                       emitted for every event so older clients (mobile,
+                       cached bundles) keep working unchanged. */
+                    const projected = projectAgentEvent(event);
+                    if (projected?.type === 'step') {
+                      writeSse(`event: agent_step\ndata: ${JSON.stringify({
+                        id: tc.id, runId, ...projected,
+                      })}\n\n`);
+                    } else if (projected?.type === 'plan') {
+                      writeSse(`event: agent_plan\ndata: ${JSON.stringify({
+                        id: tc.id, runId, ...projected,
+                      })}\n\n`);
+                    }
                     const chunk = event.event === 'delta' || event.event === 'reasoning' || event.event === 'tool_output'
                       ? String(data.delta || '')
                       : '';
@@ -714,14 +844,20 @@ data: ${JSON.stringify({
               const isExecutionTimeout = execResult.status === 'timeout'
                 || execResult.errorCode === 'execution_timeout';
               if (execResult.status !== 'completed') {
-                codeInterpreterValidationFailures += 1;
-                result.retryable = isExecutionTimeout ? false : codeInterpreterValidationFailures <= 2;
+                /* Per-tool accounting lives in toolPolicy now: the same
+                   failing tool steps aside after its own limit, and a
+                   success anywhere in the turn resets its streak. */
+                toolPolicy.recordResult(toolName, false, execResult.errorCode || 'execution_failed');
+                result.retryable = isExecutionTimeout ? false : toolPolicy.remainingRetries(toolName) > 0;
                 if (!result.retryable) {
                   result.userMessage = isExecutionTimeout
                     ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
                     : '代码执行连续多次失败，本次不再自动重试。';
                 }
+              } else {
+                toolPolicy.recordResult(toolName, true);
               }
+              outcomeRecorded = true;
 
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id,
@@ -744,12 +880,26 @@ data: ${JSON.stringify({
             } else if (toolName === 'render_visualization') {
               result = executeVisualization(args);
               if (result.status !== 'completed') {
-                visualizationValidationFailures += 1;
-                result.retryable = visualizationValidationFailures <= 2;
+                toolPolicy.recordResult(toolName, false, result.errorCode || 'visual_spec_invalid');
+                result.retryable = toolPolicy.remainingRetries(toolName) > 0;
+                /* The correction text carries the schema and a working
+                   example, which is what actually unblocks the model. */
+                const feedback = buildToolErrorFeedback({
+                  toolName,
+                  schema: schemaForTool(toolName),
+                  errorCode: result.errorCode || 'visual_spec_invalid',
+                  fieldErrors: JSON.stringify(result.detail || []),
+                  retryable: Boolean(result.retryable),
+                });
+                result.detail = feedback.detail;
+                result.correction = feedback.modelMessage;
                 if (!result.retryable) {
-                  result.userMessage = '可视化规格连续三次无效，本次不再自动重试。';
+                  result.userMessage = '可视化规格连续多次无效，本次不再自动重试。';
                 }
+              } else {
+                toolPolicy.recordResult(toolName, true);
               }
+              outcomeRecorded = true;
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id,
                 name: 'render_visualization',
@@ -768,7 +918,7 @@ data: ${JSON.stringify({
                 template: result.visualization && result.visualization.template || null,
                 status: result.status,
                 durationMs: result.durationMs,
-                corrected: visualizationValidationFailures > 0,
+                corrected: toolPolicy.remainingRetries('render_visualization') < toolPolicy.snapshot().perToolFailureLimit,
               }));
             } else if (toolName === 'web_search') {
               // Execute web search as an LLM tool.
@@ -898,12 +1048,24 @@ data: ${JSON.stringify({
               const isPlan = toolName === 'create_plan';
               result = isPlan ? executePlan(args) : executeSpec(args);
               if (result.status !== 'completed') {
-                planningValidationFailures += 1;
-                result.retryable = planningValidationFailures <= 2;
+                toolPolicy.recordResult(toolName, false, result.errorCode || 'plan_spec_invalid');
+                result.retryable = toolPolicy.remainingRetries(toolName) > 0;
+                const feedback = buildToolErrorFeedback({
+                  toolName,
+                  schema: schemaForTool(toolName),
+                  errorCode: result.errorCode || 'plan_spec_invalid',
+                  fieldErrors: JSON.stringify(result.detail || []),
+                  retryable: Boolean(result.retryable),
+                });
+                result.detail = feedback.detail;
+                result.correction = feedback.modelMessage;
                 if (!result.retryable) {
-                  result.userMessage = '结构化字段连续三次无效，本次不再自动重试。';
+                  result.userMessage = '结构化字段连续多次无效，本次不再自动重试。';
                 }
+              } else {
+                toolPolicy.recordResult(toolName, true);
               }
+              outcomeRecorded = true;
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id,
                 name: toolName,
@@ -967,15 +1129,23 @@ data: ${JSON.stringify({
               })}\n\n`);
               result = toolResult;
             } else {
-              // Unknown tool — tell the model so it can recover instead of looping.
+              /* A tool that exists in the registry but has no executor here
+                 (a wiring gap, not a model mistake) still gets the standard
+                 correction package so the model can pivot. */
+              const feedback = buildToolErrorFeedback({
+                toolName,
+                errorCode: 'unknown_tool',
+                retryable: false,
+                availableTools: activeToolNames,
+              });
               writeSse(`event: tool_result\ndata: ${JSON.stringify({
                 id: tc.id, ok: false, status: 'failed',
                 output: '', stderr: '', artifacts: [],
                 error: 'unknown_tool',
                 errorCode: 'unknown_tool', retryable: false,
-                userMessage: '该工具暂不可用。', detail: 'unknown_tool',
+                userMessage: feedback.userMessage, detail: feedback.detail,
               })}\n\n`);
-              result = { status: 'failed', error: 'unknown_tool' };
+              result = { status: 'failed', error: 'unknown_tool', errorCode: 'unknown_tool', correction: feedback.modelMessage };
             }
           } catch (err) {
             // Tool execution itself threw — never let this bubble out
@@ -989,6 +1159,18 @@ data: ${JSON.stringify({
               userMessage: '工具执行失败。', detail: msg,
             })}\n\n`);
             result = { status: 'failed', error: msg };
+          }
+
+          /* Per-tool outcome accounting for every branch that did not need
+             the post-failure count itself. A tool only loses its slot after
+             its own consecutive-failure limit, and never takes the rest of
+             the toolset down with it. */
+          if (!outcomeRecorded) {
+            toolPolicy.recordResult(
+              toolName,
+              result.status === 'completed',
+              String(result.errorCode || result.error || 'tool_failed'),
+            );
           }
 
           // Feed the tool result back as role:'tool' so the next chat
@@ -1058,21 +1240,24 @@ data: ${JSON.stringify({
             if (result.status === 'completed' && result.visualization) {
               toolContent = `[status: completed]\n[visualization: ${result.visualization.template}]\n[title: ${result.visualization.title}]\nThe visual card is now rendered in the conversation. Refer to it briefly in prose and do not output a legacy viz/html/plot fence.`;
             } else {
-              toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'visual_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? 'Correct the visual specification and call render_visualization once more. Do not fall back to Python or legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
+              toolContent = `${result.correction || `[error] ${result.errorCode || 'visual_spec_invalid'}`}\n${result.retryable ? 'Do not fall back to Python or a legacy fenced visualization.' : 'Explain the issue concisely without using Python or a legacy fenced visualization.'}`;
             }
           } else if (toolName === 'create_plan' || toolName === 'create_spec') {
             const kind = toolName === 'create_plan' ? 'plan' : 'spec';
             if (result.status === 'completed') {
               toolContent = `[status: completed]\n[${kind} card rendered]\n${result.output || ''}\nThe ${kind} card is now shown in the conversation. Refer to it briefly in prose; do not paste the whole ${kind} again. Reply in the user's language.`;
             } else {
-              toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? `Correct the ${kind} fields against the schema and call ${toolName} once more.` : `Explain the ${kind} concisely in prose instead.`}`;
+              toolContent = result.correction
+                || `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]`;
             }
           } else if (toolName === 'workspace_agent') {
             toolContent = result.status === 'completed'
               ? `[status: completed]\n[run_id: ${result.runId || 'unknown'}]\n[workspace_id: ${result.workspaceId || 'unknown'}]\n${result.output || result.stdout || '(no output)'}\nThe Codex workspace run is rendered inline. Summarize the concrete changes, tests, and artifacts in the user's language.`
               : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nIf the run is awaiting approval, wait for the user decision instead of starting a duplicate run.`;
-          } else if (result.errorCode === 'invalid_tool_arguments') {
-            toolContent = `[status: failed]\n[error_code: invalid_tool_arguments]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail}\n${result.retryable === false ? 'Do not call this tool again in this turn. Explain the issue in prose instead.' : 'Correct the argument object against the native schema and call the tool once more.'}`;
+          } else if (result.correction) {
+            /* Schema + copy-ready example, already assembled by
+               toolErrorFeedback for this rejection. */
+            toolContent = result.correction;
           } else if (result.status !== 'completed' && toolName === 'web_search') {
             toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'web_search_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe search engines are unavailable or rate-limited. If retryable, wait a moment and retry with the same or a rephrased query; otherwise answer from your own knowledge and note that live results could not be fetched.`;
           } else if (result.status !== 'completed' && toolName === 'web_fetch') {
@@ -1092,12 +1277,25 @@ data: ${JSON.stringify({
         };
 
         const toolMessages = await dispatchToolCalls(
-          boundedToolCalls,
-          (tc) => tc.function?.name || '',
+          prepared,
+          /* Scheduling hints must follow the resolved name, otherwise an
+             aliased code_interpreter call would lose its serial slot. */
+          (entry) => entry.toolName,
           toolRegistry,
           runToolCall,
         );
         workingMessages = workingMessages.concat(toolMessages);
+
+        /* An exhausted call or time budget ends the tool phase deliberately:
+           the next hop runs without tools so the turn still produces a
+           written answer instead of stopping mid-flight. */
+        const exhausted = toolPolicy.budgetExhausted();
+        if (exhausted) {
+          writeSse(`event: error\ndata: ${JSON.stringify({
+            error: exhausted.code,
+            message: exhausted.message,
+          })}\n\n`);
+        }
       }
 
       /* Abort guard — if the client disconnected during tool execution,

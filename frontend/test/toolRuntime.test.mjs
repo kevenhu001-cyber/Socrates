@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { JSDOM } from 'jsdom';
+
+/* Agent-step rendering needs a real DOM (it builds <details> rows). The
+   older tests below keep using the tiny body stub, which the runtime
+   tolerates by design. */
+const dom = new JSDOM('<!doctype html><html><body></body></html>');
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+globalThis.HTMLElement = dom.window.HTMLElement;
+globalThis.CSS = dom.window.CSS;
+
 import { createToolRuntime } from '../src/chat/toolRuntime.ts';
 
 function makeBody() {
@@ -748,4 +759,126 @@ test('ToolRuntime cancel settles grouped rows as stopped', () => {
   } finally {
     delete globalThis.document;
   }
+});
+
+/* ── Codex agent steps ─────────────────────────────────────────────── */
+
+function agentRuntimeHarness() {
+  /* Earlier tests in this file swap in a stub document and delete it when
+     they finish, so restore the jsdom globals per harness. */
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.HTMLElement = dom.window.HTMLElement;
+  globalThis.CSS = dom.window.CSS;
+  const body = document.createElement('div');
+  document.body.appendChild(body);
+  const message = { toolCalls: [] };
+  const runtime = createToolRuntime({
+    body,
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    requestAnimationFrame(callback) { callback(); return 1; },
+    cancelAnimationFrame() {},
+    EventSource: null,
+    mode: 'compact',
+    onInlineTool(_entry, row) { body.appendChild(row); return 0; },
+  });
+  return { body, message, runtime };
+}
+
+function stepFrame(overrides = {}) {
+  return {
+    type: 'step',
+    id: 'agent-1',
+    runId: 'run-1',
+    stepId: 's1',
+    kind: 'command',
+    title: '运行了命令',
+    detail: 'npm test',
+    command: 'npm test',
+    status: 'running',
+    exitCode: null,
+    durationMs: null,
+    diffStat: null,
+    output: null,
+    ...overrides,
+  };
+}
+
+test('agent steps render after the agent row and persist on the tool call', () => {
+  const { body, message, runtime } = agentRuntimeHarness();
+  runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: { task: 'do it' } });
+  runtime.recordAgentStep(stepFrame());
+  runtime.recordAgentStep(stepFrame({ status: 'done', durationMs: 1500 }));
+  runtime.recordAgentStep(stepFrame({ stepId: 's2', kind: 'read', command: 'cat a.ts', status: 'done' }));
+
+  const host = body.querySelector('.agent-run-host');
+  assert.ok(host, 'the run host is mounted');
+  assert.equal(host.previousElementSibling.dataset.tcid, 'agent-1', 'host sits right after the agent row');
+  assert.equal(host.querySelectorAll('.agent-step').length, 2, 'the same stepId updates in place');
+
+  const entry = message.toolCalls.find((call) => call.id === 'agent-1');
+  assert.equal(entry.runId, 'run-1');
+  assert.deepEqual(entry.steps.map((step) => [step.stepId, step.status]), [['s1', 'done'], ['s2', 'done']]);
+  assert.equal(entry.steps[0].durationMs, 1500);
+  runtime.dispose();
+});
+
+test('agent plan frames update one card per run', () => {
+  const { body, message, runtime } = agentRuntimeHarness();
+  runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
+  runtime.recordAgentPlan({
+    type: 'plan', id: 'agent-1', runId: 'run-1',
+    steps: [{ title: 'a', status: 'in_progress' }, { title: 'b', status: 'todo' }],
+    explanation: 'why',
+  });
+  runtime.recordAgentPlan({
+    type: 'plan', id: 'agent-1', runId: 'run-1',
+    steps: [{ title: 'a', status: 'done' }, { title: 'b', status: 'in_progress' }],
+  });
+  const cards = body.querySelectorAll('.agent-plan');
+  assert.equal(cards.length, 1);
+  assert.equal(cards[0].dataset.progress, '1/2');
+  const entry = message.toolCalls.find((call) => call.id === 'agent-1');
+  assert.deepEqual(entry.plan.steps.map((step) => step.status), ['done', 'in_progress']);
+  runtime.dispose();
+});
+
+test('agent frames that arrive before tool_use are replayed', () => {
+  const { body, message, runtime } = agentRuntimeHarness();
+  runtime.recordAgentStep(stepFrame({ id: '', stepId: 'early' }));
+  assert.equal(body.querySelector('.agent-step'), null, 'nothing renders without a row yet');
+  assert.ok(message._orphanAgentFrames, 'the frame is buffered');
+
+  runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
+  assert.ok(body.querySelector('.agent-step[data-step-id="early"]'), 'the buffered step is replayed');
+  const entry = message.toolCalls.find((call) => call.id === 'agent-1');
+  assert.equal(entry.steps.length, 1);
+  runtime.dispose();
+});
+
+test('the agent result settles the run and latches its duration', () => {
+  const { body, runtime } = agentRuntimeHarness();
+  runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
+  runtime.recordAgentStep(stepFrame());
+  runtime.recordToolResult({
+    id: 'agent-1', name: 'workspace_agent', ok: true, status: 'completed',
+    output: 'done', durationMs: 62_000,
+  });
+  const section = body.querySelector('.agent-run');
+  assert.equal(section.dataset.state, 'done');
+  assert.equal(section.querySelector('.agent-run-elapsed').textContent, '用时 1m 2s');
+  assert.equal(section.querySelector('.agent-step').dataset.state, 'done', 'a step still running is resolved');
+  runtime.dispose();
+});
+
+test('a failed agent run marks the section failed', () => {
+  const { body, runtime } = agentRuntimeHarness();
+  runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
+  runtime.recordAgentStep(stepFrame());
+  runtime.recordToolResult({
+    id: 'agent-1', name: 'workspace_agent', ok: false, status: 'failed', error: 'boom',
+  });
+  assert.equal(body.querySelector('.agent-run').dataset.state, 'failed');
+  runtime.dispose();
 });

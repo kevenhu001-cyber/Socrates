@@ -1,0 +1,156 @@
+name: Agent & tool-calling checks
+
+# Focused gate for the Codex agent-step pipeline and the tool-calling
+# reliability layer. The full CI workflow still runs everything; this one
+# gives a fast, targeted signal on the modules that own the behaviour:
+#
+#   server   toolCallSafety (argument repair + name resolution),
+#            toolTurnPolicy (per-turn budget, per-tool degradation),
+#            toolErrorFeedback (schema + copyable example on rejection),
+#            agentStepProjection (Codex events -> chat steps),
+#            codexHarness command parsing, chat prompt assembly
+#   frontend agentSteps / agentMode / toolRuntime units, plus the
+#            Playwright spec that drives real agent_step SSE frames
+#
+# Runs on demand (workflow_dispatch) and whenever those paths change.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'feat/*', 'p*/**']
+    paths:
+      - 'server/src/services/toolCallSafety.ts'
+      - 'server/src/services/toolTurnPolicy.ts'
+      - 'server/src/services/toolErrorFeedback.ts'
+      - 'server/src/services/agentStepProjection.ts'
+      - 'server/src/services/codexEvents.ts'
+      - 'server/src/services/codexHarness.ts'
+      - 'server/src/services/agentRuntime.ts'
+      - 'server/src/routes/chat/**'
+      - 'server/src/routes/agentRuns.ts'
+      - 'server/test/**'
+      - 'frontend/src/chat/**'
+      - 'frontend/src/ui/agentSteps.ts'
+      - 'frontend/src/ui/agentMode.js'
+      - 'frontend/src/ui/icons/**'
+      - 'frontend/src/ui/toolInline.ts'
+      - 'frontend/src/ui/toolCards.js'
+      - 'frontend/test/**'
+      - 'frontend/e2e/agent-steps.spec.mjs'
+      - '.github/workflows/agent-tooling-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/src/services/tool*.ts'
+      - 'server/src/services/agentStepProjection.ts'
+      - 'server/src/services/codex*.ts'
+      - 'server/src/routes/chat/**'
+      - 'frontend/src/chat/**'
+      - 'frontend/src/ui/agent*'
+      - 'frontend/test/**'
+      - 'frontend/e2e/agent-steps.spec.mjs'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+jobs:
+  server-tooling:
+    name: Server tool-calling
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - run: npm ci --include=dev
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Tool-calling and agent projection tests
+        run: |
+          node --import tsx --test \
+            test/toolCallSafety.test.js \
+            test/toolTurnPolicy.test.js \
+            test/toolErrorFeedback.test.js \
+            test/toolRegistry.test.js \
+            test/agentStepProjection.test.js \
+            test/codexEvents.test.js \
+            test/codexCommand.test.js \
+            test/chat-helpers.test.js
+
+      - name: Full server suite
+        run: npm test
+
+  frontend-agent-ui:
+    name: Frontend agent UI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci --include=dev
+
+      # The chat runtime loads a Rust/WASM mechanism library at runtime and
+      # falls back to TypeScript when it is absent, so the unit tests do not
+      # need it. The Vite build does, because the bundle imports the wasm
+      # entry point.
+      - name: Build Rust WASM support
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo install wasm-bindgen-cli --version 0.2.126 --locked
+          npm run build:wasm
+
+      - name: TypeScript check
+        run: npm run lint
+
+      - name: Agent UI unit tests
+        run: |
+          node --experimental-strip-types --test \
+            test/agentSteps.test.mjs \
+            test/agentMode.test.mjs \
+            test/toolRuntime.test.mjs \
+            test/toolInlineErrors.test.mjs \
+            test/toolRunState.test.mjs
+
+      - name: Full unit suite
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Drives real agent_step / agent_plan SSE frames through the streaming
+      # controller and asserts the rendered step list, the plan card, the
+      # elapsed summary, and that the steps survive message serialization.
+      - name: Agent step e2e
+        run: npx playwright test e2e/agent-steps.spec.mjs
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-steps-playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore
+          retention-days: 14

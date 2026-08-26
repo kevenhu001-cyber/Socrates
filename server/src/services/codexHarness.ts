@@ -30,7 +30,23 @@ import path from 'node:path';
 import os from 'node:os';
 
 export const CODEX_ENABLED = process.env.CODEX_ENABLED !== 'false';
+/**
+ * Command that starts the app server.
+ *
+ * Historically this was a standalone `codex-app-server` executable. Recent
+ * codex-cli releases ship the server as a subcommand instead, so the value
+ * may carry arguments: `".../bin/codex.js app-server"`. Splitting on
+ * whitespace keeps both forms working without a shell (which would reopen
+ * the argument-injection surface a plain spawn avoids).
+ */
 export const CODEX_BIN = process.env.CODEX_APP_SERVER_BIN || 'codex-app-server';
+
+/** `[command, ...leadingArgs]` parsed from CODEX_BIN. */
+export function parseCodexCommand(raw: string): { command: string; args: string[] } {
+  const parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { command: 'codex-app-server', args: [] };
+  return { command: parts[0], args: parts.slice(1) };
+}
 export const CODEX_HOME = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 export const CODEX_CLIENT_NAME = process.env.CODEX_CLIENT_NAME || 'socrates';
 
@@ -147,7 +163,8 @@ class CodexHarness extends EventEmitter {
         reject(new Error('Codex harness has been stopped'));
         return;
       }
-      const child = spawn(CODEX_BIN, ['--listen', 'stdio://'], {
+      const { command, args: leadingArgs } = parseCodexCommand(CODEX_BIN);
+      const child = spawn(command, [...leadingArgs, '--listen', 'stdio://'], {
         env: { ...process.env, CODEX_HOME },
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,

@@ -28,6 +28,13 @@ import {
   updateInlineToolLabel,
   updateInlineToolMeta,
 } from '../ui/toolInline.js';
+import {
+  settleAgentRun,
+  stopAgentRunTimer,
+  upsertAgentPlan,
+  upsertAgentStep,
+} from '../ui/agentSteps.js';
+import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.js';
 import type { InlineToolGroupMember } from '../ui/toolInline.js';
 import { mountVisualization } from '../render/visualization.js';
 import {
@@ -57,6 +64,12 @@ interface ToolCallEntry {
   executionId?: string;
   visualization?: unknown;
   results?: unknown[];
+  /** Codex run id, when this call is a workspace-agent run. */
+  runId?: string;
+  /** Projected Codex steps, persisted so history replay can rebuild them. */
+  steps?: AgentStepData[];
+  /** Latest Codex plan snapshot for this run. */
+  plan?: AgentPlanData | null;
   /** Character offset into the message's rawText where the inline row
       was spliced. Persisted with the message so history replay can
       rebuild the inline layout (mirrors main.js's textOffset). */
@@ -79,6 +92,22 @@ interface ToolMessage {
   _orphanDeltas?: Record<string, ToolCallDelta[]>;
   _orphanProgress?: Record<string, ToolProgress[]>;
   _orphanApprovals?: Record<string, ToolApproval[]>;
+  _orphanAgentFrames?: Record<string, Array<AgentStepFrame | AgentPlanFrame>>;
+}
+
+/** `event: agent_step` — one projected Codex step (see server projection). */
+export interface AgentStepFrame extends AgentStepData {
+  type: 'step';
+  /** Tool call id of the workspace_agent call this step belongs to. */
+  id: string;
+  runId?: string;
+}
+
+/** `event: agent_plan` — the Codex todo list for the run. */
+export interface AgentPlanFrame extends AgentPlanData {
+  type: 'plan';
+  id: string;
+  runId?: string;
 }
 
 interface ToolProgress {
@@ -199,6 +228,10 @@ export interface ToolRuntime {
   recordExecutionStart: (event: ExecutionEvent) => void;
   recordToolResult: (result: ToolResult) => void;
   recordToolApproval: (approval: ToolApproval) => void;
+  /** `event: agent_step` — render and persist one Codex step. */
+  recordAgentStep: (step: AgentStepFrame) => void;
+  /** `event: agent_plan` — update the run's checklist in place. */
+  recordAgentPlan: (plan: AgentPlanFrame) => void;
   /** Called when text streams after a tool row so live grouping breaks. */
   noteTextDelta: () => void;
   cancel: () => void;
@@ -1184,12 +1217,149 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         renderApproval({ ...orphanApprovals[approvalIndex], id: entry.id });
       }
     }
+    /* Codex can emit its first step before the tool_use frame lands. */
+    drainAgentFrames(entry, message);
     if (call.name === 'code_interpreter' && call.executionId) {
       entry.executionId = call.executionId;
       connectExecution(call.executionId, entry.id);
     }
     updateRunSummary(message);
     return output as HTMLElement | null;
+  }
+
+  /* ── Codex agent steps ──────────────────────────────────────────
+     The workspace agent streams its own activity: each Codex thread item
+     arrives as an `agent_step` frame and its todo list as `agent_plan`.
+     Steps render into a host anchored right after the agent's inline row,
+     so they read in the same order the agent worked, and they are also
+     stored on the tool call so history replay and the share view can
+     rebuild them without the live stream. */
+
+  /** Host node for a run's steps: a sibling right after the agent row. */
+  function ensureAgentRunHost(toolCallId: string): HTMLElement | null {
+    const row = (findCard(toolCallId) || (function () {
+      const entry = findEntry(activeMessage(), toolCallId);
+      return entry && entry._groupHeadId ? findCard(entry._groupHeadId) : null;
+    })()) as HTMLElement | null;
+    if (!row) return null;
+    const next = row.nextElementSibling as HTMLElement | null;
+    if (next && next.classList && next.classList.contains('agent-run-host')) return next;
+    const created = document.createElement('div');
+    created.className = 'agent-run-host';
+    created.dataset.agentAnchor = toolCallId;
+    if (typeof row.insertAdjacentElement === 'function') {
+      row.insertAdjacentElement('afterend', created);
+    } else {
+      body.appendChild(created);
+    }
+    return created;
+  }
+
+  /** Resolve the entry an agent frame belongs to, tolerating a missing id. */
+  function agentEntryFor(message: ToolMessage, frameId: string): ToolCallEntry | null {
+    const direct = frameId ? findEntry(message, frameId) : null;
+    if (direct) return direct;
+    const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
+    for (let index = calls.length - 1; index >= 0; index--) {
+      if (calls[index] && calls[index].name === 'workspace_agent' && !calls[index]._toolResultApplied) {
+        return calls[index];
+      }
+    }
+    return null;
+  }
+
+  function bufferAgentFrame(message: ToolMessage, frame: AgentStepFrame | AgentPlanFrame): void {
+    if (!message._orphanAgentFrames) message._orphanAgentFrames = {};
+    const key = String(frame.id || 'workspace_agent');
+    if (!message._orphanAgentFrames[key]) message._orphanAgentFrames[key] = [];
+    /* Bounded: a long run must not grow this buffer without limit. */
+    if (message._orphanAgentFrames[key].length < 200) message._orphanAgentFrames[key].push(frame);
+  }
+
+  function recordAgentStep(frame: AgentStepFrame): void {
+    const message = activeMessage();
+    if (!message || !frame || !frame.stepId) return;
+    const entry = agentEntryFor(message, String(frame.id || ''));
+    if (!entry) {
+      bufferAgentFrame(message, frame);
+      return;
+    }
+    onToolActivity();
+    if (frame.runId) entry.runId = String(frame.runId);
+    /* Persisted shape: plain data only, keyed by stepId so the started and
+       completed events collapse into one entry. */
+    const stored: AgentStepData = {
+      stepId: String(frame.stepId),
+      kind: frame.kind,
+      title: frame.title ?? null,
+      detail: frame.detail ?? null,
+      command: frame.command ?? null,
+      status: frame.status,
+      exitCode: frame.exitCode ?? null,
+      durationMs: frame.durationMs ?? null,
+      diffStat: frame.diffStat ?? null,
+      output: frame.output ?? null,
+    };
+    if (!Array.isArray(entry.steps)) entry.steps = [];
+    const existingIndex = entry.steps.findIndex((candidate) => candidate.stepId === stored.stepId);
+    if (existingIndex >= 0) entry.steps[existingIndex] = stored;
+    else entry.steps.push(stored);
+
+    const host = ensureAgentRunHost(entry.id);
+    if (!host) return;
+    try { upsertAgentStep(host, stored, entry.runId || null); } catch (_) { /* presentation only */ }
+  }
+
+  function recordAgentPlan(frame: AgentPlanFrame): void {
+    const message = activeMessage();
+    if (!message || !frame || !Array.isArray(frame.steps) || frame.steps.length === 0) return;
+    const entry = agentEntryFor(message, String(frame.id || ''));
+    if (!entry) {
+      bufferAgentFrame(message, frame);
+      return;
+    }
+    onToolActivity();
+    if (frame.runId) entry.runId = String(frame.runId);
+    entry.plan = { steps: frame.steps.slice(0, 40), explanation: frame.explanation ?? null };
+    const host = ensureAgentRunHost(entry.id);
+    if (!host) return;
+    try { upsertAgentPlan(host, entry.plan, entry.runId || null); } catch (_) { /* presentation only */ }
+  }
+
+  /** Replay frames that arrived before their tool_use landed. */
+  function drainAgentFrames(entry: ToolCallEntry, message: ToolMessage): void {
+    const buckets = message._orphanAgentFrames;
+    if (!buckets) return;
+    const queued = [
+      ...(buckets[entry.id] || []),
+      ...(entry.name === 'workspace_agent' ? (buckets.workspace_agent || []) : []),
+    ];
+    delete buckets[entry.id];
+    if (entry.name === 'workspace_agent') delete buckets.workspace_agent;
+    for (const frame of queued) {
+      if (frame.type === 'plan') recordAgentPlan({ ...frame, id: entry.id });
+      else recordAgentStep({ ...frame, id: entry.id });
+    }
+  }
+
+  /** Finish the run section once the agent tool itself reports a result. */
+  function settleAgentRunForEntry(entry: ToolCallEntry, result: ToolResult): void {
+    if (!entry || !Array.isArray(entry.steps) || entry.steps.length === 0) {
+      if (!entry || !entry.plan) return;
+    }
+    const host = ensureAgentRunHost(entry.id);
+    if (!host) return;
+    const run = getRun(entry);
+    const state = result.ok === false
+      ? (result.status === 'cancelled' ? 'cancelled' : 'failed')
+      : 'done';
+    try {
+      settleAgentRun(host, {
+        runId: entry.runId || null,
+        state,
+        durationMs: result.durationMs || (run && run.durationMs) || null,
+      });
+    } catch (_) { /* presentation only */ }
   }
 
   function recordToolApproval(approval: ToolApproval): void {
@@ -1380,6 +1550,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     updateRunSummary(message);
     if (entry._toolResultApplied) return;
+    /* The agent's own step list closes with the run, before the generic
+       result rendering below decides how to settle the row. */
+    if (entry.name === 'workspace_agent' && !awaitingApproval) {
+      settleAgentRunForEntry(entry, result);
+    }
     if (!output) {
       // Compact mode: settle the inline status row in place, then
       // surface image artifacts and visualizations directly AFTER the
@@ -1496,6 +1671,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     ownedInlineRows.clear();
     ownedToolCards.forEach((card) => stopToolCardTimerForCard(card));
     ownedToolCards.clear();
+    /* An agent run whose stream ended without a result must not keep a
+       one-second interval alive for the rest of the session. */
+    if (body && typeof body.querySelectorAll === 'function') {
+      body.querySelectorAll('.agent-run').forEach((section) => stopAgentRunTimer(section as HTMLElement));
+    }
     if (body && typeof body.removeEventListener === 'function') {
       body.removeEventListener('click', approvalDelegatedClick);
     }
@@ -1562,6 +1742,8 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     recordExecutionStart,
     recordToolResult,
     recordToolApproval,
+    recordAgentStep,
+    recordAgentPlan,
     noteTextDelta,
     cancel,
     dispose,

@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  # Manual runs let a change be gated from the Actions tab without pushing
+  # an empty commit, which matters for long Playwright runs.
+  workflow_dispatch:
   push:
     branches: [main, feat/*]
   pull_request:
@@ -45,7 +48,7 @@ jobs:
         run: npx vite build
 
       - name: Unit tests
-        run: node --experimental-strip-types --test test/*.test.mjs
+        run: npm run test:unit
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

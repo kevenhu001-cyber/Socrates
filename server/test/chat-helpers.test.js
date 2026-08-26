@@ -25,6 +25,7 @@ import {
   prependCodeInterpreterPrompt,
   appendFinalOutputConstraints,
   appendNativeToolContract,
+  appendToolRoutingHints,
   FINAL_OUTPUT_CONSTRAINTS,
   ChatPayloadSchema,
 } from '../src/routes/chat/helpers.js';
@@ -542,6 +543,74 @@ describe('appendNativeToolContract', () => {
     assert.match(once[0].content, /available for this turn are exactly: none/);
     assert.deepEqual(appendNativeToolContract(once, []), once);
   });
+
+  test('renders the live budget, per-tool examples and withdrawn tools', () => {
+    const out = appendNativeToolContract(
+      appendFinalOutputConstraints([{ role: 'system', content: 'base' }]),
+      ['web_search', 'code_interpreter'],
+      {
+        limits: {
+          maxIterations: 12, iterationsUsed: 3, maxCallsPerIteration: 8, perToolFailureLimit: 3,
+        },
+        examples: {
+          web_search: '{"query":"Python 3.13 release date","count":5}',
+          code_interpreter: '{"language":"python","code":"print(1)"}',
+        },
+        disabledTools: [{ name: 'render_visualization', reason: 'visual_spec_invalid' }],
+      },
+    );
+    assert.match(out[0].content, /- web_search: \{"query":"Python 3\.13 release date","count":5\}/);
+    assert.match(out[0].content, /up to 12 tool rounds \(3 used so far\)/);
+    assert.match(out[0].content, /at most 8 tool calls per round/);
+    assert.match(out[0].content, /fails 3 times in a row becomes unavailable/);
+    assert.match(out[0].content, /- render_visualization \(visual_spec_invalid\)/);
+    assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)),
+      'the final hard rule must remain the closing prompt text');
+  });
+
+  /* P_contract-per-hop — the tool loop rebuilds the request from the
+     untouched conversation on every hop. If the contract mutated
+     messages[0], the marker check would suppress every later appendix and
+     the model would keep seeing the first hop's budget and tool list. */
+  test('never mutates the conversation, so each hop regenerates the appendix', () => {
+    const conversation = appendFinalOutputConstraints([{ role: 'system', content: 'base' }]);
+    const before = conversation[0].content;
+
+    const hopOne = appendNativeToolContract(conversation, ['web_search'], {
+      limits: { maxIterations: 12, iterationsUsed: 0 },
+    });
+    assert.equal(conversation[0].content, before, 'hop 1 must not mutate the conversation');
+
+    const hopTwo = appendNativeToolContract(conversation, ['web_search'], {
+      limits: { maxIterations: 12, iterationsUsed: 4 },
+      disabledTools: [{ name: 'code_interpreter', reason: 'execution_failed' }],
+    });
+    assert.equal(conversation[0].content, before, 'hop 2 must not mutate the conversation');
+    assert.match(hopOne[0].content, /\(0 used so far\)/);
+    assert.match(hopTwo[0].content, /\(4 used so far\)/);
+    assert.match(hopTwo[0].content, /code_interpreter \(execution_failed\)/);
+    assert.doesNotMatch(hopOne[0].content, /code_interpreter \(execution_failed\)/);
+  });
+
+  test('omits budget and example sections when no state is supplied', () => {
+    const out = appendNativeToolContract([{ role: 'system', content: 'base' }], ['web_search']);
+    assert.doesNotMatch(out[0].content, /tool rounds/);
+    assert.doesNotMatch(out[0].content, /minimal correct argument object/);
+    assert.doesNotMatch(out[0].content, /Withdrawn for the rest/);
+  });
+});
+
+describe('appendToolRoutingHints', () => {
+  test('tells the model the interface streams Codex steps itself', () => {
+    const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['workspace_agent']);
+    assert.match(out[0].content, /streams each step it takes/);
+    assert.match(out[0].content, /do not narrate those steps yourself/);
+  });
+
+  test('stays absent when the agent tool is not callable', () => {
+    const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['web_search']);
+    assert.doesNotMatch(out[0].content, /Codex workspace agent/);
+  });
 });
 
 test('native tool contract explicitly permits Markdown horizontal-rule syntax', () => {
@@ -574,6 +643,19 @@ describe('ChatPayloadSchema', () => {
     assert.equal(parsed.messages.length, 1);
     /* Default `mode` is 'chat'. */
     assert.equal(parsed.mode, 'chat');
+    assert.equal(parsed.agentMode, undefined);
+  });
+
+  /* P_agent-mode — the composer switch travels as one boolean. */
+  test('accepts the agentMode switch and rejects a non-boolean', () => {
+    assert.equal(ChatPayloadSchema.parse({
+      messages: [{ role: 'user', content: 'hi' }],
+      agentMode: true,
+    }).agentMode, true);
+    assert.throws(() => ChatPayloadSchema.parse({
+      messages: [{ role: 'user', content: 'hi' }],
+      agentMode: 'yes',
+    }));
   });
 
   test('rejects an empty messages array', () => {
