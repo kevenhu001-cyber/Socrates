@@ -11,6 +11,10 @@ const port = 4173;
 
 export default defineConfig({
   testDir: './e2e',
+  // RN Web has its own exported bundle and playwright config. Keeping that
+  // spec out of the legacy SPA smoke suite prevents the two app shells from
+  // being tested against the wrong static server.
+  testIgnore: ['**/rn-web-smoke.spec.mjs'],
   fullyParallel: false, // specs share global module state via the bundled main.js
   workers: 1,
   reporter: process.env.CI

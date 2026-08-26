@@ -248,8 +248,13 @@ function fallbackMark(name: string): React.ReactNode {
 }
 
 function ConnectorMark({ id, name }: { id: string; name: string }) {
-  const url = resolveLogo(id, name);
   const offlineSvg = _OFFLINE_SVG[normalise(id)] || _OFFLINE_SVG[normalise(name)];
+  /* Prefer bundled brand assets whenever available. This keeps the icon
+     visible while an external favicon CDN is slow or unavailable, and makes
+     the connector catalog usable offline. */
+  if (offlineSvg) return <span dangerouslySetInnerHTML={{ __html: offlineSvg }} />;
+
+  const url = resolveLogo(id, name);
   if (url) {
     return (
       <>
@@ -266,22 +271,12 @@ function ConnectorMark({ id, name }: { id: string; name: string }) {
             if (sib) sib.style.display = 'flex';
           }}
         />
-        {offlineSvg ? (
-          <span
-            className="connector-logo-fallback"
-            style={{ display: 'none' }}
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: offlineSvg }}
-          />
-        ) : (
-          <span className="connector-logo-fallback" style={{ display: 'none' }} aria-hidden="true">
-            {name.slice(0, 2).toUpperCase()}
-          </span>
-        )}
+        <span className="connector-logo-fallback" style={{ display: 'none' }} aria-hidden="true">
+          {name.slice(0, 2).toUpperCase()}
+        </span>
       </>
     );
   }
-  if (offlineSvg) return <span dangerouslySetInnerHTML={{ __html: offlineSvg }} />;
   return fallbackMark(name);
 }
 

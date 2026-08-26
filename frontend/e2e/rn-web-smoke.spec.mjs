@@ -16,12 +16,7 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
   });
 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  /* "Socrates" appears in the boot loading splash, the sign-in card, and the
-     sidebar header. Scope the assertion to the sign-in card so a future
-     splash/header tweak can't re-introduce the strict-mode collision. */
-  const signInCard = page.getByLabel('Sign in');
-  await expect(signInCard).toBeVisible();
-  await expect(signInCard.getByText('Socrates', { exact: true })).toBeVisible();
+  await expect(page.getByText('Socrates', { exact: true })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Create account' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible();
 
@@ -35,7 +30,7 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
   expect(consoleErrors, consoleErrors.join('\n')).toEqual([]);
 });
 
-test('React Native web shell renders the authenticated navigation for each viewport', async ({ page }) => {
+test('React Native web shell renders the authenticated navigation for each viewport', async ({ page }, testInfo) => {
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (message) => {
@@ -65,14 +60,16 @@ test('React Native web shell renders the authenticated navigation for each viewp
   });
 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
-  /* The sidebar header (logo + brand) and the compose button are visible on
-     every viewport. There is no separate "Open navigation" toggle yet — the
-     mobile RN web shell uses the same desktop shell, so the off-canvas
-     pattern lives outside this assertion. */
-  const sidebarHeader = page.locator('#sidebarHeader');
-  await expect(sidebarHeader).toBeVisible();
-  await expect(sidebarHeader.getByText('Socrates', { exact: true })).toBeVisible();
-  await expect(page.locator('#newChatBtn')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible();
+
+  if (testInfo.project.name === 'mobile') {
+    await page.getByRole('button', { name: 'Open navigation' }).click();
+    await expect(page.getByRole('button', { name: 'Close navigation' }).first()).toBeVisible();
+    await expect(page.getByText('Socrates', { exact: true })).toBeVisible();
+  } else {
+    await expect(page.getByText('Socrates', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New chat' }).first()).toBeVisible();
+  }
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);
   expect(consoleErrors, consoleErrors.join('\n')).toEqual([]);
