@@ -50,7 +50,7 @@ export interface ExtensionContext {
       body?: string;
       shortcut?: string;
       runId?: string;
-      workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze';
+      workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze' | 'agent';
       /** Output rendering mode forwarded to the legacy setActiveTemplate.
        *  When 'canvas', the assistant's reply is wrapped in .canvas-block. */
       outputMode?: ExtensionOutputMode;
@@ -105,8 +105,8 @@ export interface SearchProgressHandle {
 /** Workflow-stage event published to the agent-run store. */
 export interface AgentRunEvent {
   runId: string;
-  workflow: 'explore' | 'deepResearch' | 'research' | 'analyze';
-  stage: 'planning' | 'searching' | 'reading' | 'synthesizing' | 'completed' | 'failed';
+  workflow: 'explore' | 'deepResearch' | 'research' | 'analyze' | 'agent';
+  stage: 'planning' | 'searching' | 'reading' | 'synthesizing' | 'working' | 'awaiting_approval' | 'completed' | 'failed';
   status: 'pending' | 'running' | 'succeeded' | 'failed';
   current?: number;
   total?: number;

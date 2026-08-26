@@ -163,11 +163,15 @@ When \`create_plan\` is supplied, call it for a genuinely multi-step request: a 
 When \`create_spec\` is supplied, call it to pin down WHAT a deliverable must satisfy before any implementation: send \`title\`, an optional one-sentence \`summary\`, 1-40 functional \`requirements\`, and optional \`acceptanceCriteria\`, \`constraints\`, and \`outOfScope\`. Use \`create_plan\` instead when the user wants an ordered sequence of actions.
 Follow the native JSON schema exactly: no extra top-level fields and no \`input\`/\`arguments\` wrapper. Write every title, step, and requirement in the user's language. After the tool succeeds the card is rendered above your reply, so refer to it briefly in prose rather than pasting the whole plan or spec again. If validation returns field errors, correct those fields once and retry.`;
 
+const WORKSPACE_AGENT_ROUTING_HINT = `## Codex workspace agent
+Use \`workspace_agent\` when the user's request needs multiple repository or file operations, a command, a code change, an experiment, MCP or project workspace context, or work that should be resumed later. Include the concrete desired outcome and constraints in \`task\`. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, MCP configuration, sandbox, and approval policy. Never ask for or invent an absolute workspace path. Read-only work may run automatically; writes, commands, network side effects, and other risky actions can pause for approval. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, preserve the explanation and add a short learning takeaway or follow-up exercise.`;
+
 export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(messages: T[], toolNames: string[]): T[] {
   const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
   const blocks: string[] = [];
   if (nameSet.has('render_visualization')) blocks.push(VISUALIZATION_ROUTING_HINT);
   if (nameSet.has('create_plan') || nameSet.has('create_spec')) blocks.push(PLANNING_ROUTING_HINT);
+  if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);
   if (blocks.length === 0) return messages;
   const hint = `${TOOL_ROUTING_HINTS_MARKER}\n${blocks.join('\n\n')}`;
   return appendAppendix(messages, TOOL_ROUTING_HINTS_MARKER, hint);

@@ -150,6 +150,19 @@ async function main() {
     }
   })();
 
+  // ── Reconnect persisted Codex threads after a process restart ──
+  // A failed reconnect is recorded as `disconnected`; the run and event
+  // history remain available for an explicit resume and are never discarded.
+  (async () => {
+    try {
+      const { recoverAgentRunsOnStartup } = await import('./services/agentRuntime.js');
+      const result = await recoverAgentRunsOnStartup();
+      if (result.checked > 0) console.log(`[agent-runtime] restart recovery checked ${result.checked}: ${result.recovered} reconnected, ${result.disconnected} disconnected`);
+    } catch (err) {
+      console.warn('[agent-runtime] restart recovery skipped:', (err as Error).message);
+    }
+  })();
+
   // ── Start self-hosted status monitor (records component state
   //     transitions to status_monitor_events for real uptime history) ──
   (async () => {

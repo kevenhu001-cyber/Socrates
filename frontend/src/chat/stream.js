@@ -277,6 +277,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             }
             return;
           }
+          /* P_codex-approval — the unified runtime projects Codex's
+             server-initiated approval request into the same chat stream.
+             Keep it separate from tool_result so the inline card can stay
+             actionable while the backend turn is paused. */
+          if(evName==="tool_approval"){
+            semanticActivity=true;
+            if(opts&&typeof opts.onToolApproval==="function"&&dataParts.length){
+              try{opts.onToolApproval(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_approval",e)}
+            }
+            return;
+          }
           /* P_error_event — retain the structured upstream error until the
              attempt has closed. If no semantic output was emitted, the
              shared retry policy can replay the request safely. */

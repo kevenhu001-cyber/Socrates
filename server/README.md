@@ -25,3 +25,17 @@ is compiled to `dist/index.runtime.js`. `deploy.sh` installs the lockfile
 dependencies, builds into an isolated candidate directory, preserves the
 previous compiled tree, and restores it automatically if restart or health
 checks fail.
+
+## Unified Codex runtime
+
+The web Chat/Tutor flow uses `/api/agent-runs` for durable workspace runs,
+replayable events, approvals, artifacts, and restart recovery. The legacy
+`/api/codex/*` routes remain available for compatibility. The rollout switches
+are `CODEX_UNIFIED_RUNTIME`, `CODEX_BACKGROUND`, and `CODEX_MCP`; all default to
+enabled when Codex itself is enabled.
+
+MCP servers are server-owned. Set `CODEX_MCP_URL` for the Socrates discovery
+server or `CODEX_MCP_SERVERS` to a JSON array/object of approved HTTPS
+endpoints. Users can only toggle those catalog entries globally or per project
+through `/api/agent-mcp`; credentials and arbitrary client-supplied URLs are
+never passed to Codex.

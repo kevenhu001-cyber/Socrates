@@ -37,6 +37,12 @@ import { executePlan, executeSpec } from '../../services/planning.js';
 import { createToolRegistry } from '../../services/toolRegistry.js';
 import { dispatchToolCalls } from '../../services/toolDispatch.js';
 import {
+  createAgentRun,
+  runAgentTurn,
+  subscribeToAgentRun,
+  type AgentRuntimeEvent,
+} from '../../services/agentRuntime.js';
+import {
   normalizeToolCalls,
   parseToolArguments,
   sanitizeToolCallForProtocol,
@@ -125,10 +131,11 @@ export function registerStreamRoute(router: Router) {
    * gated identically. */
   router.post('/stream', requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
     try {
-      const sessionIdFromQuery = parseChatSessionId(req.query.sessionId);
+      const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
       if (sessionIdFromQuery) {
         await requireOwnedSession(getDb(), sessionIdFromQuery, req.userId!);
       }
+      const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
@@ -506,6 +513,96 @@ export function registerStreamRoute(router: Router) {
                 userMessage: '该工具未启用或不可用。', detail: 'tool_not_available',
               })}\n\n`);
               result = { status: 'failed', error: 'tool_not_available', errorCode: 'tool_not_available', retryable: false };
+            } else if (toolName === 'workspace_agent') {
+              /* Unified Codex adapter — create the durable run before
+               * starting the turn so the browser can render a stable run id,
+               * reconnect to /events, and answer approvals after a refresh.
+               * Runtime events are projected into the existing chat tool
+               * protocol; the frontend never needs to know Codex's wire
+               * notification names. */
+              const task = String(args.task || '').trim();
+              if (!task) {
+                result = { status: 'failed', error: 'missing_task', errorCode: 'missing_task', retryable: false };
+                writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                  id: tc.id, name: 'workspace_agent', ok: false, status: 'failed', output: '',
+                  error: 'missing_task', errorCode: 'missing_task', retryable: false,
+                  userMessage: '请提供要交给 Codex 工作代理的任务。',
+                })}\n\n`);
+              } else {
+                const created = await createAgentRun({
+                  userId: req.userId!,
+                  task,
+                  sessionId: sessionIdFromQuery,
+                  projectId: projectIdFromBody,
+                  kind: mode === 'tutor' ? 'tutor' : 'chat',
+                  source: mode === 'tutor' ? 'tutor' : 'chat',
+                });
+                const runId = created.run.id;
+                writeSse(`event: tool_progress\ndata: ${JSON.stringify({
+                  id: tc.id, runId, phase: 'planning', chunk: '', elapsedMs: 0,
+                })}\n\n`);
+                const unsubscribe = subscribeToAgentRun(runId, (event: AgentRuntimeEvent) => {
+                  const data = event.data || {};
+                  const phase = event.event === 'approval_required'
+                    ? 'awaiting_approval'
+                    : event.event === 'run_completed' || event.event === 'run_failed' || event.event === 'run_interrupted'
+                      ? 'completed'
+                      : event.event === 'tool' || event.event === 'tool_output' || event.event === 'item_started' || event.event === 'item_completed'
+                        ? 'working'
+                        : 'working';
+                  if (event.event === 'approval_required') {
+                    writeSse(`event: tool_approval\ndata: ${JSON.stringify({
+                      id: tc.id,
+                      runId,
+                      approvalId: data.approvalId || data.requestId,
+                      requestId: data.requestId,
+                      kind: data.kind,
+                      reason: data.reason || null,
+                      command: data.command || null,
+                      cwd: '[workspace]',
+                      changes: data.changes || null,
+                      availableDecisions: data.availableDecisions || ['accept', 'decline'],
+                    })}\n\n`);
+                  } else {
+                    const chunk = event.event === 'delta' || event.event === 'reasoning' || event.event === 'tool_output'
+                      ? String(data.delta || '')
+                      : '';
+                    writeSse(`event: tool_progress\ndata: ${JSON.stringify({
+                      id: tc.id, runId, phase, chunk, event: event.event,
+                      itemId: data.itemId || null, command: data.command || null,
+                      elapsedMs: 0,
+                    })}\n\n`);
+                  }
+                });
+                try {
+                  const agentResult = await runAgentTurn(runId, req.userId!, undefined, abortController.signal);
+                  result = {
+                    status: agentResult.status,
+                    output: agentResult.output || agentResult.summary || '',
+                    error: agentResult.error || null,
+                    errorCode: agentResult.error ? 'workspace_agent_failed' : null,
+                    retryable: false,
+                    runId: agentResult.runId,
+                    threadId: agentResult.threadId,
+                    workspaceId: agentResult.workspaceId,
+                    artifacts: agentResult.artifacts || [],
+                  };
+                  writeSse(`event: tool_result\ndata: ${JSON.stringify({
+                    id: tc.id,
+                    name: 'workspace_agent',
+                    runId: agentResult.runId,
+                    ok: agentResult.status === 'completed' || agentResult.status === 'awaiting_approval',
+                    status: agentResult.status,
+                    output: agentResult.output || agentResult.summary || '',
+                    error: agentResult.error || null,
+                    errorCode: agentResult.error ? 'workspace_agent_failed' : null,
+                    artifacts: agentResult.artifacts || [],
+                    retryable: false,
+                  })}\n\n`);
+                } finally {
+                  unsubscribe();
+                }
+              }
             } else if (toolName === 'code_interpreter') {
               /* P_illustration-guard — detect when the model is using
                  code_interpreter for SVG illustration / drawing tasks
@@ -970,6 +1067,10 @@ data: ${JSON.stringify({
             } else {
               toolContent = `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\n${result.retryable ? `Correct the ${kind} fields against the schema and call ${toolName} once more.` : `Explain the ${kind} concisely in prose instead.`}`;
             }
+          } else if (toolName === 'workspace_agent') {
+            toolContent = result.status === 'completed'
+              ? `[status: completed]\n[run_id: ${result.runId || 'unknown'}]\n[workspace_id: ${result.workspaceId || 'unknown'}]\n${result.output || result.stdout || '(no output)'}\nThe Codex workspace run is rendered inline. Summarize the concrete changes, tests, and artifacts in the user's language.`
+              : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nIf the run is awaiting approval, wait for the user decision instead of starting a duplicate run.`;
           } else if (result.errorCode === 'invalid_tool_arguments') {
             toolContent = `[status: failed]\n[error_code: invalid_tool_arguments]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail}\n${result.retryable === false ? 'Do not call this tool again in this turn. Explain the issue in prose instead.' : 'Correct the argument object against the native schema and call the tool once more.'}`;
           } else if (result.status !== 'completed' && toolName === 'web_search') {

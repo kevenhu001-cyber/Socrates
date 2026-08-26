@@ -36,7 +36,7 @@ type SetActiveTemplateSpec = TemplateChipSpec & {
    *  chat pipeline can publish searching/completed against the same runId
    *  the module used for its planning event. Absent for plain templates. */
   runId?: string;
-  workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze';
+  workflow?: 'explore' | 'deepResearch' | 'research' | 'analyze' | 'agent';
   /** Output rendering mode carried onto _activeTemplate so renderAssistantHTML
    *  can wrap the assistant's reply in a .canvas-block when this is 'canvas'. */
   outputMode?: ExtensionOutputMode;

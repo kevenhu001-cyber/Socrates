@@ -10,6 +10,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
+import { removeProjectWorkspace } from '../services/codexProvider.js';
 
 const router = Router();
 router.use(requireAuth, resourceScope('projects'));
@@ -88,6 +89,16 @@ router.delete('/:id', async (req, res, next) => {
         .for('update');
       deletedSessionIds.push(...projectSessionRows.map((row) => row.id));
 
+      /* Runs can be scheduled directly against a project without having a
+       * conversation session yet. Remove those durable runs too; their event,
+       * approval and job rows cascade from agent_runs. */
+      const projectRunRows = await tx.select({ id: agentRuns.id })
+        .from(agentRuns)
+        .where(and(eq(agentRuns.userId, req.userId!), eq(agentRuns.projectId, projectId)));
+      if (projectRunRows.length > 0) {
+        await tx.delete(agentRuns).where(inArray(agentRuns.id, projectRunRows.map((row) => row.id)));
+      }
+
       const executionIds: string[] = [];
       if (deletedSessionIds.length > 0) {
         const executionRows = await tx.select({ id: executions.id })
@@ -152,6 +163,9 @@ router.delete('/:id', async (req, res, next) => {
 
     await Promise.all([...new Set(deletedFilePaths)].map((storagePath) => fs.unlink(storagePath).catch(() => {})));
     await Promise.all(deletedSessionIds.map((sessionId) => codeInterpreter.reapSessionScratch(sessionId, req.userId!).catch(() => {})));
+    /* Workspace keys are namespaced as `project:<id>` in the runtime. Use
+       the same key here so deletion removes the actual server-owned tree. */
+    removeProjectWorkspace(req.userId!, `project:${projectId}`);
     return res.status(204).end();
   } catch (err) { next(err); }
 });

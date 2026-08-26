@@ -4,6 +4,9 @@ export interface WorkspaceSnapshot {
   projectsData: ReadonlyArray<ProjectItem>;
   pluginsData: ReadonlyArray<PluginItem>;
   projectConnectorConfigured: boolean;
+  mcpData: ReadonlyArray<McpServerItem>;
+  mcpConfigured: boolean;
+  mcpProjectId: string | null;
   loading: boolean;
   error: string | null;
   revision: number;
@@ -12,6 +15,7 @@ export interface WorkspaceSnapshot {
 export interface LibraryItem { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string; mimeType?: string; source?: string; }
 export interface ProjectItem { id: string; name: string; description?: string; color?: string; systemPrompt?: string; }
 export interface PluginItem { id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null; credentialInput?: { fields: Array<{ key: string; label: string; type?: string; required?: boolean; help?: string }> } }
+export interface McpServerItem { key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: 'global' | 'project'; healthStatus?: string; lastError?: string | null; lastCheckedAt?: string | null; }
 
 export interface WorkspaceBridge {
   getSnapshot: () => WorkspaceSnapshot;
@@ -40,6 +44,8 @@ declare global {
     connectProjectConnector?: (id: string) => void;
     refreshProjectConnector?: (id: string) => void;
     openProjectConnectorForm?: (id: string) => void;
+    toggleCodexMcp?: (key: string, enabled: boolean) => void;
+    checkCodexMcpHealth?: (key: string) => void;
     openArxivSearch?: () => void;
     openZoteroLibrary?: () => void;
     ensureSlashApps?: () => void;

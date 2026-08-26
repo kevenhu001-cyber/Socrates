@@ -35,6 +35,8 @@ import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
 import codexRouter from './routes/codex.js';
+import agentRunsRouter from './routes/agentRuns.js';
+import agentMcpRouter from './routes/agentMcp.js';
 import statusRouter from './routes/status.js';
 import mobileRouter from './routes/mobile.js';
 import mcpRouter from './routes/mcp.js';
@@ -548,6 +550,11 @@ app.use('/api/projects', projectRouter);
 
 /* ─── Scheduled Tasks ─── */
 app.use('/api/scheduled-tasks', scheduledTasksRouter);
+
+/* Unified Agent Runtime — native tools and Codex share durable runs,
+ * approvals, events, workspaces, and recovery through this surface. */
+app.use('/api/agent-runs', agentRunsRouter);
+app.use('/api/agent-mcp', agentMcpRouter);
 
 /* ─── Plugins ─── */
 app.use('/api/plugins', pluginsRouter);

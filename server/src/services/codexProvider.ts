@@ -16,7 +16,7 @@
  */
 
 import path from 'node:path';
-import { mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { getActiveApiKey } from './apiKey.js';
 import { CODEX_WORKSPACE_ROOT } from './codexHarness.js';
 
@@ -71,6 +71,76 @@ export function ensureWorkspace(userId: string | null, threadId: string): string
   const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `t_${safeThread}`);
   mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+/**
+ * Resolve the stable project workspace used by the unified runtime. The
+ * caller supplies only an opaque project key; the absolute path never
+ * crosses the HTTP boundary. A project workspace intentionally outlives a
+ * Codex thread so a later Chat, Tutor, or scheduled run sees the same files.
+ */
+export function ensureProjectWorkspace(userId: string | null, projectKey: string): string {
+  const safeUser = (userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
+  const safeProject = projectKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+  const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `p_${safeProject}`);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/**
+ * Keep project guidance inside the server-owned workspace without letting a
+ * client override the runtime policy. Codex discovers a root AGENTS.md
+ * automatically; the file is only created when absent so deliberate
+ * workspace instructions are preserved.
+ */
+export function ensureWorkspaceInstructions(workspacePath: string, projectInstructions?: string | null): void {
+  const instructions = String(projectInstructions || '').trim();
+  const socratesDir = path.join(workspacePath, '.socrates');
+  const skillsDir = path.join(workspacePath, '.agents', 'skills');
+  mkdirSync(socratesDir, { recursive: true });
+  mkdirSync(skillsDir, { recursive: true });
+  writeFileSync(
+    path.join(socratesDir, 'PROJECT_INSTRUCTIONS.md'),
+    instructions ? `# Socrates project instructions\n\n${instructions.slice(0, 50_000)}\n` : '# Socrates project instructions\n\nNo additional project instructions.\n',
+    { encoding: 'utf8', mode: 0o600 },
+  );
+  const agentsPath = path.join(workspacePath, 'AGENTS.md');
+  if (!existsSync(agentsPath)) {
+    writeFileSync(
+      agentsPath,
+      [
+        '# Socrates workspace',
+        '',
+        'This directory is a project workspace managed by Socrates. Follow the user task and the server-enforced sandbox and approval policy.',
+        instructions ? `\n## Project guidance\n\n${instructions.slice(0, 50_000)}` : '',
+        '',
+      ].join('\n'),
+      { encoding: 'utf8', mode: 0o600 },
+    );
+  }
+  const skillsReadme = path.join(skillsDir, 'README.md');
+  if (!existsSync(skillsReadme)) {
+    writeFileSync(
+      skillsReadme,
+      [
+        '# Project skills',
+        '',
+        'This directory is managed by Socrates. Skills placed here are project guidance for Codex; they cannot change the server sandbox, provider, approval, network, or credential policy.',
+        '',
+      ].join('\n'),
+      { encoding: 'utf8', mode: 0o600 },
+    );
+  }
+}
+
+/** Best-effort removal for an archived project workspace. */
+export function removeProjectWorkspace(userId: string | null, projectKey: string) {
+  try {
+    const safeUser = (userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
+    const safeProject = projectKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+    const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `p_${safeProject}`);
+    rmSync(dir, { recursive: true, force: true });
+  } catch { /* best-effort cleanup */ }
 }
 
 /** Remove a thread workspace tree (best-effort). */
