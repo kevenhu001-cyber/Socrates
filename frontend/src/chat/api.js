@@ -93,6 +93,11 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
     var activeProjectId = runtimeState.currentProjectId || null;
     if (activeSessionId) body.sessionId = activeSessionId;
     if (activeProjectId) body.projectId = activeProjectId;
+    /* P_agent-mode — the composer's Agent switch. When on, the server is
+       asked to route this turn through the Codex workspace agent instead of
+       waiting for the model to decide. It is a request, not a guarantee:
+       the server still ignores it when the agent runtime is disabled. */
+    if (runtimeState.agentMode === true) body.agentMode = true;
   } catch (_) { /* keep request compatible with isolated test harnesses */ }
 
   var customInst = (typeof window.getCustomInstructionsString === "function") ? window.getCustomInstructionsString() : "";
@@ -171,7 +176,7 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
           }catch(_){ streamError=makeAIError(payload); }
           return;
         }
-        if(eventName==='tool_use'||eventName==='tool_result'||eventName==='tool_progress'||eventName==='execution_start'||eventName==='tool_call_delta'){
+        if(eventName==='tool_use'||eventName==='tool_result'||eventName==='tool_progress'||eventName==='execution_start'||eventName==='tool_call_delta'||eventName==='agent_step'||eventName==='agent_plan'){
           semanticActivity=true;
           return;
         }

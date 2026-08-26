@@ -445,6 +445,15 @@ window.setReasoningEffort = setReasoningEffort;
 window.toggleEffortPicker = toggleEffortPicker;
 window.syncEffortUI = syncEffortUI;
 
+/* ─── ui/agentMode.js — the composer's explicit Agent switch. The flag is
+   read by chat/api.js when it builds the request body; the button is
+   hidden until /api/agent-runs/capabilities reports the runtime enabled. ─── */
+import { initAgentMode, syncAgentModeUI, toggleAgentMode } from './ui/agentMode.js';
+window.toggleAgentMode = toggleAgentMode;
+window.syncAgentModeUI = syncAgentModeUI;
+window.initAgentMode = initAgentMode;
+void initAgentMode();
+
 /* ─── ui/readAloud.js — browser TTS read-aloud for assistant messages
    (P_chatgpt-landing). No backend; uses window.speechSynthesis. ─── */
 import { toggleReadAloud } from './ui/readAloud.js';

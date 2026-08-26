@@ -288,6 +288,27 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             }
             return;
           }
+          /* P_codex-steps — the workspace agent streams its own activity:
+             one `agent_step` per Codex thread item (command run, file
+             edited, file read, web search, MCP call) and `agent_plan` for
+             its todo list. They are routed separately from tool_progress so
+             the chat can render a step list in the reading flow while the
+             legacy progress channel stays byte-compatible for older
+             clients. */
+          if(evName==="agent_step"){
+            semanticActivity=true;
+            if(opts&&typeof opts.onAgentStep==="function"&&dataParts.length){
+              try{opts.onAgentStep(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_step",e)}
+            }
+            return;
+          }
+          if(evName==="agent_plan"){
+            semanticActivity=true;
+            if(opts&&typeof opts.onAgentPlan==="function"&&dataParts.length){
+              try{opts.onAgentPlan(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_plan",e)}
+            }
+            return;
+          }
           /* P_error_event — retain the structured upstream error until the
              attempt has closed. If no semantic output was emitted, the
              shared retry policy can replay the request safely. */

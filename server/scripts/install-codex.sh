@@ -60,12 +60,29 @@ detect_local_codex() {
     candidate=$(command -v codex-app-server 2>/dev/null || command -v codex 2>/dev/null || true)
   fi
   [[ -n "$candidate" ]] || return 0
+  # An already-configured value may carry the subcommand ("… app-server").
+  # Verify the executable itself, then re-attach the argument on output.
+  local candidate_args=""
+  if [[ "$candidate" == *" "* ]]; then
+    candidate_args="${candidate#* }"
+    candidate="${candidate%% *}"
+  fi
   # Normalize symlinks so the recorded path is stable.
   if command -v readlink >/dev/null 2>&1; then
     candidate=$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")
   fi
   [[ -x "$candidate" ]] || return 0
-  if "$candidate" -V >/dev/null 2>&1; then
+  "$candidate" -V >/dev/null 2>&1 || return 0
+  # The standalone codex-app-server speaks the protocol directly. The
+  # codex CLI exposes the same server as a subcommand, so the recorded
+  # command must include it — the harness appends `--listen stdio://`,
+  # which the CLI rejects at top level.
+  if [[ -z "$candidate_args" ]] && [[ "$(basename "$candidate")" != codex-app-server ]]; then
+    candidate_args="app-server"
+  fi
+  if [[ -n "$candidate_args" ]]; then
+    echo "$candidate $candidate_args"
+  else
     echo "$candidate"
   fi
 }
@@ -164,7 +181,9 @@ do_install() {
     # A host-provided binary supersedes any stale downloaded version marker.
     $SUDO rm -f "$VERSION_MARKER"
     seed_codex_home
-    if ! "$local_bin" -V >/dev/null 2>&1; then
+    # The recorded command may include the `app-server` subcommand; the
+    # -V smoke test runs against the executable itself.
+    if ! "${local_bin%% *}" -V >/dev/null 2>&1; then
       err "local codex binary failed the -V smoke test"
       exit 1
     fi
@@ -223,12 +242,14 @@ do_check() {
   fi
 
   if [[ -n "$bp" ]]; then
-    # Local / host-provided Codex recorded at install time.
-    if [[ ! -x "$bp" ]]; then
-      err "recorded local codex binary not executable: ${bp}"
+    # Local / host-provided Codex recorded at install time. The value may
+    # carry the `app-server` subcommand, so check the executable alone.
+    local bp_exe="${bp%% *}"
+    if [[ ! -x "$bp_exe" ]]; then
+      err "recorded local codex binary not executable: ${bp_exe}"
       ok=0
-    elif ! "$bp" -V >/dev/null 2>&1; then
-      err "recorded local codex binary crashed on -V: ${bp}"
+    elif ! "$bp_exe" -V >/dev/null 2>&1; then
+      err "recorded local codex binary crashed on -V: ${bp_exe}"
       ok=0
     fi
   else

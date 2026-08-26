@@ -26,6 +26,7 @@ import {
   subscribeToAgentRun,
   type AgentRuntimeEvent,
 } from '../services/agentRuntime.js';
+import { projectAgentEvent } from '../services/agentStepProjection.js';
 
 const router = Router();
 
@@ -77,8 +78,22 @@ function publicArtifact(artifact: any) {
   };
 }
 
+/**
+ * Forward one runtime event to a subscriber.
+ *
+ * `agent_event` carries the raw runtime event (existing contract). Events
+ * that describe a visible step or a plan update are additionally projected
+ * through the same mapper the chat stream uses, so the workspace page and
+ * the chat transcript label Codex activity identically.
+ */
 function sendRunEvent(res: any, event: AgentRuntimeEvent) {
   writeSseEvent(res, 'agent_event', event);
+  const projected = projectAgentEvent(event);
+  if (projected?.type === 'step') {
+    writeSseEvent(res, 'agent_step', { runId: event.runId, ...projected });
+  } else if (projected?.type === 'plan') {
+    writeSseEvent(res, 'agent_plan', { runId: event.runId, ...projected });
+  }
 }
 
 async function streamRun(req: any, res: any, runId: string, run: Promise<unknown>) {
