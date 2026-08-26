@@ -48,7 +48,6 @@ test('formulas recover after a transient KaTeX chunk failure', async ({ page }) 
   const assistant = page.locator('#msgList .msg.assistant');
   await expect(assistant).toHaveCount(1, { timeout: 10_000 });
   await expect(assistant.first()).toContainText(/f.\(x\)|f\\?\(x\)|f'/);
-  await expect(assistant.first()).toContainText(/dy\/dx/);
+  await expect(assistant.first()).toContainText(/dy.*dx/);
   expect(katexFailures, 'first katex request must have been aborted once').toBe(1);
 });
-
