@@ -740,9 +740,9 @@ export function settleInlineToolRowFromMessage(
 
 function iconHtml(state: string): string {
   if (state === 'running') return '';
-  if (state === 'done') return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  if (state === 'stopped') return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="4.5" y="4.5" width="7" height="7" rx="1.5" fill="currentColor"/></svg>';
-  return '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.2v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="12.2" r="1.1" fill="currentColor"/></svg>';
+  if (state === 'done') return '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M3.6 8.6l2.9 2.9 5.9-6.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  if (state === 'stopped') return '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><rect x="4.9" y="4.9" width="6.2" height="6.2" rx="1.6" stroke="currentColor" stroke-width="1.4"/></svg>';
+  return '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true"><path d="M8 3.6v5.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="12.1" r=".95" fill="currentColor"/></svg>';
 }
 
 /* P_tool-inline-spinner — while a tool is in flight the tool-type icon
