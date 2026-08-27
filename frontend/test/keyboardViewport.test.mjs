@@ -5,6 +5,7 @@ import {
   getKeyboardInset,
   measureKeyboardInset,
   isTrackedInputFocused,
+  MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
 
 /*
@@ -34,6 +35,8 @@ test('getKeyboardInset rounds the gap between layout and visual viewport', () =>
   /* Pan offset on iOS Safari — keyboard top edge is below the layout
      bottom, but the inset must still be non-negative. */
   assert.equal(getKeyboardInset(800, 500, 60), 240);
+  /* A negative pan/overscroll offset must not increase the covered gap. */
+  assert.equal(getKeyboardInset(800, 500, -60), 300);
 });
 
 test('getKeyboardInset clamps to zero when visual viewport matches layout', () => {
@@ -48,6 +51,7 @@ test('measureKeyboardInset prefers visualViewport when present', () => {
 
 test('measureKeyboardInset ignores a zoomed or transient visual viewport', () => {
   assert.equal(measureKeyboardInset(844, { height: 0, offsetTop: 0 }, 844), 0);
+  assert.equal(measureKeyboardInset(844, { height: MIN_STABLE_VISUAL_VIEWPORT_HEIGHT - 1, offsetTop: 0 }, 844), 0);
   assert.equal(measureKeyboardInset(844, { height: 510, offsetTop: 0, scale: 1.2 }, 844), 0);
 });
 

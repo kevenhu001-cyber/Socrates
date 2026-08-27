@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { z } from 'zod';
 import { codeInterpreter } from '../services/codeInterpreter.js';
+import { ensureSessionWorkspaceForSession, removeSessionWorkspacesForUser } from '../services/agentRuntime.js';
 import { getDb } from '../db/index.js';
 import {
   sessions, messages, mistakes, artifacts, artifactVersions,
@@ -461,6 +462,21 @@ router.post('/', writeLimiter, async (req, res, next) => {
       return { session, wasNew: !existingSession };
     });
 
+    /* Workspace creation is intentionally after the session transaction: a
+     * slow filesystem or a concurrent save must never hold the sessions row
+     * lock. It is safe to retry here, and the agent-run path repeats the same
+     * idempotent ensure before starting Codex. */
+    if (sessionId.session?.id) {
+      try {
+        await ensureSessionWorkspaceForSession(
+          req.userId!,
+          sessionId.session.id,
+          sessionId.session.projectId || null,
+        );
+      } catch (workspaceErr) {
+        console.warn(`[sessions] workspace initialization deferred for ${sessionId.session.id}: ${(workspaceErr as Error).message}`);
+      }
+    }
     return res.status(id ? 200 : 201).json(sessionId.session);
   } catch (err) { next(err); }
 });
@@ -574,6 +590,9 @@ router.delete('/:id', async (req, res, next) => {
        mid-run the dir might already be gone, and the TTL sweep
        would catch that case anyway. */
     await codeInterpreter.reapSessionScratch(req.params.id, req.userId!).catch(() => {});
+    await removeSessionWorkspacesForUser(req.userId!, [req.params.id]).catch((err) => {
+      console.warn(`[sessions] workspace cleanup deferred for ${req.params.id}: ${(err as Error).message}`);
+    });
 
     return res.status(204).end();
   } catch (err) { next(err); }
@@ -629,6 +648,9 @@ router.delete('/', async (req, res, next) => {
     await Promise.all(
       allDeletedIds.map(id => codeInterpreter.reapSessionScratch(id, req.userId!).catch(() => {}))
     );
+    await removeSessionWorkspacesForUser(req.userId!, allDeletedIds).catch((err) => {
+      console.warn(`[sessions] bulk workspace cleanup deferred: ${(err as Error).message}`);
+    });
 
     return res.json({ ok: true, deleted });
   } catch (err) { next(err); }

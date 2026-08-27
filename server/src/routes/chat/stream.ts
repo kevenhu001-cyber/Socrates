@@ -119,6 +119,24 @@ type SearchResult = {
 /** The error shape thrown by the webSearch service. */
 type WebSearchError = { code?: string; message?: string; diagnostics?: unknown; retryable?: boolean };
 
+/* A Begin flow normally awaits POST /api/sessions, but a save triggered by
+ * another tab or a mobile reconnect can still race the first stream request.
+ * Give that committed row a short window to become visible, while preserving
+ * the session ID as an authority-bearing binding. Falling back to an
+ * unbound/project workspace here would violate per-session isolation. */
+async function requireOwnedSessionAfterSave(sessionId: string, userId: string) {
+  const attempts = 4;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await requireOwnedSession(getDb(), sessionId, userId);
+    } catch (err: any) {
+      if (err?.status !== 404 || attempt === attempts - 1) throw err;
+      await new Promise<void>((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+  }
+  throw new Error('Session ownership check did not complete');
+}
+
 /**
  * Register POST /stream on the supplied router.
  *
@@ -140,24 +158,7 @@ export function registerStreamRoute(router: Router) {
     try {
       let sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
       if (sessionIdFromQuery) {
-        /* P_session-race — the client's Begin flow saves the session
-           (POST /api/sessions) then immediately sends the stream request.
-           On slow networks or under load, the session row may not exist
-           yet when this check runs. Instead of hard-failing with 404
-           "Session not found" (which surfaces as "Save failed" in the
-           UI), downgrade to a warning and proceed without the session
-           binding. The stream still works; only partial-content survival
-           on disconnect is lost for that turn. */
-        try {
-          await requireOwnedSession(getDb(), sessionIdFromQuery, req.userId!);
-        } catch (ownershipErr: any) {
-          if (ownershipErr?.status === 404) {
-            console.warn(`[chat/stream] session ${sessionIdFromQuery} not found yet (race); proceeding without binding`);
-            sessionIdFromQuery = null;
-          } else {
-            throw ownershipErr;
-          }
-        }
+        await requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!);
       }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 

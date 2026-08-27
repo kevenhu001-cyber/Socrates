@@ -71,16 +71,20 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
     window.state._userScrolledAway = false;
+    document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
+  await page.waitForTimeout(350);
+  const settledBefore = await composer.boundingBox();
+  expect(settledBefore).not.toBeNull();
 
   await page.evaluate(() => {
     document.documentElement.style.setProperty('--keyboard-inset', '300px');
   });
-  await page.waitForTimeout(150);
+  await page.waitForTimeout(450);
 
   const after = await composer.boundingBox();
   expect(after).not.toBeNull();
-  expect(Math.round(before.y - after.y)).toBe(300);
+  expect(Math.round(settledBefore.y - after.y)).toBe(300);
   const geometry = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
@@ -122,6 +126,40 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
     return Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom);
   });
   expect(clearance).toBeGreaterThanOrEqual(8);
+});
+
+test('mobile composer follows a keyboard inset continuously without a position flash', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.documentElement.style.setProperty('--keyboard-inset', '0px');
+  });
+  await page.waitForTimeout(350);
+  const start = await page.locator('#chatInputBar').boundingBox();
+  expect(start).not.toBeNull();
+
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--keyboard-inset', '260px');
+  });
+  const samples = [];
+  for (const delay of [35, 70, 120, 190, 300, 390]) {
+    await page.waitForTimeout(delay);
+    const box = await page.locator('#chatInputBar').boundingBox();
+    expect(box).not.toBeNull();
+    samples.push(box.y);
+  }
+
+  expect(samples[0]).toBeLessThan(start.y);
+  for (let index = 1; index < samples.length; index += 1) {
+    expect(samples[index]).toBeLessThanOrEqual(samples[index - 1] + 1);
+  }
+  expect(Math.round(start.y - samples[samples.length - 1])).toBe(260);
 });
 
 test('expanding the mobile composer keeps the latest message pinned and unobscured', async ({ page }) => {

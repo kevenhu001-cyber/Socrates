@@ -425,7 +425,9 @@ export const notificationTokens = pgTable('notification_tokens', {
 
    The filesystem path is deliberately not exposed to clients. `workspaceKey`
    is a server-owned stable identifier that lets the runtime derive the path
-   below CODEX_WORKSPACE_ROOT while keeping project isolation explicit.
+   below CODEX_WORKSPACE_ROOT. New runs use `session:<uuid>` keys so every
+   conversation gets an isolated working tree; project/user keys remain for
+   legacy and session-less scheduled runs.
    ────────────────────────────────────────────── */
 export const codexWorkspaces = pgTable('codex_workspaces', {
   id: uuid('id').primaryKey().defaultRandom(),

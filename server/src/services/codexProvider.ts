@@ -1,6 +1,6 @@
 /**
  * codexProvider.js — resolve which LLM provider a Codex thread should use,
- * and own per-user/per-thread workspace directories.
+ * and own per-user/per-session workspace directories.
  *
  * Codex speaks the OpenAI Responses API. Socrates users bring their own
  * OpenAI-compatible endpoints (chat/completions). P1 support:
@@ -39,18 +39,10 @@ export async function resolveCodexProvider(userId: string | null): Promise<Resol
     ) {
       const baseUrl = key.url.replace(/\/+$/, '');
       const model = key.model || null;
-      const name = `socrates-${(userId || 'anon').slice(0, 8)}`;
       return {
         mode: 'user',
         model,
-        config: {
-          model_provider: name,
-          'model_providers.socrates.name': 'Socrates',
-          'model_providers.socrates.base_url': baseUrl,
-          'model_providers.socrates.wire_api': 'responses',
-          'model_providers.socrates.experimental_bearer_token': key.keyPlaintext,
-          'model_providers.socrates.requires_openai_auth': false,
-        },
+        config: buildUserCodexProviderConfig(baseUrl, key.keyPlaintext),
       };
     }
   } catch (err) {
@@ -61,30 +53,78 @@ export async function resolveCodexProvider(userId: string | null): Promise<Resol
 }
 
 /**
+ * Build the server-owned Codex provider override for a user's compatible
+ * endpoint. Keep the selected provider name aligned with the nested provider
+ * definition: Codex rejects a config whose `model_provider` points at a name
+ * that was never registered under `model_providers.*`.
+ */
+export function buildUserCodexProviderConfig(baseUrl: string, bearerToken: string): Record<string, unknown> {
+  return {
+    model_provider: 'socrates',
+    'model_providers.socrates.name': 'Socrates',
+    'model_providers.socrates.base_url': baseUrl,
+    'model_providers.socrates.wire_api': 'responses',
+    'model_providers.socrates.experimental_bearer_token': bearerToken,
+    'model_providers.socrates.requires_openai_auth': false,
+  };
+}
+
+function safeWorkspaceSegment(value: string, maxLength: number): string {
+  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, maxLength);
+}
+
+/** Stable server-owned key for the directory attached to one conversation. */
+export function sessionWorkspaceKey(sessionId: string): string {
+  return `session:${sessionId}`;
+}
+
+/**
  * Create the isolated workspace directory for one user's thread.
  * cwd is returned as the thread's working directory; `workspace-write`
  * sandbox scopes the agent's file writes to this directory.
  */
 export function ensureWorkspace(userId: string | null, threadId: string): string {
-  const safeUser = (userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
-  const safeThread = threadId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const safeUser = safeWorkspaceSegment(userId || 'anon', 32);
+  const safeThread = safeWorkspaceSegment(threadId, 64);
   const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `t_${safeThread}`);
   mkdirSync(dir, { recursive: true });
   return dir;
 }
 
 /**
- * Resolve the stable project workspace used by the unified runtime. The
- * caller supplies only an opaque project key; the absolute path never
- * crosses the HTTP boundary. A project workspace intentionally outlives a
- * Codex thread so a later Chat, Tutor, or scheduled run sees the same files.
+ * Resolve the isolated workspace for one Socrates conversation. A session
+ * directory is deliberately independent of the Codex thread ID, so retries,
+ * approvals, and server restarts continue in the same working tree.
+ */
+export function ensureSessionWorkspace(userId: string | null, sessionId: string): string {
+  const safeUser = safeWorkspaceSegment(userId || 'anon', 32);
+  const safeSession = safeWorkspaceSegment(sessionId, 64);
+  const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `s_${safeSession}`);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/**
+ * Resolve the stable project workspace used by legacy/session-less runtime
+ * calls. The caller supplies only an opaque project key; the absolute path
+ * never crosses the HTTP boundary. Session-bound runs use
+ * ensureSessionWorkspace() instead and never share this tree.
  */
 export function ensureProjectWorkspace(userId: string | null, projectKey: string): string {
-  const safeUser = (userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
-  const safeProject = projectKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+  const safeUser = safeWorkspaceSegment(userId || 'anon', 32);
+  const safeProject = safeWorkspaceSegment(projectKey, 80);
   const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `p_${safeProject}`);
   mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+/** Rebuild a path from a persisted server-owned workspace key. */
+export function ensureWorkspaceForKey(userId: string | null, workspaceKey: string): string {
+  const key = String(workspaceKey || '');
+  if (key.startsWith('session:')) {
+    return ensureSessionWorkspace(userId, key.slice('session:'.length));
+  }
+  return ensureProjectWorkspace(userId, key);
 }
 
 /**
@@ -136,9 +176,19 @@ export function ensureWorkspaceInstructions(workspacePath: string, projectInstru
 /** Best-effort removal for an archived project workspace. */
 export function removeProjectWorkspace(userId: string | null, projectKey: string) {
   try {
-    const safeUser = (userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
-    const safeProject = projectKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+    const safeUser = safeWorkspaceSegment(userId || 'anon', 32);
+    const safeProject = safeWorkspaceSegment(projectKey, 80);
     const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `p_${safeProject}`);
+    rmSync(dir, { recursive: true, force: true });
+  } catch { /* best-effort cleanup */ }
+}
+
+/** Remove a conversation workspace tree (best-effort). */
+export function removeSessionWorkspace(userId: string | null, sessionId: string) {
+  try {
+    const safeUser = safeWorkspaceSegment(userId || 'anon', 32);
+    const safeSession = safeWorkspaceSegment(sessionId, 64);
+    const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `s_${safeSession}`);
     rmSync(dir, { recursive: true, force: true });
   } catch { /* best-effort cleanup */ }
 }
@@ -146,8 +196,8 @@ export function removeProjectWorkspace(userId: string | null, projectKey: string
 /** Remove a thread workspace tree (best-effort). */
 export function removeWorkspace(userId: string | null, threadId: string) {
   try {
-    const safeUser = (userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
-    const safeThread = threadId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+    const safeUser = safeWorkspaceSegment(userId || 'anon', 32);
+    const safeThread = safeWorkspaceSegment(threadId, 64);
     const dir = path.join(CODEX_WORKSPACE_ROOT, `u_${safeUser}`, `t_${safeThread}`);
     rmSync(dir, { recursive: true, force: true });
   } catch { /* best-effort cleanup */ }
