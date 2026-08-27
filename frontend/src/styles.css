@@ -71,6 +71,27 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   --tool-card-icon-hover:hsl(var(--text-100));
   --tool-card-focus:hsla(40,12%,10%,.35)
 }
+/* ── Inline tool row tokens (P_tool-inline-minimal) ────────────────
+   Borderless row language: a bare line icon plus one muted text line.
+   Live rows and serialized history rows read from the same tokens so
+   old message HTML re-renders in the same visual language. */
+:root{
+  --inline-row-height:24px;
+  --inline-row-gap:6px;
+  --inline-icon-size:16px;
+  --inline-icon-glyph:14px;
+  --inline-chevron-size:14px;
+  --inline-detail-indent:22px;
+  --inline-radius:6px;
+  --inline-sunken-bg:hsla(0,0%,100%,.045);
+  --inline-hover-bg:hsla(0,0%,100%,.06);
+  --shimmer-duration:2.4s;
+  --crossfade-duration:.22s
+}
+[data-theme=socrates][data-mode=light]{
+  --inline-sunken-bg:hsla(40,10%,16%,.04);
+  --inline-hover-bg:hsla(40,10%,16%,.06)
+}
 body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
 button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}
 button{border:none;background:none;cursor:pointer;outline:none;font-weight:inherit}
@@ -1741,80 +1762,6 @@ body[data-conversation-active="true"] #mobileMode{display:none!important}
   .mobile-incognito-btn[aria-pressed="true"]{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
 }
 
-/* Sources card — appended under each AI bubble when web search was
-   on. First source is always visible; remaining sources are hidden
-   behind a "▾" toggle on the header. */
-.sources-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.5));border-radius:8px;background:hsl(var(--bg-100)/0.5);overflow:hidden}
-.cite-link{font-size:0.75em;font-weight:600;color:hsl(var(--accent-000));line-height:0;margin:0 0.15em;vertical-align:baseline}
-.cite-link a{color:inherit;text-decoration:none;font-family:var(--font-mono);padding:1px 4px;border-radius:4px;background:hsl(var(--accent-000)/0.08);transition:background .15s ease,color .15s ease}
-.cite-link a:hover{color:hsl(var(--accent-100));background:hsl(var(--accent-000)/0.18);text-decoration:none}
-.sources-row-wrap:target{scroll-margin-top:60px;animation:cite-flash 1.2s ease-out}
-@keyframes cite-flash{0%{background:hsl(var(--accent-000)/0.22)}100%{background:transparent}}
-[data-theme=socrates][data-mode=dark] .sources-card{background:hsl(var(--bg-200)/0.4)}
-.sources-head{display:flex;align-items:center;padding:5px 12px;cursor:pointer;-webkit-user-select:none;user-select:none;color:hsl(var(--text-500));transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
-.sources-head:hover{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.04)}
-.sources-head:active{transform:scale(.995)}
-.sources-label{font-weight:500}
-.sources-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease}
-.sources-card.open .sources-chev{transform:rotate(180deg);color:hsl(var(--accent-000))}
-.sources-card:not(.open) .sources-row-wrap{display:none}
-.sources-rest{display:none}
-.sources-card.open .sources-rest{display:block}
-.sources-row-wrap{border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.3))}
-.sources-row-wrap:first-of-type{border-top:0}
-.sources-row-wrap.open{background:hsl(var(--bg-100)/0.4)}
-[data-theme=socrates][data-mode=dark] .sources-row-wrap.open{background:hsl(var(--bg-200)/0.3)}
-.sources-row{display:flex;align-items:baseline;gap:8px;padding:7px 12px;color:hsl(var(--text-200));text-decoration:none;transition:background .18s var(--ease-out),color .18s var(--ease-out),transform .14s var(--ease-out);line-height:1.4;cursor:pointer}
-a.sources-row:hover{color:hsl(var(--accent-100));background:hsl(var(--bg-100)/0.6);transform:translateX(2px)}
-a.sources-row:active{transform:translateX(2px) scale(.99)}
-[data-theme=socrates][data-mode=dark] a.sources-row:hover{background:hsl(var(--bg-200)/0.6)}
-.sources-row-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease;flex-shrink:0}
-.sources-row-wrap.open .sources-row-chev{transform:rotate(180deg);color:hsl(var(--accent-100))}
-
-.sources-chev,.sources-row-chev{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px}
-.sources-chev svg,.sources-row-chev svg{display:block;width:14px;height:14px}
-.sources-num{flex-shrink:0;color:hsl(var(--text-500));font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;min-width:22px}
-.sources-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sources-host{flex-shrink:0;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-family:var(--font-mono)}
-.sources-bad{flex-shrink:0;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(0 60% 50%)}
-
-/* Detail panel — appears below a sources row when expanded. Shows the
-   snippet, source-engine pill, date, matched query, full-content
-   excerpt, and the "open original" / "copy URL" actions. */
-.sources-detail{display:none;padding:10px 12px 12px 36px;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.25));background:hsl(var(--bg-50)/0.4);font-size:calc(12px * var(--app-font-scale, 1))}
-[data-theme=socrates][data-mode=dark] .sources-detail{background:hsla(var(--bg-300)/0.35)}
-.sources-row-wrap.open > .sources-detail{display:block}
-.sources-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.sources-engine-pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.02em;background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-200));border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.5))}
-[data-theme=socrates][data-mode=dark] .sources-engine-pill{background:hsla(var(--bg-100)/0.5)}
-.sources-engine-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--text-500))}
-.sources-engine-pill[data-engine=minimax-cli] .sources-engine-dot,
-.sources-engine-pill[data-engine=minimax] .sources-engine-dot{background:hsl(var(--accent-100))}
-.sources-engine-pill[data-engine=bing] .sources-engine-dot{background:hsl(220 70% 60%)}
-.sources-engine-pill[data-engine=searxng] .sources-engine-dot{background:hsl(140 50% 50%)}
-.sources-date{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-family:var(--font-mono)}
-.sources-relevance{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.02em;padding:1px 6px;border-radius:4px}
-.sources-relevance[data-rel=high]{color:hsl(140 60% 35%);background:hsl(140 60% 90%)}
-[data-theme=socrates][data-mode=dark] .sources-relevance[data-rel=high]{color:hsl(140 50% 75%);background:hsl(140 40% 18%)}
-.sources-relevance[data-rel=med]{color:hsl(35 70% 40%);background:hsl(35 80% 90%)}
-[data-theme=socrates][data-mode=dark] .sources-relevance[data-rel=med]{color:hsl(35 80% 80%);background:hsl(35 40% 18%)}
-.sources-relevance[data-rel=low]{color:hsl(var(--text-500));background:hsl(var(--bg-300)/0.5)}
-.sources-snippet{line-height:1.55;color:hsl(var(--text-200));margin-bottom:6px;word-break:break-word}
-.sources-snippet.sources-snippet-empty{color:hsl(var(--text-500));font-style:italic}
-.sources-matched-q{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:8px}
-.sources-matched-q code{font-family:var(--font-mono);background:hsl(var(--bg-300)/0.5);padding:1px 5px;border-radius:3px;color:hsl(var(--text-200));font-size:calc(11px * var(--app-font-scale, 1))}
-.sources-fulltext{margin:6px 0 8px;font-size:calc(11px * var(--app-font-scale, 1))}
-.sources-fulltext > summary{cursor:pointer;-webkit-user-select:none;user-select:none;color:hsl(var(--accent-100));font-weight:500;padding:2px 0}
-.sources-fulltext > summary:hover{color:hsl(var(--accent-000))}
-.sources-truncated-tag{color:hsl(var(--text-500));font-weight:400;margin-left:4px}
-.sources-fulltext-body{margin-top:6px;padding:8px 10px;background:hsl(var(--bg-300)/0.4);border-radius:6px;line-height:1.55;color:hsl(var(--text-200));max-height:240px;overflow:auto;white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1))}
-[data-theme=socrates][data-mode=dark] .sources-fulltext-body{background:hsla(var(--bg-100)/0.5)}
-.sources-actions{display:flex;align-items:center;gap:8px;margin-top:4px}
-.sources-open,.sources-copy{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;text-decoration:none;cursor:pointer;border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));background:hsl(var(--bg-100)/0.6);color:hsl(var(--text-200));transition:background .1s,color .1s,border-color .1s;font-family:inherit}
-[data-theme=socrates][data-mode=dark] .sources-open,[data-theme=socrates][data-mode=dark] .sources-copy{background:hsla(var(--bg-300)/0.5)}
-.sources-open:hover,.sources-copy:hover{background:hsl(var(--accent-100)/0.12);color:hsl(var(--accent-100));border-color:hsl(var(--accent-100)/0.5)}
-.sources-copy.copied{background:hsl(140 60% 92%);color:hsl(140 60% 30%);border-color:hsl(140 60% 70%)}
-[data-theme=socrates][data-mode=dark] .sources-copy.copied{background:hsla(140 40% 18%);color:hsl(140 50% 80%);border-color:hsla(140 50% 40%)}
 .msg-list{display:flex;flex-direction:column;gap:12px;flex:1;overflow-anchor:none}
 .msg{animation:msgIn .3s var(--ease-out);padding:6px 0}
 /* During the streaming-to-React handoff, React creates the durable message
@@ -2846,8 +2793,8 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .msg-body hr{border:none;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));margin:14px 0}
 .msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
 .msg-body a:hover{color:hsl(var(--accent-100))}
-.msg-body img{max-width:100%;border-radius:8px;margin:8px 0;cursor:zoom-in;transition:opacity .18s ease}
-.msg-body img:hover{opacity:.88}
+.msg-body img:not(.site-link-favicon){max-width:100%;max-height:280px;border-radius:10px;margin:8px 0;cursor:zoom-in;transition:opacity .18s ease,transform .18s ease}
+.msg-body img:not(.site-link-favicon):hover{opacity:.92;transform:scale(1.005)}
 /* P_code-block-header — a minimal header bar atop <pre> blocks with
    the language label + an expand button. Always visible at low opacity,
    brightens on hover. Reuses the viz-btn visual language. */
@@ -3272,6 +3219,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    slightly bolder than the default and add a subtle background so
    it reads as a "live indicator" rather than a stray inline label. */
 .thinking-dot{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0;line-height:1.3}
+.thinking-dot.thinking-elapsed-shown::after{content:attr(data-elapsed);font-size:11px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;opacity:0;animation:thinking-elapsed-in .6s ease forwards}
+@keyframes thinking-elapsed-in{to{opacity:1}}
 .thinking-dot[data-mode="chat"]{color:hsl(var(--text-400))}
 .thinking-dot .loading{width:14px;height:14px}
 .thinking-status{display:inline-flex;align-items:center;gap:7px;margin:4px 0;padding:5px 0;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale,1));line-height:1.3}
@@ -3783,7 +3732,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-stream{padding:0;max-height:180px}
 .exec-artifact{border:0;border-radius:var(--tool-card-radius-sm);background:transparent}
 .exec-artifact::before{display:none}
-.exec-artifact-image{border-radius:4px;transition:none}
+.exec-artifact-image{border-radius:10px}
 .exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
 .artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:var(--tool-card-radius-sm);background:transparent}
 .artifact-error-open,.artifact-error-retry{margin-left:0;border:0;background:transparent;color:hsl(var(--accent-000));padding:0;font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
@@ -4340,135 +4289,134 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   clear:both;
   width:100%;
   box-sizing:border-box;
-  margin:6px 0 0;
+  margin:2px 0;
   padding:0;
-  border:1px solid var(--tool-card-border);
-  border-radius:var(--tool-card-radius-sm);
-  background:var(--tool-card-bg);
-  font-size:14px;
-  line-height:1.55;
-  color:hsl(var(--text-300));
-  transition:background .18s ease,color .18s ease;
+  border:0;
+  background:transparent;
+  font-size:13px;
+  line-height:1.5;
+  color:hsl(var(--text-400));
+  transition:color var(--crossfade-duration) ease;
   overflow:hidden
 }
-/* P_tool-inline-group — when several tool rows sit back-to-back inside
-   the same assistant bubble they read as a single checklist (Manus
-   pattern). Drop the leading border-radius / top-margin on the next
-   row so the cluster shares one rounded shell, and add a hairline
-   divider between rows. The selector is adjacent-sibling so a prose
-   paragraph or thinking block between two rows still gives each its
-   own card. */
-.tool-inline + .tool-inline{
-  margin-top:-1px;
-  border-top-color:transparent;
-  border-radius:var(--tool-card-radius-sm);
-  box-shadow:inset 0 1px 0 0 var(--tool-card-border);
-}
-.tool-inline:hover{background:var(--tool-card-bg-hover);color:hsl(var(--text-200))}
+/* P_tool-inline-group — borderless rows stack as plain lines; the
+   grouped head label carries the "(N)" count so merging stays a
+   semantic cue, not chrome. */
+.tool-inline:hover{color:hsl(var(--text-300))}
 .tool-inline-head{
-  display:flex; align-items:center; gap:10px;
-  min-height:38px;
-  padding:8px 12px;
+  display:flex; align-items:center; gap:var(--inline-row-gap);
+  min-height:var(--inline-row-height);
+  padding:2px 4px;
   list-style:none;
   cursor:pointer;
   -webkit-user-select:none;
   user-select:none;
-  border-radius:0;
+  border-radius:4px;
   flex:1 1 auto;
   min-width:0;
+  transition:background var(--crossfade-duration) ease;
 }
 .tool-inline-head::-webkit-details-marker{display:none}
 .tool-inline-head::marker{display:none;content:""}
-.tool-inline-head:hover{background:var(--tool-card-bg-hover)}
-.tool-inline-head:hover .tool-inline-label{color:var(--tool-card-text)}
-.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:var(--tool-card-radius-sm)}
-.tool-inline[open] > .tool-inline-head{background:var(--tool-card-bg-sunken)}
+.tool-inline-head:hover{background:var(--inline-hover-bg)}
+.tool-inline-head:hover .tool-inline-label{color:hsl(var(--text-300))}
+.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:4px}
+.tool-inline[open] > .tool-inline-head{background:var(--inline-hover-bg)}
 
-/* P_tool-inline-status — leading status circle (Manus-style checklist).
-   The 22×22 chip carries a soft tinted fill that flips by state:
-   running shows the spinning ring; done shows a quiet accent fill with
-   a checkmark; error/stopped use the danger/muted palette. The tool-
-   type icon swaps to a status glyph at settle time. */
+/* P_tool-inline-status — bare 16px icon slot. No chip, no tinted
+   fill: state is carried by color alone so a settled row reads as a
+   quiet line of prose. Spinner and tool glyph share the same fixed
+   slot, so settling never reflows the label. */
 .tool-inline-icon{display:none}
 .tool-inline-tool-icon{
   display:inline-flex; align-items:center; justify-content:center;
-  width:22px; height:22px; flex:0 0 auto;
-  border-radius:50%;
-  background:var(--tool-card-bg-sunken);
-  color:var(--tool-card-icon);
-  transition:background .18s ease, color .18s ease;
+  width:var(--inline-icon-size); height:var(--inline-icon-size); flex:0 0 auto;
+  color:hsl(var(--text-400));
+  transition:color var(--crossfade-duration) ease;
 }
-.tool-inline-tool-icon svg{width:13px;height:13px;display:block}
-.tool-inline[data-state="running"] .tool-inline-tool-icon{
-  background:transparent;
-  color:var(--tool-card-icon-hover);
-}
-.tool-inline[data-state="done"] .tool-inline-tool-icon{
-  background:color-mix(in srgb, hsl(var(--accent-000)) 14%, transparent);
-  color:hsl(var(--accent-000));
-}
-.tool-inline[data-state="error"] .tool-inline-tool-icon{
-  background:var(--tool-card-danger-soft);
-  color:var(--tool-card-danger);
-}
-.tool-inline[data-state="stopped"] .tool-inline-tool-icon{
-  background:var(--tool-card-bg-hover);
-  color:var(--tool-card-text-subtle);
+.tool-inline-tool-icon svg{width:var(--inline-icon-glyph);height:var(--inline-icon-glyph);display:block}
+.tool-inline[data-state="running"] .tool-inline-tool-icon{color:hsl(var(--text-400))}
+.tool-inline[data-state="done"] .tool-inline-tool-icon{color:hsl(var(--text-400))}
+.tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 55% 52%)}
+[data-theme=socrates][data-mode=dark] .tool-inline[data-state="error"] .tool-inline-tool-icon{color:hsl(0 60% 66%)}
+.tool-inline[data-state="stopped"] .tool-inline-tool-icon{color:hsl(var(--text-500))}
+/* Settle crossfade: the spinner fades out while the tool glyph eases
+   in on the same slot (.is-settling is added by toolInline.ts). */
+.tool-inline-tool-icon.is-settling .tool-inline-spinner{opacity:0;transition:opacity var(--crossfade-duration) ease}
+.tool-inline-tool-icon.is-settling svg:not(.tool-inline-spinner){animation:inline-icon-enter var(--crossfade-duration) ease both}
+@keyframes inline-icon-enter{
+  from{opacity:0;transform:scale(.92)}
+  to{opacity:1;transform:scale(1)}
 }
 
-/* P_tool-inline-chevron — visible right-pointing chevron. Hidden when
-   the row has no detail to expand (data-expandable="0" is set by JS for
-   empty details), and rotates 90° to a down-arrow while open. */
+/* P_tool-inline-chevron — hidden at rest; fades in on hover and stays
+   (rotated) while the detail is open. Still removed entirely when the
+   row has nothing to expand (data-expandable != 1). */
 .tool-inline-chev{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:18px; height:18px;
-  margin-left:auto;
+  width:16px; height:16px;
+  margin-left:2px;
   flex:0 0 auto;
-  color:var(--tool-card-text-subtle);
-  opacity:.55;
-  transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .18s ease, color .18s ease;
+  color:hsl(var(--text-500));
+  opacity:0;
+  transition:transform .22s var(--ease-out), opacity .18s ease;
 }
-.tool-inline-chev svg{width:14px;height:14px;display:block}
-.tool-inline-head:hover .tool-inline-chev{opacity:.9;color:var(--tool-card-text-muted)}
-.tool-inline[open] .tool-inline-chev{transform:rotate(90deg);opacity:.95}
+.tool-inline-chev svg{width:var(--inline-chevron-size);height:var(--inline-chevron-size);display:block}
+.tool-inline-head:hover .tool-inline-chev{opacity:.55}
+.tool-inline[open] .tool-inline-chev{transform:rotate(90deg);opacity:.7}
 .tool-inline:not([data-expandable="1"]) .tool-inline-chev{display:none}
 .tool-inline-label{
    min-width:0;
-   color:var(--tool-card-text-muted);
+   color:inherit;
    overflow:hidden;
    text-overflow:ellipsis;
    white-space:nowrap;
    flex:1 1 auto;
-   font-size:var(--tool-card-desc-size);
-   font-weight:var(--tool-card-desc-weight);
- }
-.tool-inline[data-state="running"] .tool-inline-label{
-   color:var(--tool-card-text-muted);
+   font-size:13px;
+   font-weight:400;
  }
 .tool-inline[data-state="running"] .tool-inline-icon{display:none}
-/* The label itself carries the neutral wave; the tool icon keeps the
-   quieter circular progress cue in its fixed-width slot. */
+/* The label carries a softened neutral wave while in flight. */
 .tool-inline[data-state="running"] .tool-inline-label{
-  animation:neutralTextWave 3.2s linear infinite;
+  animation:neutralTextWave var(--shimmer-duration) linear infinite;
+  opacity:.85;
 }
 /* Spinner glyph that lives in the .tool-inline-tool-icon slot while the
-   tool is in flight. Same 16×16 footprint as the tool-type icon so the
-   label never reflows when the tool settles. */
+   tool is in flight. Same footprint as the tool-type icon so the label
+   never reflows when the tool settles; finer ring and slower symmetric
+   easing so it breathes rather than ticks. */
 .tool-inline-spinner{
   display:inline-block;width:14px;height:14px;border-radius:50%;
-  border:1.5px solid currentColor;border-right-color:transparent;
-  animation:tool-inline-spin 1s linear infinite;
+  border:1.6px solid currentColor;border-right-color:transparent;
+  animation:tool-inline-spin .9s cubic-bezier(.45,.05,.55,.95) infinite;
+  transition:opacity var(--crossfade-duration) ease;
 }
 @keyframes tool-inline-spin{
   to{transform:rotate(360deg)}
 }
-.tool-inline-meta{display:none}
+/* Elapsed chip: collapsed while hidden so it reserves no width; JS adds
+   .is-visible after a few seconds in flight (or on settle) and the chip
+   expands + fades in as a quiet "still alive" cue. */
+.tool-inline-meta{
+  flex:0 0 auto;
+  max-width:0;
+  overflow:hidden;
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  color:hsl(var(--text-500));
+  opacity:0;
+  transition:max-width .4s var(--ease-out), opacity .4s ease;
+}
+.tool-inline-meta.is-visible{max-width:72px;opacity:1}
 .tool-inline-detail{
-  padding:8px 11px 10px;
-  border-top:0;
-  animation:tool-inline-detail-enter .2s var(--composer-motion-ease,cubic-bezier(.22,1,.36,1));
+  margin:2px 4px 6px var(--inline-detail-indent);
+  padding:8px 10px;
+  border:0;
+  border-radius:var(--inline-radius);
+  background:var(--inline-sunken-bg);
+  animation:tool-inline-detail-enter .18s var(--ease-out);
 }
 @keyframes tool-inline-detail-enter{
   from{opacity:0;transform:translateY(-3px)}
@@ -4659,8 +4607,55 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    so the global reduced-motion reset at the top of the file does not
    suppress it; only the fade-out keyframe above is gated. */
 .tool-inline-flash{
-  background-color:hsl(var(--text-400)/.10);
+  background-color:hsl(var(--text-400)/.06);
   transition:background-color 1.2s ease-out;
+}
+
+/* P_tool_file_summary — compact settled card for a file-change group
+   (Qoder "Edited N files" card): rounded sunken shell, icon in a
+   rounded square, count, and a quiet review pill. */
+.tool-inline-file-summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:fit-content;
+  max-width:100%;
+  margin:4px 0 2px;
+  padding:6px 10px;
+  border-radius:8px;
+  background:var(--inline-sunken-bg);
+  color:hsl(var(--text-300));
+  font-size:12.5px;
+}
+.tool-inline-file-summary-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;flex:0 0 auto;border-radius:5px;
+  background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000));
+}
+.tool-inline-file-summary-icon svg{width:13px;height:13px;display:block}
+.tool-inline-file-summary-count{font-weight:550;color:hsl(var(--text-200))}
+.tool-inline-file-summary-review{
+  margin-left:6px;
+  padding:3px 9px;
+  border:1px solid hsl(var(--border-300)/.35);
+  border-radius:999px;
+  background:transparent;
+  font-size:11px;
+  color:hsl(var(--text-400));
+  cursor:pointer;
+  transition:background .14s ease,color .14s ease,border-color .14s ease;
+}
+.tool-inline-file-summary-review:hover{background:var(--inline-hover-bg);color:hsl(var(--text-200))}
+.tool-inline-file-summary-review:focus-visible{outline:2px solid hsl(var(--accent-000)/.55);outline-offset:2px}
+
+/* P_tool-inline-reduced-motion — static, half-opacity cues replace the
+   spinner / shimmer / settle animation so reduced-motion users still
+   see state without movement. */
+@media (prefers-reduced-motion: reduce){
+  .tool-inline-spinner{animation:none;opacity:.55}
+  .tool-inline[data-state="running"] .tool-inline-label{animation:none;opacity:.75}
+  .tool-inline-tool-icon.is-settling svg{animation:none}
+  .tool-inline-meta{transition:opacity .4s ease}
 }
 
 .tool-run-group{
@@ -4974,8 +4969,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .model-picker-trigger svg.model-picker-caret,
   .extensions-caret,
   .chat-model-caret,
-  .sources-chev,
-  .sources-row-chev,
   .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
   /* Disable transform-on-press/hover for all interactive controls. */
   .start-btn:active,
@@ -4991,8 +4984,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .recents-new-btn:active,
   .kb-node:active,
   .user-row:active,
-  .sources-head:active,
-  .sources-row:active,
   .tool-run-summary:active,
   .new-reply-pill:active,
   .new-reply-pill:hover{transform:none !important}
@@ -5002,8 +4993,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .recent-item-del:hover svg,
   .send-btn:hover svg{transform:none !important}
   /* Disable hover translateX shifts that move content. */
-  .recent-item:hover,
-  .sources-row:hover{transform:none !important}
+  .recent-item:hover{transform:none !important}
   /* Disable focus-within lift on the chat input. */
   .chat-input-wrap:focus-within{transform:none}
   .chat-input-wrap.composer-focused{transform:none}
@@ -5325,51 +5315,70 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 .slash-command-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
 .slash-command-foot{border-top:1px solid var(--tool-card-border)}
 
-/* Expandable tool execution cards */
+/* Expandable tool execution cards — borderless, same line language as
+   the live inline rows: bare tool glyph + quiet text, sunken indented
+   body when expanded. */
 .agent-tool-card{
-  margin-top:10px;
+  margin-top:2px;
   border:0;
-  border-radius:var(--tool-card-radius);
-  background:var(--tool-card-bg);
+  border-radius:0;
+  background:transparent;
   box-shadow:none;
-  transition:background-color .16s ease
+  transition:color .16s ease
 }
-.agent-tool-card:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-card:hover{background:transparent}
 .agent-tool-card.open{box-shadow:none}
-.agent-tool-head{gap:10px;padding:12px var(--tool-card-pad-x);border-radius:var(--tool-card-radius-sm);transition:background-color .16s ease}
-.agent-tool-head:hover{background:var(--tool-card-bg-hover)}
-.agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
-.agent-tool-icon{width:26px;height:26px;border-radius:var(--tool-card-radius-sm);background:var(--tool-card-bg-sunken)!important;color:var(--tool-card-icon)!important;box-shadow:none!important}
-.agent-tool-name{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.agent-tool-input{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle);opacity:1}
-.agent-tool-chev{color:var(--tool-card-text-subtle)}
+.agent-tool-head{gap:var(--inline-row-gap);min-height:var(--inline-row-height);padding:2px 4px;border-radius:4px;transition:background-color .16s ease}
+.agent-tool-head:hover{background:var(--inline-hover-bg)}
+.agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:4px}
+.agent-tool-icon{display:inline-flex!important;width:var(--inline-icon-size);height:var(--inline-icon-size);border-radius:0;background:transparent!important;color:hsl(var(--text-400))!important;box-shadow:none!important}
+.agent-tool-icon svg{width:var(--inline-icon-glyph);height:var(--inline-icon-glyph)}
+.agent-tool-name{font-size:13px;font-weight:400;color:hsl(var(--text-300))}
+.agent-tool-input{font-size:12px;color:hsl(var(--text-500));opacity:1}
+.agent-tool-chev{color:hsl(var(--text-500));opacity:0;transition:transform .22s var(--ease-out),opacity .18s ease}
+.agent-tool-head:hover .agent-tool-chev{opacity:.55}
+.agent-tool-card.open .agent-tool-chev{opacity:.7}
 .agent-tool-card .agent-tool-body::before{display:none}
-.agent-tool-out,.agent-tool-code,.agent-tool-progress,.agent-tool-code-wrap{border-top:0;background:var(--tool-card-bg-sunken)}
-.agent-tool-out{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text-muted)}
-.agent-tool-code{padding:12px var(--tool-card-pad-x);color:var(--tool-card-text)}
+.agent-tool-body{margin:2px 4px 6px var(--inline-detail-indent);border-radius:var(--inline-radius);background:var(--inline-sunken-bg)}
+.agent-tool-out,.agent-tool-code,.agent-tool-progress,.agent-tool-code-wrap{border-top:0;background:transparent}
+.agent-tool-out{padding:8px 10px;color:hsl(var(--text-400))}
+.agent-tool-code{padding:8px 10px;color:var(--tool-card-text)}
 .agent-tool-code-streaming::after{color:var(--tool-card-icon)}
 .agent-tool-out.error{color:var(--tool-card-danger);background:var(--tool-card-danger-soft)}
-.agent-tool-progress{padding:10px var(--tool-card-pad-x);color:var(--tool-card-text-muted)}
-.agent-tool-progress-badge{color:var(--tool-card-text-muted);background:var(--tool-card-bg-hover)}
-.agent-tool-progress .agent-tool-progress-spinner{border-color:var(--tool-card-border-strong);border-top-color:var(--tool-card-icon)}
-.agent-tool-status.ok,.agent-tool-status.warn,.agent-tool-status.mute{background:transparent;color:var(--tool-card-text-subtle)}
-.agent-tool-status.err{background:var(--tool-card-danger-soft);color:var(--tool-card-danger)}
+.agent-tool-progress{padding:8px 10px;color:hsl(var(--text-400))}
+.agent-tool-progress-badge{color:hsl(var(--text-400));background:transparent}
+.agent-tool-progress .agent-tool-progress-spinner{border-color:hsl(var(--border-300)/.4);border-top-color:hsl(var(--text-400))}
+.agent-tool-status.ok,.agent-tool-status.warn,.agent-tool-status.mute{background:transparent;color:hsl(var(--text-500))}
+.agent-tool-status.err{background:transparent;color:var(--tool-card-danger)}
 .agent-tool-card[data-tool-state="cancelled"]{border-color:transparent}
+/* State presentation mirrors the inline rows: while running only the
+   spinner ring shows; once settled the badge disappears and the bare
+   tool icon carries the line (red on error, faint when cancelled). */
+.agent-tool-state-icon{width:16px;height:16px;flex:0 0 16px;color:hsl(var(--text-400))}
+.agent-tool-card[data-tool-state="running"] .agent-tool-icon{display:none!important}
+.agent-tool-card[data-tool-state="complete"] .agent-tool-state-icon{display:none}
+.agent-tool-card[data-tool-state="error"] .agent-tool-state-icon{display:none}
+.agent-tool-card[data-tool-state="error"] .agent-tool-icon{color:hsl(0 55% 52%)!important}
+.agent-tool-card[data-tool-state="cancelled"] .agent-tool-state-icon{display:none}
+.agent-tool-card[data-tool-state="cancelled"] .agent-tool-icon{color:hsl(var(--text-500))!important}
 
-/* Inline tool activity and grouped tool output */
-.tool-inline-head{border-radius:var(--tool-card-radius-sm)}
-.tool-inline-head:hover{background:var(--tool-card-bg-hover)}
-.tool-inline[open] .tool-inline-head{background:var(--tool-card-bg-sunken)}
-.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
-.tool-inline-tool-icon{color:var(--tool-card-icon)}
-.tool-inline-label{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
+/* Inline tool activity and grouped tool output — final layer keeps the
+   borderless row language: tight radius, quiet hover, inherited label
+   color, indented sunken detail. */
+.tool-inline-head{border-radius:4px}
+.tool-inline-head:hover{background:var(--inline-hover-bg)}
+.tool-inline[open] .tool-inline-head{background:var(--inline-hover-bg)}
+.tool-inline-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:4px}
+.tool-inline-tool-icon{color:hsl(var(--text-400))}
+.tool-inline-label{font-size:13px;font-weight:400;color:inherit}
 .tool-inline[data-state="error"] .tool-inline-tool-icon{color:var(--tool-card-danger)}
-.tool-inline-detail{padding:8px 8px 10px 32px}
-.tool-inline-detail-value{border:0;border-radius:var(--tool-card-radius-sm);background:var(--tool-card-bg-sunken);color:var(--tool-card-text-muted)}
+.tool-inline[data-state="error"] .tool-inline-label{color:var(--tool-card-danger)}
+.tool-inline-detail{padding:8px 10px}
+.tool-inline-detail-value{border:0;border-radius:4px;background:hsl(var(--bg-000)/.32);color:var(--tool-card-text-muted)}
 .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value,.tool-inline-detail-section[data-kind="technical"] .tool-inline-detail-value{border-color:var(--tool-card-danger-soft-strong);background:var(--tool-card-danger-soft)}
 .tool-inline-src{color:var(--tool-card-text-muted)}
-a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
-.tool-inline-flash{background-color:var(--tool-card-bg-hover)}
+a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-text)}
+.tool-inline-flash{background-color:hsl(var(--text-400)/.06)}
 .tool-run-summary:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
 .tool-run-summary:active{transform:none}
 .tool-run-summary-dot,.tool-run-group[data-state="running"] .tool-run-summary-dot,.tool-run-group[data-state="complete"] .tool-run-summary-dot,.tool-run-group[data-state="cancelled"] .tool-run-summary-dot{background:var(--tool-card-text-subtle)}
@@ -5377,28 +5386,9 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 .tool-run-summary-label{color:var(--tool-card-text)}
 .tool-run-summary-meta{color:var(--tool-card-text-subtle)}
 
-/* Sources, storage, and quick suggestions use the same quiet card language
+/* Storage and quick suggestions use the same quiet card language
    so tool output does not become a second dashboard. */
-.sources-card,.storage-row{
-  border:1px solid var(--tool-card-border);
-  border-radius:var(--tool-card-radius);
-  background:var(--tool-card-bg)
-}
-.sources-card{overflow:hidden}
-.sources-head,.sources-row{padding:10px 14px;color:var(--tool-card-text-muted)}
-.sources-head:hover,a.sources-row:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
-.sources-head:active,a.sources-row:active{transform:none}
-.sources-chev,.sources-row-chev,.sources-host,.sources-num{color:var(--tool-card-text-subtle)}
-.sources-row-wrap{border-top:1px solid var(--tool-card-border)}
-.sources-detail{padding:12px 14px 14px 42px;border-top:1px solid var(--tool-card-border);background:var(--tool-card-bg-sunken)}
-.sources-engine-pill,.sources-relevance{padding:0;border:0;border-radius:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight)}
-.sources-engine-dot{background:var(--tool-card-text-subtle)!important}
-.sources-snippet{color:var(--tool-card-text-muted)}
-.sources-fulltext > summary{color:var(--tool-card-text-muted)}
-.sources-fulltext > summary:hover{color:var(--tool-card-text)}
-.sources-open,.sources-copy{padding:7px 10px;border:1px solid var(--tool-card-border-strong);border-radius:var(--tool-card-radius-sm);background:transparent;color:var(--tool-card-text-muted)}
-.sources-open:hover,.sources-copy:hover,.sources-copy.copied{background:var(--tool-card-bg-hover);color:var(--tool-card-text);border-color:var(--tool-card-border-strong)}
-.storage-row{padding:12px 14px}
+.storage-row{padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
 .storage-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
 .storage-row-meta{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
 .quick-opt{padding:8px 12px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);background:var(--tool-card-bg)}
@@ -5670,76 +5660,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 .msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src:hover{
   background:transparent;
   color:var(--tool-activity-row-hover);
-}
-
-/* Search sources are still expandable, but visually belong to the same
-   activity stream instead of becoming a second card inside the panel. */
-.msg.assistant .msg-body:has(.tool-inline) .sources-card,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-card,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-card{
-  margin:15px 0 4px;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-  overflow:visible;
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-head,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-head,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-head{
-  min-height:25px;
-  padding:0;
-  gap:12px;
-  border:0;
-  border-radius:8px;
-  background:transparent;
-  color:var(--tool-activity-row);
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-head:hover,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-head:hover,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-head:hover{
-  background:transparent;
-  color:var(--tool-activity-row-hover);
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-icon,
-.msg.assistant .msg-body:has(.tool-inline) .sources-label,
-.msg.assistant .msg-body:has(.tool-inline) .sources-count,
-.msg.assistant .msg-body:has(.tool-inline) .sources-chev,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-icon,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-label,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-count,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-chev,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-icon,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-label,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-count,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-chev{
-  color:inherit;
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-row-wrap,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-row-wrap,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-row-wrap{
-  border-top:0;
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-row,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-row,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-row{
-  padding:8px 0;
-  border-radius:8px;
-  color:var(--tool-activity-row);
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-row:hover,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-row:hover,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-row:hover{
-  background:transparent;
-  color:var(--tool-activity-row-hover);
-}
-.msg.assistant .msg-body:has(.tool-inline) .sources-detail,
-.msg.assistant .msg-body:has(.tool-run-group) .sources-detail,
-.msg.assistant .msg-body:has(.agent-tool-card) .sources-detail{
-  padding:10px 0 10px 32px;
-  border:0;
-  background:transparent;
-  color:var(--tool-activity-text);
 }
 
 /* Legacy/history tool groups inherit the same single-surface treatment.
@@ -7332,4 +7252,667 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 
 @media (prefers-reduced-motion:reduce){
   .agent-tool-card[data-tool-state="running"] .agent-tool-name{animation:none;color:hsl(var(--text-200));-webkit-text-fill-color:currentColor}
+}
+
+/* ── Quiet conversation activity + Artifacts preview ───────────────
+   Final cascade layer: one calm, Codex-like language for transient work.
+   Assistant prose remains unboxed; actions are readable status lines rather
+   than nested cards. */
+.msg.assistant .msg-body:has(.tool-inline),
+.msg.assistant .msg-body:has(.agent-tool-card),
+.msg.assistant .msg-body:has(.tool-run-group){
+  max-width:100%;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+  margin:10px 0!important;
+  background:transparent!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+  min-height:28px!important;
+  gap:8px!important;
+  padding:0 2px!important;
+  border:0!important;
+  background:transparent!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+  width:18px!important;
+  height:18px!important;
+  flex-basis:18px!important;
+  color:hsl(var(--text-400));
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+  font-size:13.5px!important;
+  font-weight:440!important;
+  letter-spacing:-.005em;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-meta{visibility:hidden}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-spinner{
+  width:7px!important;
+  height:7px!important;
+  border:0!important;
+  border-radius:50%;
+  background:currentColor;
+  opacity:.7;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-spinner{
+  animation:calm-status-breathe 2.2s ease-in-out infinite!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text,
+.agent-tool-card[data-tool-state="running"] .agent-tool-name{
+  background:none!important;
+  color:hsl(var(--text-300))!important;
+  -webkit-text-fill-color:currentColor!important;
+  animation:calm-status-text 2.2s ease-in-out infinite!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
+  margin-top:5px!important;
+  border-left-color:hsl(var(--border-300)/.34)!important;
+}
+
+.msg.assistant .agent-tool-card{
+  margin:10px 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.msg.assistant .agent-tool-card .agent-tool-head{
+  min-height:28px!important;
+  padding:0 2px!important;
+  gap:8px!important;
+  background:transparent!important;
+}
+.msg.assistant .agent-tool-card .agent-tool-status{font-size:11px!important;color:hsl(var(--text-500))!important}
+.msg.assistant .agent-tool-card[data-tool-state="running"] .agent-tool-status{visibility:hidden}
+
+@keyframes calm-status-breathe{
+  0%,100%{opacity:.38;transform:scale(.78)}
+  50%{opacity:.9;transform:scale(1)}
+}
+@keyframes calm-status-text{
+  0%,100%{opacity:.62}
+  50%{opacity:1}
+}
+
+/* Inline artifacts sit in the reading flow and open in a persistent preview
+   rail. HTML is sandboxed both inline and in the larger rail. */
+.tool-inline-attachments{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:8px 0 2px 26px;
+}
+.exec-artifact{
+  position:relative;
+  width:min(100%,440px);
+  margin:10px 0!important;
+  overflow:hidden;
+  border:1px solid hsl(var(--border-300)/.42);
+  border-radius:12px;
+  background:hsl(var(--bg-100));
+  box-shadow:0 1px 2px hsl(var(--shadow)/.08);
+}
+.exec-artifact-image{display:block;width:100%;max-height:360px;object-fit:contain;background:hsl(var(--bg-200))}
+.exec-artifact-html{width:min(100%,560px)}
+.exec-artifact-html-frame{display:block;width:100%;height:300px;border:0;background:#fff}
+.exec-artifact-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:38px;
+  padding:7px 10px;
+  border-top:1px solid hsl(var(--border-300)/.36);
+  color:hsl(var(--text-400));
+  font-size:11.5px;
+}
+.exec-artifact-meta-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exec-artifact-open{
+  flex:0 0 auto;
+  padding:4px 7px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:hsl(var(--text-300));
+  font:inherit;
+  cursor:pointer;
+}
+.exec-artifact-open:hover,.exec-artifact-open:focus-visible{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+
+.artifact-preview-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:1190;
+  border:0;
+  background:hsl(0 0% 0%/.28);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease;
+}
+.artifact-preview-backdrop.is-open{opacity:1;pointer-events:auto}
+.artifact-preview-drawer{
+  position:fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  z-index:1200;
+  display:flex;
+  flex-direction:column;
+  width:min(680px,52vw);
+  min-width:420px;
+  border-left:1px solid hsl(var(--border-300)/.55);
+  border-radius:14px 0 0 14px;
+  background:hsl(var(--bg-000));
+  box-shadow:-18px 0 48px hsl(0 0% 0%/.22);
+  transform:translateX(102%);
+  visibility:hidden;
+  transition:transform .22s cubic-bezier(.22,.8,.3,1),visibility 0s linear .22s;
+}
+.artifact-preview-drawer.is-open{transform:translateX(0);visibility:visible;transition-delay:0s}
+.artifact-preview-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:62px;
+  padding:10px 14px;
+  border-bottom:1px solid hsl(var(--border-300)/.42);
+}
+.artifact-preview-header-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 auto;border-radius:7px;background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000))}
+.artifact-preview-header-icon svg{width:15px;height:15px;stroke-width:1.6}
+.artifact-preview-heading{min-width:0;flex:1}
+.artifact-preview-heading h2{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-100));font-size:14px;font-weight:560}
+.artifact-preview-meta{margin:2px 0 0;color:hsl(var(--text-500));font-size:11px}
+.artifact-preview-close{height:30px;padding:0 12px;border:1px solid hsl(var(--border-300)/.5);border-radius:999px;background:transparent;color:hsl(var(--text-300));font:12px var(--font-sans);cursor:pointer;transition:background .14s ease,color .14s ease}
+.artifact-preview-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.artifact-preview-body{min-height:0;flex:1;padding:14px;overflow:auto;background:hsl(var(--bg-100))}
+.artifact-preview-image{display:block;width:100%;height:100%;object-fit:contain}
+.artifact-preview-frame{display:block;width:100%;height:100%;min-height:560px;border:1px solid hsl(var(--border-300)/.46);border-radius:10px;background:#fff}
+.artifact-preview-fallback{display:grid;place-items:center;gap:10px;min-height:240px;color:hsl(var(--text-400));text-align:center}
+.artifact-preview-fallback svg{width:24px;height:24px}
+.artifact-preview-fallback a{color:hsl(var(--text-100))}
+
+@media(max-width:720px){
+  .tool-inline-attachments{margin-left:0}
+  .exec-artifact,.exec-artifact-html{width:100%}
+  .exec-artifact-html-frame{height:240px}
+  .artifact-preview-drawer{
+    top:auto;
+    left:0;
+    width:100%;
+    min-width:0;
+    height:78dvh;
+    border-top:1px solid hsl(var(--border-300)/.55);
+    border-left:0;
+    border-radius:16px 16px 0 0;
+    transform:translateY(102%);
+  }
+  .artifact-preview-drawer.is-open{transform:translateY(0)}
+  .artifact-preview-frame{min-height:520px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .tool-inline-spinner,.shimmer-text,.agent-tool-name{animation:none!important}
+  .artifact-preview-backdrop,.artifact-preview-drawer{transition:none!important}
+}
+
+/* Screenshot-faithful activity rows: a short icon-and-label line only.
+   Details still open on click, but the closed state carries no card chrome,
+   duration column or disclosure glyph. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+  margin:12px 0!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+  width:max-content!important;
+  max-width:100%;
+  min-height:26px!important;
+  gap:9px!important;
+  color:hsl(var(--text-500))!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+  width:18px!important;
+  height:18px!important;
+  flex-basis:18px!important;
+  opacity:.9;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{
+  width:17px!important;
+  height:17px!important;
+  stroke-width:1.55!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+  font-size:13.5px!important;
+  font-weight:430!important;
+  line-height:1.45!important;
+  color:inherit!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev{
+  display:none!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{
+  color:hsl(var(--text-400))!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="done"] .tool-inline-label{
+  color:hsl(var(--text-500))!important;
+}
+
+/* Real domain favicons precede every external answer/source link. */
+a.has-site-favicon{
+  display:inline-flex;
+  align-items:baseline;
+  gap:5px;
+  vertical-align:baseline;
+}
+.site-link-favicon{
+  display:inline-block;
+  flex:0 0 16px;
+  width:16px;
+  height:16px;
+  margin:0;
+  border-radius:3px;
+  object-fit:contain;
+  vertical-align:-2px;
+  background:transparent;
+}
+.site-link-favicon.is-unavailable{display:none}
+
+/* Workspace-agent events use the same screenshot anatomy: icon + sentence.
+   The overall run summary owns elapsed time; individual rows keep technical
+   metadata inside their expandable body. */
+.agent-step-head{
+  width:max-content;
+  max-width:100%;
+  min-height:26px;
+  gap:9px;
+  color:hsl(var(--text-500));
+}
+.agent-step-icon{width:18px;height:18px;flex-basis:18px}
+.agent-step-icon svg{width:17px;height:17px;stroke-width:1.55}
+.agent-step-label{font-size:13.5px;font-weight:430}
+.agent-step-cmd,.agent-step-meta{display:none!important}
+
+.msg.assistant .agent-tool-card .agent-tool-head{
+  width:max-content!important;
+  max-width:100%;
+  color:hsl(var(--text-500))!important;
+}
+.msg.assistant .agent-tool-card .agent-tool-input,
+.msg.assistant .agent-tool-card .agent-tool-status,
+.msg.assistant .agent-tool-card .agent-tool-chev{display:none!important}
+
+
+/* ── Socrates workbench contract ─────────────────────────────────────
+   The conversation surface owns one compact, neutral design language.
+   Rules are deliberately scoped to a visible conversation so Library,
+   Exam and the landing experience retain their existing layout contracts. */
+#appShell{
+  --workbench-page:30 4% 10%;
+  --workbench-sidebar:30 4% 8%;
+  --workbench-surface:30 3% 13%;
+  --workbench-surface-raised:30 3% 16%;
+  --workbench-hover:30 3% 19%;
+  --workbench-line:30 3% 23%;
+  --workbench-line-soft:30 3% 18%;
+  --workbench-text:36 9% 92%;
+  --workbench-text-muted:32 5% 67%;
+  --workbench-text-faint:30 4% 48%;
+  --workbench-accent:42 55% 66%;
+  --workbench-radius-sm:7px;
+  --workbench-radius-md:12px;
+  --workbench-radius-lg:18px;
+  --workbench-shadow:0 16px 48px hsl(0 0% 0%/.22);
+  --workbench-motion:180ms cubic-bezier(.2,.8,.2,1);
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell{
+  color-scheme:dark;
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-page));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .main-bg{
+  background-color:hsl(var(--workbench-page));
+  background-image:none;
+  opacity:1;
+  clip-path:none;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar{
+  background:hsl(var(--workbench-sidebar)/.98);
+  border-right:1px solid hsl(var(--workbench-line-soft));
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  box-shadow:none;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-header{
+  min-height:52px;
+  padding:8px 10px 7px 13px;
+  border-bottom:1px solid transparent;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-logo{
+  gap:8px;
+  color:hsl(var(--workbench-text));
+  font-family:var(--font-sans);
+  font-size:15px;
+  font-weight:590;
+  letter-spacing:-.02em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-logo em{
+  color:hsl(var(--workbench-accent));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav{
+  padding-inline:8px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-session-item{
+  border-radius:var(--workbench-radius-sm);
+  color:hsl(var(--workbench-text-muted));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn.active,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-session-item:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-session-item.active{
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-hover));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar{
+  min-height:52px;
+  padding:8px 16px;
+  border-bottom:1px solid hsl(var(--workbench-line-soft));
+  background:hsl(var(--workbench-page)/.92);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .toggle-sidebar,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .find-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .share-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .chat-model-trigger{
+  border-color:transparent;
+  color:hsl(var(--workbench-text-muted));
+  background:transparent;
+  border-radius:var(--workbench-radius-sm);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .toggle-sidebar:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .find-btn:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .share-btn:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar .chat-model-trigger:hover{
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-hover));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .main-content{
+  background:hsl(var(--workbench-page));
+}
+
+@media(max-width:768px){
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar{
+    min-height:48px;
+    padding-inline:10px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar{
+    background:hsl(var(--workbench-sidebar));
+    box-shadow:18px 0 46px hsl(0 0% 0%/.34);
+  }
+}
+
+
+/* ── Workbench transcript and composer ────────────────────────────────
+   One reading column is shared by finalized React messages, the legacy
+   live stream and the in-flow composer. Ownership/display rules remain in
+   their original modules; this section only defines the visual contract. */
+#appShell{
+  --workbench-content-max:820px;
+  --workbench-message-size:15px;
+  --workbench-message-leading:1.65;
+  --workbench-user-radius:15px;
+  --workbench-composer-radius:18px;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList{
+  gap:24px;
+  padding-top:28px;
+  padding-inline:max(20px,calc((100% - var(--workbench-content-max))/2));
+  scroll-padding-block:24px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList > .msg{
+  box-sizing:border-box;
+  width:100%;
+  padding:0;
+  color:hsl(var(--workbench-text));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList > .msg.user{
+  align-items:flex-end;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body{
+  color:hsl(var(--workbench-text));
+  font-family:var(--font-sans);
+  font-size:var(--workbench-message-size);
+  font-weight:400;
+  line-height:var(--workbench-message-leading);
+  letter-spacing:-.006em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg.user .msg-body{
+  max-width:min(76%,680px);
+  padding:10px 14px;
+  border:1px solid hsl(var(--workbench-line-soft));
+  border-radius:var(--workbench-user-radius);
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-surface-raised));
+  box-shadow:none;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg.assistant .msg-body{
+  width:100%;
+  max-width:100%;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body p{
+  margin:0 0 .72em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body p:last-child{
+  margin-bottom:0;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h1,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h2,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h3{
+  margin:1.35em 0 .5em;
+  color:hsl(var(--workbench-text));
+  font-family:var(--font-sans);
+  font-weight:620;
+  line-height:1.3;
+  letter-spacing:-.025em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h1:first-child,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h2:first-child,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h3:first-child{
+  margin-top:0;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h1{font-size:1.36em}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h2{font-size:1.2em}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h3{font-size:1.08em}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body ul,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body ol{
+  margin:.6em 0 .8em;
+  padding-left:1.4em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body li + li{
+  margin-top:.28em;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body blockquote{
+  margin:.9em 0;
+  padding:.15em 0 .15em 14px;
+  border-left:2px solid hsl(var(--workbench-line));
+  color:hsl(var(--workbench-text-muted));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body pre{
+  margin:12px 0;
+  padding:13px 15px;
+  border:1px solid hsl(var(--workbench-line-soft));
+  border-radius:10px;
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-sidebar));
+  font-size:12.5px;
+  line-height:1.55;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body code{
+  border-radius:5px;
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-surface-raised));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body pre code{
+  color:inherit;
+  background:transparent;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body a{
+  color:hsl(var(--workbench-accent));
+  text-decoration-color:hsl(var(--workbench-accent)/.45);
+  text-underline-offset:3px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-model{
+  gap:7px;
+  margin-bottom:9px;
+  color:hsl(var(--workbench-text-muted));
+  font-size:12px;
+  font-weight:520;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-model-badge{
+  width:18px;
+  height:18px;
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-surface-raised));
+  font-size:9px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-toolbar{
+  height:26px;
+  min-height:26px;
+  gap:1px;
+  margin-top:5px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-toolbar-btn{
+  width:26px;
+  height:26px;
+  border-radius:6px;
+  color:hsl(var(--workbench-text-faint));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-toolbar-btn:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-toolbar-btn:focus-visible{
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-hover));
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-view{
+  width:100%;
+  max-width:var(--workbench-content-max);
+  margin:0 auto;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
+  padding:14px 0 16px;
+  background:linear-gradient(to bottom,hsl(var(--workbench-page)/0),hsl(var(--workbench-page)) 24px);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap{
+  width:100%;
+  max-width:var(--workbench-content-max);
+  min-height:56px;
+  margin:0 auto;
+  padding:6px 7px;
+  gap:4px;
+  border:1px solid hsl(var(--workbench-line));
+  border-radius:var(--workbench-composer-radius);
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-surface));
+  box-shadow:var(--workbench-shadow);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused{
+  border-color:hsl(var(--workbench-text-faint));
+  box-shadow:0 18px 54px hsl(0 0% 0%/.26),0 0 0 1px hsl(var(--workbench-line-soft));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer{
+  color:hsl(var(--workbench-text));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer-editor{
+  min-height:42px;
+  padding:9px 8px;
+  color:hsl(var(--workbench-text));
+  font-family:var(--font-sans);
+  font-size:15px;
+  line-height:1.55;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer .tiptap p.is-editor-empty:first-child::before{
+  color:hsl(var(--workbench-text-faint));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .footer-left-group{
+  gap:2px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .attach-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .send-btn{
+  width:38px;
+  height:38px;
+  border-radius:10px;
+  color:hsl(var(--workbench-text-muted));
+  background:transparent;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .attach-btn:hover,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .send-btn:hover{
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-hover));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .send-btn.active{
+  color:hsl(var(--workbench-sidebar));
+  background:hsl(var(--workbench-text));
+  box-shadow:none;
+  transform:none;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .send-btn.chat-stop,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .send-btn.agent-stop{
+  color:hsl(var(--workbench-text));
+  background:hsl(var(--workbench-hover));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .effort-trigger{
+  min-height:34px;
+  padding:6px 8px;
+  border-radius:9px;
+  color:hsl(var(--workbench-text-muted));
+  font-size:12px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .attachment-chip{
+  border-color:hsl(var(--workbench-line-soft));
+  color:hsl(var(--workbench-text-muted));
+  background:hsl(var(--workbench-surface-raised));
+}
+
+@media(max-width:768px){
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList{
+    gap:20px;
+    padding-top:18px;
+    padding-inline:16px;
+    scroll-padding-block:16px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg.user .msg-body{
+    max-width:88%;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-view{
+    max-width:none;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
+    padding:10px max(8px,env(safe-area-inset-right,0px)) max(10px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused{
+    border-radius:16px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer-editor{
+    font-size:16px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .attach-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .send-btn{
+    width:40px;
+    height:40px;
+    border-radius:10px;
+  }
 }

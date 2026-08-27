@@ -57,7 +57,12 @@ function tickInlineRows(): void {
     const meta = row.querySelector('.tool-inline-meta');
     // Only own the meta text while running; the settle path writes the
     // authoritative final duration from result.durationMs.
-    if (meta) meta.textContent = view.timeLabel;
+    if (meta) {
+      meta.textContent = view.timeLabel;
+      // Quiet "still alive" cue: the collapsed chip expands + fades in
+      // once a run passes five seconds (styles.css .is-visible).
+      if (now - startedAt >= 5000 && !meta.classList.contains('is-visible')) meta.classList.add('is-visible');
+    }
   });
 }
 
@@ -660,7 +665,7 @@ export function settleInlineToolGroupRow(
   // Group head reached a terminal aggregate — leave the shared timer.
   stopInlineRowTimer(row);
   const toolIcon = row.querySelector('.tool-inline-tool-icon');
-  if (toolIcon) toolIcon.innerHTML = toolTypeIconHtml(name);
+  if (toolIcon) settleIconCrossfade(toolIcon, toolTypeIconHtml(name));
   const label = row.querySelector('.tool-inline-label');
   if (label) {
     label.classList.remove('shimmer-text');
@@ -672,7 +677,10 @@ export function settleInlineToolGroupRow(
   }
   const meta = row.querySelector('.tool-inline-meta');
   const duration = groupDurationMs(members);
-  if (meta) meta.textContent = duration > 0 ? (duration / 1000).toFixed(1) + 's' : '';
+  if (meta) {
+    meta.textContent = duration > 0 ? (duration / 1000).toFixed(1) + 's' : '';
+    if (meta.textContent) meta.classList.add('is-visible');
+  }
   /* P_tool_error_code — stamp the first failed member's errorCode on
      the row so the head chip area can show it without expansion, and
      compute an aggregate retryable flag (true only when every failed
@@ -694,6 +702,7 @@ export function settleInlineToolGroupRow(
     try { delete row.dataset.retryable; } catch (_) { /* ignore */ }
   }
   renderInlineGroupDetails(row, members, state);
+  maybeAppendFileSummaryCard(row, members);
 }
 
 /**
@@ -751,6 +760,67 @@ function runningIconHtml(): string {
    expandable card, and an agent step. */
 function toolTypeIconHtml(name: string): string {
   return toolIcon(name);
+}
+
+/* P_tool-inline-settle — crossfade the spinner into the tool glyph:
+   .is-settling fades the spinner out (styles.css), the glyph lands
+   ~110ms later with the inline-icon-enter animation on the same slot.
+   Environments without requestAnimationFrame (JSDOM) swap in a plain
+   timeout so tests stay deterministic. */
+function settleIconCrossfade(slot: Element, html: string): void {
+  slot.classList.add('is-settling');
+  const swap = (): void => {
+    setTimeout(() => {
+      slot.innerHTML = html;
+      setTimeout(() => { try { slot.classList.remove('is-settling'); } catch (_) { /* ignore */ } }, 260);
+    }, 110);
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(swap);
+  else swap();
+}
+
+function filePathOf(input: unknown): string {
+  if (!input || typeof input !== 'object') return '';
+  const rec = input as Record<string, unknown>;
+  const p = rec.file_path ?? rec.path;
+  return typeof p === 'string' && p.trim() ? p.trim() : '';
+}
+
+/* P_tool_file_summary — settled write-category rows with several
+   distinct file paths get the compact "Edited N files" card (Qoder
+   reference). Single-file rows keep the plain line. The review button
+   just expands the row's own detail panel. */
+export function maybeAppendFileSummaryCard(row: HTMLElement, members?: InlineToolGroupMember[]): void {
+  if (toolCategory(row.dataset.tool || '') !== 'write') return;
+  if (row.dataset.state === 'error' || row.dataset.state === 'stopped') return;
+  if (row.querySelector('.tool-inline-file-summary')) return;
+  const paths = new Set<string>();
+  if (members && members.length) {
+    for (const m of members) {
+      if (m.name !== 'Write' && m.name !== 'Edit') continue;
+      const p = filePathOf(m.input);
+      if (p) paths.add(p);
+    }
+  } else {
+    const p = filePathOf((row as HTMLElement & { _toolInput?: unknown })._toolInput);
+    if (p) paths.add(p);
+  }
+  if (paths.size < 2) return;
+  const card = document.createElement('div');
+  card.className = 'tool-inline-file-summary';
+  card.innerHTML =
+    '<span class="tool-inline-file-summary-icon" aria-hidden="true">' + STROKE_ICONS.fileChange + '</span>'
+    + '<span class="tool-inline-file-summary-count">'
+    + esc(translate('tool.doneWriteFiles', 'Edited {n} files').replace('{n}', String(paths.size)))
+    + '</span>'
+    + '<button type="button" class="tool-inline-file-summary-review">'
+    + esc(translate('tool.fileSummaryReview', 'Review changes'))
+    + '</button>';
+  const review = card.querySelector('.tool-inline-file-summary-review');
+  if (review) review.addEventListener('click', () => { row.setAttribute('open', ''); });
+  const detail = row.querySelector('.tool-inline-detail');
+  if (detail && detail.parentNode === row) row.insertBefore(card, detail);
+  else row.appendChild(card);
 }
 
 function durationText(result: InlineToolResult | null): string {
@@ -920,7 +990,7 @@ export function settleInlineToolRow(
   /* Replace the running spinner with the tool-type icon when the tool
      settles so the glyph stabilises alongside the new label. */
   const toolIcon = row.querySelector('.tool-inline-tool-icon');
-  if (toolIcon) toolIcon.innerHTML = toolTypeIconHtml(name);
+  if (toolIcon) settleIconCrossfade(toolIcon, toolTypeIconHtml(name));
   const label = row.querySelector('.tool-inline-label');
   if (label) {
     label.classList.remove('shimmer-text');
@@ -945,7 +1015,9 @@ export function settleInlineToolRow(
         Date.now(),
       ).timeLabel;
     }
+    if (meta.textContent) meta.classList.add('is-visible');
   }
   const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
   renderInlineDetails(row, input, result, state);
+  maybeAppendFileSummaryCard(row);
 }
