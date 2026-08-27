@@ -5790,25 +5790,20 @@ function addStreamingMessage(opts){
   /* P_tool_in_think — cached container for tool cards inside
      the think-block. Lazily created by _ensureToolContainer(). */
   var _toolCardContainer=null;
-  /* P_tool-activity-rail — live tools are status for the answer, not part
-     of its prose. Keep them in a stable rail before the streaming text so
-     a late tool_use never freezes, rewrites, or splits a sentence. Rows are
-     still serialized with offset 0 for history/share compatibility. */
+  /* P_inline-tools — ChatGPT-style inline tool rows. The assistant
+     bubble body is a sequence of "segments": a text segment renders
+     the slice full[segBase..] progressively; when a tool_use lands,
+     the current segment is frozen in place, a .tool-inline status row
+     is appended after it, and the next text delta opens a fresh
+     segment below the row. inlineToolRows keeps {id,name,offset,row}
+     in chronological order so finish() can rebuild the same layout
+     as a serialized HTML string (offset = split point at tool time). */
   var segBase=0;
   var needNewSegment=false;
   var inlineToolRows=[];
   var segHost=null;
-  var toolActivityHost=null;
   var _liveToolSlot=null;
   function ensureLiveToolSlot(){return null}
-  function ensureToolActivityHost(){
-    if(toolActivityHost&&toolActivityHost.isConnected)return toolActivityHost;
-    toolActivityHost=document.createElement("section");
-    toolActivityHost.className="tool-activity-rail";
-    toolActivityHost.setAttribute("aria-label","Tool activity");
-    body.insertBefore(toolActivityHost,body.firstChild);
-    return toolActivityHost;
-  }
   function ensureSegHost(){
     if(segHost&&segHost.isConnected)return segHost;
     segHost=document.createElement("div");
@@ -6532,20 +6527,67 @@ function doRender(){
     },
     liveSingleCardSlot:ensureLiveToolSlot(),
     ensureToolContainer:_ensureToolContainer,
-    /* A tool_use lands in a dedicated rail before the prose. The current
-       text node remains mounted and the next delta keeps rendering into the
-       same stream segment, so tool UI cannot interrupt an unfinished answer. */
+    /* P_inline-tools — a tool_use lands: freeze the current text
+       segment in place, append the ChatGPT-style status row after
+       it, and start the next text segment below the row. offset
+       records where in `full` the split happened so finish() can
+       rebuild the identical layout as serialized HTML. */
     onInlineTool:function(entry,row){
       try{placeholder.remove()}catch(_){}
-      var host=ensureToolActivityHost();
-      host.appendChild(row);
-      inlineToolRows.push({id:entry.id,name:entry.name,offset:0,row:row});
+      /* Do not splice a tool row at an arbitrary character offset. A
+         tool_use event often follows a short, unfinished preamble; using
+         full.length here split one sentence across the tool row. Rewind to
+         the latest completed sentence/paragraph and let the unfinished tail
+         render as the next segment below the tool. */
+      var _oldSegBase=segBase;
+      var _oldSegHost=segHost;
+      var _toolOffset=findInlineToolBoundary(full,_oldSegBase);
+      /* The boundary helper is prose-oriented. Keep the current live layout
+         unchanged when an inline reasoning marker is active, because moving
+         a partial <think> structure would be more disruptive than retaining
+         the raw offset for that rare case. */
+      if(thinkState.startIdx!==-1)_toolOffset=full.length;
+      /* P_inline-tools-paint-race — a fast SSE response can deliver the
+         first content delta and tool_use in the same turn, before the
+         first rAF has painted the text segment. Materialize that segment
+         before freezing it so the completed prose remains before the row.
+         cancelScheduledRender() also cancels the stale rAF; the next
+         segment will schedule its own render below the newly inserted row. */
+      if(full.length>_oldSegBase&&(!segHost||!segHost.isConnected)){
+        cancelScheduledRender();
+        ensureSegHost();
+        try{doRender()}catch(_){}
+      }
+      _oldSegHost=segHost;
+      freezeCurrentSegment();
+      if(_toolOffset<full.length&&_oldSegHost&&_oldSegHost.isConnected){
+        try{
+          var _frozenVisible=stripChatArtifacts(full.slice(_oldSegBase,_toolOffset))
+            .replace(/<think>[\s\S]*?<\/think>/gi,"")
+            .replace(/<think>[\s\S]*$/gi,"");
+          if(_frozenVisible.trim())_oldSegHost.innerHTML=renderAssistantHTML(_frozenVisible);
+          else _oldSegHost.remove();
+        }catch(_){}
+      }
+      /* The row mounts directly in the bubble body at the split point, so
+         it reads at the position the assistant had reached when it called
+         the tool — never pinned to the bubble top or bottom. */
+      body.appendChild(row);
+      inlineToolRows.push({id:entry.id,name:entry.name,offset:_toolOffset,row:row});
+      segBase=_toolOffset;
+      if(_toolOffset<full.length){
+        cancelScheduledRender();
+        pendingRender=requestAnimationFrame(function(){doRender()});
+      }
       var sc=list||scrollContainer();
       if(sc&&!state._userScrolledAway&&
          sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96){
         sc.scrollTop=sc.scrollHeight;
       }
-      return 0;
+      /* P_tool-textoffset — return the split point so the tool runtime
+         can persist it on synthetic rows created from a late tool_result
+         (those never pass through the finish() write-back loop below). */
+      return _toolOffset;
     },
     onToolActivity:function(){
       /* The tool row is the only live status while execution is active;

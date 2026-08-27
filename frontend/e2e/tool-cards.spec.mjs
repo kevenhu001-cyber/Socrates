@@ -74,7 +74,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
 });
 
-test('tool activity stays before one uninterrupted response stream', async ({ page }) => {
+test('tool activity lands at the call site without splitting a sentence', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -107,15 +107,32 @@ test('tool activity stays before one uninterrupted response stream', async ({ pa
   await expect(row).toHaveCount(1);
   const layout = await row.evaluate((toolRow) => {
     const body = toolRow.closest('.msg-body');
-    const proseNode = body?.querySelector('.stream-segment, p, h1, h2, h3, ul, ol, blockquote');
+    let beforeText = '';
+    let afterText = '';
+    let seenRow = false;
+    for (const node of Array.from(body?.children || [])) {
+      if (node === toolRow) { seenRow = true; continue; }
+      const cls = node.classList;
+      if (cls && (cls.contains('tool-inline-attachments') || cls.contains('agent-run-host'))) continue;
+      const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      if (seenRow) afterText += text;
+      else beforeText += text;
+    }
     const clone = body?.cloneNode(true);
-    clone?.querySelectorAll('.tool-activity-rail, .tool-inline, .tool-inline-attachments, .agent-run-host').forEach((node) => node.remove());
+    clone?.querySelectorAll('.tool-inline, .tool-inline-attachments, .agent-run-host').forEach((node) => node.remove());
     return {
-      toolBeforeProse: Boolean(proseNode && (toolRow.compareDocumentPosition(proseNode) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      beforeText,
+      afterText,
       prose: (clone?.textContent || '').replace(/\s+/g, ' ').trim(),
     };
   });
-  expect(layout.toolBeforeProse).toBe(true);
+  // The completed first sentence stays before the row; the unfinished
+  // sentence that was streaming when the tool fired continues below it —
+  // intact, not split across the row.
+  expect(layout.beforeText).toContain('先说明结论。');
+  expect(layout.beforeText).not.toContain('然后');
+  expect(layout.afterText).toContain('然后继续检查这个模块的实现细节，再给出修复方案。');
   expect(layout.prose).toContain('先说明结论。 然后继续检查这个模块的实现细节，再给出修复方案。');
 });
 

@@ -5,6 +5,7 @@ import {
   getKeyboardInset,
   measureKeyboardInset,
   isTrackedInputFocused,
+  easeKeyboardLift,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
 
@@ -13,6 +14,21 @@ import {
  * is exercised end-to-end by the Playwright smoke suite; these tests guard
  * the math behind the inset value and the focus check.
  */
+
+test('easeKeyboardLift is a clamped, monotonic ease-out curve', () => {
+  assert.equal(easeKeyboardLift(0), 0);
+  assert.equal(easeKeyboardLift(1), 1);
+  assert.equal(easeKeyboardLift(-0.5), 0);
+  assert.equal(easeKeyboardLift(1.5), 1);
+  let previous = 0;
+  for (let t = 0.1; t <= 1.0001; t += 0.1) {
+    const value = easeKeyboardLift(t);
+    assert.ok(value >= previous, `monotonic at t=${t}`);
+    previous = value;
+  }
+  /* Ease-out: more than half the distance covered in the first quarter. */
+  assert.ok(easeKeyboardLift(0.25) > 0.5);
+});
 
 test('getKeyboardInset returns 0 for non-finite inputs', () => {
   assert.equal(getKeyboardInset(NaN, 800), 0);
