@@ -89,6 +89,8 @@ import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT, HIGH_EFFORT_OUTPUT_GUIDANCE } from './chat/systemPrompts.js';
 import { appendInlineArtifact, renderToolTextOutput } from './ui/toolCards.js';
+import { initArtifactPreview } from './ui/artifactPreview.js';
+import { initLinkFavicons } from './ui/linkFavicons.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
 /* searchProgress UI removed in favour of the inline status label.
    The import was retired when agent-tool-cards were dropped from the
@@ -102,7 +104,6 @@ import { settleInlineToolRow, settleInlineToolRowFromMessage, createInlineToolRo
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
-import { renderSourcesCard } from './ui/sourcesCard.js';
 import { renderDiagResultsScreen } from './ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from './ui/diagnosticQuestion.js';
 import { loadAndRenderCrossSessionKB, resetCrossSessionKBCache } from './ui/knowledgeCrossSession.js';
@@ -115,6 +116,8 @@ import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, swi
    client-side cookie writes are gated by cookieConsent.js until the visitor
    accepts them. */
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
+initArtifactPreview();
+initLinkFavicons();
 import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 import { stripChatArtifacts } from './util/stripChatArtifacts.js';
@@ -4936,9 +4939,7 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
         for(var aj=0;aj<tc.artifacts.length;aj++){
           var artJ=tc.artifacts[aj];
           if(!artJ||!artJ.id)continue;
-          if(artJ.mimeType&&artJ.mimeType.indexOf("image/")===0){
-            try{window.appendInlineArtifact(artJ.id,artJ.mimeType,host,artJ.name)}catch(_){}
-          }
+          try{window.appendInlineArtifact(artJ.id,artJ.mimeType,host,artJ.name)}catch(_){}
         }
       }
       continue;
@@ -4969,12 +4970,13 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
       for(var ai=0;ai<tc.artifacts.length;ai++){
         var art=tc.artifacts[ai];
         if(!art||!art.id)continue;
-        try{window.appendInlineArtifact(art.id,art.mimeType||"image/png",cardOut,art.name)}catch(_){}
-        if(art.mimeType&&art.mimeType.indexOf("image/")===0){
-          try{window.appendInlineArtifact(art.id,art.mimeType,body,art.name)}catch(_){}
-        }
+        var previewable=art.mimeType&&(art.mimeType.indexOf("image/")===0||art.mimeType.indexOf("text/html")===0);
+        try{window.appendInlineArtifact(art.id,art.mimeType||"application/octet-stream",previewable?body:cardOut,art.name)}catch(_){}
       }
     }
+  }
+  if(typeof window.appendFileChangeSummaryCards==="function"){
+    try{window.appendFileChangeSummaryCards(body)}catch(_){}
   }
   if(body.dataset)body.dataset.persistedExtrasFor=messageKey;
 }
@@ -5905,27 +5907,6 @@ function addStreamingMessage(opts){
   /* Unique ID for the retry button so we can attach a click handler after
      setting innerHTML (innerHTML wipes previous listeners). */
   var retryBtnId="retry-"+Math.random().toString(36).slice(2,10);
-  /* Snapshot the search results at message START so a background
-     refresh that lands mid-stream doesn't change which sources the
-     user sees under this bubble. Pulled from THIS message's tool
-     calls, not the global state.searchResults (which can be polluted
-     by unrelated background fetches or stale data from earlier
-     messages in the same session). */
-  function _collectSourcesFromThisMessage() {
-    var collected = [];
-    var toolCalls = state.messages[msgIdx] && state.messages[msgIdx].toolCalls;
-    if (Array.isArray(toolCalls)) {
-      for (var i = 0; i < toolCalls.length; i++) {
-        var entry = toolCalls[i];
-        if (entry && Array.isArray(entry.results)) {
-          for (var j = 0; j < entry.results.length; j++) collected.push(entry.results[j]);
-        }
-      }
-    }
-    return collected;
-  }
-  var sourcesSnapshot=_collectSourcesFromThisMessage();
-  var hasSources=sourcesSnapshot.length>0;
   /* Show a "thinking" placeholder until the first delta arrives.
      FIRST_DELTA_TIMEOUT_MS is set to the same value as the stream
      timeout so there is effectively one timeout — the model can take
@@ -6009,13 +5990,24 @@ function addStreamingMessage(opts){
   /* Task 4.1 — record turn-in-progress + Resend target (latest user msg). */
   try{markTurnInProgress()}catch(_){}
   var thinkStarted=Date.now();
-  /* Elapsed-second counter so the user sees progress while waiting. */
+  /* Phase-based reassurance keeps the surface visibly alive without a
+     twitchy elapsed-seconds counter that can read like a stalled request. */
   var _elapsedTick=null;
   _elapsedTick=setInterval(function(){
     if(finished||!firstDelta)return;
     var sec=Math.round((Date.now()-thinkStarted)/1000);
-    setPlaceholderText((appMode==="chat"?t("think.thinking"):t("common.generating"))+" "+sec+"s");
-  },5000);
+    if(sec>=45)setPlaceholderText(t("think.stillWorking"));
+    else if(sec>=20)setPlaceholderText(t("think.organizingAnswer"));
+    else if(sec>=8)setPlaceholderText(t("think.reviewingContext"));
+    /* Quiet elapsed cue after 12s: the phase copy stays primary, the
+       seconds suffix fades in beside it so long waits read as alive. */
+    if(sec>=12&&!placeholderRow.classList.contains("thinking-elapsed-shown")){
+      placeholderRow.classList.add("thinking-elapsed-shown");
+    }
+    if(placeholderRow.classList.contains("thinking-elapsed-shown")){
+      placeholderRow.setAttribute("data-elapsed",sec+"s");
+    }
+  },1000);
   var firstDeltaTimer=setTimeout(function(){
     if(finished||!firstDelta)return;
     if(_elapsedTick)clearInterval(_elapsedTick);
@@ -7183,20 +7175,6 @@ function doRender(){
           try{wireCodeBlockHeaders(body)}catch(_){}
           try{wireMsgBodyImages(body)}catch(_){}
         }
-/* Source Card. Prefer results accumulated on this message's own
-            toolCalls (the per-message source of truth) so that
-            background fetches from other sessions/conversations or
-            stale global state can't bleed into this bubble. Fall back
-            to the live global state only when the message-level
-            snapshot is empty — the background fetchWebContext may
-            still be in flight when the first message finishes. */
-        var liveResults=Array.isArray(state.searchResults)?state.searchResults:[];
-        var messageSources=_collectSourcesFromThisMessage();
-        var sourcesToRender=messageSources.length?messageSources:(hasSources?sourcesSnapshot:liveResults);
-        if(sourcesToRender.length){
-          var card=renderSourcesCard(sourcesToRender);
-          if(card)div.appendChild(card);
-        }
         /* Streaming AI bubbles skip addMessage(). React owns #msgList and the
            React MessageToolbar component renders the same action buttons
            from the snapshot, so the legacy toolbar path is unreachable. */
@@ -7380,12 +7358,6 @@ function doRender(){
                     var _lvArts=legacyNode.querySelectorAll('.exec-artifact,.visualization-card');
                     for(var lai=0;lai<_lvArts.length;lai++)reseatSavedArtifact(reactBody,_lvArts[lai]);
                   }
-                  /* The sources card is appended to the legacy .msg
-                     element (not the body) by finishAfterRender; it was
-                     never transplanted before, so it silently vanished
-                     the moment the legacy bubble was dropped. */
-                  var _lvSources=legacyNode.querySelector('.sources-card');
-                  if(_lvSources)reactBody.appendChild(_lvSources);
                   try{processPendingMermaid()}catch(_){}
                   try{processPendingViz(reactBody)}catch(_){}
                   try{processPendingVizActions(reactBody)}catch(_){}

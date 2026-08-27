@@ -18,6 +18,7 @@ import { sanitizeUrl } from '../util/safe.js';
 import { formatToolOutput } from '../render/toolOutput.js';
 import { toolCardView } from './toolCardView.js';
 import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
+import { openArtifactPreview } from './artifactPreview.js';
 
 /* ============================================================
    RUNNING-CARD ELAPSED TIMER (task 6.3, Req 3.2 / 3.3)
@@ -414,6 +415,10 @@ export function appendToolModule(toolName, toolInput, body, opts) {
   const detailId = "tool-detail-" + Math.random().toString(36).slice(2, 10);
   card.className = `agent-tool-card tool-${meta.tone} ${meta.cls}`;
   card.dataset.tool = toolName;
+  const editedPath = toolInput && typeof toolInput === "object" ? (toolInput.file_path || toolInput.path) : null;
+  if ((toolName === "Write" || toolName === "Edit") && typeof editedPath === "string" && editedPath.trim()) {
+    card.dataset.filePath = editedPath.trim();
+  }
   const isRunningCard = !opts.restored;
   card.dataset.toolState = opts.restored ? (opts.isError ? "error" : "complete") : "running";
   // Stamp the run start so the shared elapsed timer (Req 3.2) and the
@@ -903,13 +908,15 @@ export function appendInlineArtifact(fileId, mimeType, outEl, displayName) {
      the retry-storm flicker pattern. */
   if (document.querySelector(`[data-artifact-id="${selectorId}"]`)) return;
   if ((mimeType || "").indexOf("image/") === 0) {
-    appendInlineImage(fileId, mimeType, url, out);
+    appendInlineImage(fileId, mimeType, url, out, displayName);
+  } else if ((mimeType || "").indexOf("text/html") === 0) {
+    appendInlineHtml(fileId, mimeType, url, out, displayName);
   } else {
     appendInlineFileLink(fileId, mimeType, url, out, t, displayName);
   }
 }
 
-function appendInlineImage(fileId, mimeType, url, out) {
+function appendInlineImage(fileId, mimeType, url, out, artifactName) {
   const wrap = document.createElement("figure");
   wrap.className = "exec-artifact";
   wrap.dataset.artifactId = String(fileId);
@@ -970,7 +977,7 @@ function appendInlineImage(fileId, mimeType, url, out) {
     meta.className = "exec-artifact-meta";
     var name = document.createElement("span");
     name.className = "exec-artifact-meta-name";
-    name.textContent = (displayName(fileId, mimeType) || 'artifact');
+    name.textContent = (artifactName || displayName(fileId, mimeType) || 'artifact');
     var size = document.createElement("span");
     size.className = "exec-artifact-meta-size";
     size.textContent = (img.naturalWidth ? img.naturalWidth + '×' + img.naturalHeight + ' px' : 'image');
@@ -1000,15 +1007,15 @@ function appendInlineImage(fileId, mimeType, url, out) {
     } catch (_) {}
   });
   img.style.display = "none";
-  /* Click on the image (or the expand button) opens a fullscreen
-     lightbox that reuses the viz-modal shell. Pass raw HTML so
-     the image renders at natural size without sandboxing. */
+  /* Image and expand affordances open the shared Artifacts drawer. */
   function openLightbox(ev) {
     if (ev) ev.preventDefault();
-    if (typeof window.__vizOpenModalRaw !== "function") return;
     var fullSrc = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
-    var html = '<div class="img-lightbox"><img src="' + esc(fullSrc) + '" alt="' + esc(displayName(fileId, mimeType) || 'artifact') + '"/></div>';
-    window.__vizOpenModalRaw(html, displayName(fileId, mimeType) || 'Artifact');
+    openArtifactPreview({
+      url: fullSrc,
+      mimeType: mimeType,
+      name: artifactName || displayName(fileId, mimeType) || 'Artifact'
+    });
   }
   wrap.addEventListener("click", function (ev) {
     var t = ev && ev.target;
@@ -1023,6 +1030,38 @@ function appendInlineImage(fileId, mimeType, url, out) {
   });
   out.appendChild(wrap);
   requestImage();
+}
+
+function appendInlineHtml(fileId, mimeType, url, out, artifactName) {
+  const t = window.t || function (key) { return key; };
+  const wrap = document.createElement('figure');
+  wrap.className = 'exec-artifact exec-artifact-html';
+  wrap.dataset.artifactId = String(fileId);
+
+  const frame = document.createElement('iframe');
+  frame.className = 'exec-artifact-html-frame';
+  frame.src = url;
+  frame.title = artifactName || t('artifact.htmlAlt');
+  frame.loading = 'lazy';
+  frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+  wrap.appendChild(frame);
+
+  const caption = document.createElement('figcaption');
+  caption.className = 'exec-artifact-meta';
+  const name = document.createElement('span');
+  name.className = 'exec-artifact-meta-name';
+  name.textContent = artifactName || displayName(fileId, mimeType) || 'HTML';
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.className = 'exec-artifact-open';
+  open.textContent = t('artifact.openPreview');
+  open.addEventListener('click', function () {
+    openArtifactPreview({ url: url, mimeType: mimeType, name: name.textContent });
+  });
+  caption.appendChild(name);
+  caption.appendChild(open);
+  wrap.appendChild(caption);
+  out.appendChild(wrap);
 }
 
 /* Best-effort display name for an artifact. fileId is opaque so we
@@ -1062,4 +1101,57 @@ function appendInlineFileLink(fileId, mimeType, url, out, t, displayName) {
     } catch (_) {}
   }
   out.appendChild(a);
+}
+
+/* P_tool_file_summary — history/share parity: after a run of adjacent
+   Write/Edit cards, insert the same compact "Edited N files" card the
+   live inline rows show. Cards carry data-file-path stamped by
+   appendToolModule. */
+export function appendFileChangeSummaryCards(root) {
+  if (!root || typeof root.querySelectorAll !== "function") return;
+  const cards = Array.prototype.slice.call(root.querySelectorAll(".agent-tool-card[data-file-path]"));
+  if (!cards.length) return;
+  let group = [];
+  const flush = function () {
+    if (group.length >= 2) {
+      const seen = {};
+      let count = 0;
+      group.forEach(function (c) {
+        const p = c.dataset.filePath || "";
+        if (p && !seen[p]) { seen[p] = 1; count++; }
+      });
+      if (count >= 2) {
+        const last = group[group.length - 1];
+        const card = document.createElement("div");
+        card.className = "tool-inline-file-summary";
+        card.innerHTML =
+          '<span class="tool-inline-file-summary-icon" aria-hidden="true">' + STROKE_ICONS.fileChange + "</span>"
+          + '<span class="tool-inline-file-summary-count">'
+          + esc(trTool("tool.doneWriteFiles", "Edited {n} files", { n: count }))
+          + "</span>"
+          + '<button type="button" class="tool-inline-file-summary-review">'
+          + esc(trTool("tool.fileSummaryReview", "Review changes"))
+          + "</button>";
+        const review = card.querySelector(".tool-inline-file-summary-review");
+        if (review) review.addEventListener("click", function () {
+          group.forEach(function (c) {
+            c.classList.add("open");
+            const head = c.querySelector(".agent-tool-head");
+            const bodyEl = c.querySelector(".agent-tool-body");
+            if (head) head.setAttribute("aria-expanded", "true");
+            if (bodyEl) bodyEl.hidden = false;
+          });
+        });
+        last.insertAdjacentElement("afterend", card);
+      }
+    }
+    group = [];
+  };
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    if (group.length && group[group.length - 1].nextElementSibling !== card) flush();
+    if ((card.dataset.toolState || "") === "error") { flush(); continue; }
+    group.push(card);
+  }
+  flush();
 }

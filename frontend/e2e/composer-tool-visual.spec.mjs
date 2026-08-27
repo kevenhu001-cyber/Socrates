@@ -44,7 +44,8 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const chatComposer = page.locator('#chatInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();
   const desktopComposerBox = await chatComposer.boundingBox();
-  expect(desktopComposerBox?.width).toBeLessThanOrEqual(800);
+  // The workbench content column is --workbench-content-max (820px).
+  expect(desktopComposerBox?.width).toBeLessThanOrEqual(820);
   expect(desktopComposerBox?.height).toBeLessThanOrEqual(72);
   const desktopControlBoxes = await page.evaluate(() => {
     const box = (selector) => {

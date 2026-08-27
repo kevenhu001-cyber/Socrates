@@ -386,9 +386,10 @@ window.submitExam = submitExam;
 window.refreshExamI18n = refreshExamI18n;
 
 /* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
-import { appendToolModule, appendInlineArtifact } from './ui/toolCards.js';
+import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './ui/toolCards.js';
 window.appendToolModule = appendToolModule;
 window.appendInlineArtifact = appendInlineArtifact;
+window.appendFileChangeSummaryCards = appendFileChangeSummaryCards;
 
 /* ─── ui/greeting.js — ChatGPT-style personalized greeting (P_chatgpt-landing) ─── */
 import { renderGreeting } from './ui/greeting.js';

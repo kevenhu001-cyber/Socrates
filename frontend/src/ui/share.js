@@ -264,16 +264,15 @@ function _renderSharedMessageList(messages) {
           for (var ai = 0; ai < tc.artifacts.length; ai++) {
             var art = tc.artifacts[ai];
             if (art && art.id) {
-              window.appendInlineArtifact(art.id, art.mimeType || "image/png", cardOut, art.name);
-              /* P_inline-artifact — render image artifacts inline in
-                 the message body so they are visible at a glance. */
-              if (art.mimeType && art.mimeType.indexOf("image/") === 0) {
-                window.appendInlineArtifact(art.id, art.mimeType, body, art.name);
-              }
+              var previewable = art.mimeType && (art.mimeType.indexOf("image/") === 0 || art.mimeType.indexOf("text/html") === 0);
+              window.appendInlineArtifact(art.id, art.mimeType || "application/octet-stream", previewable ? body : cardOut, art.name);
             }
           }
         }
       }
+    }
+    if (m.role === "assistant" && typeof window.appendFileChangeSummaryCards === "function") {
+      try { window.appendFileChangeSummaryCards(body); } catch (_) {}
     }
     msgList.appendChild(div);
   });
