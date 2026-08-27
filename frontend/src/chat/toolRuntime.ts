@@ -1590,7 +1590,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         const attachmentHost = attachRow ? ensureRowAttachmentHost(attachRow, entry.id) : body;
         for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
           const artifact = entry.artifacts[artifactIndex];
-          if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
+          if (artifact.id) {
             appendInlineArtifact(artifact.id, artifact.mimeType, attachmentHost, artifact.name);
           }
         }
@@ -1640,7 +1640,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     for (let artifactIndex = 0; artifactIndex < entry.artifacts.length; artifactIndex++) {
       const artifact = entry.artifacts[artifactIndex];
-      if (artifact.id && artifact.mimeType && artifact.mimeType.indexOf('image/') === 0) {
+      if (artifact.id && artifact.mimeType && (artifact.mimeType.indexOf('image/') === 0 || artifact.mimeType.indexOf('text/html') === 0)) {
         appendInlineArtifact(artifact.id, artifact.mimeType, body, artifact.name);
       } else if (artifact.id) {
         appendInlineArtifact(artifact.id, artifact.mimeType, output, artifact.name);
