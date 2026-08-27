@@ -1433,18 +1433,16 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* --keyboard-inset is a settled geometry value from
-     keyboardViewport.js. The browser's viewport resize remains the only
-     transition timeline; no second JS animation is layered on top. */
+  /* --keyboard-inset is the keyboard geometry from keyboardViewport.js.
+     The module glides the value toward each measurement over one short
+     ease-out rAF sequence, so the bar follows it 1:1 — no CSS transition
+     here, which would layer a second easing on top and make the composer
+     lag behind (or flash ahead of) the keyboard. */
   margin-top:0;
   /* keyboard avoidance: shift the composer up by the virtual
-     keyboard inset on mobile. Padding is the layout reserve, so animating
-     the actual property keeps both the composer and transcript moving as
-     one continuous flow instead of flashing between two positions when the
-     visual viewport reports several intermediate values. */
+     keyboard inset on mobile. Padding is the layout reserve, so the
+     composer and transcript move as one continuous flow. */
   padding-bottom:var(--keyboard-inset, 0px);
-  transition:padding-bottom .28s cubic-bezier(.22,1,.36,1);
-  will-change:padding-bottom;
 }
 
 /* P_composer-anim-no-fr — when the engine does not interpolate fr
@@ -4334,16 +4332,6 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    `white-space: nowrap` with `text-overflow: ellipsis` so a long
    command path or filename is truncated with a trailing … rather
    than wrapping and breaking visual rhythm with the surrounding prose. */
-/* A stable pre-answer rail: tool status never becomes part of the prose
-   stream, and color-only transitions avoid height/transform jitter. */
-.tool-activity-rail{
-  display:flex;flex-direction:column;align-items:stretch;
-  width:min(100%,680px);margin:0 0 10px;padding:0;
-  contain:layout;overflow:visible;
-}
-.tool-activity-rail:empty{display:none}
-.tool-activity-rail .tool-inline{margin-top:0}
-.tool-activity-rail .tool-inline + .tool-inline{margin-top:4px}
 .tool-inline{
   display:flex;
   flex-direction:column;

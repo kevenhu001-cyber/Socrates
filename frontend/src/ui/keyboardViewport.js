@@ -31,9 +31,14 @@ import { smoothScrollToBottom } from './scroll.js';
  *   - stuck 100vh:   appBottom stuck at full height  → inset = keyboard height
  *
  * This module writes one CSS custom property (--keyboard-inset) plus a
- * data-keyboard-open flag. Layout follows that one measured value; there is
- * deliberately no JS interpolation loop, so there is no second motion model
- * that can double the lift or leave stale frames behind.
+ * data-keyboard-open flag. Layout follows that one measured value.
+ * Browsers differ in how they report the keyboard's travel: some emit
+ * many progressive samples (the composer can follow them 1:1), others
+ * a single discrete jump once the keyboard is up. A short ease-out
+ * glide toward the latest measurement — owned here, nowhere else in
+ * CSS or JS — turns both shapes into one smooth, continuous lift and
+ * prevents the composer from snapping ahead of the keyboard or
+ * flashing between intermediate positions.
  */
 
 /* Android/iOS WebViews can expose a 0–1px visual viewport for a transient
@@ -41,6 +46,18 @@ import { smoothScrollToBottom } from './scroll.js';
  * sample; treating it as the keyboard top would lift the composer almost the
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
+
+/* Duration of the composer lift when the measured inset arrives as a
+ * discrete jump (Android overlay keyboards report the final size in one
+ * event). Kept close to the platform keyboard animation so the input
+ * rides the keyboard's own motion instead of snapping or lagging. */
+export const KEYBOARD_LIFT_MS = 220;
+
+/* Pure ease-out cubic, split out for unit tests. */
+export function easeKeyboardLift(t) {
+  const x = Math.min(1, Math.max(0, Number(t) || 0));
+  return 1 - (1 - x) * (1 - x) * (1 - x);
+}
 
 export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0) {
   if (
@@ -125,10 +142,23 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const viewport = window.visualViewport;
   let updateFrame = 0;
   let pinFrame = 0;
+  let motionFrame = 0;
   let blurRecheckTimer = 0;
-  /* -1 forces the first applyInset() to write, so --keyboard-inset and
+  /* -1 forces the first write to apply, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
+  /* Interpolation state: the measured inset is the motion target; the
+     value exposed to CSS glides toward it over KEYBOARD_LIFT_MS. */
+  let targetInset = 0;
+  let motionFrom = 0;
+  let motionStart = 0;
+
+  const prefersReducedMotion = () => {
+    try {
+      return typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (_) { return false; }
+  };
 
   const stableMeasuredInset = (focused) => {
     if (!focused) return 0;
@@ -143,7 +173,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     return measureKeyboardInset(appShellBottom(), viewport, window.innerHeight);
   };
 
-  const applyInset = (inset) => {
+  /* One frame of the lift: write the current interpolated value and keep
+     a bottom-pinned transcript anchored to the new bottom edge. */
+  const writeInsetFrame = (inset) => {
     const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
     if (roundedInset === appliedInset) return;
     const list = typeof document !== 'undefined'
@@ -156,11 +188,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       && list.scrollHeight - list.scrollTop - list.clientHeight <= 96
     );
 
-    /* Apply the measured geometry directly. The browser emits several
-     * viewport events during a real keyboard transition, so CSS can follow
-     * those settled values without a second JavaScript animation. */
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-    root.dataset.keyboardOpen = roundedInset > 50 ? 'true' : 'false';
 
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
      * Preserve the bottom anchor only for a reader who was already following
@@ -176,6 +204,46 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       });
     }
     appliedInset = roundedInset;
+  };
+
+  const stepMotion = (now) => {
+    motionFrame = 0;
+    const elapsed = now - motionStart;
+    const t = KEYBOARD_LIFT_MS > 0 ? elapsed / KEYBOARD_LIFT_MS : 1;
+    if (t >= 1) {
+      writeInsetFrame(targetInset);
+      return;
+    }
+    const value = motionFrom + (targetInset - motionFrom) * easeKeyboardLift(t);
+    writeInsetFrame(value);
+    motionFrame = requestAnimationFrame(stepMotion);
+  };
+
+  const applyInset = (inset) => {
+    const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+
+    /* Discrete layout states key off the settled measurement, not the
+     * in-flight interpolated value, so they flip exactly once per
+     * keyboard open/close. */
+    root.dataset.keyboardOpen = roundedTarget > 50 ? 'true' : 'false';
+
+    if (roundedTarget === targetInset && motionFrame === 0 && appliedInset === roundedTarget) return;
+    targetInset = roundedTarget;
+
+    /* Progressive viewports (iOS) deliver many small steps; a short glide
+     * between samples keeps the motion continuous there too. Discrete
+     * viewports (most Android builds) get the whole lift from the
+     * interpolation. Reduced motion snaps. */
+    if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
+      if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
+      writeInsetFrame(roundedTarget);
+      return;
+    }
+    motionFrom = appliedInset < 0 ? 0 : appliedInset;
+    motionStart = (typeof performance !== 'undefined' && performance.now)
+      ? performance.now()
+      : Date.now();
+    if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
   };
 
   /* Bottom edge of the app shell in client coordinates. Falls back to
@@ -342,6 +410,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   return () => {
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
+    if (motionFrame) window.cancelAnimationFrame(motionFrame);
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     try { root.style.removeProperty('--keyboard-inset'); } catch (_) { /* detached root */ }
