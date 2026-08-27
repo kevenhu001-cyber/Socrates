@@ -16,12 +16,11 @@ export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 //
 // velocityScrollTo() is the lower-level primitive: it scrolls an
 // arbitrary target in `distance` px using the velocity-based duration
-// planner in ui/motion.js. Both the keyboard-inset lift and the
-// content-follow scroll share this planner so they finish in
-// lockstep; that is what keeps the "AI content moves up with the
-// input" geometry constant. smoothScrollToBottom() is layered on
-// top of velocityScrollTo() so the data-auto-scrolling flag and the
-// cancellation semantics are written once.
+// planner in ui/motion.js. smoothScrollToBottom() is layered on top of
+// velocityScrollTo() so the data-auto-scrolling flag and cancellation
+// semantics are written once. Keyboard geometry itself is handled by
+// keyboardViewport.js; this module only re-anchors a pinned transcript
+// after the browser applies that geometry.
 //
 // smoothScrollToBottom() centralises the "glide to the new bottom"
 // motion for send, keyboard open, and in-message content growth.
@@ -36,8 +35,8 @@ export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 // participates in the chat flex layout; this controller only preserves
 // bottom-follow intent for in-message content growth (streaming text,
 // image decode, tool card expansion). Keyboard-driven layout shifts
-// are handled by keyboardViewport.js via a paired keyboard-inset +
-// velocityScrollTo call that share one motion plan.
+// are measured by keyboardViewport.js and re-anchor the transcript after
+// the flex layout settles.
 
 /* The page's scrollable area is .msg-list (when chat/tutor is
    active) or #mainContent (for the start screen, settings, etc.).
@@ -91,11 +90,8 @@ function cancelScrollAnimationFor(list){
 }
 
 /* `easeOutQuint` lives in ui/motion.js alongside the velocity planner
-   so the per-frame interpolation matches the curve the WAAPI
-   consumers see in planMotion(). KeyboardViewport's inset
-   interpolation also uses it (see applyInset in keyboardViewport.js)
-   — three call sites, one implementation, kept consistent by the
-   shared import. */
+   so the per-frame interpolation matches the curve used by scroll
+   consumers. */
 
 /* Glide the chat container from its current `scrollTop` to
    `targetTop` using the velocity-based duration planner from
@@ -104,11 +100,9 @@ function cancelScrollAnimationFor(list){
    the animation settles, or immediately when snapping.
 
    The planner guarantees a constant perceived velocity regardless of
-   the distance — the keyboard-inset lift and the scroll-follow use
-   the same planner, so when they are dispatched together (from
-   keyboardViewport.applyInset) they share the same duration and
-   finish in lockstep. That is the geometry contract that keeps the
-   AI content and the input box at a constant relative distance.
+   the distance. Keyboard inset geometry is deliberately not animated by
+   this function; keyboardViewport applies the measured CSS inset directly
+   and only asks this function to restore a pinned transcript after layout.
 
    Implementation: manual requestAnimationFrame interpolation of
    `list.scrollTop`. WAAPI cannot animate scrollTop directly (it is
@@ -223,7 +217,7 @@ export function velocityScrollTo(list, targetTop, opts){
    velocity-based planner. Thin convenience wrapper around
    velocityScrollTo() — the heavy lifting lives there so send-time,
    keyboard-time, and stream-time scroll-to-bottom share one code
-   path and one timeline.
+   path and consistent cancellation semantics.
 
    `opts.smooth` defaults to true; setting it to false forces an
    instant snap (used by streaming chunks where a smooth scroll per
@@ -248,10 +242,10 @@ export function smoothScrollToBottom(list, opts){
    450 ms ResizeObserver RAF loop that handled *keyboard/composer*
    layout shifts has been removed — that motion now belongs to a
    single browser-native smoothScrollToBottom() call dispatched from
-   keyboardViewport.js, so the CSS padding-bottom transition owns
+   keyboardViewport.js, so the browser's layout update owns
    the visual motion and the JS no longer resets scrollTop every
-     frame mid-animation. The bounded composer-follow sequence below only
-     runs while a focus/keyboard transition is active. */
+   frame mid-animation. The bounded composer-follow sequence below only
+     runs while a focus/composer transition is active. */
 export function initChatComposerReserve(options){
   options=options||{};
   var list=options.list||document.getElementById("msgList");
@@ -399,7 +393,7 @@ export function initChatComposerReserve(options){
      column. Cover that edge with one coalesced style-attribute fallback,
      but only for an inset that is visibly open while the app's own keyboard
      flag is still closed. keyboardViewport.js sets the flag before its
-     animated writes, so normal keyboard motion keeps its single scroll
+     measured writes, so normal keyboard motion keeps its single scroll
      owner and is not re-snapped by this observer. */
   var keyboardStyleFollowFrame=0;
   var keyboardStyleObserver=typeof MutationObserver==="function"&&

@@ -603,6 +603,8 @@ describe('appendNativeToolContract', () => {
 describe('appendToolRoutingHints', () => {
   test('tells the model the interface streams Codex steps itself', () => {
     const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['workspace_agent']);
+    assert.match(out[0].content, /Choose `workspace_agent` automatically/);
+    assert.match(out[0].content, /Do not wait for the user to enable Agent/);
     assert.match(out[0].content, /streams each step it takes/);
     assert.match(out[0].content, /do not narrate those steps yourself/);
   });
@@ -646,8 +648,9 @@ describe('ChatPayloadSchema', () => {
     assert.equal(parsed.agentMode, undefined);
   });
 
-  /* P_agent-mode — the composer switch travels as one boolean. */
-  test('accepts the agentMode switch and rejects a non-boolean', () => {
+  /* Backward compatibility: older clients may still send the retired field,
+     but the chat route no longer uses it for routing. */
+  test('accepts the deprecated agentMode field and rejects a non-boolean', () => {
     assert.equal(ChatPayloadSchema.parse({
       messages: [{ role: 'user', content: 'hi' }],
       agentMode: true,

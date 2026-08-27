@@ -5,7 +5,6 @@ import {
   getKeyboardInset,
   measureKeyboardInset,
   isTrackedInputFocused,
-  shouldRefreezeAppVh,
 } from '../src/ui/keyboardViewport.js';
 
 /*
@@ -19,6 +18,13 @@ test('getKeyboardInset returns 0 for non-finite inputs', () => {
   assert.equal(getKeyboardInset(800, Infinity), 0);
   assert.equal(getKeyboardInset(800, -Infinity), 0);
   assert.equal(getKeyboardInset(Infinity, 800), 0);
+});
+
+test('getKeyboardInset ignores a transient zero-height visual viewport', () => {
+  /* A zero height can be reported for one frame while the IME is opening;
+     it must not be interpreted as the keyboard covering the whole shell. */
+  assert.equal(getKeyboardInset(844, 0, 0), 0);
+  assert.equal(getKeyboardInset(844, -1, 0), 0);
 });
 
 test('getKeyboardInset rounds the gap between layout and visual viewport', () => {
@@ -38,6 +44,11 @@ test('getKeyboardInset clamps to zero when visual viewport matches layout', () =
 test('measureKeyboardInset prefers visualViewport when present', () => {
   const viewport = { height: 500, offsetTop: 60 };
   assert.equal(measureKeyboardInset(800, viewport, 800), 240);
+});
+
+test('measureKeyboardInset ignores a zoomed or transient visual viewport', () => {
+  assert.equal(measureKeyboardInset(844, { height: 0, offsetTop: 0 }, 844), 0);
+  assert.equal(measureKeyboardInset(844, { height: 510, offsetTop: 0, scale: 1.2 }, 844), 0);
 });
 
 test('measureKeyboardInset falls back to innerHeight without visualViewport', () => {
@@ -68,17 +79,4 @@ test('isTrackedInputFocused survives detached/custom-element throws', () => {
   const active = {};
   /* must not propagate the throw */
   assert.equal(isTrackedInputFocused([evil], active), false);
-});
-
-test('shouldRefreezeAppVh requires a cached value to skip re-measuring', () => {
-  /* No freeze yet → must measure. */
-  assert.equal(shouldRefreezeAppVh(-1, -1, 390), true);
-  assert.equal(shouldRefreezeAppVh(0, -1, 390), true);
-  /* Cached height + same width → keep the freeze, do not re-measure. */
-  assert.equal(shouldRefreezeAppVh(844, 390, 390), false);
-});
-
-test('shouldRefreezeAppVh invalidates on width change (rotation / split-screen)', () => {
-  /* Same height, different width → re-measure for the new orientation. */
-  assert.equal(shouldRefreezeAppVh(844, 390, 844), true);
 });

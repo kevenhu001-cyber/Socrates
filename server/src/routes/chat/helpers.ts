@@ -229,7 +229,7 @@ When \`create_spec\` is supplied, call it to pin down WHAT a deliverable must sa
 Follow the native JSON schema exactly: no extra top-level fields and no \`input\`/\`arguments\` wrapper. Write every title, step, and requirement in the user's language. After the tool succeeds the card is rendered above your reply, so refer to it briefly in prose rather than pasting the whole plan or spec again. If validation returns field errors, correct those fields once and retry.`;
 
 const WORKSPACE_AGENT_ROUTING_HINT = `## Codex workspace agent
-Use \`workspace_agent\` when the user's request needs multiple repository or file operations, a command, a code change, an experiment, MCP or project workspace context, or work that should be resumed later. Include the concrete desired outcome and constraints in \`task\`. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, MCP configuration, sandbox, and approval policy. Never ask for or invent an absolute workspace path. Read-only work may run automatically; writes, commands, network side effects, and other risky actions can pause for approval. While the agent works, the interface streams each step it takes (commands run, files edited, files read, plan updates) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, preserve the explanation and add a short learning takeaway or follow-up exercise.`;
+Choose \`workspace_agent\` automatically whenever the user's intent requires touching the project workspace: creating, editing, or reviewing files; implementing, fixing, or refactoring code; inspecting a repository; running commands or tests; performing an experiment; using MCP/project workspace context; or doing work that should be resumed later. This includes a request that changes only one file. Do not wait for the user to enable Agent, start a worker, or provide a special mode. Include the concrete desired outcome and constraints in \`task\`, then let the workspace agent perform the work instead of returning an imagined patch or merely describing commands. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, MCP configuration, sandbox, and approval policy. Never ask for or invent an absolute workspace path. Read-only work may run automatically; writes, commands, network side effects, and other risky actions can pause for approval. While the agent works, the interface streams each step it takes (commands run, files edited, files read, plan updates) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, preserve the explanation and add a short learning takeaway or follow-up exercise.`;
 
 export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(messages: T[], toolNames: string[]): T[] {
   const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
@@ -543,10 +543,9 @@ export const ChatPayloadSchema = z.object({
      them to llm.js as-is; non-DeepSeek upstreams silently ignore
      the unknown fields. */
   reasoning_effort: z.enum(['low', 'medium', 'high']).optional(),
-  /* P_agent-mode — the composer's explicit Agent switch. When true the
-     route asks the model to start with the Codex workspace agent instead
-     of leaving the routing decision to it. Ignored when the agent runtime
-     is disabled or the tool is not in this turn's registry. */
+  /* Backward-compatible input for older clients. Agent routing is now always
+     decided from the user's intent by the model; this field is accepted but
+     ignored so stale clients cannot force a worker run. */
   agentMode: z.boolean().optional(),
   extra_body: z.record(z.any()).optional(),
 }).passthrough();

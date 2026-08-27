@@ -175,10 +175,6 @@ function buildActionMap() {
   registerAction('setReasoningEffort', function (el, e, level) {
     if (typeof w.setReasoningEffort === 'function') w.setReasoningEffort(level);
   });
-  registerAction('toggleAgentMode', function () {
-    if (typeof w.toggleAgentMode === 'function') w.toggleAgentMode();
-  });
-
   registerAction('openFindInSession', function () { w.openFindInSession(); });
   registerAction('closeFindInSession', function () { w.closeFindInSession(); });
   registerAction('onFindInput', function (el) { w.onFindInput(el.value); });

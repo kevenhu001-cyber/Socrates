@@ -45,6 +45,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  await expect(page.locator('#agentModeBtn')).toHaveCount(0);
 
   await page.evaluate(() => {
     window.state.phase = 'chat';
@@ -90,6 +91,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
       listBottom: Math.round(listRect.bottom),
       barTop: Math.round(barRect.top),
       barPosition: getComputedStyle(bar).position,
+      appVh: document.documentElement.style.getPropertyValue('--app-vh'),
       measuredBarHeight: getComputedStyle(document.getElementById('chatView'))
         .getPropertyValue('--chat-input-bar-height'),
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
@@ -97,6 +99,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   });
   expect(geometry.paddingBottom).toBe(0);
   expect(geometry.barPosition).toBe('relative');
+  expect(geometry.appVh).toBe('');
   expect(geometry.measuredBarHeight).toBe('');
   expect(geometry.listBottom).toBeLessThanOrEqual(geometry.barTop);
   expect(geometry.distanceFromBottom).toBeLessThanOrEqual(2);

@@ -427,7 +427,7 @@ export function appendToolModule(toolName, toolInput, body, opts) {
       <span class="agent-tool-name"></span>
       <span class="agent-tool-input"></span>
       <span class="agent-tool-status" role="status" aria-live="polite"></span>
-      <span class="agent-tool-chev" aria-hidden="true">▾</span>
+      <span class="agent-tool-chev" aria-hidden="true">${STROKE_ICONS.chevronDown}</span>
     </div>
     <div class="agent-tool-body" id="${detailId}" hidden>
       <section class="agent-tool-section agent-tool-input-section">

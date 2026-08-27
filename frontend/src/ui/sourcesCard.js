@@ -1,4 +1,5 @@
 import { esc } from '../render/helpers.js';
+import { STROKE_ICONS } from './icons/toolIcons.js';
 
 /* Build a collapsible "Sources" card listing the URLs the model had
    access to. The card is appended to the assistant bubble so the user
@@ -14,7 +15,7 @@ export function renderSourcesCard(results) {
   html += '<span class="sources-icon"><svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M2 2.5A1.5 1.5 0 0 1 3.5 1h9A1.5 1.5 0 0 1 14 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V2.5Zm1.5-.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5H3.5Z"/><path d="M5 4.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm0 3a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Z"/></svg></span>';
   html += '<span class="sources-label">Sources</span>';
   html += '<span class="sources-count">' + results.length + '</span>';
-  if (rest.length) html += '<span class="sources-chev">▾</span>';
+  if (rest.length) html += '<span class="sources-chev">' + STROKE_ICONS.chevronDown + '</span>';
   html += '</div>';
   html += renderSourceRow(first, 1, { expanded: true });
   if (rest.length) {
@@ -119,7 +120,7 @@ function renderSourceRow(s, idx, opts) {
         '<span class="sources-num">[' + idx + ']</span>' +
         '<span class="sources-title">' + title + '</span>' +
         '<span class="sources-host">' + esc(host) + '</span>' +
-        '<span class="sources-row-chev" aria-hidden="true">▾</span>' +
+        '<span class="sources-row-chev" aria-hidden="true">' + STROKE_ICONS.chevronDown + '</span>' +
       '</a>' +
       renderSourceDetail(s, idx) +
     '</div>';

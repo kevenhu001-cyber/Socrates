@@ -160,10 +160,6 @@ export function registerStreamRoute(router: Router) {
         }
       }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
-      /* P_agent-mode — an explicit composer switch, not a policy change: it
-         only pins the first hop's tool choice. The model still decides what
-         to do after the agent returns, and a disabled runtime ignores it. */
-      const agentModeRequested = req.body?.agentMode === true;
 
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
@@ -386,11 +382,11 @@ export function registerStreamRoute(router: Router) {
             ...(toolsAllowed && activeToolDefs.length > 0
               ? {
                 tools: activeToolDefs,
-                /* Pin the agent only on the opening hop: later hops must be
-                   free to answer in prose or use another tool. */
-                tool_choice: agentModeRequested && iter === 0 && activeToolNames.includes('workspace_agent')
-                  ? { type: 'function', function: { name: 'workspace_agent' } }
-                  : 'auto',
+                /* Let the model select workspace_agent from the user's
+                   intent. There is no client-side Agent switch or forced
+                   first hop: ordinary questions stay native, while project
+                   and file work can enter the Codex runtime automatically. */
+                tool_choice: 'auto',
               }
               : {}),
           } as Parameters<typeof streamChatCompletion>[0],

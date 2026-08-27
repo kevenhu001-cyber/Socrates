@@ -1,5 +1,4 @@
-import { smoothScrollToBottom, velocityScrollTo } from './scroll.js';
-import { planMotionForUser } from './motion.js';
+import { smoothScrollToBottom } from './scroll.js';
 
 /*
  * Keep chat controls above mobile virtual keyboards.
@@ -32,15 +31,25 @@ import { planMotionForUser } from './motion.js';
  *   - stuck 100vh:   appBottom stuck at full height  → inset = keyboard height
  *
  * This module writes one CSS custom property (--keyboard-inset) plus a
- * data-keyboard-open flag. Layout AND animation are left to CSS
- * (.chat-view transitions its padding-bottom); there is deliberately no
- * JS interpolation loop, so there is a single source of motion and no
- * double-smoothed lag or flicker.
+ * data-keyboard-open flag. Layout follows that one measured value; there is
+ * deliberately no JS interpolation loop, so there is no second motion model
+ * that can double the lift or leave stale frames behind.
  */
 
 export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0) {
-  if (!Number.isFinite(layoutHeight) || !Number.isFinite(visualHeight)) return 0;
-  return Math.max(0, Math.round(layoutHeight - (visualHeight + Math.max(0, visualOffsetTop))));
+  if (
+    !Number.isFinite(layoutHeight) ||
+    !Number.isFinite(visualHeight) ||
+    layoutHeight <= 0 ||
+    visualHeight <= 0
+  ) {
+    return 0;
+  }
+
+  const offsetTop = Number.isFinite(visualOffsetTop) ? visualOffsetTop : 0;
+  const visualBottom = Math.max(0, visualHeight + offsetTop);
+  const covered = Math.round(layoutHeight - visualBottom);
+  return Math.min(layoutHeight, Math.max(0, covered));
 }
 
 /* Pure measurement step, split out for unit tests. `appBottom` is the app
@@ -51,8 +60,14 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
  * working, while overlay keyboards stay invisible (inset 0), matching
  * the previous degraded behaviour. */
 export function measureKeyboardInset(appBottom, viewport, innerHeight) {
-  if (!viewport) return getKeyboardInset(appBottom, innerHeight ?? 0, 0);
-  return getKeyboardInset(appBottom, viewport.height, viewport.offsetTop);
+  const viewportHeight = Number(viewport?.height);
+  if (viewport && Number.isFinite(viewportHeight) && viewportHeight > 0) {
+    const scale = Number(viewport.scale);
+    // A zoomed visual viewport is not an IME occlusion measurement.
+    if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) return 0;
+    return getKeyboardInset(appBottom, viewportHeight, Number(viewport.offsetTop) || 0);
+  }
+  return getKeyboardInset(appBottom, Number(innerHeight) || 0, 0);
 }
 
 /* The tracked node is usually the React composer mount point, while the
@@ -77,18 +92,11 @@ export function isTrackedInputFocused(trackedInputs, activeElement) {
   return false;
 }
 
-/* P_topic-kb-stable — pure decision helper for the --app-vh freeze.
-   Returns true when the frozen height must be (re)measured while a
-   composer is focused: either no value is cached yet, or the window
-   width changed (rotation / split-screen) since the last freeze.
-   Split out from initKeyboardViewport so the cache semantics are
-   unit-testable without a DOM. */
-export function shouldRefreezeAppVh(frozenHeight, frozenWidth, currentWidth) {
-  return !(frozenHeight > 0 && frozenWidth === currentWidth);
-}
-
 export function initKeyboardViewport({ inputs, input, container, root = document.documentElement } = {}) {
   if (!root) return () => {};
+  /* Clear the legacy frozen-height value when hot reload or a soft navigation
+     reuses the document. It is no longer part of keyboard avoidance. */
+  try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
 
   /* P_multi-input — `input` (single element) is the legacy shape; pass
    * `inputs` (single element, array of elements, or CSS selector) to
@@ -111,26 +119,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* -1 forces the first applyInset() to write, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
-  /* P_topic-kb-stable — last keyboard-closed shell height written to
-     --app-vh, plus the width it was measured at (rotation detector). */
-  let appliedStableVh = -1;
-  let stableVhWidth = -1;
-
-  /* Cache the inset rAF handle so a rapid keyboard open/close cycle
-     cancels the in-flight run instead of stacking two animations on
-     the same property. The previous implementation kept an
-     `insetAnim` object whose `cancel()` was a no-op; with that
-     no-op cancel, an old rAF chain kept writing the captured
-     `startInset` to `roundedInset` interpolation while a new chain
-     wrote its own captured values, producing visible jitter (the
-     "stutter and flicker" the user reported on rapid keyboard
-     toggles). We now track a `cancelled` flag plus the rAF handle
-     so cancel is real and the closed-over `tickInset` exits cleanly
-     on the next animation frame. */
-  let insetCancel = null;
 
   const applyInset = (inset) => {
-    const roundedInset = Math.round(inset);
+    const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
     if (roundedInset === appliedInset) return;
     const list = typeof document !== 'undefined'
       ? document.getElementById('msgList')
@@ -142,96 +133,22 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       && list.scrollHeight - list.scrollTop - list.clientHeight <= 96
     );
 
-    /* Drive the keyboard inset via Web Animations API on the CSS
-     * custom property itself. Pair it with a velocity-based scroll
-     * to the new bottom (when the reader was pinned) using the same
-     * motion plan, so the input box lift and the transcript content
-     * scroll finish at exactly the same time. That is what keeps
-     * their relative distance constant — the AI content moves up
-     * with the input instead of jumping ahead of it or lagging
-     * behind it. The previous implementation drove --keyboard-inset
-     * via a CSS transition and scrollTop via an independent
-     * scrollTo({behavior:'smooth'}); the two timelines drifted and
-     * produced the visible "layout jump" the user reported. */
-    const startInset = parseFloat(root.style.getPropertyValue('--keyboard-inset')) || 0;
-    const distance = Math.abs(roundedInset - startInset);
-    const plan = planMotionForUser(distance);
-    const duration = plan.duration;
-    const targetScrollTop = wasPinned && list
-      ? (startInset < roundedInset
-          ? list.scrollTop + (roundedInset - startInset)
-          : list.scrollHeight - list.clientHeight)
-      : null;
-
-    /* Cancel any in-flight inset animation. The rAF chain checks the
-     * `cancelled` flag on every tick and exits without writing the
-     * CSS variable, so a stale chain cannot race a fresh one.
-     *
-     * WAAPI cannot animate a custom property registered on `:root`
-     * by string name without a typed-OM registration; we drive the
-     * property via rAF instead. Capture the rAF start time at
-     * dispatch (before scheduling) so the inset animation and the
-     * velocityScrollTo dispatched on the next rAF tick share the
-     * same epoch — visual drift between the two rAF chains is
-     * sub-perceptual (under one frame). */
-    if (insetCancel) {
-      const prev = insetCancel;
-      insetCancel = null;
-      prev.cancel();
-    }
-    const applyInstantly = duration === 0;
-    if (applyInstantly) {
-      root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-    } else {
-      const startedAt = performance.now();
-      let cancelled = false;
-      let handle = 0;
-      const tickInset = (now) => {
-        if (cancelled) return;
-        const elapsed = now - startedAt;
-        if (elapsed >= duration) {
-          root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-          if (insetCancel && insetCancel.handle === handle) insetCancel = null;
-          return;
-        }
-        const t = elapsed / duration;
-        const eased = 1 - Math.pow(1 - t, 5);
-        root.style.setProperty(
-          '--keyboard-inset',
-          `${Math.round(startInset + (roundedInset - startInset) * eased)}px`
-        );
-        handle = requestAnimationFrame(tickInset);
-      };
-      insetCancel = {
-        handle: 0,
-        cancel() {
-          cancelled = true;
-          if (handle) cancelAnimationFrame(handle);
-        },
-      };
-      handle = requestAnimationFrame(tickInset);
-      insetCancel.handle = handle;
-    }
-
+    /* Apply the measured geometry directly. The browser emits several
+     * viewport events during a real keyboard transition, so CSS can follow
+     * those settled values without a second JavaScript animation. */
+    root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
     root.dataset.keyboardOpen = roundedInset > 50 ? 'true' : 'false';
 
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
      * Preserve the bottom anchor only for a reader who was already following
-     * the latest message; otherwise the smaller viewport can make them appear
-     * to have scrolled away and subsequent stream updates stop following.
-     *
-     * velocityScrollTo() uses the SAME motion plan (planMotionForUser) as
-     * the inset lift above, so when both run in the same task they
-     * finish in lockstep — the AI content and the input move up
-     * together at constant relative distance. */
-    if (wasPinned && list && targetScrollTop != null) {
+     * the latest message. Snap after layout settles instead of running a
+     * second long animation that can amplify the keyboard lift. */
+    if (wasPinned && list) {
       if (pinFrame) cancelAnimationFrame(pinFrame);
       pinFrame = requestAnimationFrame(() => {
         pinFrame = 0;
         if (!window.state || !window.state._userScrolledAway) {
-          /* Pass the pre-computed plan so the scroll uses the same
-             duration as the inset lift. */
-          velocityScrollTo(list, targetScrollTop, { smooth: true, motion: plan });
+          smoothScrollToBottom(list, { smooth: false });
         }
       });
     }
@@ -286,72 +203,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     } catch (_) { /* detached — leave attribute untouched */ }
   };
 
-  /* Current rendered height of the app shell in CSS pixels. Used both
-     for the frozen --app-vh (below) and the keyboard inset. */
-  const appShellHeight = () => {
-    const appEl = container
-      || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
-      || root;
-    try {
-      if (appEl && typeof appEl.getBoundingClientRect === 'function') {
-        const rect = appEl.getBoundingClientRect();
-        if (Number.isFinite(rect.height) && rect.height > 0) return rect.height;
-      }
-    } catch (_) { /* detached node — use the fallback */ }
-    return window.innerHeight || 0;
-  };
-
-  /* P_topic-kb-stable — freeze the app shell's height while a composer
-     is focused. On resize-mode keyboards (Firefox Android, Capacitor
-     Keyboard.resize:"native") the layout viewport shrinks when the
-     keyboard opens; without a frozen --app-vh the whole landing/topic
-     layout reflows and the focused input visibly jumps. The freeze
-     keeps the shell at its last keyboard-closed height, so the
-     keyboard simply covers the bottom edge (which is intended) and
-     the input keeps its exact position.
-
-     `--app-vh` is only written while a composer has focus; on blur we
-     remove it so the shell resumes tracking 100dvh. When the window
-     width changes (rotation, split-screen) the cached value is
-     invalidated and the next focus re-measures. */
-  const isSmallViewport = () => {
-    try {
-      if (typeof window.matchMedia === 'function') {
-        return window.matchMedia('(max-width: 768px)').matches;
-      }
-    } catch (_) { /* fall through to the numeric check */ }
-    return window.innerWidth <= 768;
-  };
-
-  const clearStableVh = () => {
-    if (appliedStableVh === -1) return;
-    root.style.removeProperty('--app-vh');
-    appliedStableVh = -1;
-    stableVhWidth = -1;
-  };
-
-  const applyStableVh = (focused) => {
-    /* Desktop focus must never freeze the app shell. Apart from being
-       unnecessary there, the old unconditional focusin handler also froze
-       the shell when a modal or sidebar control received focus. */
-    if (!focused || !isSmallViewport()) {
-      clearStableVh();
-      return;
-    }
-    const width = window.innerWidth;
-    if (!shouldRefreezeAppVh(appliedStableVh, stableVhWidth, width)) return;
-    const height = appShellHeight();
-    if (height <= 0) return;
-    root.style.setProperty('--app-vh', `${Math.round(height)}px`);
-    appliedStableVh = Math.round(height);
-    stableVhWidth = width;
-  };
-
-  /* The topic landing is its own scroll container. When a resize-mode
-     keyboard covers the lower part of the frozen shell, lifting the whole
-     landing page would move the greeting and create a visible jump. Instead,
-     move only the topic scroller when the focused editor falls outside the
-     visual viewport. */
+  /* The topic landing is its own scroll container. When the keyboard covers
+     the lower part of the shell, move only the topic scroller when the
+     focused editor falls outside the visual viewport. */
   const ensureTopicComposerVisible = () => {
     const active = typeof document !== 'undefined' ? document.activeElement : null;
     if (!active) return;
@@ -372,8 +226,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const composer = tracked.closest?.('.topic-input-wrap') || tracked;
     if (!composer || typeof composer.getBoundingClientRect !== 'function') return;
 
-    const offsetTop = viewport ? Math.max(0, Number(viewport.offsetTop) || 0) : 0;
-    const viewportHeight = viewport ? Number(viewport.height) : Number(window.innerHeight);
+    const offsetTop = viewport ? Number(viewport.offsetTop) || 0 : 0;
+    const viewportHeight = viewport && Number(viewport.height) > 0
+      ? Number(viewport.height)
+      : Number(window.innerHeight);
     if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) return;
     const visibleTop = offsetTop + 8;
     const visibleBottom = offsetTop + viewportHeight - 16;
@@ -382,7 +238,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (rect.bottom > visibleBottom) delta = rect.bottom - visibleBottom;
     else if (rect.top < visibleTop) delta = rect.top - visibleTop;
     if (Math.abs(delta) < 1) return;
-    topic.scrollTop = Math.max(0, topic.scrollTop + delta);
+    const maxScrollTop = Math.max(0, topic.scrollHeight - topic.clientHeight);
+    topic.scrollTop = Math.min(maxScrollTop, Math.max(0, topic.scrollTop + delta));
   };
 
   let topicEnsureFrame = 0;
@@ -403,7 +260,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
-    applyStableVh(focused);
     applyInset(
       focused
         ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
@@ -421,19 +277,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     });
   };
 
-  /* P_topic-kb-stable — freeze --app-vh SYNCHRONOUSLY on focus. The rAF
-     schedule above measures one frame later, but resize-mode keyboards
-     (Capacitor resize:"native", Firefox Android) can shrink the layout
-     viewport before that frame runs. Measuring then would freeze the
-     post-keyboard height and leave the composer under the keyboard.
-     focusin fires before the keyboard opens, so this sync write locks
-     the keyboard-closed shell height first; the later update() call
-     hits the `appliedStableVh > 0 && width === stableVhWidth` cache and
-     leaves it untouched. Only a tracked composer focus may enter this path. */
-  const onFocusIn = (event) => {
-    if (isTrackedInputFocused(trackedInputs, event?.target)) {
-      applyStableVh(true);
-    }
+  const onFocusIn = () => {
     schedule();
     /* Mirror the focus state to data-topic-composer-focused synchronously
        so the disclaimer disappears on the same frame the topic input
@@ -481,8 +325,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
-    if (insetCancel) { try { insetCancel.cancel(); } catch (_) {} insetCancel = null; }
-    try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
+    try { root.style.removeProperty('--keyboard-inset'); } catch (_) { /* detached root */ }
+    try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
+    try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
     if (viewport) {
       viewport.removeEventListener('resize', schedule);
       viewport.removeEventListener('scroll', schedule);

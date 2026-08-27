@@ -44,7 +44,7 @@ export const WORKSPACE_AGENT_TOOL = {
   function: {
     name: 'workspace_agent',
     description:
-      'Runs the Socrates project workspace agent powered by Codex. Use it for multi-step coding or file work, repository exploration, patches, command execution, project experiments, MCP calls, or a task that should continue across turns. Keep ordinary explanations, short calculations, and simple web research in native tools. The server owns the workspace, model, sandbox, MCP configuration, and approval policy. Read-only actions run automatically; file writes, commands, network side effects, and other risky actions may pause for an explicit user approval. After it finishes, summarize the result and mention any generated files or artifacts.',
+      'Runs the Socrates project workspace agent powered by Codex. Select it automatically when the user asks to create, edit, review, or inspect project files, implement/fix/refactor code, run commands or tests, explore a repository, perform an experiment, use MCP/project workspace context, or continue work across turns—even when only one file is involved. Do not wait for a manual Agent mode or worker start. Keep ordinary explanations, short calculations, and simple web research in native tools. The server owns the workspace, model, sandbox, MCP configuration, and approval policy. Read-only actions run automatically; file writes, commands, network side effects, and other risky actions may pause for an explicit user approval. After it finishes, summarize the result and mention any generated files or artifacts.',
     parameters: {
       type: 'object',
       properties: {
