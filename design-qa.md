@@ -246,3 +246,93 @@ final result: passed
 - 因此将全站**站内链接改回无扩展名**（`href="research"`、`href="../research"`、`href="../../research"`、`product#knowledge-map` 锚点保留），由 nginx 自动补 `.html`；磁盘文件仍为 `.html`。
 - 同步将 `editorial.js` 重建的导航项改为无扩展名（`key`/`href` 均去 `.html`），保证 masthead 与正文一致。
 - 验证：`serve.cjs` 下 `/research` `/announcements` `/policy` `/documents` `/learn` `/product` `/zh/index` 均 200；生产 nginx `$uri.html` + `$uri/` 回退覆盖页面与 `research/<slug>/` 子目录。
+
+---
+
+## 2026-08-27 — 对话工具行、等待反馈与 Artifacts 预览
+
+### 对比基准
+
+- Source visual truth:
+  - `C:\Users\Jiacheng\AppData\Local\Temp\codex-clipboard-4c3610c6-f88f-4c79-81e5-217ec9a650f0.png`
+  - `C:\Users\Jiacheng\AppData\Local\Temp\codex-clipboard-2dea64b2-4cb5-40fb-978d-e08acbbce10e.png`
+- Implementation screenshots:
+  - `C:\Users\Jiacheng\.codex\visualizations\2026\08\27\01a0425c-1d2d-78c1-b208-74659380f985\socrates-artifacts-desktop.png`
+  - `C:\Users\Jiacheng\.codex\visualizations\2026\08\27\01a0425c-1d2d-78c1-b208-74659380f985\socrates-artifacts-mobile.png`
+  - Combined comparison: `C:\Users\Jiacheng\.codex\visualizations\2026\08\27\01a0425c-1d2d-78c1-b208-74659380f985\socrates-reference-comparison.png`
+- Viewports: desktop `1280 × 720` CSS px; mobile `390 × 844` CSS px; device scale factor `1`.
+- State: dark theme, completed web-search and code-interpreter rows, inline image and sandboxed HTML previews, Artifacts panel open.
+- Pixel normalization: implementation captured at the CSS viewport; the combined image places reference and implementation in equal 640 px columns for a single visual comparison input.
+
+### Fidelity review
+
+- Fonts and typography: Socrates keeps its existing Inter/Noto Sans SC and Newsreader brand stack. Tool labels use compact 13–13.5 px UI type; assistant prose remains the primary hierarchy. No browser-default control type remains in the new preview controls.
+- Spacing and layout rhythm: unboxed assistant prose and 28 px activity rows match the reference's quiet vertical cadence. Artifact captions use a compact 38 px metadata rail. Desktop drawer occupies 52 vw; mobile becomes a 78 dvh bottom sheet without horizontal overflow (`390 px clientWidth = scrollWidth`).
+- Colors and visual tokens: existing dark Socrates tokens are preserved; tool activity stays muted neutral, with error color reserved for failures. The HTML canvas remains true white because it is generated content, not app chrome.
+- Image quality and asset fidelity: image artifacts render at natural aspect ratio with `object-fit: contain`; HTML renders in sandboxed iframes inline and in Artifacts. No placeholder or CSS-drawn media substitutes are used.
+- Copy and content: existing Socrates navigation and conversation copy remain intact. New waiting phases describe progress without exposing a jittering seconds counter. English and Chinese strings are present for all new states and controls.
+- Icons: existing Socrates stroke-icon family is reused at 15–20 px and consistent optical weight. No emoji or text-glyph stand-ins were introduced.
+
+### Full-view and focused evidence
+
+- Full-view comparison confirms the reference's content-first hierarchy, open assistant response, small tool/status rows, subdued timestamps/status metadata, and dark neutral palette are retained.
+- Focused HTML-preview comparison confirms compact header, clear filename/meta, close action, stable white preview canvas, and no nested-card clutter.
+- Inline image click opened the Artifacts dialog and exposed `Image preview`; the HTML `Open in Artifacts` control opened the sandboxed preview and exposed `Sandboxed HTML preview`.
+- Intentional deviation: Socrates retains its product sidebar, message composer, and brand type rather than copying Codex chrome. Artifacts uses a desktop right rail and mobile bottom sheet so the core conversation remains visible.
+
+### Comparison history
+
+- Initial browser pass found no P0/P1/P2 mismatch in the requested surfaces. The mobile drawer transition was allowed to settle and then re-captured; final geometry was `390 × 658.3 px`, fixed to the viewport bottom with no overflow.
+- No additional visual repair iteration was required after the final desktop/mobile captures.
+
+### Functional verification
+
+- In-app Browser page identity: `Socrates` at the local QA URL.
+- Meaningful app DOM rendered; no framework overlay.
+- Console errors/warnings: none.
+- Primary path: send message → compact search/tool rows settle → inline image and HTML appear → open HTML in Artifacts → close → open image in Artifacts.
+- `npm run lint` — passed.
+- `npm run test:unit` — passed.
+- `npm run build` — passed (existing bundle-size/circular-chunk warnings remain non-blocking).
+
+### Findings
+
+- No actionable P0/P1/P2 findings remain.
+- P3 follow-up: a future accessibility pass could add a full focus trap to the custom Artifacts dialog; current close button, backdrop, Escape handling, dialog semantics, and focus restoration are present.
+
+final result: passed
+
+---
+
+## 2026-08-27 — 工具调用 UI 逐像素复核与链接 favicon
+
+### 对比基准
+
+- Source visual truth: `C:\Users\Jiacheng\AppData\Local\Temp\codex-clipboard-c48440b7-7d46-499d-96c9-2116f2c98b64.png`
+- Desktop implementation: `C:\Users\Jiacheng\.codex\visualizations\2026\08\27\01a0425c-1d2d-78c1-b208-74659380f985\socrates-tool-fidelity-desktop.png`
+- Mobile implementation: `C:\Users\Jiacheng\.codex\visualizations\2026\08\27\01a0425c-1d2d-78c1-b208-74659380f985\socrates-tool-fidelity-mobile.png`
+- Combined comparison: `C:\Users\Jiacheng\.codex\visualizations\2026\08\27\01a0425c-1d2d-78c1-b208-74659380f985\socrates-tool-fidelity-comparison.png`
+- Viewports: desktop `1280 × 720`; mobile `390 × 844`; dark theme.
+
+### 精确规格与结果
+
+- 完成态工具行固定为 `26 px` 高，图标 `18 px`，正文 `13.5 px`；背景透明、无边框、无卡片阴影。
+- 完成态隐藏耗时、元信息和展开箭头，仅保留截图中的“小图标 + 单行淡色状态文字”。
+- 外链 favicon 以 `16 px` 内联显示，图标与链接之间为 `5 px`；优先加载目标站点 `/favicon.ico`，失败时才回退 favicon 服务。
+- 实测 Anthropic 与 Claude 两条链接均加载目标站点 favicon；图片 natural width 均为 `48 px`，按 `16 px` 渲染。
+- 实测工具行：`height=26`、`iconWidth=18`、`background=transparent`、`border=none`、`meta=none`、`chevron=none`。
+- 桌面和移动端均无可见横向溢出；浏览器控制台无 error/warning。
+
+### 自动化验证
+
+- 新增 favicon DOM 单测，覆盖外链装饰、幂等处理以及拒绝 `javascript:` URL。
+- `npm run lint` — passed。
+- `npm run test:unit` — passed。
+- `npm run build` — passed（既有 bundle/chunk warning 仍为非阻塞项）。
+
+### Findings
+
+- 请求范围内的工具调用完成态和正文链接 favicon 无剩余 P0/P1/P2 问题。
+- Socrates 自身侧栏、输入框与品牌排版继续保留；本轮“完全一致”针对用户指定的工具调用行及正文链接图标，而不是复制 Codex 整个应用外壳。
+
+final result: passed
