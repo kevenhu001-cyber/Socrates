@@ -108,8 +108,30 @@ export function useAutoHeight(
       }
     }
 
+    /* Measure the content's intrinsic height with the lock released.
+       ─────────────────────────────────────────────────────────────
+       `scrollHeight` reports `clientHeight` whenever the content is
+       SHORTER than the box. While we hold `style.height` at the last
+       settled value, a locked element therefore can never report a
+       shrink: deleting a line leaves scrollHeight pinned at the old
+       lock and the composer grows but never comes back down. Clearing
+       the inline height for the duration of this read lets the box
+       collapse to its intrinsic size; restoring it before we return
+       keeps the whole measurement inside one synchronous task, so the
+       browser never paints the unlocked state and the user sees no
+       flash. The two forced layouts happen at most once per animation
+       frame (every caller goes through `scheduleUpdate`). */
     function readNatural(target: HTMLElement, cap: { min: number; max: number }): number {
-      const naturalRaw = target.scrollHeight;
+      let naturalRaw: number;
+      const locked = target.style.height;
+      try {
+        if (locked) target.style.height = 'auto';
+        naturalRaw = target.scrollHeight;
+      } catch (_) {
+        naturalRaw = target.scrollHeight;
+      } finally {
+        try { if (locked) target.style.height = locked; } catch (_) { /* detached */ }
+      }
       return Math.max(cap.min, Math.min(cap.max, naturalRaw));
     }
 
@@ -146,6 +168,23 @@ export function useAutoHeight(
       }
       if (typeof target.animate === 'function') {
         try {
+          /* Commit the DESTINATION to the inline lock before the
+             animation starts.
+
+             WAAPI runs with `fill: 'none'` (see below), so the instant
+             the animation's active interval ends the element falls back
+             to its underlying inline value. When that value was still
+             the OLD lock, the box snapped back to the pre-growth height
+             for the frames between the final animation tick and the
+             asynchronous `onfinish` callback that refreshed the lock —
+             a one-frame flash on every single expansion, which is
+             exactly the "闪现" the composer exhibited.
+
+             Writing `natural` up front makes the hand-off from animated
+             value to underlying value a no-op, and it also makes
+             `anim.cancel()` land on the destination instead of
+             rewinding to the start. */
+          lockAt(target, natural);
           /* WAAPI animates the inline height alongside our lock. We
              use `fill: 'none'` because `fill: 'forwards'` would keep
              the final keyframe applied forever, which would re-freeze
@@ -198,22 +237,37 @@ export function useAutoHeight(
        dance, so bursts of transactions and resize notifications collapse
        into one measurement instead of competing height animations. */
     function update(target: HTMLElement): void {
+      /* 1. Capture the height the user is CURRENTLY seeing, before
+            touching anything else. Mid-animation this is the
+            interpolated value, and it is the only correct start for the
+            next transition: the inline lock now holds the previous
+            DESTINATION (see animateTo), not what is on screen. Starting
+            from the lock instead would rewind the box and read as a
+            backwards jump when the user types quickly. */
+      const visual = target.getBoundingClientRect().height;
+      /* 2. Stop any in-flight animation before measuring. A running
+            WAAPI animation outranks the inline style in the cascade, so
+            readNatural's temporary `height:auto` would be ignored and
+            the measurement would come back as the interpolated height
+            rather than the content height. Cancelling reverts the box to
+            the inline lock, and nothing is painted between here and the
+            new animation, so the revert is never visible. */
+      if (anim) {
+        try { anim.cancel(); } catch (_) { /* not animatable */ }
+        anim = null;
+      }
       const cap = readHeightCap(target);
-      /* Always read the CURRENT lock value as the animation start.
-         The lock is set on mount (initial lock) and after every
-         finish (chain-lock), so it is the most recent settled
-         height. If the lock is somehow missing (race during unmount
-         or first paint) fall back to the rendered height. */
-      let current = parseFloat(target.style.height);
-      if (!Number.isFinite(current)) {
-        current = target.getBoundingClientRect().height;
+      let current = visual;
+      if (!Number.isFinite(current) || current <= 0) {
+        current = parseFloat(target.style.height);
+        if (!Number.isFinite(current)) current = cap.min;
       }
       const natural = readNatural(target, cap);
       const distance = Math.abs(natural - current);
       if (distance < 1) {
         /* No motion needed — re-assert the lock so the box stays
            locked at this size for the next change. */
-        lockAt(target, current);
+        lockAt(target, natural);
         return;
       }
       if (reduced) {

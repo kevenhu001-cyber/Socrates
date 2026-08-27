@@ -343,6 +343,20 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
          Still well under the user-perceived "drag" threshold. */
       velocity: 1100,
       maxDuration: 360,
+      /* The shared planner collapses any motion under
+         MOTION_SNAP_DISTANCE_PX (24px) to duration 0. One composer line
+         is ~21px (14px × 1.5 line-height), so EVERY single-line growth
+         fell inside that snap window and was applied instantly — the
+         input bar teleported one line up instead of gliding. Opt out of
+         the snap window here: on this element even a one-line change is
+         the entire motion the user is watching, so it must always be
+         interpolated. */
+      snapDistance: 0,
+      /* 21px at 1100px/s is only 19ms, which still reads as an instant
+         jump. Floor the glide at ~140ms so a one-line growth is
+         perceptibly continuous; a large paste still scales up toward
+         maxDuration. */
+      minDuration: 140,
     },
   });
 
