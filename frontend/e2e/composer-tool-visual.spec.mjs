@@ -82,6 +82,25 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await expect(mobileComposer.locator('.effort-picker')).toBeHidden();
   const collapsedBox = await mobileComposer.boundingBox();
   expect(collapsedBox?.height).toBeLessThanOrEqual(66);
+  const collapsedGeometry = await page.evaluate(() => {
+    const rect = (selector) => {
+      const el = document.querySelector(selector);
+      if (!(el instanceof HTMLElement) || el.hidden || getComputedStyle(el).display === 'none') return null;
+      const r = el.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    };
+    return {
+      left: rect('#chatInputWrap .footer-left-group'),
+      editor: rect('#chatComposerRoot'),
+      send: rect('#sendBtn'),
+      bodyDisplay: getComputedStyle(document.querySelector('#chatInputWrap .chat-composer-body')).display,
+      bodyColumns: getComputedStyle(document.querySelector('#chatInputWrap .chat-composer-body')).gridTemplateColumns,
+    };
+  });
+  console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
+  expect(collapsedGeometry.bodyDisplay).toBe('grid');
+  expect(collapsedGeometry.left?.right ?? 0).toBeLessThanOrEqual((collapsedGeometry.editor?.left ?? 0) + 1);
+  expect(collapsedGeometry.editor?.right ?? 0).toBeLessThanOrEqual((collapsedGeometry.send?.left ?? 0) + 1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
 
   await mobileEditor.click();

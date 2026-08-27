@@ -26,6 +26,17 @@ NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.
 NGINX_APP_CONF="${NGINX_APP_CONF:-/etc/nginx/sites-available/app.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
+
+# The app nginx config is normally a symlink from sites-enabled to
+# sites-available, but older hosts have used a copied file instead. Keep the
+# active config and its source config aligned when both exist.
+APP_NGINX_CONFIGS=("$NGINX_APP_CONF")
+APP_ENABLED_CONF="/etc/nginx/sites-enabled/$(basename "$NGINX_APP_CONF")"
+APP_CONF_REAL=$(readlink -f "$NGINX_APP_CONF" 2>/dev/null || echo "$NGINX_APP_CONF")
+APP_ENABLED_CONF_REAL=$(readlink -f "$APP_ENABLED_CONF" 2>/dev/null || echo "$APP_ENABLED_CONF")
+if [[ "$APP_ENABLED_CONF" != "$NGINX_APP_CONF" && -f "$APP_ENABLED_CONF" && "$APP_ENABLED_CONF_REAL" != "$APP_CONF_REAL" ]]; then
+  APP_NGINX_CONFIGS+=("$APP_ENABLED_CONF")
+fi
 # P_build-heap — the legacy 4 GB ceiling was needed because Rollup walked
 # mermaid's 38 lazy diagram imports + cytoscape/fcose/dagre, 4 echarts
 # sub-modules + zrender, and the 4.85 MB plotly bundle. With those three
@@ -117,6 +128,44 @@ backup_previous() {
   if [[ -d "$web_root/assets" ]]; then
     $SUDO rm -rf "$web_root/.previous/assets"
     $SUDO cp -a "$web_root/assets" "$web_root/.previous/assets"
+  fi
+}
+
+# Point the SPA fallback at the exact entry written by this deploy. Older
+# versions only replaced the /__APP_INDEX__ placeholder, so the first
+# versioned deploy permanently pinned nginx to that one filename. Also remove
+# the $uri/ directory candidate: when the web root has no stable index.html,
+# a request for / matches the directory and nginx returns 403 instead of the
+# versioned SPA entry.
+set_app_index_target() {
+  local app_file="$1"
+  local conf
+  local found=0
+  local app_fallback_expr
+
+  app_fallback_expr='s#^([[:space:]]*try_files[[:space:]]+)\$uri([[:space:]]+\$uri/)?[[:space:]]+/(__APP_INDEX__|index\.[0-9]+\.html);[[:space:]]*$#\1\$uri /'"$app_file"';#'
+
+  for conf in "${APP_NGINX_CONFIGS[@]}"; do
+    [[ -f "$conf" ]] || continue
+    if ! $SUDO grep -Eq \
+      '^[[:space:]]*try_files[[:space:]]+\$uri([[:space:]]+\$uri/)?[[:space:]]+/(__APP_INDEX__|index\.[0-9]+\.html);[[:space:]]*$' \
+      "$conf"; then
+      continue
+    fi
+
+    found=1
+    $SUDO sed -E -i "$app_fallback_expr" "$conf"
+
+    if ! $SUDO grep -Fq "try_files \$uri /$app_file;" "$conf"; then
+      echo "ERROR: nginx SPA fallback was not updated in $conf" >&2
+      return 1
+    fi
+  done
+
+  if [[ "$found" != "1" ]]; then
+    echo "ERROR: no managed SPA fallback found in nginx app config(s): ${APP_NGINX_CONFIGS[*]}" >&2
+    echo "       Expected try_files \$uri [\$uri/] /__APP_INDEX__ or /index.<timestamp>.html" >&2
+    return 1
   fi
 }
 
@@ -226,14 +275,16 @@ if [[ "${1:-}" != "" && -f "${1}" ]]; then
   backup_previous "$APP_WEB_ROOT"
   APP_TS=$(date +%s)
   APP_FILE="index.${APP_TS}.html"
+  while [[ -e "$APP_WEB_ROOT/$APP_FILE" ]]; do
+    APP_TS=$((APP_TS + 1))
+    APP_FILE="index.${APP_TS}.html"
+  done
   $SUDO install -m 644 -o www-data -g www-data "$LEGACY_SRC" "$APP_WEB_ROOT/$APP_FILE"
-  if ! $SUDO sed -i "s|/__APP_INDEX__|/$APP_FILE|" "$NGINX_APP_CONF"; then
-    echo "ERROR: failed to rewrite nginx try_files sentinel in $NGINX_APP_CONF" >&2
-    exit 1
-  fi
+  set_app_index_target "$APP_FILE"
   SRC_DESC="$LEGACY_SRC"
   SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/$APP_FILE")
   SRC_MD5=$(md5sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
+  SRC_SHA256=$(sha256sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
 else
   # Production mode: build the Vite bundle and copy dist/* into the web root.
   echo "Installing frontend dependencies from package-lock.json…"
@@ -255,12 +306,15 @@ else
   # Versioned SPA entry. Writes the freshly-built index.html to
   # `index.<TS>.html` (timestamp seconds since epoch) so each deploy
   # gets a fresh CDN cache key on the SPA HTML response, and so the
-  # nginx `try_files` sentinel (/__APP_INDEX__) below can be sed-
-  # rewritten to point at exactly this file. The sentinel pattern in
-  # $NGINX_APP_CONF must exist as a unique substring — see that file's
-  # P_cdn-bust comment for the rationale.
+  # nginx SPA fallback below is rewritten to point at exactly this file.
+  # The managed fallback pattern in $NGINX_APP_CONF must exist as a unique
+  # line — see set_app_index_target for the migration-safe rewrite.
   APP_TS=$(date +%s)
   APP_FILE="index.${APP_TS}.html"
+  while [[ -e "$APP_WEB_ROOT/$APP_FILE" ]]; do
+    APP_TS=$((APP_TS + 1))
+    APP_FILE="index.${APP_TS}.html"
+  done
 
   # Wipe + copy the bundle (versioned index.<TS>.html + assets/) so we
   # don't leave stale hash-named JS files behind after a code change.
@@ -292,19 +346,15 @@ else
     $SUDO install -m 644 -o www-data -g www-data "$f" "$APP_WEB_ROOT/$fname"
   done
 
-  # Repoint the nginx SPA-fallback `try_files` sentinel at the freshly
-  # deployed versioned file. Run before the nginx reload further down
-  # so the reload picks up the matching config. Use a fixed-string
-  # replacement (`||` after the sed) so an accidental prior run that
-  # already substituted the sentinel doesn't fail this deploy.
-  if ! $SUDO sed -i "s|/__APP_INDEX__|/$APP_FILE|" "$NGINX_APP_CONF"; then
-    echo "ERROR: failed to rewrite nginx try_files sentinel in $NGINX_APP_CONF" >&2
-    exit 1
-  fi
+  # Repoint the nginx SPA fallback at the freshly deployed versioned file.
+  # This handles both the initial placeholder and a previous timestamp, and
+  # also keeps copied sites-enabled configs in sync with sites-available.
+  set_app_index_target "$APP_FILE"
 
   SRC_DESC="vite build → $APP_WEB_ROOT/$APP_FILE"
   SRC_SIZE=$(stat -c%s "$APP_WEB_ROOT/$APP_FILE")
   SRC_MD5=$(md5sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
+  SRC_SHA256=$(sha256sum "$APP_WEB_ROOT/$APP_FILE" | cut -d' ' -f1)
 fi
 
 # ─── 2. Marketing site (topodrive.top) ───────────────────────────────
@@ -541,10 +591,9 @@ fi
 
 # ─── 4. Validate nginx + reload ──────────────────────────────────────
 if ! $SUDO nginx -t >/dev/null 2>&1; then
-  echo "WARNING: nginx config test failed (not related to file copy)" >&2
-fi
-
-if $SUDO nginx -s reload >/dev/null 2>&1; then
+  NGINX_STATUS="CONFIG TEST FAILED"
+  echo "ERROR: nginx config test failed; keeping the old nginx workers" >&2
+elif $SUDO nginx -s reload >/dev/null 2>&1; then
   NGINX_STATUS="reloaded"
 else
   NGINX_STATUS="RELOAD FAILED — files are in place but nginx did not pick them up; check 'sudo nginx -t' manually"
@@ -561,36 +610,104 @@ GATE_RESULTS=()
 
 gate_check() {
   local label="$1" url="$2"; shift 2
-  local code
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$@" "$url" || echo 000)
-  if [[ "$code" =~ ^2 ]]; then
-    GATE_RESULTS+=("  $label $code")
-  else
-    GATE_RESULTS+=("  $label $code  ← FAIL")
-    echo "GATE FAIL: $label returned $code ($url)" >&2
-    GATE_FAILED=1
+  local code=""
+  local attempts=1
+  local attempt
+
+  # nginx reloads gracefully and EdgeOne can briefly route a request to an
+  # old worker. Retry only the app entry gate so that a short handoff window
+  # does not turn an otherwise valid release into a false failure.
+  if [[ "$label" == "app frontend        " ]]; then
+    attempts="${APP_GATE_ATTEMPTS:-3}"
   fi
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 "$@" "$url" || echo 000)
+    if [[ "$code" =~ ^2 ]]; then
+      GATE_RESULTS+=("  $label $code")
+      return 0
+    fi
+    if (( attempt < attempts )); then
+      sleep "${APP_GATE_RETRY_DELAY_SEC:-2}"
+    fi
+  done
+
+  GATE_RESULTS+=("  $label $code  ← FAIL")
+  echo "GATE FAIL: $label returned $code ($url)" >&2
+  GATE_FAILED=1
 }
 
-# 4.5a. Frontend bundle integrity: md5 of just-built == md5 on disk.
+if [[ "$NGINX_STATUS" != "reloaded" ]]; then
+  GATE_RESULTS+=("  nginx reload $NGINX_STATUS  ← FAIL")
+  GATE_FAILED=1
+fi
+
+# 4.5a. Frontend bundle integrity: the just-built entry must exist on disk
+# and match byte-for-byte. Previously a missing file skipped this check.
 # The deployed file is the versioned `index.<TS>.html` written by this
 # deploy; we look it up via $APP_FILE if set, otherwise fall back to
 # the legacy stable-name `index.html` (legacy single-file mode).
 APP_DEPLOYED_PATH="$APP_WEB_ROOT/${APP_FILE:-index.html}"
-if [[ -n "${DIST_DIR:-}" && -f "${DIST_DIR}/index.html" && -f "$APP_DEPLOYED_PATH" ]]; then
-  BUILT_MD5=$(md5sum "$DIST_DIR/index.html" | cut -d' ' -f1)
-  DEPLOYED_MD5=$(md5sum "$APP_DEPLOYED_PATH" | cut -d' ' -f1)
-  if [[ "$BUILT_MD5" == "$DEPLOYED_MD5" ]]; then
-    GATE_RESULTS+=("  bundle.md5 match ($DEPLOYED_MD5)")
-  else
-    echo "GATE FAIL: bundle md5 mismatch — built=$BUILT_MD5 deployed=$DEPLOYED_MD5" >&2
+if [[ -n "${DIST_DIR:-}" ]]; then
+  if [[ ! -f "${DIST_DIR}/index.html" || ! -f "$APP_DEPLOYED_PATH" ]]; then
+    echo "GATE FAIL: deployed frontend entry is missing ($APP_DEPLOYED_PATH)" >&2
     GATE_FAILED=1
-    GATE_RESULTS+=("  bundle.md5 MISMATCH  ← FAIL")
+    GATE_RESULTS+=("  bundle.file MISSING  ← FAIL")
+  else
+    BUILT_MD5=$(md5sum "$DIST_DIR/index.html" | cut -d' ' -f1)
+    DEPLOYED_MD5=$(md5sum "$APP_DEPLOYED_PATH" | cut -d' ' -f1)
+    if [[ "$BUILT_MD5" == "$DEPLOYED_MD5" ]]; then
+      GATE_RESULTS+=("  bundle.md5 match ($DEPLOYED_MD5)")
+    else
+      echo "GATE FAIL: bundle md5 mismatch — built=$BUILT_MD5 deployed=$DEPLOYED_MD5" >&2
+      GATE_FAILED=1
+      GATE_RESULTS+=("  bundle.md5 MISMATCH  ← FAIL")
+    fi
   fi
 fi
 
 # 4.5b. Public endpoints — catches nginx→wrong port, DNS/SSL/firewall issues.
-gate_check "app frontend        " "${APP_PUBLIC_URL%/}/"
+# Include the unique release timestamp so an EdgeOne cache entry for `/` from
+# a previous release cannot make a broken fallback look healthy.
+APP_FRONTEND_GATE_URL="${APP_PUBLIC_URL%/}/"
+if [[ -n "${APP_TS:-}" ]]; then
+  APP_FRONTEND_GATE_URL="${APP_FRONTEND_GATE_URL}?__socrates_deploy=${APP_TS}"
+fi
+gate_check "app frontend        " "$APP_FRONTEND_GATE_URL"
+
+# The status-only gate above is not enough: it could still serve an older
+# cached 200. Compare the public root response with the exact entry deployed
+# in this release, including the trailing bytes in the response body.
+if [[ -n "${APP_FILE:-}" && -f "$APP_DEPLOYED_PATH" ]]; then
+  PUBLIC_APP_TMP=$(mktemp)
+  PUBLIC_APP_MD5=""
+  PUBLIC_APP_MATCH=0
+  for attempt in 1 2 3; do
+    if curl -sfL --max-time 8 "$APP_FRONTEND_GATE_URL" -o "$PUBLIC_APP_TMP"; then
+      PUBLIC_APP_MD5=$(md5sum "$PUBLIC_APP_TMP" | cut -d' ' -f1)
+      if [[ "$PUBLIC_APP_MD5" == "${DEPLOYED_MD5:-}" ]]; then
+        PUBLIC_APP_MATCH=1
+        break
+      fi
+    fi
+    if (( attempt < 3 )); then
+      sleep "${APP_GATE_RETRY_DELAY_SEC:-2}"
+    fi
+  done
+  if [[ "$PUBLIC_APP_MATCH" == "1" ]]; then
+    GATE_RESULTS+=("  public bundle matches $APP_FILE")
+  elif [[ -n "$PUBLIC_APP_MD5" ]]; then
+    echo "GATE FAIL: public app bundle mismatch — public=$PUBLIC_APP_MD5 deployed=${DEPLOYED_MD5:-unknown}" >&2
+    GATE_FAILED=1
+    GATE_RESULTS+=("  public bundle MISMATCH  ← FAIL")
+  else
+    echo "GATE FAIL: public app bundle could not be downloaded ($APP_FRONTEND_GATE_URL)" >&2
+    GATE_FAILED=1
+    GATE_RESULTS+=("  public bundle UNAVAILABLE  ← FAIL")
+  fi
+  rm -f "$PUBLIC_APP_TMP"
+fi
+
 gate_check "marketing site      " "${SITE_PUBLIC_URL%/}/"
 gate_check "status page         " "${STATUS_PUBLIC_URL%/}/"
 
@@ -682,15 +799,36 @@ fi
 
 # 4.5g. State file: update only on full success so last-known-good is preserved.
 if [[ $GATE_FAILED -eq 0 ]]; then
-  DEPLOY_COMMIT=$(git -C "$(dirname "$(readlink -f "$0")")" rev-parse HEAD 2>/dev/null || echo unknown)
+  DEPLOY_SOURCE_DIR="$(dirname "$(readlink -f "$0")")"
+  DEPLOY_COMMIT=$(git -C "$DEPLOY_SOURCE_DIR" rev-parse HEAD 2>/dev/null || echo unknown)
+  DEPLOY_WORKTREE_STATUS=$(git -C "$DEPLOY_SOURCE_DIR" status --porcelain=v1 --untracked-files=all 2>/dev/null || true)
+  if [[ -n "$DEPLOY_WORKTREE_STATUS" ]]; then
+    DEPLOY_SOURCE_DIRTY=true
+  else
+    DEPLOY_SOURCE_DIRTY=false
+  fi
+  DEPLOY_SOURCE_FINGERPRINT=$(
+    {
+      git -C "$DEPLOY_SOURCE_DIR" rev-parse HEAD 2>/dev/null || true
+      git -C "$DEPLOY_SOURCE_DIR" diff --no-ext-diff --binary HEAD 2>/dev/null || true
+      git -C "$DEPLOY_SOURCE_DIR" status --porcelain=v1 --untracked-files=all 2>/dev/null || true
+    } | sha256sum | cut -d' ' -f1
+  )
+  if [[ "$DEPLOY_SOURCE_DIRTY" == "true" ]]; then
+    echo "WARNING: deploying a dirty worktree; recording source fingerprint $DEPLOY_SOURCE_FINGERPRINT" >&2
+  fi
   DEPLOY_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   tmp=$(mktemp "${STATE_FILE}.XXXXXX.tmp")
   cat > "$tmp" <<EOF
 {
   "lastSuccessfulDeploy": {
     "commit": "${DEPLOY_COMMIT}",
+    "sourceDirty": ${DEPLOY_SOURCE_DIRTY},
+    "sourceFingerprint": "${DEPLOY_SOURCE_FINGERPRINT}",
     "timestamp": "${DEPLOY_TS}",
+    "frontendEntry": "${APP_FILE:-index.html}",
     "frontendBundleMd5": "${DEPLOYED_MD5:-}",
+    "frontendBundleSha256": "${SRC_SHA256:-}",
     "frontendBundleSize": ${SRC_SIZE:-0},
     "srcDesc": "${SRC_DESC:-}",
     "checks": {

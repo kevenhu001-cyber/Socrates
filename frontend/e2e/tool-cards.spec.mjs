@@ -74,7 +74,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
 });
 
-test('inline tool rows never split an unfinished sentence', async ({ page }) => {
+test('tool activity stays before one uninterrupted response stream', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -105,16 +105,18 @@ test('inline tool rows never split an unfinished sentence', async ({ page }) => 
   const bubble = page.locator('.msg.assistant').last();
   const row = bubble.locator('.tool-inline[data-tcid="boundary-search"]');
   await expect(row).toHaveCount(1);
-  const order = await row.evaluate((toolRow) => {
-    let before = '';
-    let after = '';
-    for (let node = toolRow.previousSibling; node; node = node.previousSibling) before = (node.textContent || '') + before;
-    for (let node = toolRow.nextSibling; node; node = node.nextSibling) after += node.textContent || '';
-    return { before: before.replace(/\s+/g, ' ').trim(), after: after.replace(/\s+/g, ' ').trim() };
+  const layout = await row.evaluate((toolRow) => {
+    const body = toolRow.closest('.msg-body');
+    const proseNode = body?.querySelector('.stream-segment, p, h1, h2, h3, ul, ol, blockquote');
+    const clone = body?.cloneNode(true);
+    clone?.querySelectorAll('.tool-activity-rail, .tool-inline, .tool-inline-attachments, .agent-run-host').forEach((node) => node.remove());
+    return {
+      toolBeforeProse: Boolean(proseNode && (toolRow.compareDocumentPosition(proseNode) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      prose: (clone?.textContent || '').replace(/\s+/g, ' ').trim(),
+    };
   });
-  expect(order.before).toContain('先说明结论。');
-  expect(order.before).not.toContain('然后继续检查这个模块');
-  expect(order.after).toContain('然后继续检查这个模块的实现细节，再给出修复方案。');
+  expect(layout.toolBeforeProse).toBe(true);
+  expect(layout.prose).toContain('先说明结论。 然后继续检查这个模块的实现细节，再给出修复方案。');
 });
 
 test('live chat shows a Searching label while the model is searching', async ({ page }) => {

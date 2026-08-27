@@ -13,7 +13,7 @@ import { esc } from '../render/helpers.js';
 import { formatToolOutput } from '../render/toolOutput.js';
 import { getSocratesWasm } from '../lib/socratesWasm.js';
 import { toolCardView } from './toolCardView.js';
-import { toolIcon } from './icons/toolIcons.js';
+import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
 
 /* ============================================================
    RUNNING-ROW ELAPSED TIMER (task 6.3, Req 3.2 / 3.3)
@@ -780,7 +780,7 @@ export function createInlineToolRow(entry: InlineToolEntry): HTMLElement {
     + '<span class="tool-inline-tool-icon">' + runningIconHtml() + '</span>'
     + '<span class="tool-inline-label shimmer-text">' + esc(runningLabel(entry.name)) + '</span>'
     + '<span class="tool-inline-meta"></span>'
-    + '<span class="tool-inline-chev" aria-hidden="true"></span>'
+    + '<span class="tool-inline-chev" aria-hidden="true">' + STROKE_ICONS.chevronRight + '</span>'
     + '</summary>'
     + '<div class="tool-inline-detail"></div>';
   (row as HTMLElement & { _toolInput?: unknown })._toolInput = entry.input;

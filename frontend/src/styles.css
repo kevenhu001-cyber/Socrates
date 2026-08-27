@@ -107,12 +107,9 @@ a{color:inherit;text-decoration:none}
 /* Firefox — supported since FF 64. WebKit fallback above. */
 @supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}}
 .app{display:flex;height:100vh;height:100dvh;
-  /* P_topic-kb-stable — keyboardViewport.js writes --app-vh with the last
-     keyboard-CLOSED viewport height and freezes it while a composer is
-     focused. On resize-mode keyboards the shell therefore keeps its
-     pre-keyboard height (the keyboard covers its bottom edge) instead of
-     reflowing the whole layout; --keyboard-inset lifts the chat composer. */
-  height:var(--app-vh,100dvh);
+  /* The dynamic viewport is allowed to follow the browser's native resize.
+     keyboardViewport.js adds only the measured overlay inset when a browser
+     keeps the layout viewport unchanged. */
   overflow:hidden;overscroll-behavior:none;position:relative}
 /* UI-align: translucent sidebar surface (open-webui desktop look).
    Mobile keeps a solid background — see the 768px override below. */
@@ -974,7 +971,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 /* #msgList is a sibling of .chat-view and owns the transcript viewport.
    The composer is an in-flow flex item, so no measured bottom reserve or
    duplicate transcript padding is needed. */
-.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,calc(var(--app-vh,100vh) * .12),136px);flex:1;min-height:0;overflow-y:auto}
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,12dvh,136px);flex:1;min-height:0;overflow-y:auto}
 /* .hidden variants on chat-mode siblings of #msgList - kept out
    of layout so they stop claiming flex space inside .main-content
    when chat-view is active. */
@@ -984,22 +981,17 @@ html[data-show-grid="false"] .main-bg{background-image:none}
 .exam-view.hidden{display:none}
 
 .chat-view.hidden,.chat-view-lifted.hidden{display:none}
-.main-inner.hidden{display:none}/* P_topic-kb-stable — the landing must not reflow when the virtual
+.main-inner.hidden{display:none}/* P_topic-kb-local — the landing must not reflow when the virtual
    keyboard opens or closes: the focused input keeps its exact position
    and the disclaimer below stays put (the keyboard may cover it — that
-   is intended, it must never "avoid" the keyboard). Two mechanisms:
-     1. The shell height and every vh-derived gap on this screen use
-        --app-vh, which keyboardViewport.js freezes while a composer is
-        focused, so resize-mode keyboards can't shrink the layout.
-     2. No data-keyboard-open overrides fire here — earlier builds
-        re-pinned the column with a smaller padding-top and hid the
-        disclaimer, which itself caused the jump this rule set removes. */
+   is intended, it must never "avoid" the keyboard). The controller only
+   scrolls this local surface when the focused editor is actually covered. */
 .topic-title{font-family:var(--font-display);font-size:calc(clamp(1.8rem,1.32rem + 1.9vw,2.5rem) * var(--app-font-scale, 1));font-weight:560;color:hsl(var(--text-200));text-align:center;line-height:1.28;animation:emptyStateIn .4s var(--ease-out) both}
 .topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap;animation:emptyStateIn .4s var(--ease-out) 70ms both}
 /* UI-align: staged empty-state entrance (open-webui Placeholder —
    greeting, subtitle, then input fade in one after another). */
 @keyframes emptyStateIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.topic-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);width:100%;max-width:720px;margin-top:clamp(16px,calc(var(--app-vh,100vh) * .03),50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
+.topic-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);width:100%;max-width:720px;margin-top:clamp(16px,3dvh,50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
   position:relative;z-index:1;
   /* Focus feedback glides on the same duration/curve as the chat composer
      (see .chat-input-wrap) — the old .2s default-ease border/shadow snap
@@ -1441,13 +1433,9 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* P_keyboard-slide-velocity — --keyboard-inset is now driven from
-     JS by keyboardViewport.js via a velocity-based animation that
-     shares its duration with the content scroll, so the input and
-     the AI content move up in lockstep. The CSS transition is
-     dropped because two independent timelines (CSS transition +
-     scrollTo smooth scroll) drifted and produced the visible
-     "layout jump" when the keyboard opened. */
+  /* --keyboard-inset is a settled geometry value from
+     keyboardViewport.js. The browser's viewport resize remains the only
+     transition timeline; no second JS animation is layered on top. */
   margin-top:0;
   /* keyboard avoidance: shift the composer up by the virtual
      keyboard inset on mobile. */
@@ -1779,6 +1767,9 @@ a.sources-row:active{transform:translateX(2px) scale(.99)}
 [data-theme=socrates][data-mode=dark] a.sources-row:hover{background:hsl(var(--bg-200)/0.6)}
 .sources-row-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));transition:transform .26s cubic-bezier(.4,0,.2,1),color .2s ease;flex-shrink:0}
 .sources-row-wrap.open .sources-row-chev{transform:rotate(180deg);color:hsl(var(--accent-100))}
+
+.sources-chev,.sources-row-chev{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 18px}
+.sources-chev svg,.sources-row-chev svg{display:block;width:14px;height:14px}
 .sources-num{flex-shrink:0;color:hsl(var(--text-500));font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;min-width:22px}
 .sources-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sources-host{flex-shrink:0;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-family:var(--font-mono)}
@@ -2942,7 +2933,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
    style="font-style:italic" on mathnormal spans. */
 .katex .mathnormal{font-style:normal !important}
 .katex .mathvariant-italic{font-style:normal !important}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:calc(var(--app-vh,100vh) * .04) 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:20px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4dvh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:20px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -3480,7 +3471,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 [data-theme=socrates][data-mode=dark] .agent-tool-card.code     .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
 .agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
 .agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:var(--tool-card-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;opacity:.8}
-.agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:var(--tool-card-text-subtle);transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6}
+.agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:var(--tool-card-text-subtle);transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px}
+.agent-tool-chev svg{display:block;width:14px;height:14px}
 .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.95}
 
 /* Accent rail on the leading edge of the body — gives each tool
@@ -4283,7 +4275,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
 
 /* ────── Responsive: small screens ≤ 480 px ────── */
 @media(max-width:480px){
-  .main-inner{padding:calc(var(--app-vh,100vh) * .02) 8px 20px}
+  .main-inner{padding:2dvh 8px 20px}
   .topic-title{font-size:calc(1.25rem * var(--app-font-scale, 1));padding:16px 4px 0}
   .topic-sub{font-size:calc(12.5px * var(--app-font-scale, 1));padding:0 4px;white-space:nowrap}
   .chat-messages{padding:8px 4px}
@@ -4337,6 +4329,16 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    `white-space: nowrap` with `text-overflow: ellipsis` so a long
    command path or filename is truncated with a trailing … rather
    than wrapping and breaking visual rhythm with the surrounding prose. */
+/* A stable pre-answer rail: tool status never becomes part of the prose
+   stream, and color-only transitions avoid height/transform jitter. */
+.tool-activity-rail{
+  display:flex;flex-direction:column;align-items:stretch;
+  width:min(100%,680px);margin:0 0 10px;padding:0;
+  contain:layout;overflow:visible;
+}
+.tool-activity-rail:empty{display:none}
+.tool-activity-rail .tool-inline{margin-top:0}
+.tool-activity-rail .tool-inline + .tool-inline{margin-top:4px}
 .tool-inline{
   display:flex;
   flex-direction:column;
@@ -4435,15 +4437,7 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   opacity:.55;
   transition:transform .22s cubic-bezier(.4,0,.2,1), opacity .18s ease, color .18s ease;
 }
-.tool-inline-chev::before{
-  content:"";
-  width:6px; height:6px;
-  border-top:1.5px solid currentColor;
-  border-right:1.5px solid currentColor;
-  transform:rotate(45deg);
-  transform-origin:60% 60%;
-  margin-left:-3px;
-}
+.tool-inline-chev svg{width:14px;height:14px;display:block}
 .tool-inline-head:hover .tool-inline-chev{opacity:.9;color:var(--tool-card-text-muted)}
 .tool-inline[open] .tool-inline-chev{transform:rotate(90deg);opacity:.95}
 .tool-inline:not([data-expandable="1"]) .tool-inline-chev{display:none}
@@ -4850,51 +4844,30 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
        border, shadow, size, and reordered children glide in lockstep. */
     transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);
   }
-  .chat-input-wrap .chat-input-footer,
-  .chat-input-wrap .footer-left-group{display:contents}
-  .chat-input-wrap .footer-left-group .attach-btn{order:1}
-    .chat-input-wrap .chat-composer-body{
-      order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
-      /* Collapsed: row 1 keeps its 42px min so the editor stays usable;
-         row 2 is a definite 0px track so the footer slides off-screen.
-         Both rows are definite-length tracks (row 2 animates 0px → 44px
-         on focus). Do NOT use `fr` tracks here: this grid container's
-         height is content-driven (auto), and in that situation flexible
-         tracks resolve to the items' intrinsic sizes instead of
-         distributing free space — `0fr` stayed at the footer's 44px
-         min-height and `1fr` inflated to the editor's max-content,
-         which is what made the mobile composer render ~102px collapsed
-         and ~142px focused instead of the intended ~56px / ~124px.
-         Definite tracks ignore item contributions entirely, so row 2
-         genuinely collapses to 0. Engines that cannot interpolate track
-         sizes are routed to the `.composer-anim-no-fr` block below. */
-      display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(42px,1fr) 0px;
-     /* Keep layout containment for the focus reflow, but do not use paint
-        containment here: the collapsed footer is translated over the editor
-        row, and paint containment clips the top of the neutral send circle. */
-     contain:none;
-     transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease),grid-template-rows var(--composer-motion-duration) var(--composer-motion-ease);
-   }
-   .chat-input-wrap .composer-editor-root{
-     order:initial;grid-column:1;grid-row:1;flex:none;width:100%;min-width:0;
-   }
-   .chat-input-wrap .chat-input-footer{
-     display:flex;grid-column:1;grid-row:2;align-items:center;width:100%;min-height:44px;padding:0 2px 6px;
-     /* The collapsed footer is overlaid on the editor row. Its 6px bottom
-        padding lifts the 40px control by 4px, so compensate here; the
-        focused state below restores translateY(0) for the full footer row. */
-     transform:translateY(-40px);pointer-events:none;transition:transform var(--composer-motion-duration) var(--composer-motion-ease);will-change:transform;
-   }
-   .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
-   .chat-input-wrap .chat-input-footer .footer-left-group{display:flex;align-items:center;gap:2px;margin-right:auto;order:0}
-   .chat-input-wrap .chat-input-footer .send-btn{order:1;margin-left:auto}
-   /* Show the effort picker (model + thinking intensity) as a floating
-      badge in the collapsed composer so users can change settings without
-      tapping into the input first. Absolute positioning escapes the
-      collapsed grid row (grid-row 2 / height 0px). */
-   .chat-input-wrap .footer-left-group .effort-picker{
-     position:absolute;right:50px;top:50%;transform:translateY(-50%);z-index:5;display:inline-flex;pointer-events:auto;
-   }
+  .chat-input-wrap .chat-input-footer{display:contents}
+  /* Mobile collapsed state is a real three-column row: left controls,
+     editor, send. Controls therefore own layout space instead of being
+     translated over the contenteditable. On focus the same grid becomes
+     two rows (editor above, controls below); no moving control ever crosses
+     placeholder or typed text during the shell's height transition. */
+  .chat-input-wrap .chat-composer-body{
+    order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-rows:minmax(42px,auto);column-gap:2px;align-items:center;
+    contain:none;
+    transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .composer-editor-root{
+    order:initial;grid-column:2;grid-row:1;flex:none;width:100%;min-width:0;
+  }
+  .chat-input-wrap .chat-input-footer .footer-left-group{
+    grid-column:1;grid-row:1;display:flex;align-items:center;gap:2px;min-width:0;
+  }
+  .chat-input-wrap .chat-input-footer .send-btn{
+    grid-column:3;grid-row:1;margin-left:0;
+  }
+  .chat-input-wrap .footer-left-group .effort-picker{display:none}
+
   .rich-composer[data-surface="chat"]{min-height:42px;display:flex;align-items:center}
   .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
   .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
@@ -4906,48 +4879,33 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
        :has(:focus) rule below); ride the shared composer motion so it
        resizes in lockstep with the wrap instead of snapping. */
     transition:background-color .18s ease,color .18s ease,min-height var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),padding var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),border-radius var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease)}
-   .rich-composer[data-surface="chat"] .tiptap{
+  .rich-composer[data-surface="chat"] .tiptap{
     min-height:42px;max-height:var(--composer-editor-max-mobile);
-    /* P_mobile-overlay-reserve — collapsed state floats the send/attach
-       buttons over the editor via transform:translateY(-40px) on the
-       footer. Padding was 9/48/9/46, which reserved LEFT/RIGHT gutters for
-       the buttons but let them sit on top of the text as the user typed
-       past one line. Reserve the bottom 40px instead so the visible text
-       stays in the top portion of the editor and the button overlay sits
-       BELOW the text region, not on top of it. Focused state below
-       overrides this back to symmetric padding since the footer slides
-       into its own row. */
-    padding:9px 9px 40px;font-size:16px;
-    /* Same duration/curve as .chat-input-wrap so the editor grows in
-       lockstep with its shell instead of finishing early. The padding
-       transition glides the text region during the collapsed↔focused
-       swap instead of snapping the content 38px sideways. */
+    padding:9px 8px;font-size:16px;
     transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
-   .chat-input-wrap.composer-focused{
-     min-height:var(--composer-focused-min);padding:8px;border-radius:26px;gap:4px 3px;
-     align-content:flex-start;
-   }
-   .chat-input-wrap.composer-focused .chat-composer-body{
-     order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
-     /* Focused: row 2 expands to the footer's definite 44px track. The
-        transition from `0px` to `44px` interpolates the track size
-        smoothly on track-interpolating engines (same capability gate as
-        the old `0fr → 1fr` swap, see the collapsed rule above). */
-     grid-template-rows:minmax(42px,1fr) 44px;
-   }
-   .chat-input-wrap.composer-focused .composer-editor-root{
-     width:100%;min-width:0;max-width:none;
-   }
-   .chat-input-wrap.composer-focused .chat-input-footer{
-     transform:translateY(0);pointer-events:auto;
-   }
-   .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
-     position:static;display:block;margin-left:auto;margin-right:8px;align-self:center;order:0;transform:none;right:auto;top:auto;z-index:auto;pointer-events:auto;
-   }
-   .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{display:contents}
-   .chat-input-wrap.composer-focused .chat-input-footer .attach-btn{order:0}
-   .chat-input-wrap.composer-focused .chat-input-footer .send-btn{order:1;margin-left:0}
+  .chat-input-wrap.composer-focused{
+    min-height:var(--composer-focused-min);padding:8px;border-radius:26px;gap:4px 3px;
+    align-content:flex-start;
+  }
+  .chat-input-wrap.composer-focused .chat-composer-body{
+    order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:minmax(62px,1fr) 44px;
+    row-gap:2px;
+  }
+  .chat-input-wrap.composer-focused .composer-editor-root{
+    grid-column:1 / -1;grid-row:1;width:100%;min-width:0;max-width:none;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{
+    grid-column:1;grid-row:2;display:flex;align-items:center;gap:4px;min-width:0;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{
+    grid-column:2;grid-row:2;margin-left:0;
+  }
+  .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
+    position:static;display:block;margin:0;align-self:center;transform:none;z-index:auto;
+  }
   .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
     min-height:62px;max-height:var(--composer-editor-max-mobile);padding:12px 8px 8px;
   }
@@ -4960,7 +4918,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
      fit. The cap stays above 132px (≈ 4 lines) so single-screen messages
      remain fully readable. */
   :root[data-keyboard-open="true"] .rich-composer[data-surface="chat"] .tiptap{
-    max-height:min(var(--composer-editor-max-mobile), calc(var(--app-vh, 100dvh) * .32));
+    max-height:min(var(--composer-editor-max-mobile), calc(100dvh * .32));
   }
   :root[data-keyboard-open="true"] .chat-input-wrap .attachment-chips{
     /* Shrink the chip strip under the keyboard so the wrap doesn't
@@ -6952,38 +6910,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 }
 .agent-plan-note{margin:7px 0 0;color:hsl(var(--text-500));font-size:12px;line-height:1.5}
 
-/* Composer Agent switch: quiet by default, accent only while armed, so the
-   composer keeps one visual emphasis (the send button). */
-.agent-mode-btn{
-  display:inline-flex;align-items:center;gap:6px;
-  height:30px;
-  padding:0 10px;
-  border:1px solid transparent;
-  border-radius:9px;
-  background:transparent;
-  color:hsl(var(--text-400));
-  font-size:12.5px;
-  font-weight:450;
-  cursor:pointer;
-  transition:background .15s ease,color .15s ease,border-color .15s ease;
-}
-.agent-mode-btn svg{width:15px;height:15px;stroke-width:1.5}
-.agent-mode-btn:hover{background:hsl(var(--text-500)/.1);color:hsl(var(--text-200))}
-.agent-mode-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.6);outline-offset:2px}
-.agent-mode-btn[aria-pressed="true"]{
-  border-color:hsl(var(--accent-000)/.45);
-  background:hsl(var(--accent-000)/.14);
-  color:hsl(var(--accent-000));
-}
-@media(max-width:640px){
-  .agent-mode-btn .agent-mode-label{display:none}
-  .agent-mode-btn{padding:0 8px}
-}
-@media(prefers-reduced-motion:reduce){
-  .agent-run-chev,.agent-mode-btn{transition:none}
-}
-
-
 /* ─── Final conversational surface contract ─────────────────────────────
    Keep this block last so the landing and composer geometry have one
    authoritative responsive definition. Earlier rules remain as compatibility
@@ -7012,7 +6938,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   padding-bottom:max(40px,env(safe-area-inset-bottom,0px));
   padding-left:max(12px,env(safe-area-inset-left,0px));
   scroll-padding-top:16px;
-  scroll-padding-bottom:calc(var(--keyboard-inset,0px) + 24px);
+  scroll-padding-bottom:24px;
   overscroll-behavior-y:contain;
 }
 .topic-title.greeting{
@@ -7081,7 +7007,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
        the greeting aligns closer to the optical center, leaving a
        generous gutter for the disclaimer pinned to the bottom. */
     padding-top:clamp(96px,17vh,140px);
-    padding-bottom:max(64px,calc(var(--keyboard-inset,0px) + env(safe-area-inset-bottom,0px) + 40px));
+    padding-bottom:max(64px,calc(env(safe-area-inset-bottom,0px) + 40px));
   }
   .topic-title.greeting{
     font-size:calc(clamp(1.8rem,7vw,2.35rem) * var(--app-font-scale,1));
@@ -7143,18 +7069,19 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
     order:1;
     position:relative;
     display:grid;
-    grid-template-columns:minmax(0,1fr);
-    grid-template-rows:44px 0px;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-rows:44px;
+    column-gap:2px;
     flex:0 0 auto;
     width:100%;
     min-width:0;
     min-height:0;
-    align-items:stretch;
-    transition:grid-template-rows var(--composer-motion-duration) var(--composer-motion-ease);
+    align-items:center;
+    transition:none;
   }
   .chat-input-wrap .composer-editor-root{
     order:initial;
-    grid-column:1;
+    grid-column:2;
     grid-row:1;
     width:100%;
     min-width:0;
@@ -7171,33 +7098,25 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   .rich-composer[data-surface="chat"] .tiptap{
     min-height:44px;
     max-height:var(--composer-editor-max-mobile);
-    padding:9px 9px 40px;
+    padding:9px 8px;
     font-size:16px;
     line-height:1.5;
     transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),
       padding var(--composer-motion-duration) var(--composer-motion-ease);
   }
-  .chat-input-wrap .chat-input-footer{
-    grid-column:1;
-    grid-row:2;
-    display:flex;
-    align-items:center;
-    width:100%;
-    min-height:44px;
-    padding:0 2px 6px;
-    transform:translateY(-40px);
-    pointer-events:none;
-    transition:transform var(--composer-motion-duration) var(--composer-motion-ease);
-  }
+  .chat-input-wrap .chat-input-footer{display:contents}
   .chat-input-wrap .chat-input-footer > *{pointer-events:auto}
   .chat-input-wrap .chat-input-footer .footer-left-group{
+    grid-column:1;
+    grid-row:1;
     display:flex;
     align-items:center;
     gap:2px;
-    margin-right:auto;
+    min-width:0;
+    margin:0;
     order:0;
   }
-  .chat-input-wrap .chat-input-footer .send-btn{order:1;margin-left:auto}
+  .chat-input-wrap .chat-input-footer .send-btn{grid-column:3;grid-row:1;margin-left:0}
   .chat-input-wrap .chat-input-footer .chat-input-hint{display:none}
   .chat-input-wrap .footer-left-group .effort-picker{
     position:absolute;
@@ -7224,31 +7143,37 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
     width:100%;
     min-width:0;
     max-width:none;
+    grid-template-columns:minmax(0,1fr) auto;
     grid-template-rows:minmax(64px,auto) 44px;
+    row-gap:2px;
+  }
+  .chat-input-wrap.composer-focused .composer-editor-root{
+    grid-column:1 / -1;
+    grid-row:1;
   }
   .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
     min-height:64px;
     max-height:var(--composer-editor-max-mobile);
     padding:10px 8px 8px;
   }
-  .chat-input-wrap.composer-focused .chat-input-footer{
-    transform:translateY(0);
-    pointer-events:auto;
-  }
   .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{
+    grid-column:1;
+    grid-row:2;
     display:flex;
-    margin-right:auto;
+    align-items:center;
+    gap:4px;
+    min-width:0;
+    margin:0;
   }
   .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
     position:static;
     display:block;
-    margin-left:auto;
-    margin-right:8px;
+    margin:0;
     transform:none;
     pointer-events:auto;
   }
   .chat-input-wrap.composer-focused .chat-input-footer .attach-btn{order:0}
-  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{order:1;margin-left:0}
+  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{grid-column:2;grid-row:2;margin-left:0}
 
   /* Older engines use the same two-stage shape with a height transition
      rather than attempting to interpolate grid tracks. The footer remains
@@ -7273,11 +7198,10 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
     transform:translateY(0);
   }
 
-  /* Only the active topic surface receives extra scroll room. The shell
-     itself stays frozen while the keyboard opens; keyboardViewport.js may
-     move this local scroller when the focused editor would be covered. */
+  /* Only the active topic surface is scrolled when the focused editor would
+     be covered; the shell itself is never artificially lifted. */
   :root[data-keyboard-open="true"] .topic-setup{
-    scroll-padding-bottom:calc(var(--keyboard-inset,0px) + 24px + env(safe-area-inset-bottom,0px));
+    scroll-padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
   }
 }
 
