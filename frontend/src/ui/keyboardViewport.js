@@ -36,6 +36,12 @@ import { smoothScrollToBottom } from './scroll.js';
  * that can double the lift or leave stale frames behind.
  */
 
+/* Android/iOS WebViews can expose a 0–1px visual viewport for a transient
+ * frame while the IME is opening or closing. It is not a usable geometry
+ * sample; treating it as the keyboard top would lift the composer almost the
+ * full height of the app. */
+export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
+
 export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0) {
   if (
     !Number.isFinite(layoutHeight) ||
@@ -46,7 +52,10 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
     return 0;
   }
 
-  const offsetTop = Number.isFinite(visualOffsetTop) ? visualOffsetTop : 0;
+  /* offsetTop is a client-coordinate distance. Negative values can appear
+   * during an overscroll/pan frame, but clamping them prevents counting the
+   * same covered pixels twice and producing an over-large lift. */
+  const offsetTop = Number.isFinite(visualOffsetTop) ? Math.max(0, visualOffsetTop) : 0;
   const visualBottom = Math.max(0, visualHeight + offsetTop);
   const covered = Math.round(layoutHeight - visualBottom);
   return Math.min(layoutHeight, Math.max(0, covered));
@@ -61,7 +70,8 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
  * the previous degraded behaviour. */
 export function measureKeyboardInset(appBottom, viewport, innerHeight) {
   const viewportHeight = Number(viewport?.height);
-  if (viewport && Number.isFinite(viewportHeight) && viewportHeight > 0) {
+  if (viewport && Number.isFinite(viewportHeight)) {
+    if (viewportHeight <= 0 || viewportHeight < MIN_STABLE_VISUAL_VIEWPORT_HEIGHT) return 0;
     const scale = Number(viewport.scale);
     // A zoomed visual viewport is not an IME occlusion measurement.
     if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) return 0;
@@ -119,6 +129,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* -1 forces the first applyInset() to write, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
+
+  const stableMeasuredInset = (focused) => {
+    if (!focused) return 0;
+    const viewportHeight = Number(viewport?.height);
+    /* Preserve the last stable value while the visual viewport is in its
+     * transient zero/tiny state. This keeps a closing keyboard from flashing
+     * the composer down and back up, while an opening keyboard starts at 0
+     * and adopts the first real sample on the next frame. */
+    if (viewport && (!Number.isFinite(viewportHeight) || viewportHeight < MIN_STABLE_VISUAL_VIEWPORT_HEIGHT)) {
+      return appliedInset > 0 ? appliedInset : 0;
+    }
+    return measureKeyboardInset(appShellBottom(), viewport, window.innerHeight);
+  };
 
   const applyInset = (inset) => {
     const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
@@ -260,11 +283,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
-    applyInset(
-      focused
-        ? measureKeyboardInset(appShellBottom(), viewport, window.innerHeight)
-        : 0,
-    );
+    applyInset(stableMeasuredInset(focused));
     applyTopicComposerFocused(focused);
     if (focused) scheduleTopicEnsure();
   };

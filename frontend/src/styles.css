@@ -1438,8 +1438,13 @@ true) but the dropdown never shows — see commit history. */
      transition timeline; no second JS animation is layered on top. */
   margin-top:0;
   /* keyboard avoidance: shift the composer up by the virtual
-     keyboard inset on mobile. */
+     keyboard inset on mobile. Padding is the layout reserve, so animating
+     the actual property keeps both the composer and transcript moving as
+     one continuous flow instead of flashing between two positions when the
+     visual viewport reports several intermediate values. */
   padding-bottom:var(--keyboard-inset, 0px);
+  transition:padding-bottom .28s cubic-bezier(.22,1,.36,1);
+  will-change:padding-bottom;
 }
 
 /* P_composer-anim-no-fr — when the engine does not interpolate fr
@@ -4909,18 +4914,20 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
     min-height:62px;max-height:var(--composer-editor-max-mobile);padding:12px 8px 8px;
   }
-  /* P_kb-cap-editor — when the virtual keyboard is open, the available
-     space above the keyboard shrinks by --keyboard-inset. With many
+  /* P_kb-cap-editor — while the mobile composer is focused, the available
+     space above the virtual keyboard can shrink by --keyboard-inset. With many
      attachment chips + a full multi-line editor + the 44px footer the
      focused wrap can exceed that space, and main-content's overflow:hidden
      clips the bottom (the send button + the last editor line). Cap the
-     editor to a viewport-relative size so wrap + chips + footer always
-     fit. The cap stays above 132px (≈ 4 lines) so single-screen messages
-     remain fully readable. */
-  :root[data-keyboard-open="true"] .rich-composer[data-surface="chat"] .tiptap{
+     editor to a viewport-relative size so wrap + chips + footer always fit.
+     Applying the cap from focus (instead of a 50px keyboard threshold) keeps
+     the composer geometry stable while the keyboard transition is in flight.
+     The cap stays above 132px (≈ 4 lines) so single-screen messages remain
+     fully readable. */
+  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
     max-height:min(var(--composer-editor-max-mobile), calc(100dvh * .32));
   }
-  :root[data-keyboard-open="true"] .chat-input-wrap .attachment-chips{
+  .chat-input-wrap.composer-focused .attachment-chips{
     /* Shrink the chip strip under the keyboard so the wrap doesn't
        overflow. The chips keep their own overflow-y:auto so the user
        can still see all attachments by scrolling the strip. */
@@ -7206,6 +7213,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 }
 
 @media(prefers-reduced-motion:reduce){
+  .chat-view,
   .topic-input-wrap,
   .chat-input-wrap,
   .chat-input-wrap .chat-composer-body,

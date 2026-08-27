@@ -4,6 +4,7 @@ import { getDb } from '../db/index.js';
 import { sessions, messages, apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { encrypt, deriveEncryptionKey } from '../lib/crypto.js';
+import { ensureSessionWorkspaceForSession } from '../services/agentRuntime.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -34,6 +35,15 @@ router.post('/', async (req, res, next) => {
           totalQ: s.totalQ || 0,
           currentNode: s.currentNode || 0,
         }).onConflictDoNothing();
+
+        /* Imported conversations are real sessions too. Create their private
+         * workspace immediately; the startup reconciliation remains a
+         * backstop for records imported by an older server. */
+        try {
+          await ensureSessionWorkspaceForSession(req.userId!, sessionId, null);
+        } catch (workspaceErr) {
+          console.warn(`[migrate] workspace initialization deferred for ${sessionId}: ${(workspaceErr as Error).message}`);
+        }
 
         if (Array.isArray(s.messages)) {
           for (const m of s.messages) {

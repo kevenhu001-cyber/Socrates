@@ -16,7 +16,12 @@ import { getDb } from '../db/index.js';
 import { scheduledTasks, sessions, messages, users } from '../db/schema.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm.js';
-import { CODEX_BACKGROUND_ENABLED, createAgentRun, runAgentTurn } from './agentRuntime.js';
+import {
+  CODEX_BACKGROUND_ENABLED,
+  createAgentRun,
+  ensureSessionWorkspaceForSession,
+  runAgentTurn,
+} from './agentRuntime.js';
 import {
   SERVER_SYSTEM_POLICY,
   appendFinalOutputConstraints,
@@ -78,9 +83,38 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
   const db = getDb();
   let codexRunId: string | undefined;
   let content = '';
+  let sessionId = task.sessionId;
+
+  /* Codex needs its session before thread/start so the first turn gets the
+   * same isolated directory as retries and later scheduled runs. Native
+   * tasks can continue creating their result session after completion. */
   if (task.agentKind === 'codex') {
     if (!CODEX_BACKGROUND_ENABLED) throw new Error('Codex background runs are disabled');
-    /* Scheduled Codex tasks share the project workspace and durable run
+    if (sessionId) {
+      const [existing] = await db.select({ id: sessions.id }).from(sessions)
+        .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId)))
+        .limit(1);
+      if (!existing) sessionId = null;
+    }
+    if (!sessionId) {
+      const [session] = await db.insert(sessions).values({
+        userId: task.userId,
+        title: `⏰ ${task.title}`,
+        topic: task.title,
+        mode: 'chat',
+        phase: 'chat',
+        kind: 'chat',
+        projectId: task.projectId,
+      }).returning({ id: sessions.id });
+      if (!session) throw new Error('Unable to create scheduled session');
+      sessionId = session.id;
+      await db.update(scheduledTasks).set({ sessionId }).where(eq(scheduledTasks.id, task.id));
+    }
+    await ensureSessionWorkspaceForSession(task.userId, sessionId, task.projectId || null);
+  }
+
+  if (task.agentKind === 'codex') {
+    /* Scheduled Codex tasks use the session workspace and durable run
      * history. `stopOnApproval` makes unattended side effects pause the job
      * and notify through the run/event surface instead of holding the poller
      * open until a human appears. The approval continuation watcher in the
@@ -88,7 +122,7 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
     const created = await createAgentRun({
       userId: task.userId,
       task: (task.prompt || '').trim() || task.title,
-      sessionId: task.sessionId,
+      sessionId,
       projectId: task.projectId,
       kind: 'scheduled',
       source: 'scheduled',
@@ -163,7 +197,6 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
   }
 
   // Reuse the task's session when it still exists; otherwise create one.
-  let sessionId = task.sessionId;
   if (sessionId) {
     const [existing] = await db.select({ id: sessions.id }).from(sessions)
       .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId)))
@@ -178,8 +211,10 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
       mode: 'chat',
       phase: 'chat',
       kind: 'chat',
+      projectId: task.projectId,
       preview: content.slice(0, 200),
     }).returning({ id: sessions.id });
+    if (!session) throw new Error('Unable to create scheduled session');
     sessionId = session.id;
     await db.update(scheduledTasks)
       .set({ sessionId })
@@ -189,6 +224,8 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
       .set({ preview: content.slice(0, 200), updatedAt: new Date() })
       .where(eq(sessions.id, sessionId));
   }
+
+  await ensureSessionWorkspaceForSession(task.userId, sessionId, task.projectId || null);
 
   await db.insert(messages).values({ sessionId, role: 'user', content: promptText, rawText: promptText });
   await db.insert(messages).values({

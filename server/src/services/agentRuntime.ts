@@ -29,7 +29,15 @@ import { BadRequest, NotFound } from '../lib/errors.js';
 import { codexHarness, CODEX_ENABLED } from './codexHarness.js';
 import { mapCodexNotification } from './codexEvents.js';
 import { CODEX_MCP_ENABLED, resolveCodexMcpConfig } from './codexMcp.js';
-import { ensureProjectWorkspace, ensureWorkspaceInstructions, resolveCodexProvider } from './codexProvider.js';
+import {
+  ensureProjectWorkspace,
+  ensureSessionWorkspace,
+  ensureWorkspaceForKey,
+  ensureWorkspaceInstructions,
+  removeSessionWorkspace,
+  resolveCodexProvider,
+  sessionWorkspaceKey,
+} from './codexProvider.js';
 
 export const UNIFIED_CODEX_ENABLED = CODEX_ENABLED && process.env.CODEX_UNIFIED_RUNTIME !== 'false';
 export const CODEX_BACKGROUND_ENABLED = UNIFIED_CODEX_ENABLED && process.env.CODEX_BACKGROUND !== 'false';
@@ -330,24 +338,66 @@ async function resolveContext(input: CreateAgentRunInput) {
   return { session, project, projectId: project?.id || null };
 }
 
-async function getOrCreateWorkspace(userId: string, projectId: string | null, workspacePolicy: Record<string, unknown>) {
+async function getOrCreateWorkspace(
+  userId: string,
+  sessionId: string | null,
+  projectId: string | null,
+  workspacePolicy: Record<string, unknown>,
+) {
   const db = getDb();
-  const workspaceKey = projectId ? `project:${projectId}` : 'user:default';
+  /* A conversation is the isolation boundary. Project and user fallbacks are
+   * kept for scheduled/legacy runs that do not have a session yet. */
+  const workspaceKey = sessionId
+    ? sessionWorkspaceKey(sessionId)
+    : projectId
+      ? `project:${projectId}`
+      : 'user:default';
   const [existing] = await db.select().from(codexWorkspaces)
     .where(and(eq(codexWorkspaces.userId, userId), eq(codexWorkspaces.workspaceKey, workspaceKey))).limit(1);
   if (existing) {
-    await db.update(codexWorkspaces).set({ lastUsedAt: new Date(), updatedAt: new Date(), status: 'active' })
+    await db.update(codexWorkspaces).set({
+      projectId,
+      lastUsedAt: new Date(),
+      updatedAt: new Date(),
+      status: 'active',
+    })
       .where(eq(codexWorkspaces.id, existing.id));
-    return { row: existing, path: ensureProjectWorkspace(userId, workspaceKey) };
+    return {
+      row: { ...existing, projectId },
+      path: sessionId ? ensureSessionWorkspace(userId, sessionId) : ensureProjectWorkspace(userId, workspaceKey),
+    };
   }
+  /* Two requests can create the first task for a session at the same time
+   * (for example a retry plus the chat stream). Let the unique key arbitrate
+   * that race, then read the winner instead of surfacing a 23505 as an
+   * unexplained "workspace initialization failed" error. */
   const [created] = await db.insert(codexWorkspaces).values({
     userId,
     projectId,
     workspaceKey,
     policy: workspacePolicy,
+  }).onConflictDoNothing({
+    target: [codexWorkspaces.userId, codexWorkspaces.workspaceKey],
   }).returning();
-  if (!created) throw new Error('Unable to create Codex workspace');
-  return { row: created, path: ensureProjectWorkspace(userId, workspaceKey) };
+  if (!created) {
+    const [raced] = await db.select().from(codexWorkspaces)
+      .where(and(eq(codexWorkspaces.userId, userId), eq(codexWorkspaces.workspaceKey, workspaceKey))).limit(1);
+    if (!raced) throw new Error('Unable to create Codex workspace');
+    await db.update(codexWorkspaces).set({
+      projectId,
+      lastUsedAt: new Date(),
+      updatedAt: new Date(),
+      status: 'active',
+    }).where(eq(codexWorkspaces.id, raced.id));
+    return {
+      row: { ...raced, projectId },
+      path: sessionId ? ensureSessionWorkspace(userId, sessionId) : ensureProjectWorkspace(userId, workspaceKey),
+    };
+  }
+  return {
+    row: created,
+    path: sessionId ? ensureSessionWorkspace(userId, sessionId) : ensureProjectWorkspace(userId, workspaceKey),
+  };
 }
 
 const DEFAULT_POLICY = {
@@ -358,11 +408,60 @@ const DEFAULT_POLICY = {
   maxOutputBytes: 2_000_000,
 };
 
+/**
+ * Create/repair the workspace attached to a conversation without starting a
+ * Codex process. Session creation and the agent-run endpoint both call this,
+ * so the folder exists before the first turn and can be reused by retries.
+ */
+export async function ensureSessionWorkspaceForSession(
+  userId: string,
+  sessionId: string,
+  projectId: string | null = null,
+) {
+  if (!isValidUuid(sessionId)) throw new BadRequest('Invalid sessionId');
+  return getOrCreateWorkspace(userId, sessionId, projectId, DEFAULT_POLICY);
+}
+
+/** Reconcile the durable workspace for every existing session after startup. */
+export async function ensureSessionWorkspacesOnStartup(): Promise<{ checked: number; created: number; failed: number }> {
+  if (!UNIFIED_CODEX_ENABLED) return { checked: 0, created: 0, failed: 0 };
+  const db = getDb();
+  const rows = await db.select({ id: sessions.id, userId: sessions.userId, projectId: sessions.projectId }).from(sessions);
+  let created = 0;
+  let failed = 0;
+  for (const session of rows) {
+    try {
+      const workspace = await getOrCreateWorkspace(session.userId, session.id, session.projectId, DEFAULT_POLICY);
+      if (workspace.row.createdAt.getTime() >= Date.now() - 5_000) created++;
+    } catch (err) {
+      failed++;
+      console.warn(`[agent-runtime] session workspace ${session.id} could not be initialized: ${(err as Error).message}`);
+    }
+  }
+  return { checked: rows.length, created, failed };
+}
+
+/** Remove session workspace records and their private filesystem trees. */
+export async function removeSessionWorkspacesForUser(userId: string, sessionIds: string[]): Promise<void> {
+  const ids = sessionIds.filter(isValidUuid);
+  if (ids.length === 0) return;
+  const db = getDb();
+  await db.delete(codexWorkspaces).where(and(
+    eq(codexWorkspaces.userId, userId),
+    inArray(codexWorkspaces.workspaceKey, ids.map(sessionWorkspaceKey)),
+  ));
+  for (const sessionId of ids) removeSessionWorkspace(userId, sessionId);
+}
+
 async function startCodexThread(
   run: typeof agentRuns.$inferSelect,
   context: { projectId: string | null; project: typeof projects.$inferSelect | null },
   workspace: { row: typeof codexWorkspaces.$inferSelect; path: string },
 ) {
+  /* Codex reads AGENTS.md while opening the thread. Write the stable session
+   * guidance before thread/start so the first turn sees the same workspace
+   * contract as every later turn. */
+  ensureWorkspaceInstructions(workspace.path, context.project?.systemPrompt);
   await codexHarness.ensureStarted();
   const provider = await resolveCodexProvider(run.userId);
   const mcpConfig = CODEX_MCP_ENABLED
@@ -413,7 +512,6 @@ async function startCodexThread(
 
   codexHarness.claimThread(thread.id, run.userId, String(thread.model ?? provider.model ?? ''));
   const db = getDb();
-  ensureWorkspaceInstructions(workspace.path, context.project?.systemPrompt);
   const [existing] = await db.select().from(codexThreads).where(eq(codexThreads.threadId, String(thread.id))).limit(1);
   if (!existing) {
     await db.insert(codexThreads).values({
@@ -453,10 +551,22 @@ export async function createAgentRun(input: CreateAgentRunInput) {
   if (task.length > MAX_TASK_LENGTH) throw new BadRequest('task is too long');
   const context = await resolveContext({ ...input, task });
   const db = getDb();
+  /* Bind the run to its session workspace at creation time. The old flow
+   * inserted a run with a null workspaceId and postponed directory creation
+   * until turn/start, which made the initialization endpoint look successful
+   * while the first task could still fail or be marked disconnected on a
+   * restart. */
+  const workspace = await getOrCreateWorkspace(
+    input.userId,
+    context.session?.id || null,
+    context.projectId,
+    DEFAULT_POLICY,
+  );
   const [run] = await db.insert(agentRuns).values({
     userId: input.userId,
     sessionId: context.session?.id || null,
     projectId: context.projectId,
+    workspaceId: workspace.row.id,
     task,
     status: 'starting',
     mode: 'workspace',
@@ -471,8 +581,10 @@ export async function createAgentRun(input: CreateAgentRunInput) {
     kind: run.kind,
     source: run.source,
     projectId: context.projectId,
+    sessionId: run.sessionId,
+    workspaceId: run.workspaceId,
   });
-  return { run, context };
+  return { run, context, workspace };
 }
 
 async function loadRun(runId: string, userId: string) {
@@ -484,11 +596,22 @@ async function loadRun(runId: string, userId: string) {
 }
 
 async function workspaceForRun(run: typeof agentRuns.$inferSelect) {
-  if (!run.workspaceId) throw new Error('Agent run has no workspace');
   const db = getDb();
-  const [workspace] = await db.select().from(codexWorkspaces).where(eq(codexWorkspaces.id, run.workspaceId)).limit(1);
-  if (!workspace) throw new NotFound('Agent workspace not found');
-  return { row: workspace, path: ensureProjectWorkspace(run.userId, workspace.workspaceKey) };
+  if (run.workspaceId) {
+    const [workspace] = await db.select().from(codexWorkspaces).where(eq(codexWorkspaces.id, run.workspaceId)).limit(1);
+    if (workspace) {
+      await db.update(codexWorkspaces).set({ lastUsedAt: new Date(), updatedAt: new Date(), status: 'active' })
+        .where(eq(codexWorkspaces.id, workspace.id));
+      return { row: workspace, path: ensureWorkspaceForKey(run.userId, workspace.workspaceKey) };
+    }
+  }
+
+  /* Repair legacy runs created before workspace binding, or runs whose
+   * workspace row was removed during session cleanup. This makes resume and
+   * retry self-healing instead of ending in the opaque "no workspace" error. */
+  const repaired = await getOrCreateWorkspace(run.userId, run.sessionId, run.projectId, DEFAULT_POLICY);
+  await db.update(agentRuns).set({ workspaceId: repaired.row.id }).where(eq(agentRuns.id, run.id));
+  return repaired;
 }
 
 function projectForRun(run: typeof agentRuns.$inferSelect) {
@@ -553,18 +676,28 @@ export async function runAgentTurn(
     await getDb().update(agentRuns).set({ task }).where(eq(agentRuns.id, runId));
     run = { ...run, task };
   }
-  if (!run.threadId || !run.workspaceId) {
-    const workspace = await getOrCreateWorkspace(userId, run.projectId, DEFAULT_POLICY);
-    const project = await projectForRun(run);
-    const started = await startCodexThread(run, { projectId: run.projectId, project }, workspace);
-    threadInfo = started;
-    run = (await loadRun(runId, userId));
-    run = { ...run, threadId: started.threadId, workspaceId: workspace.row.id };
-  }
+  let workspace: Awaited<ReturnType<typeof workspaceForRun>> | null = null;
+  let project: Awaited<ReturnType<typeof projectForRun>> | null = null;
+  try {
+    workspace = await workspaceForRun(run);
+    if (!run.threadId) {
+      project = await projectForRun(run);
+      const started = await startCodexThread(run, { projectId: run.projectId, project }, workspace);
+      threadInfo = started;
+      run = (await loadRun(runId, userId));
+      run = { ...run, threadId: started.threadId, workspaceId: workspace.row.id };
+      workspace = await workspaceForRun(run);
+    }
 
-  const workspace = await workspaceForRun(run);
-  const project = await projectForRun(run);
-  if (!threadInfo) threadInfo = await startCodexThread(run, { projectId: run.projectId, project }, workspace);
+    project = await projectForRun(run);
+    if (!threadInfo) threadInfo = await startCodexThread(run, { projectId: run.projectId, project }, workspace);
+  } catch (err) {
+    const message = safeText((err as Error).message || err, workspace?.path);
+    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(() => undefined);
+    await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace?.path).catch(() => undefined);
+    throw err;
+  }
+  if (!workspace || !threadInfo) throw new Error('Codex thread initialization returned no workspace');
   const threadId = threadInfo.threadId;
   let output = '';
   let usage: unknown = null;
@@ -898,7 +1031,7 @@ export async function recoverAgentRunsOnStartup(): Promise<{ checked: number; re
   let recovered = 0;
   let disconnected = 0;
   for (const run of rows) {
-    if (!run.threadId || !run.workspaceId) {
+    if (!run.threadId) {
       await updateRunStatus(run.id, 'disconnected', { error: 'Run was interrupted by a server restart.' });
       disconnected++;
       continue;

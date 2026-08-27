@@ -52,6 +52,22 @@ async function main() {
     console.warn('[validate] API key validation skipped:', (err as Error).message);
   }
 
+  // ── Reconcile one private Codex directory per existing conversation ──
+  // New sessions are initialized by POST /api/sessions; this startup pass
+  // backfills older sessions and repairs rows left behind by an interrupted
+  // deploy without starting a Codex thread for any of them.
+  (async () => {
+    try {
+      const { ensureSessionWorkspacesOnStartup } = await import('./services/agentRuntime.js');
+      const result = await ensureSessionWorkspacesOnStartup();
+      if (result.checked > 0) {
+        console.log(`[agent-runtime] session workspace reconciliation checked ${result.checked}: ${result.created} new, ${result.failed} failed`);
+      }
+    } catch (err) {
+      console.warn('[agent-runtime] session workspace reconciliation skipped:', (err as Error).message);
+    }
+  })();
+
   // ── Warm up Pyodide code-interpreter pool ──
   // Pay the ~3-5 s cold-start cost at boot so the first user request
   // doesn't block on loading the WASM interpreter. Non-blocking —
