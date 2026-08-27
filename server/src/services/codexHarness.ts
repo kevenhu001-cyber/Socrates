@@ -26,6 +26,8 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { EventEmitter } from 'node:events';
+import { existsSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -38,6 +40,10 @@ export const CODEX_ENABLED = process.env.CODEX_ENABLED !== 'false';
  * may carry arguments: `".../bin/codex.js app-server"`. Splitting on
  * whitespace keeps both forms working without a shell (which would reopen
  * the argument-injection surface a plain spawn avoids).
+ *
+ * When the operator sets nothing, this stays at the historical default and
+ * `resolveCodexLauncher()` below probes the machine instead. Do NOT spawn
+ * this constant directly — see that function for why.
  */
 export const CODEX_BIN = process.env.CODEX_APP_SERVER_BIN || 'codex-app-server';
 
@@ -57,6 +63,151 @@ export function parseCodexCommand(raw: string): { command: string; args: string[
     || base === 'codex.cmd' || base === 'codex.ps1';
   if (isCodexCli && !args.includes('app-server')) args.push('app-server');
   return { command, args };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Launcher discovery                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Extensions that a bare `spawn()` can execute directly on this platform.
+ *
+ * On Windows the npm shim for a package binary is `codex.cmd` / `codex.ps1`,
+ * and `child_process.spawn` cannot execute either without `shell: true`.
+ * We refuse to opt into a shell here (it would reopen the argument-injection
+ * surface the plain spawn deliberately avoids), so a shim is treated as
+ * "found but not directly spawnable" and we route through Node + the
+ * package's own JS entry point instead.
+ */
+const DIRECTLY_SPAWNABLE_WIN_EXT = new Set(['.exe', '.com']);
+
+function isDirectlySpawnable(file: string): boolean {
+  if (process.platform !== 'win32') return true;
+  const ext = path.extname(file).toLowerCase();
+  return ext === '' || DIRECTLY_SPAWNABLE_WIN_EXT.has(ext);
+}
+
+/** Locate `name` on PATH. Returns every match, shims included. */
+function whichAll(name: string): string[] {
+  const raw = process.env.PATH || process.env.Path || '';
+  if (!raw) return [];
+  const dirs = raw.split(path.delimiter).filter(Boolean);
+  const suffixes = process.platform === 'win32'
+    ? ['', ...(process.env.PATHEXT || '.COM;.EXE;.BAT;.CMD').split(';').filter(Boolean)]
+    : [''];
+  const found: string[] = [];
+  for (const dir of dirs) {
+    for (const suffix of suffixes) {
+      const candidate = path.join(dir, name + suffix);
+      try {
+        if (existsSync(candidate) && statSync(candidate).isFile()) found.push(candidate);
+      } catch { /* unreadable PATH entry */ }
+    }
+  }
+  return found;
+}
+
+/**
+ * Find `@openai/codex/bin/codex.js` so we can run it with the Node binary
+ * already executing this server. This is the most portable launcher: it
+ * needs no shell, works identically on Windows and Linux, and does not
+ * depend on which shim flavour npm generated.
+ */
+function findCodexJsEntry(): string | null {
+  const candidates: string[] = [];
+
+  /* Resolve through the module graph first — covers `npm i @openai/codex`
+     as a server dependency and any pnpm/yarn layout. */
+  try {
+    const req = createRequire(import.meta.url);
+    candidates.push(req.resolve('@openai/codex/bin/codex.js'));
+  } catch { /* not a resolvable dependency */ }
+
+  /* Then the npm-global layout, derived from wherever the `codex` shim
+     lives on PATH: <prefix>/codex.cmd sits next to
+     <prefix>/node_modules/@openai/codex/bin/codex.js. */
+  for (const shim of whichAll('codex')) {
+    candidates.push(path.join(path.dirname(shim), 'node_modules', '@openai', 'codex', 'bin', 'codex.js'));
+    /* Unix npm prefixes use bin/ + lib/node_modules/ instead. */
+    candidates.push(path.join(path.dirname(shim), '..', 'lib', 'node_modules', '@openai', 'codex', 'bin', 'codex.js'));
+  }
+
+  for (const candidate of candidates) {
+    try {
+      if (existsSync(candidate) && statSync(candidate).isFile()) return path.resolve(candidate);
+    } catch { /* keep probing */ }
+  }
+  return null;
+}
+
+export interface CodexLauncher {
+  command: string;
+  args: string[];
+  /** How the launcher was chosen — logged once so installs are diagnosable. */
+  source: string;
+}
+
+let cachedLauncher: CodexLauncher | null = null;
+
+/**
+ * Decide how to start the Codex app-server on THIS machine.
+ *
+ * Why this exists: `CODEX_BIN` defaulted to the bare name
+ * `codex-app-server`, but no current Codex distribution installs a binary
+ * under that name — `npm i -g @openai/codex` ships a single `codex` CLI with
+ * an `app-server` subcommand. So on any box where the operator had not set
+ * CODEX_APP_SERVER_BIN by hand, `spawn('codex-app-server')` failed with
+ * ENOENT and EVERY workspace task died during initialization. That is the
+ * "工作区任务初始化总是失败" symptom.
+ *
+ * Probe order (first hit wins):
+ *   1. CODEX_APP_SERVER_BIN — an explicit operator override always wins,
+ *      including its historical "<path> app-server" form.
+ *   2. A real `codex-app-server` executable on PATH (standalone builds).
+ *   3. `node <@openai/codex>/bin/codex.js app-server` — the npm install.
+ *      Preferred over the PATH shim because it is directly spawnable on
+ *      Windows, where the shim is a .cmd that spawn cannot execute.
+ *   4. A directly-spawnable `codex` on PATH → `codex app-server`.
+ *   5. Fall back to the historical default so the ENOENT handler emits its
+ *      actionable "install Codex or set CODEX_APP_SERVER_BIN" message.
+ *
+ * The result is cached: PATH does not change under a running server, and
+ * this touches the filesystem.
+ */
+export function resolveCodexLauncher(force = false): CodexLauncher {
+  if (cachedLauncher && !force) return cachedLauncher;
+
+  const explicit = process.env.CODEX_APP_SERVER_BIN;
+  if (explicit && explicit.trim()) {
+    const parsed = parseCodexCommand(explicit);
+    cachedLauncher = { ...parsed, source: 'CODEX_APP_SERVER_BIN' };
+    return cachedLauncher;
+  }
+
+  for (const hit of whichAll('codex-app-server')) {
+    if (!isDirectlySpawnable(hit)) continue;
+    cachedLauncher = { command: hit, args: [], source: 'PATH:codex-app-server' };
+    return cachedLauncher;
+  }
+
+  const jsEntry = findCodexJsEntry();
+  if (jsEntry) {
+    cachedLauncher = {
+      command: process.execPath,
+      args: [jsEntry, 'app-server'],
+      source: 'node:@openai/codex',
+    };
+    return cachedLauncher;
+  }
+
+  for (const hit of whichAll('codex')) {
+    if (!isDirectlySpawnable(hit)) continue;
+    cachedLauncher = { command: hit, args: ['app-server'], source: 'PATH:codex' };
+    return cachedLauncher;
+  }
+
+  cachedLauncher = { ...parseCodexCommand(CODEX_BIN), source: 'default' };
+  return cachedLauncher;
 }
 export const CODEX_HOME = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 export const CODEX_CLIENT_NAME = process.env.CODEX_CLIENT_NAME || 'socrates';
@@ -177,9 +328,9 @@ class CodexHarness extends EventEmitter {
         reject(new Error('Codex harness has been stopped'));
         return;
       }
-      const { command, args: leadingArgs } = parseCodexCommand(CODEX_BIN);
+      const { command, args: leadingArgs, source } = resolveCodexLauncher();
       const argv = [...leadingArgs, '--listen', 'stdio://'];
-      console.log(`[codex-harness] starting app-server: ${command} ${argv.join(' ')}`);
+      console.log(`[codex-harness] starting app-server via ${source}: ${command} ${argv.join(' ')}`);
       this.stderrTail = '';
       const child = spawn(command, argv, {
         env: { ...process.env, CODEX_HOME },
@@ -211,7 +362,7 @@ class CodexHarness extends EventEmitter {
       child.on('error', (err) => {
         const code = (err as NodeJS.ErrnoException).code;
         const message = code === 'ENOENT'
-          ? `Codex app-server binary not found ("${command}"). Install Codex or point CODEX_APP_SERVER_BIN at the binary.`
+          ? `Codex app-server not found (tried "${command}" via ${source}). Install it with \`npm i -g @openai/codex\`, or point CODEX_APP_SERVER_BIN at the binary.`
           : err.message;
         this.emit('log', 'error', `[codex-harness] spawn error: ${message}`);
         this.teardown();

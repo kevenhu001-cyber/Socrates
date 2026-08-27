@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-import { parseCodexCommand } from '../src/services/codexHarness.ts';
+import { parseCodexCommand, resolveCodexLauncher } from '../src/services/codexHarness.ts';
 
 /* CODEX_APP_SERVER_BIN used to name a standalone executable. Current
    codex-cli releases expose the server as `codex app-server`, so the value
@@ -66,4 +69,37 @@ test('parseCodexCommand never duplicates an explicit app-server subcommand', () 
     command: '/usr/bin/codex',
     args: ['app-server'],
   });
+});
+
+
+test('resolveCodexLauncher discovers the modern npm Codex app-server without a standalone binary', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'socrates-codex-launcher-'));
+  const binName = process.platform === 'win32' ? 'codex.cmd' : 'codex';
+  const shim = path.join(root, binName);
+  const entry = path.join(root, 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
+  const oldPath = process.env.PATH;
+  const oldPathAlias = process.env.Path;
+  const oldExplicit = process.env.CODEX_APP_SERVER_BIN;
+  try {
+    mkdirSync(path.dirname(entry), { recursive: true });
+    writeFileSync(shim, process.platform === 'win32' ? '@echo off\r\n' : '#!/bin/sh\n', 'utf8');
+    writeFileSync(entry, '#!/usr/bin/env node\n', 'utf8');
+    assert.equal(existsSync(entry), true);
+    process.env.PATH = root;
+    process.env.Path = root;
+    delete process.env.CODEX_APP_SERVER_BIN;
+
+    const launcher = resolveCodexLauncher(true);
+    assert.equal(launcher.source, 'node:@openai/codex');
+    assert.equal(launcher.command, process.execPath);
+    assert.deepEqual(launcher.args, [entry, 'app-server']);
+    assert.equal(/\.(cmd|ps1)$/i.test(launcher.command), false, 'must not spawn a Windows npm shell shim');
+  } finally {
+    if (oldPath == null) delete process.env.PATH; else process.env.PATH = oldPath;
+    if (oldPathAlias == null) delete process.env.Path; else process.env.Path = oldPathAlias;
+    if (oldExplicit == null) delete process.env.CODEX_APP_SERVER_BIN;
+    else process.env.CODEX_APP_SERVER_BIN = oldExplicit;
+    resolveCodexLauncher(true);
+    rmSync(root, { recursive: true, force: true });
+  }
 });
