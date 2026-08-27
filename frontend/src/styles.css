@@ -6441,7 +6441,10 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 /* Live compact rows. */
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline{
   display:block;
-  margin:14px 0;
+  /* A status line should read like one sentence of the answer, not a card.
+     Keep only a compact rhythm break around it; details remain available on
+     demand without surrounding the closed row in chrome. */
+  margin:9px 0;
   border:0!important;
   border-radius:0!important;
   background:transparent!important;
@@ -6449,17 +6452,17 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   color:var(--tool-activity-row);
   transition:color .16s ease,opacity .16s ease;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline:first-child{margin-top:5px}
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline:last-child{margin-bottom:5px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:first-child{margin-top:3px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:last-child{margin-bottom:3px}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-merged="1"]{display:none}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
   display:flex;
   align-items:center;
   width:100%;
-  min-height:26px;
+  min-height:24px;
   padding:0;
-  gap:10px;
-  border-radius:7px;
+  gap:7px;
+  border-radius:6px;
   background:transparent;
   color:var(--tool-activity-row);
   cursor:pointer;
@@ -6476,12 +6479,12 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  flex:0 0 19px;
-  width:19px;
-  height:19px;
+  flex:0 0 17px;
+  width:17px;
+  height:17px;
   color:currentColor;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{width:17px;height:17px;stroke-width:1.7}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{width:15px;height:15px;stroke-width:1.5}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
   min-width:0;
   flex:0 1 auto;
@@ -6489,9 +6492,9 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   text-overflow:ellipsis;
   white-space:nowrap;
   color:inherit;
-  font-size:13.5px;
-  font-weight:450;
-  line-height:1.45;
+  font-size:13px;
+  font-weight:430;
+  line-height:1.4;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta{
   flex:0 0 auto;
@@ -6499,24 +6502,34 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
   color:hsl(var(--text-500));
   font:11px/1.3 var(--font-mono);
 }
+/* P_tool-chevron-single — this rule used to draw a CSS border triangle
+   (border-width:0 1.4px 1.4px 0 on a 9×9 box, rotate(45deg)) INSIDE the
+   same span that already carries the chevron SVG, and it never hid that
+   SVG. Two different glyphs were therefore stacked and clipped inside a
+   9×9 box on every tool row — the reason the expand/collapse arrow
+   looked hand-drawn. Render the SVG alone at its designed 16px size and
+   rotate the box, not the artwork, so the glyph's exact 45° arms
+   survive the open/closed transition. */
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev{
   position:relative;
-  flex:0 0 10px;
-  width:9px;
-  height:9px;
-  margin:0 3px 3px 4px;
-  border:solid currentColor;
-  border-width:0 1.4px 1.4px 0;
-  transform:rotate(45deg);
-  transition:transform .16s ease;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  margin:0 0 0 1px;
+  border:0;
+  opacity:.45;
+  transform:rotate(0deg);
+  transition:transform .18s cubic-bezier(.4,0,.2,1),opacity .18s ease;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-chev{transform:rotate(225deg) translate(-1px,-1px)}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev svg{width:14px;height:14px;stroke-width:1.5}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:hover .tool-inline-chev{opacity:.85}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-chev{transform:rotate(90deg);opacity:.85}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{animation:neutralTextWave 3.2s linear infinite}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-tool-icon,
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-label{color:var(--tool-activity-danger)}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
-  margin:9px 0 2px 29px;
-  padding:0 0 0 17px;
+  margin:7px 0 1px 24px;
+  padding:0 0 0 12px;
   border:0;
   border-left:1px solid var(--tool-activity-border);
 }
@@ -6611,29 +6624,28 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 }
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status,
 .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-status{flex:0 0 auto;color:hsl(var(--text-500));font-size:11px}
+/* P_tool-chevron-single — same double-glyph defect as .tool-inline-chev:
+   a ::before border triangle was drawn on top of the 14px chevron SVG
+   inside a 9×9 box (font-size:0 only hides text, not the SVG child).
+   Render the SVG alone and rotate the box. */
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev,
 .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev{
-  flex:0 0 10px;
-  width:9px;
-  height:9px;
-  margin:0 3px 3px 4px;
+  flex:0 0 16px;
+  width:16px;
+  height:16px;
+  margin:0 0 0 2px;
   color:currentColor;
   font-size:0;
-  transform:none;
+  opacity:.5;
+  transform:rotate(0deg);
+  transition:transform .18s cubic-bezier(.4,0,.2,1),opacity .18s ease;
 }
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev svg,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev svg{width:16px;height:16px;stroke-width:1.5}
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev::before{
-  content:"";
-  display:block;
-  width:9px;
-  height:9px;
-  border:solid currentColor;
-  border-width:0 1.4px 1.4px 0;
-  transform:rotate(45deg);
-  transition:transform .16s ease;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card.open .agent-tool-chev::before,
-.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-card.open .agent-tool-chev::before{transform:rotate(225deg) translate(-1px,-1px)}
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev::before{content:none}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card.open .agent-tool-chev,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.85}
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
 .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
   margin:9px 0 2px 29px;
@@ -6670,13 +6682,13 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:var(--tool-ca
 }
 @media(prefers-reduced-motion:reduce){
   .msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev,
-  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before{transition:none}
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev{transition:none}
 }
 
 /* Keep the activity row's geometry stable while its state changes. The
    spinner and shimmer own the running animation; settled rows explicitly
    clear both so completed/error states never keep moving. */
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{min-height:28px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{min-height:24px}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-spinner{
   animation:tool-inline-spin .95s linear infinite;
 }
