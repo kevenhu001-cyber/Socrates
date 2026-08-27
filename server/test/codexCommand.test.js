@@ -35,3 +35,35 @@ test('parseCodexCommand falls back to the default binary name', () => {
   assert.deepEqual(parseCodexCommand(''), { command: 'codex-app-server', args: [] });
   assert.deepEqual(parseCodexCommand('   '), { command: 'codex-app-server', args: [] });
 });
+
+test('parseCodexCommand attaches the app-server subcommand to the codex CLI', () => {
+  /* A binary named `codex` is the interactive CLI — spawning it with
+     `--listen stdio://` exits with an argument error. The normalized form
+     must launch the embedded server subcommand instead. */
+  assert.deepEqual(parseCodexCommand('codex'), {
+    command: 'codex',
+    args: ['app-server'],
+  });
+  assert.deepEqual(
+    parseCodexCommand('/home/u/.npm-global/lib/node_modules/@openai/codex/bin/codex.js'),
+    {
+      command: '/home/u/.npm-global/lib/node_modules/@openai/codex/bin/codex.js',
+      args: ['app-server'],
+    },
+  );
+  assert.deepEqual(parseCodexCommand('codex.cmd'), {
+    command: 'codex.cmd',
+    args: ['app-server'],
+  });
+});
+
+test('parseCodexCommand never duplicates an explicit app-server subcommand', () => {
+  assert.deepEqual(parseCodexCommand('codex app-server'), {
+    command: 'codex',
+    args: ['app-server'],
+  });
+  assert.deepEqual(parseCodexCommand('/usr/bin/codex app-server'), {
+    command: '/usr/bin/codex',
+    args: ['app-server'],
+  });
+});

@@ -496,7 +496,16 @@ detect_local_codex() {
     p=$(readlink -f "$p" 2>/dev/null || echo "$p")
   fi
   if [[ -x "$p" ]] && "$p" -V >/dev/null 2>&1; then
-    echo "$p"
+    # The codex CLI exposes the server as a subcommand; the harness appends
+    # `--listen stdio://`, which the CLI rejects at top level. Record the
+    # subcommand with the binary (mirrors install-codex.sh), or the systemd
+    # drop-in would spawn `codex --listen …` and every workspace task would
+    # fail during initialization.
+    if [[ "$(basename "$p")" != "codex-app-server" ]]; then
+      echo "$p app-server"
+    else
+      echo "$p"
+    fi
   fi
 }
 
@@ -518,19 +527,26 @@ install_codex_harness() {
     return 1
   fi
 
-  # The binary the backend will actually spawn: either the host-provided
-  # local install (CODEX_APP_SERVER_BIN) or the downloaded package.
-  local codex_bin="${CODEX_APP_SERVER_BIN:-${CODEX_INSTALL_DIR}/bin/codex-app-server}"
+  # The binary the backend will actually spawn: prefer the exact command
+  # install-codex.sh resolved and verified (it carries the `app-server`
+  # subcommand for CLI installs), then the env detection, then the package.
+  local codex_bin=""
+  if [[ -f "${CODEX_INSTALL_DIR}/.bin-path" ]]; then
+    codex_bin=$(cat "${CODEX_INSTALL_DIR}/.bin-path")
+  fi
+  codex_bin="${codex_bin:-${CODEX_APP_SERVER_BIN:-${CODEX_INSTALL_DIR}/bin/codex-app-server}}"
 
   # systemd drop-in — set after the service unit is already installed so
   # this deploy never edits the unit file itself (upgrades/removals keep
   # working, and `systemctl cat socrates-api` shows the split config).
+  # The CODEX_APP_SERVER_BIN value is quoted: a CLI-derived command carries
+  # the `app-server` subcommand after a space and must stay one assignment.
   echo "Writing systemd drop-in $CODEX_DROPIN…"
   $SUDO mkdir -p "$(dirname "$CODEX_DROPIN")"
   $SUDO tee "$CODEX_DROPIN" >/dev/null <<EOF
 [Service]
 Environment=CODEX_ENABLED=1
-Environment=CODEX_APP_SERVER_BIN=${codex_bin}
+Environment="CODEX_APP_SERVER_BIN=${codex_bin}"
 Environment=CODEX_HOME=${CODEX_HOME}
 Environment=CODEX_WORKSPACE_ROOT=${CODEX_HOME}/workspaces
 Environment=PATH=${CODEX_INSTALL_DIR}/bin:${CODEX_INSTALL_DIR}/codex-path:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

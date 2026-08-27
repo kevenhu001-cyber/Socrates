@@ -45,7 +45,18 @@ export const CODEX_BIN = process.env.CODEX_APP_SERVER_BIN || 'codex-app-server';
 export function parseCodexCommand(raw: string): { command: string; args: string[] } {
   const parts = String(raw || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { command: 'codex-app-server', args: [] };
-  return { command: parts[0], args: parts.slice(1) };
+  const command = parts[0];
+  const args = parts.slice(1);
+  /* A binary named `codex` is the interactive CLI; the app-server lives
+   * behind its `app-server` subcommand. Spawning the CLI directly with
+   * `--listen stdio://` exits with an argument error, which surfaces to
+   * users as every workspace task failing during initialization. The
+   * standalone build is named codex-app-server and passes through as-is. */
+  const base = command.replace(/^.*[\\/]/, '').toLowerCase();
+  const isCodexCli = base === 'codex' || base === 'codex.js'
+    || base === 'codex.cmd' || base === 'codex.ps1';
+  if (isCodexCli && !args.includes('app-server')) args.push('app-server');
+  return { command, args };
 }
 export const CODEX_HOME = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
 export const CODEX_CLIENT_NAME = process.env.CODEX_CLIENT_NAME || 'socrates';
@@ -94,6 +105,9 @@ class CodexHarness extends EventEmitter {
   private starting: Promise<void> | null = null;
   private stopped = false;
   private restartTimer: NodeJS.Timeout | null = null;
+  /** Last bytes printed on the child's stderr — included in failure
+   * messages so a crashed app-server is diagnosable from the journal. */
+  private stderrTail = '';
 
   /** threadId → owner metadata (in-memory; threads are ephemeral in P1). */
   private owners = new Map<string, ThreadOwner>();
@@ -164,7 +178,10 @@ class CodexHarness extends EventEmitter {
         return;
       }
       const { command, args: leadingArgs } = parseCodexCommand(CODEX_BIN);
-      const child = spawn(command, [...leadingArgs, '--listen', 'stdio://'], {
+      const argv = [...leadingArgs, '--listen', 'stdio://'];
+      console.log(`[codex-harness] starting app-server: ${command} ${argv.join(' ')}`);
+      this.stderrTail = '';
+      const child = spawn(command, argv, {
         env: { ...process.env, CODEX_HOME },
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
@@ -186,13 +203,19 @@ class CodexHarness extends EventEmitter {
 
       child.stderr.on('data', (d: Buffer) => {
         const text = d.toString().trim();
-        if (text) this.emit('log', 'debug', `[codex-harness stderr] ${text.slice(0, 500)}`);
+        if (!text) return;
+        this.stderrTail = `${this.stderrTail}\n${text}`.slice(-2000);
+        this.emit('log', 'debug', `[codex-harness stderr] ${text.slice(0, 500)}`);
       });
 
       child.on('error', (err) => {
-        this.emit('log', 'error', `[codex-harness] spawn error: ${err.message}`);
+        const code = (err as NodeJS.ErrnoException).code;
+        const message = code === 'ENOENT'
+          ? `Codex app-server binary not found ("${command}"). Install Codex or point CODEX_APP_SERVER_BIN at the binary.`
+          : err.message;
+        this.emit('log', 'error', `[codex-harness] spawn error: ${message}`);
         this.teardown();
-        reject(err);
+        reject(new Error(message));
       });
 
       child.on('exit', (code, signal) => {
@@ -212,10 +235,17 @@ class CodexHarness extends EventEmitter {
     this.child = null;
     this.rl?.removeAllListeners();
     this.rl = null;
-    // Fail every in-flight request so callers don't hang forever.
+    // Fail every in-flight request so callers don't hang forever. Include
+    // the child's stderr tail: when the binary exits during the initialize
+    // handshake (wrong command, missing auth) this is the only place the
+    // real reason surfaces.
+    const tail = this.stderrTail.trim().split('\n').slice(-3).join(' ').slice(0, 300);
+    const deathMessage = tail
+      ? `Codex app-server process died: ${tail}`
+      : 'Codex app-server process died';
     for (const [, p] of this.pending) {
       clearTimeout(p.timer);
-      p.reject(new Error('Codex app-server process died'));
+      p.reject(new Error(deathMessage));
     }
     this.pending.clear();
     this.owners.clear();
@@ -385,7 +415,7 @@ class CodexHarness extends EventEmitter {
       const id = this.nextId++;
       const timer = setTimeout(() => {
         this.pending.delete(id);
-        reject(new Error('Codex initialize timed out'));
+        reject(new Error(`Codex initialize timed out after ${REQUEST_TIMEOUT_MS}ms (check CODEX_APP_SERVER_BIN="${CODEX_BIN}")`));
       }, REQUEST_TIMEOUT_MS);
       this.pending.set(id, {
         resolve: (result) => {
