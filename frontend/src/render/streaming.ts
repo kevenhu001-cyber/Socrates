@@ -73,11 +73,14 @@ export interface StreamingSplit {
  * Pick a stable insertion offset for an inline tool row.
  *
  * Tool-use events can arrive while the model is still streaming a short
- * preamble. Mounting the row at the raw byte/character offset can split a
- * sentence in half (for example, "我先查一下这个" + tool row + "问题").
- * Prefer the latest completed paragraph or sentence. When the current
- * segment has no completed boundary, keep the whole unfinished sentence
- * together after the tool row by returning segmentStart.
+ * preamble. Mounting the row at the raw character offset can split a
+ * finished sentence in half, so prefer the latest completed paragraph or
+ * sentence boundary inside the current segment.
+ *
+ * When the current segment holds no completed boundary at all, anchor at
+ * the END of the streamed text rather than rewinding to segmentStart.
+ * See the comment at that branch — rewinding is what made tool rows pile
+ * up at the top of a bubble.
  */
 export function findInlineToolBoundary(text: string, segmentStart = 0): number {
   const full = String(text || '');
@@ -105,7 +108,29 @@ export function findInlineToolBoundary(text: string, segmentStart = 0): number {
 
   const newline = Math.max(segment.lastIndexOf('\n'), segment.lastIndexOf('\r'));
   if (newline >= 0) return start + newline + 1;
-  return start;
+
+  /* No completed boundary anywhere in this segment: the model paused
+     part-way through a sentence to call the tool.
+
+     This branch used to `return start`, rewinding the anchor to the top
+     of the segment — and that is precisely what made tool rows collect
+     at the top of an assistant bubble. Every tool in a turn that had not
+     yet emitted a sentence terminator resolved to the SAME offset, so:
+
+       • each new row was spliced in before prose that was already
+         painted, and the visible text jumped down underneath a growing
+         stack of rows (the "unstable" feel), and
+       • on reload, rebuildAssistantHtmlWithInlineTools sorted several
+         rows onto one identical offset and emitted them back-to-back at
+         the top with the whole answer below them.
+
+     Anchoring at the end of what has streamed so far fixes all of that:
+     already-painted text never moves, consecutive tools get strictly
+     increasing offsets so each row stays where it fired, and the only
+     text a row can now interrupt is an UNFINISHED fragment — never a
+     complete sentence, which is the constraint that actually matters to
+     the reader. */
+  return full.length;
 }
 
 /* Keep completed Markdown blocks in a stable DOM region and return only the

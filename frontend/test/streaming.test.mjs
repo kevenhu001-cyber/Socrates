@@ -47,11 +47,27 @@ test('stream splitting keeps an open Tutor scaffold in the live tail', () => {
   assert.equal(isStableMarkdownPrefix(complete), true);
 });
 
-test('inline tools are inserted only after complete prose boundaries', () => {
-  assert.equal(findInlineToolBoundary('我先检查一下这个模块，看看'), 0);
+test('inline tools anchor at the latest complete prose boundary', () => {
   assert.equal(findInlineToolBoundary('先说明结论。 然后继续分析'), '先说明结论。 '.length);
   assert.equal(findInlineToolBoundary('First paragraph.\n\nSecond paragraph is unfinished'), 'First paragraph.\n\n'.length);
   assert.equal(findInlineToolBoundary('prefix 已完成。 后续仍在输入', 'prefix '.length), 'prefix 已完成。 '.length);
+});
+
+test('a segment with no complete boundary anchors at the streamed end, not back at the segment start', () => {
+  /* Rewinding to segmentStart is what made tool rows pile up at the top
+     of a bubble: several tools in one unfinished paragraph all resolved
+     to the same offset, so each row was spliced in above prose that was
+     already painted. Anchoring at the end keeps painted text still and
+     gives consecutive tools strictly increasing offsets. */
+  const fragment = '我先检查一下这个模块，看看';
+  assert.equal(findInlineToolBoundary(fragment), fragment.length);
+
+  // Two tools fired inside the same unfinished paragraph must not share
+  // an offset — the second has to land after the text streamed since the
+  // first, otherwise the rows stack and the prose sinks below them.
+  const first = findInlineToolBoundary('让我查一下');
+  const second = findInlineToolBoundary('让我查一下，再看看别的地方', first);
+  assert.ok(second > first, `expected ${second} > ${first}`);
 });
 
 test('Tutor scaffolds render as typed live cards before the closing tag arrives', () => {
