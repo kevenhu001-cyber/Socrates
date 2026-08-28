@@ -225,6 +225,10 @@ window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 import { toggleComposerTools } from './ui/composerTools.js';
 window.toggleComposerTools = toggleComposerTools;
 
+
+/* ─── ui/voiceInput.js ─── */
+import { toggleSpeechInput } from './ui/voiceInput.js';
+window.toggleSpeechInput = toggleSpeechInput;
 /* ─── ui/settings.js ─── */
 import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider } from './ui/settings.js';
 window.openSettings = openSettings;

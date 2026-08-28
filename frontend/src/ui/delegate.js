@@ -150,9 +150,27 @@ function buildActionMap() {
 
   registerAction('startSession', function (el, e) {
     if (e && e.type === 'keydown') e.preventDefault();
+    if (window.matchMedia && window.matchMedia('(max-width:768px)').matches &&
+        !el.classList.contains('active') && typeof w.toggleSpeechInput === 'function') {
+      w.toggleSpeechInput('topic');
+      return;
+    }
     w.startSession();
   });
-  registerAction('handleSendClick', function () { w.handleSendClick(); });
+  registerAction('handleSendClick', function (el) {
+    if (window.matchMedia && window.matchMedia('(max-width:768px)').matches &&
+        !el.classList.contains('active') &&
+        !el.classList.contains('chat-stop') &&
+        !el.classList.contains('agent-stop') &&
+        typeof w.toggleSpeechInput === 'function') {
+      w.toggleSpeechInput('chat');
+      return;
+    }
+    w.handleSendClick();
+  });
+  registerAction('toggleSpeechInput', function (el, e, surface) {
+    if (typeof w.toggleSpeechInput === 'function') w.toggleSpeechInput(surface || 'topic');
+  });
   registerAction('handleChatKey', function (el, e) {
     if (typeof w.handleChatKey === 'function') w.handleChatKey(e);
   });

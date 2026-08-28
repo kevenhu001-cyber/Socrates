@@ -10,11 +10,14 @@
 export type ComposerMode = 'topic' | 'chat';
 
 export type ComposerToolsAction =
+  | 'camera'
+  | 'photos'
   | 'upload'
   | 'write'
   | 'research'
   | 'explore'
   | 'deepResearch'
+  | 'extensiveThinking'
   | 'analyze'
   | 'exam'
   | 'skills';

@@ -7916,3 +7916,222 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     border-radius:10px;
   }
 }
+
+
+/* =====================================================================
+ * Mobile conversation home — reference-matched dark ChatGPT layout
+ * ===================================================================== */
+.mobile-starter-prompts,.mobile-mic-btn,.mobile-effort-icon,.composer-tools-mobile-items{display:none}
+.composer-tools-desktop-items{display:block}
+
+@media(max-width:768px){
+  html[data-mode="dark"],html[data-mode="dark"] body,
+  html[data-mode="dark"] .app,html[data-mode="dark"] .main,
+  html[data-mode="dark"] .main-content{background:#000}
+  html[data-mode="dark"] .main-bg{background:#000;background-image:none;opacity:1}
+
+  .top-bar{
+    min-height:76px;padding:16px 14px;gap:10px;background:#000;z-index:20
+  }
+  .top-bar-left,.top-bar-right{flex:0 0 44px;overflow:visible}
+  .top-bar-right{justify-content:flex-end}
+  .toggle-sidebar,.mobile-incognito-btn{
+    display:flex;width:44px;height:44px;border:1px solid #494949;border-radius:50%;
+    background:#242424;color:#fff;box-shadow:none
+  }
+  .toggle-sidebar:hover,.toggle-sidebar:active,
+  .mobile-incognito-btn:hover,.mobile-incognito-btn:active{background:#2b2b2b;color:#fff}
+  .toggle-sidebar svg,.mobile-incognito-btn svg{width:24px;height:24px}
+  .mobile-incognito-btn[aria-pressed="true"]{color:#fff;background:#303030;border-color:#666}
+
+  /* The reference uses a persistent two-segment pill rather than a dropdown. */
+  #modeSegmentedTop,.top-mode-tabs{
+    display:flex;top:50%;width:176px;height:44px;padding:4px;gap:0;
+    border-radius:24px;background:#414141;box-shadow:none
+  }
+  .top-mode-tabs .app-mode-toggle{
+    display:flex;align-items:center;justify-content:center;flex:1;height:36px;padding:0 12px;
+    border-radius:20px;color:#fff;font-size:16px;font-weight:600
+  }
+  .top-mode-tabs .app-mode-toggle.active{background:#242424;color:#fff;box-shadow:none}
+  .mobile-mode{display:none!important}
+
+  .main-inner{max-width:none;height:100%;padding:0 12px 12px;margin:0}
+  .topic-setup{
+    height:100%;padding:0;gap:0;overflow:hidden;align-items:stretch
+  }
+  .topic-title,.topic-sub,#topicDisclaimer{display:none!important}
+  .mobile-starter-prompts{
+    display:flex;flex-direction:column;align-items:stretch;gap:20px;
+    width:100%;margin-top:auto;margin-bottom:28px;padding:0 18px
+  }
+  .mobile-starter-prompt{
+    display:flex;align-items:center;gap:14px;width:100%;min-height:36px;padding:0;
+    border:0;background:transparent;color:#e6e6e6;text-align:left;
+    font:500 16px/1.35 var(--font-sans);letter-spacing:-.01em
+  }
+  .mobile-starter-prompt:active{opacity:.7}
+  .mobile-starter-icon{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;color:#fff}
+  .mobile-starter-icon svg{display:block;width:26px;height:26px}
+
+  /* Landing composer: one row at rest, editor + controls on two rows on focus. */
+  .topic-input-wrap{
+    display:grid;grid-template-columns:44px minmax(0,1fr) 40px 48px;grid-template-rows:minmax(48px,auto);
+    align-items:center;column-gap:2px;width:100%;max-width:none;min-height:68px;margin:0;padding:8px;
+    overflow:visible;border:1px solid #505050;border-radius:34px;background:#222;box-shadow:none;
+    animation:none;contain:none
+  }
+  .topic-input-wrap:focus-within{border-color:#5b5b5b}
+  .topic-input-wrap .attachment-chips{grid-column:1/-1;grid-row:1;padding:4px 6px 8px}
+  .topic-input-wrap:has(.attachment-chips:not(.hidden)) .composer-editor-root,
+  .topic-input-wrap:has(.attachment-chips:not(.hidden)) .topic-footer{grid-row:2}
+  .topic-input-wrap .composer-editor-root{grid-column:2;grid-row:1;width:100%;min-width:0}
+  .topic-footer,.topic-footer .footer-left-group{display:contents}
+  .topic-footer .attach-btn{grid-column:1;grid-row:1}
+  .topic-footer .effort-picker{display:none}
+  .topic-footer .mobile-mic-btn{grid-column:3;grid-row:1}
+  .topic-footer .start-btn{grid-column:4;grid-row:1}
+  .topic-input-wrap .rich-composer,.topic-input-wrap .rich-composer>div:last-child{width:100%;min-width:0}
+  .topic-input-wrap .rich-composer .tiptap{
+    min-height:48px;max-height:150px;padding:12px 6px;font-size:16px;line-height:1.5
+  }
+  .topic-input-wrap .rich-composer .tiptap p.is-editor-empty:first-child::before{color:#a6a6a6}
+
+  .topic-input-wrap.composer-focused{
+    grid-template-columns:44px minmax(0,1fr) 40px 48px;
+    grid-template-rows:minmax(60px,auto) 44px;row-gap:2px;min-height:124px;
+    padding:8px;border-radius:28px;align-content:start
+  }
+  .topic-input-wrap.composer-focused .composer-editor-root{grid-column:1/-1;grid-row:1}
+  .topic-input-wrap.composer-focused .rich-composer .tiptap{min-height:60px;padding:11px 8px 7px}
+  .topic-input-wrap.composer-focused .topic-footer .attach-btn{grid-column:1;grid-row:2}
+  .topic-input-wrap.composer-focused .topic-footer .effort-picker{
+    display:block;position:static;grid-column:2;grid-row:2;justify-self:end
+  }
+  .topic-input-wrap.composer-focused .topic-footer .mobile-mic-btn{grid-column:3;grid-row:2}
+  .topic-input-wrap.composer-focused .topic-footer .start-btn{grid-column:4;grid-row:2}
+
+  /* Conversation composer mirrors the same shape while preserving its
+     existing in-flow keyboard and transcript geometry. */
+  .chat-view{margin-bottom:4px}
+  .chat-input-bar{padding:10px 12px max(8px,env(safe-area-inset-bottom,0px));background:#000}
+  .chat-input-wrap{
+    width:100%;min-height:64px;margin:0;padding:7px 8px;gap:2px;
+    border:1px solid #505050;border-radius:34px;background:#222;box-shadow:none;overflow:visible
+  }
+  .chat-input-wrap .chat-composer-body{
+    display:grid;grid-template-columns:44px minmax(0,1fr) 40px 48px;
+    grid-template-rows:minmax(48px,auto);column-gap:2px;align-items:center;
+    flex:1 1 100%;width:100%;min-width:0
+  }
+  .chat-input-wrap .composer-editor-root{grid-column:2;grid-row:1;width:100%;min-width:0}
+  .chat-input-wrap .chat-input-footer,.chat-input-wrap .chat-input-footer .footer-left-group{display:contents}
+  .chat-input-wrap .chat-input-footer .footer-left-group{grid-column:auto;grid-row:auto}
+  .chat-input-wrap .chat-input-footer .attach-btn{grid-column:1;grid-row:1}
+  .chat-input-wrap .chat-input-footer .mobile-mic-btn{grid-column:3;grid-row:1}
+  .chat-input-wrap .chat-input-footer .send-btn{grid-column:4;grid-row:1}
+  .chat-input-wrap .rich-composer[data-surface="chat"],
+  .chat-input-wrap .rich-composer[data-surface="chat"]>div:last-child{width:100%;min-height:48px}
+  .chat-input-wrap .rich-composer[data-surface="chat"] .tiptap{
+    min-height:48px;max-height:150px;padding:12px 6px;font-size:16px;line-height:1.5
+  }
+  .chat-input-wrap .rich-composer .tiptap p.is-editor-empty:first-child::before{color:#a6a6a6}
+  .chat-input-wrap.composer-focused{
+    min-height:124px;padding:8px;border-radius:28px;align-content:flex-start
+  }
+  .chat-input-wrap.composer-focused .chat-composer-body{
+    display:grid;grid-template-columns:44px minmax(0,1fr) 40px 48px;
+    grid-template-rows:minmax(60px,auto) 44px;row-gap:2px;
+    flex:1 1 100%;width:100%;min-width:100%;max-width:100%
+  }
+  .chat-input-wrap.composer-focused .composer-editor-root{grid-column:1/-1;grid-row:1}
+  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{min-height:60px;padding:11px 8px 7px}
+  .chat-input-wrap.composer-focused .chat-input-footer .attach-btn{grid-column:1;grid-row:2}
+  .chat-input-wrap.composer-focused .chat-input-footer .effort-picker{
+    display:block;position:static;grid-column:2;grid-row:2;justify-self:end;margin:0
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .mobile-mic-btn{grid-column:3;grid-row:2}
+  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{grid-column:4;grid-row:2}
+
+  .topic-input-wrap .attach-btn,.chat-input-wrap .attach-btn,
+  .mobile-mic-btn,.topic-input-wrap .effort-trigger,.chat-input-wrap .effort-trigger{
+    display:flex;align-items:center;justify-content:center;width:40px;height:40px;min-height:40px;
+    padding:0;border:0;border-radius:50%;background:transparent;color:#fff
+  }
+  .topic-input-wrap .attach-btn,.chat-input-wrap .attach-btn{width:44px;height:44px}
+  .topic-input-wrap .attach-btn svg,.chat-input-wrap .attach-btn svg{width:26px;height:26px;stroke-width:1.8}
+  .mobile-mic-btn svg{width:24px;height:24px}
+  .mobile-mic-btn.is-listening{color:#4b8dff;background:#343434}
+  .topic-input-wrap .effort-trigger .effort-label,
+  .chat-input-wrap .effort-trigger .effort-label,
+  .topic-input-wrap .effort-trigger .effort-caret,
+  .chat-input-wrap .effort-trigger .effort-caret{display:none}
+  .topic-input-wrap .mobile-effort-icon,.chat-input-wrap .mobile-effort-icon{display:block;width:28px;height:28px}
+  .topic-input-wrap .effort-picker[data-open="true"] .effort-menu,
+  .chat-input-wrap .effort-picker[data-open="true"] .effort-menu{bottom:48px}
+
+  .topic-footer .start-btn,.chat-input-footer .send-btn{
+    display:flex;align-items:center;justify-content:center;width:48px;height:48px;margin:0;padding:0;
+    border-radius:50%;background:#4b8dff;color:#fff;box-shadow:none;transform:none
+  }
+  .topic-footer .start-btn:hover,.topic-footer .start-btn.active,
+  .chat-input-footer .send-btn:hover,.chat-input-footer .send-btn.active{
+    background:#4b8dff;color:#fff;box-shadow:none;transform:none
+  }
+  .topic-footer .start-btn svg,.chat-input-footer .send-btn svg{width:20px;height:20px}
+  .topic-footer .start-btn:not(.active):not(.is-listening) svg,
+  .chat-input-footer .send-btn:not(.active):not(.chat-stop):not(.agent-stop):not(.is-listening) svg{display:none}
+  .topic-footer .start-btn:not(.active):not(.is-listening)::before,
+  .chat-input-footer .send-btn:not(.active):not(.chat-stop):not(.agent-stop):not(.is-listening)::before{
+    content:"";display:block;width:26px;height:26px;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M4 11v4M8.5 7.5v11M13 4.5v17M17.5 7.5v11M22 10v6'/%3E%3C/svg%3E") center/contain no-repeat
+  }
+  .topic-footer .start-btn.is-listening::before,
+  .chat-input-footer .send-btn.is-listening::before{
+    content:"";width:22px;height:22px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:loadingSpin .8s linear infinite
+  }
+
+  /* Reference-style floating tools card — deliberately not a bottom sheet. */
+  .composer-tools-desktop-items{display:none}
+  .composer-tools-mobile-items{display:block}
+  .composer-tools-menu{
+    left:12px!important;right:auto;top:auto!important;
+    bottom:calc(var(--keyboard-inset,0px) + 92px);
+    width:min(258px,calc(100vw - 24px));max-width:258px;max-height:none!important;
+    padding:10px;border:1px solid #4a4a4a;border-radius:28px;background:#242424;
+    box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:none;overflow:visible
+  }
+  .composer-tools-menu::before{display:none}
+  .composer-tools-mobile-item{
+    min-height:58px;padding:7px 10px;gap:14px;border-radius:18px;color:#fff;font-size:17px;font-weight:600
+  }
+  .composer-tools-mobile-item+.composer-tools-mobile-item{margin-top:2px}
+  .composer-tools-mobile-item .composer-tools-icon{
+    display:grid;place-items:center;width:44px;height:44px;flex:0 0 44px;border-radius:50%;
+    background:#3d3d3d;color:#fff
+  }
+  .composer-tools-mobile-item .composer-tools-icon svg{width:25px;height:25px}
+  .composer-tools-mobile-item .composer-tools-copy>span{color:inherit;font-weight:600}
+  .composer-tools-mobile-item.is-active{color:#4b8dff}
+  .composer-tools-mobile-item.is-active .composer-tools-icon{color:#4b8dff}
+  .composer-tools-check{width:24px;height:24px;margin-left:auto;color:#4b8dff}
+  body.composer-tools-open::after{display:none}
+}
+
+@media(max-width:420px){
+  .top-bar{padding-inline:12px}
+  #modeSegmentedTop,.top-mode-tabs{width:168px}
+  .main-inner{padding-inline:10px}
+  .mobile-starter-prompts{padding-inline:16px}
+  .mobile-starter-prompt{font-size:15px}
+  .chat-input-bar{padding-inline:10px}
+}
+
+@media(max-width:768px){
+  .topic-setup{height:auto;padding-bottom:6px}
+  .topic-input-wrap .rich-composer .tiptap p.is-editor-empty:first-child::before,
+  .chat-input-wrap .rich-composer .tiptap p.is-editor-empty:first-child::before{
+    content:"Ask Socrates";white-space:nowrap
+  }
+  .composer-tools-menu{animation:none;opacity:1}
+}
