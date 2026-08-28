@@ -24,12 +24,35 @@ declare global {
   }
 }
 
+function openMobileAttachmentPicker(
+  mode: ComposerMode | null,
+  kind: 'camera' | 'photos' | 'upload',
+): void {
+  const inputId = mode === 'topic' ? 'topicAttachInput' : 'attachInput';
+  const input = document.getElementById(inputId) as HTMLInputElement | null;
+  if (input) {
+    if (kind === 'camera') {
+      input.accept = 'image/*';
+      input.setAttribute('capture', 'environment');
+    } else if (kind === 'photos') {
+      input.accept = 'image/*';
+      input.removeAttribute('capture');
+    } else {
+      input.accept = 'image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf';
+      input.removeAttribute('capture');
+    }
+  }
+  getLegacyActions().composer.openAttachmentPicker(inputId);
+}
+
 function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null): void {
   const nav = getLegacyActions().navigation;
   const composer = getLegacyActions().composer;
   switch (action) {
+    case 'camera':
+    case 'photos':
     case 'upload':
-      composer.openAttachmentPicker(mode === 'topic' ? 'topicAttachInput' : 'attachInput');
+      openMobileAttachmentPicker(mode, action);
       return;
     case 'write':
       composer.composeAction();
@@ -44,6 +67,9 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       return;
     case 'deepResearch':
       composer.deepResearchAction();
+      return;
+    case 'extensiveThinking':
+      composer.toggleExtensionByKey(action);
       return;
     case 'analyze':
       composer.analyzeAction();
