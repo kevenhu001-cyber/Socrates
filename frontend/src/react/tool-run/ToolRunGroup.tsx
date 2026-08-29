@@ -17,7 +17,7 @@
 import { Fragment, useMemo, useState } from 'react';
 
 import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
-import { formatSeconds, tf } from './labels.js';
+import { formatSeconds } from './labels.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import {
   groupViewOf,
@@ -108,29 +108,6 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
         />
       </button>
 
-      {/* Collapsed, the file-count chip is the one-glance answer to "what did
-          it touch" and Review is what opens the list; expanded, the paths are
-          already in the body, so the chip gets out of the way. */}
-      {view.fileSummary && !open && showsFileChip(view.state) ? (
-        <div className="tool-inline-file-summary">
-          <span
-            className="tool-inline-file-summary-icon"
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: STROKE_ICONS.fileChange }}
-          />
-          <span className="tool-inline-file-summary-count">
-            {tf('tool.doneWriteFiles', 'Edited {n} files', { n: view.fileSummary.count })}
-          </span>
-          <button
-            type="button"
-            className="tool-inline-file-summary-review"
-            onClick={() => setOpen(true)}
-          >
-            {tf('tool.fileSummaryReview', 'Review changes')}
-          </button>
-        </div>
-      ) : null}
-
       <div className="tool-run-list" hidden={!open}>
         {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
         {segment.members.map((call, index) => (
@@ -162,11 +139,6 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
       ))}
     </section>
   );
-}
-
-/** The file chip reports work that landed, so failures and stops skip it. */
-function showsFileChip(state: ToolRunState): boolean {
-  return state === 'done' || state === 'running' || state === 'awaiting';
 }
 
 export default ToolRunGroup;

@@ -4615,43 +4615,6 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   transition:background-color 1.2s ease-out;
 }
 
-/* P_tool_file_summary — compact settled card for a file-change group
-   (Qoder "Edited N files" card): rounded sunken shell, icon in a
-   rounded square, count, and a quiet review pill. */
-.tool-inline-file-summary{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  width:fit-content;
-  max-width:100%;
-  margin:4px 0 2px;
-  padding:6px 10px;
-  border-radius:8px;
-  background:var(--inline-sunken-bg);
-  color:hsl(var(--text-300));
-  font-size:12.5px;
-}
-.tool-inline-file-summary-icon{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:20px;height:20px;flex:0 0 auto;border-radius:5px;
-  background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000));
-}
-.tool-inline-file-summary-icon svg{width:13px;height:13px;display:block}
-.tool-inline-file-summary-count{font-weight:550;color:hsl(var(--text-200))}
-.tool-inline-file-summary-review{
-  margin-left:6px;
-  padding:3px 9px;
-  border:1px solid hsl(var(--border-300)/.35);
-  border-radius:999px;
-  background:transparent;
-  font-size:11px;
-  color:hsl(var(--text-400));
-  cursor:pointer;
-  transition:background .14s ease,color .14s ease,border-color .14s ease;
-}
-.tool-inline-file-summary-review:hover{background:var(--inline-hover-bg);color:hsl(var(--text-200))}
-.tool-inline-file-summary-review:focus-visible{outline:2px solid hsl(var(--accent-000)/.55);outline-offset:2px}
-
 /* P_tool-inline-reduced-motion — static, half-opacity cues replace the
    spinner / shimmer / settle animation so reduced-motion users still
    see state without movement. */
@@ -8150,4 +8113,124 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 /* A group is one item of the turn's flow, so it takes the same 12px slot as a
    lone row; the live rows that render outside the header keep their own. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-group{margin:12px 0}
-.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-file-summary{margin:6px 0 0 27px}
+
+/* ═══ Cowork-style landing reference ══════════════════════════════════
+   A restrained desktop work surface: compact navigation, a centered hero,
+   one two-tier composer, and lightweight starter ideas. */
+#appShell{
+  --cowork-page:0 0% 7.4%;
+  --cowork-sidebar:0 0% 5.8%;
+  --cowork-surface:0 0% 12.3%;
+  --cowork-surface-active:0 0% 20%;
+  --cowork-line:0 0% 25%;
+  --cowork-text:0 0% 88%;
+  --cowork-muted:0 0% 54%;
+}
+[data-mode=dark] #appShell,
+[data-mode=dark] .main-content,
+[data-mode=dark] .main-bg{background:hsl(var(--cowork-page))}
+[data-mode=dark] .main-bg{background-image:none;opacity:1}
+
+@media(min-width:769px){
+  .sidebar{
+    width:288px;
+    min-width:288px;
+    background:hsl(var(--cowork-sidebar));
+    border-right:1px solid hsl(var(--cowork-line)/.42);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+  .sidebar-header{min-height:48px;padding:8px 10px 6px 13px}
+  .sidebar-logo{font-family:var(--font-sans);font-size:14px;font-weight:600;letter-spacing:-.02em}
+  .top-bar{min-height:48px;padding:6px 16px;border-bottom:0;background:hsl(var(--cowork-page))}
+  .top-mode-tabs{display:none}
+  .sidebar-mode-switch{display:flex;align-items:center;width:272px;height:36px;margin:0 8px 8px;padding:3px;box-sizing:border-box;border-radius:7px;background:hsl(var(--cowork-surface));flex-shrink:0}
+  .sidebar-mode-switch .app-mode-toggle{flex:1;height:30px;border:0;border-radius:6px;color:hsl(var(--cowork-muted));background:transparent;font:500 13px var(--font-sans);cursor:pointer}
+  .sidebar-mode-switch .app-mode-toggle.active{color:hsl(var(--cowork-text));background:hsl(var(--cowork-surface-active));box-shadow:inset 0 0 0 1px hsl(var(--cowork-line)/.4)}
+  .sidebar-nav{padding:0 8px 4px;gap:1px}
+  .sidebar-nav-btn{min-height:34px;padding:7px 10px;border-radius:6px;color:hsl(var(--cowork-muted));font-size:13px}
+  #navNew{order:1;background:hsl(var(--cowork-surface-active));color:hsl(var(--cowork-text))}
+  #navProjects{order:2}
+  #navLibrary{order:3}
+  #navScheduled{order:4}
+  #navMore{order:5}
+  #navPlugins,#navExam{display:none}
+  .sidebar-search-row{display:none}
+  .recents-panel{padding:30px 10px 0}
+  .recents-title{font-size:11px;letter-spacing:0;text-transform:none;color:hsl(var(--cowork-muted))}
+  .recents-title{font-size:0}
+  .recents-title::after{content:"Tasks";font-size:11px}
+  .recents-filter-chips{display:none}
+  .recents-time-label{display:none}
+  .recent-item{border-radius:6px;padding:7px 9px}
+  .recent-item-text{font-size:12px;color:hsl(var(--cowork-muted))}
+  .recent-item-meta,.recent-mode-badge{display:none}
+  .sidebar-footer{min-height:52px;padding:7px 10px;border-top:1px solid hsl(var(--cowork-line)/.3)}
+}
+
+.main-inner:has(#topicSetup:not(.hidden)){width:100%;max-width:none;padding:0}
+.topic-setup{
+  box-sizing:border-box;
+  justify-content:flex-start;
+  gap:0;
+  padding:0 20px 28px;
+  overflow-y:auto;
+}
+.topic-title.greeting{
+  position:relative;
+  margin:298px 0 0;
+  padding:0 0 0 42px;
+  font-family:var(--font-display);
+  font-size:42px;
+  font-weight:400;
+  line-height:1.12;
+  letter-spacing:-.035em;
+  color:hsl(var(--cowork-text));
+}
+.topic-title.greeting::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:50%;
+  width:34px;
+  height:34px;
+  border-radius:5px;
+  background:url('/logo.png') center/contain no-repeat;
+  transform:translateY(-50%);
+}
+.topic-sub{display:none}
+.topic-input-wrap{
+  width:min(100%,680px);
+  max-width:680px;
+  margin-top:40px;
+  border:1px solid hsl(var(--cowork-line));
+  border-radius:20px;
+  overflow:hidden;
+  color:hsl(var(--cowork-text));
+  background:hsl(var(--cowork-surface));
+  box-shadow:none;
+}
+.topic-input-wrap:hover{border-color:hsl(var(--cowork-muted)/.8)}
+.topic-input-wrap.composer-focused,.topic-input-wrap:focus-within{border-color:hsl(var(--cowork-muted));box-shadow:0 0 0 1px hsl(var(--cowork-line)/.45)}
+.topic-input-wrap .rich-composer .tiptap,
+.topic-input-wrap .rich-composer-editor{min-height:62px;padding:17px 18px 8px;font-size:15px;line-height:24px}
+.topic-footer{min-height:48px;padding:5px 10px 8px}
+.topic-footer .footer-left-group{gap:4px}
+.topic-input-wrap .start-btn{width:36px;min-width:36px;height:36px;min-height:36px;border-radius:10px}
+.home-ideas{width:min(100%,680px);margin-top:36px;display:flex;flex-direction:column;gap:2px}
+.home-ideas-label{padding:0 18px 10px;color:hsl(var(--cowork-muted));font-size:11px}
+.home-idea{display:flex;align-items:center;gap:16px;min-height:44px;padding:8px 18px;border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;font:500 14px var(--font-sans);text-align:left;cursor:pointer}
+.home-idea:hover{background:hsl(var(--cowork-surface))}
+.home-idea img{width:22px;height:22px;object-fit:contain;filter:grayscale(1);opacity:.45}
+#topicDisclaimer{display:none}
+
+body[data-conversation-active="true"] .home-ideas{display:none}
+
+@media(max-width:768px){
+  .topic-setup{padding:clamp(96px,17vh,140px) 16px max(24px,env(safe-area-inset-bottom,0px));overflow-y:auto}
+  .topic-title.greeting{margin:0;padding-left:0;font-size:32px;text-align:center}
+  .topic-title.greeting::before{display:none}
+  .topic-input-wrap{margin-top:28px;border-radius:24px}
+  .home-ideas{margin-top:24px}
+  .home-idea{padding-inline:10px}
+}

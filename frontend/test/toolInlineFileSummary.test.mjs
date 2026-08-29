@@ -22,7 +22,7 @@ test('single Write row settles without a file summary card', () => {
   assert.equal(row.querySelector('.tool-inline-file-summary'), null);
 });
 
-test('settled write group with distinct paths gets the Edited N files card', () => {
+test('settled write group stays a single summary row without a nested file card', () => {
   const row = createInlineToolRow({ id: 'g1', name: 'Write', input: { file_path: '/a.js' } });
   settleInlineToolGroupRow(row, [
     { id: 'g1', name: 'Write', input: { file_path: '/a.js' }, result: { ok: true } },
@@ -30,14 +30,7 @@ test('settled write group with distinct paths gets the Edited N files card', () 
     { id: 'g3', name: 'Write', input: { file_path: '/a.js' }, result: { ok: true } },
   ]);
   assert.equal(row.dataset.state, 'done');
-  const card = row.querySelector('.tool-inline-file-summary');
-  assert.ok(card, 'expected a file summary card for two distinct paths');
-  const count = card.querySelector('.tool-inline-file-summary-count');
-  assert.match(count.textContent, /2/, 'expected the distinct-path count in the label');
-  const review = card.querySelector('.tool-inline-file-summary-review');
-  assert.ok(review, 'expected a review button');
-  review.click();
-  assert.ok(row.hasAttribute('open'), 'review click expands the row detail');
+  assert.equal(row.querySelector('.tool-inline-file-summary'), null);
 });
 
 test('failed write group does not get a summary card', () => {

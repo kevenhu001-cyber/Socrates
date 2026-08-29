@@ -105,6 +105,47 @@ test('a call at offset 0 still gets its row instead of an empty lead segment', (
   assert.deepEqual(layout.map((s) => s.kind), ['group', 'text']);
 });
 
+test('moves a mid-sentence tool boundary to the end of a complete Chinese sentence', () => {
+  const text = '我先查一下相关资料。后续说明。';
+  const layout = buildTurnLayout(text, [
+    call({ id: 'search', textOffset: '我先查一下'.length, output: 'ok', durationMs: 3 }),
+  ]);
+  assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.equal(layout[0].text, '我先查一下相关资料。');
+  assert.equal(layout[1].members[0].id, 'search');
+  assert.equal(layout[2].text, '后续说明。');
+});
+
+test('keeps consecutive calls together after normalizing the sentence boundary', () => {
+  const text = '我先查一下相关资料。结论如下。';
+  const offset = '我先查一下'.length;
+  const layout = buildTurnLayout(text, [
+    call({ id: 'search', textOffset: offset, output: 'ok', durationMs: 3 }),
+    call({ id: 'fetch', name: 'web_fetch', textOffset: offset, output: 'ok', durationMs: 3 }),
+  ]);
+  assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.equal(layout[1].members.length, 2);
+});
+
+test('keeps a live unfinished sentence ahead of its tool row', () => {
+  const text = '我先查一下相关资料';
+  const layout = buildTurnLayout(text, [
+    call({ id: 'search', textOffset: '我先查一下'.length, _run: { phase: 'running' } }),
+  ], { inlineThink: true, deferOpenSentence: true });
+  assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group']);
+  assert.equal(layout[0].text, text);
+});
+
+test('keeps a tool boundary after sentence punctuation and its closing quote', () => {
+  const sentence = '我说：“先查资料。”';
+  const layout = buildTurnLayout(sentence + '继续。', [
+    call({ id: 'search', textOffset: sentence.length, output: 'ok', durationMs: 3 }),
+  ]);
+  assert.equal(layout[0].text, sentence);
+  assert.equal(layout[1].kind, 'group');
+  assert.equal(layout[2].text, '继续。');
+});
+
 /* ── thinking ────────────────────────────────────────────────────────── */
 
 test('extracts thinking spans, including one the stream never closed', () => {

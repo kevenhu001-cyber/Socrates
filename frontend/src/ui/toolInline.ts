@@ -704,7 +704,6 @@ export function settleInlineToolGroupRow(
     try { delete row.dataset.retryable; } catch (_) { /* ignore */ }
   }
   renderInlineGroupDetails(row, members, state);
-  maybeAppendFileSummaryCard(row, members);
 }
 
 /**
@@ -779,50 +778,6 @@ function settleIconCrossfade(slot: Element, html: string): void {
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(swap);
   else swap();
-}
-
-function filePathOf(input: unknown): string {
-  if (!input || typeof input !== 'object') return '';
-  const rec = input as Record<string, unknown>;
-  const p = rec.file_path ?? rec.path;
-  return typeof p === 'string' && p.trim() ? p.trim() : '';
-}
-
-/* P_tool_file_summary — settled write-category rows with several
-   distinct file paths get the compact "Edited N files" card (Qoder
-   reference). Single-file rows keep the plain line. The review button
-   just expands the row's own detail panel. */
-export function maybeAppendFileSummaryCard(row: HTMLElement, members?: InlineToolGroupMember[]): void {
-  if (toolCategory(row.dataset.tool || '') !== 'write') return;
-  if (row.dataset.state === 'error' || row.dataset.state === 'stopped') return;
-  if (row.querySelector('.tool-inline-file-summary')) return;
-  const paths = new Set<string>();
-  if (members && members.length) {
-    for (const m of members) {
-      if (m.name !== 'Write' && m.name !== 'Edit') continue;
-      const p = filePathOf(m.input);
-      if (p) paths.add(p);
-    }
-  } else {
-    const p = filePathOf((row as HTMLElement & { _toolInput?: unknown })._toolInput);
-    if (p) paths.add(p);
-  }
-  if (paths.size < 2) return;
-  const card = document.createElement('div');
-  card.className = 'tool-inline-file-summary';
-  card.innerHTML =
-    '<span class="tool-inline-file-summary-icon" aria-hidden="true">' + STROKE_ICONS.fileChange + '</span>'
-    + '<span class="tool-inline-file-summary-count">'
-    + esc(translate('tool.doneWriteFiles', 'Edited {n} files').replace('{n}', String(paths.size)))
-    + '</span>'
-    + '<button type="button" class="tool-inline-file-summary-review">'
-    + esc(translate('tool.fileSummaryReview', 'Review changes'))
-    + '</button>';
-  const review = card.querySelector('.tool-inline-file-summary-review');
-  if (review) review.addEventListener('click', () => { row.setAttribute('open', ''); });
-  const detail = row.querySelector('.tool-inline-detail');
-  if (detail && detail.parentNode === row) row.insertBefore(card, detail);
-  else row.appendChild(card);
 }
 
 function durationText(result: InlineToolResult | null): string {
@@ -1021,5 +976,4 @@ export function settleInlineToolRow(
   }
   const input = (row as HTMLElement & { _toolInput?: unknown })._toolInput;
   renderInlineDetails(row, input, result, state);
-  maybeAppendFileSummaryCard(row);
 }

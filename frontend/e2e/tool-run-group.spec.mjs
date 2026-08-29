@@ -274,19 +274,15 @@ test('a lone call gets no aggregate header, and its failure keeps a visible Retr
     .toContainText('SEARCH_TIMEOUT');
 });
 
-test('a write run aggregates under one header with an Edit N files chip that opens it', async ({ page }) => {
+test('a write run uses one compact summary row that opens its file details', async ({ page }) => {
   const body = await loadFixtureSession(page);
   const write = body.locator('.tool-run-group').nth(1);
   await expect(write).toHaveAttribute('data-state', 'complete');
   await expect(write.locator('.tool-run-summary-label')).toHaveText('Edited moe.py + router_v2.py');
 
-  const chip = write.locator('.tool-inline-file-summary');
-  await expect(chip).toHaveCount(1);
-  await expect(chip.locator('.tool-inline-file-summary-count')).toHaveText('Edited 2 files');
-  await chip.locator('.tool-inline-file-summary-review').click();
-  await expect(write.locator('.tool-run-list')).not.toHaveAttribute('hidden', '');
-  /* The chip is a collapsed-state affordance; expanded, the path list is there. */
   await expect(write.locator('.tool-inline-file-summary')).toHaveCount(0);
+  await write.locator('.tool-run-summary').click();
+  await expect(write.locator('.tool-run-list')).not.toHaveAttribute('hidden', '');
   await expect(write.locator('[data-kind="files"] .tool-inline-detail-value'))
     .toContainText('router_v2.py');
   await expect(write.locator('.tool-inline[data-tcid="w1"] .tool-inline-label'))

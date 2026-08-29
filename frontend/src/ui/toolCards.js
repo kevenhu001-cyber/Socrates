@@ -1103,55 +1103,8 @@ function appendInlineFileLink(fileId, mimeType, url, out, t, displayName) {
   out.appendChild(a);
 }
 
-/* P_tool_file_summary — history/share parity: after a run of adjacent
-   Write/Edit cards, insert the same compact "Edited N files" card the
-   live inline rows show. Cards carry data-file-path stamped by
-   appendToolModule. */
+/* Compatibility hook for older history/share callers. File changes now use
+   their existing summary row, so a second nested card is intentionally absent. */
 export function appendFileChangeSummaryCards(root) {
-  if (!root || typeof root.querySelectorAll !== "function") return;
-  const cards = Array.prototype.slice.call(root.querySelectorAll(".agent-tool-card[data-file-path]"));
-  if (!cards.length) return;
-  let group = [];
-  const flush = function () {
-    if (group.length >= 2) {
-      const seen = {};
-      let count = 0;
-      group.forEach(function (c) {
-        const p = c.dataset.filePath || "";
-        if (p && !seen[p]) { seen[p] = 1; count++; }
-      });
-      if (count >= 2) {
-        const last = group[group.length - 1];
-        const card = document.createElement("div");
-        card.className = "tool-inline-file-summary";
-        card.innerHTML =
-          '<span class="tool-inline-file-summary-icon" aria-hidden="true">' + STROKE_ICONS.fileChange + "</span>"
-          + '<span class="tool-inline-file-summary-count">'
-          + esc(trTool("tool.doneWriteFiles", "Edited {n} files", { n: count }))
-          + "</span>"
-          + '<button type="button" class="tool-inline-file-summary-review">'
-          + esc(trTool("tool.fileSummaryReview", "Review changes"))
-          + "</button>";
-        const review = card.querySelector(".tool-inline-file-summary-review");
-        if (review) review.addEventListener("click", function () {
-          group.forEach(function (c) {
-            c.classList.add("open");
-            const head = c.querySelector(".agent-tool-head");
-            const bodyEl = c.querySelector(".agent-tool-body");
-            if (head) head.setAttribute("aria-expanded", "true");
-            if (bodyEl) bodyEl.hidden = false;
-          });
-        });
-        last.insertAdjacentElement("afterend", card);
-      }
-    }
-    group = [];
-  };
-  for (let i = 0; i < cards.length; i++) {
-    const card = cards[i];
-    if (group.length && group[group.length - 1].nextElementSibling !== card) flush();
-    if ((card.dataset.toolState || "") === "error") { flush(); continue; }
-    group.push(card);
-  }
-  flush();
+  void root;
 }
