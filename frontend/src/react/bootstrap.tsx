@@ -24,6 +24,8 @@ import { SidebarHeader } from './sidebar-chrome/SidebarHeader';
 import { SidebarFooter } from './sidebar-chrome/SidebarFooter';
 import { mountSessionList } from './session-list';
 import { mountMessageList } from './message-list';
+import { mountAssistantTurn, releaseAssistantTurns } from './tool-run';
+import type { LegacyChatMessage } from './types/domain';
 import { RichComposer } from './composer-input';
 import { WorkflowLayer } from './extensions/WorkflowLayer';
 import { installThinkingPanelBridge, mountThinkingPanel } from './thinking-panel';
@@ -93,6 +95,15 @@ function SendButtonContent() {
  * UI and event surface are unchanged.
  */
 export function bootstrapReactCompatibilityRuntime(): Root {
+  /* Published before anything can fail: the read-only share view renders its
+     transcript from auth/boot.js's `?share=` branch, which needs this bridge to
+     lay out tool rows declaratively. main.js has no top-level await, so this
+     module body runs to completion before that branch's first fetch resolves —
+     and ui/share.js degrades to plain prose if the bridge is ever missing. */
+  window.__socratesMountAssistantTurn = (container, message, options) =>
+    mountAssistantTurn(container, message as LegacyChatMessage, options);
+  window.__socratesReleaseAssistantTurns = releaseAssistantTurns;
+
   const pill = document.getElementById(NEW_REPLY_PILL_ID);
   const sendButtonContent = document.getElementById(SEND_BUTTON_CONTENT_ID);
   if (!pill) {

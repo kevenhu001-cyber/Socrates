@@ -18,6 +18,25 @@ export async function authBoot(){
   /* Prime the CSRF cookie before any API calls. */
   try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
   var params=new URLSearchParams(location.search);
+  /* P_local-dev-bypass — when the app is served from localhost (vite dev
+   * server, `npm run dev`) append `?dev=1` to skip the sign-in flow.
+   * The hostname guard means this branch is unreachable on any deployed
+   * host, so the bypass cannot be exercised in production. */
+  if(params.get("dev")==="1"&&/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)){
+    history.replaceState(null,"",location.pathname+(params.get("next")?"?next="+encodeURIComponent(params.get("next")):""));
+    try{
+      var BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
+      if(BEAGLE_BUILT_IN&&!BEAGLE_BUILT_IN.key){BEAGLE_BUILT_IN.key="local";BEAGLE_BUILT_IN.model="local";}
+      window.SERVER_HAS_BEAGLE_KEY=true;
+    }catch(_){}
+    var devUser={id:"local-dev",name:"Local Dev",email:"dev@local",plan:"local",isLocal:true};
+    if(typeof window.setCurrentUser==="function")window.setCurrentUser(devUser);
+    else window.CURRENT_USER=devUser;
+    try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
+    if(typeof window.afterAuthEnter==="function")try{await window.afterAuthEnter()}catch(_){}
+    window.hideGate&&window.hideGate();
+    return;
+  }
   var oauthError=params.get("oauth_error");
   if(oauthError){
     history.replaceState(null,"",location.pathname);

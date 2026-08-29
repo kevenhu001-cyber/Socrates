@@ -11,12 +11,13 @@ import type { LegacyChatMessage } from '../types/domain';
 
 const MSG_LIST_ID = 'msgList';
 
-interface MessageListProps {
-  omitEntryIds?: ReadonlySet<string>;
-}
-
-function isFinalized(entry: LegacyChatMessage): boolean {
-  if (typeof entry.type === 'string' && entry.type === 'streaming') return false;
+function isRenderable(entry: LegacyChatMessage): boolean {
+  /* A streaming entry is renderable as soon as the stream starts: React owns
+     the live turn (see react/tool-run/AssistantTurn's `live` mode), which is
+     what the status line, the running tool row, and the arriving tail all
+     paint from. `chat/toolRuntime.ts` keeps `toolCalls[]` current and main.js
+     keeps `rawText` + `_liveStatus` current on this same object. */
+  if (typeof entry.type === 'string' && entry.type === 'streaming') return true;
   if (typeof entry.html === 'string' && entry.html.length > 0) return true;
   if (typeof entry.rawText === 'string' && entry.rawText.length > 0) return true;
   return false;
@@ -29,39 +30,40 @@ function entryId(entry: LegacyChatMessage, fallback: string): string {
 }
 
 let visibleMessagesCache: ReadonlyArray<LegacyChatMessage> = Object.freeze([]);
+let visibleMessagesRevision = -1;
 
 function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
+  const snapshot = getChatRuntimeSnapshot();
+  /* The store's revision — not entry identity — is the invalidation signal.
+     The legacy pipeline mutates message objects in place (streamed text,
+     tool calls settling), so comparing entries would hand React back the
+     same array after a publish and the bubble would freeze mid-stream.
+     Returning a stable value while the revision is untouched is what
+     `useSyncExternalStore` requires of a snapshot reader. */
+  if (visibleMessagesRevision === snapshot.revision) return visibleMessagesCache;
+
   const seen = new Set<string>();
   const next: LegacyChatMessage[] = [];
 
-  getChatRuntimeSnapshot().messages.forEach((entry, idx) => {
+  snapshot.messages.forEach((entry, idx) => {
     const id = entryId(entry, `idx-${idx}`);
-    if (!isFinalized(entry) || seen.has(id)) return;
+    if (!isRenderable(entry) || seen.has(id)) return;
     seen.add(id);
     next.push(entry);
   });
 
-  if (
-    next.length === visibleMessagesCache.length
-    && next.every((entry, index) => entry === visibleMessagesCache[index])
-  ) {
-    return visibleMessagesCache;
-  }
-
+  visibleMessagesRevision = snapshot.revision;
   visibleMessagesCache = Object.freeze(next);
   return visibleMessagesCache;
 }
 
-function MessageList({ omitEntryIds }: MessageListProps) {
+function MessageList() {
   const visibleMessages = useSyncExternalStore(
     subscribeToChatRuntime,
     getVisibleMessagesSnapshot,
     getVisibleMessagesSnapshot,
   );
-  const items = omitEntryIds?.size
-    ? visibleMessages.filter((entry, idx) => !omitEntryIds.has(entryId(entry, `idx-${idx}`)))
-    : visibleMessages;
-
+  const items = visibleMessages;
   // Legacy addMessage schedules its scroll before React has committed the
   // new bubble. On a keyboard-constrained viewport that leaves the transcript
   // one bubble above the true bottom. Scroll after this list's DOM commit,
@@ -90,7 +92,17 @@ function MessageList({ omitEntryIds }: MessageListProps) {
     <>
       {items.map((entry, idx) => {
         const id = entryId(entry, `idx-${idx}`);
-        return <MessageItem key={id} message={entry} />;
+        return (
+          <MessageItem
+            key={id}
+            message={entry}
+            /* Both are read from mutable legacy state. Passing them as props
+               is what lets the memoized row notice a change that left every
+               object identity intact. */
+            textLength={typeof entry.rawText === 'string' ? entry.rawText.length : 0}
+            toolRevision={entry._toolRunRev || 0}
+          />
+        );
       })}
     </>
   );
@@ -106,10 +118,11 @@ function MessageList({ omitEntryIds }: MessageListProps) {
  * direct DOM mutation. The legacy state push remains the authoritative
  * write; React renders from the chat runtime snapshot.
  *
- * Streaming bubbles (`type === 'streaming'`) stay owned by the
- * legacy streaming pipeline until they finish; React re-renders them
- * once their `html` is set. The `omitEntryIds` set suppresses React's
- * render for in-flight streams during the transition window.
+ * A streaming bubble belongs to React too: the live turn renders from the
+ * same `rawText` + `toolCalls` as a finalized one, with the chrome (status
+ * line, running row) coming from `_liveStatus`. When the runtime is not
+ * mounted, `main.js` keeps painting its own bubble — every legacy writer
+ * checks the dataset flags this function sets before that hand-off.
  */
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
@@ -122,8 +135,7 @@ export function mountMessageList(): { root: Root | null } {
   container.setAttribute('data-react-migration-runtime', 'msg-list');
 
   const root = createRoot(container);
-  const omit = buildOmitSet();
-  root.render(<ErrorBoundary><MessageList omitEntryIds={omit} /></ErrorBoundary>);
+  root.render(<ErrorBoundary><MessageList /></ErrorBoundary>);
 
   window.__socratesReleaseMsgListReact = () => {
     try { root.unmount(); } catch (_) { /* already unmounted */ }
@@ -133,16 +145,6 @@ export function mountMessageList(): { root: Root | null } {
   };
 
   return { root };
-}
-
-function buildOmitSet(): ReadonlySet<string> {
-  try {
-    const raw = window.__socratesActiveStreamIds;
-    if (Array.isArray(raw)) {
-      return new Set(raw.filter((s): s is string => typeof s === 'string'));
-    }
-  } catch (_) { /* no-op */ }
-  return new Set<string>();
 }
 
 export { MessageList };

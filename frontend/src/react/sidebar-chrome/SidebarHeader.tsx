@@ -18,8 +18,10 @@ export function SidebarHeader() {
   return (
     <>
       <div className="sidebar-logo">
-        <img src="/logo.png" width="18" height="18" alt="" style={{ borderRadius: 3, flexShrink: 0 }} />
-        <span><em>S</em>ocrates</span>
+        <span>Socrates</span>
+        <svg className="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m7 10 5 5 5-5" />
+        </svg>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <button

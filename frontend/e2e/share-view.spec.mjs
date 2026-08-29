@@ -6,6 +6,8 @@
 //   2. createShareLink / revokeShareLink use the per-session endpoint
 //      /api/sessions/:id/share (matches server contract + OpenAPI).
 //   3. Private visibility is rejected with 403.
+//   4. A turn that recorded tool split points is laid out by the same
+//      declarative renderer the chat uses — read-only, so no Retry.
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle, login } from './_lib.mjs';
@@ -25,6 +27,36 @@ const SHARED_VIZ = {
     yLabel: 'relative force',
   },
 };
+
+/* The declarative turn's fixture. `rawText` is what the public projection now
+   carries (server/src/routes/publicShares.ts) and `textOffset` indexes into it,
+   so this is the pair the renderer needs to place a row. */
+const SHARED_RAW = 'Gravity pulls masses together.\n\nIt weakens with the square of distance.';
+const SHARED_CALLS = [
+  {
+    id: 'shared-search',
+    name: 'web_search',
+    input: { query: 'inverse square law' },
+    output: '2 results',
+    results: [
+      { title: 'Newton', url: 'https://example.test/newton', snippet: 'Principia' },
+      { title: 'Square', url: 'https://example.test/square', snippet: 'Geometry' },
+    ],
+    durationMs: 900,
+    status: 'completed',
+    textOffset: 0,
+  },
+  {
+    id: 'shared-fetch',
+    name: 'web_fetch',
+    input: { url: 'https://arxiv.org/abs/gravity' },
+    output: 'Fetched 1 page',
+    durationMs: 400,
+    status: 'completed',
+    textOffset: 0,
+  },
+];
+
 const SHARED_PAYLOAD = {
   id: SESSION_ID,
   title: 'Shared conversation',
@@ -47,6 +79,14 @@ const SHARED_PAYLOAD = {
         output: 'Visualization ready',
         artifacts: [],
       }],
+    },
+    {
+      id: 'm-3',
+      role: 'assistant',
+      content: '<p>Gravity pulls masses together.</p><p>It weakens with the square of distance.</p>',
+      rawText: SHARED_RAW,
+      toolCalls: SHARED_CALLS,
+      createdAt: '2026-01-01T00:00:03Z',
     },
   ],
 };
@@ -75,7 +115,7 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
 
   // Shared view is rendered; the read-only messages are visible.
   const msgList = page.locator('#msgList .msg');
-  await expect(msgList).toHaveCount(2);
+  await expect(msgList).toHaveCount(3);
   await expect(msgList.nth(0)).toContainText('What is gravity?');
   await expect(msgList.nth(1)).toContainText('Gravity is a force');
   await expect(page.locator('.visualization-card')).toContainText('Shared gravity curve');
@@ -119,8 +159,65 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
   expect(requests.some((r) => r.includes('/api/auth/me'))).toBe(false);
 });
 
-test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
+/* The shared view must look like the conversation it came from: same rows, same
+   grouping, same two-tier detail — and none of the controls that would let a
+   reader act on someone else's turn. Copy is asserted in English because the
+   app defaults to zh. */
+test('a shared turn lays its tool rows out declaratively, read-only', async ({ page }) => {
   await mockAuthedApp(page);
+  await page.addInitScript(() => {
+    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+  });
+  await mockShareRoute(page);
+  await page.goto('/?share=' + encodeURIComponent(SHARE_TOKEN));
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  const turn = page.locator('#msgList .msg.assistant').last();
+  const body = turn.locator('.msg-body');
+  /* The scope class is what re-enables the row meta / chevron the compact
+     activity-row pass hides — without it the turn renders but reads inert. */
+  await expect(body).toHaveClass(/is-declarative/);
+
+  // Two consecutive calls of the same category → one aggregate header.
+  await expect(body.locator('.tool-run-group')).toHaveCount(1);
+  await expect(body.locator('.tool-run-summary-meta')).toContainText('2 actions');
+  await expect(body.locator('.tool-run-list')).toBeHidden();
+  await expect(body.locator('.tool-inline')).toHaveCount(2);
+
+  // Both calls split at offset 0, so the run is the first thing in the turn
+  // and the answer prose follows it as one segment — never re-baked rows.
+  // (Compared whitespace-collapsed: the markdown renderer's block output
+  // separates paragraphs with one newline in textContent, not the source's two.)
+  const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
+  const order = await body.evaluate((el) => Array.from(el.children).map((node) => (
+    node.classList.contains('tool-run-prose')
+      ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
+      : node.classList.contains('tool-run-group') ? 'group' : 'other'
+  )));
+  expect(order).toEqual(['group', 'text:' + oneLine(SHARED_RAW)]);
+
+  await body.locator('.tool-run-summary').click();
+  await expect(body.locator('.tool-inline-label')).toHaveText([
+    'Searched "inverse square law"',
+    'Read arxiv.org',
+  ]);
+  await body.locator('.tool-inline[data-tcid="shared-search"] summary').click();
+  /* Scoped to the row: the aggregate's merged list is showing the same two
+     sources one level up, and that duplication is the point of the header. */
+  await expect(body.locator('.tool-inline[data-tcid="shared-search"] .tool-inline-src-title')).toHaveCount(2);
+
+  /* Read-only: nothing in the turn can retry a call or answer a permission
+     prompt, and the legacy card chrome must not come back alongside. */
+  await expect(body.locator('.tool-inline-retry')).toHaveCount(0);
+  await expect(body.locator('.agent-tool-card')).toHaveCount(0);
+
+  // The stylesheet's declarative block was authored against the chat surface;
+  // this is the share view's own frame of the same turn, expanded.
+  await body.screenshot({ path: 'test-results/share-turn-declarative.png' });
+});
+
+test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {  await mockAuthedApp(page);
   const calls = [];
   await page.route('**/api/**/sessions/*/share', async (route) => {
     calls.push(route.request().method() + ' ' + route.request().url());

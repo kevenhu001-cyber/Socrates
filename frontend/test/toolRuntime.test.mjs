@@ -882,3 +882,92 @@ test('a failed agent run marks the section failed', () => {
   assert.equal(body.querySelector('.agent-run').dataset.state, 'failed');
   runtime.dispose();
 });
+
+/* ── P_tool-declarative-refresh ──────────────────────────────────────
+   The declarative renderer draws rows out of message.toolCalls, which this
+   runtime mutates in place. Two consequences, both regression-pinned here:
+   the data has to be complete at the moment it is chosen (not at finish()),
+   and every mutation has to announce itself, because neither the message
+   object nor the toolCalls array changes identity. */
+
+function publishHarness(offset) {
+  const events = [];
+  globalThis.window.__socratesReactChatBridge = {
+    publish: (event) => events.push(event),
+  };
+  const message = {
+    clientId: 'msg-live-1',
+    type: 'streaming',
+    toolCalls: [],
+  };
+  let scheduled = null;
+  const runtime = createToolRuntime({
+    body: { querySelector() { return null; }, querySelectorAll() { return []; } },
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    onInlineTool: () => offset,
+    requestAnimationFrame(callback) { scheduled = callback; return 3; },
+    cancelAnimationFrame() {},
+    EventSource: null,
+    mode: 'compact',
+  });
+  return { message, events, runtime, flush: () => scheduled && scheduled() };
+}
+
+test('a live tool call carries its split point on the data, before finish()', () => {
+  const h = publishHarness(7);
+  try {
+    h.runtime.recordToolUse({ id: 'tc-1', name: 'web_search', input: { query: 'q' } });
+    assert.equal(h.message.toolCalls[0].textOffset, 7, 'offset stamped at mount time');
+    assert.ok(h.events.some((e) => e.type === 'tool-run-updated' && e.messageId === 'msg-live-1'),
+      'the mount is published — a row has to appear without waiting for the next text delta');
+    assert.ok((h.message._toolRunRev || 0) >= 1, 'revision bumped');
+    h.runtime.dispose();
+  } finally {
+    delete globalThis.window.__socratesReactChatBridge;
+  }
+});
+
+test('streamed arguments land on the entry so a running row can preview them', () => {
+  const h = publishHarness(0);
+  try {
+    h.runtime.recordToolUse({ id: 'tc-code', name: 'code_interpreter', input: null });
+    h.runtime.recordToolCallDelta({ id: 'tc-code', index: 0, arguments: 'import antigravity' });
+    h.flush();
+    assert.equal(h.message.toolCalls[0].argumentsText, 'import antigravity');
+    h.runtime.dispose();
+  } finally {
+    delete globalThis.window.__socratesReactChatBridge;
+  }
+});
+
+test('a terminal result publishes, so the row stops spinning', () => {
+  const h = publishHarness(3);
+  try {
+    h.runtime.recordToolUse({ id: 'tc-2', name: 'web_fetch', input: { url: 'https://arxiv.org/x' } });
+    h.events.length = 0;
+    h.runtime.recordToolResult({
+      id: 'tc-2', name: 'web_fetch', ok: true, status: 'completed',
+      output: 'Fetched', durationMs: 120,
+    });
+    const entry = h.message.toolCalls[0];
+    assert.equal(entry._toolResultApplied, true);
+    assert.ok(h.events.some((e) => e.type === 'tool-run-updated'), 'the settle is published');
+    h.runtime.dispose();
+  } finally {
+    delete globalThis.window.__socratesReactChatBridge;
+  }
+});
+
+test('cancelling a turn publishes the stopped state', () => {
+  const h = publishHarness(3);
+  try {
+    h.runtime.recordToolUse({ id: 'tc-3', name: 'web_search', input: { query: 'q' } });
+    h.events.length = 0;
+    h.runtime.cancel();
+    assert.ok(h.events.some((e) => e.type === 'tool-run-updated'), 'cancel repaints the rows');
+    h.runtime.dispose();
+  } finally {
+    delete globalThis.window.__socratesReactChatBridge;
+  }
+});

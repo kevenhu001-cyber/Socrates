@@ -38,7 +38,9 @@ export function checkShareAccess(
  *
  * Returns the session metadata + the message list (the front-end
  * re-renders the same way as the live app). Sensitive fields
- * (attachments, html snapshots, rawText) are explicitly excluded.
+ * (attachments, html snapshots) are explicitly excluded; `rawText` is
+ * included because the inline tool layout is sliced from it — see the
+ * projection comment below for why that adds no new exposure.
  */
 router.get('/:token', async (req, res, next) => {
   try {
@@ -72,13 +74,26 @@ router.get('/:token', async (req, res, next) => {
      * private attachment data (base64 image dataUrls, extracted PDF
      * text, etc.) to anyone holding the link. Select an explicit
      * projection that omits the `attachments` jsonb column along with
-     * other implementation-detail fields (rawText, sources, html) that
-     * could leak PII or be used to re-derive the user's input style. */
+     * other implementation-detail fields (sources, html) that
+     * could leak PII or be used to re-derive the user's input style.
+     *
+     * P_share-rawtext — `rawText` is back, and only because the
+     * read-only viewer now lays a turn out from it: the inline tool
+     * rows are spliced at `toolCalls[].textOffset`, which indexes the
+     * RAW markdown, not the rendered HTML. It is the same body the
+     * already-public `content` carries (sessions.ts writes `content`
+     * as `html || rawText` and rawText as `sanitizePlainText` of the
+     * same string), so for an assistant turn it adds no text the
+     * recipient does not already have; the user turns' raw input was
+     * public through `content` before this change too. What stays out
+     * of the projection is `attachments` — that is the column with
+     * dataUrls and extracted file text. */
     const msgs = await db.select({
       id: messages.id,
       sessionId: messages.sessionId,
       role: messages.role,
       content: messages.content,
+      rawText: messages.rawText,
       model: messages.model,
       tokenCount: messages.tokenCount,
       reasoningContent: messages.reasoningContent,

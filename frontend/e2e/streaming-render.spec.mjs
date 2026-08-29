@@ -47,22 +47,35 @@ async function prepareDelayedStream(page, options = {}) {
 
     window.state.phase = 'chat';
     window.state.currentSessionId = '77777777-7777-4777-8777-777777777777';
-    window.state.messages = [{ clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }];
+    /* A tall transcript, through state.messages: #msgList is React-owned, so
+       foreign nodes appended to it are not something the renderer promises to
+       keep — and the scroll maths below only mean something if the height
+       comes from what is actually rendered. */
+    const earlier = [];
+    for (let i = 0; i < 24; i += 1) {
+      const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
+      earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
+    }
+    window.state.messages = [{ clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }, ...earlier];
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
 
     const list = document.getElementById('msgList');
-    for (let i = 0; i < 24; i += 1) {
-      const msg = document.createElement('div');
-      msg.className = 'msg assistant';
-      msg.innerHTML = `<div class="msg-body">Earlier message ${i}: ${'context '.repeat(12)}</div>`;
-      list.appendChild(msg);
-    }
-    await new Promise((resolve) => requestAnimationFrame(resolve));
+    /* Start the turn first, then wait for the send-time anchor to settle: while
+       scheduleActiveTurnToTop holds the prompt at the top of the viewport,
+       "pinned to the bottom" is a position the app is deliberately not at yet. */
+    window.__smoothStreamPromise = window.askChatTurn('Stream smoothly');
+    await new Promise((resolve) => {
+      const wait = () => {
+        if (list.querySelector('.msg.assistant[data-viewport-anchor]')) return resolve();
+        requestAnimationFrame(wait);
+      };
+      wait();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 600));
     list.scrollTop = list.scrollHeight;
     await new Promise((resolve) => requestAnimationFrame(resolve));
     window.state._userScrolledAway = false;
-    window.__smoothStreamPromise = window.askChatTurn('Stream smoothly');
   }, { delay, finishDelay });
 }
 
@@ -90,22 +103,28 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
   /* CI intentionally runs without third-party CDN globals, so Markdown
      falls back to a paragraph here. The invariant under test is that the
      settled block itself stays mounted while the tail changes. */
-  const heading = bubble.locator('.stream-settled-content > *');
+  const heading = bubble.locator('.tool-run-prose.is-settled > *');
   await expect(heading).toContainText('Stable heading');
   expect(await page.evaluate(() => {
-    window.__settledHeading = document.querySelector('.stream-settled-content')?.firstElementChild;
+    window.__settledHeading = document.querySelector('.tool-run-prose.is-settled')?.firstElementChild;
     return Boolean(window.__settledHeading);
   })).toBe(true);
 
-  await expect(bubble.locator('.stream-live-content')).toContainText('adaptive streaming cadence');
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('adaptive streaming cadence');
   expect(await page.evaluate(() => {
-    const current = document.querySelector('.stream-settled-content')?.firstElementChild;
+    const current = document.querySelector('.tool-run-prose.is-settled')?.firstElementChild;
     return current === window.__settledHeading;
   })).toBe(true);
-  await expect(bubble.locator('.stream-live-content')).toContainText('The final Markdown remains c');
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('The final Markdown remains c');
+  /* The row element itself must survive the finish() handoff: the declarative
+     turn re-renders its prose in place instead of swapping the bubble (that
+     transplant is what used to jump the scroll and re-run the post-render
+     hooks). The prose *segment* does change class when the last block settles,
+     so identity is checked on the row, not on the settled div. */
   expect(await page.evaluate(() => {
-    window.__settledHeadingAtFinish = document.querySelector('.stream-settled-content')?.firstElementChild;
-    return Boolean(window.__settledHeadingAtFinish);
+    const id = window.state.messages.at(-1)?.clientId;
+    window.__streamRow = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
+    return Boolean(window.__streamRow);
   })).toBe(true);
 
   await expect.poll(() => page.evaluate(() => {
@@ -120,11 +139,8 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
   expect(await page.evaluate(() => {
     const id = window.state.messages.at(-1)?.clientId;
-    const current = id
-      ? document.querySelector(`[data-client-id="${id}"][data-react-owned] .stream-settled-content`)?.firstElementChild
-      : null;
-    return current === window.__settledHeadingAtFinish
-      && Boolean(window.__settledHeadingAtFinish?.isConnected);
+    const current = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
+    return current === window.__streamRow && Boolean(current?.isConnected);
   })).toBe(true);
   await expect.poll(() => page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -135,7 +151,7 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
 test('streaming respects an intentional scroll-away', async ({ page }) => {
   await prepareDelayedStream(page, { delay: 180 });
   const bubble = page.locator('.msg.assistant').last();
-  await expect(bubble.locator('.stream-live-content')).toContainText('keeps growing');
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('keeps growing');
 
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -143,10 +159,10 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
     list.dispatchEvent(new Event('scroll', { bubbles: true }));
   });
   await expect.poll(() => page.evaluate(() => window.state._userScrolledAway)).toBe(true);
-  await expect(bubble.locator('.stream-live-content')).toContainText('pinned scrolling behavior');
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('pinned scrolling behavior');
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
   await expect(page.locator('#newReplyPill')).toHaveClass(/visible/);
-  await expect(bubble.locator('.stream-live-content')).toContainText('The final Markdown remains c');
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('The final Markdown remains c');
   const beforeFinishTop = await page.evaluate(() => document.getElementById('msgList').scrollTop);
 
   await page.evaluate(() => window.__smoothStreamPromise);
@@ -155,59 +171,56 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
   expect(Math.abs(afterFinishTop - beforeFinishTop)).toBeLessThanOrEqual(2);
 });
 
-/* P_anchor-finish — when the reader scrolls UP into the streaming
-   bubble mid-stream (not pinned, not at the very top), the
-   finish() handoff must keep them on the same row instead of
-   snapping to distance-from-bottom zero — which is the
-   "jumped back to the start of the answer" symptom. The legacy
-   bubble is taller than the React bubble in this fixture (it
-   carries the streaming placeholder chrome that React doesn't
-   duplicate), so the previous scrollTop = scrollHeight -
-   clientHeight - distanceFromBottom math produced scrollTop=0
-   every time. */
+/* P_anchor-finish — when the reader is looking at the top of the streaming
+   answer when finish() lands, the handoff must keep them on the same row
+   instead of snapping to distance-from-bottom zero — which is the "jumped
+   back to the start of the answer" symptom. Distance-from-bottom maths is
+   what used to fail here: the finalized turn is a different height than the
+   streaming one (the running row folds into its group, the status line
+   retires), so "preserve distance-from-bottom" produced scrollTop=0 every
+   time. The row-anchor restore avoids this by tracking which row was at the
+   scroller's viewport top. */
 test('finish preserves mid-message scroll position (row anchor)', async ({ page }) => {
   await prepareDelayedStream(page, { delay: 80 });
 
   // Wait for streaming to begin — the streaming bubble carries
-  // .stream-live-content. The 24 pre-existing assistant messages
+  // .tool-run-prose.is-live. The 24 pre-existing assistant messages
   // don't, so the locator uniquely selects the new bubble.
-  const bubble = page.locator('.msg.assistant').filter({ has: page.locator('.stream-live-content') });
+  const bubble = page.locator('.msg.assistant').filter({ has: page.locator('.tool-run-prose.is-live') });
   await expect(bubble).toHaveCount(1);
-  await expect(bubble.locator('.stream-live-content')).toContainText('keeps growing');
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('keeps growing');
 
-  // Scroll the streaming bubble's TOP into the scroller's viewport
-  // (user is reading the START of the AI's answer). Measure the
-  // bubble's offset relative to the scroller (not the page viewport
-  // — the scroller is offset from the page top by header/sidebar
-  // chrome). This is the case the pre-existing "scrollTop=0" test
-  // does NOT cover — and where the legacy distance-from-bottom math
-  // falls apart: legacy bubble is taller than React bubble, so the
-  // math result for "preserve distance-from-bottom" lands the user
-  // at the very top of the scroller. The row-anchor restore avoids
-  // this by tracking which row was at the scroller's viewport top.
+  // Put the streaming row's TOP at the scroller's viewport edge — the
+  // reader is at the start of the answer. Measure relative to the
+  // scroller, not the page viewport: the scroller itself is offset by the
+  // header chrome.
   const before = await page.evaluate(() => {
     const list = document.getElementById('msgList');
-    const b = document.querySelector('.msg.assistant .stream-live-content')?.closest('.msg.assistant');
+    const b = document.querySelector('.msg.assistant .tool-run-prose.is-live')?.closest('.msg.assistant');
     if (!b) throw new Error('streaming bubble missing');
     list.scrollTop = b.offsetTop;
     list.dispatchEvent(new Event('scroll', { bubbles: true }));
     const lr = list.getBoundingClientRect();
     const br = b.getBoundingClientRect();
     return {
+      clientId: b.dataset.clientId,
       listTop: Math.round(list.scrollTop),
       maxScrollTop: Math.round(list.scrollHeight - list.clientHeight),
       bubbleOffsetFromScroller: Math.round(br.top - lr.top),
     };
   });
+  expect(before.clientId, 'the streaming row is the one under test').toBeTruthy();
 
   await page.evaluate(() => window.__smoothStreamPromise);
   // Wait for the React commit + handoff + async mounts to settle.
   await page.waitForTimeout(500);
 
-  const after = await page.evaluate(() => {
+  /* Track the row by id, not by "the first React-owned assistant": every
+     message in this fixture renders through React, so a positional selector
+     would measure one of the filler turns instead. */
+  const after = await page.evaluate((clientId) => {
     const list = document.getElementById('msgList');
-    const b = document.querySelector('.msg.assistant[data-react-owned]')
-      || document.querySelector('.msg.assistant:last-child');
+    const b = document.querySelector(`.msg.assistant[data-client-id="${clientId}"]`);
     if (!b) return { bubbleOffsetFromScroller: null, listTop: null };
     const lr = list.getBoundingClientRect();
     const br = b.getBoundingClientRect();
@@ -216,15 +229,14 @@ test('finish preserves mid-message scroll position (row anchor)', async ({ page 
       maxScrollTop: Math.round(list.scrollHeight - list.clientHeight),
       bubbleOffsetFromScroller: Math.round(br.top - lr.top),
     };
-  });
+  }, before.clientId);
 
   // The bug: listTop goes to ~0 (the user is dumped at the top of
-  // the scroller — "jumped back to the start of the answer"). The
-  // fix keeps the bubble anchored near the scroller's viewport top.
-  // We assert bubbleOffsetFromScroller stays close to its captured
-  // value (was 0 before scroll, should stay close to 0 after finish).
-  // 60px slack for height delta between legacy/React bubbles and
-  // async mermaid/viz mounts.
+  // the scroller — "jumped back to the start of the answer"). The fix
+  // keeps this row anchored at the same distance from the viewport top.
+  // 60px slack covers the finalize-time height delta (the running row
+  // folding into its group, the status line retiring) plus async
+  // mermaid/viz mounts.
   expect(after.bubbleOffsetFromScroller).not.toBeNull();
   expect(
     Math.abs(after.bubbleOffsetFromScroller - before.bubbleOffsetFromScroller),

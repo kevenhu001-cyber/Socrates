@@ -121,11 +121,22 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
   expect(result.events).toContain('stream-started');
   expect(result.events).toContain('stream-delta');
   expect(result.events).toContain('stream-finished');
+  /* `stream-finished` is no longer guaranteed to be the LAST publish. The live
+     chrome of a turn — the status line retiring, the viewport anchor being
+     cleared — is data on the same message object, so writing it publishes a
+     `tool-run-updated` after the text is final, and the row has to repaint for
+     it. What the lifecycle contract still requires is that no *stream* event
+     arrives after the finish. */
+  expect(
+    result.events
+      .slice(result.events.indexOf('stream-finished') + 1)
+      .filter((event) => event.startsWith('stream-')),
+  ).toEqual([]);
+  expect(['stream-finished', 'tool-run-updated']).toContain(result.final.lastEvent);
   expect(result.final).toMatchObject({
     currentSessionId: '88888888-8888-4888-8888-888888888888',
     messageCount: 2,
     isStreaming: false,
-    lastEvent: 'stream-finished',
     stream: {
       status: 'completed',
       textLength: 'Bridge response.'.length,

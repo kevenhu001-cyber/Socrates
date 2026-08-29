@@ -1,16 +1,27 @@
 /**
- * ui/toolInline.ts — minimal ChatGPT-style inline tool status rows.
+ * ui/toolInline.ts — imperative inline tool rows.
  *
- * A row is mounted in the message flow at the exact point the tool
- * fired (text → row → text). It starts in a running state (spinner +
- * action label) and settles in place to done / error. Web-search rows
- * expand (native <details>) to reveal the source list. The markup is
- * self-contained and serializable: message.html persistence keeps the
- * row interactive after reload without any JS re-wiring.
+ * A row is mounted in the message flow at the exact point the tool fired
+ * (text → row → text). It starts in a running state (spinner + action
+ * label) and settles in place to done / error; web-search rows expand
+ * (native <details>) to reveal the source list.
+ *
+ * This is the DEGRADED surface. When React owns #msgList the rows are
+ * drawn from `message.toolCalls[]` by react/tool-run instead, and neither
+ * this module nor `message.html` carries them — so a reload renders from
+ * data rather than from row markup persisted into the answer. What stays
+ * here is what the degraded path and `chat/toolRuntime.ts` still need: the
+ * row lifecycle (create / settle / replace) and the shared pure helpers
+ * (`toolCategory`, `isInlineSearchTool`, `truncateDetailLines`).
+ *
+ * Where the two surfaces must agree on wording, they read the same
+ * fallbacks below; labels with an object ("读取 moe.py", not "已读取文件")
+ * are derived in react/tool-run/toolRunModel.ts.
  */
 
 import { esc } from '../render/helpers.js';
 import { formatToolOutput } from '../render/toolOutput.js';
+import { toolCategory as categoryOf } from '../render/toolCategory.js';
 import { getSocratesWasm } from '../lib/socratesWasm.js';
 import { toolCardView } from './toolCardView.js';
 import { STROKE_ICONS, toolIcon } from './icons/toolIcons.js';
@@ -148,22 +159,13 @@ export function isInlineSearchTool(name: string): boolean {
 }
 
 /**
- * Display category for a tool name. The TS branch mirrors
- * socrates-format::categorize_tool exactly; when the Rust mechanism
- * library is loaded the WASM `categorize_tool_js` is authoritative
- * (parity asserted in test/wasmParity.test.mjs).
+ * Display category for a tool name. Lives in render/toolCategory.ts so the
+ * declarative renderer and the runtime merge logic share one table; re-exported
+ * here because existing importers (and test/wasmParity.test.mjs) reach for it
+ * on this module.
  */
 export function toolCategory(name: string): string {
-  if (SEARCH_TOOLS.has(name)) return 'search';
-  if (name === 'code_interpreter' || name === 'Code') return 'code';
-  if (name === 'web_fetch' || name === 'WebFetch') return 'fetch';
-  if (name === 'render_visualization') return 'visual';
-  if (name === 'create_plan') return 'plan';
-  if (name === 'create_spec') return 'spec';
-  if (name === 'workspace_agent') return 'agent';
-  if (name === 'Read' || name === 'Glob' || name === 'Grep') return 'read';
-  if (name === 'Write' || name === 'Edit' || name === 'Bash') return 'write';
-  return 'other';
+  return categoryOf(name);
 }
 
 /**

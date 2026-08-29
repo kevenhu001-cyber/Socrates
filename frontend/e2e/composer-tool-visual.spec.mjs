@@ -33,10 +33,13 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   // inline status row (.tool-inline) mounted in the message flow so the
   // learner sees what the model is doing without tool-card chrome. The
   // stream here is fulfilled atomically, so by assertion time the row
-  // has settled into its done state showing the found-results label.
+  // has settled. Its label names the object of the call — the query —
+  // and the source count lives in the meta span, so the row is
+  // informative without expanding it.
   const toolRow = page.locator('.msg.assistant .tool-inline[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
-  await expect(toolRow.locator('.tool-inline-label').first()).toContainText(/Found|Searching/i);
+  await expect(toolRow.locator('.tool-inline-label').first()).toHaveText('Searched "Socratic learning"');
+  await expect(toolRow.locator('.tool-inline-meta')).toHaveText('2 sources');
   // tool-run-group and agent-tool-card are now share/history-only —
   // they must NOT be created in the live chat path.
   await expect(page.locator('.tool-run-group')).toHaveCount(0);
