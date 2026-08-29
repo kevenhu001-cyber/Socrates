@@ -21,7 +21,7 @@ export function renderGreeting() {
   if (!el) return;
   var mode = (typeof window !== "undefined" && window.appMode) || "chat";
   var key = mode === "tutor" ? "greeting.tutor" : "greeting.chat";
-  var tmpl = typeof window.t === "function" ? window.t(key) : (key === "greeting.tutor" ? "Let's explore, {name}." : "Hello, {name}.");
+  var tmpl = typeof window.t === "function" ? window.t(key) : (key === "greeting.tutor" ? "Let's explore, {name}." : "You're here!");
   el.textContent = tmpl.replace("{name}", _greetingFirstName());
   el.classList.add("greeting");
 }

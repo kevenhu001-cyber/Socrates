@@ -112,14 +112,13 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   const calls = Array.isArray(message.toolCalls) ? (message.toolCalls as ToolCallRecord[]) : [];
   const isLive = Boolean(live);
-  const segments = useMemo<TurnSegment[]>(
-    () => buildTurnLayout(rawText, calls, { inlineThink: isLive }),
-    // The legacy runtime mutates toolCalls[] in place, so identity is not a
-    // useful dep; the row state that matters is reachable from rawText length
-    // plus the array itself, and the message list re-renders on every publish.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rawText, message.toolCalls && message.toolCalls.length, isLive],
-  );
+  // toolCalls[] is mutated in place as rows settle. Rebuild this small, pure
+  // layout on each published render so labels, states, and sentence-safe split
+  // points cannot be trapped behind stale object identity.
+  const segments: TurnSegment[] = buildTurnLayout(rawText, calls, {
+    inlineThink: isLive,
+    deferOpenSentence: isLive,
+  });
   const { settled, tail } = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
   /* Approvals and retries are filed against the message the row belongs to. */

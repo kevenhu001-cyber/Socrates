@@ -278,7 +278,7 @@ export function sortableToolCalls(
 export function buildTurnLayout(
   rawText: string,
   toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
-  opts?: { inlineThink?: boolean },
+  opts?: { inlineThink?: boolean; deferOpenSentence?: boolean },
 ): TurnSegment[] {
   const raw = String(rawText || '');
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
@@ -302,7 +302,11 @@ export function buildTurnLayout(
 
   let prev = 0;
   for (const call of calls) {
-    const offset = Math.max(prev, Math.min(call.textOffset as number, raw.length));
+    const persistedOffset = Math.min(call.textOffset as number, raw.length);
+    const offset = Math.max(
+      prev,
+      sentenceSafeToolOffset(raw, persistedOffset, opts?.deferOpenSentence === true),
+    );
     pushProse(prev, offset);
     segments.push({ kind: 'tool', call });
     prev = offset;
@@ -310,6 +314,41 @@ export function buildTurnLayout(
   pushProse(prev, raw.length);
 
   return foldConsecutiveRuns(segments);
+}
+
+/**
+ * A provider can emit a tool event before the text chunk containing the rest
+ * of its introductory sentence. The persisted offset is still useful, but
+ * rendering at it would split prose in two (especially visible in Chinese,
+ * where there is no separating space). Move that visual boundary to the next
+ * sentence ending on the same line. During a live turn, keep an unfinished
+ * sentence ahead of the tool until its punctuation arrives.
+ */
+function sentenceSafeToolOffset(raw: string, offset: number, deferOpenSentence: boolean): number {
+  if (offset <= 0 || offset >= raw.length) return offset;
+
+  const before = raw.slice(0, offset);
+  const trimmedBefore = before.trimEnd();
+  const next = raw[offset] || '';
+  const closesSentence = /(?:[。！？!?]|\.)(?:["'”’」』）)\]}]*)$/u.test(trimmedBefore);
+  if (/\n|\r/u.test(next) || closesSentence) return offset;
+
+  const lineEndMatch = raw.slice(offset).match(/[\r\n]/u);
+  const searchEnd = lineEndMatch ? offset + (lineEndMatch.index || 0) : raw.length;
+  for (let index = offset; index < searchEnd; index += 1) {
+    const char = raw[index];
+    const nextChar = raw[index + 1] || '';
+    const isCjkEnding = /[。！？!?]/u.test(char);
+    const isEnglishPeriod = char === '.' && (!nextChar || /[\s"'”’）)\]}]/u.test(nextChar));
+    if (!isCjkEnding && !isEnglishPeriod) continue;
+
+    let end = index + 1;
+    while (end < raw.length && /["'”’」』）)\]}]/u.test(raw[end])) end += 1;
+    while (end < raw.length && /[\t ]/u.test(raw[end])) end += 1;
+    return end;
+  }
+
+  return deferOpenSentence ? raw.length : offset;
 }
 
 function appendText(out: TurnSegment[], text: string, start: number, end: number): void {
