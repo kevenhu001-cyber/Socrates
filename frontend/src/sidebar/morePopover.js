@@ -49,9 +49,17 @@ function _publishMorePopover(isOpen) {
 }
 
 /* Compute the popover's position from the More button. The popover is
-   right-aligned to the button and opens upward (matches the
-   display-prefs popover behavior). Falls back to sensible defaults
-   if the button is missing. */
+   right-aligned to the button and prefers to open upward (matching the
+   display-prefs popover), but flips below the button when there is not
+   enough room above it. Falls back to sensible defaults if the button is
+   missing.
+
+   The flip is not cosmetic: #navMore sits near the top of the sidebar, so a
+   menu that could only grow upward slid off the top of the viewport as soon
+   as it gained an item, leaving every row unclickable. Requires the popover
+   to be visible already so offsetHeight is real — see toggleMorePopover. */
+var GAP = 8;
+
 function _position(p, btn) {
   if (!btn) return;
   var r = btn.getBoundingClientRect();
@@ -66,12 +74,24 @@ function _position(p, btn) {
     }
   } catch (_) { /* ignore */ }
   var left = r.right - popW;
-  if (left < 8) left = 8;
-  var bottom = window.innerHeight - r.top + 8;
+  var maxLeft = window.innerWidth - popW - GAP;
+  if (maxLeft >= GAP && left > maxLeft) left = maxLeft;
+  if (left < GAP) left = GAP;
   p.style.left = left + "px";
-  p.style.bottom = bottom + "px";
   p.style.right = "auto";
-  p.style.top = "auto";
+
+  var h = p.offsetHeight || 0;
+  if (h > 0 && r.top - GAP - h < GAP) {
+    var top = r.bottom + GAP;
+    var maxTop = window.innerHeight - h - GAP;
+    if (maxTop >= GAP && top > maxTop) top = maxTop;
+    if (top < GAP) top = GAP;
+    p.style.top = top + "px";
+    p.style.bottom = "auto";
+  } else {
+    p.style.bottom = (window.innerHeight - r.top + GAP) + "px";
+    p.style.top = "auto";
+  }
 }
 
 /* Close the popover and remove the outside-click + Esc listeners. */
@@ -98,8 +118,11 @@ export function toggleMorePopover() {
   if (!p) return;
   if (_isOpen(p)) { _close(p); return; }
   var btn = _button();
-  _position(p, btn);
+  /* Unhide before measuring: _position needs a real offsetHeight to decide
+     whether the menu fits above the button. Both happen in the same frame,
+     so nothing paints at the stale position. */
   p.classList.remove("hidden");
+  _position(p, btn);
   _publishMorePopover(true);
   /* Defer outside-click + Esc listeners by one tick so the opening
      click doesn't immediately close the popover. */

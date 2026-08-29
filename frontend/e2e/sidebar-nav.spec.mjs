@@ -16,6 +16,18 @@ test.beforeEach(async ({ page }) => {
   await page.waitForTimeout(400);
 });
 
+/**
+ * The desktop shell trims the sidebar nav to five primary destinations, so
+ * Plugins is reached from the Customize popover rather than a nav row. The
+ * button still exists (and is used under 769px), which is why this goes
+ * through the popover instead of clicking #navPlugins directly.
+ */
+async function openPlugins(page) {
+  await page.locator('#navMore').click();
+  await page.locator('#moreNavPopover [role="menuitem"]').filter({ hasText: 'Plugins' }).first().click();
+  await expect(page.locator('#moreNavPopover')).toBeHidden();
+}
+
 test('the 5 secondary nav buttons exist and have stable ids', async ({ page }) => {
   for (const id of ['navLibrary', 'navProjects', 'navScheduled', 'navPlugins', 'navMore']) {
     const btn = page.locator(`#${id}`);
@@ -48,7 +60,7 @@ test('Library, Projects, and Plugins keep one page shell with restored headers',
   await expect(page.locator('#spacesPanel > .spaces-header')).toBeVisible();
   await expect(page.locator('#spacesPanel #spacesList')).toHaveCount(1);
 
-  await page.locator('#navPlugins').click();
+  await openPlugins(page);
   await expect(page.locator('#pluginsPanel')).toHaveCount(1);
   await expect(page.locator('#pluginsPanel > .plugins-header')).toBeVisible();
   await expect(page.locator('#pluginsPanel #pluginsList')).toHaveCount(1);
@@ -91,10 +103,9 @@ test('the More popover closes on Escape', async ({ page }) => {
 test('clicking a More menu item closes the popover and dispatches the action', async ({ page }) => {
   await page.locator('#navMore').click();
   await expect(page.locator('#moreNavPopover')).toBeVisible();
-  /* The first item is "API settings" → openSettings. The popover
-     should close and the settings modal should open. We don't
-     stub the settings backend here, but we can at least confirm
-     the popover dismissal happens before the action runs. */
+  /* Whatever the first item happens to be, picking it must dismiss the
+     popover before its action runs — that ordering is the contract here, so
+     the assertion stays independent of the menu's contents. */
   await page.locator('#moreNavPopover .sidebar-more-item').first().click();
   await expect(page.locator('#moreNavPopover')).toBeHidden();
 });
@@ -109,7 +120,7 @@ test('Scheduled button opens the scheduled panel (PR-D)', async ({ page }) => {
 });
 
 test('Plugins shows the project connector catalog with brand icons', async ({ page }) => {
-  await page.locator('#navPlugins').click();
+  await openPlugins(page);
   await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   await expect(page.locator('#topicDisclaimer')).toBeHidden();
   await expect(page.locator('.connector-row')).toHaveCount(5);

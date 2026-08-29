@@ -273,13 +273,42 @@ test('group label names the files touched and reports the action count', () => {
   assert.deepEqual(label.meta, ['3 actions']);
 });
 
-test('a mixed group falls back to the generic explored header instead of naming part of it', () => {
+test('a mixed group reports one clause per kind of work instead of naming part of it', () => {
   const label = toolRunGroupLabel([
     { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' } },
     { id: '2', name: 'Bash', input: { command: 'pytest' } },
   ], 'done');
+  assert.equal(label.text, 'Ran a command, edited a file');
+  assert.deepEqual(label.meta, ['2 actions']);
+});
+
+test('mixed clauses count each bucket and keep a stable reading order', () => {
+  const label = toolRunGroupLabel([
+    { id: '1', name: 'Bash', input: { command: 'pytest' } },
+    { id: '2', name: 'Bash', input: { command: 'npm run build' } },
+    { id: '3', name: 'Read', input: { file_path: 'a/moe.py' } },
+    { id: '4', name: 'Grep', input: { pattern: 'moe' } },
+    { id: '5', name: 'Write', input: { file_path: 'a/new.py' } },
+  ], 'done');
+  assert.equal(label.text, 'Ran 2 commands, read 2 files, created a file');
+  assert.deepEqual(label.meta, ['5 actions']);
+});
+
+test('a run holding an unclassified call keeps the generic header rather than under-reporting', () => {
+  const label = toolRunGroupLabel([
+    { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' } },
+    { id: '2', name: 'workspace_agent', input: { task: 'refactor' } },
+  ], 'done');
   assert.equal(label.text, 'Explored');
   assert.deepEqual(label.meta, ['2 actions']);
+});
+
+test('a single-bucket run is left to the homogeneous branches, not summarised as one clause', () => {
+  const label = toolRunGroupLabel([
+    { id: '1', name: 'Bash', input: { command: 'pytest' } },
+    { id: '2', name: 'Bash', input: { command: 'npm run build' } },
+  ], 'done');
+  assert.equal(label.text, 'Explored');
 });
 
 /* ── detail panel: results first, arguments behind the toggle ────────── */

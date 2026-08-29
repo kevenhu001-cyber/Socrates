@@ -408,7 +408,82 @@ export function toolRunGroupLabel(
     }
     return { text: tf('tool.groupSearchEmpty', 'No results · {m} searches', { m: total }), meta };
   }
+  const mixed = mixedRunClauses(members);
+  if (mixed) return { text: mixed, meta };
   return { text: translate('tool.groupExplored', 'Explored'), meta };
+}
+
+/**
+ * Buckets a mixed run reports on, in the order they are read. Each carries a
+ * singular form: "read 1 files" is the kind of copy that makes a summary look
+ * generated rather than written.
+ */
+const MIXED_BUCKETS: ReadonlyArray<{
+  key: string;
+  fallback: string;
+  oneKey: string;
+  oneFallback: string;
+  match: (name: string) => boolean;
+}> = [
+  {
+    key: 'tool.clauseRanCommands', fallback: 'ran {n} commands',
+    oneKey: 'tool.clauseRanCommandOne', oneFallback: 'ran a command',
+    match: (n) => n === 'Bash',
+  },
+  {
+    key: 'tool.clauseReadFiles', fallback: 'read {n} files',
+    oneKey: 'tool.clauseReadFileOne', oneFallback: 'read a file',
+    match: (n) => toolCategory(n) === 'read',
+  },
+  {
+    key: 'tool.clauseEditedFiles', fallback: 'edited {n} files',
+    oneKey: 'tool.clauseEditedFileOne', oneFallback: 'edited a file',
+    match: (n) => n === 'Edit',
+  },
+  {
+    key: 'tool.clauseCreatedFiles', fallback: 'created {n} files',
+    oneKey: 'tool.clauseCreatedFileOne', oneFallback: 'created a file',
+    match: (n) => n === 'Write',
+  },
+  {
+    key: 'tool.clauseSearched', fallback: 'searched {n} times',
+    oneKey: 'tool.clauseSearchedOne', oneFallback: 'searched the web',
+    match: (n) => isInlineSearchTool(n) || toolCategory(n) === 'fetch',
+  },
+  {
+    key: 'tool.clauseRanCode', fallback: 'ran {n} code blocks',
+    oneKey: 'tool.clauseRanCodeOne', oneFallback: 'ran code',
+    match: (n) => toolCategory(n) === 'code',
+  },
+];
+
+/**
+ * "Ran 2 commands, read 4 files, edited a file" for a run that mixes kinds of
+ * work. The homogeneous branches above name the files themselves, which is
+ * better; this is for the case where naming any single object would describe
+ * only part of what happened — previously a bare "Explored", which told the
+ * reader nothing they could act on.
+ *
+ * Returns '' when the run does not decompose into at least two known buckets,
+ * so the caller keeps its generic header rather than emitting a one-clause
+ * summary that a homogeneous branch would have phrased better.
+ */
+function mixedRunClauses(members: ToolCallLike[]): string {
+  const clauses: string[] = [];
+  let covered = 0;
+  for (const bucket of MIXED_BUCKETS) {
+    const n = countBy(members, (m) => bucket.match(String(m.name || '')));
+    if (n === 0) continue;
+    covered += n;
+    clauses.push(n === 1
+      ? translate(bucket.oneKey, bucket.oneFallback)
+      : tf(bucket.key, bucket.fallback, { n }));
+  }
+  /* Every call has to land in a bucket: a run that also touched something
+     unclassified would report a total that does not add up. */
+  if (clauses.length < 2 || covered !== members.length) return '';
+  const joined = clauses.join(translate('tool.clauseJoin', ', '));
+  return joined.charAt(0).toLocaleUpperCase() + joined.slice(1);
 }
 
 /** "a.py, b.py, +2" — two names then a remainder, so the row stays one line. */

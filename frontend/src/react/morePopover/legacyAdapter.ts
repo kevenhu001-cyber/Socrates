@@ -23,6 +23,15 @@ function dispatchAction(action: MorePopoverAction): void {
   nav.closeMorePopover();
 
   switch (action) {
+    /* The desktop shell trims the sidebar nav to the five primary
+       destinations, so Plugins and Exam route through here — without them the
+       two panels had no entry point at all above 768px. */
+    case 'plugins':
+      nav.openNav('plugins');
+      return;
+    case 'exam':
+      nav.openNav('exam');
+      return;
     case 'skills':
       nav.openPromptTemplatesModal();
       return;

@@ -63,10 +63,15 @@ function _publishSidebarChrome() {
     var cu = window.CURRENT_USER || null;
     var initials, displayName, tier, tierLabel;
     if (cu) {
-      var name = cu.displayName || cu.email || "?";
+      /* P_cowork-landing — the footer row is ~150px wide once the avatar and
+         the three icon buttons take their share, so a full address ellipsised
+         to "jiache…" identified nobody. Fall back to the address's local part;
+         the complete address stays visible in the profile modal. */
+      var localPart = String(cu.email || "").split("@")[0];
+      var name = cu.displayName || localPart || "?";
       var parts = name.trim().split(/\s+/);
       initials = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
-      displayName = cu.displayName || cu.email || "";
+      displayName = name === "?" ? "" : name;
       tier = cu.tier || 'diophantus';
       tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
     } else {

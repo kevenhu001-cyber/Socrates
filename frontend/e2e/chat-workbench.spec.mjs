@@ -124,7 +124,9 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  expect(composed.wrapRadius).toBe(18);
+  /* 24px is the composer's designed radius across all five of its
+     breakpoint rules; the 18 this used to assert predates that pass. */
+  expect(composed.wrapRadius).toBe(24);
   expect(composed.wrapBorder).not.toBe('0px');
   expect(composed.sendSize).toBe(38);
   expect(composed.attachSize).toBe(38);

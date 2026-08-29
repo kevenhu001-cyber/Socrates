@@ -73,9 +73,19 @@ test('Sidebar React nav buttons call window.openNav and reflect active state', a
 
 test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', async ({ page }) => {
   await mockAuthedApp(page);
+  /* Narrow viewport on purpose: the desktop shell hides the tag-filter chip
+     row (the reference task list has no chips), so the chips are only
+     clickable under 769px — where the sidebar also starts off-canvas and has
+     to be opened first. The bridge wiring is identical on both. */
+  await page.setViewportSize({ width: 420, height: 860 });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
+  await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
+  });
+  await page.waitForTimeout(400);
 
   // Stub the chip-click handler on the bridge so we can capture the call.
   await page.evaluate(() => {

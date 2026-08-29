@@ -1,4 +1,6 @@
 export type MorePopoverAction =
+  | 'plugins'
+  | 'exam'
   | 'skills'
   | 'settings'
   | 'display'

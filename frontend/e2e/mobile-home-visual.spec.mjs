@@ -15,13 +15,20 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.waitForTimeout(350);
 
   const leftButton = page.locator('#sidebarOpenBtn');
+  /* The desktop segmented pill is replaced under 640px by the compact
+     "Chat ˅" dropdown, so that is the control to assert on here. */
   const modeTabs = page.locator('#modeSegmentedTop');
+  const modeSwitch = page.locator('#mobileModeTrigger');
   const composer = page.locator('#topicInputWrap');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
 
-  await expect(page.locator('.mobile-starter-prompt')).toHaveCount(2);
+  /* The two hardcoded starter cards were replaced by the shared "Ideas for
+     you" list under the composer, which both breakpoints render. */
+  await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
+  await expect(page.locator('.home-idea')).toHaveCount(3);
   await expect(leftButton).toBeVisible();
-  await expect(modeTabs).toBeVisible();
+  await expect(modeTabs).toBeHidden();
+  await expect(modeSwitch).toBeVisible();
   await expect(composer).toBeVisible();
 
   const geometry = await page.evaluate(() => {
@@ -32,28 +39,43 @@ test('mobile conversation home matches the compact dark reference layout', async
     return {
       left: rect('#sidebarOpenBtn'),
       right: rect('#mobileIncognitoBtn'),
-      tabs: rect('#modeSegmentedTop'),
+      modeSwitch: rect('#mobileModeTrigger'),
       composer: rect('#topicInputWrap'),
-      background: getComputedStyle(document.querySelector('.main')).backgroundColor,
+      ideas: rect('.home-ideas'),
+      /* .main is a transparent layout box; the painted surface is
+         .main-content (the shell's page colour). */
+      background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
     };
   });
 
-  expect(geometry.left?.width).toBe(44);
-  expect(geometry.left?.height).toBe(44);
-  expect(geometry.right?.width).toBe(44);
-  expect(geometry.tabs?.width).toBeGreaterThanOrEqual(168);
-  expect(geometry.tabs?.height).toBe(44);
-  expect(geometry.composer?.width).toBeGreaterThanOrEqual(360);
-  expect(geometry.composer?.height).toBeLessThanOrEqual(72);
-  expect(geometry.composer?.bottom).toBeGreaterThanOrEqual(825);
-  expect(geometry.background).toBe('rgb(0, 0, 0)');
+  expect(geometry.left?.width).toBe(28);
+  expect(geometry.left?.height).toBe(28);
+  expect(geometry.right?.width).toBe(28);
+  expect(geometry.modeSwitch?.width).toBeGreaterThanOrEqual(64);
+  expect(geometry.modeSwitch?.height).toBeGreaterThanOrEqual(28);
+  /* The landing composer is the middle band of a centred group, not a bar
+     pinned to the bottom, so the assertion is on the group's ordering. */
+  expect(geometry.composer?.width).toBeGreaterThanOrEqual(340);
+  expect(geometry.composer?.height).toBeLessThanOrEqual(132);
+  expect(geometry.ideas?.y).toBeGreaterThan(geometry.composer?.bottom ?? 0);
+  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(844);
+  expect(geometry.background).toBe('rgb(19, 19, 19)');
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
 
+  /* The landing composer ships its two-row layout up front — input above,
+     run controls below — rather than growing into it on focus the way the
+     chat composer does. Focus must therefore keep the geometry stable and
+     leave every control reachable, which is what this asserts. */
+  const beforeFocus = (await composer.boundingBox())?.height ?? 0;
   await editor.click();
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(120);
+  await expect(composer).toHaveClass(/composer-focused/);
+  const afterFocus = (await composer.boundingBox())?.height ?? 0;
+  expect(afterFocus).toBeGreaterThanOrEqual(beforeFocus);
+  expect(afterFocus).toBeLessThanOrEqual(200);
   await expect(composer.locator('.effort-picker')).toBeVisible();
   await expect(composer.locator('.mobile-mic-btn')).toBeVisible();
+  await expect(composer.locator('.start-btn')).toBeVisible();
 
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
