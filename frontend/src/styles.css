@@ -8416,6 +8416,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 body[data-conversation-active="true"] .home-ideas{display:none}
 
+/* Chat composer follow-ups must retire once a conversation is active —
+   without this rule the chip row would surface follow-ups (and flicker
+   on every React commit) during an in-flight session. The JS engine
+   (`src/ui/suggestions.js → renderSuggestions`) is the source of
+   truth and clears the row the moment the first user turn lands; this
+   selector is the CSS-level safety net for any attribute flip the
+   engine hasn't observed yet. */
+body[data-conversation-active="true"] .chat-suggestions{display:none}
+
 /* ── Chat-view follow-up suggestions ─────────────────────────────────
    Two chips above #chatInputBar. Mirrors .home-ideas so the two
    surfaces look like the same control in different places, but uses
