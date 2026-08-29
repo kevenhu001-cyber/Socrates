@@ -285,11 +285,6 @@
         </button>
       </div>
     </div>
-    <div class="sidebar-mode-switch" role="tablist" aria-label="Workspace mode">
-      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-action="toggleAppMode" data-action-guard="appMode:chat:neq">Cowork</button>
-      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-action="toggleAppMode" data-action-guard="appMode:tutor:neq">Code</button>
-    </div>
-
     <!-- P_chatgpt-landing — ChatGPT-style sidebar nav. Six buttons modeled
          after ChatGPT's primary navigation (新聊天 / 文件库 / 项目 /
          已安排 / 插件 / 更多).
@@ -673,31 +668,14 @@
           </div>
         </div>
 
-        <!-- P_cowork-landing — starter ideas. Each row carries its own line
-             glyph inside a hairline tile; three identical logo bitmaps read
-             as an unfinished placeholder rather than a set of choices. The
-             tile is decorative, so the SVG is aria-hidden and the label
-             carries the accessible name. -->
+        <!-- P_cowork-landing — starter ideas. Two chips; each row carries
+             its own line glyph inside a hairline tile. The container is
+             empty in markup: src/ui/suggestions.js fills it at runtime,
+             picking prompts from a built-in library or deriving them from
+             the latest assistant turn. The label still drives the screen-
+             reader announcement via data-i18n-key. -->
         <div class="home-ideas" aria-label="Ideas for you">
           <div class="home-ideas-label" data-i18n-key="home.ideasLabel">Ideas for you</div>
-          <button class="home-idea" type="button" data-home-prompt="Send me a daily briefing">
-            <span class="home-idea-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v13H6a2 2 0 0 1-2-2z"/><path d="M16 8h2.5A1.5 1.5 0 0 1 20 9.5v7a2 2 0 0 1-2 2h-2"/><path d="M7 8h6M7 11h6M7 14h4"/></svg>
-            </span>
-            <span data-i18n-key="home.idea.briefing">Send me a daily briefing</span>
-          </button>
-          <button class="home-idea" type="button" data-home-prompt="Help me organize my inbox">
-            <span class="home-idea-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13.5 6 6.2A1.5 1.5 0 0 1 7.4 5.2h9.2a1.5 1.5 0 0 1 1.4 1L20.5 13.5"/><path d="M3.5 13.5h4l1.2 2.2h6.6l1.2-2.2h4v3.9a1.6 1.6 0 0 1-1.6 1.6H5.1a1.6 1.6 0 0 1-1.6-1.6z"/></svg>
-            </span>
-            <span data-i18n-key="home.idea.inbox">Organize my inbox</span>
-          </button>
-          <button class="home-idea" type="button" data-home-prompt="Customize Socrates for the way I work">
-            <span class="home-idea-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/><circle cx="9" cy="6.5" r="2.1"/><circle cx="15" cy="12" r="2.1"/><circle cx="8" cy="17.5" r="2.1"/></svg>
-            </span>
-            <span data-i18n-key="home.idea.customize">Customize Socrates for me</span>
-          </button>
         </div>
 
       </div>
@@ -798,6 +776,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         </div>
+        <!-- P_chat-suggestions — Two follow-up suggestion chips above the
+             in-session composer. src/ui/suggestions.js fills this container
+             at runtime so the chips follow the conversation and the UI
+             language. Empty in markup so the first paint of the chat view
+             doesn't show a stale hardcoded suggestion before the engine
+             commits its first render. -->
+        <div class="chat-suggestions" aria-label="Follow-up suggestions"></div>
         <div class="chat-input-bar" id="chatInputBar">
           <!-- P_pill-anchor-composer — moved inside chat-input-bar so the
                pill anchors to the composer's top edge instead of
@@ -839,7 +824,6 @@
                     </div>
                   </div>
                 </div>
-                <span class="chat-input-hint" id="chatInputHint">Shift+Enter for new line</span>
                 <button class="mobile-mic-btn" type="button" data-action="toggleSpeechInput" data-action-arg="chat" aria-label="Voice input" aria-pressed="false">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></svg>
                 </button>

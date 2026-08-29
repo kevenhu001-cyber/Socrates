@@ -124,29 +124,54 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* 24px is the composer's designed radius across all five of its
-     breakpoint rules; the 18 this used to assert predates that pass. */
-  expect(composed.wrapRadius).toBe(24);
+  /* Conversation and landing now share the same compact desktop shell. */
+  expect(composed.wrapRadius).toBe(16);
   expect(composed.wrapBorder).not.toBe('0px');
-  expect(composed.sendSize).toBe(38);
-  expect(composed.attachSize).toBe(38);
+  expect(composed.sendSize).toBe(30);
+  expect(composed.attachSize).toBe(28);
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
 test('mobile chat workbench keeps a focusable multiline composer without horizontal overflow', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.mobile });
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.mobile,
+    streamBody: [textFrame('Sent without changing the composer surface.'), completeFrame()].join(''),
+  });
 
   const editor = page.locator('#chatComposerRoot .rich-composer-editor');
   const wrap = page.locator('#chatInputWrap');
   await expect(page.locator('#msgList')).toBeVisible();
   await expect(editor).toBeVisible();
-  const collapsedHeight = await wrap.evaluate((node) => node.getBoundingClientRect().height);
+  const initial = await wrap.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      height: node.getBoundingClientRect().height,
+      width: node.getBoundingClientRect().width,
+      background: style.backgroundColor,
+      radius: style.borderRadius,
+      pageBackground: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
+    };
+  });
   await editor.focus();
   await editor.fill('Mobile line one');
+  await expect(wrap).toHaveClass(/composer-focused/);
+  await expect(wrap).not.toHaveClass(/composer-multiline/);
+  await page.waitForTimeout(80);
+  const singleLineHeight = await wrap.evaluate((node) => node.getBoundingClientRect().height);
+  expect(Math.abs(singleLineHeight - initial.height)).toBeLessThanOrEqual(2);
+
   await editor.press('Shift+Enter');
   await editor.type('Mobile line two');
-  await expect(wrap).toHaveClass(/composer-focused/);
-  await page.waitForTimeout(220);
+  await expect(wrap).toHaveClass(/composer-multiline/);
+  const animatedHeights = [];
+  for (const delay of [35, 55, 75, 110]) {
+    await page.waitForTimeout(delay);
+    animatedHeights.push(await wrap.evaluate((node) => node.getBoundingClientRect().height));
+  }
+  for (let index = 1; index < animatedHeights.length; index += 1) {
+    expect(animatedHeights[index]).toBeGreaterThanOrEqual(animatedHeights[index - 1] - 1);
+  }
 
   const geometry = await snapshotWorkbenchGeometry(page);
   const mobileComposer = await page.evaluate(() => {
@@ -165,11 +190,32 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(geometry.app.height).toBe(WORKBENCH_VIEWPORTS.mobile.height);
   expect(geometry.composer.width).toBeLessThanOrEqual(WORKBENCH_VIEWPORTS.mobile.width);
   expect(geometry.overflow).toBeLessThanOrEqual(0);
-  expect(mobileComposer.focusedHeight).toBeGreaterThan(collapsedHeight + 24);
+  expect(mobileComposer.focusedHeight).toBeGreaterThanOrEqual(initial.height + 24);
   expect(mobileComposer.fontSize).toBe(16);
-  expect(mobileComposer.sendSize).toBeGreaterThanOrEqual(40);
-  expect(mobileComposer.attachSize).toBeGreaterThanOrEqual(40);
+  expect(mobileComposer.sendSize).toBe(36);
+  expect(mobileComposer.attachSize).toBe(36);
   expect(mobileComposer.activeEditor).toBe(true);
+
+  await editor.fill('Send this single line');
+  await expect(wrap).not.toHaveClass(/composer-multiline/);
+  await page.waitForTimeout(360);
+  await editor.press('Enter');
+  await expect(page.locator('#msgList .msg.assistant').last()).toContainText('Sent without changing');
+  const afterSend = await wrap.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      height: node.getBoundingClientRect().height,
+      width: node.getBoundingClientRect().width,
+      background: style.backgroundColor,
+      radius: style.borderRadius,
+      pageBackground: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
+    };
+  });
+  expect(afterSend.height).toBeCloseTo(initial.height, 0);
+  expect(afterSend.width).toBeCloseTo(initial.width, 0);
+  expect(afterSend.background).toBe(initial.background);
+  expect(afterSend.radius).toBe(initial.radius);
+  expect(afterSend.pageBackground).toBe(initial.pageBackground);
 });
 
 test('deterministic tool fixture preserves one durable row and finalized answer', async ({ page }) => {

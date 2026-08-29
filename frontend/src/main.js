@@ -28,7 +28,7 @@ import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned, smoot
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
-import './ui/homeIdeas.js';
+import './ui/suggestions.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
 import {
@@ -144,11 +144,22 @@ import {
 
 /* React migration bridge. The bridge only exists when `?react=1` loaded the
    dynamic compatibility runtime; default mode pays no React bundle cost.
-   Payloads contain lifecycle metadata only — never prompt or response text. */
+   Payloads contain lifecycle metadata only — never prompt or response text.
+
+   Also dispatches a `socrates:chat-runtime-changed` window event so
+   non-React listeners (e.g. the prompt-suggestion engine) can re-derive
+   their UI from the latest message snapshot. The dispatch is synchronous
+   and wrapped in try/catch so a noisy listener can never block the React
+   bridge from publishing its event. */
 function publishReactChatRuntime(event){
   try{
     var bridge=window.__socratesReactChatBridge;
     if(bridge&&typeof bridge.publish==="function")bridge.publish(event);
+  }catch(_){}
+  try{
+    if(typeof window!=="undefined"){
+      window.dispatchEvent(new CustomEvent("socrates:chat-runtime-changed",{detail:event||{}}));
+    }
   }catch(_){}
 }
 
@@ -2983,55 +2994,25 @@ async function startSession(){
     if(!tutorExploration)return;
   }
 
+  /* P_send-instant — common state setup. Run BEFORE the branch so both
+     chat and tutor modes share the same fresh session identity. The
+     individual branches then do their own synchronous view-swap; this
+     block stays cheap (no awaits, no network) so the click→view swap
+     remains a single task. */
+  var newSessId=generateId();
   state.topic=topic;
   state.diagIndex=0;
   state.diagAnswers=[];
-
-  /* Always generate nodes and fallback questions */
-  var gen=aiGenerate(topic);
-  state.kbNodes=gen.nodes;
-  state.domain=gen.domain;
-
-  state.currentNode=0;
-  state.stuckCount=0;
-  state.totalQ=0;
-  state.explaining=false;
-  state.lastCallSource=null;
-
-  /* User clicked Begin — this is when the session officially starts. */
-  var newSessId=generateId();
-  /* P_dup-session — mirror into the namespaced field too so the
-     first saveCurrentSession after Begin uses this id rather than
-     re-generating its own (which the previous code did, creating
-     a duplicate session on the server). setCurrentSessionId writes
-     to both fields + window mirror in one call. */
-  setCurrentSessionId(newSessId);
-  pushChatIdToURL(state.currentSessionId);
-  /* P_new-session-context-leak — startSession() must NOT inherit the
-     previous session's message history. The Begin button calls
-     startSession() directly (no resetApp() in between when the user
-     just edits the topic input and clicks Begin again from the
-     topic-setup screen), so state.messages can still hold the prior
-     chat's turns. extractHistory() in askChatTurn() would then feed
-     the LLM the old conversation + the new topic, producing the
-     "AI kept answering along the old session's context" cross-talk.
-
-     P_recents-pollution — clearing messages here is also what makes
-     the P_recents-auto save below safe to run BEFORE the chat starts.
-     Without this ordering, saveCurrentSession() would POST the prior
-     session's turns under the NEW session id; the server would UPSERT
-     them onto the new row, and every other device that syncs
-     /api/sessions would see a polluted session whose title is "new
-     topic" but whose messages are "old conversation". Clearing state
-     first guarantees the Begin-time POST carries an empty message
-     array regardless of which path called us. The DOM msgList is
-     cleared per-branch below (chat / tutor). */
+  state.kbNodes=[];
+  state.domain=state.topic;
+  state.phase=(appMode==="chat" || _deepResearchOn)?"chat":"diagnostic";
+  /* P_new-session-context-leak — clear the inherited message list so
+     saveCurrentSession never carries the previous session's turns under
+     the new session id (P_recents-pollution). */
   state.session.messages=[];
-  /* P_currentProjectId-leak — reset project binding so a new session
-     started via Begin (without going through resetApp()) doesn't
-     inherit the previous session's projectId. Preserve any project
-     explicitly selected via _nextProjectId (same pattern as
-     resetApp()). */
+  /* P_currentProjectId-leak — reset project binding unless the caller
+     explicitly selected one (the Project picker stores it in
+     window._nextProjectId before invoking startSession). */
   state.currentProjectId=null;
   if(window._nextProjectId){
     state.currentProjectId=window._nextProjectId;
@@ -3039,60 +3020,24 @@ async function startSession(){
   }
   state.diagQuestions=[];
   state.diagAnswers=[];
-  state.diagIndex=0;
   state.substantiveCount=0;
   state.stuckCount=0;
   state.session.stuckCheckOffered=false;
   state.session.stuckCheckRejected=0;
   state.session.fourOptionDialog=null;
-  /* AUDIT-R5 — stamp the phase for the Begin-time auto-save below.
-     Previously the tutor branch never set phase before the first
-     save, so a tutor session created right after a chat session
-     inherited phase="chat" on the server. proceedToTeaching flips
-     tutor sessions to "chat" once teaching actually starts. */
-  state.phase=(appMode==="chat")?"chat":"diagnostic";
-  /* P_recents-auto — save the session to the server immediately so it
-     appears in the Recent sessions list as soon as the user clicks
-     Begin, without waiting for the first AI response to finish. The
-     initial save carries the topic but no messages; subsequent saves
-     (from finishAfterRender / proceedToTeaching) fill in the content.
-     MUST run AFTER the message-clearing block above so the empty
-     state is what gets persisted.
-     P_session-race — AWAIT the save so the server has the session row
-     before /api/chat/stream's requireOwnedSession() runs. Without this,
-     the stream request fires (via setTimeout(0) below) before the POST
-     /api/sessions round-trip completes, and the server returns 404
-     "Session not found". The await guarantees the session exists
-     server-side before the first chat turn is sent. */
-  await saveCurrentSession();
-  /* F2b — flush cross-round transients (search cache, call metadata,
-     composer draft, plan fields, _pendingChat*). Placed BEFORE the
-     new-session abort so even if the abort fires during the helper,
-     we never carry the previous session's web-search result into the
-     new chat. */
-  resetSessionTransients(state);
-  /* P_new-session-context-leak — also abort any in-flight stream from
-     a previous session so its late onDelta/finish callbacks can't
-     write into the freshly-cleared state.messages. */
-  if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
-  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-  window._activeChatCtl=null;
-  window._activeChatAbort=null;
-  _chatStreaming=false;
-  _chatStopMode=false;
+  /* Set the new session id BEFORE the view swap. setCurrentSessionId
+     publishes a state-synced event that React commits asynchronously,
+     but the synchronous state mutations above already happened so the
+     first paint of chatView sees the right id without waiting for
+     React to flush. pushChatIdToURL only updates window.location, which
+     is cheap. */
+  setCurrentSessionId(newSessId);
+  pushChatIdToURL(state.currentSessionId);
 
-/* Chat mode: skip diagnostic, KB, mistake book. Go straight to chat
-      with a plain-conversation prompt. The first AI turn is a greeting
-      so the user sees something without having to type. Deep Research
-      shares this startup (view swap + session bookkeeping) and only
-      swaps the first AI turn for the research agent. */
   if(appMode==="chat" || _deepResearchOn){
-    
-    state.kbNodes=[];
-    /* diagQuestions/diagAnswers/diagIndex/substantiveCount already
-        cleared by the P_new-session-context-leak block above. */
-    state.domain=state.topic;
-    state.phase="chat";
+
+    /* STEP 1 — flip to chat view + commit the user bubble SYNCHRONOUSLY.
+       Everything in this block runs in the same task as the click. */
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
@@ -3100,43 +3045,81 @@ async function startSession(){
     toggleChatTopBarEls(true);
     clearLegacyMsgListChildren();
     publishReactChatRuntime({type:"state-synced",reason:"new-chat-start"});
-    /* P_attachments-start — assemble the first user message the same
-       way submitChatMessage does, so an attachment dropped onto the
-       topic-setup screen travels with the very first chat turn (not
-       just follow-up messages). buildMessageContent may call
-       /api/vision/describe for image attachments; await it here so
-       the multimodal content is fully assembled before askChatTurn
-       picks up _pendingChatContent. */
-    var startBuilt = (typeof buildMessageContent === "function")
-      ? await buildMessageContent(state.topic)
-      : { rawText: state.topic, parts: state.topic, attachmentList: [] };
-    var startChatContent = startBuilt.parts;
-    var startPersistText = startBuilt.rawText;
-    var startAttList = startBuilt.attachmentList || [];
-    window._pendingChatContent = startChatContent;
-    window._pendingAttachments = startAttList;
-    addMessage("user", startPersistText, null, null, startAttList);
-    /* Consume the pending attachments now that the message is committed
-       to the DOM. Re-render chips so both composers' strips empty out. */
+
+    /* addMessage returns the clientId of the new bubble; the background
+       task uses it to patch attachments once buildMessageContent completes. */
+    var _startUserClientId = addMessage("user", state.topic, null, null, []);
+    /* Reset attachments + chips immediately so the topic-setup composer
+       looks "empty" once the view swap completes. */
     if(typeof resetAttachments === "function") resetAttachments();
     if(typeof renderAttachmentChips === "function") renderAttachmentChips();
     if(typeof updateSendBtn === "function") updateSendBtn();
     updateKB();
     updateChatStats();
-    /* Fire the greeting stream on the NEXT task (deferred). Do NOT call
-       askChatTurn synchronously inside the Begin click handler:
-       addStreamingMessage() captures ownerSessionId immediately, but
-       several still-pending microtasks from the topic-setup screen can
-       touch state.messages or state.session.currentSessionId in the same
-       task. If any of them land AFTER the placeholder is pushed but
-       before stillOwnsSlot() checks it, the placeholder's slot identity
-       becomes stale and stillOwnsSlot() drops every incoming delta —
-       the bubble then hangs on the "Connecting…" placeholder. The manual
-       Send path (submitChatMessage) wraps askChatTurn in setTimeout(…,0),
-       so the same code path works for follow-up messages. Mirror that
-       here so the first chat turn behaves identically — including the
-       async wrapper that ensures proper microtask ordering. */
+
+    /* STEP 2 — defer to the next task. The current task still has
+       pending microtasks (React commit, scroll, …) that should land on
+       the topic-setup DOM, not the freshly-flipped chat-view. Same
+       reason as the original P_microtask-defer comment for askChatTurn:
+       addStreamingMessage() captures ownerSessionId immediately and
+       late microtasks could otherwise bump the placeholder out of slot. */
     setTimeout(async function(){
+      /* F2b — flush cross-round transients (search cache, call metadata,
+         composer draft, plan fields, _pendingChat*). Placed BEFORE the
+         new-session abort so even if the abort fires during the helper,
+         we never carry the previous session's web-search result into the
+         new chat. */
+      resetSessionTransients(state);
+      /* P_new-session-context-leak — also abort any in-flight stream from
+         a previous session so its late onDelta/finish callbacks can't
+         write into the freshly-cleared state.messages. */
+      if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
+      if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+      window._activeChatCtl=null;
+      window._activeChatAbort=null;
+      _chatStreaming=false;
+      _chatStopMode=false;
+      /* P_attachments-start — assemble the first user message the same
+         way submitChatMessage does. Fire this in parallel with the
+         session save so neither blocks the other; both complete before
+         askChatTurn fires. */
+      var builtP = (typeof buildMessageContent === "function")
+        ? buildMessageContent(state.topic)
+        : Promise.resolve({ rawText: state.topic, parts: state.topic, attachmentList: [] });
+      /* P_session-race — still awaits the save before askChatTurn so
+         requireOwnedSession() sees the row. The save runs concurrently
+         with buildMessageContent instead of blocking the view swap. */
+      var saveP = Promise.resolve(saveCurrentSession());
+      var startBuilt, saveResult;
+      try {
+        [startBuilt, saveResult] = await Promise.all([builtP, saveP]);
+      } catch (e) {
+        /* If either background call fails, fall back to a plain-text
+           turn so the user can still chat; buildMessageContent failure
+           on a topic without attachments is impossible, but defending
+           here keeps the click robust to a server hiccup. */
+        startBuilt = { rawText: state.topic, parts: state.topic, attachmentList: [] };
+      }
+      var startChatContent = startBuilt.parts || state.topic;
+      var startPersistText = startBuilt.rawText || state.topic;
+      var startAttList = Array.isArray(startBuilt.attachmentList) ? startBuilt.attachmentList : [];
+      window._pendingChatContent = startChatContent;
+      window._pendingAttachments = startAttList;
+      /* Patch the user bubble in place if attachments arrived late
+         (image attachments need /api/vision/describe). React's message
+         list reads from the state snapshot, so a state-synced publish
+         causes it to re-render the bubble with the chips attached. */
+      if (startAttList.length && _startUserClientId) {
+        for (var _si = state.messages.length - 1; _si >= 0; _si--) {
+          if (state.messages[_si] && state.messages[_si].clientId === _startUserClientId) {
+            state.messages[_si].attachments = startAttList;
+            state.messages[_si].rawText = startPersistText;
+            state.messages[_si].html = formatMsg(startPersistText);
+            publishReactChatRuntime({type:"state-synced",reason:"start-attachment-patch"});
+            break;
+          }
+        }
+      }
       /* Deep Research first turn — the user bubble is already committed
          above, so call startDeepResearch (not launchDeepResearch, which
          would re-read the now-empty composer and post a duplicate). */
@@ -3163,17 +3146,39 @@ async function startSession(){
      the first chat bubble; tutor mode goes through a diagnostic
      detour first, so we stash the list on state for the LLM calls
      ahead. After this snapshot, the pending chips are cleared so
-     the chat composer (visible after diagnostic) starts empty. */
-  var tutorBuilt = null;
-  if(typeof buildMessageContent === "function"){
-    try{ tutorBuilt = await buildMessageContent(topic); }catch(_){ tutorBuilt = null; }
-  }
-  state.tutorAttachments = (tutorBuilt && tutorBuilt.attachmentList) || [];
-  state.tutorPartsTemplate = (tutorBuilt && tutorBuilt.parts) || topic;
+     the chat composer (visible after diagnostic) starts empty.
+
+     P_tutor-instant — view swap above is already synchronous. The
+     remaining await (buildMessageContent) is also deferred so the
+     diagnostic loading screen appears immediately; the resolved
+     attachments land on state once the call returns. If the call
+     never returns (e.g. image describe timeout), tutor mode can still
+     proceed with an empty attachment list. */
   if(typeof resetAttachments === "function") resetAttachments();
   if(typeof renderAttachmentChips === "function") renderAttachmentChips();
   if(typeof updateStartBtn === "function") updateStartBtn();
   if(typeof updateSendBtn === "function") updateSendBtn();
+  if(typeof buildMessageContent === "function"){
+    /* Fire-and-forget. The promise resolves into state.tutorAttachments
+       so the eventual generateDiagnosticQuestions() can read it. We do
+       NOT await here — the user already sees the diagnostic view; the
+       attachment list will appear in the first teaching turn even if
+       it's empty for the diagnostic step. */
+    buildMessageContent(topic).then(function(tutorBuilt){
+      try{
+        state.tutorAttachments = (tutorBuilt && tutorBuilt.attachmentList) || [];
+        state.tutorPartsTemplate = (tutorBuilt && tutorBuilt.parts) || topic;
+      }catch(_){}
+    }).catch(function(){
+      try{
+        state.tutorAttachments = [];
+        state.tutorPartsTemplate = topic;
+      }catch(_){}
+    });
+  } else {
+    state.tutorAttachments = [];
+    state.tutorPartsTemplate = topic;
+  }
 
   /* U-H3 — reusable loading markup (initial render + retry re-render).
      Includes a cancel button so the user can bail out of a slow
@@ -5161,6 +5166,10 @@ function addMessage(role,text,type,actions,attachmentsArg){
       updateKB();
     }
   }catch(_){}
+  /* Return the clientId so callers (e.g. startSession) can patch this
+     entry in place once async work like buildMessageContent finishes —
+     without re-running the side effects above. */
+  return clientId;
 }
 
 /* Tool-card restoration helpers live in src/ui/toolCards.js. Live

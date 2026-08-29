@@ -162,7 +162,7 @@ test('mobile composer follows a keyboard inset continuously without a position f
   expect(Math.round(start.y - samples[samples.length - 1])).toBe(260);
 });
 
-test('expanding the mobile composer keeps the latest message pinned and unobscured', async ({ page }) => {
+test('a second input line expands the mobile composer and keeps the latest message unobscured', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -189,7 +189,15 @@ test('expanding the mobile composer keeps the latest message pinned and unobscur
     return { barHeight: bar.getBoundingClientRect().height };
   });
 
-  await page.locator('#chatComposerRoot .rich-composer-editor').first().focus();
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await editor.fill('First line');
+  await page.waitForTimeout(80);
+  const focusedSingleLine = await page.locator('#chatInputBar').evaluate((node) => node.getBoundingClientRect().height);
+  expect(Math.abs(focusedSingleLine - before.barHeight)).toBeLessThanOrEqual(2);
+  await editor.press('Shift+Enter');
+  await editor.type('Second line');
+  await expect(page.locator('#chatInputWrap')).toHaveClass(/composer-multiline/);
   await page.waitForTimeout(450);
 
   const after = await page.evaluate(() => {

@@ -15,8 +15,12 @@
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
-[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
-[data-theme=socrates][data-mode=light]{--bg-000:40 24% 91%;--bg-100:40 18% 87%;--bg-200:40 14% 81%;--bg-300:40 10% 73%;--bg-400:0 0% 100%;--text-000:40 12% 10%;--text-100:40 10% 16%;--text-200:40 8% 32%;--text-300:40 8% 32%;--text-400:40 6% 38%;--text-500:40 6% 38%;--border-100:40 10% 62%;--border-200:40 10% 62%;--border-300:40 10% 62%;--border-400:40 10% 62%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
+[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
+[data-theme=socrates][data-mode=light]{--bg-000:42 33% 98%;--bg-100:40 25% 96%;--bg-200:38 20% 92%;--bg-300:36 15% 87%;--bg-400:0 0% 100%;--text-000:36 12% 10%;--text-100:34 10% 16%;--text-200:34 8% 28%;--text-300:34 7% 35%;--text-400:34 6% 43%;--text-500:34 5% 50%;--border-100:38 12% 86%;--border-200:38 11% 82%;--border-300:36 10% 78%;--border-400:36 9% 72%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
+/* Chinese uses the bundled Noto face directly for both UI and display copy.
+   Keeping the locale override on the theme root prevents an OS-specific
+   Chinese fallback from changing the product's typography. */
+html[data-theme=socrates][data-mode]:lang(zh){--font-sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;--font-display:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* ─── View Transition — cross-browser consistent ── */
@@ -721,7 +725,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
     solid surface, grabber, and safe-area padding. JS positions the desktop
     popover via inline left/top, so those are overridden here. */
  .composer-tools-menu{
-   left:0!important;right:0;top:auto!important;bottom:0;
+   left:0;right:0;top:auto;bottom:0;
    width:100%;max-width:none;
    max-height:min(72vh,calc(100vh - 72px));overflow-y:auto;overscroll-behavior:contain;
    padding:6px 10px calc(12px + env(safe-area-inset-bottom,0px));
@@ -1991,7 +1995,11 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
      mobile. Safe-area devices get whichever inset is larger. */
   padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
 }
-.chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);--composer-collapsed-min:54px;--composer-focused-min:116px;--composer-editor-max:280px;--composer-editor-max-mobile:180px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.55);border-radius:24px;overflow:hidden;
+/* UI-align: chat-input-wrap mirrors topic-input-wrap so the composer does
+   not change skin between landing and in-chat. Identical width, radius,
+   border, shadow, and focus feedback — only the inner Tiptap surface and
+   the footer controls differ between the two surfaces. */
+.chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:28px;overflow:hidden;width:100%;max-width:720px;margin:0 auto;
   /* Focus-driven geometry (min-height/padding/border-radius/gap jump in the
      desktop :has(:focus) rule below) must glide, not snap. Every animatable
      property shares one duration/ease so the wrap, its shadow, and the inner
@@ -2010,7 +2018,11 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
      dropdown. The composer shell is small enough that the missing paint
      containment is not measurable. */
   contain:layout;
-  box-shadow:0 2px 12px hsl(var(--always-black)/8%)}
+  box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
+  position:relative;z-index:1;
+  /* Focus feedback glides on the same duration/curve as topic-input-wrap
+     so the composer skin does not change between landing and in-chat. */
+  transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease)}
 .chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
 #chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:24px;max-height:120px;overflow-y:auto;font-family:var(--font-sans);padding:5px 14px 7px}@supports (scrollbar-width:none){#chatInputArea{scrollbar-width:none}}
 #chatInputArea::-webkit-scrollbar{display:none}
@@ -2887,7 +2899,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
    style="font-style:italic" on mathnormal spans. */
 .katex .mathnormal{font-style:normal !important}
 .katex .mathvariant-italic{font-style:normal !important}
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4dvh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:20px}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4dvh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:6px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
 
@@ -4666,9 +4678,15 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 .agent-tool-card[data-tool-state="cancelled"]{border-color:hsl(35 58% 48%/.34)}
 
 /* Composer: a stable, tactile control surface that stays secondary to the
-   conversation while giving attachments, offline states, and Stop room. */
-.chat-input-bar{background:linear-gradient(to bottom,transparent 0%,hsl(var(--surface-page))/26px);padding-top:18px;padding-inline:12px}
-.chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:58px;margin:0 auto;width:min(calc(100% - 32px),640px);padding:7px 8px;border-radius:24px;border-color:hsl(var(--border-300)/.42);background:hsl(var(--bg-000));box-shadow:0 10px 30px -6px hsl(var(--always-black)/.14),0 2px 8px hsl(var(--always-black)/.06);transition:width var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease)}
+   conversation while giving attachments, offline states, and Stop room.
+   UI-align: chat-input-bar mirrors the topic-setup footer surface so the
+   composer skin does not change between landing and in-chat — no fade
+   gradient, no extra padding-top. */
+.chat-input-bar{padding-top:6px;padding-inline:16px;background:transparent}
+/* UI-align: chat-input-wrap mirrors topic-input-wrap. The width, radius,
+   border, shadow, and focus feedback here intentionally duplicate
+   topic-input-wrap so the composer skin does not change between surfaces. */
+.chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0 auto;width:100%;max-width:720px;padding:7px 8px;border-radius:28px;border-color:hsl(var(--border-300)/0.24);background:hsl(var(--bg-000));box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease)}
 .chat-composer-body{display:contents}
 .chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.45)}
  .chat-input-wrap .attachment-chips{order:0;flex-basis:100%}
@@ -4676,7 +4694,11 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 .chat-input-footer{display:contents}
 .chat-input-footer .footer-left-group{order:1;display:flex;align-items:center;gap:2px;flex-shrink:0}
 .chat-input-footer .chat-input-hint{order:3;display:none}
-.chat-input-footer .send-btn{order:4;width:42px;height:42px;margin-left:2px;background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+/* UI-align: send-btn mirrors start-btn. Same 30px circle footprint and
+   15px SVG so the run control does not change size between landing and
+   in-chat. */
+.chat-input-footer .send-btn{order:4;width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%;margin-left:2px;background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.chat-input-footer .send-btn svg{width:15px;height:15px}
 .chat-input-footer .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .chat-input-footer .attach-btn{width:38px;height:38px;color:hsl(var(--text-300))}
 .chat-input-footer .attach-btn svg{width:20px;height:20px}
@@ -4770,11 +4792,13 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    composer in the visual reference. The topic composer and phone layout
    retain the full formatting rail; Markdown shortcuts still work here. */
 @media(min-width:769px){
-  .chat-input-bar{padding-top:14px;padding-inline:16px}
+  .chat-input-bar{padding-top:6px;padding-inline:16px}
   .chat-input-wrap{
-    min-height:56px;width:min(calc(100% - 32px),640px);padding:5px 7px;gap:4px;
-    flex-wrap:wrap;border-radius:24px;
-    transition:width var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease);
+    /* UI-align: width/radius mirror topic-input-wrap so the composer skin
+       does not change between landing and in-chat. */
+    width:100%;max-width:720px;padding:5px 7px;gap:4px;
+    flex-wrap:wrap;border-radius:28px;
+    transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-wrap .composer-editor-root{
     order:2;flex:1 1 260px;width:auto;align-self:center;
@@ -4789,7 +4813,8 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
      order values used by the tool controls. The hint is display:none so
      it does not push the mic off-screen. */
   .chat-input-wrap .mobile-mic-btn{order:4;margin-left:2px}
-  .chat-input-wrap .send-btn{order:5}
+  /* UI-align: keep send-btn at 30px to mirror start-btn on landing. */
+  .chat-input-wrap .send-btn{order:5;width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%;margin-left:2px}
   .rich-composer[data-surface="chat"]{
     min-height:44px;display:flex;flex-direction:row;align-items:center;
   }
@@ -4838,12 +4863,14 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 @media(max-width:768px){
   .chat-input-bar{padding-inline:8px}
   .chat-input-wrap{
-    width:min(calc(100% - 32px),640px);min-height:var(--composer-collapsed-min);padding:6px;gap:2px;flex-wrap:wrap;border-radius:24px;
+    /* UI-align: width/radius mirror topic-input-wrap so the composer skin
+       does not change between landing and in-chat. */
+    width:100%;max-width:720px;padding:6px;gap:2px;flex-wrap:wrap;border-radius:28px;
     position:relative;
     /* All properties share the unified --composer-motion-duration/ease so
        the focus-in expansion and blur-out collapse move as one motion —
        border, shadow, size, and reordered children glide in lockstep. */
-    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);
+    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-wrap .chat-input-footer{display:contents}
   /* Mobile collapsed state is a real three-column row: left controls,
@@ -4872,7 +4899,9 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
   .rich-composer[data-surface="chat"]{min-height:42px;display:flex;align-items:center}
   .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
   .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
-  .chat-input-footer .send-btn{width:40px;height:40px}
+  /* UI-align: keep send-btn at 30px to mirror start-btn on landing. */
+  .chat-input-footer .send-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
+  .chat-input-footer .send-btn svg{width:15px;height:15px}
   .chat-input-footer .attach-btn{width:38px;height:38px}
   .chat-input-footer .mic-btn{display:none}
   /* Voice input: the collapsed mobile row is already three columns
@@ -4943,7 +4972,11 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
 }
 .attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
 @media(max-width:768px){
-  .attach-btn,.send-btn{width:36px;height:36px}
+  /* UI-align: keep send-btn at 30px on mobile to mirror start-btn. attach-btn
+     stays at 36px since the landing attach uses 36px as well. */
+  .attach-btn{width:36px;height:36px}
+  .send-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
+  .send-btn svg{width:15px;height:15px}
   .chat-input-footer{min-height:44px;padding:0 8px 6px}
   .chat-input-hint{display:none}
   .tool-run-summary{min-height:44px}
@@ -8125,9 +8158,19 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 @media(max-width:768px){
   .composer-tools-desktop-items{display:none}
   .composer-tools-mobile-items{display:block}
-  /* A compact floating card, not a full-width sheet. */
-  .composer-tools-menu{width:min(252px,calc(100vw - 24px));padding:6px;border-radius:16px}
+  /* A compact floating card, not a full-width sheet. Undo the earlier
+     mobile-sheet positioning so the inline coordinates from
+     ui/composerTools.js can anchor this card beside its trigger. */
+  .composer-tools-menu{
+    right:auto;bottom:auto;
+    width:min(252px,calc(100vw - 24px));padding:6px;
+    border:1px solid var(--tool-card-border);border-radius:16px;
+    box-shadow:0 12px 32px hsl(var(--always-black)/.28),0 1px 0 hsl(var(--always-white)/.04) inset;
+    animation:composer-tools-enter .22s var(--ease-out);
+    transform-origin:left bottom;
+  }
   .composer-tools-menu::before{display:none}
+  body.composer-tools-open::after{display:none}
   .composer-tools-mobile-item{
     display:flex;align-items:center;gap:12px;width:100%;min-height:44px;
     padding:6px 8px;border:0;border-radius:10px;background:transparent;
@@ -8149,6 +8192,18 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    A restrained desktop work surface: compact navigation, a centered hero,
    one two-tier composer, and lightweight starter ideas. */
 #appShell{
+  --cowork-page:40 25% 96%;
+  --cowork-sidebar:42 28% 93%;
+  --cowork-surface:42 33% 99%;
+  --cowork-surface-active:38 18% 87%;
+  --cowork-line:36 10% 76%;
+  --cowork-text:34 10% 16%;
+  --cowork-muted:34 6% 43%;
+  /* The three bars from public/logo.svg with the circular plate dropped, so
+     the mark can be used as a mask and take its colour from the accent. */
+  --cowork-brand-glyph:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 132'%3E%3Cg fill='%23000'%3E%3Crect width='96' height='36' rx='5'/%3E%3Crect y='48' width='96' height='36' rx='5'/%3E%3Crect y='96' width='96' height='36' rx='5'/%3E%3C/g%3E%3C/svg%3E");
+}
+[data-mode=dark] #appShell{
   --cowork-page:0 0% 7.4%;
   --cowork-sidebar:0 0% 5.8%;
   --cowork-surface:0 0% 12.3%;
@@ -8156,14 +8211,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   --cowork-line:0 0% 25%;
   --cowork-text:0 0% 88%;
   --cowork-muted:0 0% 54%;
-  /* The three bars from public/logo.svg with the circular plate dropped, so
-     the mark can be used as a mask and take its colour from the accent. */
-  --cowork-brand-glyph:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 132'%3E%3Cg fill='%23000'%3E%3Crect width='96' height='36' rx='5'/%3E%3Crect y='48' width='96' height='36' rx='5'/%3E%3Crect y='96' width='96' height='36' rx='5'/%3E%3C/g%3E%3C/svg%3E");
 }
 [data-mode=dark] #appShell,
 [data-mode=dark] .main-content,
 [data-mode=dark] .main-bg{background:hsl(var(--cowork-page))}
 [data-mode=dark] .main-bg{background-image:none;opacity:1}
+[data-mode=light] #appShell,
+[data-mode=light] .main-content,
+[data-mode=light] .main-bg{background:hsl(var(--cowork-page))}
+[data-mode=light] .main-bg{background-image:none;opacity:1}
 
 @media(min-width:769px){
   /* 240px rather than 288px: the reference shell trades sidebar width for
@@ -8185,9 +8241,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   .top-mode-tabs{display:none}
   /* Fluid, not a fixed 272px: the switch used to be pinned to the old
      sidebar width, so any width change overflowed it. */
-  .sidebar-mode-switch{display:flex;align-items:center;height:28px;margin:2px 8px 10px;padding:2px;box-sizing:border-box;border-radius:7px;background:hsl(var(--cowork-surface));flex-shrink:0}
-  .sidebar-mode-switch .app-mode-toggle{flex:1;min-width:0;height:24px;border:0;border-radius:5px;color:hsl(var(--cowork-muted));background:transparent;font:500 12px var(--font-sans);letter-spacing:0;cursor:pointer}
-  .sidebar-mode-switch .app-mode-toggle.active{color:hsl(var(--cowork-text));background:hsl(var(--cowork-surface-active));box-shadow:inset 0 0 0 1px hsl(var(--cowork-line)/.4)}
   .sidebar-nav{padding:0 8px 2px;gap:0}
   .sidebar-nav-btn{min-height:27px;gap:9px;padding:4px 8px;border-radius:6px;color:hsl(var(--cowork-muted));font-size:13px;line-height:18px}
   .sidebar-nav-btn svg{width:15px;height:15px;color:inherit;opacity:.9}
@@ -8274,12 +8327,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    than clipping it. */
 .topic-setup::before,
 .topic-setup::after{content:"";flex-basis:0;flex-shrink:1}
-.topic-setup::before{flex-grow:3;max-height:240px}
+.topic-setup::before{flex-grow:2;max-height:200px}
 .topic-setup::after{flex-grow:1}
 .topic-title.greeting{
   position:relative;
   margin:0;
-  padding:0 0 0 40px;
+  padding:0;
   font-family:var(--font-display);
   font-size:42px;
   font-weight:400;
@@ -8287,36 +8340,33 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   letter-spacing:-.035em;
   color:hsl(var(--cowork-text));
 }
-/* The brand glyph, not the app icon: /logo.png bakes in a dark circular
-   plate, which next to a serif greeting read as a disabled button. Masking
-   the three bars out of the mark leaves a flat accent-tinted glyph sitting on
-   the page, the way the reference hero does. */
-.topic-title.greeting::before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:50%;
-  width:22px;
-  height:30px;
-  background:hsl(var(--accent-000));
-  -webkit-mask:var(--cowork-brand-glyph) center/contain no-repeat;
-  mask:var(--cowork-brand-glyph) center/contain no-repeat;
-  transform:translateY(-50%);
-}
 .topic-sub{display:none}
 .topic-input-wrap{
   width:min(100%,620px);
   max-width:620px;
-  margin-top:30px;
+  margin-top:20px;
   border:1px solid hsl(var(--cowork-line));
   border-radius:16px;
   overflow:hidden;
   color:hsl(var(--cowork-text));
   background:hsl(var(--cowork-surface));
   box-shadow:none;
+  /* The hidden chat composer used to transition from its legacy one-row
+     geometry when the first message activated the conversation. Geometry is
+     already identical to the landing composer, so switching surfaces must be
+     immediate; only the measured second-line WAAPI animation changes height. */
+  transition:border-color .15s ease,background-color .15s ease;
 }
 .topic-input-wrap:hover{border-color:hsl(var(--cowork-muted)/.8)}
 .topic-input-wrap.composer-focused,.topic-input-wrap:focus-within{border-color:hsl(var(--cowork-muted));box-shadow:0 0 0 1px hsl(var(--cowork-line)/.45)}
+[data-mode=light] .topic-input-wrap{
+  box-shadow:0 1px 2px hsl(var(--always-black)/.04),0 10px 30px hsl(36 20% 30%/.07);
+}
+[data-mode=light] .topic-input-wrap.composer-focused,
+[data-mode=light] .topic-input-wrap:focus-within{
+  border-color:hsl(var(--accent-000)/.65);
+  box-shadow:0 0 0 3px hsl(var(--accent-000)/.1),0 12px 32px hsl(36 20% 30%/.08);
+}
 .topic-input-wrap .rich-composer .tiptap,
 .topic-input-wrap .rich-composer-editor{min-height:52px;padding:14px 16px 4px;font-size:14.5px;line-height:22px}
 .topic-footer{min-height:40px;gap:2px;padding:4px 8px 6px}
@@ -8327,10 +8377,27 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .topic-footer .effort-trigger .effort-caret{width:11px;height:11px}
 .topic-input-wrap .start-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
 .topic-input-wrap .start-btn svg{width:15px;height:15px}
-.home-ideas{width:min(100%,620px);margin:26px 0 0;display:flex;flex-direction:column;gap:0}
-.home-ideas-label{padding:0 10px 4px;color:hsl(var(--cowork-muted));font-size:11px}
-.home-idea{display:flex;align-items:center;gap:12px;min-height:32px;padding:5px 10px;border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;font:400 13px var(--font-sans);text-align:left;cursor:pointer}
-.home-idea:hover{background:hsl(var(--cowork-surface))}
+.home-ideas{width:min(100%,620px);margin:18px 0 0;display:flex;flex-direction:column;gap:0}
+/* Suggestion chips fade in / out smoothly so the row never snaps when
+   the engine swaps prompts (e.g. after a lang flip or after the user
+   sends a new turn). The transition is short enough to feel responsive
+   and long enough to mask React commits and i18n re-renders behind it. */
+.home-idea,.suggestion-chip{
+  display:flex;align-items:center;gap:12px;min-height:32px;padding:5px 10px;
+  border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;
+  font:400 13px var(--font-sans);text-align:left;cursor:pointer;
+  opacity:1;
+  transition:background-color .18s var(--ease-out),color .18s var(--ease-out),opacity .18s var(--ease-out),transform .18s var(--ease-out);
+}
+.home-idea:hover,.suggestion-chip:hover{background:hsl(var(--cowork-surface))}
+.home-idea:focus-visible,.suggestion-chip:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:1px}
+/* Enter: the chip starts hidden + slightly nudged down and animates
+   to its resting state over ~180ms. The JS toggles the .suggestion-enter
+   class on a rAF after appending, so the browser commits the start
+   frame first, then transitions the change — no flash. */
+.suggestion-chip.suggestion-enter{opacity:0;transform:translateY(4px)}
+.suggestion-chip:not(.suggestion-enter){opacity:1;transform:translateY(0)}
+.suggestion-chip.suggestion-leave{opacity:0;transform:translateY(-2px);pointer-events:none}
 /* A hairline tile per idea: it separates the glyph from the label without
    adding a filled chip, which is what the reference row does. */
 .home-idea-icon{
@@ -8342,34 +8409,384 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   border:1px solid hsl(var(--cowork-line)/.75);
   border-radius:6px;
   color:hsl(var(--cowork-muted));
+  transition:border-color .18s var(--ease-out),color .18s var(--ease-out);
 }
 .home-idea-icon svg{width:13px;height:13px}
-.home-idea:hover .home-idea-icon{border-color:hsl(var(--cowork-line));color:hsl(var(--cowork-text))}
+.home-idea:hover .home-idea-icon,.suggestion-chip:hover .home-idea-icon{border-color:hsl(var(--cowork-line));color:hsl(var(--cowork-text))}
 #topicDisclaimer{display:none}
 
 body[data-conversation-active="true"] .home-ideas{display:none}
 
+/* ── Chat-view follow-up suggestions ─────────────────────────────────
+   Two chips above #chatInputBar. Mirrors .home-ideas so the two
+   surfaces look like the same control in different places, but uses
+   the cowork-* tokens so the row reads correctly in either theme.
+   The container reserves its own height so adding/removing a chip
+   never shifts the composer (the engine animates opacity instead of
+   display:none). */
+.chat-suggestions{
+  width:min(100%,640px);
+  margin:0 auto 8px;
+  padding-inline:16px;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+.chat-suggestions:empty{margin:0;padding:0}
+.chat-suggestions-label{padding:0 6px 4px;color:hsl(var(--cowork-muted));font-size:11px}
+.chat-suggestions .suggestion-chip{min-height:32px}
+/* On mobile the chat composer fills the safe-area bottom; align the
+   suggestions just above it without padding-top (the row scrolls with
+   the chat input). */
+@media(max-width:768px){
+  .chat-suggestions{width:100%;padding-inline:12px}
+  .chat-suggestions .suggestion-chip{font-size:12.5px}
+}
+
 /* Short windows: the serif hero is the one band with slack in it. */
 @media(min-width:769px) and (max-height:660px){
-  .topic-title.greeting{font-size:34px;padding-left:34px}
-  .topic-title.greeting::before{width:26px;height:26px}
+  .topic-title.greeting{font-size:34px}
   .topic-input-wrap{margin-top:22px}
   .home-ideas{margin-top:18px}
 }
 
 @media(max-width:768px){
-  /* Phones get a gentler bias than the desktop 3:1 — the tall viewport makes
-     the desktop ratio open with ~400px of empty canvas above the hero. */
-  .topic-setup{padding:clamp(24px,5vh,48px) 16px max(24px,env(safe-area-inset-bottom,0px));overflow-y:auto}
-  .topic-setup::before{flex-grow:1.4;max-height:none}
-  .topic-setup::after{flex-grow:1}
-  .topic-title.greeting{margin:0;padding-left:0;font-size:32px;text-align:center}
-  .topic-title.greeting::before{display:none}
-  .topic-input-wrap{width:min(100%,620px);margin-top:28px;border-radius:24px}
+  /* Mobile empty state follows a bottom-action composition: the page itself
+     stays quiet while two useful prompts lead directly into the composer. */
+  .main:has(#topicSetup:not(.hidden)) .top-bar{min-height:56px;padding:10px 16px}
+  .main:has(#topicSetup:not(.hidden)) #sidebarOpenBtn,
+  .main:has(#topicSetup:not(.hidden)) #mobileIncognitoBtn{width:28px;height:28px}
+  .main:has(#topicSetup:not(.hidden)) #sidebarOpenBtn svg,
+  .main:has(#topicSetup:not(.hidden)) #mobileIncognitoBtn svg{width:28px;height:28px}
+  .main:has(#topicSetup:not(.hidden)) .mobile-mode-trigger{font-size:18px;font-weight:600}
+  [data-mode=dark] .main:has(#topicSetup:not(.hidden)) .top-bar,
+  [data-mode=dark] .main:has(#topicSetup:not(.hidden)) .main-content,
+  [data-mode=dark] .main:has(#topicSetup:not(.hidden)) .main-bg{background:hsl(var(--cowork-page))}
+  /* Light mode mobile landing — match the cowork-page token so the
+     composer shell reads as the same surface in either mode. */
+  [data-mode=light] .main:has(#topicSetup:not(.hidden)) .top-bar,
+  [data-mode=light] .main:has(#topicSetup:not(.hidden)) .main-content,
+  [data-mode=light] .main:has(#topicSetup:not(.hidden)) .main-bg{background:hsl(var(--cowork-page))}
+  .topic-setup{
+    justify-content:flex-end;
+    padding:0 16px max(24px,env(safe-area-inset-bottom,0px));
+    overflow-y:auto;
+  }
+  .topic-setup::before,.topic-setup::after{display:none}
+  .topic-title.greeting,.topic-sub{display:none}
+  .topic-input-wrap{
+    order:2;
+    width:100%;
+    margin:0;
+    border-radius:30px;
+  }
   .topic-input-wrap .rich-composer .tiptap,
-  .topic-input-wrap .rich-composer-editor{min-height:62px;padding:17px 18px 8px;font-size:15px;line-height:24px}
-  .topic-footer{min-height:48px;padding:5px 10px 8px}
-  .topic-input-wrap .start-btn{width:40px;min-width:40px;height:40px;min-height:40px}
-  .home-ideas{margin:24px 0 0}
-  .home-idea{padding-inline:10px}
+  .topic-input-wrap .rich-composer-editor{min-height:40px;padding:11px 18px 1px;font-size:16px;line-height:24px}
+  .topic-footer{min-height:40px;padding:2px 10px 4px}
+  .topic-input-wrap .attach-btn,
+  .topic-input-wrap .mobile-mic-btn,
+  .topic-input-wrap .start-btn{width:36px;min-width:36px;height:36px;min-height:36px;border-radius:50%}
+  .home-ideas{
+    order:1;
+    width:100%;
+    margin:0 0 16px;
+    gap:4px;
+  }
+  .home-ideas-label{display:none}
+  .home-idea{
+    min-height:44px;
+    gap:14px;
+    padding:7px 10px;
+    border-radius:10px;
+    font-size:16px;
+    color:hsl(var(--cowork-muted));
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .home-idea>span:last-child,.home-idea>.home-idea-text{overflow:hidden;text-overflow:ellipsis}
+  .home-idea-icon{width:24px;height:24px;border:0;border-radius:0;color:hsl(var(--cowork-text))}
+  .home-idea-icon svg{width:20px;height:20px}
+  .home-idea:nth-of-type(3){display:none}
+}
+
+/* ═══ Stable live-turn + composer state contract ═══════════════════════
+   Focus never changes the composer's geometry. A measured second rendered
+   line adds `.composer-multiline`; that is the sole trigger for the mobile
+   two-tier layout. Landing and conversation surfaces share the same page,
+   border, radius and fill so sending the first message does not swap themes. */
+.thinking-status-label.shimmer-text,
+.thinking-dot > .shimmer-text{
+  color:hsl(var(--text-400));
+  -webkit-text-fill-color:currentColor;
+  background:none;
+  animation:none;
+  will-change:auto;
+}
+.thinking-dot::before,
+.thinking-status::before{
+  opacity:.62;
+  transform:none;
+  animation:none;
+}
+
+/* Focus and first-send are state changes, not a second visual theme. Keep
+   both composer shells on their baseline edge treatment and prevent the
+   hidden chat shell from animating out of its legacy geometry when revealed. */
+#chatInputWrap,
+#chatInputWrap.composer-focused,
+#chatInputWrap.composer-multiline{
+  transition:border-color .15s ease,background-color .15s ease;
+}
+body:not(.exam-active):not(.workspace-active) #chatInputWrap{
+  width:min(100%,620px);
+  min-height:0;
+  padding:0;
+  gap:0;
+  border-color:hsl(var(--cowork-line));
+  border-radius:16px;
+  color:hsl(var(--cowork-text));
+  background:hsl(var(--cowork-surface));
+  box-shadow:none;
+}
+body:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap{
+  min-height:52px;
+  padding:14px 16px 4px;
+  font-size:14.5px;
+  line-height:22px;
+  transition:none;
+}
+.topic-input-wrap.composer-focused,
+.topic-input-wrap:focus-within,
+[data-mode=light] .topic-input-wrap.composer-focused,
+[data-mode=light] .topic-input-wrap:focus-within{
+  border-color:hsl(var(--cowork-line));
+  box-shadow:none;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .main-content,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .main-bg{
+  background:hsl(var(--cowork-page));
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
+  background:linear-gradient(to bottom,hsl(var(--cowork-page)/0),hsl(var(--cowork-page)) 24px);
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{
+  width:min(100%,620px);
+  min-height:0;
+  padding:0;
+  gap:0;
+  border-color:hsl(var(--cowork-line));
+  border-radius:16px;
+  color:hsl(var(--cowork-text));
+  background:hsl(var(--cowork-surface));
+  box-shadow:none;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-composer-body,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .chat-composer-body,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-composer-body{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto auto;
+  grid-template-rows:auto 40px;
+  column-gap:2px;
+  row-gap:0;
+  width:100%;
+  padding:0;
+  align-items:center;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .composer-editor-root,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .composer-editor-root,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .composer-editor-root{
+  grid-column:1 / -1;
+  grid-row:1;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
+  min-height:52px;
+  padding:14px 16px 4px;
+  font-size:14.5px;
+  line-height:22px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .footer-left-group,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .chat-input-footer .footer-left-group,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-input-footer .footer-left-group{
+  display:contents;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .attach-btn{
+  grid-column:1;
+  grid-row:2;
+  width:28px;
+  height:28px;
+  margin-left:8px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .footer-left-group .effort-picker,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .footer-left-group .effort-picker,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .footer-left-group .effort-picker{
+  position:relative;
+  inset:auto;
+  grid-column:3;
+  grid-row:2;
+  display:inline-flex;
+  margin:0;
+  transform:none;
+  pointer-events:auto;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .effort-trigger{
+  min-height:24px;
+  padding:3px 6px;
+  border-radius:6px;
+  gap:5px;
+  font-size:12.5px;
+}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .effort-trigger .effort-glyph{width:13px;height:13px}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .effort-trigger .effort-caret{width:11px;height:11px}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .mobile-mic-btn{display:none}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .send-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .chat-input-footer .send-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-input-footer .send-btn{
+  grid-column:4;
+  grid-row:2;
+  width:30px;
+  height:30px;
+  margin:0 8px 0 0;
+  border-radius:50%;
+}
+
+@media(min-width:769px){
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .attach-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .footer-left-group .effort-picker,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .send-btn{
+    position:relative;
+    top:-1px;
+  }
+}
+
+@media(max-width:768px){
+  body:not(.exam-active):not(.workspace-active) #chatInputWrap{
+    width:100%;
+    padding:0;
+    border-radius:30px;
+  }
+  body:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap{
+    min-height:40px;
+    padding:11px 18px 1px;
+    font-size:16px;
+    line-height:24px;
+    transition:none;
+  }
+  body:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"]{
+    min-height:40px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar{
+    min-height:56px;
+    padding:10px 16px;
+    border-bottom:0;
+    background:hsl(var(--cowork-page));
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #mobileMode{
+    display:flex!important;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #sidebarOpenBtn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #mobileIncognitoBtn{
+    width:28px;
+    height:28px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .main-bg,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .main-content{
+    background:hsl(var(--cowork-page));
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
+    padding-inline:16px;
+    padding-bottom:max(24px,env(safe-area-inset-bottom,0px));
+    background:linear-gradient(to bottom,transparent,hsl(var(--cowork-page)) 24px);
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{
+    width:100%;
+    min-height:0;
+    padding:0;
+    gap:0;
+    border-radius:30px;
+    border-color:hsl(var(--cowork-line));
+    background:hsl(var(--cowork-surface));
+    box-shadow:none;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-composer-body,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .chat-composer-body,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-composer-body{
+    grid-template-columns:auto minmax(0,1fr) auto auto auto;
+    grid-template-rows:40px 40px;
+    column-gap:2px;
+    row-gap:0;
+    padding-bottom:2px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .composer-editor-root,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .composer-editor-root,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .composer-editor-root{
+    grid-column:1 / -1;
+    grid-row:1;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
+    min-height:40px;
+    padding:11px 18px 1px;
+    font-size:16px;
+    line-height:24px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-composer-body{
+    grid-template-rows:minmax(64px,auto) 40px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .rich-composer[data-surface="chat"] .tiptap{
+    min-height:64px;
+    padding:11px 18px 1px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .footer-left-group,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .chat-input-footer .footer-left-group,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-input-footer .footer-left-group{
+    display:contents;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .attach-btn{
+    grid-column:1;
+    grid-row:2;
+    width:36px;
+    height:36px;
+    margin-left:10px;
+    border-radius:50%;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .footer-left-group .effort-picker,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .footer-left-group .effort-picker,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .footer-left-group .effort-picker{
+    position:static;
+    grid-column:3;
+    grid-row:2;
+    display:inline-flex;
+    margin:0;
+    transform:none;
+    pointer-events:auto;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .send-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .chat-input-footer .send-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .chat-input-footer .send-btn{
+    grid-column:5;
+    grid-row:2;
+    width:36px;
+    height:36px;
+    margin:0 10px 0 0;
+    border-radius:50%;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .mobile-mic-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .mobile-mic-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .mobile-mic-btn{
+    display:inline-flex;
+    grid-column:4;
+    grid-row:2;
+    width:36px;
+    height:36px;
+    min-width:36px;
+    min-height:36px;
+    margin:0;
+  }
 }

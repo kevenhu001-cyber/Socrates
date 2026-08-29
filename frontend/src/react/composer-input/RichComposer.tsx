@@ -156,9 +156,59 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
   ], [onRemoveExtension]);
 
   const tokenWasPresent = useRef(false);
-  /* Class toggling instead of CSS `:has()`: avoids per-focus style recalc so
-     the expand/collapse animation keeps full frame density. Inert on desktop. */
+  /* Focus is only an interaction state. Geometry is tracked separately so a
+     one-line draft keeps exactly the same composer shape before, during, and
+     after focus; the mobile two-tier layout starts only when rendered content
+     actually needs a second line. */
   const composerWrapRef = useRef<HTMLElement | null>(null);
+  const shapeFrameRef = useRef<number | null>(null);
+  const shapeAnimationRef = useRef<Animation | null>(null);
+  const syncComposerShape = useCallback((editorDom: HTMLElement) => {
+    if (surface !== 'chat') return;
+    if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
+    shapeFrameRef.current = requestAnimationFrame(() => {
+      shapeFrameRef.current = null;
+      const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap');
+      if (!wrap) return;
+      const style = getComputedStyle(editorDom);
+      const lineHeight = Number.parseFloat(style.lineHeight) || 24;
+      /* Measure the rendered document blocks, not the editor's scrollHeight:
+         the expanded CSS state deliberately gives the editor a 64px minimum,
+         so scrollHeight cannot tell when a two-line draft is replaced by one
+         line. Child geometry reflects explicit paragraphs and soft wrapping
+         while remaining independent of the shell's reserved height. */
+      const blocks = Array.from(editorDom.children) as HTMLElement[];
+      let contentTop = Number.POSITIVE_INFINITY;
+      let contentBottom = Number.NEGATIVE_INFINITY;
+      blocks.forEach((block) => {
+        const rect = block.getBoundingClientRect();
+        if (!rect.height) return;
+        contentTop = Math.min(contentTop, rect.top);
+        contentBottom = Math.max(contentBottom, rect.bottom);
+      });
+      const contentHeight = Number.isFinite(contentTop) ? contentBottom - contentTop : 0;
+      const shouldExpand = contentHeight > lineHeight * 1.5;
+      if (wrap.classList.contains('composer-multiline') === shouldExpand) return;
+      shapeAnimationRef.current?.cancel();
+      const fromHeight = wrap.getBoundingClientRect().height;
+      wrap.classList.toggle('composer-multiline', shouldExpand);
+      const toHeight = wrap.getBoundingClientRect().height;
+      if (
+        Math.abs(toHeight - fromHeight) > 1
+        && matchMedia('(max-width:768px)').matches
+        && !matchMedia('(prefers-reduced-motion:reduce)').matches
+      ) {
+        const animation = wrap.animate(
+          [{ height: `${fromHeight}px` }, { height: `${toHeight}px` }],
+          { duration: 340, easing: 'cubic-bezier(.22,1,.36,1)' },
+        );
+        shapeAnimationRef.current = animation;
+        animation.addEventListener('finish', () => {
+          if (shapeAnimationRef.current === animation) shapeAnimationRef.current = null;
+        }, { once: true });
+      }
+    });
+  }, [surface]);
 
   const editor = useEditor({
     extensions,
@@ -226,6 +276,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         tokenWasPresent.current = activeToken;
       }
       notifyComposerChange(surface, current.getMarkdown());
+      syncComposerShape(current.view.dom as HTMLElement);
     },
   });
 
@@ -306,8 +357,22 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
   }, [editor, getMarkdown, setExtensionToken, surface]);
 
   useEffect(() => {
+    if (!editor || surface !== 'chat') return;
+    const editorDom = editor.view.dom as HTMLElement;
+    const observer = new ResizeObserver(() => syncComposerShape(editorDom));
+    observer.observe(editorDom);
+    syncComposerShape(editorDom);
+    return () => observer.disconnect();
+  }, [editor, surface, syncComposerShape]);
+
+  useEffect(() => {
     return () => {
       composerWrapRef.current?.classList.remove('composer-focused');
+      composerWrapRef.current?.classList.remove('composer-multiline');
+      shapeAnimationRef.current?.cancel();
+      shapeAnimationRef.current = null;
+      if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
+      shapeFrameRef.current = null;
       composerWrapRef.current = null;
     };
   }, []);

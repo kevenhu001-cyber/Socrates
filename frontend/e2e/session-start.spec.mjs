@@ -6,6 +6,37 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+async function composerSignature(page, selector) {
+  return page.locator(selector).evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const style = getComputedStyle(node);
+    const childRect = (childSelector) => {
+      const child = node.querySelector(childSelector);
+      if (!child) return null;
+      const value = child.getBoundingClientRect();
+      if (!value.width && !value.height) return null;
+      return {
+        x: Math.round(value.x - rect.x),
+        y: Math.round(value.y - rect.y),
+        width: Math.round(value.width),
+        height: Math.round(value.height),
+      };
+    };
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      background: style.backgroundColor,
+      border: style.borderColor,
+      radius: style.borderRadius,
+      editor: childRect('.rich-composer-editor'),
+      attach: childRect('.attach-btn'),
+      effort: childRect('.effort-picker'),
+      mic: childRect('.mobile-mic-btn'),
+      send: childRect('.start-btn,.send-btn'),
+    };
+  });
+}
+
 test('typing into topic input enables the Start button; clicking does not throw', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
@@ -53,6 +84,29 @@ test('pressing Enter in the topic input starts the session', async ({ page }) =>
   await expect(page.locator('#chatView')).toBeVisible();
   await expect(page.locator('#msgList .msg.user')).toContainText('Enter should send this topic');
 });
+
+for (const [name, viewport] of [
+  ['desktop', { width: 1280, height: 800 }],
+  ['mobile', { width: 390, height: 844 }],
+]) {
+  test(`${name} composer keeps the landing UI after the first message is sent`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await mockAuthedApp(page);
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+
+    const topicEditor = page.locator('#topicComposerRoot .rich-composer-editor');
+    await topicEditor.fill('Keep this exact composer UI');
+    const before = await composerSignature(page, '#topicInputWrap');
+    await topicEditor.press('Enter');
+    await expect(page.locator('#chatView')).toBeVisible();
+    const after = await composerSignature(page, '#chatInputWrap');
+
+    expect(after).toEqual(before);
+    await expect(page.locator('#chatComposerRoot .rich-composer-editor'))
+      .toHaveAttribute('aria-label', 'How can I help you today?');
+  });
+}
 
 // Regression (P_deep-research-view): with the Deep Research extension enabled,
 // clicking Start on the landing screen used to early-return into
