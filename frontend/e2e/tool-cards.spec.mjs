@@ -21,6 +21,16 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+/* Every copy assertion below is English — the app ships with zh as its default
+   language, and the labels are now derived per-tool with objects ("Searched
+   \"alpha\"" rather than a bare verb), so word order matters. Pin the locale
+   instead of depending on the shipped default. */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+  });
+});
+
 const ONE_PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLefQAAAABJRU5ErkJggg==',
   'base64',
@@ -195,7 +205,10 @@ test('live chat shows a Searching label while the model is searching', async ({ 
 
   await page.evaluate(() => window.__finishSearchStream());
   await expect(row).toHaveAttribute('data-state', 'done');
-  await expect(row.locator('.tool-inline-label')).toContainText('Found 1');
+  /* P_declarative-tool-run — the settled row names its object and moves the
+     count to meta: "Found 1 web results" said nothing about which search. */
+  await expect(row.locator('.tool-inline-label')).toContainText('Searched "weather today"');
+  await expect(row.locator('.tool-inline-meta')).toContainText('1 source');
 });
 
 test('code execution switches from executing to data analysis without thinking overlap', async ({ page }) => {
@@ -331,28 +344,25 @@ test('live chat shows only the latest tool card during a burst but persists ever
     await window.askChatTurn('Run three tools');
   });
 
-  // The persisted HTML on the finished message contains every tool row
-  // so reload / share / history re-render all three. The single-card
-  // slot is presentation-only — it never collapses the persisted
-  // toolCalls.
-  const persisted = await page.evaluate(() => {
-    const list = window.state.messages;
-    const last = list[list.length - 1];
-    return last && last.html ? last.html : '';
+  /* P_persist-split-points — the durable contract for "a reload re-renders all
+     three rows" is data, not markup: every call records where it splits the
+     answer, and the renderer rebuilds the layout from toolCalls[] + rawText.
+     (It used to assert `data-tcid` inside message.html, which only pinned the
+     baked-HTML implementation. Stage 2 removes that baking; the assertions
+     below hold either way.) The single-card slot stays presentation-only. */
+  const finalized = await page.evaluate(() => {
+    const last = window.state.messages[window.state.messages.length - 1];
+    const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
+    return { ids: calls.map((t) => t.id), offsets: calls.map((t) => t.textOffset) };
   });
-  expect(persisted).toContain('data-tcid="search-a"');
-  expect(persisted).toContain('data-tcid="code-b"');
-  expect(persisted).toContain('data-tcid="search-c"');
-  // The state-side toolCalls array also keeps every entry.
-  const toolCallIds = await page.evaluate(() => {
-    const list = window.state.messages;
-    const last = list[list.length - 1];
-    return Array.isArray(last && last.toolCalls) ? last.toolCalls.map((t) => t.id) : [];
-  });
-  expect(toolCallIds).toEqual(['search-a', 'code-b', 'search-c']);
+  expect(finalized.ids).toEqual(['search-a', 'code-b', 'search-c']);
+  for (const offset of finalized.offsets) {
+    expect(typeof offset, 'each persisted call records its split point').toBe('number');
+  }
+  await expect(page.locator('.msg.assistant').last().locator('.tool-inline')).toHaveCount(3);
 });
 
-test('consecutive same-category tools merge into one grouped inline row', async ({ page }) => {
+test('consecutive same-category tools aggregate under one collapsible header', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -381,36 +391,47 @@ test('consecutive same-category tools merge into one grouped inline row', async 
     await window.askChatTurn('Search twice');
   });
 
+  /* P_declarative-tool-run — a run of same-category calls collapses under one
+     aggregate header (react/tool-run/ToolRunGroup). The old contract was a
+     single merged `.tool-inline` row carrying data-group-count/-ids; the rows
+     are now real rows inside a `.tool-run-list`, which is what expanding has
+     to reveal. */
   const bubble = page.locator('.msg.assistant').last();
-  await expect(bubble.locator('.tool-inline')).toHaveCount(1);
-  const row = bubble.locator('.tool-inline').first();
-  await expect(row).toHaveAttribute('data-group-count', '2');
-  await expect(row).toHaveAttribute('data-group-ids', 'group-a,group-b');
-  await expect(row).toHaveAttribute('data-state', 'done');
-  await expect(row.locator('.tool-inline-label')).toContainText('Found 2 sources');
+  await expect(bubble.locator('.tool-run-group')).toHaveCount(1);
+  const group = bubble.locator('.tool-run-group').first();
+  await expect(group).toHaveAttribute('data-state', 'complete');
+  await expect(group).toHaveAttribute('data-category', 'search');
+  await expect(group.locator('.tool-run-summary-label')).toContainText('Found 2 sources · 2 searches');
+  await expect(group.locator('.tool-run-summary-meta')).toContainText('2 actions');
+  /* Collapsed until asked: the member rows are in the DOM, off the screen. */
+  await expect(group.locator('.tool-run-list')).toBeHidden();
+  await expect(group.locator('.tool-inline')).toHaveCount(2);
+  await expect(group.locator('.tool-inline').first()).toBeHidden();
 
-  await row.locator('summary').click();
-  await expect(row.locator('[data-member-id="group-a"]')).toHaveCount(1);
-  await expect(row.locator('[data-member-id="group-b"]')).toHaveCount(1);
-  await expect(row.locator('.tool-inline-sources')).toContainText('Alpha');
-  await expect(row.locator('.tool-inline-sources')).toContainText('Beta');
+  await group.locator('.tool-run-summary').click();
+  await expect(group.locator('.tool-run-list')).toBeVisible();
+  await expect(group.locator('.tool-inline[data-tcid="group-a"]')).toHaveCount(1);
+  await expect(group.locator('.tool-inline[data-tcid="group-b"]')).toHaveCount(1);
+  await expect(group.locator('.tool-inline[data-tcid="group-a"] .tool-inline-label'))
+    .toHaveText('Searched "alpha"');
+  /* The aggregate answers "what did I learn" in one place: the merged source
+     list is the group's own detail, not a per-row dump. */
+  const aggregate = group.locator('.tool-run-list > .tool-inline-detail');
+  await expect(aggregate.locator('[data-kind="sources"] .tool-inline-src-title')).toHaveCount(2);
+  await expect(aggregate.locator('[data-kind="sources"]')).toContainText('Beta');
 
-  const persisted = await page.evaluate(() => {
-    const list = window.state.messages;
-    const last = list[list.length - 1];
-    return last && last.html ? last.html : '';
+  /* Same split-point contract as the burst test above: the merged row is a
+     rendering decision, the persistence is one record per call. */
+  const groupCalls = await page.evaluate(() => {
+    const last = window.state.messages[window.state.messages.length - 1];
+    const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
+    return { ids: calls.map((t) => t.id), offsets: calls.map((t) => t.textOffset) };
   });
-  expect(persisted).toContain('data-group-ids="group-a,group-b"');
-  expect((persisted.match(/data-tcid="group-/g) || []).length).toBe(1);
-  const toolCallIds = await page.evaluate(() => {
-    const list = window.state.messages;
-    const last = list[list.length - 1];
-    return Array.isArray(last && last.toolCalls) ? last.toolCalls.map((t) => t.id) : [];
-  });
-  expect(toolCallIds).toEqual(['group-a', 'group-b']);
+  expect(groupCalls.ids).toEqual(['group-a', 'group-b']);
+  expect(groupCalls.offsets.every((o) => typeof o === 'number'), 'merging must not drop a split point').toBe(true);
 });
 
-test('a failed member marks the grouped tool row as needs-attention', async ({ page }) => {
+test('a failed member marks the grouped run and keeps its own error detail', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
@@ -439,10 +460,20 @@ test('a failed member marks the grouped tool row as needs-attention', async ({ p
     await window.askChatTurn('Search');
   });
 
+  /* P_declarative-tool-run — a member that failed marks the whole aggregate
+     and says so in the header meta, which is the only part of a collapsed run
+     a reader sees. The failure then belongs to the row that caused it. */
   const bubble = page.locator('.msg.assistant').last();
-  const row = bubble.locator('.tool-inline').first();
-  await expect(row).toHaveAttribute('data-state', 'error');
-  await expect(row.locator('.tool-inline-label')).toContainText('Tool needs attention');
-  await row.locator('summary').click();
-  await expect(row.locator('[data-member-id="fail-b"]')).toContainText('boom');
+  const group = bubble.locator('.tool-run-group').first();
+  await expect(group).toHaveAttribute('data-state', 'error');
+  await expect(group.locator('.tool-run-summary-meta')).toContainText('1 failed');
+
+  await group.locator('.tool-run-summary').click();
+  const failed = group.locator('.tool-inline[data-tcid="fail-b"]');
+  await expect(failed).toHaveAttribute('data-state', 'error');
+  await expect(failed).toHaveAttribute('data-error', '1');
+  await failed.locator('summary').click();
+  await expect(failed.locator('[data-kind="error"] .tool-inline-detail-value')).toContainText('boom');
+  /* The row that succeeded is not painted as a failure. */
+  await expect(group.locator('.tool-inline[data-tcid="fail-a"]')).toHaveAttribute('data-state', 'done');
 });

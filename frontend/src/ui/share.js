@@ -180,8 +180,14 @@ async function revokeShareLink() {
 
 /* Read-only message list used by loadSharedSession. Renders the
    server-projected messages without an input area, share button, or
-   any editing affordances. Also restores tool-call cards (including
-   artifact images) when the persisted message has toolCalls data. */
+   any editing affordances.
+
+   P_share-declarative-turn — an assistant turn that recorded inline tool
+   split points is laid out by the same React renderer the chat uses
+   (react/tool-run), read-only, instead of re-splicing HTML strings here. That
+   leaves this function with the prose path for everything the renderer cannot
+   take: user turns, turns with no tool calls, and turns stored before
+   textOffset existed (whose baked rows still ride along in `content`). */
 function _renderSharedMessageList(messages) {
   var msgList = document.getElementById("msgList");
   if (!msgList) return;
@@ -193,6 +199,11 @@ function _renderSharedMessageList(messages) {
   if (typeof window.__socratesReleaseMsgListReact === "function") {
     try { window.__socratesReleaseMsgListReact(); } catch (_) {}
   }
+  /* Same hazard per message: each declarative turn is its own React root
+     inside the body we are about to wipe. */
+  if (typeof window.__socratesReleaseAssistantTurns === "function") {
+    try { window.__socratesReleaseAssistantTurns(); } catch (_) {}
+  }
   /* P_viz-dispose-shared — dispose any live visualization
      cards/ECharts instances before wiping the DOM. Mirrors the
      call in main.js#enterChat (line 1496) so the shared-session
@@ -202,6 +213,8 @@ function _renderSharedMessageList(messages) {
     try { window.disposeVisualizations(msgList); } catch (_) {}
   }
   msgList.innerHTML = "";
+  var mountTurn = typeof window.__socratesMountAssistantTurn === "function"
+    ? window.__socratesMountAssistantTurn : null;
   (messages || []).forEach(function (m) {
     if (!m) return;
     var div = document.createElement("div");
@@ -214,39 +227,58 @@ function _renderSharedMessageList(messages) {
     } else if (typeof m.content === "string" && m.content.length > 0) {
       source = m.content;
     }
-    var renderHtml = "";
-    try {
-      /* P_inline-restore — assistant turns that recorded inline tool
-         split points rebuild the exact text→row→text layout, matching
-         the live chat and history views. The offsets index into the
-         RAW markdown, so only rebuild when rawText is available; the
-         public-share projection omits rawText but its `content` is the
-         finalized HTML snapshot which already carries the serialized
-         rows — reuse it directly in that case. */
-      if (m.role === "assistant" && typeof m.rawText === "string" && m.rawText
-          && typeof window.rebuildAssistantHtmlWithInlineTools === "function") {
-        renderHtml = window.rebuildAssistantHtmlWithInlineTools(m.rawText, m.toolCalls) || "";
-      } else if (m.role === "assistant" && typeof m.content === "string"
-          && m.content.indexOf("tool-inline") !== -1) {
-        renderHtml = m.content;
+    /* The renderer refuses turns whose calls have no usable split point, so
+       one call decides the whole branch: it returns false without mounting.
+       The offsets index the RAW markdown, so `rawText` — not `content`, which
+       is the rendered snapshot — is what the turn gets sliced against. */
+    var declarative = false;
+    if (m.role === "assistant" && mountTurn && typeof m.rawText === "string" && m.rawText
+        && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
+      body.className = "msg-body content is-declarative";
+      try {
+        declarative = !!mountTurn(body, {
+          id: m.id || null,
+          clientId: m.id || null,
+          role: "assistant",
+          type: "assistant",
+          rawText: m.rawText,
+          html: typeof m.content === "string" ? m.content : "",
+          toolCalls: m.toolCalls,
+          reasoningContent: m.reasoningContent || null,
+        }, { readOnly: true });
+      } catch (_) {
+        declarative = false;
       }
-      if (!renderHtml) {
-        renderHtml = m.role === "assistant" && typeof window.renderAssistantHTML === "function"
-          ? window.renderAssistantHTML(source)
-          : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
-      }
-    } catch (_) {
-      renderHtml = "<p>" + esc(source) + "</p>";
+      if (!declarative) body.className = "msg-body content";
     }
-    body.innerHTML = renderHtml;
+    if (!declarative) {
+      var renderHtml = "";
+      try {
+        /* P_inline-restore — turns the renderer could not take fall back to
+           the stored markup. `content` is the finalized HTML snapshot, which
+           for a message saved before this renderer existed already carries the
+           serialized rows; re-rendering the markdown would drop them. */
+        if (m.role === "assistant" && typeof m.content === "string"
+            && m.content.indexOf("tool-inline") !== -1) {
+          renderHtml = m.content;
+        }
+        if (!renderHtml) {
+          renderHtml = m.role === "assistant" && typeof window.renderAssistantHTML === "function"
+            ? window.renderAssistantHTML(source)
+            : (typeof window.formatMsg === "function" ? window.formatMsg(source) : ("<p>" + esc(source) + "</p>"));
+        }
+      } catch (_) {
+        renderHtml = "<p>" + esc(source) + "</p>";
+      }
+      body.innerHTML = renderHtml;
+    }
     div.appendChild(body);
-    /* P_tool-history-share — restore tool-call cards (including
-       artifact images) when viewing a shared session that has
-       saved tool entries. Reuses appendToolModule and
-       appendInlineArtifact from the live chat path. */
-    if (m.role === "assistant" && typeof window.restorePersistedMessageExtras === "function") {
+    /* P_tool-history-share — a declarative turn already renders its own
+       attachments (charts, saved files) from toolCalls[], so the recovery
+       pass is only for turns that fell back to stored markup. */
+    if (!declarative && m.role === "assistant" && typeof window.restorePersistedMessageExtras === "function") {
       window.restorePersistedMessageExtras(body, m, "share-" + (m.id || "message"));
-    } else if (m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
+    } else if (!declarative && m.role === "assistant" && Array.isArray(m.toolCalls) && m.toolCalls.length > 0) {
       for (var tci = 0; tci < m.toolCalls.length; tci++) {
         var tc = m.toolCalls[tci];
         if (!tc || !tc.name) continue;
@@ -271,7 +303,10 @@ function _renderSharedMessageList(messages) {
         }
       }
     }
-    if (m.role === "assistant" && typeof window.appendFileChangeSummaryCards === "function") {
+    /* The summary card is built by inserting a node after the last legacy
+       .agent-tool-card, so it only applies to the fallback markup — a
+       declarative turn renders its own file chip and React owns that body. */
+    if (!declarative && m.role === "assistant" && typeof window.appendFileChangeSummaryCards === "function") {
       try { window.appendFileChangeSummaryCards(body); } catch (_) {}
     }
     msgList.appendChild(div);
@@ -330,7 +365,9 @@ async function loadSharedSession(token) {
         return {
           clientId: m.id || ("shared-" + Math.random().toString(36).slice(2, 10)),
           role: m.role || "user",
-          rawText: m.content || "",
+          /* rawText is the markdown the inline tool rows are spliced into, so
+             keep it distinct from the rendered `content` snapshot. */
+          rawText: m.rawText || m.content || "",
           html: "",
           type: m.role || "user",
           reasoningContent: m.reasoningContent || null,

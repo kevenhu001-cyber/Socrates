@@ -220,6 +220,10 @@ function _closeAll() {
 export function syncEffortUI() {
   var v = _load();
   document.querySelectorAll(".effort-picker").forEach(function (picker) {
+    /* P_effort-glyph — expose the current level as a data attribute so the
+       trigger's bar indicator can fill in the right number of segments
+       without each picker having to listen for changes. */
+    picker.setAttribute("data-effort", v);
     var label = picker.querySelector(".effort-label");
     if (label) label.textContent = _labelFor(v);
     var menu = picker.querySelector(".effort-menu");

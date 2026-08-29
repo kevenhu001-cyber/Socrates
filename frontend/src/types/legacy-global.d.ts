@@ -35,9 +35,6 @@ declare global {
     /** Array of active session summaries read by SessionList. */
     SERVER_SESSIONS?: unknown[];
 
-    /** Set of message IDs currently being streamed. */
-    __socratesActiveStreamIds?: Set<string>;
-
     // ── Mount / render entry points (set by React, called by legacy JS) ──
 
     __socratesMountScheduled?: () => void;
@@ -47,6 +44,28 @@ declare global {
     __socratesShareMsgListTakeover?: boolean;
     /** Unmounts the React message list so legacy code may own #msgList. */
     __socratesReleaseMsgListReact?: () => void;
+
+    /**
+     * Bumped by main.js when lazily-loaded KaTeX finally arrives. The
+     * declarative turn renderer caches settled prose HTML per turn, so this
+     * counter — not a new string — is what tells the cache to drop its
+     * entries and re-typeset math that streamed as fallback text.
+     */
+    __socratesMathRenderRev?: number;
+
+    /**
+     * Renders one assistant turn with the declarative tool-run renderer, for
+     * surfaces that build their own transcript (the read-only share view).
+     * Returns false when the turn has no usable split points and nothing was
+     * mounted, so the caller can keep its own markup. Released in batches by
+     * __socratesReleaseAssistantTurns before the caller wipes the list.
+     */
+    __socratesMountAssistantTurn?: (
+      container: Element,
+      message: unknown,
+      options?: { readOnly?: boolean },
+    ) => boolean;
+    __socratesReleaseAssistantTurns?: () => void;
 
     // ── Bridge stores (typed, per-domain) ────────────────────────────
     // Each __socratesXxxBridge is defined together with its store module and

@@ -120,9 +120,10 @@ export function findInlineToolBoundary(text: string, segmentStart = 0): number {
        • each new row was spliced in before prose that was already
          painted, and the visible text jumped down underneath a growing
          stack of rows (the "unstable" feel), and
-       • on reload, rebuildAssistantHtmlWithInlineTools sorted several
-         rows onto one identical offset and emitted them back-to-back at
-         the top with the whole answer below them.
+       • on reload, the HTML rebuilder that used to re-splice rows from
+         stored offsets sorted several rows onto one identical offset and
+         emitted them back-to-back at the top with the whole answer below
+         them.
 
      Anchoring at the end of what has streamed so far fixes all of that:
      already-painted text never moves, consecutive tools get strictly

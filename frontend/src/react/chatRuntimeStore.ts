@@ -53,6 +53,9 @@ let snapshot: ChatRuntimeSnapshot = Object.freeze({
 });
 
 let pendingDelta: Extract<ChatRuntimeEvent, { type: 'stream-delta' }> | null = null;
+/* Tool state can change on more than one message at a time (a retry while a
+   new turn streams), so the coalesced set is keyed by message id. */
+let pendingToolRuns: Set<string> | null = null;
 let pendingDeltaFrame = 0;
 
 function asString(value: unknown): string | null {
@@ -113,6 +116,10 @@ function streamFromEvent(
         textLength: event.textLength,
       });
     case 'message-added':
+      return snapshot.stream;
+    case 'tool-run-updated':
+      /* A tool lifecycle change is not a text-streaming change: the stream
+         keeps whatever status the last stream-* event gave it. */
       return snapshot.stream;
     case 'state-synced': {
       let activeMessage: LegacyChatMessage | undefined;
@@ -176,21 +183,50 @@ function flushPendingDelta(): void {
   commit(event);
 }
 
+function scheduleFrame(): void {
+  if (pendingDeltaFrame) return;
+  pendingDeltaFrame = window.requestAnimationFrame(() => {
+    pendingDeltaFrame = 0;
+    flushPendingDelta();
+    flushPendingToolRuns();
+  });
+}
+
+/**
+ * Tool lifecycle events arrive faster than a person can read them (a code run
+ * emits progress on every output flush). Both the text tail and the row state
+ * are re-read from `state.messages` at commit time, so one repaint per frame
+ * is enough for the whole turn — same trick `stream-delta` uses.
+ */
+function flushPendingToolRuns(): void {
+  if (!pendingToolRuns || pendingToolRuns.size === 0) {
+    pendingToolRuns = null;
+    return;
+  }
+  const ids = [...pendingToolRuns];
+  pendingToolRuns = null;
+  for (const messageId of ids) {
+    commit({ type: 'tool-run-updated', messageId });
+  }
+}
+
 function publish(event: ChatRuntimeEvent): void {
   if (event.type === 'stream-delta') {
     pendingDelta = event;
-    if (!pendingDeltaFrame) {
-      pendingDeltaFrame = window.requestAnimationFrame(() => {
-        pendingDeltaFrame = 0;
-        flushPendingDelta();
-      });
-    }
+    scheduleFrame();
+    return;
+  }
+  if (event.type === 'tool-run-updated') {
+    if (!pendingToolRuns) pendingToolRuns = new Set<string>();
+    pendingToolRuns.add(event.messageId);
+    scheduleFrame();
     return;
   }
 
   // Preserve lifecycle ordering when a terminal event lands before the
   // animation frame scheduled for the final delta.
   flushPendingDelta();
+  flushPendingToolRuns();
   commit(event);
 }
 

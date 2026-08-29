@@ -63,6 +63,19 @@ export async function mockAuthedApp(page, options = {}) {
     });
   }
 
+  /* Pin the UI language. Most specs assert English copy, and i18n.js reads
+     `socrates-lang-app` synchronously at module load — so without a recorded
+     preference the assertion is really about whatever the app's shipped
+     default happens to be. Specs that test the other locale say so explicitly
+     with their own addInitScript (which registers after this one and wins) or
+     by calling setLang() at runtime. Pass { lang: false } to opt out. */
+  if (options.lang !== false) {
+    const lang = options.lang || 'en';
+    await page.addInitScript((value) => {
+      try { localStorage.setItem('socrates-lang-app', value); } catch (_) {}
+    }, lang);
+  }
+
   // Cookies that auth/boot.js + util/api.js expect to find.
   await page.context().addCookies([{
     name: 'csrf', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',

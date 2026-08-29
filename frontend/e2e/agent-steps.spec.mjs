@@ -78,14 +78,18 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await steps.nth(1).locator('.agent-step-head').click();
   await expect(steps.nth(1).locator('.agent-step-pre[data-kind="output"]')).toContainText('226 pass');
 
-  // The step list survives the final serialization (persisted html), which is
-  // what makes it come back after a reload.
+  /* P_declarative-tool-run — what survives serialization is the data, not the
+     markup: `message.html` is prose only, and the step list comes back from
+     toolCalls[].steps (asserted just below) which is what the renderer draws.
+     The DOM above already proves the list rendered; pinning html to it again
+     would only re-test the implementation this change removes. */
   const persisted = await page.evaluate(() => {
     const message = window.state.messages[window.state.messages.length - 1];
     return message && message.html ? message.html : '';
   });
-  expect(persisted).toContain('agent-run-host');
-  expect(persisted).toContain('读取了文件');
+  expect(persisted, 'the answer text is still stored as html').toContain('notes.txt');
+  expect(persisted, 'no agent chrome is baked into the answer').not.toContain('agent-run-host');
+  expect(persisted, 'no step markup is baked into the answer').not.toContain('agent-step');
 
   const stored = await page.evaluate(() => {
     const message = window.state.messages[window.state.messages.length - 1];

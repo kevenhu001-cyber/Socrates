@@ -92,15 +92,13 @@ import { appendInlineArtifact, renderToolTextOutput } from './ui/toolCards.js';
 import { initArtifactPreview } from './ui/artifactPreview.js';
 import { initLinkFavicons } from './ui/linkFavicons.js';
 import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
-/* searchProgress UI removed in favour of the inline status label.
-   The import was retired when agent-tool-cards were dropped from the
-   live chat surface; the background web_search path now only updates
-   state.searchContext and lets the chat bubble's thinking pill
-   reflect the activity. The function is still re-exported for the
-   legacy e2e suite and `window.__startSearchProgress` test hook. */
-import { startSearchProgress } from './ui/searchProgress.js';
+/* ui/searchProgress.js is no longer a live-chat surface: the model announces
+   what it is doing through `_liveStatus` (react/tool-run/TurnStatus) instead
+   of a step card prepended to the bubble. The module still serves the
+   extensions' deep-research surface and the `window.__startSearchProgress`
+   e2e hook, both of which import it themselves. */
 import { createToolRuntime } from './chat/toolRuntime.js';
-import { settleInlineToolRow, settleInlineToolRowFromMessage, createInlineToolRow } from './ui/toolInline.js';
+import { settleInlineToolRowFromMessage } from './ui/toolInline.js';
 import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
 import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
@@ -153,6 +151,42 @@ function publishReactChatRuntime(event){
   }catch(_){}
 }
 
+/* P_react-live-turn — does the React message list own this turn?
+   Read per call, not once at boot: the runtime is released and remounted
+   across session switches, and the read-only share view never mounts it at
+   all. While false, the streaming pipeline below paints its own bubble;
+   while true it writes only state.messages + `_liveStatus` and
+   react/tool-run renders the live turn from that data. The dataset flag is
+   the safety valve: if React is not mounted, the legacy writers keep the
+   answer visible. */
+function reactOwnsMsgList(){
+  var list=document.getElementById("msgList");
+  return !!(list&&((list.dataset&&list.dataset.msgListReactHydrated==="1")||
+    list.getAttribute("data-react-migration-runtime")==="msg-list"));
+}
+
+/* The one live status line of a turn, as data. `status` is a LiveTurnStatus
+   (phase waiting|thinking|retrying|error) or null to retire the line; see
+   react/tool-run/TurnStatus for what each phase draws. Written onto the
+   streaming entry so React's memo comparator (identity of `_liveStatus`)
+   notices the change, and published through the per-rAF tool-run flush. */
+function setReactLiveStatus(message,status){
+  if(!message)return;
+  var prev=message._liveStatus;
+  if(prev===status)return;
+  if(prev&&status&&prev.phase===status.phase&&prev.label===status.label&&
+     prev.state===status.state&&prev.error===status.error&&
+     prev.elapsedSec===status.elapsedSec){
+    return;
+  }
+  message._liveStatus=status;
+  message._toolRunRev=(message._toolRunRev||0)+1;
+  publishReactChatRuntime({
+    type:"tool-run-updated",
+    messageId:String(message.clientId||message.id||"")
+  });
+}
+
 /* Thinking panel bridge — live reasoning text is published through the
    React store so the right drawer / mobile sheet can render it without
    touching the legacy stream DOM. The bridge is installed by
@@ -174,6 +208,12 @@ function rerenderMathAfterKatex(){
   try{
     var list=document.getElementById("msgList");
     if(!list)return;
+    /* The declarative renderer paints prose from rawText through a per-turn
+       cache of settled HTML (react/tool-run/AssistantTurn), so a re-render
+       alone would hand back the SAME cached string — the one computed before
+       KaTeX existed. Bumping this counter is what tells that cache to throw
+       its entries away and re-typeset. */
+    window.__socratesMathRenderRev=(window.__socratesMathRenderRev||0)+1;
     var msgs=(typeof state!=="undefined"&&state&&Array.isArray(state.messages))?state.messages:[];
     var changed=false;
     for(var mi=0;mi<msgs.length;mi++){
@@ -1719,11 +1759,15 @@ async function loadSession(id){
       var _rrClientId = m.clientId || m.id || ("loaded-"+generateId());
       var restoredHtml = "";
       if (m.role === "assistant" && m.rawText) {
-        /* P_inline-restore — messages that recorded inline tool split
-           points rebuild the exact text→row→text layout; everything
-           else re-renders the raw markdown so current scaffold /
-           widget renderers apply to old conversations too. */
-        try { restoredHtml = rebuildAssistantHtmlWithInlineTools(m.rawText, m.toolCalls) || renderAssistantHTML(m.rawText); }
+        /* P_declarative-tool-run — rebuild from the canonical source, never
+           from the stored snapshot: react/tool-run splices this turn's rows in
+           from toolCalls[].textOffset, so `html` only carries prose — and
+           re-rendering is what lets current scaffold / widget / visualization
+           renderers apply to conversations saved before they existed. Turns
+           whose calls predate recorded offsets simply render no rows; the
+           classic cards still come back through
+           restorePersistedMessageExtras(message.restoredFromHistory). */
+        try { restoredHtml = renderAssistantHTML(m.rawText); }
         catch (_) { restoredHtml = m.html || formatMsg(m.rawText); }
       } else {
         restoredHtml = m.html || (m.rawText ? formatMsg(m.rawText) : "");
@@ -1762,6 +1806,18 @@ async function loadSession(id){
                inline layout and charts survive a reload round-trip. */
             textOffset: typeof tc.textOffset === "number" ? tc.textOffset : undefined,
             visualization: (tc.visualization && tc.visualization.version === 1) ? tc.visualization : undefined,
+            /* P_declarative-tool-run — and keep the terminal fields. The
+               declarative renderer derives a row's state from them, so a
+               dropped status/durationMs made every restored call look like it
+               was still running, and a failed call lose its error text. */
+            status: tc.status == null ? null : String(tc.status),
+            durationMs: typeof tc.durationMs === "number" ? tc.durationMs : undefined,
+            error: tc.error == null ? null : tc.error,
+            errorCode: tc.errorCode == null ? null : tc.errorCode,
+            retryable: typeof tc.retryable === "boolean" ? tc.retryable : undefined,
+            userMessage: tc.userMessage == null ? undefined : tc.userMessage,
+            stderr: tc.stderr == null ? undefined : tc.stderr,
+            detail: tc.detail == null ? undefined : tc.detail,
           };
         }) : [],
         actions: null
@@ -4921,6 +4977,12 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
       if(_sel)inlineRow=body.querySelector('.tool-inline[data-tcid="'+_sel+'"]');
     }catch(_){}
     if(inlineRow){
+      /* P_declarative-tool-run — nothing to mount means nothing to insert:
+         react/tool-run already rendered the host for a call that has a chart
+         or a file, and an empty .tool-inline-attachments div next to every
+         restored row only adds a gap to the layout. */
+      var hasArtifacts=Array.isArray(tc.artifacts)&&tc.artifacts.length>0;
+      if(!vizSpec&&!hasArtifacts)continue;
       var host=inlineRow.nextElementSibling;
       if(!host||!host.classList||!host.classList.contains("tool-inline-attachments")){
         host=document.createElement("div");
@@ -4980,50 +5042,6 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
   }
   if(body.dataset)body.dataset.persistedExtrasFor=messageKey;
 }
-/* Rebuild an assistant message's HTML from rawText while re-splicing the
-   persisted inline tool rows at their recorded textOffset split points —
-   the exact inverse of the serialization finish() performs. Returns null
-   when the message has no usable offsets (legacy sessions), in which case
-   callers fall back to a plain renderAssistantHTML pass and
-   restorePersistedMessageExtras appends classic cards at the end. */
-function rebuildAssistantHtmlWithInlineTools(rawText,toolCalls){
-  var raw=String(rawText||"");
-  var rows=(Array.isArray(toolCalls)?toolCalls:[]).filter(function(tc){
-    return tc&&tc.id&&tc.name&&typeof tc.textOffset==="number"&&tc.textOffset>=0&&tc.textOffset<=raw.length;
-  }).sort(function(a,b){return a.textOffset-b.textOffset});
-  if(!rows.length)return null;
-  var renderSeg=function(txt){
-    var vis=stripChatArtifacts(txt)
-      .replace(/<think>[\s\S]*?<\/think>/gi,"")
-      .replace(/<think>[\s\S]*$/gi,"");
-    if(!vis.trim())return "";
-    return renderAssistantHTML(vis);
-  };
-  var parts=[];
-  var prev=0;
-  for(var ri=0;ri<rows.length;ri++){
-    var tc=rows[ri];
-    parts.push(renderSeg(raw.slice(prev,tc.textOffset)));
-    try{
-      var row=createInlineToolRow({
-        id:String(tc.id),
-        name:String(tc.name),
-        input:tc.input==null?null:tc.input
-      });
-      settleInlineToolRow(row,{
-        ok:tc.isError!==true,
-        status:tc.isError===true?"failed":"completed",
-        results:Array.isArray(tc.results)?tc.results:[],
-        output:tc.output==null?"":String(tc.output),
-        error:tc.isError===true&&tc.output!=null?String(tc.output):""
-      });
-      parts.push(row.outerHTML);
-    }catch(_){}
-    prev=tc.textOffset;
-  }
-  parts.push(renderSeg(raw.slice(prev)));
-  return parts.join("");
-}
 /* Re-seat a live artifact / chart node after the final-render innerHTML
    pass. Anchored attachment hosts carry the data-tool-anchor of the
    inline row they belong to; the serialized row (same data-tcid) is in
@@ -5077,6 +5095,8 @@ function addMessage(role,text,type,actions,attachmentsArg){
       )){
         delete state.messages[_ami]._turnAnchorMinHeight;
         delete state.messages[_ami]._turnAnchorMarginTop;
+        delete state.messages[_ami]._turnAnchorMode;
+        delete state.messages[_ami]._turnViewportTarget;
       }
     }
     try{
@@ -5198,8 +5218,8 @@ var _stableStreamRetryViewport=null;
 
 
 /* SEARCH_PROGRESS_LABELS, trSearchLabel, _formatEngineBreakdown,
-   startSearchProgress extracted to src/ui/searchProgress.js
-   (Phase 1C split). Imported at the top. */
+   startSearchProgress live in src/ui/searchProgress.js — no longer used
+   here; see the import-site comment for what still consumes them. */
 
 /* beginAgentTextStream, appendRunFooter extracted to
    src/chat/agentStream.js (Phase 1D split). Imported at the top. */
@@ -5371,15 +5391,58 @@ function settleRetryErrorViewport(list,clientId,onOffset){
   requestAnimationFrame(settle);
 }
 
+/* The mounted row for a turn, whichever renderer put it there. Legacy appended
+   its own bubble and can be handed the node directly; once React owns #msgList
+   that node is detached and the only way back to the row is the message id. */
+function turnRowFor(list,assistant,clientId){
+  if(!list)return null;
+  if(assistant&&assistant.isConnected)return assistant;
+  var id=String(clientId||"");
+  if(!id)return null;
+  var esc=typeof CSS!=="undefined"&&CSS.escape?CSS.escape(id):id.replace(/["\\]/g,"\\$&");
+  return list.querySelector('.msg[data-client-id="'+esc+'"]');
+}
+
 function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
   var normalAnchorSettling=false;
+  var message=msgIdx>=0&&state.messages[msgIdx]?state.messages[msgIdx]:null;
+  var clientId=message&&message.clientId?message.clientId:(assistant&&assistant.dataset?assistant.dataset.clientId:"");
+  function row(){return turnRowFor(list,assistant,clientId)}
+  /* Reserve the row's leading space. A React row takes it from the message
+     entry (MessageItem renders minHeight / .turn-viewport-anchor /
+     data-viewport-anchor from there), which survives the next commit instead
+     of being wiped by it — and lets the chrome be written one frame early,
+     while the row is still only in state.messages. On the legacy path the
+     bubble is already in the document, so the style goes straight on it. */
+  function stampAnchor(mode,reserve,targetOffset){
+    var mounted=row();
+    if(!mounted&&!reactOwnsMsgList())return;
+    if(reactOwnsMsgList()){
+      if(!message)return;
+      if(message._turnAnchorMinHeight===reserve&&message._turnAnchorMode===mode)return;
+      message._turnAnchorMinHeight=reserve;
+      message._turnAnchorMode=mode;
+      message._turnViewportTarget=targetOffset;
+      message._toolRunRev=(message._toolRunRev||0)+1;
+      publishReactChatRuntime({type:"tool-run-updated",messageId:String(clientId||"")});
+      return;
+    }
+    mounted.classList.add("turn-viewport-anchor");
+    mounted.dataset.viewportAnchor=mode;
+    mounted.dataset.viewportTarget=String(targetOffset);
+    mounted.style.minHeight=reserve+"px";
+    if(message)message._turnAnchorMinHeight=reserve;
+  }
   /* The composer can still be in its short focus/keyboard transition when
      the stream bubble is mounted. Keep the submitted prompt at the target
      offset while that bounded layout change settles; stop immediately when
      the reader expresses upward intent. This is intentionally a send-time
      convergence loop, not a permanent streaming scroll owner. */
   function settleNormalTurnAnchor(targetOffset,deadline){
-    if(!list||!assistant||!assistant.isConnected||state._userScrolledAway)return;
+    if(!list||state._userScrolledAway)return;
+    /* Stop once this turn's row is gone — the loop only promises to hold the
+       prompt still while the composer's layout settles. */
+    if(!assistant.isConnected&&!row())return;
     var users=list.querySelectorAll&&list.querySelectorAll(".msg.user");
     var anchor=users&&users.length?users[users.length-1]:null;
     if(!anchor||!anchor.isConnected)return;
@@ -5395,7 +5458,8 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
     });
   }
   function position(){
-      if(!list||!assistant||!assistant.isConnected)return;
+      var mounted=row();
+      if(!list)return;
       var styles=getComputedStyle(list);
       var bottomPadding=parseFloat(styles.paddingBottom)||0;
       var anchor=null;
@@ -5406,16 +5470,19 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
            previous leading-space correction before measuring; otherwise the
            next pass measures the already-correct offset and overwrites the
            full margin with only the tiny residual delta. */
-        assistant.style.marginTop="";
-        if(msgIdx>=0&&state.messages[msgIdx]){
-          delete state.messages[msgIdx]._turnAnchorMarginTop;
-        }
-        anchor=assistant;
+        if(mounted===assistant)mounted.style.marginTop="";
+        if(message)delete message._turnAnchorMarginTop;
         var maxOffset=Math.max(8,list.clientHeight-bottomPadding-64);
         targetOffset=Math.max(8,Math.min(maxOffset,retryViewport.offset));
         reserve=Math.max(120,Math.round(
           list.clientHeight-bottomPadding-targetOffset
         ));
+        stampAnchor("retry",reserve,targetOffset);
+        /* The retry row is a React commit away: the reserve is already on the
+           entry so its first paint has the right height, and positionSoon
+           comes back with the node in hand to do the measurement. */
+        if(!mounted)return;
+        anchor=mounted;
       }else{
         var users=list.querySelectorAll(".msg.user");
         anchor=users.length?users[users.length-1]:null;
@@ -5423,15 +5490,9 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
         reserve=Math.max(120,Math.round(
           list.clientHeight-anchor.getBoundingClientRect().height-bottomPadding-24
         ));
+        stampAnchor("turn",reserve,targetOffset);
       }
-      assistant.classList.add("turn-viewport-anchor");
-      assistant.dataset.viewportAnchor=retryViewport?"retry":"turn";
       if(!retryViewport)list.__socratesTurnViewportOwner=true;
-      assistant.dataset.viewportTarget=String(targetOffset);
-      assistant.style.minHeight=reserve+"px";
-      if(msgIdx>=0&&state.messages[msgIdx]){
-        state.messages[msgIdx]._turnAnchorMinHeight=reserve;
-      }
       var listRect=list.getBoundingClientRect();
       var anchorRect=anchor.getBoundingClientRect();
       var target=list.scrollTop+(anchorRect.top-listRect.top)-targetOffset;
@@ -5443,9 +5504,10 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
          then use margin only when the scroller genuinely has no more range. */
       if(retryViewport){
         requestAnimationFrame(function settleRetryAnchor(attempt){
-          if(!assistant.isConnected)return;
+          var current=row();
+          if(!current)return;
           var retryListRect=list.getBoundingClientRect();
-          var actualOffset=assistant.getBoundingClientRect().top-retryListRect.top;
+          var actualOffset=current.getBoundingClientRect().top-retryListRect.top;
           var delta=Math.round(actualOffset-targetOffset);
           if(Math.abs(delta)>1){
             var maxScroll=Math.max(0,list.scrollHeight-list.clientHeight);
@@ -5457,13 +5519,17 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
             return;
           }
           var finalListRect=list.getBoundingClientRect();
-          var finalOffset=assistant.getBoundingClientRect().top-finalListRect.top;
+          var finalOffset=current.getBoundingClientRect().top-finalListRect.top;
           var missingSpace=Math.max(0,Math.round(targetOffset-finalOffset));
           var finalMaxScroll=Math.max(0,list.scrollHeight-list.clientHeight);
           if(missingSpace>1&&list.scrollTop>=finalMaxScroll-1){
-            assistant.style.marginTop=missingSpace+"px";
-            if(msgIdx>=0&&state.messages[msgIdx]){
-              state.messages[msgIdx]._turnAnchorMarginTop=missingSpace;
+            if(current===assistant){
+              current.style.marginTop=missingSpace+"px";
+              if(message)message._turnAnchorMarginTop=missingSpace;
+            }else if(message){
+              message._turnAnchorMarginTop=missingSpace;
+              message._toolRunRev=(message._toolRunRev||0)+1;
+              publishReactChatRuntime({type:"tool-run-updated",messageId:String(clientId||"")});
             }
           }
         },0);
@@ -5479,9 +5545,20 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
   /* A retry bubble is already mounted in the legacy list and its target
      offset is known. Position it synchronously so the first visible frame
      cannot flash at the top while waiting for the deferred layout pass. */
-  if(retryViewport)position();
+  var _positionWaits=0;
+  function positionSoon(){
+    /* Under React the live row is a commit away — when the stream starts the
+       entry is only in `state.messages`. Bailing on that first null is what
+       made the send-time anchor a no-op, so keep asking (bounded) until the
+       row exists and the scroll can be measured against it. */
+    position();
+    if(row()||++_positionWaits>30)return;
+    requestAnimationFrame(positionSoon);
+  }
+  if(retryViewport&&row())position();
+  else positionSoon();
   requestAnimationFrame(function(){
-    requestAnimationFrame(position);
+    requestAnimationFrame(positionSoon);
   });
 }
 
@@ -5612,6 +5689,101 @@ function stopChatResponse(){
 
 
 
+/* P_react-live-turn — one live turn may be retried, and only its own
+   streaming closure knows how (it holds the prompt, the retry budget, and the
+   viewport to re-anchor). React's status line and the legacy timeout block
+   therefore both route through this registry instead of each owning a click
+   handler. The newest stream claims it; finish()/abort() release it. */
+var _liveRetryOwner=null;
+function claimLiveRetry(owner,run){
+  _liveRetryOwner=owner?{owner:owner,run:run}:null;
+}
+function releaseLiveRetry(owner){
+  if(_liveRetryOwner&&_liveRetryOwner.owner===owner)_liveRetryOwner=null;
+}
+function retryLiveTurn(messageId){
+  var owner=_liveRetryOwner;
+  if(!owner)return false;
+  if(messageId&&String(owner.owner.clientId||"")!==String(messageId))return false;
+  try{owner.run()}catch(_){/* the retry handler threw — the turn is unchanged */}
+  return true;
+}
+
+/* P_react-live-turn — a declarative row answers a Codex approval through
+   __socratesLegacy.liveTurn, and the only code that can POST a decision lives
+   inside the runtime that recorded it (chat/toolRuntime.ts needs the message
+   closure to write the outcome back onto toolCalls[].approval). The runtime for
+   a turn therefore gets registered here by clientId, and entries are dropped
+   lazily at lookup once the turn is no longer waiting on a decision — a
+   finalized turn keeps its runtime alive precisely while an approval is
+   pending, which is exactly the window this map has to cover. Turns are
+   serialized, so the cap is a backstop against an abandoned pending run. */
+var _liveTurnRuntimes=new Map();
+function liveTurnKey(message){
+  if(!message)return "";
+  return String(message.clientId||message.id||"");
+}
+function registerLiveTurnRuntime(messageId,runtime){
+  if(!messageId||!runtime)return;
+  _liveTurnRuntimes.set(String(messageId),runtime);
+  if(_liveTurnRuntimes.size>16){
+    var oldest=_liveTurnRuntimes.keys().next().value;
+    _liveTurnRuntimes.delete(oldest);
+  }
+}
+function liveTurnMessage(messageId){
+  var key=String(messageId||"");
+  var msgs=(state&&state.messages)||[];
+  if(!key)return null;
+  for(var i=msgs.length-1;i>=0;i--){
+    var m=msgs[i];
+    if(m&&(String(m.clientId||"")===key||String(m.id||"")===key))return m;
+  }
+  return null;
+}
+function approvalStillPending(message){
+  var calls=message&&Array.isArray(message.toolCalls)?message.toolCalls:[];
+  for(var i=0;i<calls.length;i++){
+    var ap=calls[i]&&calls[i].approval;
+    if(ap&&(!ap.status||ap.status==="pending"))return true;
+  }
+  return false;
+}
+function decideLiveApproval(messageId,toolCallId,decision){
+  var key=String(messageId||"");
+  var runtime=_liveTurnRuntimes.get(key);
+  var message=liveTurnMessage(key);
+  if(!runtime||!approvalStillPending(message)){
+    _liveTurnRuntimes.delete(key);
+    return null;
+  }
+  if(typeof runtime.decideApproval!=="function")return null;
+  /* The runtime records a failed POST into approval.ui (which the row paints)
+     and re-enables the buttons, so the rejection has nowhere useful left to
+     go — swallow it rather than leave an unhandled promise. */
+  return Promise.resolve(runtime.decideApproval(toolCallId,decision)).catch(function(){});
+}
+
+/* P_tool_retry_button — Retry on a failed search row re-issues the query
+   through the streaming closure that owns the prompt (`onSearchRetry`).
+   The event bubbles out of whatever subtree the row lives in — the legacy
+   bubble, a React row, a history or share transcript — so one document-level
+   listener serves all of them, and the newest stream claims where it goes.
+   Registered once: a per-stream listener would fire N times per click. */
+var _liveSearchRetry=null;
+function claimLiveSearchRetry(handler){_liveSearchRetry=typeof handler==="function"?handler:null}
+if(typeof document!=="undefined"&&!window.__socratesToolRetryWired){
+  window.__socratesToolRetryWired=true;
+  document.addEventListener("tool-retry",function(ev){
+    var detail=(ev&&ev.detail)||{};
+    /* share.js / history replay install their own handler for the same event. */
+    var handler=(typeof window.__socratesToolRetry==="function")
+      ?window.__socratesToolRetry:_liveSearchRetry;
+    if(typeof handler!=="function")return;
+    try{handler(detail.query||"")}catch(_){/* a failed retry is just a missed click */}
+  });
+}
+
 function addStreamingMessage(opts){
   opts=opts||{};
   var onRetry=opts.onRetry;
@@ -5623,6 +5795,11 @@ function addStreamingMessage(opts){
   state._userScrolledAway=false;
   hideNewReplyPill();
   var list=document.getElementById("msgList");
+  /* P_react-live-turn — captured once for this turn: the runtime cannot be
+     released mid-stream without the session (and this bubble) going away, and
+     a value that flipped halfway through would leave the answer rendered by
+     neither surface. */
+  var reactLive=reactOwnsMsgList();
   var div=document.createElement("div");
   div.className="msg assistant";
   /* Override the CSS content-visibility:auto inherited from
@@ -5636,7 +5813,10 @@ function addStreamingMessage(opts){
   var body=document.createElement("div");
   body.className="msg-body";
   div.appendChild(body);
-  list.appendChild(div);
+  /* The bubble is mounted by React from the streaming entry below; the
+     detached `div` stays as the sink for legacy writers that have no data
+     equivalent (inline artifact hosts on the non-React path). */
+  if(!reactLive)list.appendChild(div);
   /* P1.1/P1.2 — push a placeholder into the authoritative
      state.messages list. While streaming, `rawText` is updated on
      every delta and `html` is set to null. At finish() time we
@@ -5783,6 +5963,18 @@ function addStreamingMessage(opts){
      toggled "Show AI thinking" off. */
   var thinkCtl=null;
   var suppressedThinkCtl={append:function(){},finalize:function(){},remove:function(){}};
+  /* The React surface of the same controller: every mutation is a write to
+     `message._liveStatus`, never a node. TurnStatus draws it. */
+  var reactThinkCtl={
+    append:function(){},
+    finalize:function(){clearLiveStatus()},
+    remove:function(){clearLiveStatus()},
+    setLabel:function(text,state){
+      if(statusIsBusy())return;
+      setLiveStatus({phase:"thinking",label:String(text||""),
+        state:state||"",clickable:appMode==="chat"});
+    }
+  };
   function hideThinkCtl(){
     if(thinkCtl&&typeof thinkCtl.remove==="function"){
       try{thinkCtl.remove()}catch(_){/* status may already be detached */}
@@ -5792,20 +5984,21 @@ function addStreamingMessage(opts){
   /* P_tool_in_think — cached container for tool cards inside
      the think-block. Lazily created by _ensureToolContainer(). */
   var _toolCardContainer=null;
-  /* P_inline-tools — ChatGPT-style inline tool rows. The assistant
-     bubble body is a sequence of "segments": a text segment renders
-     the slice full[segBase..] progressively; when a tool_use lands,
-     the current segment is frozen in place, a .tool-inline status row
-     is appended after it, and the next text delta opens a fresh
-     segment below the row. inlineToolRows keeps {id,name,offset,row}
-     in chronological order so finish() can rebuild the same layout
-     as a serialized HTML string (offset = split point at tool time). */
+  /* P_declarative-tool-run — where in `full` the answer was when each tool_use
+     landed. `segBase` is what the degraded (non-React) text painter renders
+     from — after a tool call the text resumes below it — and inlineToolRows is
+     the {id,name,offset} ledger finish() stamps onto toolCalls[] as
+     `textOffset`, which is the sole input react/tool-run needs to lay the rows
+     out. The rows themselves are no longer spliced into this bubble: the
+     layout rule lives once, in the renderer, not three times in HTML strings. */
   var segBase=0;
-  var needNewSegment=false;
   var inlineToolRows=[];
+  /* The degraded (non-React) surface paints its streamed text into one host
+     for the whole turn, appended after whatever the runtime mounts into the
+     body. It used to be a fresh host per text segment, frozen and re-opened
+     around every inline row — that per-segment dance was the second copy of
+     the tool-row layout rule, and it is gone with the rows. */
   var segHost=null;
-  var _liveToolSlot=null;
-  function ensureLiveToolSlot(){return null}
   function ensureSegHost(){
     if(segHost&&segHost.isConnected)return segHost;
     segHost=document.createElement("div");
@@ -5813,46 +6006,10 @@ function addStreamingMessage(opts){
     body.appendChild(segHost);
     return segHost;
   }
-  function freezeCurrentSegment(){
-    cancelScheduledRender();
-    /* Flush the latest text of the current segment into the DOM so
-       the frozen block shows everything streamed before the tool. */
-    if(streamContent||thinkState.beforeNode){
-      try{doRender()}catch(_){}
-    }
-    try{if(cursor&&cursor.parentNode)cursor.parentNode.removeChild(cursor)}catch(_){}
-    try{if(thinkState.cursorNode&&thinkState.cursorNode.parentNode)thinkState.cursorNode.parentNode.removeChild(thinkState.cursorNode)}catch(_){}
-    streamContent=null;settledContent=null;liveContent=null;cursor=null;
-    thinkState.startIdx=-1;thinkState.endIdx=-1;
-    thinkState.beforeNode=null;thinkState.details=null;thinkState.summary=null;
-    thinkState.thinkDiv=null;thinkState.afterNode=null;thinkState.cursorNode=null;
-    thinkState.lastRenderedThink=null;thinkState.lastRenderedBefore=null;thinkState.lastRenderedAfter=null;
-    _stablePrefixText=null;_stablePrefixHtml="";_lastParsedLen=-1;
-    _toolCardContainer=null;
-    segHost=null;
-  }
-  function _toolRunList(host){
-    var group=host.querySelector('.tool-run-group');
-    if(!group){
-      group=document.createElement('section');
-      group.className='tool-run-group';
-      group.innerHTML='<button type="button" class="tool-run-summary" aria-expanded="false">'+
-        '<span class="tool-run-summary-dot" aria-hidden="true"></span>'+
-        '<span class="tool-run-summary-label">Exploring</span>'+
-        '<span class="tool-run-summary-meta"></span>'+
-        '<span class="tool-run-summary-chev" aria-hidden="true">⌄</span>'+
-        '</button><div class="tool-run-list" hidden></div>';
-      var trigger=group.querySelector('.tool-run-summary');
-      var list=group.querySelector('.tool-run-list');
-      trigger.addEventListener('click',function(){
-        var open=group.classList.toggle('open');
-        trigger.setAttribute('aria-expanded',open?'true':'false');
-        list.hidden=!open;
-      });
-      host.appendChild(group);
-    }
-    return group.querySelector('.tool-run-list');
-  }
+  /* Where a legacy (non-declarative) tool card mounts in the degraded bubble:
+     inside the think-block when there is one, so the cards read as part of the
+     reasoning, otherwise at the end of the body. The React renderer never calls
+     this — it draws rows from toolCalls[]. */
   function _ensureToolContainer(){
     if(_toolCardContainer&&_toolCardContainer.isConnected)return _toolCardContainer;
     /* Try to reuse an existing think-block's .think-tools slot.
@@ -5869,7 +6026,6 @@ function addStreamingMessage(opts){
         if(tc)tc.after(_toolCardContainer);
         else tb.appendChild(_toolCardContainer);
       }
-      _toolCardContainer=_toolRunList(_toolCardContainer);
       return _toolCardContainer;
     }
     /* No think-block yet (thinking content hasn't arrived, or won't
@@ -5883,7 +6039,6 @@ function addStreamingMessage(opts){
       _toolCardContainer.className="think-tools";
       body.appendChild(_toolCardContainer);
     }
-    _toolCardContainer=_toolRunList(_toolCardContainer);
     return _toolCardContainer;
   }
   function ensureThinkCtl(){
@@ -5893,6 +6048,13 @@ function addStreamingMessage(opts){
        settle can create the pill again. */
     if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools()){
       return suppressedThinkCtl;
+    }
+    if(reactLive){
+      /* No pill DOM — thinkingPill appends into the last assistant bubble,
+         which under React is a node React owns. The status line is data. */
+      thinkCtl=reactThinkCtl;
+      stampThinking();
+      return reactThinkCtl;
     }
     if(thinkCtl)return thinkCtl;
     /* P0.8 — The placeholder ("正在思考…") is no longer needed once
@@ -5975,9 +6137,11 @@ function addStreamingMessage(opts){
       }
     });
   }
-  body.appendChild(placeholder);
+  if(!reactLive)body.appendChild(placeholder);
+  else stampWaiting(0);
   scheduleActiveTurnToTop(list,div,msgIdx,retryViewport);
   function setPlaceholderText(label){
+    if(reactLive){stampWaiting(Math.round((Date.now()-thinkStarted)/1000));return}
     /* Fast text-node rewrite — no DOM rebuild, no parse, no
        layout reflow beyond the badge's own intrinsic box. Safe to
        call many times per second. */
@@ -5996,6 +6160,7 @@ function addStreamingMessage(opts){
   _elapsedTick=setInterval(function(){
     if(finished||!firstDelta)return;
     var sec=Math.round((Date.now()-thinkStarted)/1000);
+    if(reactLive){stampWaiting(sec);return}
     if(sec>=45)setPlaceholderText(t("think.stillWorking"));
     else if(sec>=20)setPlaceholderText(t("think.organizingAnswer"));
     else if(sec>=8)setPlaceholderText(t("think.reviewingContext"));
@@ -6018,6 +6183,18 @@ function addStreamingMessage(opts){
     /* Cancel the underlying stream so it doesn't keep running in the
        background holding resources for the full timeout window. */
     try{if(window._activeChatAbort)window._activeChatAbort("first-delta-timeout")}catch(_){}
+    var _timeoutCopy=t("common.noResponseTimeout").replace("{sec}",Math.round(FIRST_DELTA_TIMEOUT_MS/1000));
+    if(reactLive){
+      /* The entry stays a live turn: React's status line carries the failure
+         and the Retry affordance, and retrying starts a new turn, so nothing
+         has to be baked into `html` here. */
+      setLiveStatus({phase:"error",label:_timeoutCopy,error:_timeoutCopy,retryable:true});
+      claimLiveRetry(ret,function(){
+        if(typeof onRetry==="function"){try{onRetry()}catch(e){/* retry handler threw */}}
+      });
+      updateChatStats();
+      return;
+    }
     /* P_paint-race — swap placeholder for the error block via
        replaceChild so other children (in practice the reasoning
        pill if reasoning_content arrived first) survive. */
@@ -6025,7 +6202,7 @@ function addStreamingMessage(opts){
     err.className="msg-error";
     var errText=document.createElement("span");
     errText.className="msg-error-text";
-    errText.textContent=t("common.noResponseTimeout").replace("{sec}",Math.round(FIRST_DELTA_TIMEOUT_MS/1000));
+    errText.textContent=_timeoutCopy;
     var errBtn=document.createElement("button");
     errBtn.type="button";
     errBtn.className="msg-retry-btn";
@@ -6181,6 +6358,35 @@ function addStreamingMessage(opts){
     cursor=null;
   }
 
+  /* Follow the answer as it grows, unless the reader said otherwise. Shared by
+     the legacy painter and the React pass, which mutates the DOM in its own
+     callback and so needs this tail without any of the painting.
+     P_react-live-turn — the snap cannot be one write: with React owning the
+     bubble, the text lands in a commit scheduled off the delta publish, which
+     can land a frame or two AFTER this pass measured. A pinned reader would
+     then sit looking at a gap that only closes on the next delta. So keep
+     chasing the bottom for a few frames; each write is a no-op once the view
+     is already there, and the scroll-away flag (set synchronously by the
+     listener) breaks the chain the moment the reader takes over. */
+  var _pinFollowFrames=3;
+  function followStreamBottom(scroller,pinned){
+    if(!scroller)return;
+    if(state._userScrolledAway){showNewReplyPill();return}
+    if(!pinned)return;
+    /* P_scroll-race — `pinned` was measured before this cycle's DOM
+       mutations. A concurrent passive wheel / touch event (processed by
+       the compositor thread without blocking JS) may have scrolled the
+       viewport since then — the per-frame re-check of the flag below is what
+       keeps us from fighting the user's scroll intent. */
+    scroller.scrollTop=scroller.scrollHeight;
+    var _frames=_pinFollowFrames;
+    requestAnimationFrame(function _repin(){
+      if(!scroller||state._userScrolledAway||_frames-- <=0)return;
+      scroller.scrollTop=scroller.scrollHeight;
+      requestAnimationFrame(_repin);
+    });
+  }
+
 function doRender(){
     pendingRender=null;
     /* P_session-stream-dispose — rAF guard. cancelAnimationFrame in
@@ -6190,9 +6396,6 @@ function doRender(){
 
     _lastRenderAt=performance.now();
 
-    /* Measure pinning BEFORE the DOM grows. Measuring afterwards made a
-       single tall Markdown/code update look like a manual scroll-away,
-       so streaming abruptly stopped following the answer. */
     /* Keep using the message list even on the exact frame where it grows
        from non-scrollable to scrollable; scrollContainer() otherwise
        switches surfaces at that boundary and loses the bottom anchor. */
@@ -6201,14 +6404,36 @@ function doRender(){
        scrollDecision.ts. The streaming path uses a wider 96px pin slack than
        the 64px SCROLL_SLACK default (a single tall Markdown/code delta can
        jump the bottom by more than 64px between frames), so pass the slack
-       explicitly to isPinnedToBottom and AND in the scroll-away intent the
-       same way shouldAutoScroll does. Keeping the decision behind the shared
-       predicate makes it testable while preserving the 96px behavior. */
-    var _wasPinned=!!_streamScroller&&
-      isPinnedToBottom(
+       explicitly to isPinnedToBottom. */
+    /* Was the reader at the bottom BEFORE this cycle's growth? Measuring
+       afterwards made a single tall Markdown/code update look like a manual
+       scroll-away, so streaming abruptly stopped following the answer. Under
+       React the growth already happened by the time this runs (React commits
+       in its own earlier rAF), so the reading comes from noteStreamGrowth(),
+       which is called when the delta arrives. */
+    var _wasPinned=false;
+    if(_streamScroller&&!state._userScrolledAway){
+      _wasPinned=reactLive?_pinWanted:isPinnedToBottom(
         _streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight,
         96
-      )&&!state._userScrolledAway;
+      );
+    }
+
+    if(reactLive){
+      /* P_react-live-turn — AssistantTurn paints this turn's prose from
+         `rawText` with the same stable-prefix split, so the whole render
+         section below (segment hosts, think-block scaffolding, innerHTML
+         writes) is dead weight here. Mirror the data, keep the thinking panel
+         fed, and follow the bottom. */
+      if(stillOwnsSlot()){
+        state.messages[msgIdx].rawText=full;
+      }
+      if(fullReasoning||_extractThinkText(full)){
+        _publishThinkingPanelLive();
+      }
+      followStreamBottom(_streamScroller,_wasPinned);
+      return;
+    }
 
     /* P0 — chat-template artifact strip. The upstream LLM (Beagle,
      * DeepSeek, MiniMax M2, etc.) can leak <|im_start|>...<|im_end|>,
@@ -6430,35 +6655,7 @@ function doRender(){
     if(stillOwnsSlot()){
       state.messages[msgIdx].rawText=full;
     }
-    if(_wasPinned&&_streamScroller){
-      /* P_scroll-race — _wasPinned was measured before this render
-         cycle's DOM mutations. A concurrent passive wheel / touch event
-         (processed by the compositor thread without blocking JS) may
-         have scrolled the viewport since then — re-check the flag so
-         we don't fight the user's scroll intent by snapping them back
-         to the bottom. */
-      if(!state._userScrolledAway){
-        _streamScroller.scrollTop=_streamScroller.scrollHeight;
-        /* P_content-visibility-drift — content-visibility:auto on
-           off-screen messages can make scrollHeight lag the true
-           content height. After the initial snap, check if the user
-           is still more than 16px from the measured bottom; if so,
-           schedule a follow-up snap one frame later when the browser
-           has accounted for all layout. This is a no-op when the snap
-           already reached the true bottom (the common case). */
-        var _drift=_streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight;
-        if(_drift>16){
-          requestAnimationFrame(function _repin(){
-            if(!state._userScrolledAway&&_streamScroller){
-              _streamScroller.scrollTop=_streamScroller.scrollHeight;
-            }
-          });
-        }
-      }
-    }
-    if(state._userScrolledAway){
-      showNewReplyPill();
-    }
+    followStreamBottom(_streamScroller,_wasPinned);
   }
   var streamContent=null;
   var settledContent=null;
@@ -6487,14 +6684,6 @@ function doRender(){
   /* First delta renders immediately so the user sees content right away */
   var firstDelta=true;
 
-  /* Phase 3 — search-progress log attached to this bubble. The chat
-   * path (line 2707) creates a startSearchProgress() instance up front
-   * (so the log can prepend to the bubble's body even before the first
-   * delta) and then drives it via the prependSearchStep / finalize
-   * methods below. We keep a single closure ref so the methods can
-   * detach, finalize, and feed it without re-querying the DOM. */
-  var _searchProgress = null;
-
   /* P_tool_retry_button — Retry buttons on failed inline tool rows
      dispatch a `tool-retry` CustomEvent (toolInline.ts). The delegated
      listener below routes to this handler. Falls back to window scope
@@ -6511,80 +6700,121 @@ function doRender(){
     }
   };
 
+  /* ── P_react-live-turn — the live turn's chrome, as data ─────────────
+     The waiting dot, the reasoning pill, the retry notice and the timeout
+     error block were four DOM appenders that could all appear at once. When
+     React owns #msgList they collapse into one field — `message._liveStatus`
+     — and react/tool-run/TurnStatus is the only thing that draws it, so a
+     turn cannot show two "working on it" lines. `reactLive` picks the
+     surface; both branches below carry the same copy. */
+  var _pinWanted=true;
+  var _waitingLabel=appMode==="chat"?t("think.thinking"):t("common.generating");
+  function liveMessage(){
+    return (msgIdx>=0&&state.messages[msgIdx]&&
+      state.messages[msgIdx].clientId===clientId)?state.messages[msgIdx]:null;
+  }
+  function setLiveStatus(status){
+    var msg=liveMessage();
+    if(msg)setReactLiveStatus(msg,status);
+  }
+  /* A status line never overwrites a failure or a retry notice, and the
+     waiting dot gives up as soon as the turn has real content. */
+  function statusIsBusy(){
+    var msg=liveMessage();
+    var prev=msg&&msg._liveStatus;
+    return !!(prev&&(prev.phase==="error"||prev.phase==="retrying"));
+  }
+  function clearLiveStatus(){
+    if(!statusIsBusy())setLiveStatus(null);
+  }
+  function waitingCopyFor(sec){
+    if(sec>=45)return t("think.stillWorking");
+    if(sec>=20)return t("think.organizingAnswer");
+    if(sec>=8)return t("think.reviewingContext");
+    return _waitingLabel;
+  }
+  function stampWaiting(sec){
+    if(!reactLive||statusIsBusy())return;
+    setLiveStatus({phase:"waiting",label:waitingCopyFor(sec),mode:appMode,
+      clickable:appMode==="chat",elapsedSec:sec>=12?sec:undefined});
+  }
+  function stampThinking(){
+    if(!reactLive||statusIsBusy())return;
+    setLiveStatus({phase:"thinking",label:t("think.thinking"),
+      clickable:appMode==="chat"});
+  }
+  /* React commits the growth in its own rAF, which runs before doRender's
+     scroll pass — so "was the reader at the bottom?" has to be answered when
+     the delta arrives, not after the DOM already grew. */
+  function noteStreamGrowth(){
+    if(!reactLive)return;
+    var sc=list||scrollContainer();
+    if(!sc)return;
+    _pinWanted=isPinnedToBottom(
+      sc.scrollHeight-sc.scrollTop-sc.clientHeight,96)&&!state._userScrolledAway;
+  }
+
   var toolRuntime=createToolRuntime({
     body:body,
+    /* P_react-live-turn — the single ownership switch. With this true every
+       row / panel / host writer in the runtime degrades to its no-row path, so
+       it only maintains the data (`_run`, `textOffset`, `_liveOutput`,
+       `steps`, `approval`) that react/tool-run renders from. */
+    ownsLiveTurn:function(){return reactLive},
     stillOwnsSlot:stillOwnsSlot,
     getMessage:function(){
       return msgIdx>=0?(state.messages[msgIdx]||null):null;
     },
-    liveSingleCardSlot:ensureLiveToolSlot(),
+    /* `liveSingleCardSlot` is deliberately unset: the one-row-in-a-slot
+       presentation was a live-only surface, and the React renderer groups
+       rows from the data instead. */
     ensureToolContainer:_ensureToolContainer,
-    /* P_inline-tools — a tool_use lands: freeze the current text
-       segment in place, append the ChatGPT-style status row after
-       it, and start the next text segment below the row. offset
-       records where in `full` the split happened so finish() can
-       rebuild the identical layout as serialized HTML. */
+    /* P_declarative-tool-run — a tool_use landed: record where in `full` the
+       answer was, and let the renderer draw the row from that offset.
+       `findInlineToolBoundary` rewinds to the last completed paragraph so a
+       call that fires mid-sentence never splits it, and segBase always
+       advances, which is what keeps two calls firing in the same instant from
+       claiming the same offset (buildTurnLayout would drop the duplicate row).
+       Nothing is spliced into the prose here any more; on the degraded surface
+       (React never mounted) the row joins the bottom of the bubble and the
+       answer streams above it. */
     onInlineTool:function(entry,row){
-      try{placeholder.remove()}catch(_){}
-      /* Do not splice a tool row at an arbitrary character offset. A
-         tool_use event often follows a short, unfinished preamble; using
-         full.length here split one sentence across the tool row. Rewind to
-         the latest completed sentence/paragraph and let the unfinished tail
-         render as the next segment below the tool. */
-      var _oldSegBase=segBase;
-      var _oldSegHost=segHost;
-      var _toolOffset=findInlineToolBoundary(full,_oldSegBase);
-      /* The boundary helper is prose-oriented. Keep the current live layout
-         unchanged when an inline reasoning marker is active, because moving
-         a partial <think> structure would be more disruptive than retaining
-         the raw offset for that rare case. */
-      if(thinkState.startIdx!==-1)_toolOffset=full.length;
-      /* P_inline-tools-paint-race — a fast SSE response can deliver the
-         first content delta and tool_use in the same turn, before the
-         first rAF has painted the text segment. Materialize that segment
-         before freezing it so the completed prose remains before the row.
-         cancelScheduledRender() also cancels the stale rAF; the next
-         segment will schedule its own render below the newly inserted row. */
-      if(full.length>_oldSegBase&&(!segHost||!segHost.isConnected)){
-        cancelScheduledRender();
-        ensureSegHost();
-        try{doRender()}catch(_){}
-      }
-      _oldSegHost=segHost;
-      freezeCurrentSegment();
-      if(_toolOffset<full.length&&_oldSegHost&&_oldSegHost.isConnected){
-        try{
-          var _frozenVisible=stripChatArtifacts(full.slice(_oldSegBase,_toolOffset))
-            .replace(/<think>[\s\S]*?<\/think>/gi,"")
-            .replace(/<think>[\s\S]*$/gi,"");
-          if(_frozenVisible.trim())_oldSegHost.innerHTML=renderAssistantHTML(_frozenVisible);
-          else _oldSegHost.remove();
-        }catch(_){}
-      }
-      /* The row mounts directly in the bubble body at the split point, so
-         it reads at the position the assistant had reached when it called
-         the tool — never pinned to the bubble top or bottom. */
-      body.appendChild(row);
-      inlineToolRows.push({id:entry.id,name:entry.name,offset:_toolOffset,row:row});
-      segBase=_toolOffset;
-      if(_toolOffset<full.length){
-        cancelScheduledRender();
-        pendingRender=requestAnimationFrame(function(){doRender()});
-      }
-      var sc=list||scrollContainer();
-      if(sc&&!state._userScrolledAway&&
-         sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96){
-        sc.scrollTop=sc.scrollHeight;
+      var _roff=findInlineToolBoundary(full,segBase);
+      if(_roff<segBase)_roff=segBase;
+      /* The boundary helper is prose-oriented. With an inline reasoning marker
+         open, moving the split point would tear a partial <think> in half, so
+         the raw end-of-text offset is the lesser evil. */
+      if(!reactLive&&thinkState.startIdx!==-1)_roff=full.length;
+      segBase=_roff;
+      inlineToolRows.push({id:entry.id,name:entry.name,offset:_roff});
+      if(reactLive){
+        noteStreamGrowth();
+      }else{
+        try{placeholder.remove()}catch(_){}
+        if(row){try{body.appendChild(row)}catch(_){}}
+        if(_roff<full.length){
+          cancelScheduledRender();
+          pendingRender=requestAnimationFrame(function(){doRender()});
+        }
+        var sc=list||scrollContainer();
+        if(sc&&!state._userScrolledAway&&
+           sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96){
+          sc.scrollTop=sc.scrollHeight;
+        }
       }
       /* P_tool-textoffset — return the split point so the tool runtime
          can persist it on synthetic rows created from a late tool_result
-         (those never pass through the finish() write-back loop below). */
-      return _toolOffset;
+         (those never pass through the finish() write-back above). */
+      return _roff;
     },
     onToolActivity:function(){
       /* The tool row is the only live status while execution is active;
          remove a reasoning pill immediately so the two indicators never
          appear together. */
+      if(reactLive){
+        noteStreamGrowth();
+        clearLiveStatus();
+      }
       hideThinkCtl();
       /* A tool call counts as first visible activity, so retire the
          waiting placeholder before execution progress begins. */
@@ -6596,30 +6826,22 @@ function doRender(){
         pendingRender=requestAnimationFrame(function(){doRender()});
       }
     },
-    /* P_tool_retry_button — Retry buttons inside failed inline tool
-       rows fire a `tool-retry` CustomEvent (toolInline.ts). Listen on
-       the bubble body (delegated) and route through onSearchRetry so
-       the user can re-run a failed search without retyping the query.
-       Non-search failures (web_fetch, code_interpreter) fall through;
-       the system prompt teaches the model to use a different strategy
-       per errorCode rather than blindly re-issuing the same call. */
+    /* P_tool_retry_button — Retry buttons inside failed tool rows fire a
+       `tool-retry` CustomEvent (ui/toolInline.ts, react/tool-run). The
+       document-level listener above routes it here so the user can re-run a
+       failed search without retyping the query. Non-search failures
+       (web_fetch, code_interpreter) fall through; the system prompt teaches
+       the model to use a different strategy per errorCode rather than
+       blindly re-issuing the same call. */
     onSearchRetry:_onSearchRetry
   });
 
-  /* P_tool_retry_button — delegated listener so failed search rows in
-     share / history replay (which don't go through createToolRuntime)
-     also get the retry affordance. The runtime-supplied onSearchRetry
-     handles live chat; share view can swap in its own handler via
-     window.__socratesToolRetry. */
-  if(typeof body.addEventListener==='function'){
-    body.addEventListener('tool-retry',function(ev){
-      const detail=ev&&ev.detail||{};
-      const handler=(typeof window.__socratesToolRetry==='function')
-        ?window.__socratesToolRetry
-        :_onSearchRetry;
-      try{if(typeof handler==='function')handler(detail.query||'');}catch(_){/*ignore*/}
-    });
-  }
+  /* P_tool_retry_button — claim the route for the delegated `tool-retry`
+     listener (registered once, module scope) and hand this turn's runtime to
+     the approval bridge, which needs it to outlive finish() when the run is
+     paused on a decision. */
+  claimLiveSearchRetry(_onSearchRetry);
+  registerLiveTurnRuntime(clientId,toolRuntime);
   var ret={
     recordToolUse:toolRuntime.recordToolUse,
     recordToolProgress:toolRuntime.recordToolProgress,
@@ -6643,12 +6865,16 @@ function doRender(){
          even if abort() hasn't propagated yet, closing the race
          window where a delta lands between session-switch and abort. */
       if(!stillOwnsSlot())return;
+      noteStreamGrowth();
       var wasFirst=firstDelta;
       if(wasFirst){
         firstDelta=false;
         /* First delta arrived — stop the watchdog and elapsed counter. */
         clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
+        /* The waiting line is retired with the first real content, exactly
+           where the legacy painter called placeholder.remove(). */
+        if(reactLive)clearLiveStatus();
         /* Don't finalize the pill on the FIRST delta — many models emit
            a short preamble ("好的,让我搜一下…") before the tool_use
            event, and removing the pill here would leave the user
@@ -6658,6 +6884,16 @@ function doRender(){
            (or whatever label the upcoming tool_use sets) visible. */
       }
       full+=delta;
+      /* P_react-live-turn — React renders from this field when the publish
+         below flushes, so the mirror has to happen before it. doRender's own
+         write stays for the legacy painter and for a late-arriving frame. */
+      if(reactLive){
+        state.messages[msgIdx].rawText=full;
+        /* Tokens are the proof the retry worked: the notice outlives tool
+           activity and thinking stamps by design, so retire it here. */
+        var _st=state.messages[msgIdx]._liveStatus;
+        if(_st&&_st.phase==="retrying")setLiveStatus(null);
+      }
       if(toolRuntime&&typeof toolRuntime.noteTextDelta==="function"){
         try{toolRuntime.noteTextDelta()}catch(_){}
       }
@@ -6704,10 +6940,16 @@ function doRender(){
     },
     setRetryStatus:function(notice){
       if(!stillOwnsSlot())return;
+      var _retryLabel="Retrying · "+notice.retryNumber+"/"+notice.maxRetries+" · 5s";
+      if(reactLive){
+        noteStreamGrowth();
+        setLiveStatus({phase:"retrying",label:_retryLabel,clickable:false});
+        return;
+      }
       try{
         var retryCtl=ensureThinkCtl();
         if(retryCtl&&typeof retryCtl.setLabel==="function"){
-          retryCtl.setLabel("Retrying · "+notice.retryNumber+"/"+notice.maxRetries+" · 5s");
+          retryCtl.setLabel(_retryLabel);
         }
       }catch(_){}
     },
@@ -6779,64 +7021,13 @@ function doRender(){
          now also uses marked + KaTeX via formatMsgProgressive for live streaming. */
       var total=full.length;
       var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
-      /* P_smooth-handoff — resolved once so finish(), the catch
-         fallback, finishAfterRender and _hfTick all agree on which
-         pipeline owns the finalized DOM. When React owns #msgList the
-         legacy bubble is a throwaway: it gets dropped one pre-paint
-         frame after React commits the finalized copy. */
-      var _reactHandoff=!!(list&&(
-        (list.dataset&&list.dataset.msgListReactHydrated==="1")||
-        list.getAttribute("data-react-migration-runtime")==="msg-list"
-      ));
-      /* Flush only the still-live tail to its complete text before the
-         body is transferred. The stable prefix stays mounted, so a
-         reader higher in a long answer keeps the exact same DOM nodes.
-         This also closes the small cadence window where [DONE] can
-         arrive after the network text but before the final scheduled
-         progressive render. */
-      if(_reactHandoff&&settledContent&&liveContent&&thinkState.startIdx===-1){
-        try{
-          var _liveVisibleFinal=stripChatArtifacts(full.slice(segBase))
-            .replace(/<think>[\s\S]*?<\/think>/gi,"")
-            .replace(/<think>[\s\S]*$/gi,"");
-          var _liveFinalParts=splitStreamingMarkdown(_liveVisibleFinal);
-          var _liveFinalHtml;
-          if(_liveFinalParts.prefix===_stablePrefixText){
-            _liveFinalHtml=_liveFinalParts.tail
-              ?formatMsgProgressive(_liveFinalParts.tail):"";
-          }else if(_stablePrefixText
-            &&_liveVisibleFinal.slice(0,_stablePrefixText.length)===_stablePrefixText){
-            /* P_tail-truncation — the last network delta moved the
-               settled/live split (a new blank line arrived with [DONE]),
-               so the freshly split prefix no longer equals the one the
-               settled container was rendered from. Skipping the flush
-               here left the live tail one render behind — the final few
-               characters were missing until (and unless) something else
-               repainted the bubble. The settled DOM is still an exact
-               render of _stablePrefixText, so render EVERYTHING past it
-               into the tail instead of skipping. */
-            var _liveRemainder=_liveVisibleFinal.slice(_stablePrefixText.length);
-            _liveFinalHtml=_liveRemainder?formatMsgProgressive(_liveRemainder):"";
-          }else{
-            /* Prefix mismatch (retro-edited text or no prefix rendered
-               yet): resync both containers to the final split so the
-               preserved stream DOM carries the complete message. */
-            settledContent.innerHTML=_liveFinalParts.prefix
-              ?formatMsgProgressive(_liveFinalParts.prefix):"";
-            _stablePrefixText=_liveFinalParts.prefix||null;
-            _liveFinalHtml=_liveFinalParts.prefix
-              ?(_liveFinalParts.tail?formatMsgProgressive(_liveFinalParts.tail):"")
-              :(_liveVisibleFinal?formatMsgProgressive(_liveVisibleFinal):"");
-          }
-          if(liveContent._lastRenderedHtml!==_liveFinalHtml){
-            liveContent.innerHTML=_liveFinalHtml;
-            liveContent._lastRenderedHtml=_liveFinalHtml;
-          }
-        }catch(_){}
-      }
-      var _preserveLiveBody=!!(_reactHandoff&&body.querySelector(
-        '.stream-content,.think-prefix,.think-suffix'
-      ));
+      /* P_react-live-turn — `reactLive`, captured when this bubble was created,
+         is the single answer to "which surface owns the finalized DOM?". When it
+         is true, React has painted this turn from rawText + toolCalls all along,
+         so nothing below touches `body` — the final render is only the `html`
+         string that history reload and session save read. When it is false, the
+         legacy bubble IS the surface: the swap, the artifact reseat and the
+         post-render wiring all run as before. */
       /* Skip the char-by-char animation when the response contains
        * a <think> marker. The animation writes formatted HTML into
        * a text node, so mid-stream the user would see literal
@@ -6947,73 +7138,30 @@ function doRender(){
           if(window._activeTemplate&&window._activeTemplate.outputMode==='canvas'){
             state._canvasPendingId='canvas-'+Math.random().toString(36).slice(2,10);
           }
-          /* P_inline-tools — assemble the final HTML by splicing the
-             settled inline tool rows between the text segments they
-             actually split. The serialized result goes into
-             state.messages[i].html so history replay / React handoff /
-             session save all reproduce the inline layout for free. */
-          var _renderSeg=function(txt){
-            var vis=stripChatArtifacts(txt)
-              .replace(/<think>[\s\S]*?<\/think>/gi,"")
-              .replace(/<think>[\s\S]*$/gi,"");
-            if(!vis.trim())return "";
-            return renderAssistantHTML(vis);
-          };
-          if(inlineToolRows.length){
-            var _parts2=[];
-            var _prev=0;
-            for(var _ri=0;_ri<inlineToolRows.length;_ri++){
-              var _r=inlineToolRows[_ri];
-              _parts2.push(_renderSeg(full.slice(_prev,_r.offset)));
-              if(_r.row){
-                /* A row still spinning at finish time means its result
-                   never arrived — settle it as stopped so the saved
-                   HTML doesn't carry a perpetual spinner. */
-                if(_r.row.getAttribute("data-state")==="running"){
-                  try{
-                    settleInlineToolRowFromMessage(_r.row,msgIdx>=0?(state.messages[msgIdx]||null):null);
-                  }catch(_){}
-                }
-                _parts2.push(_r.row.outerHTML);
-                /* P_codex-steps-persist — the Codex step list lives in an
-                   anchored host near the agent's row so it reads in the flow
-                   of the answer. Serialize it with the row, or a reload would
-                   show the agent call with no visible work. Look it up by
-                   anchor id: an attachment host (charts, artifacts) can be
-                   inserted between the row and this host. */
-                try{
-                  var _agentHost=body.querySelector(
-                    '.agent-run-host[data-agent-anchor="'+
-                    (window.CSS&&CSS.escape?CSS.escape(String(_r.id)):String(_r.id))+'"]');
-                  if(_agentHost)_parts2.push(_agentHost.outerHTML);
-                }catch(_){}
-              }
-              _prev=_r.offset;
-            }
-            _parts2.push(_renderSeg(full.slice(_prev)));
-            finalHtml=_parts2.join("");
-            /* Persist the split points on the toolCalls entries so the
-               raw data survives even if a future renderer wants to
-               rebuild the layout from rawText. */
-            try{
-              var _m=msgIdx>=0?state.messages[msgIdx]:null;
-              if(_m&&Array.isArray(_m.toolCalls)){
-                for(var _ti=0;_ti<inlineToolRows.length;_ti++){
-                  for(var _tj=0;_tj<_m.toolCalls.length;_tj++){
-                    if(_m.toolCalls[_tj].id===inlineToolRows[_ti].id){
-                      _m.toolCalls[_tj].textOffset=inlineToolRows[_ti].offset;
-                      break;
-                    }
+          /* P_declarative-tool-run — the finalized html carries prose only, on
+             every surface: react/tool-run splices the rows in from
+             toolCalls[].textOffset, so a second copy baked into `html` would
+             render each row twice. The split points captured at tool time are
+             stamped onto the entries here — that is what makes the layout
+             survive the save/reload round-trip, including on the degraded
+             (non-React) surface where no row was ever mounted. */
+          try{
+            var _m=msgIdx>=0?state.messages[msgIdx]:null;
+            if(_m&&Array.isArray(_m.toolCalls)){
+              for(var _ti=0;_ti<inlineToolRows.length;_ti++){
+                for(var _tj=0;_tj<_m.toolCalls.length;_tj++){
+                  if(_m.toolCalls[_tj].id===inlineToolRows[_ti].id){
+                    _m.toolCalls[_tj].textOffset=inlineToolRows[_ti].offset;
+                    break;
                   }
                 }
               }
-            }catch(_){}
-          }else{
-            var visibleFinal=stripChatArtifacts(full)
-              .replace(/<think>[\s\S]*?<\/think>/gi,"")
-              .replace(/<think>[\s\S]*$/gi,"");
-            finalHtml=renderAssistantHTML(visibleFinal);
-          }
+            }
+          }catch(_){}
+          var visibleFinal=stripChatArtifacts(full)
+            .replace(/<think>[\s\S]*?<\/think>/gi,"")
+            .replace(/<think>[\s\S]*$/gi,"");
+          finalHtml=renderAssistantHTML(visibleFinal);
         }catch(e){
           console.log("[finish] render error");
           finalHtml="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
@@ -7025,39 +7173,38 @@ function doRender(){
         if(thinkCtl&&typeof thinkCtl.finalize==="function"){
           try{thinkCtl.finalize()}catch(_){}
         }
-        /* P_smooth-handoff — when React owns #msgList, the legacy
-           bubble is dropped by _hfTick one pre-paint frame after React
-           commits its finalized copy. Keep the live DOM for ordinary
-           text and tool/artifact streams, but upgrade a scaffold preview
-           to the finalized slot tree before handoff. This is important
-           for <quiz>/<practice> interactivity and also prevents a
-           temporary [Key Point] preview from surviving completion. The
-           guarded path has no live tool/artifact nodes, so it cannot
-           reload an iframe or discard a tool result. */
-        var _liveScaffoldNeedsUpgrade=!!(
-          _reactHandoff&&body.querySelector('[data-scaffold-live]')&&
-          !body.querySelector('.think-block,.tool-run-group,.tool-inline,'+
-            '.agent-tool-card,.tool-inline-attachments,.agent-run-host,.exec-artifact,.visualization-card')
-        );
-        if(_reactHandoff){
-          if(_liveScaffoldNeedsUpgrade){
-            try{body.innerHTML=finalHtml}catch(_){/* keep the live preview */}
-          }
-          var _lateCursors=body.querySelectorAll('.stream-cursor');
-          for(var _lci=0;_lci<_lateCursors.length;_lci++){
-            try{_lateCursors[_lci].remove()}catch(_){}
-          }
-          cursor=null;
-        }else{
+        /* The legacy bubble is the final surface: swap the streamed DOM
+           for one renderAssistantHTML pass and carry over the nodes that
+           renderAssistantHTML cannot reproduce. Under React there is nothing
+           to swap — see the P_react-live-turn note above. */
+        if(!reactLive){
           /* P_tool_card_preserve — save BOTH the thinking pill and
              any tool cards we appended via recordToolUse, then
              re-insert them after the formatted HTML. Cards now live
              inside the pill, so saving the pill is sufficient — only
              extract individual cards when there's no pill to host them. */
           var savedPill=body.querySelector('.think-block');
-          var savedToolGroup=body.querySelector('.tool-run-group');
           var savedToolCards=body.querySelectorAll('.agent-tool-card');
           var savedToolCardArr=[];
+          /* P_declarative-tool-run — the inline rows the runtime mounted during
+             the turn are not in `finalHtml` any more (prose only), so they are
+             carried across the innerHTML swap the same way the cards are. A row
+             still spinning at this point had no result arrive: settle it from
+             the message so the saved DOM does not carry a perpetual spinner. */
+          var savedInlineRows=[];
+          (function(){
+            var rows=body.querySelectorAll('.tool-inline');
+            for(var rri=0;rri<rows.length;rri++){
+              var _row=rows[rri];
+              if(_row.getAttribute("data-state")==="running"){
+                try{
+                  settleInlineToolRowFromMessage(_row,msgIdx>=0?(state.messages[msgIdx]||null):null);
+                }catch(_){}
+              }
+              savedInlineRows.push(_row);
+              _row.parentNode.removeChild(_row);
+            }
+          })();
           /* P_inline-artifact-survival-finish — the final render at
              finish() rewrites body's innerHTML. Tool cards are saved
              and re-mounted above, but inline artifacts (plots and native
@@ -7077,7 +7224,7 @@ function doRender(){
             savedArtifacts.push(artifactNodes[ai]);
             artifactNodes[ai].parentNode.removeChild(artifactNodes[ai]);
           }
-          if(!savedPill&&!savedToolGroup){
+          if(!savedPill){
             for(var sci=0;sci<savedToolCards.length;sci++){
               savedToolCardArr.push(savedToolCards[sci]);
               savedToolCards[sci].parentNode.removeChild(savedToolCards[sci]);
@@ -7090,7 +7237,12 @@ function doRender(){
              spontaneous "refresh" after the answer completed. */
           body.innerHTML=finalHtml;
           if(savedPill)body.insertBefore(savedPill,body.firstChild);
-          else if(savedToolGroup)body.appendChild(savedToolGroup);
+          /* Rows go back before the cards and before any anchored artifact is
+             re-seated: reseatSavedArtifact looks up [data-tcid] to place a
+             chart beside the call that produced it. */
+          for(var sri2=0;sri2<savedInlineRows.length;sri2++){
+            body.appendChild(savedInlineRows[sri2]);
+          }
           for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
             body.appendChild(savedToolCardArr[sci2]);
           }
@@ -7126,14 +7278,19 @@ function doRender(){
       }catch(e){
         console.log("[finish] formatMsg error");
         var fb="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
-        /* P_smooth-handoff — same rule as the success path: only touch
-           the legacy body when it IS the final surface. */
-        if(!_reactHandoff){
+        /* Same rule as the success path: only touch the legacy body when
+           it IS the final surface. */
+        if(!reactLive){
           var savedPill2=body.querySelector('.think-block');
-          var savedToolGroup2=body.querySelector('.tool-run-group');
+          var savedRows2=body.querySelectorAll('.tool-inline');
+          var savedRowsArr2=[];
+          for(var rri2=0;rri2<savedRows2.length;rri2++){
+            savedRowsArr2.push(savedRows2[rri2]);
+            savedRows2[rri2].parentNode.removeChild(savedRows2[rri2]);
+          }
           var savedTC2=body.querySelectorAll('.agent-tool-card');
           var savedTCArr2=[];
-          if(!savedPill2&&!savedToolGroup2){
+          if(!savedPill2){
             for(var sci3=0;sci3<savedTC2.length;sci3++){
               savedTCArr2.push(savedTC2[sci3]);
               savedTC2[sci3].parentNode.removeChild(savedTC2[sci3]);
@@ -7141,7 +7298,9 @@ function doRender(){
           }
           body.innerHTML=fb;
           if(savedPill2)body.insertBefore(savedPill2,body.firstChild);
-          else if(savedToolGroup2)body.appendChild(savedToolGroup2);
+          for(var sri3=0;sri3<savedRowsArr2.length;sri3++){
+            body.appendChild(savedRowsArr2[sri3]);
+          }
           for(var sci4=0;sci4<savedTCArr2.length;sci4++){
             body.appendChild(savedTCArr2[sci4]);
           }
@@ -7164,11 +7323,9 @@ function doRender(){
            will actually stay on screen. In the React path the streamed
            body is dropped a frame later and MessageItem's
            useLayoutEffect runs the same idempotent hooks on the React
-           copy pre-paint; running them here as well re-rendered
-           mermaid and re-wired code blocks on a throwaway body —
-           wasted work plus a one-frame visual pop right before the
-           handoff. */
-        if(!_reactHandoff){
+           body after each commit; running them here as well re-rendered
+           mermaid and re-wired code blocks on a throwaway body. */
+        if(!reactLive){
           try{processPendingMermaid()}catch(_){}
           try{processPendingViz()}catch(_){}
           try{processPendingVizActions()}catch(_){}
@@ -7198,15 +7355,12 @@ function doRender(){
              keeps the closure (and DOM refs) eligible for GC. */
           window._activeChatCtl=null;
         }
-        /* Capture a visual row anchor before React replaces the legacy
-           streaming node. The two renderers produce different heights,
-           so preserving scrollTop or distance-from-bottom cannot preserve
-           what the reader is looking at. Identity + viewport offset can. */
+        /* The final pass changes the answer's height (a running row folds
+           into its group, the status line retires, KaTeX resolves), and
+           neither scrollTop nor distance-from-bottom survives that. Capture
+           row identity + viewport offset instead, and re-assert it below. */
         var _finishViewport=null;
-        if(_preserveLiveBody&&msgIdx>=0&&state.messages[msgIdx]){
-          state.messages[msgIdx]._preserveLiveBody=true;
-        }
-        if(_reactHandoff&&list){
+        if(reactLive&&list){
           try{
             var _fvRect=list.getBoundingClientRect();
             var _fvRows=list.querySelectorAll('.msg[data-client-id]');
@@ -7292,246 +7446,152 @@ function doRender(){
             };
           }catch(_){}
         }
-        /* P_streaming-finish-handoff — when the React runtime owns
-           #msgList, the legacy streaming bubble is now redundant:
-           the snapshot carries the finalized entry (type=assistant,
-           html=<finalized>) and React will paint a fresh bubble on
-           the next render. The legacy bubble is detached below only
-           AFTER React commits its copy, so the swap is seamless. */
         publishReactChatRuntime({
           type:"stream-finished",
           messageId:clientId,
           textLength:full.length
         });
-        /* P_handoff-no-flash — publish first, THEN remove the legacy
-           bubble only after React has committed its finalized copy.
-           rAF callbacks run before paint, so when React commits
-           synchronously during the publish above, the very first tick
-           below removes the legacy bubble in the same pre-paint frame:
-           the user never sees a gap or a duplicate. The old order
-           (remove first, publish after) left the message missing for
-           at least one frame — perceived as a spontaneous "refresh"
-           right after the answer finished. Retained live-DOM modules
-           (think pill, tool cards, artifacts) are handed to React's
-           body in the same tick. */
-        if(_reactHandoff){
-          var _hfFrames=0;
-          var _hfFindLegacy=function(){
-            var cands=list.querySelectorAll('[data-client-id="'+clientId+'"]');
-            for(var ci=0;ci<cands.length;ci++){
-              if(!cands[ci].hasAttribute("data-react-owned"))return cands[ci];
+        /* P_react-live-turn — the bubble React has been painting this whole
+           turn IS the finalized one: there is no transplant, no reveal, and
+           no duplicate legacy node to drop. What still changes at finish is
+           the content height — the running row folds into its group, the
+           status line retires, KaTeX resolves — so re-assert the anchor
+           captured above for a bounded number of frames. A one-shot restore
+           taken mid-flux strands the reader above the answer ("jumped back
+           to my own message"), and the churn fires scroll events the
+           scrollPill listener misreads as the user scrolling away. */
+        if(reactLive){
+          if(_finishViewport&&_finishViewport.scroller){
+            var _fvScroller=_finishViewport.scroller;
+            var _fvUserIntent=false;
+            var _fvMarkIntent=function(){_fvUserIntent=true;};
+            var _fvIntentEvents=["wheel","touchstart","pointerdown","keydown"];
+            for(var _fvei=0;_fvei<_fvIntentEvents.length;_fvei++){
+              window.addEventListener(_fvIntentEvents[_fvei],_fvMarkIntent,
+                {passive:true,capture:true});
             }
-            return null;
-          };
-          var _hfTick=function(){
-            try{
-              var reactNode=list.querySelector('[data-client-id="'+clientId+'"][data-react-owned]');
-              var legacyNode=_hfFindLegacy();
-              if(reactNode){
-                /* Keep the live message body itself. React has already
-                   created the durable outer message shell and toolbar,
-                   but replacing the entire Markdown body here destroys
-                   the exact nodes the reader is looking at. Async KaTeX,
-                   Mermaid, images and visualization layout then move the
-                   new copy again, which looks like a page refresh even if
-                   scrollTop is restored. Move every existing body child
-                   into the React shell instead. The persisted finalHtml
-                   remains authoritative for history reloads, while this
-                   live turn never re-renders at completion. */
-                var reactBody=reactNode.querySelector('.msg-body');
-                if(reactBody&&legacyNode){
-                  var _lvBody=legacyNode.querySelector('.msg-body');
-                  if(_preserveLiveBody&&_lvBody){
-                    while(reactBody.firstChild)reactBody.removeChild(reactBody.firstChild);
-                    while(_lvBody.firstChild)reactBody.appendChild(_lvBody.firstChild);
-                  }else{
-                    var _lvPill=legacyNode.querySelector('.think-block');
-                    var _lvGroup=legacyNode.querySelector('.tool-run-group');
-                    if(_lvPill)reactBody.insertBefore(_lvPill,reactBody.firstChild);
-                    else if(_lvGroup)reactBody.appendChild(_lvGroup);
-                    if(!_lvPill&&!_lvGroup){
-                      var _lvCards=legacyNode.querySelectorAll('.agent-tool-card');
-                      for(var lci=0;lci<_lvCards.length;lci++)reactBody.appendChild(_lvCards[lci]);
-                    }
-                    var _lvHosts=legacyNode.querySelectorAll('.tool-inline-attachments');
-                    for(var lhi=0;lhi<_lvHosts.length;lhi++)reseatSavedArtifact(reactBody,_lvHosts[lhi]);
-                    var _lvArts=legacyNode.querySelectorAll('.exec-artifact,.visualization-card');
-                    for(var lai=0;lai<_lvArts.length;lai++)reseatSavedArtifact(reactBody,_lvArts[lai]);
-                  }
-                  try{processPendingMermaid()}catch(_){}
-                  try{processPendingViz(reactBody)}catch(_){}
-                  try{processPendingVizActions(reactBody)}catch(_){}
-                  try{wireCodeBlockHeaders(reactBody)}catch(_){}
-                  try{wireMsgBodyImages(reactBody)}catch(_){}
-                }
-                if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
-                /* Reveal the durable React shell only after the live DOM has
-                   moved and the duplicate legacy shell is gone. This makes
-                   the handoff a single layout transition instead of briefly
-                   rendering two copies of the same answer. */
-                try{
-                  /* Apply animation:none before removing display:none so
-                     the msgIn entrance animation is suppressed before the
-                     browser can paint the element's first visible frame. */
-                  reactNode.setAttribute('data-live-handoff-complete','1');
-                  reactNode.removeAttribute('data-live-handoff-pending');
-                  var _liveMsg=msgIdx>=0?state.messages[msgIdx]:null;
-                  if(_liveMsg){
-                    Object.defineProperty(_liveMsg,'_liveBodyHandedOff',{
-                      value:true,writable:true,configurable:true,enumerable:false
-                    });
-                  }
-                }catch(_){}
-                if(_finishViewport&&_finishViewport.scroller){
-                  /* P_finish-settle — a single scrollTop restore is not
-                     enough: the reveal + transplant keeps mutating layout
-                     for several frames (async KaTeX/fonts/animations), so
-                     a one-shot restore taken mid-flux strands the reader
-                     above the answer ("jumped back to my own message").
-                     The layout churn also fires scroll events that the
-                     scrollPill listener misreads as the USER scrolling
-                     away, corrupting state._userScrolledAway. Re-assert
-                     the captured position every frame for ~30 frames and
-                     bail the moment the user actually interacts. */
-                  var _fvScroller=_finishViewport.scroller;
-                  var _fvUserIntent=false;
-                  var _fvMarkIntent=function(){_fvUserIntent=true;};
-                  var _fvIntentEvents=["wheel","touchstart","pointerdown","keydown"];
-                  for(var _fvei=0;_fvei<_fvIntentEvents.length;_fvei++){
-                    window.addEventListener(_fvIntentEvents[_fvei],_fvMarkIntent,
-                      {passive:true,capture:true});
-                  }
-                  var _fvDetachIntent=function(){
-                    for(var _fvej=0;_fvej<_fvIntentEvents.length;_fvej++){
-                      window.removeEventListener(_fvIntentEvents[_fvej],_fvMarkIntent,
-                        {capture:true});
-                    }
-                  };
-                  var _fvApply=function(){
-                    if(_finishViewport.pinned){
-                      /* A short answer can be both at the physical bottom and
-                         aligned near the viewport top. If completion removes
-                         streaming-only chrome, blindly staying at bottom moves
-                         the whole answer downward. Restore the lost row height
-                         first, then snap to the new bottom so both invariants
-                         remain true. */
-                      if(_finishViewport.streamRowId&&
-                        Number.isFinite(_finishViewport.streamRowOffset)){
-                        var _fvPinnedRow=list.querySelector(
-                          '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
-                        );
-                        if(_fvPinnedRow){
-                          var _fvPinnedRect=_fvPinnedRow.getBoundingClientRect();
-                          var _fvPinnedNow=_fvPinnedRect.top-
-                            _fvScroller.getBoundingClientRect().top;
-                          var _fvPinnedDelta=Math.ceil(
-                            _fvPinnedNow-_finishViewport.streamRowOffset
-                          );
-                          if(_fvPinnedDelta>1){
-                            var _fvPinnedMin=Math.ceil(
-                              _fvPinnedRect.height+_fvPinnedDelta
-                            );
-                            _fvPinnedRow.style.minHeight=_fvPinnedMin+"px";
-                            var _fvPinnedMsg=msgIdx>=0?state.messages[msgIdx]:null;
-                            if(_fvPinnedMsg){
-                              _fvPinnedMsg._turnAnchorMinHeight=Math.max(
-                                Number(_fvPinnedMsg._turnAnchorMinHeight)||0,
-                                _fvPinnedMin
-                              );
-                            }
-                          }
-                        }
-                      }
-                      _fvScroller.scrollTop=_fvScroller.scrollHeight;
-                      /* Layout-shift scroll events during the handoff may
-                         have flipped this flag; the reader never left the
-                         bottom, so undo the corruption. */
-                      state._userScrolledAway=false;
-                    }else if(_finishViewport.scrolledAway&&_finishViewport.scrollTop<=2){
-                      /* At the absolute transcript top, preserving scrollTop
-                         is the user's explicit intent. Mid-answer reading is
-                         different: React/legacy height deltas move the visible
-                         paragraph even when scrollTop itself is unchanged, so
-                         let the row-anchor branches below preserve content. */
-                      _fvScroller.scrollTop=_finishViewport.scrollTop;
-                    }else if(_finishViewport.streamRowId&&
-                      Number.isFinite(_finishViewport.streamRowOffset)){
-                      var _fvStreamRow=list.querySelector(
-                        '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
-                      );
-                      if(_fvStreamRow){
-                        var _fvStreamRect=_fvStreamRow.getBoundingClientRect();
-                        var _fvStreamNow=_fvStreamRect.top-
-                          _fvScroller.getBoundingClientRect().top;
-                        var _fvStreamDelta=_fvStreamNow-_finishViewport.streamRowOffset;
-                        if(_fvStreamDelta>1){
-                          var _fvMaxTop=Math.max(0,
-                            _fvScroller.scrollHeight-_fvScroller.clientHeight);
-                          var _fvNeededTop=_fvScroller.scrollTop+_fvStreamDelta;
-                          var _fvShortfall=Math.ceil(_fvNeededTop-_fvMaxTop);
-                          if(_fvShortfall>0){
-                            /* The reader is already at the physical scroll
-                               limit, so create only the missing answer reserve
-                               before applying the row correction. This blank
-                               tail is the same turn viewport anchor used while
-                               streaming and is cleared when the next user turn
-                               begins. */
-                            var _fvRequiredMin=Math.ceil(
-                              _fvStreamRect.height+_fvShortfall
-                            );
-                            _fvStreamRow.style.minHeight=_fvRequiredMin+"px";
-                            var _fvStreamMsg=msgIdx>=0?state.messages[msgIdx]:null;
-                            if(_fvStreamMsg){
-                              _fvStreamMsg._turnAnchorMinHeight=Math.max(
-                                Number(_fvStreamMsg._turnAnchorMinHeight)||0,
-                                _fvRequiredMin
-                              );
-                            }
-                          }
-                        }
-                        _fvScroller.scrollTop+=_fvStreamDelta;
-                      }
-                    }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
-                      var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
-                        _fvScroller.getBoundingClientRect().top;
-                      _fvScroller.scrollTop+=_fvExactNow-_finishViewport.anchorOffset;
-                    }else if(_finishViewport.anchorId){
-                      var _fvCurrent=null;
-                      var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');
-                      for(var _fvci=0;_fvci<_fvCurrentRows.length;_fvci++){
-                        if(_fvCurrentRows[_fvci].getAttribute('data-client-id')===_finishViewport.anchorId){
-                          _fvCurrent=_fvCurrentRows[_fvci];break;
-                        }
-                      }
-                      if(_fvCurrent){
-                        var _fvNow=_fvCurrent.getBoundingClientRect().top-
-                          _fvScroller.getBoundingClientRect().top;
-                        _fvScroller.scrollTop+=_fvNow-_finishViewport.anchorOffset;
-                      }else{
-                        _fvScroller.scrollTop=_finishViewport.scrollTop;
-                      }
-                    }else{
-                      _fvScroller.scrollTop=_finishViewport.scrollTop;
-                    }
-                  };
-                  var _fvFrames=0;
-                  var _fvSettle=function(){
-                    if(_fvUserIntent){_fvDetachIntent();return;}
-                    try{_fvApply()}catch(_){}
-                    if(++_fvFrames<30){requestAnimationFrame(_fvSettle);}
-                    else{_fvDetachIntent();}
-                  };
-                  _fvSettle();
-                }
-                return;
+            var _fvDetachIntent=function(){
+              for(var _fvej=0;_fvej<_fvIntentEvents.length;_fvej++){
+                window.removeEventListener(_fvIntentEvents[_fvej],_fvMarkIntent,
+                  {capture:true});
               }
-              if(++_hfFrames<120){requestAnimationFrame(_hfTick);return;}
-              /* React never painted this entry — drop the legacy bubble
-                 anyway so a later snapshot render can't duplicate it. */
-              if(legacyNode&&legacyNode.parentNode)legacyNode.parentNode.removeChild(legacyNode);
-            }catch(_){}
-          };
-          requestAnimationFrame(_hfTick);
+            };
+            var _fvApply=function(){
+              if(_finishViewport.pinned){
+                /* A short answer can be both at the physical bottom and
+                   aligned near the viewport top. If completion removes
+                   streaming-only chrome, blindly staying at bottom moves
+                   the whole answer downward. Restore the lost row height
+                   first, then snap to the new bottom so both invariants
+                   remain true. */
+                if(_finishViewport.streamRowId&&
+                  Number.isFinite(_finishViewport.streamRowOffset)){
+                  var _fvPinnedRow=list.querySelector(
+                    '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
+                  );
+                  if(_fvPinnedRow){
+                    var _fvPinnedRect=_fvPinnedRow.getBoundingClientRect();
+                    var _fvPinnedNow=_fvPinnedRect.top-
+                      _fvScroller.getBoundingClientRect().top;
+                    var _fvPinnedDelta=Math.ceil(
+                      _fvPinnedNow-_finishViewport.streamRowOffset
+                    );
+                    if(_fvPinnedDelta>1){
+                      var _fvPinnedMin=Math.ceil(
+                        _fvPinnedRect.height+_fvPinnedDelta
+                      );
+                      _fvPinnedRow.style.minHeight=_fvPinnedMin+"px";
+                      var _fvPinnedMsg=msgIdx>=0?state.messages[msgIdx]:null;
+                      if(_fvPinnedMsg){
+                        _fvPinnedMsg._turnAnchorMinHeight=Math.max(
+                          Number(_fvPinnedMsg._turnAnchorMinHeight)||0,
+                          _fvPinnedMin
+                        );
+                      }
+                    }
+                  }
+                }
+                _fvScroller.scrollTop=_fvScroller.scrollHeight;
+                /* Layout-shift scroll events during the handoff may
+                   have flipped this flag; the reader never left the
+                   bottom, so undo the corruption. */
+                state._userScrolledAway=false;
+              }else if(_finishViewport.scrolledAway&&_finishViewport.scrollTop<=2){
+                /* At the absolute transcript top, preserving scrollTop
+                   is the user's explicit intent. Mid-answer reading is
+                   different: React/legacy height deltas move the visible
+                   paragraph even when scrollTop itself is unchanged, so
+                   let the row-anchor branches below preserve content. */
+                _fvScroller.scrollTop=_finishViewport.scrollTop;
+              }else if(_finishViewport.streamRowId&&
+                Number.isFinite(_finishViewport.streamRowOffset)){
+                var _fvStreamRow=list.querySelector(
+                  '.msg[data-client-id="'+_finishViewport.streamRowId+'"][data-react-owned]'
+                );
+                if(_fvStreamRow){
+                  var _fvStreamRect=_fvStreamRow.getBoundingClientRect();
+                  var _fvStreamNow=_fvStreamRect.top-
+                    _fvScroller.getBoundingClientRect().top;
+                  var _fvStreamDelta=_fvStreamNow-_finishViewport.streamRowOffset;
+                  if(_fvStreamDelta>1){
+                    var _fvMaxTop=Math.max(0,
+                      _fvScroller.scrollHeight-_fvScroller.clientHeight);
+                    var _fvNeededTop=_fvScroller.scrollTop+_fvStreamDelta;
+                    var _fvShortfall=Math.ceil(_fvNeededTop-_fvMaxTop);
+                    if(_fvShortfall>0){
+                      /* The reader is already at the physical scroll
+                         limit, so create only the missing answer reserve
+                         before applying the row correction. This blank
+                         tail is the same turn viewport anchor used while
+                         streaming and is cleared when the next user turn
+                         begins. */
+                      var _fvRequiredMin=Math.ceil(
+                        _fvStreamRect.height+_fvShortfall
+                      );
+                      _fvStreamRow.style.minHeight=_fvRequiredMin+"px";
+                      var _fvStreamMsg=msgIdx>=0?state.messages[msgIdx]:null;
+                      if(_fvStreamMsg){
+                        _fvStreamMsg._turnAnchorMinHeight=Math.max(
+                          Number(_fvStreamMsg._turnAnchorMinHeight)||0,
+                          _fvRequiredMin
+                        );
+                      }
+                    }
+                  }
+                  _fvScroller.scrollTop+=_fvStreamDelta;
+                }
+              }else if(_finishViewport.anchorNode&&_finishViewport.anchorNode.isConnected){
+                var _fvExactNow=_finishViewport.anchorNode.getBoundingClientRect().top-
+                  _fvScroller.getBoundingClientRect().top;
+                _fvScroller.scrollTop+=_fvExactNow-_finishViewport.anchorOffset;
+              }else if(_finishViewport.anchorId){
+                var _fvCurrent=null;
+                var _fvCurrentRows=list.querySelectorAll('.msg[data-client-id]');
+                for(var _fvci=0;_fvci<_fvCurrentRows.length;_fvci++){
+                  if(_fvCurrentRows[_fvci].getAttribute('data-client-id')===_finishViewport.anchorId){
+                    _fvCurrent=_fvCurrentRows[_fvci];break;
+                  }
+                }
+                if(_fvCurrent){
+                  var _fvNow=_fvCurrent.getBoundingClientRect().top-
+                    _fvScroller.getBoundingClientRect().top;
+                  _fvScroller.scrollTop+=_fvNow-_finishViewport.anchorOffset;
+                }else{
+                  _fvScroller.scrollTop=_finishViewport.scrollTop;
+                }
+              }else{
+                _fvScroller.scrollTop=_finishViewport.scrollTop;
+              }
+            };
+            var _fvFrames=0;
+            var _fvSettle=function(){
+              if(_fvUserIntent){_fvDetachIntent();return;}
+              try{_fvApply()}catch(_){}
+              if(++_fvFrames<30){requestAnimationFrame(_fvSettle);}
+              else{_fvDetachIntent();}
+            };
+            _fvSettle();
+          }
         }else{
           try{
             var _finLegacy=list.querySelector('[data-client-id="'+clientId+'"]');
@@ -7585,10 +7645,7 @@ function doRender(){
         .replace(/<think>[\s\S]*$/gi,"")
         .trim();
       var hasPartial=!!(abortedMessage&&visibleStoppedRaw);
-      var _reactAbortHandoff=!!(list&&(
-        (list.dataset&&list.dataset.msgListReactHydrated==="1")||
-        list.getAttribute("data-react-migration-runtime")==="msg-list"
-      ));
+      var _reactAbortHandoff=reactLive;
       if(abortedMessage&&!hasPartial&&abortedMessage.type==="streaming"){
         state.messages.splice(msgIdx,1);
         abortedMessage=null;
@@ -7630,6 +7687,16 @@ function doRender(){
         abortedMessage.html=stoppedHtml;
         abortedMessage.type="assistant";
         abortedMessage.state="stopped";
+        if(reactLive){
+          /* Same rule as replaceWithError: the declarative renderer has no host
+             for the html-resend affordance, so the stopped line is data. */
+          setReactLiveStatus(abortedMessage,{
+            phase:"stopped",label:t("chat.stopped")||"Response stopped"
+          });
+          claimLiveRetry(ret,function(){
+            try{resendLastUserMessage()}catch(_){/* resend handler threw */}
+          });
+        }
         if(!_reactAbortHandoff)body.innerHTML=stoppedHtml;
         /* Delegate the Resend click on the list (button DOM is React-owned
            after the next paint in React mode, and legacy body in legacy mode
@@ -7697,6 +7764,16 @@ function doRender(){
           if(msgIdx>=0 && state.messages[msgIdx]){
             state.messages[msgIdx].html=errHtml;
             state.messages[msgIdx].type="assistant";
+            /* P_react-live-turn — a turn that has already drawn tool rows is
+               rendered declaratively, where the error markup inside `html` has
+               no host. The status line is that error's other half. */
+            if(reactLive){
+              var _errCopy=String(errMsg||'Generation failed');
+              setReactLiveStatus(state.messages[msgIdx],{
+                phase:"error",label:_errCopy,error:_errCopy,
+                retryable:typeof onRetry==="function"
+              });
+            }
           }
           var btn={ id: retryBtnId };
           if(btn&&typeof onRetry==="function"){
@@ -7714,6 +7791,9 @@ function doRender(){
                 }
               }catch(e){/* retry handler threw */}
             };
+            /* React's status line asks this closure to retry; it is the same
+               handler the delegated legacy click below runs. */
+            claimLiveRetry(ret,retryHandler);
             if(typeof btn.addEventListener==="function"){
               var _captureDirectRetry=function(ev){
                 captureStreamRetryViewport(list,clientId);
@@ -7797,33 +7877,6 @@ function doRender(){
           };
         });
       },
-    /* Phase 3 — attach a search-progress controller to this bubble.
-     * `progress` is the object returned by startSearchProgress(). The
-     * log was already prepended to `body`; we just stash the ref so
-     * prependSearchStep / finalizeSearchProgress can drive it. */
-    attachSearchProgress:function(progress){
-      _searchProgress=progress;
-    },
-    /* Phase 3 — feed one fetchWebContext step event to the search
-     * log attached to this bubble. No-op if none attached. */
-    prependSearchStep:function(event){
-      try{if(_searchProgress)_searchProgress.onStep(event)}catch(_){}
-    },
-    /* Phase 3 — feed a synthetic step (used by webSearchWithRetry for
-     * judge + retry messages). */
-    prependSearchStepText:function(text,kind){
-      try{if(_searchProgress)_searchProgress.appendStep(text,kind||'running')}catch(_){}
-    },
-    /* Phase 3 — finalize the search log with a summary (or 'err' /
-     * 'warn'). Safe to call multiple times — only the first sticks. */
-    finalizeSearchProgress:function(summary){
-      try{if(_searchProgress){_searchProgress.finalize(summary||{});_searchProgress=null}}catch(_){}
-    },
-    /* Phase 3 — detach the search log entirely (used on cancel / when
-     * the user sends a new message mid-search). */
-    removeSearchProgress:function(){
-      try{if(_searchProgress){_searchProgress.remove();_searchProgress=null}}catch(_){}
-    }
   };
   /* Publish this controller on window so a subsequent turn in the same
      chat can call _activeChatCtl.abort() to evict the "正在思考…"
@@ -9971,7 +10024,6 @@ window.processPendingMermaid = processPendingMermaid;
 window.wireCodeBlockHeaders = wireCodeBlockHeaders;
 window.wireMsgBodyImages = wireMsgBodyImages;
 window.restorePersistedMessageExtras = restorePersistedMessageExtras;
-window.rebuildAssistantHtmlWithInlineTools = rebuildAssistantHtmlWithInlineTools;
 window.renderAssistantHTML = renderAssistantHTML;
 /* Bridge missing window.* assignments that React reads but were never
    explicitly exported (pre-existing gap). Adding them here so C4-B's
@@ -10108,6 +10160,54 @@ window.__socratesLegacy = {
     wireCodeBlockHeaders: window.wireCodeBlockHeaders,
     wireMsgBodyImages: window.wireMsgBodyImages,
     restorePersistedMessageExtras: window.restorePersistedMessageExtras,
+    /* P_declarative-tool-run — react/tool-run renders a tool row's non-text
+       output (chart spec, saved files) from toolCalls[] instead of having
+       restorePersistedMessageExtras insert a sibling node after the row. Both
+       mounters dedup by id, so the two paths sharing one host is harmless. */
+    mountVisualization: function (spec, host, options) {
+      return typeof window.mountVisualization === 'function'
+        ? window.mountVisualization(spec, host, options) : null;
+    },
+    appendInlineArtifact: function (fileId, mimeType, outEl, displayName) {
+      if (typeof window.appendInlineArtifact === 'function') {
+        window.appendInlineArtifact(fileId, mimeType, outEl, displayName);
+      }
+    },
+  },
+  /* P_declarative-tool-run — markdown rendering stays in legacy (it owns the
+     viz/mermaid placeholder registration that postRender fills in), but the
+     tool rows no longer do: react/tool-run renders those from toolCalls[].
+     AssistantTurn calls renderAssistantHTML per prose segment, so the answer
+     text keeps formatting exactly as before. */
+  render: {
+    renderAssistantHTML: function (rawText) { return renderAssistantHTML(rawText); },
+    /* P_tool-live-turn — the streaming-safe renderer, same one the old
+       imperative doRender painted with. formatMsg assumes closed pairs, so
+       feeding it a half-arrived `$$…$$` or an open fence leaks raw LaTeX into
+       the bubble; this preprocessor tolerates partial input. AssistantTurn
+       uses it for a live turn and renderAssistantHTML once the turn settles,
+       which is the same hand-off the legacy pipeline did at finish(). */
+    renderAssistantProgressive: function (rawText) {
+      return formatMsgProgressive(stripChatArtifacts(String(rawText || '')));
+    },
+  },
+  /* P_react-live-turn — the two surfaces a declarative turn has to hand back:
+     the reasoning panel (the status line is clickable, but the panel is a
+     drawer React does not own) and the live turn's controls. Both are thin
+     routes into the streaming closure; see the registries above
+     addStreamingMessage for why the closure, not the row, has to act. */
+  thinking: {
+    openPanel: function (messageId) {
+      publishThinkingPanelEvent({ type: "panel-open", messageId: messageId || null });
+    },
+  },
+  liveTurn: {
+    retry: function (messageId) {
+      return retryLiveTurn(messageId);
+    },
+    decideApproval: function (messageId, toolCallId, decision) {
+      return decideLiveApproval(messageId, toolCallId, decision);
+    },
   },
 };
 /* Init UI sync — runs after window.apiConfig is set (above) so

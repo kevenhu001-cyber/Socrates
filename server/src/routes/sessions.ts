@@ -113,6 +113,17 @@ const SessionPayloadSchema = z.object({
        * rebuild the inline text→row→chart layout on reload/share. */
       textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
       visualization: z.any().optional().nullable(),
+      /* P_tool-run-restore — the Codex step log and the terminal status the
+       * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
+       * run's state without the live SSE stream. Steps are capped client-side
+       * too; the bound here keeps a hostile or buggy client from writing an
+       * unbounded jsonb payload. */
+      runId: z.string().max(200).optional().nullable(),
+      status: z.string().max(60).optional().nullable(),
+      /* Shape is validated where it is written (below) rather than here, so a
+       * malformed step entry degrades to "no steps" instead of failing the
+       * whole session save with a 400. */
+      steps: z.array(z.any()).max(60).optional(),
     })).max(20).optional(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
@@ -411,6 +422,32 @@ router.post('/', writeLimiter, async (req, res, next) => {
                     results: Array.isArray(tc.results) ? tc.results.slice(0, 20) : [],
                     textOffset: typeof tc.textOffset === 'number' ? tc.textOffset : null,
                     visualization: tc.visualization == null ? null : tc.visualization,
+                    runId: tc.runId == null ? null : String(tc.runId).slice(0, 200),
+                    status: tc.status == null ? null : String(tc.status).slice(0, 60),
+                    /* Well-formed only, and capped: the renderer ignores a
+                     * partial log rather than drawing half a checklist, so a
+                     * malformed entry here costs that run its steps — which is
+                     * still better than persisting junk or rejecting the save. */
+                    steps: Array.isArray(tc.steps)
+                      ? tc.steps.filter(function (step) {
+                          return step && typeof step === 'object'
+                            && step.stepId != null && String(step.stepId).trim() !== '';
+                        }).slice(0, 60).map(function (step) {
+                          const clean: Record<string, unknown> = { stepId: String(step.stepId).slice(0, 200) };
+                          /* 2 kB per field: a step line is a sentence, and the
+                           * full tool output already lives in the run's result. */
+                          for (const field of ['kind', 'title', 'detail', 'command', 'status', 'output', 'diffStat'] as const) {
+                            const value = step[field];
+                            if (typeof value === 'string') clean[field] = value.slice(0, 2_000);
+                            else if (value == null) continue;
+                            else clean[field] = String(value).slice(0, 2_000);
+                          }
+                          for (const field of ['exitCode', 'durationMs'] as const) {
+                            if (typeof step[field] === 'number') clean[field] = step[field];
+                          }
+                          return clean;
+                        })
+                      : [],
                   };
                 })
               : [],

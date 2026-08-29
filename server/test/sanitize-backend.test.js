@@ -209,4 +209,51 @@ describe('sanitizePlainText', () => {
   test('empty string passes through', () => {
     assert.equal(sanitizePlainText(''), '');
   });
+
+  /* P_share-rawtext — the read-only share view now ships rawText so the
+   * front-end can splice inline tool rows at toolCalls[].textOffset. That is
+   * only sound while storage is a no-op for the text the model produced:
+   * every offset was computed against the un-sanitized string, so a single
+   * preserved character means a preserved index. */
+  test('leaves the markdown of an assistant turn byte-identical, so recorded offsets stay valid', () => {
+    const raw = [
+      'Let me look that up.',
+      '',
+      '## Findings',
+      '',
+      '- a source with **bold** and `inline code`',
+      '- [a link](https://example.test/a)',
+      '',
+      '| model | params |',
+      '| --- | --- |',
+      '| 7B | 7e9 |',
+      '',
+      '```python',
+      'def route(x):',
+      '\treturn x ** 2',
+      '```',
+      '',
+      'Energy falls off as $E \\propto 1/r^2$.',
+    ].join('\n');
+    const stored = sanitizePlainText(raw);
+    assert.equal(stored, raw);
+    assert.equal(stored.length, raw.length);
+    // A split point recorded mid-document survives at the same index.
+    const offset = raw.indexOf('## Findings');
+    assert.ok(offset > 0);
+    assert.equal(stored.slice(offset, offset + 11), '## Findings');
+  });
+
+  test('the one length-changing case is edge trim, and only for padded text', () => {
+    /* A turn whose raw text starts with whitespace loses that prefix, which
+     * shifts every offset by the trimmed length — the layout snaps its split
+     * points to blank lines, so the shift cannot cut a word, but a caller
+     * that needs exact indexes must trim before computing them. */
+    const padded = '\n\nLead.\n\nTail.';
+    const stored = sanitizePlainText(padded);
+    assert.equal(stored, 'Lead.\n\nTail.');
+    assert.equal(padded.length - stored.length, 2);
+    // Interior structure — the part offsets index — is never rewritten.
+    assert.equal(stored.indexOf('\n\nTail.'), 'Lead.'.length);
+  });
 });

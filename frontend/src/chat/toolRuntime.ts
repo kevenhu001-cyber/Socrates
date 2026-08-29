@@ -49,6 +49,11 @@ import { createLiveOutputBuffer, renderLivePreview } from './liveOutput.js';
 import type { LiveOutputBufferHandle } from './liveOutput.js';
 import { getSocratesWasm } from '../lib/socratesWasm.js';
 import { apiFetch } from '../util/api.js';
+/* Type-only: the event shape is owned by the React store, but this module is
+   loaded straight from Node by test/toolRuntime.test.mjs, so the runtime
+   linkage stays the `window.__socratesReactChatBridge` global (same hand-off
+   `publishReactChatRuntime` in main.js and ui/thinkingPill.js use). */
+import type { ChatRuntimeEvent } from '../react/types/domain';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -74,6 +79,11 @@ interface ToolCallEntry {
       was spliced. Persisted with the message so history replay can
       rebuild the inline layout (mirrors main.js's textOffset). */
   textOffset?: number;
+  /** Cumulative streamed `arguments` JSON while the call is in flight.
+      The declarative row shows this as a live code/command preview —
+      reading it from data is what replaces updateInlineToolCodePreview's
+      write into a `<details>` nobody could open. */
+  argumentsText?: string;
   /** Client-only runtime metadata — not persisted. */
   _run?: ToolRun;
   /** Id of the grouped inline row this call was merged into (live UI). */
@@ -84,11 +94,22 @@ interface ToolCallEntry {
   _progressPhase?: string;
   /** Bounded live-output buffer for the running stream (client-only). */
   _liveBuffer?: LiveOutputBufferHandle;
+  /**
+   * Flattened stdout/stderr tail while the call runs, so a declarative row can
+   * show output as it arrives instead of waiting for the result. Derived from
+   * `_liveBuffer` — same string, on the data instead of in a DOM node.
+   */
+  _liveOutput?: string;
   approval?: ToolApproval;
 }
 
 interface ToolMessage {
   toolCalls?: ToolCallEntry[];
+  /** Identity the React message list keys this entry by. */
+  clientId?: string;
+  id?: string | number;
+  /** Bumped on every tool-lifecycle mutation (see notifyToolRun). */
+  _toolRunRev?: number;
   _orphanDeltas?: Record<string, ToolCallDelta[]>;
   _orphanProgress?: Record<string, ToolProgress[]>;
   _orphanApprovals?: Record<string, ToolApproval[]>;
@@ -129,6 +150,13 @@ interface ToolApproval {
   changes?: unknown;
   availableDecisions?: string[];
   status?: string;
+  /**
+   * Feedback for the decision the reader just took, kept on the data so a
+   * declarative panel can show "Saving your decision…" / "Approved" / an error
+   * without owning a DOM node. The imperative panel wrote the same strings
+   * straight into `.tool-inline-approval-status`.
+   */
+  ui?: { text: string; state?: string; disabled?: boolean };
 }
 
 interface ToolCallDelta {
@@ -197,8 +225,11 @@ interface ToolRuntimeOptions {
    * Returns the textOffset split point (or null when unavailable) so
    * synthetic rows created from a late tool_result can persist the
    * offset directly instead of relying on finish()'s write-back loop.
+   * `row` is null when the host does not create DOM for this call — a
+   * declarative turn records only the split point, which is the one piece
+   * of layout information React cannot derive.
    */
-  onInlineTool?: (entry: { id: string; name: string }, row: HTMLElement) => number | null;
+  onInlineTool?: (entry: { id: string; name: string }, row: HTMLElement | null) => number | null;
   /**
    * P_tool_live_card — when set, the live chat shows a single visible
    * tool card. A new tool id fades the previous card out and replaces
@@ -207,6 +238,16 @@ interface ToolRuntimeOptions {
    * tool call — this is a presentation-only option.
    */
   liveSingleCardSlot?: HTMLElement | null;
+  /**
+   * P_tool-live-turn — true while the React message list owns this turn's
+   * bubble. Rows, groups, approval panels and Codex steps are then drawn from
+   * `message.toolCalls[]` by react/tool-run, so this runtime stops creating
+   * DOM for them and only keeps the data current: run phase, split point
+   * (`textOffset`), streamed arguments, live output tail, steps, plan,
+   * approval state. Everything that finds a row through `findCard` already
+   * degrades to "no row" when the answer is yes.
+   */
+  ownsLiveTurn?: () => boolean;
 }
 
 interface ExecutionConnection {
@@ -228,6 +269,8 @@ export interface ToolRuntime {
   recordExecutionStart: (event: ExecutionEvent) => void;
   recordToolResult: (result: ToolResult) => void;
   recordToolApproval: (approval: ToolApproval) => void;
+  /** Answer a pending approval from a declarative row. */
+  decideApproval: (toolCallId: string, decision: string) => Promise<void>;
   /** `event: agent_step` — render and persist one Codex step. */
   recordAgentStep: (step: AgentStepFrame) => void;
   /** `event: agent_plan` — update the run's checklist in place. */
@@ -365,11 +408,14 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   const EventSourceImpl = options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
   const useExecutionEventSource = options.useExecutionEventSource === true;
   const mode = options.mode || 'compact';
-  const onInlineTool = options.onInlineTool || function (_entry: { id: string; name: string }, row: HTMLElement): number | null {
-    body.appendChild(row);
+  /* Default host: no segmentation control, so the row lands at the end of the
+     body. A null row means the caller only wanted the split point recorded. */
+  const onInlineTool = options.onInlineTool || function (_entry: { id: string; name: string }, row: HTMLElement | null): number | null {
+    if (row) body.appendChild(row);
     return null;
   };
   const liveSingleCardSlot = options.liveSingleCardSlot || null;
+  const ownsLiveTurn = options.ownsLiveTurn || function (): boolean { return false; };
 
   /* P_tool-live-group — consecutive same-category tools while no text has
      streamed in between collapse into one visible inline row. The state
@@ -388,8 +434,22 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   const ownedInlineRows = new Set<HTMLElement>();
   const ownedToolCards = new Set<HTMLElement>();
 
+  /**
+   * P_tool-live-turn — declarative mount: choose the split point and put it on
+   * the entry. No row is created, so grouping (which the React renderer derives
+   * from adjacency in rawText) has nothing to track here either.
+   */
+  function recordRowOffset(entry: ToolCallEntry): number | null {
+    let offset: number | null = null;
+    try { offset = onInlineTool({ id: entry.id, name: entry.name }, null); } catch (_) { /* no host */ }
+    if (typeof offset === 'number') entry.textOffset = offset;
+    notifyToolRun(getMessage());
+    return offset;
+  }
+
   function mountInlineRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
+    if (ownsLiveTurn()) return recordRowOffset(entry);
     const row = createInlineToolRow({
       id: entry.id,
       name: entry.name,
@@ -399,6 +459,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
     const resolved = typeof offset === 'number' ? offset : null;
+    /* P_tool-declarative-refresh — record the split point on the data the
+       moment it is chosen. Waiting for finish()'s write-back loop meant a
+       turn that never reached finish() (abort, navigation, a dropped SSE)
+       persisted calls with no offset, and any renderer working from
+       toolCalls[] mid-stream would not know where the row belongs. */
+    if (resolved != null) entry.textOffset = resolved;
     liveGroup = {
       headId: entry.id,
       headRow: row,
@@ -407,6 +473,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       memberIds: [entry.id],
       settled: false,
     };
+    notifyToolRun(getMessage());
     return resolved;
   }
 
@@ -427,6 +494,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
      collapsed head. */
   function mountLiveSingleCardRow(entry: ToolCallEntry): number | null {
     if (findCard(entry.id)) return null;
+    if (ownsLiveTurn()) return recordRowOffset(entry);
     const children = liveSingleCardSlot
       ? Array.from(liveSingleCardSlot.children || []) as HTMLElement[]
       : [];
@@ -453,6 +521,8 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, row); } catch (_) { body.appendChild(row); }
+    if (typeof offset === 'number') entry.textOffset = offset;
+    notifyToolRun(getMessage());
     return typeof offset === 'number' ? offset : null;
   }
 
@@ -483,6 +553,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     entry._groupHeadId = group.headId;
     if (group.offset != null) entry.textOffset = group.offset;
     try { updateInlineToolGroupLabel(group.headRow, group.memberIds.length); } catch (_) { /* ignore */ }
+    notifyToolRun(activeMessage());
   }
 
   function groupMemberSummaries(headRow: HTMLElement, opts?: { forceCancel?: boolean }): InlineToolGroupMember[] | null {
@@ -531,6 +602,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (liveGroup && headRow.getAttribute('data-tcid') === liveGroup.headId) {
       liveGroup = null;
     }
+    notifyToolRun(activeMessage());
   }
 
   function findInlineRow(id: string): HTMLElement | null {
@@ -611,6 +683,26 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     return getMessage() || null;
   }
 
+  /* P_tool-declarative-refresh — the declarative renderer draws rows from
+     message.toolCalls, and this runtime MUTATES that array in place: neither
+     the message object nor the array ever changes identity, so React cannot
+     notice a phase change by reference alone. Bump a revision the memoized
+     row compares, then publish. The store coalesces these to one repaint per
+     animation frame, so progress bursts cost no extra renders. */
+  function notifyToolRun(message: ToolMessage | null): void {
+    if (!message) return;
+    message._toolRunRev = (message._toolRunRev || 0) + 1;
+    const messageId = String(message.clientId || message.id || '');
+    if (!messageId) return;
+    const event: ChatRuntimeEvent = { type: 'tool-run-updated', messageId };
+    try {
+      const bridge = (typeof window !== 'undefined'
+        ? (window as unknown as Record<string, unknown>).__socratesReactChatBridge
+        : null) as { publish?: (e: ChatRuntimeEvent) => void } | null;
+      if (bridge && typeof bridge.publish === 'function') bridge.publish(event);
+    } catch (_) { /* a listener throwing must not break the stream */ }
+  }
+
   function hasActiveTools(): boolean {
     const message = activeMessage();
     const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
@@ -623,7 +715,15 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
 
   function findCard(id: string): Element | null {
     if (!body || !id) return null;
-    return body.querySelector('[data-tcid="' + cssEscape(id) + '"]');
+    const hit = body.querySelector('[data-tcid="' + cssEscape(id) + '"]');
+    /* A declarative row carries the same data-tcid (the stylesheet and the
+       e2e specs both key off it) but belongs to React: writing into it would
+       be undone on the next render, and reading its state would drift from
+       the data. Treat it as "no row" so every caller takes its no-row path. */
+    if (hit && (hit as HTMLElement).dataset && (hit as HTMLElement).dataset.reactOwned === '1') {
+      return null;
+    }
+    return hit;
   }
 
   function approvalSummary(approval: ToolApproval): string {
@@ -655,6 +755,15 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   }
 
   function setApprovalUi(approvalId: string, text: string, state?: string, disabled = true): void {
+    /* Record the transition on the entry first: a declarative row paints its
+       status line from `approval.ui`, and the DOM panels below may be none. */
+    const message = activeMessage();
+    const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
+    for (const entry of calls) {
+      if (!entry || !entry.approval || String(entry.approval.approvalId) !== String(approvalId)) continue;
+      entry.approval = { ...entry.approval, ui: { text, state, disabled } };
+    }
+    if (message) notifyToolRun(message);
     approvalPanels(approvalId).forEach((panel) => {
       if (state) panel.dataset.state = state;
       const status = panel.querySelector('.tool-inline-approval-status') as HTMLElement | null;
@@ -692,6 +801,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       const message = activeMessage();
       const entry = findEntry(message, entryId);
       if (entry) entry.approval = { ...entry.approval, ...approval, status: decision };
+      notifyToolRun(message);
       if (decision !== 'decline') {
         const startedAt = Date.now();
         const poll = async (): Promise<void> => {
@@ -727,6 +837,20 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
   }
 
+  /**
+   * Answer a pending approval for one tool call. Exposed for the declarative
+   * row, whose buttons are React elements with their own handlers; the legacy
+   * path reaches the same `submitApprovalAction` through a delegated click
+   * listener. Rejects with the transport error after recording it in
+   * `approval.ui`, so the caller can restore focus.
+   */
+  async function decideApproval(toolCallId: string, decision: string): Promise<void> {
+    const message = activeMessage();
+    const entry = findEntry(message, String(toolCallId || ''));
+    if (!entry || !entry.approval || !decision) return;
+    await submitApprovalAction(entry.approval, entry.id, decision);
+  }
+
   function renderApproval(approval: ToolApproval): void {
     const message = activeMessage();
     if (!message || !approval || !approval.runId || !approval.approvalId) return;
@@ -739,6 +863,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     if (!entry) return;
     entry.approval = { ...approval, status: approval.status || 'pending' };
+    notifyToolRun(message);
+    /* A declarative row renders the prompt from `entry.approval`
+       (react/tool-run/ToolRunApproval), so there is nothing to mount — and
+       queueing it as an orphan would only grow, since nothing drains it. */
+    if (ownsLiveTurn()) return;
     let card = findCard(entry.id) as HTMLElement | null;
     if (!card && entry._groupHeadId) card = findCard(entry._groupHeadId) as HTMLElement | null;
     if (!card) {
@@ -858,13 +987,27 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     entry._progressPhase = progress.phase;
     setRun(entry, phaseFromProgress(progress), { elapsedMs: progress.elapsedMs || 0 });
+    /* Keep the bounded output buffer on the entry whether or not there is a DOM
+       card to write into: the declarative row paints its live tail from
+       `_liveOutput`, so a run whose row is collapsed in a group (or not mounted
+       yet) still has what it printed when it appears. */
+    if (progress.chunk && (progress.phase === 'stdout' || progress.phase === 'stderr' || progress.phase === 'timeout_warning')) {
+      const buffer = entry._liveBuffer || (entry._liveBuffer = createLiveOutputBuffer());
+      buffer.push(progress.phase === 'timeout_warning' ? '\n[' + progress.chunk + ']\n' : progress.chunk);
+      entry._liveOutput = renderLivePreview(buffer.preview());
+    }
     updateRunSummary(message);
+    notifyToolRun(message);
     let card = findCard(progress.id);
     if (!card && entry._groupHeadId) {
       const headCard = findCard(entry._groupHeadId);
       if (headCard && headCard.classList.contains('tool-inline')) card = headCard;
     }
     if (!card) {
+      /* React owns this turn's rows: the data above is the whole job. The
+         pending-queue exists only so a late-mounting legacy card can replay
+         chunks, so skipping it here is what keeps the queue from growing. */
+      if (ownsLiveTurn()) return;
       entry._pendingProgress = entry._pendingProgress || [];
       entry._pendingProgress.push(progress);
       return;
@@ -955,6 +1098,21 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       latest.set((delta.id || '?') + ':' + (delta.index || 0), delta);
     }
     pendingDeltas.length = 0;
+
+    /* P_tool-live-preview — put the streamed arguments on the entry before
+       looking for a DOM row. The declarative row paints its live code /
+       command preview from `argumentsText`, so a preview survives a call
+       whose row is not mounted yet (or is collapsed inside a group) — the
+       exact case updateInlineToolCodePreview used to lose. */
+    let argumentsChanged = false;
+    latest.forEach(function (delta: ToolCallDelta) {
+      if (!delta || !delta.id || typeof delta.arguments !== 'string') return;
+      const entry = findEntry(message, delta.id);
+      if (!entry || entry.argumentsText === delta.arguments) return;
+      entry.argumentsText = delta.arguments;
+      argumentsChanged = true;
+    });
+    if (argumentsChanged) notifyToolRun(message);
 
     const matchedIds = new Set<string>();
     const cards = body.querySelectorAll('.agent-tool-card[data-tcid]');
@@ -1187,6 +1345,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       const queuedDeltas = entry._pendingDeltas.splice(0);
       for (let deltaIndex = 0; deltaIndex < queuedDeltas.length; deltaIndex++) {
         try { updateToolCardCode(entry.id, queuedDeltas[deltaIndex].arguments || '', queuedDeltas[deltaIndex].name || ''); } catch (_) { /* ignore */ }
+        if (queuedDeltas[deltaIndex].arguments) entry.argumentsText = queuedDeltas[deltaIndex].arguments;
         /* P_tool-delta-stream — deltas buffered before tool_use landed
            replay into the compact row's live preview too; updateToolCardCode
            above is a no-op in compact mode (no .agent-tool-card exists). */
@@ -1224,6 +1383,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       connectExecution(call.executionId, entry.id);
     }
     updateRunSummary(message);
+    notifyToolRun(message);
     return output as HTMLElement | null;
   }
 
@@ -1303,7 +1463,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (!Array.isArray(entry.steps)) entry.steps = [];
     const existingIndex = entry.steps.findIndex((candidate) => candidate.stepId === stored.stepId);
     if (existingIndex >= 0) entry.steps[existingIndex] = stored;
-    else entry.steps.push(stored);
+    /* Bounded, in reading order: a run that reports more than this keeps the
+       steps the reader saw first, and the session route caps what persists. */
+    else if (entry.steps.length < 60) entry.steps.push(stored);
+    notifyToolRun(message);
 
     const host = ensureAgentRunHost(entry.id);
     if (!host) return;
@@ -1321,6 +1484,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     onToolActivity();
     if (frame.runId) entry.runId = String(frame.runId);
     entry.plan = { steps: frame.steps.slice(0, 40), explanation: frame.explanation ?? null };
+    notifyToolRun(message);
     const host = ensureAgentRunHost(entry.id);
     if (!host) return;
     try { upsertAgentPlan(host, entry.plan, entry.runId || null); } catch (_) { /* presentation only */ }
@@ -1386,6 +1550,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     }
     const normalized = { ...approval, id: entry.id };
     entry.approval = normalized;
+    /* Publish before the DOM pass: a React row renders the panel from
+       entry.approval, and the legacy path below may bail to the orphan
+       buffer without touching anything visible. */
+    notifyToolRun(message);
     renderApproval(normalized);
   }
 
@@ -1409,6 +1577,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       if (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase)) return;
       setRun(entry, TOOL_RUN_PHASES.running);
       updateRunSummary(message);
+      notifyToolRun(message);
     }
     connectExecution(event.executionId, event.id);
   }
@@ -1549,6 +1718,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       entry.output = entry.output ? entry.output + '\n\n' + artifactLines.join('\n') : artifactLines.join('\n');
     }
     updateRunSummary(message);
+    /* Everything the row reads (output / isError / results / artifacts /
+       visualization) is on the entry by now, so this is the repaint point
+       for the terminal state — it must fire before the early return below,
+       otherwise a second result frame would leave the row spinning. */
+    notifyToolRun(message);
     if (entry._toolResultApplied) return;
     /* The agent's own step list closes with the run, before the generic
        result rendering below decides how to settle the row. */
@@ -1730,6 +1904,9 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         }
       }
       updateRunSummary(message);
+      /* Rows settle as stopped, not spinning: the declarative renderer reads
+         run.phase off the entry, so the cancel has to publish. */
+      notifyToolRun(message);
     }
     dispose();
   }
@@ -1742,6 +1919,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     recordExecutionStart,
     recordToolResult,
     recordToolApproval,
+    decideApproval,
     recordAgentStep,
     recordAgentPlan,
     noteTextDelta,

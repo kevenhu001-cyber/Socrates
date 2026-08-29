@@ -9,6 +9,15 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 const RUN_ID = '11111111-1111-4111-8111-111111111111';
 const APPROVAL_ID = '22222222-2222-4222-8222-222222222222';
 
+/* The approval row's label is asserted in English below; the app ships with zh
+   as its default language, so pin the locale rather than assert on whichever
+   one the profile happens to boot with. */
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+  });
+});
+
 function enterChat(page) {
   return page.evaluate(() => {
     const sessionId = '33333333-3333-4333-8333-333333333333';

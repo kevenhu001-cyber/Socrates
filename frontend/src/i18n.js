@@ -802,6 +802,42 @@ var I18N={
     "tool.groupVisualDone":"Created {m} visuals",
     "tool.groupDone":"Used {m} tools",
     "tool.failedCount":"{n} failed",
+    /* P_declarative-tool-run — copy for react/tool-run. Every label carries an
+       object taken from the call's own arguments ("Read moe.py", "Searched
+       \"…\""), because a bare verb ("Read files") made two different calls
+       render identically and forced the reader to expand the row. `{}`
+       placeholders are filled by tf() in react/tool-run/labels.ts — the
+       legacy t() takes no arguments. */
+    "tool.searchingFor":"Searching \"{query}\"…",
+    "tool.searchedFor":"Searched \"{query}\"",
+    "tool.searchFailedFor":"Search failed: {query}",
+    "tool.nSources":"{n} sources",
+    "tool.nSourceOne":"1 source",
+    "tool.readingHost":"Reading {host}…",
+    "tool.fetchedHost":"Read {host}",
+    "tool.readingFile":"Reading {file}…",
+    "tool.readFile":"Read {file}",
+    "tool.creatingFile":"Creating {file}…",
+    "tool.createdFile":"Created {file}",
+    "tool.editingFile":"Editing {file}…",
+    "tool.editedFile":"Edited {file}",
+    "tool.ranCode":"Ran Python",
+    "tool.ranCommand":"Ran a command",
+    "tool.usedToolOn":"{tool} · {target}",
+    "tool.actionFailedOn":"Failed: {target}",
+    "tool.nActions":"{n} actions",
+    "tool.readFiles":"Read {files}",
+    "tool.readNFiles":"Read {n} files",
+    "tool.exploredFiles":"Edited {files}",
+    "tool.editedNFiles":"Edited {n} files",
+    "tool.files":"Files",
+    "tool.errorCode":"Error code",
+    "tool.retryable":"Retryable",
+    "tool.retryableYes":"Retryable — safe to run again",
+    "tool.retryableNo":"Not retryable — change the arguments first",
+    "tool.retry":"Retry search",
+    "tool.techDetails":"Technical details",
+    "tool.hideTechDetails":"Hide technical details",
     /* P_viz-actions — native visualization card action buttons.
        Previously hardcoded Chinese in render/visualization.js —
        these keys localize the four actions plus the fallback
@@ -864,9 +900,9 @@ var I18N={
     "topic.model":"模型",
     "topic.extensions":"扩展",
     /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
-    "greeting.chat":"你好，{name}。",
-    "greeting.tutor":"一起探索，{name}。",
-    "greeting.guest":"访客",
+    "greeting.chat":"Hello, {name}.",
+    "greeting.tutor":"Let's explore, {name}.",
+    "greeting.guest":"Guest",
     "sidebar.nav.new":"新聊天",
     "sidebar.nav.library":"文件库",
     "sidebar.nav.projects":"项目",
@@ -1283,8 +1319,8 @@ var I18N={
     "tutor.stageCheck":"阶段检查",
     "tutor.done":"[已完成]",
     /* U-H1 / U-H2 — session mode segmented control + header badge (zh). */
-    "tutor.modeTutor":"导师",
-    "tutor.modeChat":"对话",
+    "tutor.modeTutor":"工作",
+    "tutor.modeChat":"聊天",
     /* U-H4 — teaching-plan sub-topic mastery status labels (zh). */
     "tutor.statusBlank":"空白",
     "tutor.statusFuzzy":"模糊",
@@ -1621,6 +1657,37 @@ var I18N={
     "tool.groupVisualDone":"已生成 {m} 个图表",
     "tool.groupDone":"使用了 {m} 个工具",
     "tool.failedCount":"{n} 个失败",
+    /* P_declarative-tool-run — 与 en 段一一对应，见上方注释。 */
+    "tool.searchingFor":"正在搜索「{query}」…",
+    "tool.searchedFor":"已搜索「{query}」",
+    "tool.searchFailedFor":"搜索失败：{query}",
+    "tool.nSources":"{n} 条来源",
+    "tool.nSourceOne":"1 条来源",
+    "tool.readingHost":"正在读取 {host}…",
+    "tool.fetchedHost":"已读取 {host}",
+    "tool.readingFile":"正在读取 {file}…",
+    "tool.readFile":"已读取 {file}",
+    "tool.creatingFile":"正在创建 {file}…",
+    "tool.createdFile":"已新建 {file}",
+    "tool.editingFile":"正在修改 {file}…",
+    "tool.editedFile":"已修改 {file}",
+    "tool.ranCode":"已运行 Python",
+    "tool.ranCommand":"已执行命令",
+    "tool.usedToolOn":"{tool} · {target}",
+    "tool.actionFailedOn":"失败：{target}",
+    "tool.nActions":"{n} 个操作",
+    "tool.readFiles":"已读取 {files}",
+    "tool.readNFiles":"已读取 {n} 个文件",
+    "tool.exploredFiles":"已修改 {files}",
+    "tool.editedNFiles":"已修改 {n} 个文件",
+    "tool.files":"文件",
+    "tool.errorCode":"错误码",
+    "tool.retryable":"可重试",
+    "tool.retryableYes":"可重试 —— 再次运行是安全的",
+    "tool.retryableNo":"不可重试 —— 请先修改参数",
+    "tool.retry":"重试搜索",
+    "tool.techDetails":"技术细节",
+    "tool.hideTechDetails":"收起技术细节",
     /* P_viz-actions (zh) — see en block for context. */
     "viz.action.table":"数据",
     "viz.action.reset":"重置视图",
@@ -1651,7 +1718,7 @@ var I18N={
     "consent.learnMore":"隐私政策"
   },
 };
-var _currentLang="en";
+var _currentLang="zh";
 function t(key){var v=I18N[_currentLang]&&I18N[_currentLang][key];if(typeof v!=="undefined")return v;v=I18N.en[key];if(typeof v!=="undefined")return v;return key;}
 function setLang(lang){
   if(!I18N[lang])return;

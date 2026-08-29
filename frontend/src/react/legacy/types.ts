@@ -136,6 +136,61 @@ export interface LegacyPostRender {
     message: Record<string, unknown>,
     idPrefix?: string,
   ): void;
+  /**
+   * Tool outputs that are not text: the v1 chart spec a call produced and any
+   * saved files attached to it. Both mounters dedup by id in the DOM, so the
+   * declarative renderer (react/tool-run) and the history-recovery pass above
+   * can hand the same host div to both without ever drawing a card twice.
+   */
+  mountVisualization?(
+    spec: Record<string, unknown>,
+    host: HTMLElement,
+    options?: { toolCallId?: string },
+  ): unknown;
+  appendInlineArtifact?(
+    fileId: string,
+    mimeType?: string,
+    outEl?: HTMLElement | null,
+    displayName?: string,
+  ): void;
+}
+
+/**
+ * Legacy markdown rendering, kept in legacy because it registers the
+ * viz/mermaid placeholders that `postRender` later fills in. The React tool
+ * renderer (react/tool-run) uses it per prose segment so answer text keeps
+ * its existing formatting while tool rows come from structured data.
+ */
+export interface LegacyRender {
+  renderAssistantHTML(rawText: string): string;
+  /**
+   * Streaming-safe variant: tolerates an unclosed fence, formula, or scaffold
+   * tag, so a partially-arrived answer renders as markdown instead of raw
+   * LaTeX. Used for a turn that is still in flight; the settled string still
+   * goes through `renderAssistantHTML`.
+   */
+  renderAssistantProgressive?(rawText: string): string;
+}
+
+/**
+ * The right-hand reasoning panel. Legacy owns the panel's event channel
+ * (`window.__socratesThinkingPanelBridge`); a declarative turn's status line
+ * asks for it through here instead of reaching for window directly.
+ */
+export interface LegacyThinking {
+  openPanel(messageId: string | null): void;
+}
+
+/**
+ * Live-turn controls that a declarative render needs to hand back to the
+ * streaming pipeline: retrying a turn that timed out before its first token,
+ * and answering a tool-approval request the run is blocked on.
+ */
+export interface LegacyLiveTurn {
+  /** False when no live turn claims this message — the button is a no-op. */
+  retry(messageId: string): boolean;
+  /** Null when the turn's runtime is gone (page reload, or already decided). */
+  decideApproval(messageId: string, toolCallId: string, decision: string): void | Promise<void>;
 }
 
 export interface LegacyActions {
@@ -149,6 +204,9 @@ export interface LegacyActions {
   workspace: LegacyWorkspace;
   scheduled: LegacyScheduled;
   postRender: LegacyPostRender;
+  render: LegacyRender;
+  thinking?: LegacyThinking;
+  liveTurn?: LegacyLiveTurn;
 }
 
 export type LegacyDomain = keyof LegacyActions;

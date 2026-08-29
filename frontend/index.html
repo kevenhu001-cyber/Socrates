@@ -273,8 +273,8 @@
   <div class="sidebar-inner">
     <div class="sidebar-header" id="sidebarHeader">
       <div class="sidebar-logo">
-        <img src="/logo.png" width="18" height="18" alt="" class="sidebar-logo-img">
-        <span><em>S</em>ocrates</span>
+        <span>Socrates</span>
+        <svg class="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg>
       </div>
       <div class="sidebar-header-actions">
         <button class="icon-btn compose-btn" id="newChatBtn" title="Start a new chat" data-action="resetApp">
@@ -509,8 +509,8 @@
          landing #modeSegmented control automatically. Absolute-centered
          so it stays visually centered regardless of side-content width. -->
     <div class="top-mode-tabs" id="modeSegmentedTop" role="tablist" aria-label="Session mode">
-      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" data-action="toggleAppMode" data-action-guard="appMode:chat:neq">Chat</button>
-      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" data-action="toggleAppMode" data-action-guard="appMode:tutor:neq">Tutor</button>
+      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" data-action="toggleAppMode" data-action-guard="appMode:chat:neq">聊天</button>
+      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" data-action="toggleAppMode" data-action-guard="appMode:tutor:neq">工作</button>
     </div>
     <!-- P_mobile-topbar — mobile-only centered mode switcher. The desktop
          segmented pill (#modeSegmentedTop) is hidden under 640px, so this
@@ -534,7 +534,7 @@
       </div>
     </div>
     <div class="top-bar-left">
-      <button class="toggle-sidebar" id="sidebarOpenBtn" data-action="toggleSidebar" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
+      <button class="toggle-sidebar cg-circle-btn" id="sidebarOpenBtn" data-action="toggleSidebar" title="Toggle sidebar (⌘B)" aria-controls="sidebar" aria-expanded="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9h12"/><path d="M6 15h8"/></svg>
       </button>
       <span class="chat-stats hidden" id="chatStats"></span>
@@ -546,7 +546,15 @@
            Recents. Styled like the left sidebar toggle (not a filled
            circle). Hidden on desktop. -->
       <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" data-action="toggleIncognito" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.2 4.8A8 8 0 0 1 19 9.6"/><path d="M19.2 14.4A8 8 0 0 1 7.5 19.3"/><path d="M4.7 15.6A8 8 0 0 1 5 8.1"/><path d="M5 8.1 4 4.8l3.3.8"/><path d="m19 9.6 1.2 3.2-3.4-.5"/><path d="m7.5 19.3-3.4-.1 1.7-2.9"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- P_incognito-icon — domino / bandit mask: lens-shaped body
+               with two eye holes. Reads unambiguously as "incognito /
+               hidden identity" at 16 px, where hat silhouettes compete
+               with construction-helmet and bowler shapes. -->
+          <path d="M3 12c0-1.8 4-3.2 9-3.2s9 1.4 9 3.2c0 1.8-4 3.2-9 3.2s-9-1.4-9-3.2z"/>
+          <circle cx="8.5" cy="12" r="0.9" fill="currentColor" stroke="none"/>
+          <circle cx="15.5" cy="12" r="0.9" fill="currentColor" stroke="none"/>
+        </svg>
       </button>
       <div class="chat-model-wrap hidden" id="chatModelWrap">
         <button class="chat-model-trigger" id="chatModel" type="button" aria-haspopup="listbox" aria-expanded="false" title="Pick or configure the model for this conversation">
@@ -566,6 +574,12 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         <span class="share-btn-label" data-i18n-key="sidebar.share">Share</span>
       </button>
+      <button type="button" class="cg-circle-btn cg-newchat-btn" id="topBarNewChatBtn" data-action="resetApp" title="New chat" aria-label="New chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20a8 8 0 0 0 8-8 8 8 0 0 0-8-8 8 8 0 0 0-8 8c0 2.2.9 4.2 2.3 5.6L6 20l4.4-1.2A7.9 7.9 0 0 0 12 20z"/><path d="M8 12h8" opacity="0"/></svg>
+      </button>
+      <button type="button" class="cg-layout-btn" data-action="toggleSidebar" title="Toggle sidebar" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 5v14"/></svg>
+      </button>
     </div>
   </div>
   <div class="main-content" id="mainContent">
@@ -580,20 +594,12 @@
              paint before JS runs. -->
         <h1 class="topic-title greeting" id="topicTitle" data-i18n-key="greeting.chat"></h1>
         <p class="topic-sub" id="topicSub"></p>
-        <div class="mobile-starter-prompts" aria-label="Suggested tasks">
-          <button type="button" class="mobile-starter-prompt" data-action="composeAction">
-            <span class="mobile-starter-icon mobile-starter-icon-code" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="m10 8-4 4 4 4M14 8l4 4-4 4" stroke="#050505" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-            <span>Help me write and refine an idea</span>
-          </button>
-          <button type="button" class="mobile-starter-prompt" data-action="researchAction">
-            <span class="mobile-starter-icon mobile-starter-icon-learn" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10.5" fill="url(#starterGlow)" stroke="white" stroke-opacity=".65"/><path d="M12 6.8v6.1l-3.4 2" stroke="white" stroke-width="1.8" stroke-linecap="round"/><defs><linearGradient id="starterGlow" x1="5" y1="4" x2="19" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#7fb7ff"/><stop offset=".52" stop-color="#7f86ff"/><stop offset="1" stop-color="#ef9fcf"/></linearGradient></defs></svg>
-            </span>
-            <span>Explore a topic with guided practice</span>
-          </button>
-        </div>
+        <div class="mobile-starter-prompts" aria-label="Suggested tasks" hidden></div>
+        <!-- Chat history surface — populated at runtime by main.js renderRecents()
+             (server-sourced sessions) and the local fallback. Kept as an empty
+             container so the layout reserves space without hard-coding demo
+             items in markup. -->
+        <div class="cg-history" id="cgHistory" hidden></div>
         <div class="topic-input-wrap" id="topicInputWrap">
           <!-- P_attachments-tutor — chip strip above the topic-setup
                textarea. Shares the same .attachment-chips class and
@@ -615,8 +621,17 @@
                    and the chosen value feeds chat/stream.js's reasoning_effort. -->
               <div class="effort-picker" data-open="false">
                 <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                  <svg class="effort-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <!-- P_effort-glyph — three ascending bars signal "reasoning
+                         effort" without competing with the i18n label. CSS
+                         fills the right number of bars from the
+                         `.effort-picker[data-effort]` attribute that
+                         syncEffortUI() maintains. -->
+                    <rect class="effort-bar" data-bar="1" x="4"  y="14" width="4" height="6"  rx="1"/>
+                    <rect class="effort-bar" data-bar="2" x="10" y="10" width="4" height="10" rx="1"/>
+                    <rect class="effort-bar" data-bar="3" x="16" y="6"  width="4" height="14" rx="1"/>
+                  </svg>
                   <span class="effort-label">Medium</span>
-                  <svg class="mobile-effort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4.2 16a8.5 8.5 0 0 1 15.6 0"/><path d="m12 14 3.2-4.6"/><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>
                   <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
@@ -759,8 +774,12 @@
                        with the landing one. -->
                   <div class="effort-picker" data-open="false">
                   <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                      <svg class="effort-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect class="effort-bar" data-bar="1" x="4"  y="14" width="4" height="6"  rx="1"/>
+                        <rect class="effort-bar" data-bar="2" x="10" y="10" width="4" height="10" rx="1"/>
+                        <rect class="effort-bar" data-bar="3" x="16" y="6"  width="4" height="14" rx="1"/>
+                      </svg>
                       <span class="effort-label">Medium</span>
-                  <svg class="mobile-effort-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4.2 16a8.5 8.5 0 0 1 15.6 0"/><path d="m12 14 3.2-4.6"/><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>
                       <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <div class="effort-menu" role="listbox" aria-label="Reasoning effort">

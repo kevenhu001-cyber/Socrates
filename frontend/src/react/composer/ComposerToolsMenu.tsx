@@ -21,27 +21,27 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
 }> = [
   {
     action: 'camera',
-    label: 'Camera',
+    label: '相机',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7.5h3l1.4-2h7.2l1.4 2h3v11H4z"/><circle cx="12" cy="13" r="3.4"/></svg>',
   },
   {
     action: 'photos',
-    label: 'Photos',
+    label: '照片',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="15.5" cy="9" r="1.5"/><path d="m5.5 17 4.2-4.5 3.1 3 2.1-2 3.6 3.5"/></svg>',
   },
   {
     action: 'upload',
-    label: 'Files',
+    label: '文件',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8.5 12.5 14 7a3 3 0 0 1 4.2 4.2l-7 7a5 5 0 0 1-7.1-7.1l7.2-7.2"/><path d="m7.1 14 7-7"/></svg>',
   },
   {
     action: 'skills',
-    label: 'Plugins',
+    label: '插件',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 9.5a2.2 2.2 0 1 1 3.8-1.6v8.2a2.2 2.2 0 1 0 3.8-1.6"/><path d="m6.5 14.5 2-2 2 2M13.5 9.5l2 2 2-2"/></svg>',
   },
   {
     action: 'extensiveThinking',
-    label: 'Think deeper',
+    label: '更深入思考',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.2 16a8.5 8.5 0 0 1 15.6 0"/><path d="m12 14 3.2-4.6"/><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>',
   },
 ];

@@ -156,16 +156,21 @@ test('retry replaces the failed answer and resumes at the visible error position
   });
 
   await retryButton.click();
+  /* The retried turn announces itself through its anchor chrome — the row
+     carrying data-viewport-anchor="retry" is the one being positioned at the
+     captured error offset. Waiting on the status line alone can catch a frame
+     of the new row before that positioning lands. */
   await page.waitForFunction((oldId) => {
-    const thinking = document.querySelector('#msgList .msg.assistant .thinking-placeholder');
-    const message = thinking?.closest('.msg');
-    return Boolean(message && message.dataset.clientId !== oldId);
+    const message = document.querySelector(
+      '#msgList .msg.assistant[data-viewport-anchor="retry"]',
+    );
+    return Boolean(message && message.dataset.clientId !== oldId
+      && message.querySelector('.thinking-placeholder'));
   }, failedMessageId);
 
   const retried = await page.evaluate((oldId) => {
     const list = document.getElementById('msgList');
-    const thinking = list.querySelector('.msg.assistant .thinking-placeholder');
-    const message = thinking?.closest('.msg');
+    const message = list.querySelector('.msg.assistant[data-viewport-anchor="retry"]');
     return {
       oldRemoved: !list.querySelector(`[data-client-id="${oldId}"]`),
       offset: message
@@ -188,53 +193,71 @@ test('retry replaces the failed answer and resumes at the visible error position
   ).toBeLessThanOrEqual(24);
 });
 
-test('React message-list updates do not remove the active legacy stream bubble', async ({ page }) => {
+test('the live turn keeps exactly one row while deltas arrive', async ({ page }) => {
   await mockAuthedApp(page);
+  /* A stream the test drives frame by frame (same harness as
+     chat-autoscroll.spec.mjs): window.__pushDelta / window.__finishStream. */
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return nativeFetch(input, init);
+      const encoder = new TextEncoder();
+      let controller;
+      const body = new ReadableStream({ start(c) { controller = c; } });
+      window.__pushDelta = (text) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`));
+      };
+      window.__finishStream = () => {
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      };
+      return Promise.resolve(new Response(body, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
+  });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await page.evaluate(() => {
+  const clientId = await page.evaluate(async () => {
     window.state.phase = 'chat';
-    window.state.topic = 'Streaming ownership regression';
+    window.state.topic = 'Streaming ownership';
     window.state.currentSessionId = '33333333-3333-4333-8333-333333333333';
     window.state.session.currentSessionId = window.state.currentSessionId;
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
-
     window.addMessage('user', 'Keep the next streamed answer visible.');
-
-    const id = 'msg-stream-ownership-regression';
-    const list = document.getElementById('msgList');
-    const bubble = document.createElement('div');
-    bubble.className = 'msg assistant';
-    bubble.dataset.clientId = id;
-    bubble.innerHTML = '<div class="msg-body">Partial reply</div>';
-    list.appendChild(bubble);
-    window.state.messages.push({
-      clientId: id,
-      role: 'assistant',
-      rawText: 'Partial reply',
-      html: null,
-      type: 'streaming',
-    });
-    window.__socratesReactChatBridge.publish({
-      type: 'stream-started',
-      messageId: id,
-    });
+    /* Drive the real streaming path: the entry goes into state.messages and
+       React draws the only bubble. Hand-mounting a legacy bubble here would
+       test a co-ownership state the app no longer enters — addStreamingMessage
+       skips its own appendChild as soon as React owns #msgList. */
+    window.__streamPromise = window.askChatTurn('Keep the next streamed answer visible.');
+    const streaming = window.state.messages.filter((m) => m.type === 'streaming').pop();
+    return streaming ? streaming.clientId : '';
   });
+  expect(clientId, 'a streaming entry is in state.messages').toBeTruthy();
 
-  await page.waitForTimeout(100);
-  await expect(page.locator('[data-client-id="msg-stream-ownership-regression"]')).toBeVisible();
+  const rows = page.locator(`.msg[data-client-id="${clientId}"]`);
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toBeVisible();
+
+  /* A streamed delta keeps its last few characters in hand (chat/stream.js
+     holds them back in case a `<think` tag straddles the chunk boundary), so
+     assert on the leading words mid-stream and on the whole sentence once
+     [DONE] flushes. */
+  await page.evaluate(() => window.__pushDelta('Partial reply, and the answer keeps growing from here. '));
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('Partial reply');
 
   await page.evaluate(() => {
-    window.__socratesReactChatBridge.publish({
-      type: 'stream-delta',
-      messageId: 'msg-stream-ownership-regression',
-      textLength: 24,
-    });
+    window.__finishStream();
+    return window.__streamPromise;
   });
-
-  await page.waitForTimeout(100);
-  await expect(page.locator('[data-client-id="msg-stream-ownership-regression"]')).toContainText('Partial reply');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText(
+    'Partial reply, and the answer keeps growing from here.',
+  );
 });
