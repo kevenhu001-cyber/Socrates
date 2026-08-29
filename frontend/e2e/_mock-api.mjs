@@ -97,7 +97,7 @@ export async function mockAuthedApp(page, options = {}) {
        endpoint branches instead of falling through to { ok: true }. */
     const apiUrl = url.replace('/api/v2/', '/api/');
     if (apiUrl.endsWith('/api/auth/me') || apiUrl.includes('/api/auth/me?')) {
-      await route.fulfill(jsonResponse({ user: MOCK_USER }));
+      await route.fulfill(jsonResponse({ user: { ...MOCK_USER, ...(options.user || {}) } }));
       return;
     }
     if (apiUrl.endsWith('/api/config') || apiUrl.includes('/api/config?')) {

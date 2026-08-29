@@ -7,11 +7,10 @@ import type { SidebarNavKey } from './types';
 const NAV_ID = 'sidebarNav';
 
 interface NavButtonSpec {
-  key: SidebarNavKey | 'new';
+  key: SidebarNavKey | 'new' | 'skills';
   label: string;
   i18nKey: string;
   icon: string;
-  aria?: { haspopup?: 'menu'; expanded?: boolean };
 }
 
 const BUTTONS: NavButtonSpec[] = [
@@ -22,16 +21,16 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
   },
   {
-    key: 'library',
-    label: 'Library',
-    i18nKey: 'sidebar.nav.library',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-  },
-  {
     key: 'projects',
     label: 'Projects',
     i18nKey: 'sidebar.nav.projects',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h12"/></svg>',
+  },
+  {
+    key: 'library',
+    label: 'Artifacts',
+    i18nKey: 'sidebar.nav.library',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
   },
   {
     key: 'scheduled',
@@ -52,11 +51,10 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
   },
   {
-    key: 'more',
-    label: 'More',
-    i18nKey: 'sidebar.nav.more',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5"  r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>',
-    aria: { haspopup: 'menu', expanded: false },
+    key: 'skills',
+    label: 'Skills & shortcuts',
+    i18nKey: 'sidebar.more.skills',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>',
   },
 ];
 
@@ -65,7 +63,7 @@ function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
-function navButtonId(key: SidebarNavKey | 'new'): string {
+function navButtonId(key: SidebarNavKey | 'new' | 'skills'): string {
   if (key === 'new') return 'navNew';
   return `nav${(key as string)[0].toUpperCase()}${(key as string).slice(1)}`;
 }
@@ -77,9 +75,8 @@ function SidebarNav() {
   return (
     <>
       {BUTTONS.map((button) => {
-        const isActive = button.key !== 'new' && active === button.key;
+        const isActive = button.key !== 'new' && button.key !== 'skills' && active === button.key;
         const label = i18n(button.i18nKey, button.label);
-        const isMore = button.key === 'more';
         return (
           <button
             key={button.key}
@@ -87,11 +84,11 @@ function SidebarNav() {
             className={`sidebar-nav-btn${isActive ? ' active' : ''}`}
             data-nav={button.key}
             id={navButtonId(button.key)}
-            aria-haspopup={button.aria?.haspopup}
-            aria-expanded={isMore ? (isActive ? 'true' : 'false') : undefined}
             onClick={() => {
               if (button.key === 'new') {
                 getLegacyActions().navigation.resetApp();
+              } else if (button.key === 'skills') {
+                getLegacyActions().navigation.openPromptTemplatesModal();
               } else if (button.key !== null) {
                 open(button.key);
               }

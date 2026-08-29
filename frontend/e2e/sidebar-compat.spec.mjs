@@ -54,21 +54,21 @@ test('Sidebar React nav buttons call window.openNav and reflect active state', a
 
   // Click the Library nav button. The legacy `openLibrary()` calls into
   // the workspace route /library, so the button click should reach it.
-  await page.locator('#navLibrary').click();
+  await page.locator('#navPlugins').click();
 
   const calls = await page.evaluate(() => window.__openNavCalls);
-  expect(calls).toContain('library');
+  expect(calls).toContain('plugins');
 
   // Bridge snapshot reflects the active nav.
   const after = await page.evaluate(() => {
     const s = window.__socratesSidebarNavBridge?.getSnapshot();
     return s?.activeNav;
   });
-  expect(after).toBe('library');
+  expect(after).toBe('plugins');
 
-  // The Library button should now have the .active class (React re-renders).
-  const libraryBtn = page.locator('#navLibrary');
-  await expect(libraryBtn).toHaveClass(/active/);
+  // The Plugins button should now have the .active class (React re-renders).
+  const pluginsBtn = page.locator('#navPlugins');
+  await expect(pluginsBtn).toHaveClass(/active/);
 });
 
 test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', async ({ page }) => {
