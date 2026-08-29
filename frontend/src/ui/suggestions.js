@@ -1,9 +1,14 @@
 // src/ui/suggestions.js — prompt-suggestion engine.
 //
 // Two surfaces pull from this module:
-//   1. The landing composer (above #topicInputWrap).
-//   2. The in-session composer (above #chatInputWrap), when the running
-//      conversation is empty enough to benefit from a nudge.
+//   1. The landing composer (above #topicInputWrap) — always live.
+//   2. The in-session composer (above #chatInputWrap) — only while the
+//      conversation is empty. The moment the user sends the first turn
+//      the chip row retires; we do not surface follow-up chips during
+//      the rest of the conversation. The picker comment further down
+//      ("when empty enough to benefit from a nudge") captures the same
+//      intent — the previous implementation honoured it in spirit but
+//      forgot the gate, which produced the "flicker during chat" bug.
 //
 // Each surface renders two chips. The selection rules:
 //   • If there is at least one user turn in the active conversation,
@@ -224,6 +229,25 @@ export function pickSuggestions(messages, opts) {
   return pickFromLibrary(lang);
 }
 
+/* Gate the in-session chip row. The design intent — "when the running
+   conversation is empty enough to benefit from a nudge" — means: only
+   render chat-suggestions before the first user turn is sent. Once the
+   user has produced even one message, the row retires for the rest of
+   the conversation so the composer area stops flashing follow-ups on
+   every React commit (streamed chunks, tool-run status, lang flips,
+   etc., all re-publish socrates:chat-runtime-changed and used to
+   cycle the chip prompts). */
+function chatSurfaceShouldRender(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return true;
+  }
+  for (var i = 0; i < messages.length; i++) {
+    var m = messages[i];
+    if (m && m.role === "user") return false;
+  }
+  return true;
+}
+
 /* SVG glyph cache so the renderer doesn't rebuild the same icon
    string on every render. Keys are icon ids, values are SVG markup. */
 var ICON_CACHE = {
@@ -302,14 +326,46 @@ function wireSurface(container, surface) {
    "stutter-then-flash" pattern that happens when React commits and
    the suggestion engine race for the same frame.
 
+   Structural dedup: the chat-runtime-changed event fires on every
+   React commit (katex-ready, session-load, tool-run status updates
+   during streaming, message-added, langchange, etc.), so without
+   this guard `pickFromLibrary` advances `_pickerOffset` on every
+   pass and the chip *text* changes between renders. The diff in
+   `renderNow` keys off the prompt string, so a fresh prompt was
+   treated as a brand-new chip — every chip got the .suggestion-
+   enter class and the fade-in replayed on every commit, producing
+   the "疯狂刷新" flicker. Comparing the prompt signature before
+   touching the DOM keeps the row stable when nothing meaningful
+   changed.
+
    First-call optimization: when the container is empty (initial
    paint or right after a view swap that just revealed a freshly
    built container), render synchronously so the user never sees an
    empty chip row. Subsequent renders batch via rAF so a flood of
    state-synced events only paints once. */
 var _pendingRenders = new WeakMap();
+var _lastSignature = new WeakMap();
 function scheduleRender(container, suggestions, surface) {
   if (!container) return;
+  /* Use a control char as the join separator so two prompts that
+     concatenate to the same string (e.g. "ab" + "" vs "a" + "b")
+     still produce different signatures. */
+  var SIG_SEP = "\x01";
+  var sig = surface + SIG_SEP + suggestions.map(function (s) {
+    return s && s.prompt ? s.prompt : "";
+  }).join(SIG_SEP);
+  var prev = _lastSignature.get(container);
+  if (prev === sig && container.firstChild) {
+    /* Same chips, same order, already painted — skip the DOM pass
+       entirely so no enter/leave animation can replay. */
+    var pending = _pendingRenders.get(container);
+    if (pending) {
+      try { cancelAnimationFrame(pending); } catch (_) {}
+      _pendingRenders.delete(container);
+    }
+    return;
+  }
+  _lastSignature.set(container, sig);
   var pendingRender = _pendingRenders.get(container);
   if (!container.firstChild) {
     if (pendingRender) {
@@ -387,6 +443,22 @@ export function renderSuggestions(surface, messages) {
         : ".home-ideas"
     );
     if (!container) return;
+    if (surface === "chat" && !chatSurfaceShouldRender(messages)) {
+      /* Conversation has started — retire the chip row. Clear once
+         so any stale chips from the empty-session paint disappear,
+         then drop the cached signature so a later empty-session
+         re-entry paints a fresh row. */
+      if (container.firstChild || _lastSignature.has(container)) {
+        try { container.replaceChildren(); } catch (_) {}
+        _lastSignature.delete(container);
+        var pending = _pendingRenders.get(container);
+        if (pending) {
+          try { cancelAnimationFrame(pending); } catch (_) {}
+          _pendingRenders.delete(container);
+        }
+      }
+      return;
+    }
     wireSurface(container, surface);
     var suggestions = pickSuggestions(messages, {});
     scheduleRender(container, suggestions, surface);
