@@ -22,10 +22,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   const composer = page.locator('#topicInputWrap');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
 
-  /* The two hardcoded starter cards were replaced by the shared "Ideas for
-     you" list under the composer, which both breakpoints render. */
+  /* The reference keeps two lightweight suggestions directly above the
+     bottom composer. The third desktop idea remains in the DOM but is
+     intentionally hidden at this breakpoint. */
   await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
   await expect(page.locator('.home-idea')).toHaveCount(3);
+  await expect(page.locator('.home-idea:visible')).toHaveCount(2);
   await expect(leftButton).toBeVisible();
   await expect(modeTabs).toBeHidden();
   await expect(modeSwitch).toBeVisible();
@@ -53,15 +55,24 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.right?.width).toBe(28);
   expect(geometry.modeSwitch?.width).toBeGreaterThanOrEqual(64);
   expect(geometry.modeSwitch?.height).toBeGreaterThanOrEqual(28);
-  /* The landing composer is the middle band of a centred group, not a bar
-     pinned to the bottom, so the assertion is on the group's ordering. */
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(340);
   expect(geometry.composer?.height).toBeLessThanOrEqual(132);
-  expect(geometry.ideas?.y).toBeGreaterThan(geometry.composer?.bottom ?? 0);
-  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(844);
-  expect(geometry.background).toBe('rgb(19, 19, 19)');
+  expect(geometry.ideas?.y).toBeLessThan(geometry.composer?.y ?? 0);
+  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(geometry.composer?.y ?? 0);
+  expect(geometry.composer?.bottom).toBeGreaterThanOrEqual(816);
+  expect(geometry.composer?.bottom).toBeLessThanOrEqual(824);
+  expect(geometry.background).toBe('rgb(0, 0, 0)');
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
+
+  /* The supplied visual's app-owned region normalizes to roughly 390×756
+     after removing browser chrome. Capture that exact comparison viewport
+     outside the repo for the design-QA pass. */
+  await page.setViewportSize({ width: 390, height: 756 });
+  await page.waitForTimeout(180);
+  await page.screenshot({ path: '/tmp/socrates-mobile-reference-implementation.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(180);
 
   /* The landing composer ships its two-row layout up front — input above,
      run controls below — rather than growing into it on focus the way the

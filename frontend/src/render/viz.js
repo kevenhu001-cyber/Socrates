@@ -50,7 +50,7 @@ export var VIZ_THEME_RESET =
   '<style>' +
     '*,*::before,*::after{box-sizing:border-box}' +
     'html,body{margin:0;padding:0}' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;font-size:14px;line-height:1.55}' +
+    'body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;font-size:14px;line-height:1.55}' +
     'body{color:var(--text-100,#3a3a3a);background:transparent}' +
     '[data-mode=dark] body{color:var(--text-100,#e8e8ec)}' +
     'a{color:var(--accent-000,#5b6fdb)}' +

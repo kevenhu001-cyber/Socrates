@@ -188,10 +188,8 @@ function normalizeFunction(spec) {
  * (see _watchTheme). Keep `Inter` (loaded from Google Fonts) as the
  * authoritative font family — system-ui is a fallback only if Inter is
  * unavailable, never the default. */
-/* P_viz-google-fonts — Chinese glyphs must resolve to the Google-served
-   Noto Sans SC (loaded in index.html) instead of falling through the
-   generic sans-serif chain to the OS default (Microsoft YaHei on
-   Windows). Keep Inter first for Latin/numerals. */
+/* P_viz-google-fonts — Chinese glyphs resolve to the bundled Noto Sans SC
+   rather than an OS-dependent fallback. Keep Inter first for Latin/numerals. */
 var VIZ_FONT_FAMILY = "'Inter', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
 
 function labelLength(value) {
@@ -457,7 +455,7 @@ function renderExtension(spec, cardId) {
   /* P_perf-self-host — sandboxed extension iframes use the platform font
      stack instead of blocking on fonts.googleapis.com. */
   var fontPreload =
-    '<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;margin:0;padding:0}</style>';
+    '<style>body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;margin:0;padding:0}</style>';
   var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + '<script>window.parent.postMessage({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '},"*")<\\/script>' + source;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + esc(spec.title) + '" data-card-id="' + esc(cardId) + '" data-nonce="' + esc(nonce) + '" srcdoc="' + esc(documentSource) + '"></iframe>';
 }

@@ -62,6 +62,19 @@ test('clicking the Thinking pill opens the right drawer and streams live reasoni
   const pill = page.locator('.msg.assistant .thinking-status').last();
   await expect(pill).toBeVisible();
   await expect(pill).toHaveAttribute('role', 'button');
+  const stableStatus = await pill.evaluate((node) => {
+    const label = node.querySelector('.thinking-status-label');
+    const labelStyle = getComputedStyle(label);
+    const dotStyle = getComputedStyle(node, '::before');
+    return {
+      labelAnimation: labelStyle.animationName,
+      dotAnimation: dotStyle.animationName,
+      labelFill: labelStyle.webkitTextFillColor,
+    };
+  });
+  expect(stableStatus.labelAnimation).toBe('none');
+  expect(stableStatus.dotAnimation).toBe('none');
+  expect(stableStatus.labelFill).not.toBe('transparent');
   await pill.click();
 
   const panel = page.locator('[data-thinking-panel="1"]');

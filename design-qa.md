@@ -1,70 +1,48 @@
-# Design QA — Cowork-style landing
+# Mobile conversation home design QA
 
-## Comparison target
-
-- Source visual truth: `C:\Users\Jiacheng\AppData\Local\Temp\codex-clipboard-632f0e28-46bc-4b60-8713-8ca6aeaa5a34.png`
-- Follow-up landing reference: `C:\Users\Jiacheng\AppData\Local\Temp\codex-clipboard-8ac28b33-3e6e-45f7-ac53-09c234ef99d8.png`
-- Follow-up tool-flow reference: `C:\Users\Jiacheng\AppData\Local\Temp\codex-clipboard-22078607-d50b-4b16-acb8-6560a25bb1df.png`
-- Browser-rendered implementation: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-cowork-final-neutral.png`
-- Side-by-side comparison: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-cowork-comparison.png`
-- Responsive check: `C:\Users\Jiacheng\AppData\Local\Temp\socrates-cowork-mobile-clean.png`
-
-## Normalization
-
-- Source pixels: 3071 × 1815, normalized to a 1536 × 908 CSS-pixel desktop viewport at approximately 2× source density.
-- Implementation pixels: 1536 × 908 at deviceScaleFactor 1.
-- State: dark-mode landing page, sidebar expanded, empty composer, Cowork mode selected.
+- Source visual truth: `/tmp/paseo-attachments-zjtwyL/396d93193b49103b684b1524d48f4fa0979361887e790854e390ed400b3a9c7d.jpg`
+- Implementation screenshot: `/tmp/socrates-mobile-reference-implementation.png`
+- Combined comparison: `/tmp/socrates-mobile-reference-comparison.png`
+- State: authenticated, empty conversation, dark theme, sidebar closed
+- CSS viewport: `390 × 756`, device scale factor `1`
+- Source pixels: `986 × 2048`; browser chrome removed at source y=137, leaving an app-owned `986 × 1911` region
+- Normalization: source app region scaled to `390 × 756`; implementation captured directly at `390 × 756`
 
 ## Full-view comparison evidence
 
-- Main title renders at x=795, y=346; the reference title is approximately x=790, y=350.
-- Composer keeps its 680px desktop width and is now 113px high after removing the project/folder tier.
-- Sidebar is 288px wide in both normalized views.
-- The compact composer, Ideas for you label, and three suggestion rows match the requested hierarchy; no project/folder control remains.
+The normalized side-by-side comparison shows matching composition: a 56px quiet top bar, empty black content field, two suggestion rows immediately above the composer, a 358px-wide bottom composer, and a 24px bottom safety gutter. The suggestion baselines and composer top/bottom edges align within a few CSS pixels.
 
-## Focused-region comparison evidence
-
-- The title/composer/suggestion stack was readable in the normalized full-view comparison, so a separate crop was not required.
-- Interaction evidence: clicking “Send me a daily briefing” populated and focused the topic composer; the neutral state was then restored for final capture.
-- Responsive evidence: 894 × 1582 mobile layout showed no clipping, overlap, or horizontal overflow; DOM inspection confirmed zero project/folder rows.
-- Browser console: no warnings or errors.
-- Tool-flow evidence: a persisted Chinese introduction split at `我先查一下|相关资料。` rendered as one prose block `我先查一下相关资料。`, followed by the tool summary and then `代码验证。`.
-- Edit evidence: the write run renders one collapsed summary row; the duplicate `Edited N files / Review changes` card is absent, while clicking the summary still exposes file details.
+No separate focused crop was required because both artifacts remain legible at the normalized 1:1 CSS size in the combined comparison. The top controls, suggestion rows, placeholder, footer controls, border, radius, and bottom gutter can all be judged directly.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: passed. Newsreader is used for the display title; Inter/Noto Sans SC remain the UI family. Weight, line-height, wrapping, and hierarchy match the reference closely.
-- Spacing and layout rhythm: passed. Sidebar width, title/composer coordinates, compact composer dimensions, radius, and suggestion spacing are aligned.
-- Colors and visual tokens: passed. Page/sidebar/surface gray levels, subtle borders, muted labels, and selected navigation state match the reference dark palette.
-- Image quality and asset fidelity: passed with an intentional brand substitution. The supplied reference’s orange starburst is replaced by the existing sharp Socrates logo asset rather than a CSS or placeholder drawing.
-- Copy and content: passed for the app-owned landing surface. “You’re here!”, “Type / for skills”, and all three suggestion labels match the reference; the project/folder option is intentionally removed. Session/account text remains dynamic product data.
-
-## Comparison history
-
-1. Initial implementation used a statistics overview and bottom-docked composer; the user replaced that visual target.
-2. First Cowork pass established the two-tier composer and suggestion list but placed the stack about 50px too high, omitted the visible mode switch, and duplicated sidebar labels through compatibility CSS.
-3. Fixes moved the stack to the measured reference coordinates, added a real sidebar mode switch, mapped navigation labels directly, and removed time-group noise.
-4. Final copy pass changed “Organize my study inbox” to “Organize my inbox” and “Customize Socrates for me” to “Customize Cowork for me”.
-5. Follow-up pass removed the project/folder tier, collapsed Edit activity to a single summary row, and made tool insertion sentence-aware for both live and restored turns.
+- Fonts and typography: UI sans-serif weight, 16px suggestion/input copy, compact 18px top label, line height, truncation, and hierarchy match the reference closely. Socrates keeps its existing localized product copy and Inter/Noto Sans stack.
+- Spacing and layout rhythm: top controls, large empty field, suggestion baselines, composer width/top edge, reduced composer height, 30px radius, and 24px bottom gutter match the normalized reference.
+- Colors and visual tokens: empty dark state uses true black; composer uses the existing near-black raised surface with restrained gray text and border. Light mode retains its separate warm palette.
+- Image quality and asset fidelity: no raster imagery is required inside the app-owned reference region. Existing Socrates vector icons are retained rather than approximating ChatGPT/GitHub brand assets.
+- Copy and content: structure and truncation match; Socrates keeps its own suggestions, mode label, effort control, incognito control, and send behavior.
 
 ## Findings
 
-- No actionable P0/P1/P2 findings remain.
-- P3: the Socrates product logo replaces the reference product’s orange starburst.
-- P3: the live product keeps its existing reasoning-effort and microphone controls instead of hard-coding the reference model name and “High” state.
-- P3: the sidebar header and account/session data remain Socrates-specific rather than copying another product’s window chrome and fixture content.
+No actionable P0, P1, or P2 mismatches remain.
 
-## Implementation checklist
+- P3: Product-specific icon and action differences remain intentionally. The reference uses ChatGPT/GitHub-specific imagery and a blue voice action; Socrates keeps its existing navigation, incognito, suggestion, reasoning-effort, microphone, and disabled-send semantics.
 
-- [x] Match normalized desktop geometry.
-- [x] Match double-tier composer structure.
-- [x] Match Cowork/Code and sidebar navigation hierarchy.
-- [x] Match starter suggestion copy and spacing.
-- [x] Remove the project/folder option from the landing composer.
-- [x] Keep Edit activity to one compact, expandable summary.
-- [x] Preserve complete prose sentences before tool rows in live and history views.
-- [x] Verify suggestion interaction.
-- [x] Verify desktop and mobile rendering with no console errors.
-- [x] Pass lint, unit tests, and production build.
+## Comparison history
+
+1. Initial implementation: composer was about 12px taller than the normalized reference and had about 12px too little bottom clearance. The suggestion rows were correspondingly high.
+2. Fix: reduced the editor/footer/control heights and changed the mobile bottom gutter from 12px to 24px.
+3. Post-fix evidence: `/tmp/socrates-mobile-reference-comparison.png` shows the composer top and bottom edges and both suggestion baselines aligned with the normalized source.
+
+## Interaction evidence
+
+- Page identity and authenticated application shell rendered.
+- Empty state was non-blank and had no framework overlay.
+- Composer focus preserved its geometry and kept effort, microphone, and send controls visible.
+- Plus menu opened as the compact five-item mobile popover.
+- “Think deeper” toggled and persisted its active indicator.
+- No relevant console errors were observed by the visual regression spec.
+
+## Final result
 
 final result: passed

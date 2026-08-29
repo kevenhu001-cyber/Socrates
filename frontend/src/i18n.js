@@ -1,7 +1,7 @@
 var I18N={
   en:{
     "chat.placeholder":"Type your thinking...",
-    "chat.inputPlaceholder":"Send a message",
+    "chat.inputPlaceholder":"How can I help you today?",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
     /* P_attachments — UI strings for the chat-input attachment chip
@@ -57,12 +57,14 @@ var I18N={
     "composer.tools.plugins":"Plugins",
     "composer.tools.thinkDeeper":"Think deeper",
     /* P_cowork-landing — starter ideas under the landing composer. The
-       button labels also seed the composer, so keep them phrased as
-       something a person would actually send. */
+       button labels are generated at runtime by src/ui/suggestions.js
+       from a built-in library (en/zh) or derived from the latest
+       assistant turn; the only localized label that remains is the
+       row heading itself, which the suggestion engine renders
+       through data-i18n-key. */
     "home.ideasLabel":"Ideas for you",
-    "home.idea.briefing":"Send me a daily briefing",
-    "home.idea.inbox":"Organize my inbox",
-    "home.idea.customize":"Customize Socrates for me",
+    "home.idea.label":"Suggestion",
+    "home.chatSuggestionsLabel":"Follow-ups",
     "sidebar.nav.new":"New",
     "sidebar.nav.library":"Artifacts",
     "sidebar.nav.projects":"Projects",
@@ -915,7 +917,7 @@ var I18N={
   },
   zh:{
     "chat.placeholder":"输入你的想法...",
-    "chat.inputPlaceholder":"输入你的想法...",
+    "chat.inputPlaceholder":"今天有什么可以帮你的？",
     "chat.hint":"Shift+Enter 换行",
     "chat.send":"发送",
     /* P_attachments — see matching en block. */
@@ -957,11 +959,13 @@ var I18N={
     "composer.tools.files":"文件",
     "composer.tools.plugins":"插件",
     "composer.tools.thinkDeeper":"更深入思考",
-    /* P_cowork-landing — starter ideas under the landing composer. */
+    /* P_cowork-landing — starter ideas under the landing composer.
+       Chip prompts come from src/ui/suggestions.js (zh copy lives in
+       PROMPT_LIBRARY). The localized label below is the row heading
+       and the screen-reader hint. */
     "home.ideasLabel":"为你推荐",
-    "home.idea.briefing":"给我一份每日简报",
-    "home.idea.inbox":"帮我整理收件箱",
-    "home.idea.customize":"按我的习惯定制 Socrates",
+    "home.idea.label":"建议",
+    "home.chatSuggestionsLabel":"后续建议",
     "sidebar.nav.new":"新建",
     "sidebar.nav.library":"作品库",
     "sidebar.nav.projects":"项目",
