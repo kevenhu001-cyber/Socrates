@@ -345,6 +345,18 @@
          handlers call closeMorePopover() to dismiss the popover before the
          underlying action runs. -->
     <div class="sidebar-more-popover hidden" id="moreNavPopover" role="menu" aria-label="More actions" data-action="__stop">
+      <!-- P_cowork-landing — Plugins and Exam are routed through here because
+           the desktop sidebar nav is trimmed to five primary destinations;
+           without these two entries the panels are unreachable above 768px.
+           React's MorePopover re-renders the same items on hydration. -->
+      <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;openNav" data-action-arg="plugins">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><rect x="5" y="10" width="6" height="4" rx="1"/><rect x="13" y="10" width="6" height="4" rx="1"/></svg>
+        <span data-i18n-key="sidebar.nav.plugins">Plugins</span>
+      </button>
+      <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;openNav" data-action-arg="exam">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+        <span data-i18n-key="sidebar.nav.exam">Exam</span>
+      </button>
       <button type="button" class="sidebar-more-item" role="menuitem" data-action="closeMorePopover;openPromptTemplatesModal">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>
         <span data-i18n-key="sidebar.more.skills">Skills &amp; shortcuts</span>
@@ -393,7 +405,7 @@
     </div>
     <div class="recents-panel" id="recentsPanel">
       <div class="recents-header">
-        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recent Sessions</span>
+        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Tasks</span>
       </div>
       <!-- P2.2 — tag filter chip row. "All" plus a few of the user's
            most-used tags. Renders inline; the active chip is highlighted. -->
@@ -406,7 +418,11 @@
     </div>
 
     <div class="sidebar-footer" id="sidebarFooter">
-      <div class="user-row" id="sidebarUserRow"><div class="user-avatar">JH</div><div><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
+      <!-- .user-identity wraps the name + tier so the desktop shell can lay
+           them out on one line ("Name · Tier") without reaching for
+           structural selectors. React's SidebarFooter renders the same
+           class, so both paths style identically. -->
+      <div class="user-row" id="sidebarUserRow"><div class="user-avatar">JH</div><div class="user-identity"><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
       <div class="sidebar-footer-actions">
         <button class="icon-btn theme-toggle" id="themeToggle" data-action="toggleTheme" data-action-arg="event" title="Toggle theme">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -620,29 +636,32 @@
               <input type="file" id="topicAttachInput" multiple
                      accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
                      hidden>
-              <!-- P_chatgpt-landing — reasoning-effort selector (高/中/低).
-                   The label is filled by syncEffortUI() (ui/effortPicker.js)
-                   and the chosen value feeds chat/stream.js's reasoning_effort. -->
-              <div class="effort-picker" data-open="false">
-                <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
-                  <svg class="effort-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <!-- P_effort-glyph — three ascending bars signal "reasoning
-                         effort" without competing with the i18n label. CSS
-                         fills the right number of bars from the
-                         `.effort-picker[data-effort]` attribute that
-                         syncEffortUI() maintains. -->
-                    <rect class="effort-bar" data-bar="1" x="4"  y="14" width="4" height="6"  rx="1"/>
-                    <rect class="effort-bar" data-bar="2" x="10" y="10" width="4" height="10" rx="1"/>
-                    <rect class="effort-bar" data-bar="3" x="16" y="6"  width="4" height="14" rx="1"/>
-                  </svg>
-                  <span class="effort-label">Medium</span>
-                  <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-                <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                  <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
-                  <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
-                  <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
-                </div>
+            </div>
+            <!-- P_cowork-landing — reasoning effort sits with the send button,
+                 not with the attach button. Everything that decides *how* the
+                 turn runs now reads left-to-right into the send action, which
+                 leaves "+" alone on the left as the only add-content control.
+                 The label is filled by syncEffortUI() (ui/effortPicker.js) and
+                 the chosen value feeds chat/stream.js's reasoning_effort. -->
+            <div class="effort-picker" data-open="false">
+              <button type="button" class="effort-trigger" data-action="toggleEffortPicker" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                <svg class="effort-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <!-- P_effort-glyph — three ascending bars signal "reasoning
+                       effort" without competing with the i18n label. CSS
+                       fills the right number of bars from the
+                       `.effort-picker[data-effort]` attribute that
+                       syncEffortUI() maintains. -->
+                  <rect class="effort-bar" data-bar="1" x="4"  y="14" width="4" height="6"  rx="1"/>
+                  <rect class="effort-bar" data-bar="2" x="10" y="10" width="4" height="10" rx="1"/>
+                  <rect class="effort-bar" data-bar="3" x="16" y="6"  width="4" height="14" rx="1"/>
+                </svg>
+                <span class="effort-label">Medium</span>
+                <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
+                <button type="button" class="effort-item" data-effort="high" role="option" data-action="setReasoningEffort" data-action-arg="high"><span data-i18n-key="effort.high">High</span></button>
+                <button type="button" class="effort-item" data-effort="medium" role="option" data-action="setReasoningEffort" data-action-arg="medium"><span data-i18n-key="effort.medium">Medium</span></button>
+                <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
               </div>
             </div>
             <button class="mobile-mic-btn" type="button" data-action="toggleSpeechInput" data-action-arg="topic" aria-label="Voice input" aria-pressed="false">
@@ -654,19 +673,30 @@
           </div>
         </div>
 
+        <!-- P_cowork-landing — starter ideas. Each row carries its own line
+             glyph inside a hairline tile; three identical logo bitmaps read
+             as an unfinished placeholder rather than a set of choices. The
+             tile is decorative, so the SVG is aria-hidden and the label
+             carries the accessible name. -->
         <div class="home-ideas" aria-label="Ideas for you">
-          <div class="home-ideas-label">Ideas for you</div>
+          <div class="home-ideas-label" data-i18n-key="home.ideasLabel">Ideas for you</div>
           <button class="home-idea" type="button" data-home-prompt="Send me a daily briefing">
-            <img src="/logo.png" alt="" width="20" height="20">
-            <span>Send me a daily briefing</span>
+            <span class="home-idea-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v13H6a2 2 0 0 1-2-2z"/><path d="M16 8h2.5A1.5 1.5 0 0 1 20 9.5v7a2 2 0 0 1-2 2h-2"/><path d="M7 8h6M7 11h6M7 14h4"/></svg>
+            </span>
+            <span data-i18n-key="home.idea.briefing">Send me a daily briefing</span>
           </button>
           <button class="home-idea" type="button" data-home-prompt="Help me organize my inbox">
-            <img src="/logo.png" alt="" width="20" height="20">
-            <span>Organize my inbox</span>
+            <span class="home-idea-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13.5 6 6.2A1.5 1.5 0 0 1 7.4 5.2h9.2a1.5 1.5 0 0 1 1.4 1L20.5 13.5"/><path d="M3.5 13.5h4l1.2 2.2h6.6l1.2-2.2h4v3.9a1.6 1.6 0 0 1-1.6 1.6H5.1a1.6 1.6 0 0 1-1.6-1.6z"/></svg>
+            </span>
+            <span data-i18n-key="home.idea.inbox">Organize my inbox</span>
           </button>
-          <button class="home-idea" type="button" data-home-prompt="Customize Cowork for the way I work">
-            <img src="/logo.png" alt="" width="20" height="20">
-            <span>Customize Cowork for me</span>
+          <button class="home-idea" type="button" data-home-prompt="Customize Socrates for the way I work">
+            <span class="home-idea-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/><circle cx="9" cy="6.5" r="2.1"/><circle cx="15" cy="12" r="2.1"/><circle cx="8" cy="17.5" r="2.1"/></svg>
+            </span>
+            <span data-i18n-key="home.idea.customize">Customize Socrates for me</span>
           </button>
         </div>
 

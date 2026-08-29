@@ -28,10 +28,17 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   expect(installed).toEqual({ bridge: true, isOpen: false });
 
   // All workflow items rendered with the expected data-action values.
-  const actions = await page.locator('#composerToolsMenu [data-composer-action]').evaluateAll((els) =>
+  /* Scoped to the desktop list: the menu renders both item sets and lets CSS
+     pick one per breakpoint, so an unscoped query also returns the five
+     mobile rows. */
+  const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
   expect(actions).toEqual(['upload', 'write', 'research', 'explore', 'deepResearch', 'analyze', 'codex', 'exam', 'skills']);
+  const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
+    els.map((el) => el.getAttribute('data-composer-action')),
+  );
+  expect(mobileActions).toEqual(['camera', 'photos', 'upload', 'skills', 'extensiveThinking']);
 });
 
 test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {

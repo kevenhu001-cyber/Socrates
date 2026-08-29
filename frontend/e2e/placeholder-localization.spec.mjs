@@ -49,8 +49,11 @@ test('zh landing greeting keeps the original display font stack', async ({ page 
   await page.evaluate(() => window.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
 
+  /* The assertion only has to prove the zh string rendered so the CJK font
+     fallback below is measured against CJK glyphs — the copy itself moved
+     from "你好，{name}。" to the shorter landing greeting. */
   const greeting = page.locator('#topicTitle');
-  await expect(greeting).toContainText('你好，');
+  await expect(greeting).toContainText('你来了');
   const zhFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
   expect(zhFont).toContain('Newsreader');
   expect(zhFont).toContain('Noto Sans SC');

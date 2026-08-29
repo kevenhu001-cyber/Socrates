@@ -8114,6 +8114,37 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    lone row; the live rows that render outside the header keep their own. */
 .msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-group{margin:12px 0}
 
+/* ═══ Composer tools menu: one item set per breakpoint ════════════════
+   ComposerToolsMenu.tsx renders both lists and lets CSS choose. The rule
+   that did the choosing was dropped along with the previous mobile-home
+   block, which left the desktop menu showing all fourteen rows and the
+   mobile menu doing the same at full viewport width. */
+.composer-tools-desktop-items{display:block}
+.composer-tools-mobile-items{display:none}
+
+@media(max-width:768px){
+  .composer-tools-desktop-items{display:none}
+  .composer-tools-mobile-items{display:block}
+  /* A compact floating card, not a full-width sheet. */
+  .composer-tools-menu{width:min(252px,calc(100vw - 24px));padding:6px;border-radius:16px}
+  .composer-tools-menu::before{display:none}
+  .composer-tools-mobile-item{
+    display:flex;align-items:center;gap:12px;width:100%;min-height:44px;
+    padding:6px 8px;border:0;border-radius:10px;background:transparent;
+    color:hsl(var(--text-100));text-align:left;cursor:pointer;
+  }
+  .composer-tools-mobile-item+.composer-tools-mobile-item{margin-top:2px}
+  .composer-tools-mobile-item .composer-tools-icon{
+    display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;
+    color:hsl(var(--text-400));
+  }
+  .composer-tools-mobile-item .composer-tools-icon svg{width:22px;height:22px}
+  .composer-tools-mobile-item .composer-tools-copy>span{color:inherit;font-weight:500;font-size:14px}
+  .composer-tools-mobile-item.is-active,
+  .composer-tools-mobile-item.is-active .composer-tools-icon{color:hsl(var(--accent-000))}
+  .composer-tools-check{width:20px;height:20px;margin-left:auto;color:hsl(var(--accent-000))}
+}
+
 /* ═══ Cowork-style landing reference ══════════════════════════════════
    A restrained desktop work surface: compact navigation, a centered hero,
    one two-tier composer, and lightweight starter ideas. */
@@ -8125,6 +8156,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   --cowork-line:0 0% 25%;
   --cowork-text:0 0% 88%;
   --cowork-muted:0 0% 54%;
+  /* The three bars from public/logo.svg with the circular plate dropped, so
+     the mark can be used as a mask and take its colour from the accent. */
+  --cowork-brand-glyph:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 132'%3E%3Cg fill='%23000'%3E%3Crect width='96' height='36' rx='5'/%3E%3Crect y='48' width='96' height='36' rx='5'/%3E%3Crect y='96' width='96' height='36' rx='5'/%3E%3C/g%3E%3C/svg%3E");
 }
 [data-mode=dark] #appShell,
 [data-mode=dark] .main-content,
@@ -8132,54 +8166,120 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 [data-mode=dark] .main-bg{background-image:none;opacity:1}
 
 @media(min-width:769px){
+  /* 240px rather than 288px: the reference shell trades sidebar width for
+     transcript width, and at 288px a 1024px-wide window left the composer
+     with less room than the navigation. */
   .sidebar{
-    width:288px;
-    min-width:288px;
+    width:240px;
+    min-width:240px;
     background:hsl(var(--cowork-sidebar));
     border-right:1px solid hsl(var(--cowork-line)/.42);
     -webkit-backdrop-filter:none;
     backdrop-filter:none;
   }
-  .sidebar-header{min-height:48px;padding:8px 10px 6px 13px}
-  .sidebar-logo{font-family:var(--font-sans);font-size:14px;font-weight:600;letter-spacing:-.02em}
-  .top-bar{min-height:48px;padding:6px 16px;border-bottom:0;background:hsl(var(--cowork-page))}
+  .sidebar-header{min-height:40px;padding:6px 6px 4px 12px}
+  .sidebar-logo{font-family:var(--font-sans);font-size:13px;font-weight:600;letter-spacing:-.01em}
+  .sidebar-header .icon-btn{width:26px;height:26px;min-width:26px;color:hsl(var(--cowork-muted))}
+  .sidebar-header .icon-btn svg{width:15px;height:15px}
+  .top-bar{min-height:44px;padding:6px 14px;border-bottom:0;background:hsl(var(--cowork-page))}
   .top-mode-tabs{display:none}
-  .sidebar-mode-switch{display:flex;align-items:center;width:272px;height:36px;margin:0 8px 8px;padding:3px;box-sizing:border-box;border-radius:7px;background:hsl(var(--cowork-surface));flex-shrink:0}
-  .sidebar-mode-switch .app-mode-toggle{flex:1;height:30px;border:0;border-radius:6px;color:hsl(var(--cowork-muted));background:transparent;font:500 13px var(--font-sans);cursor:pointer}
+  /* Fluid, not a fixed 272px: the switch used to be pinned to the old
+     sidebar width, so any width change overflowed it. */
+  .sidebar-mode-switch{display:flex;align-items:center;height:28px;margin:2px 8px 10px;padding:2px;box-sizing:border-box;border-radius:7px;background:hsl(var(--cowork-surface));flex-shrink:0}
+  .sidebar-mode-switch .app-mode-toggle{flex:1;min-width:0;height:24px;border:0;border-radius:5px;color:hsl(var(--cowork-muted));background:transparent;font:500 12px var(--font-sans);letter-spacing:0;cursor:pointer}
   .sidebar-mode-switch .app-mode-toggle.active{color:hsl(var(--cowork-text));background:hsl(var(--cowork-surface-active));box-shadow:inset 0 0 0 1px hsl(var(--cowork-line)/.4)}
-  .sidebar-nav{padding:0 8px 4px;gap:1px}
-  .sidebar-nav-btn{min-height:34px;padding:7px 10px;border-radius:6px;color:hsl(var(--cowork-muted));font-size:13px}
+  .sidebar-nav{padding:0 8px 2px;gap:0}
+  .sidebar-nav-btn{min-height:27px;gap:9px;padding:4px 8px;border-radius:6px;color:hsl(var(--cowork-muted));font-size:13px;line-height:18px}
+  .sidebar-nav-btn svg{width:15px;height:15px;color:inherit;opacity:.9}
+  .sidebar-nav-btn:hover:not([disabled]) svg{color:inherit}
   #navNew{order:1;background:hsl(var(--cowork-surface-active));color:hsl(var(--cowork-text))}
   #navProjects{order:2}
   #navLibrary{order:3}
   #navScheduled{order:4}
   #navMore{order:5}
+  /* Trimmed to the five primary destinations, matching the reference nav.
+     Plugins and Exam moved into the Customize popover rather than being
+     dropped — see #moreNavPopover in index.html. */
   #navPlugins,#navExam{display:none}
-  .sidebar-search-row{display:none}
-  .recents-panel{padding:30px 10px 0}
-  .recents-title{font-size:11px;letter-spacing:0;text-transform:none;color:hsl(var(--cowork-muted))}
-  .recents-title{font-size:0}
-  .recents-title::after{content:"Tasks";font-size:11px}
+  /* Kept, not hidden: this row is the only way to search chats, and in Tutor
+     mode it also holds the Knowledge and Mistakes entries. Compacted to the
+     shell's rhythm instead. */
+  .sidebar-search-row{padding:6px 8px 2px;gap:4px}
+  .sidebar-search{height:28px;gap:6px;padding:0 8px;border-radius:6px;background:hsl(var(--cowork-surface));border-color:transparent}
+  .sidebar-search:focus-within{background:hsl(var(--cowork-surface));border-color:hsl(var(--cowork-line))}
+  .sidebar-search-icon{width:14px;height:14px;color:hsl(var(--cowork-muted))}
+  .sidebar-search:focus-within .sidebar-search-icon{color:hsl(var(--cowork-text))}
+  .sidebar-search input{font-size:12.5px}
+  .sidebar-view-btn{width:28px;height:28px;min-width:28px;border-radius:6px}
+  .sidebar-view-btn svg{width:15px;height:15px}
+  .recents-panel{padding:12px 8px 0}
+  .recents-header{padding:4px 8px 2px}
+  .recents-title{font-size:11px;font-weight:500;letter-spacing:0;text-transform:none;color:hsl(var(--cowork-muted))}
   .recents-filter-chips{display:none}
   .recents-time-label{display:none}
-  .recent-item{border-radius:6px;padding:7px 9px}
-  .recent-item-text{font-size:12px;color:hsl(var(--cowork-muted))}
+  .recent-item{min-height:27px;gap:6px;border-radius:6px;padding:4px 8px}
+  .recent-item-text{font-size:12.5px;line-height:18px;color:hsl(var(--cowork-muted))}
+  .recent-item.active .recent-item-text{font-weight:500;color:hsl(var(--cowork-text))}
   .recent-item-meta,.recent-mode-badge{display:none}
-  .sidebar-footer{min-height:52px;padding:7px 10px;border-top:1px solid hsl(var(--cowork-line)/.3)}
+  /* One line, mirroring the reference's "Name · Tier" account row, instead
+     of a 32px avatar over two stacked lines. */
+  .sidebar-footer{min-height:40px;padding:4px 6px 4px 8px;border-top:1px solid hsl(var(--cowork-line)/.3);container-type:inline-size;container-name:sidebar-footer}
+  .sidebar-footer .user-row{gap:8px;padding:4px 6px;border-radius:6px}
+  .user-avatar{width:22px;height:22px;font-size:9.5px}
+  .user-identity{display:flex;align-items:center;flex:1 1 auto;gap:0;min-width:0}
+  .user-name{flex:0 1 auto;min-width:0;font-size:12.5px;font-weight:500;color:hsl(var(--cowork-text));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* The tier is the qualifier, so it is what gives way when the row runs out
+     of width — a high shrink factor makes flexbox spend the deficit here
+     before it starts eating into the name. */
+  .user-plan{flex:0 60 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .user-plan::before{content:"·";margin:0 5px;color:hsl(var(--cowork-muted)/.75)}
+  .user-plan .tier-badge{padding:0;border-radius:0;background:none;font-size:11px;font-weight:400;letter-spacing:0;text-transform:capitalize;color:hsl(var(--cowork-muted))}
+  /* At the default 240px the avatar and the three action buttons leave ~100px
+     for the identity, which is not enough for "name · tier" — and a tier
+     clipped mid-word looks like a rendering fault. Drop it until the user
+     drags the sidebar wider; it is always readable in the profile modal. */
+  @container sidebar-footer (max-width:279px){
+    .user-plan{display:none}
+  }
+  .sidebar-footer-actions .icon-btn{width:24px;height:24px;min-width:24px;color:hsl(var(--cowork-muted))}
+  .sidebar-footer-actions .icon-btn svg{width:14px;height:14px}
+  /* Voice input is a touch affordance — the pointer composer has the same
+     control in the tools menu, and the reference control row is just
+     "+ … effort · send". */
+  .topic-input-wrap .mobile-mic-btn{display:none}
 }
 
 .main-inner:has(#topicSetup:not(.hidden)){width:100%;max-width:none;padding:0}
+/* The landing is a centered column, not a stack pinned a fixed distance from
+   the top. The previous `margin:298px 0 0` on the greeting overflowed
+   .topic-setup on any viewport shorter than ~760px, and because
+   .topic-input-wrap sets `overflow:hidden` its min-content height is 0 — so
+   the flex container absorbed the overflow by crushing the composer down to
+   its two borders (a 2px sliver) instead of scrolling. Auto margins centre
+   the group and collapse to 0 once it really does overflow, which keeps the
+   top of the hero reachable; `flex:0 0 auto` stops the bands from being
+   shrunk again. */
 .topic-setup{
   box-sizing:border-box;
   justify-content:flex-start;
   gap:0;
-  padding:0 20px 28px;
+  padding:24px 20px 32px;
   overflow-y:auto;
 }
+.topic-setup > *{flex:0 0 auto}
+/* Two shrinkable spacers instead of `justify-content:center`: the 1.85:1
+   split seats the group a little below the optical centre (matching the
+   reference composition) and both collapse to 0 when the content is taller
+   than the pane, so a short window scrolls from the top of the hero rather
+   than clipping it. */
+.topic-setup::before,
+.topic-setup::after{content:"";flex-basis:0;flex-shrink:1}
+.topic-setup::before{flex-grow:3;max-height:240px}
+.topic-setup::after{flex-grow:1}
 .topic-title.greeting{
   position:relative;
-  margin:298px 0 0;
-  padding:0 0 0 42px;
+  margin:0;
+  padding:0 0 0 40px;
   font-family:var(--font-display);
   font-size:42px;
   font-weight:400;
@@ -8187,24 +8287,29 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   letter-spacing:-.035em;
   color:hsl(var(--cowork-text));
 }
+/* The brand glyph, not the app icon: /logo.png bakes in a dark circular
+   plate, which next to a serif greeting read as a disabled button. Masking
+   the three bars out of the mark leaves a flat accent-tinted glyph sitting on
+   the page, the way the reference hero does. */
 .topic-title.greeting::before{
   content:"";
   position:absolute;
   left:0;
   top:50%;
-  width:34px;
-  height:34px;
-  border-radius:5px;
-  background:url('/logo.png') center/contain no-repeat;
+  width:22px;
+  height:30px;
+  background:hsl(var(--accent-000));
+  -webkit-mask:var(--cowork-brand-glyph) center/contain no-repeat;
+  mask:var(--cowork-brand-glyph) center/contain no-repeat;
   transform:translateY(-50%);
 }
 .topic-sub{display:none}
 .topic-input-wrap{
-  width:min(100%,680px);
-  max-width:680px;
-  margin-top:40px;
+  width:min(100%,620px);
+  max-width:620px;
+  margin-top:30px;
   border:1px solid hsl(var(--cowork-line));
-  border-radius:20px;
+  border-radius:16px;
   overflow:hidden;
   color:hsl(var(--cowork-text));
   background:hsl(var(--cowork-surface));
@@ -8213,24 +8318,58 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .topic-input-wrap:hover{border-color:hsl(var(--cowork-muted)/.8)}
 .topic-input-wrap.composer-focused,.topic-input-wrap:focus-within{border-color:hsl(var(--cowork-muted));box-shadow:0 0 0 1px hsl(var(--cowork-line)/.45)}
 .topic-input-wrap .rich-composer .tiptap,
-.topic-input-wrap .rich-composer-editor{min-height:62px;padding:17px 18px 8px;font-size:15px;line-height:24px}
-.topic-footer{min-height:48px;padding:5px 10px 8px}
-.topic-footer .footer-left-group{gap:4px}
-.topic-input-wrap .start-btn{width:36px;min-width:36px;height:36px;min-height:36px;border-radius:10px}
-.home-ideas{width:min(100%,680px);margin-top:36px;display:flex;flex-direction:column;gap:2px}
-.home-ideas-label{padding:0 18px 10px;color:hsl(var(--cowork-muted));font-size:11px}
-.home-idea{display:flex;align-items:center;gap:16px;min-height:44px;padding:8px 18px;border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;font:500 14px var(--font-sans);text-align:left;cursor:pointer}
+.topic-input-wrap .rich-composer-editor{min-height:52px;padding:14px 16px 4px;font-size:14.5px;line-height:22px}
+.topic-footer{min-height:40px;gap:2px;padding:4px 8px 6px}
+.topic-footer .footer-left-group{gap:2px}
+/* The run controls read left-to-right into the send action. */
+.topic-footer .effort-trigger{min-height:24px;padding:3px 6px;border-radius:6px;font-size:12.5px;gap:5px}
+.topic-footer .effort-trigger .effort-glyph{width:13px;height:13px}
+.topic-footer .effort-trigger .effort-caret{width:11px;height:11px}
+.topic-input-wrap .start-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
+.topic-input-wrap .start-btn svg{width:15px;height:15px}
+.home-ideas{width:min(100%,620px);margin:26px 0 0;display:flex;flex-direction:column;gap:0}
+.home-ideas-label{padding:0 10px 4px;color:hsl(var(--cowork-muted));font-size:11px}
+.home-idea{display:flex;align-items:center;gap:12px;min-height:32px;padding:5px 10px;border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;font:400 13px var(--font-sans);text-align:left;cursor:pointer}
 .home-idea:hover{background:hsl(var(--cowork-surface))}
-.home-idea img{width:22px;height:22px;object-fit:contain;filter:grayscale(1);opacity:.45}
+/* A hairline tile per idea: it separates the glyph from the label without
+   adding a filled chip, which is what the reference row does. */
+.home-idea-icon{
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  width:22px;
+  height:22px;
+  border:1px solid hsl(var(--cowork-line)/.75);
+  border-radius:6px;
+  color:hsl(var(--cowork-muted));
+}
+.home-idea-icon svg{width:13px;height:13px}
+.home-idea:hover .home-idea-icon{border-color:hsl(var(--cowork-line));color:hsl(var(--cowork-text))}
 #topicDisclaimer{display:none}
 
 body[data-conversation-active="true"] .home-ideas{display:none}
 
+/* Short windows: the serif hero is the one band with slack in it. */
+@media(min-width:769px) and (max-height:660px){
+  .topic-title.greeting{font-size:34px;padding-left:34px}
+  .topic-title.greeting::before{width:26px;height:26px}
+  .topic-input-wrap{margin-top:22px}
+  .home-ideas{margin-top:18px}
+}
+
 @media(max-width:768px){
-  .topic-setup{padding:clamp(96px,17vh,140px) 16px max(24px,env(safe-area-inset-bottom,0px));overflow-y:auto}
+  /* Phones get a gentler bias than the desktop 3:1 — the tall viewport makes
+     the desktop ratio open with ~400px of empty canvas above the hero. */
+  .topic-setup{padding:clamp(24px,5vh,48px) 16px max(24px,env(safe-area-inset-bottom,0px));overflow-y:auto}
+  .topic-setup::before{flex-grow:1.4;max-height:none}
+  .topic-setup::after{flex-grow:1}
   .topic-title.greeting{margin:0;padding-left:0;font-size:32px;text-align:center}
   .topic-title.greeting::before{display:none}
-  .topic-input-wrap{margin-top:28px;border-radius:24px}
-  .home-ideas{margin-top:24px}
+  .topic-input-wrap{width:min(100%,620px);margin-top:28px;border-radius:24px}
+  .topic-input-wrap .rich-composer .tiptap,
+  .topic-input-wrap .rich-composer-editor{min-height:62px;padding:17px 18px 8px;font-size:15px;line-height:24px}
+  .topic-footer{min-height:48px;padding:5px 10px 8px}
+  .topic-input-wrap .start-btn{width:40px;min-width:40px;height:40px;min-height:40px}
+  .home-ideas{margin:24px 0 0}
   .home-idea{padding-inline:10px}
 }

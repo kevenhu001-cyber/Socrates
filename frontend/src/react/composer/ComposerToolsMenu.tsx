@@ -14,34 +14,44 @@ const MENU_ID = 'composerToolsMenu';
 
 type MenuItemSpec = ExtensionDefinition;
 
+/* Labels go through the i18n pipeline like every other menu in the app: these
+   five were briefly hardcoded to Chinese, which shipped Chinese copy to the
+   English default locale. `labelKey` is resolved at render time so setLang()
+   repaints the menu with the rest of the chrome. */
 const MOBILE_MENU_ITEMS: ReadonlyArray<{
   action: ComposerToolsAction;
+  labelKey: string;
   label: string;
   icon: string;
 }> = [
   {
     action: 'camera',
-    label: '相机',
+    labelKey: 'composer.tools.camera',
+    label: 'Camera',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7.5h3l1.4-2h7.2l1.4 2h3v11H4z"/><circle cx="12" cy="13" r="3.4"/></svg>',
   },
   {
     action: 'photos',
-    label: '照片',
+    labelKey: 'composer.tools.photos',
+    label: 'Photos',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="15.5" cy="9" r="1.5"/><path d="m5.5 17 4.2-4.5 3.1 3 2.1-2 3.6 3.5"/></svg>',
   },
   {
     action: 'upload',
-    label: '文件',
+    labelKey: 'composer.tools.files',
+    label: 'Files',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8.5 12.5 14 7a3 3 0 0 1 4.2 4.2l-7 7a5 5 0 0 1-7.1-7.1l7.2-7.2"/><path d="m7.1 14 7-7"/></svg>',
   },
   {
     action: 'skills',
-    label: '插件',
+    labelKey: 'composer.tools.plugins',
+    label: 'Plugins',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 9.5a2.2 2.2 0 1 1 3.8-1.6v8.2a2.2 2.2 0 1 0 3.8-1.6"/><path d="m6.5 14.5 2-2 2 2M13.5 9.5l2 2 2-2"/></svg>',
   },
   {
     action: 'extensiveThinking',
-    label: '更深入思考',
+    labelKey: 'composer.tools.thinkDeeper',
+    label: 'Think deeper',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.2 16a8.5 8.5 0 0 1 15.6 0"/><path d="m12 14 3.2-4.6"/><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>',
   },
 ];
@@ -95,6 +105,7 @@ function MenuItem({
 
 function MobileMenuItem({
   action,
+  labelKey,
   label,
   icon,
   active,
@@ -103,20 +114,21 @@ function MobileMenuItem({
   active: boolean;
   onPick: (action: ComposerToolsAction) => void;
 }) {
+  const text = i18n(labelKey, label);
   return (
     <button
       type="button"
       className={`composer-tools-item composer-tools-mobile-item${active ? ' is-active' : ''}`}
       role="menuitem"
       data-composer-action={action}
-      aria-label={label}
+      aria-label={text}
       onClick={(event) => {
         event.stopPropagation();
         onPick(action);
       }}
     >
       <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: icon }} />
-      <span className="composer-tools-copy"><span>{label}</span></span>
+      <span className="composer-tools-copy"><span>{text}</span></span>
       {active ? (
         <svg className="composer-tools-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
       ) : null}
@@ -135,8 +147,10 @@ function MenuItems({
     <>
       <div className="composer-tools-desktop-items">
         <div className="composer-tools-heading">
-          <span>Tools</span>
-          <span className="composer-tools-heading-hint">Choose a workflow</span>
+          <span>{i18n('composer.tools.heading', 'Tools')}</span>
+          <span className="composer-tools-heading-hint">
+            {i18n('composer.tools.headingHint', 'Choose a workflow')}
+          </span>
         </div>
         {toolDefinitions().map((spec) => (
           <MenuItem

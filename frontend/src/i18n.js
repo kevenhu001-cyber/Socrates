@@ -34,7 +34,10 @@ var I18N={
        zh-side strings change. */
     "topic.title":"What would you like to explore?",
     "topic.subtitle":"",
-    "topic.inputPlaceholder":"Type / for skills",
+    /* P_cowork-landing — the landing composer opens the conversation, so it
+       asks a question. The "/" affordance is discoverable from the slash
+       menu itself and no longer has to carry the empty state. */
+    "topic.inputPlaceholder":"How can I help you today?",
     "topic.start":"Begin",
     "topic.hint":"Be specific for better results",
     "topic.model":"Model",
@@ -43,6 +46,23 @@ var I18N={
     "greeting.chat":"You're here!",
     "greeting.tutor":"Let's explore, {name}.",
     "greeting.guest":"Guest",
+    /* Composer "+" menu. The five mobile rows were briefly hardcoded to
+       Chinese inside ComposerToolsMenu.tsx; the copy belongs here so both
+       locales stay in sync. */
+    "composer.tools.heading":"Tools",
+    "composer.tools.headingHint":"Choose a workflow",
+    "composer.tools.camera":"Camera",
+    "composer.tools.photos":"Photos",
+    "composer.tools.files":"Files",
+    "composer.tools.plugins":"Plugins",
+    "composer.tools.thinkDeeper":"Think deeper",
+    /* P_cowork-landing — starter ideas under the landing composer. The
+       button labels also seed the composer, so keep them phrased as
+       something a person would actually send. */
+    "home.ideasLabel":"Ideas for you",
+    "home.idea.briefing":"Send me a daily briefing",
+    "home.idea.inbox":"Organize my inbox",
+    "home.idea.customize":"Customize Socrates for me",
     "sidebar.nav.new":"New",
     "sidebar.nav.library":"Artifacts",
     "sidebar.nav.projects":"Projects",
@@ -143,7 +163,11 @@ var I18N={
     "sidebar.recents":"Recents",
     "sidebar.mistakes":"Mistakes",
     "sidebar.searchPlaceholder":"Search chats",
-    "sidebar.recentSessions":"Recent Sessions",
+    /* P_cowork-landing — the session list heading. Was rendered by a
+       `.recents-title{font-size:0}` + `::after{content:"Tasks"}` CSS swap,
+       which left the real string in the accessibility tree while showing a
+       different one on screen. The copy lives here instead. */
+    "sidebar.recentSessions":"Tasks",
     "sidebar.new":"New",
     "sidebar.mistakeBook":"Mistake Book",
     "sidebar.all":"All",
@@ -830,6 +854,25 @@ var I18N={
     "tool.readNFiles":"Read {n} files",
     "tool.exploredFiles":"Edited {files}",
     "tool.editedNFiles":"Edited {n} files",
+    /* P_cowork-landing — clause set for a mixed tool run ("Ran 2 commands,
+       read 4 files, edited a file"). A run that touches more than one kind of
+       work used to collapse to a bare "Explored", which named nothing the
+       reader could act on. Each bucket owns its verb so the clause list also
+       reads correctly in languages that do not share English's word order;
+       `tool.clauseJoin` is the separator between clauses. */
+    "tool.clauseJoin":", ",
+    "tool.clauseRanCommands":"ran {n} commands",
+    "tool.clauseRanCommandOne":"ran a command",
+    "tool.clauseReadFiles":"read {n} files",
+    "tool.clauseReadFileOne":"read a file",
+    "tool.clauseEditedFiles":"edited {n} files",
+    "tool.clauseEditedFileOne":"edited a file",
+    "tool.clauseCreatedFiles":"created {n} files",
+    "tool.clauseCreatedFileOne":"created a file",
+    "tool.clauseSearched":"searched {n} times",
+    "tool.clauseSearchedOne":"searched the web",
+    "tool.clauseRanCode":"ran {n} code blocks",
+    "tool.clauseRanCodeOne":"ran code",
     "tool.files":"Files",
     "tool.errorCode":"Error code",
     "tool.retryable":"Retryable",
@@ -894,22 +937,38 @@ var I18N={
        above are already localized, so Tutor now mirrors that. */
     "topic.title":"今天想探索什么？",
     "topic.subtitle":"",
-    "topic.inputPlaceholder":"输入 / 使用技能",
+    "topic.inputPlaceholder":"今天有什么可以帮你的？",
     "topic.start":"开始",
     "topic.hint":"描述越具体效果越好",
     "topic.model":"模型",
     "topic.extensions":"扩展",
     /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
-    "greeting.chat":"You're here!",
-    "greeting.tutor":"Let's explore, {name}.",
-    "greeting.guest":"Guest",
-    "sidebar.nav.new":"New",
-    "sidebar.nav.library":"Artifacts",
+    /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
+       left holding the English strings when the landing was redesigned, so
+       the zh locale rendered a half-English sidebar. */
+    "greeting.chat":"你来了！",
+    "greeting.tutor":"来一起探索吧，{name}。",
+    "greeting.guest":"访客",
+    /* Composer "+" menu. */
+    "composer.tools.heading":"工具",
+    "composer.tools.headingHint":"选择一个工作流",
+    "composer.tools.camera":"相机",
+    "composer.tools.photos":"照片",
+    "composer.tools.files":"文件",
+    "composer.tools.plugins":"插件",
+    "composer.tools.thinkDeeper":"更深入思考",
+    /* P_cowork-landing — starter ideas under the landing composer. */
+    "home.ideasLabel":"为你推荐",
+    "home.idea.briefing":"给我一份每日简报",
+    "home.idea.inbox":"帮我整理收件箱",
+    "home.idea.customize":"按我的习惯定制 Socrates",
+    "sidebar.nav.new":"新建",
+    "sidebar.nav.library":"作品库",
     "sidebar.nav.projects":"项目",
     "sidebar.nav.scheduled":"已安排",
     "sidebar.nav.plugins":"插件",
     "sidebar.nav.exam":"考试",
-    "sidebar.nav.more":"Customize",
+    "sidebar.nav.more":"自定义",
     "sidebar.nav.soon":"即将",
     /* PR-A — More popover items */
     "sidebar.more.settings":"API 设置",
@@ -1003,7 +1062,7 @@ var I18N={
     "sidebar.recents":"最近",
     "sidebar.mistakes":"错题",
     "sidebar.searchPlaceholder":"搜索对话",
-    "sidebar.recentSessions":"最近会话",
+    "sidebar.recentSessions":"任务",
     "sidebar.new":"新建",
     "sidebar.mistakeBook":"错题本",
     "sidebar.all":"全部",
@@ -1680,6 +1739,20 @@ var I18N={
     "tool.readNFiles":"已读取 {n} 个文件",
     "tool.exploredFiles":"已修改 {files}",
     "tool.editedNFiles":"已修改 {n} 个文件",
+    /* P_cowork-landing — clause set for a mixed tool run. */
+    "tool.clauseJoin":"、",
+    "tool.clauseRanCommands":"运行 {n} 条命令",
+    "tool.clauseRanCommandOne":"运行 1 条命令",
+    "tool.clauseReadFiles":"读取 {n} 个文件",
+    "tool.clauseReadFileOne":"读取 1 个文件",
+    "tool.clauseEditedFiles":"修改 {n} 个文件",
+    "tool.clauseEditedFileOne":"修改 1 个文件",
+    "tool.clauseCreatedFiles":"新建 {n} 个文件",
+    "tool.clauseCreatedFileOne":"新建 1 个文件",
+    "tool.clauseSearched":"搜索 {n} 次",
+    "tool.clauseSearchedOne":"搜索 1 次",
+    "tool.clauseRanCode":"运行 {n} 段代码",
+    "tool.clauseRanCodeOne":"运行 1 段代码",
     "tool.files":"文件",
     "tool.errorCode":"错误码",
     "tool.retryable":"可重试",
