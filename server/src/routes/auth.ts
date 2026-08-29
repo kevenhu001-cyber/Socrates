@@ -234,7 +234,24 @@ router.post('/mobile/oauth/exchange', async (req, res, next) => {
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const user = await authService.getMe(req.userId!);
-    return res.json({ user });
+    /* Hosting platforms derive these headers from the visitor IP. Keep the
+       field ephemeral (not persisted on the account) and validate it as an
+       IANA zone before the client uses it for time-aware greetings. */
+    const rawTimeZone = [
+      req.get('x-vercel-ip-timezone'),
+      req.get('cloudfront-viewer-time-zone'),
+      req.get('cf-timezone'),
+      req.get('x-geo-timezone'),
+    ].find(Boolean);
+    let timeZone: string | null = null;
+    if (rawTimeZone) {
+      try {
+        const candidate = decodeURIComponent(rawTimeZone).trim();
+        new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format();
+        timeZone = candidate;
+      } catch { /* malformed or unsupported zone — browser fallback wins */ }
+    }
+    return res.json({ user: { ...user, timeZone } });
   } catch (err) { next(err); }
 });
 

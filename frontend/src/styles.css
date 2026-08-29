@@ -4860,6 +4860,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
     border-color:hsl(var(--accent-000)/.45);
   }
 }
+
 @media(max-width:768px){
   .chat-input-bar{padding-inline:8px}
   .chat-input-wrap{
@@ -8249,11 +8250,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   #navProjects{order:2}
   #navLibrary{order:3}
   #navScheduled{order:4}
-  #navMore{order:5}
-  /* Trimmed to the five primary destinations, matching the reference nav.
-     Plugins and Exam moved into the Customize popover rather than being
-     dropped — see #moreNavPopover in index.html. */
-  #navPlugins,#navExam{display:none}
+  #navPlugins{order:5}
+  #navExam{order:6}
+  #navSkills{order:7}
   /* Kept, not hidden: this row is the only way to search chats, and in Tutor
      mode it also holds the Knowledge and Mistakes entries. Compacted to the
      shell's rhythm instead. */
@@ -8789,4 +8788,57 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     min-height:36px;
     margin:0;
   }
+}
+
+/* Final authority for the landing/conversation visual contract. Kept after
+   all migration compatibility rules so neither the old Workbench pass nor a
+   mobile composer shim can reintroduce a second UI. */
+#appShell{
+  --conversation-content-width:calc(760px * var(--app-width-scale,1));
+  --conversation-composer-width:calc(620px * var(--app-width-scale,1));
+  --workbench-page:var(--cowork-page);
+  --workbench-sidebar:var(--cowork-sidebar);
+  --workbench-surface:var(--cowork-surface);
+  --workbench-surface-raised:var(--cowork-surface-active);
+  --workbench-hover:var(--cowork-surface-active);
+  --workbench-line:var(--cowork-line);
+  --workbench-line-soft:var(--cowork-line);
+  --workbench-text:var(--cowork-text);
+  --workbench-text-muted:var(--cowork-muted);
+  --workbench-text-faint:var(--cowork-muted);
+  --workbench-accent:var(--accent-000);
+  --workbench-content-max:var(--conversation-content-width);
+  --workbench-message-size:calc(15px * var(--app-font-scale,1));
+}
+[data-mode=light] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell{color-scheme:light}
+[data-mode=dark] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell{color-scheme:dark}
+.topic-title.greeting::before{display:none!important;content:none!important}
+.topic-title.greeting{font-size:calc(42px * var(--app-font-scale,1))}
+.topic-input-wrap,.home-ideas{width:min(100%,var(--conversation-composer-width));max-width:var(--conversation-composer-width)}
+.topic-input-wrap .rich-composer .tiptap,.topic-input-wrap .rich-composer-editor{font-size:calc(14.5px * var(--app-font-scale,1))}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar{min-height:44px;padding:6px 14px;border-bottom:0;background:hsl(var(--cowork-page));-webkit-backdrop-filter:none;backdrop-filter:none}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar{background:hsl(var(--cowork-sidebar));border-right:1px solid hsl(var(--cowork-line)/.42)}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList{padding-inline:max(20px,calc((100% - var(--conversation-content-width))/2))}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-view{max-width:var(--conversation-content-width)}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{width:min(calc(100% - 32px),var(--conversation-composer-width));max-width:var(--conversation-composer-width);border-color:hsl(var(--cowork-line));color:hsl(var(--cowork-text));background:hsl(var(--cowork-surface))}
+[data-mode=light] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap{box-shadow:0 1px 2px hsl(var(--always-black)/.04),0 10px 30px hsl(36 20% 30%/.07)}
+[data-mode=light] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused{border-color:hsl(var(--accent-000)/.65);box-shadow:0 0 0 3px hsl(var(--accent-000)/.1),0 12px 32px hsl(36 20% 30%/.08)}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer-editor{font-size:calc(14.5px * var(--app-font-scale,1))}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-bar{position:fixed;top:max(56px,calc(env(safe-area-inset-top,0px) + 52px));right:max(16px,env(safe-area-inset-right,0px));left:auto;bottom:auto;color:hsl(var(--cowork-text));background:hsl(var(--cowork-surface));border-color:hsl(var(--cowork-line)/.7);box-shadow:0 12px 34px hsl(var(--always-black)/.18)}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-bar input{color:hsl(var(--cowork-text))}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-bar input::placeholder,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-bar-icon,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-count,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-nav-btn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-close-btn{color:hsl(var(--cowork-muted))}
+@media(max-width:768px){
+  .topic-title.greeting{font-size:calc(34px * var(--app-font-scale,1))}
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList{padding-inline:16px}
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{width:100%;max-width:none}
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-bar{top:max(64px,calc(env(safe-area-inset-top,0px) + 60px));right:8px;left:8px}
 }

@@ -307,25 +307,26 @@ function wireSurface(container, surface) {
    built container), render synchronously so the user never sees an
    empty chip row. Subsequent renders batch via rAF so a flood of
    state-synced events only paints once. */
-var _pendingRender = null;
+var _pendingRenders = new WeakMap();
 function scheduleRender(container, suggestions, surface) {
   if (!container) return;
+  var pendingRender = _pendingRenders.get(container);
   if (!container.firstChild) {
-    if (_pendingRender) {
-      try { cancelAnimationFrame(_pendingRender); } catch (_) {}
-      _pendingRender = null;
+    if (pendingRender) {
+      try { cancelAnimationFrame(pendingRender); } catch (_) {}
+      _pendingRenders.delete(container);
     }
     renderNow(container, suggestions, surface);
     return;
   }
-  if (_pendingRender) {
-    try { cancelAnimationFrame(_pendingRender); } catch (_) {}
-    _pendingRender = null;
+  if (pendingRender) {
+    try { cancelAnimationFrame(pendingRender); } catch (_) {}
   }
-  _pendingRender = requestAnimationFrame(function () {
-    _pendingRender = null;
+  var frameId = requestAnimationFrame(function () {
+    _pendingRenders.delete(container);
     renderNow(container, suggestions, surface);
   });
+  _pendingRenders.set(container, frameId);
 }
 
 function renderNow(container, suggestions, surface) {

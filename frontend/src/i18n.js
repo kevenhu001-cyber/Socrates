@@ -43,7 +43,11 @@ var I18N={
     "topic.model":"Model",
     "topic.extensions":"Extensions",
     /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
-    "greeting.chat":"You're here!",
+    "greeting.chat":"Welcome back, {name}!",
+    "greeting.chat.morning":"Good morning, {name}!",
+    "greeting.chat.afternoon":"Good afternoon, {name}!",
+    "greeting.chat.evening":"Good evening, {name}!",
+    "greeting.chat.late":"Up late, {name}?",
     "greeting.tutor":"Let's explore, {name}.",
     "greeting.guest":"Guest",
     /* Composer "+" menu. The five mobile rows were briefly hardcoded to
@@ -948,7 +952,11 @@ var I18N={
     /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
        left holding the English strings when the landing was redesigned, so
        the zh locale rendered a half-English sidebar. */
-    "greeting.chat":"你来了！",
+    "greeting.chat":"欢迎回来，{name}！",
+    "greeting.chat.morning":"早上好，{name}！",
+    "greeting.chat.afternoon":"下午好，{name}！",
+    "greeting.chat.evening":"晚上好，{name}！",
+    "greeting.chat.late":"夜深了，{name}。",
     "greeting.tutor":"来一起探索吧，{name}。",
     "greeting.guest":"访客",
     /* Composer "+" menu. */
