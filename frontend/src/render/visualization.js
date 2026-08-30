@@ -185,13 +185,13 @@ function normalizeFunction(spec) {
 
 /* ECharts ignores CSS variables read at runtime, so we pass concrete HSL
  * strings. The chart is re-rendered when the user toggles the theme
- * (see _watchTheme). Keep the bundled Plus Jakarta Sans face as the
+ * (see _watchTheme). Keep the bundled Inter face as the
  * authoritative font family — system-ui is a fallback only if the
  * bundled face is unavailable, never the default. */
 /* P_viz-google-fonts — Chinese glyphs resolve to the bundled Noto Sans SC
-   rather than an OS-dependent fallback. Keep Plus Jakarta Sans first for
+   rather than an OS-dependent fallback. Keep Inter first for
    Latin/numerals. */
-var VIZ_FONT_FAMILY = "'Plus Jakarta Sans', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
+var VIZ_FONT_FAMILY = "'Inter', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
 
 function labelLength(value) {
   return Array.from(String(value == null ? '' : value)).length;
