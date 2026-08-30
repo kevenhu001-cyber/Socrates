@@ -47,7 +47,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const chatComposer = page.locator('#chatInputWrap');
   await expect(chatComposer.locator('.rich-composer-toolbar')).toBeHidden();
   const desktopComposerBox = await chatComposer.boundingBox();
-  // The workbench content column is --workbench-content-max (820px).
+  // The workbench content column is the shared 768px reading column.
   expect(desktopComposerBox?.width).toBeLessThanOrEqual(820);
   expect(desktopComposerBox?.height).toBeLessThanOrEqual(72);
   const desktopControlBoxes = await page.evaluate(() => {
@@ -109,13 +109,17 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
 
   await mobileEditor.click();
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
-  // The composer grows to its focused height via a CSS transition, so wait
-  // for the animation to settle before measuring rather than catching it
-  // mid-flight.
-  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(110);
+  // Focus is a state cue, not a layout jump. The same compact row stays in
+  // place until the editor actually becomes multiline.
+  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
   const focusedEditorBox = await page.locator('#chatComposerRoot').boundingBox();
-  expect(focusedEditorBox?.width).toBeGreaterThanOrEqual((focusedBox?.width ?? 0) - 20);
+  /* The focused state restores the reasoning control, so the editor is
+     intentionally narrower than the outer pill while every control remains
+     on the same row. */
+  expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(140);
+  expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
+  expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(66);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 
   await page.evaluate(() => {

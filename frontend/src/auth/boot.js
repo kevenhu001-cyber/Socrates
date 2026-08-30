@@ -82,7 +82,11 @@ export async function authBoot(){
     window.showGate&&window.showGate();
     window.__resetToken=resetToken;
     window.showAuthView&&window.showAuthView("authResetPasswordView");
-    document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
+    document.querySelectorAll(".auth-tab").forEach(function(t){
+      t.classList.remove("active");
+      t.setAttribute("aria-selected","false");
+      t.setAttribute("tabindex","-1");
+    });
     /* Prefill the hidden email field by asking the server which
        account this token belongs to. The hidden field exists so
        password managers + screen readers see a username on the same

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('light conversation home has a warm readable palette and balanced composer position', async ({ page }) => {
+test('light conversation home has a neutral readable palette and balanced composer position', async ({ page }) => {
   const consoleErrors = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -58,7 +58,7 @@ test('light conversation home has a warm readable palette and balanced composer 
   expect(geometry.ideas?.top ?? 0).toBeGreaterThan(geometry.composer?.bottom ?? 0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
-  expect(luminance(geometry.composerBackground)).toBeGreaterThan(luminance(geometry.pageBackground));
+  expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
 
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
@@ -87,10 +87,11 @@ test('light conversation home has a warm readable palette and balanced composer 
   await expect(page.locator('#topicInputWrap')).toBeVisible();
   await expect(page.locator('.home-ideas')).toBeVisible();
   const mobileComposer = await page.locator('#topicInputWrap').boundingBox();
-  expect(mobileComposer?.y ?? 0).toBeGreaterThan(690);
-  /* This spec intentionally resizes a focused desktop page into mobile.
-     Chromium can retain up to one safe-area gutter of focus scroll; the
-     fresh-mobile reference spec below owns the exact 12px bottom margin. */
-  expect(mobileComposer?.bottom ?? 844).toBeLessThanOrEqual(844);
+  /* The mobile empty state is a centered optical group rather than a fixed
+     bottom sheet: keep the composer comfortably below the greeting and
+     above the starter ideas. */
+  expect(mobileComposer?.y ?? 0).toBeGreaterThan(300);
+  expect(mobileComposer?.y ?? 844).toBeLessThan(520);
+  expect(mobileComposer?.bottom ?? 844).toBeLessThanOrEqual(520);
   await page.screenshot({ path: '/tmp/socrates-landing-light-mobile.png', fullPage: true });
 });

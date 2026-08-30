@@ -185,9 +185,9 @@ function normalizeFunction(spec) {
 
 /* ECharts ignores CSS variables read at runtime, so we pass concrete HSL
  * strings. The chart is re-rendered when the user toggles the theme
- * (see _watchTheme). Keep `Inter` (loaded from Google Fonts) as the
- * authoritative font family — system-ui is a fallback only if Inter is
- * unavailable, never the default. */
+ * (see _watchTheme). Keep the bundled Plus Jakarta Sans face as the
+ * authoritative font family — system-ui is a fallback only if the
+ * bundled face is unavailable, never the default. */
 /* P_viz-google-fonts — Chinese glyphs resolve to the bundled Noto Sans SC
    rather than an OS-dependent fallback. Keep Plus Jakarta Sans first for
    Latin/numerals. */

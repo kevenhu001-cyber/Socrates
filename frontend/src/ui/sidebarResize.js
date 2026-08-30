@@ -11,7 +11,7 @@ import { toggleSidebar } from '../sidebar/index.js';
 
 const SIDEBAR_MIN_PX = 200;
 const SIDEBAR_MAX_PX = 480;
-const SIDEBAR_DEFAULT_PX = 288;   /* default ≈ 18rem */
+const SIDEBAR_DEFAULT_PX = 260;   /* ChatGPT-style desktop shell */
 const STORAGE_KEY = "socrates-sidebar-width";
 
 let sidebarWidthPx = SIDEBAR_DEFAULT_PX;

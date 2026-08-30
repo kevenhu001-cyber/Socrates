@@ -318,7 +318,7 @@ function labelFor(key, fallback) {
 function buildButton(suggestion, surface) {
   var btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "home-idea suggestion-chip suggestion-enter";
+  btn.className = (surface === "topic" ? "home-idea " : "") + "suggestion-chip suggestion-enter";
   btn.setAttribute("data-home-prompt", suggestion.prompt || "");
   btn.setAttribute("data-surface", surface);
   btn.setAttribute("aria-label", labelFor("home.idea.label", "Suggestion"));

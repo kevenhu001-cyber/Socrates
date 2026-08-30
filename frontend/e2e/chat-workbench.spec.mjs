@@ -70,18 +70,24 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
       userBackground: userStyle?.backgroundColor,
       assistantBackground: assistantStyle?.backgroundColor,
       assistantFontSize: Math.round(parseFloat(assistantStyle?.fontSize || '0')),
+      fontScale: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale')) || 1,
       assistantLineHeight: Math.round(parseFloat(assistantStyle?.lineHeight || '0')),
       toolbarHeight: Math.round(toolbar?.getBoundingClientRect().height || 0),
     };
   });
-  expect(messageLayout.contentMax).toBe('820px');
+  /* The canonical reading column is 768px; CSS preserves the calc() token
+     so the user width scale can adjust it without another test rewrite. */
+  expect(messageLayout.contentMax).toContain('768px');
   expect(messageLayout.rowWidth).toBeLessThanOrEqual(822);
   expect(messageLayout.userWidth).toBeLessThan(messageLayout.rowWidth);
   expect(Math.abs(messageLayout.userRightGap)).toBeLessThanOrEqual(1);
   expect(messageLayout.userRadius).toBe(15);
   expect(messageLayout.userBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(messageLayout.assistantBackground).toBe('rgba(0, 0, 0, 0)');
-  expect(messageLayout.assistantFontSize).toBe(15);
+  /* The display preference intentionally ships at 1.125×, so the 15px
+     workbench base renders as 17px. Keep the assertion tied to that token
+     instead of freezing the test to one preference value. */
+  expect(messageLayout.assistantFontSize).toBe(Math.round(15 * messageLayout.fontScale));
   expect(messageLayout.assistantLineHeight).toBeGreaterThanOrEqual(24);
   expect(messageLayout.toolbarHeight).toBeLessThanOrEqual(28);
 });
@@ -125,10 +131,10 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
   /* Conversation and landing now share the same compact desktop shell. */
-  expect(composed.wrapRadius).toBe(16);
+  expect(composed.wrapRadius).toBe(26);
   expect(composed.wrapBorder).not.toBe('0px');
   expect(composed.sendSize).toBe(30);
-  expect(composed.attachSize).toBe(28);
+  expect(composed.attachSize).toBe(44);
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
@@ -193,7 +199,7 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(mobileComposer.focusedHeight).toBeGreaterThanOrEqual(initial.height + 24);
   expect(mobileComposer.fontSize).toBe(16);
   expect(mobileComposer.sendSize).toBe(36);
-  expect(mobileComposer.attachSize).toBe(36);
+  expect(mobileComposer.attachSize).toBe(44);
   expect(mobileComposer.activeEditor).toBe(true);
 
   await editor.fill('Send this single line');

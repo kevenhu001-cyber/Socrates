@@ -112,28 +112,34 @@ function ProfileModal() {
 
           <div className="profile-row">
             <span className="profile-row-label">{i18n('profile.language', 'Language')}</span>
-            <div className="profile-lang-toggle" id="profileLangToggle">
-              <span
+            <div className="profile-lang-toggle" id="profileLangToggle" role="group" aria-label={i18n('profile.language', 'Language')}>
+              <button
+                type="button"
                 className={`profile-lang-option${snap.currentLang === 'en' ? ' active' : ''}`}
                 id="profileLangEn"
+                aria-pressed={snap.currentLang === 'en'}
                 onClick={() => dispatch.setLang('en')}
               >
                 English
-              </span>
-              <span
+              </button>
+              <button
+                type="button"
                 className={`profile-lang-option${snap.currentLang === 'zh' ? ' active' : ''}`}
                 id="profileLangZh"
+                aria-pressed={snap.currentLang === 'zh'}
                 onClick={() => dispatch.setLang('zh')}
               >
                 中文
-              </span>
+              </button>
             </div>
           </div>
 
           <div className="profile-toggle-desc">{i18n('profile.webSearchDesc', 'Enable web search to include real-time results in questions.')}</div>
-          <div
+          <button
+            type="button"
             className="profile-toggle"
             id="profileWebSearchToggle"
+            aria-pressed={snap.webSearchOn}
             onClick={() => dispatch.toggleWebSearch()}
           >
             <span className="profile-toggle-label">{i18n('profile.webSearch', 'Web search')}</span>
@@ -143,7 +149,7 @@ function ProfileModal() {
             >
               <div className="stg-toggle-knob" />
             </div>
-          </div>
+          </button>
 
           <div className="profile-instructions">
             <label className="profile-instructions-label" htmlFor="profileInstResponse">

@@ -196,6 +196,25 @@ function localT(key) {
   return fallback[key] || key;
 }
 
+/* Keep the first-visit banner visible without covering the auth form.  The
+ * auth gate is a scroll container, so placing the banner in its flow lets a
+ * visitor finish the sign-in form and then review consent below it.  Once the
+ * app shell is active, move it back to body so it returns to the compact
+ * fixed bottom treatment used by the product shell. */
+export function syncCookieConsentPlacement(authVisible) {
+  if (typeof document === 'undefined' || !document.body) return;
+  var banner = document.getElementById('socratesCookieConsent');
+  if (!banner) return;
+  var gate = document.getElementById('authGate');
+  if (authVisible && gate) {
+    gate.appendChild(banner);
+    banner.classList.add('socrates-cookie-consent--auth');
+  } else {
+    document.body.appendChild(banner);
+    banner.classList.remove('socrates-cookie-consent--auth');
+  }
+}
+
 export function initCookieConsent(options) {
   options = options || {};
   if (typeof document === 'undefined') return { shown: false };
@@ -266,6 +285,9 @@ export function initCookieConsent(options) {
   banner.appendChild(actions);
   banner.appendChild(link);
   document.body.appendChild(banner);
+  var gate = document.getElementById('authGate');
+  syncCookieConsentPlacement(!!(gate && !gate.classList.contains('hidden') &&
+    document.documentElement.dataset.bootState === 'auth'));
   return { shown: true };
 }
 

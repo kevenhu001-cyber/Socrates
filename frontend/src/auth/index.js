@@ -13,6 +13,7 @@
 
 import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
+import { syncCookieConsentPlacement } from '../cookieConsent.js';
 
 function isEmbeddedNativeWebView(){
   try{
@@ -30,6 +31,7 @@ export function hideGate(){
      in <head> take over. From this point on, showGate()/hideGate()
      are the single source of truth for which view is on top. */
   try{document.documentElement.dataset.bootState="app"}catch(_){}
+  syncCookieConsentPlacement(false);
 }
 
 export function showGate(){
@@ -38,6 +40,7 @@ export function showGate(){
   try{document.documentElement.dataset.bootState="auth"}catch(_){}
   var g=document.getElementById("authGate");if(g)g.classList.remove("hidden");
   var s=document.getElementById("appShell");if(s)s.classList.add("hidden");
+  syncCookieConsentPlacement(true);
   /* A normal browser reaches the auth gate during first paint and during
    * local login flows.  Only tell the native shell that its cookie expired
    * when this is actually a WebView hand-off; otherwise a regular desktop
@@ -56,8 +59,39 @@ export function showAuthSignin(){switchAuthTab("signin")}
 export function showAuthRegister(){switchAuthTab("register")}
 
 export function switchAuthTab(tab){
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===tab)});
+  document.querySelectorAll(".auth-tab").forEach(function(t){
+    var active=t.getAttribute("data-tab")===tab;
+    t.classList.toggle("active",active);
+    t.setAttribute("aria-selected",active?"true":"false");
+    t.setAttribute("tabindex",active?"0":"-1");
+  });
   showAuthView(tab==="signin"?"authSigninView":"authRegisterView");
+}
+
+/* Roving-tab keyboard behavior for the auth tablist. Kept as a public
+ * bridge action so the declarative event map and the runtime window surface
+ * share one implementation. */
+export function focusAuthTab(el,e){
+  if(!e||["ArrowLeft","ArrowUp","ArrowRight","ArrowDown","Home","End"].indexOf(e.key)===-1)return;
+  var tabs=Array.from(document.querySelectorAll(".auth-tab"));
+  var current=tabs.indexOf(el);
+  if(current<0||!tabs.length)return;
+  var next=current;
+  if(e.key==="Home")next=0;
+  else if(e.key==="End")next=tabs.length-1;
+  else if(e.key==="ArrowLeft"||e.key==="ArrowUp")next=(current-1+tabs.length)%tabs.length;
+  else if(e.key==="ArrowRight"||e.key==="ArrowDown")next=(current+1)%tabs.length;
+  e.preventDefault();
+  tabs[next].focus();
+  switchAuthTab(tabs[next].getAttribute("data-tab"));
+}
+
+function clearAuthTabSelection(){
+  document.querySelectorAll(".auth-tab").forEach(function(t){
+    t.classList.remove("active");
+    t.setAttribute("aria-selected","false");
+    t.setAttribute("tabindex","-1");
+  });
 }
 
 export function setAuthError(viewId,msg){
@@ -70,7 +104,7 @@ export function setAuthError(viewId,msg){
 export function showAuthForgotPassword(){
   document.getElementById("authForgotEmail").value=document.getElementById("authSigninEmail").value;
   showAuthView("authForgotPasswordView");
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
+  clearAuthTabSelection();
 }
 
 export function showAuthCodeLogin(){
@@ -81,7 +115,7 @@ export function showAuthCodeLogin(){
   document.getElementById("authCodeResendWrap").classList.add("hidden");
   document.getElementById("authCodeError").textContent="";
   showAuthView("authCodeLoginView");
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
+  clearAuthTabSelection();
 }
 
 /* ── Post-auth hydration ──
@@ -271,7 +305,7 @@ export async function submitAuthRegister(){
     var resendEl=document.getElementById("authResendEmail");
     if(resendEl)resendEl.value=email;
     showAuthView("authVerifySentView");
-    document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
+    clearAuthTabSelection();
   }catch(e){
     setAuthError("authRegisterError",e.status===409?"That email is already registered. Try signing in.":e.message);
   }finally{
@@ -300,7 +334,7 @@ export async function resendVerification(){
 export async function submitAuthVerify(token){
   /* Show the "verifying…" state immediately, while we hit the API. */
   showAuthView("authVerifiedView");
-  document.querySelectorAll(".auth-tab").forEach(function(t){t.classList.remove("active")});
+  clearAuthTabSelection();
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/verify?token="+encodeURIComponent(token));
