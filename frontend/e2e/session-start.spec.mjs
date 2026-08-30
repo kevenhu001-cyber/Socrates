@@ -100,9 +100,26 @@ for (const [name, viewport] of [
     const before = await composerSignature(page, '#topicInputWrap');
     await topicEditor.press('Enter');
     await expect(page.locator('#chatView')).toBeVisible();
+    await expect(page.locator('#msgList .msg.assistant .msg-body').first()).toBeVisible();
     const after = await composerSignature(page, '#chatInputWrap');
 
-    expect(after).toEqual(before);
+    /* Width-align: the in-conversation composer now spans the transcript's
+       reading column instead of the landing composer's 620px cap. The skin
+       contract therefore compares the shared shell properties (height,
+       surface, border, radius) — every child rect shifts with the wider
+       wrap — and the freed width is asserted directly below: the composer's
+       edges line up with the message column. */
+    const skinOf = ({ height, background, border, radius }) => ({ height, background, border, radius });
+    expect(skinOf(after)).toEqual(skinOf(before));
+    const widths = await page.evaluate(() => {
+      const wrap = document.querySelector('#chatInputWrap');
+      const body = document.querySelector('#msgList .msg.assistant .msg-body');
+      return {
+        composer: Math.round(wrap.getBoundingClientRect().width),
+        text: Math.round(body.getBoundingClientRect().width),
+      };
+    });
+    expect(Math.abs(widths.composer - widths.text)).toBeLessThanOrEqual(1);
     await expect(page.locator('#chatComposerRoot .rich-composer-editor'))
       .toHaveAttribute('aria-label', 'How can I help you today?');
   });

@@ -4648,6 +4648,16 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    `:first-child` rules keep matching exactly as they did when the whole answer
    was one HTML string. */
 .tool-run-prose{display:contents}
+/* P_stream-seam — during a live turn the settled prefix and the growing tail
+   are separate `display:contents` wrappers, so the settled prefix's last
+   paragraph matches `p:last-child` and its bottom margin collapses to 0.
+   The gap to the paragraph still being typed therefore read ~0 while the
+   finished text below the same cursor read .72em/8px — and every paragraph
+   that crossed the seam shifted all text above it as its margin came back.
+   Pin the seam paragraph to the same bottom margin a settled paragraph uses
+   in each mode, so spacing is identical before, during, and after streaming. */
+.msg .msg-body .tool-run-prose.is-settled:not(:empty)>p:last-child{margin-bottom:8px}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg .msg-body .tool-run-prose.is-settled:not(:empty)>p:last-child{margin-bottom:.72em}
 .tool-run-group{
   margin:8px 0 4px;
   border:0;
@@ -7912,7 +7922,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   color:hsl(var(--workbench-text));
   background:hsl(var(--workbench-surface));
   box-shadow:var(--workbench-shadow);
-  transition:width var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease);
+  /* No width in the transition list: the composer's width is the
+     transcript's reading column and only changes when the view swaps
+     (landing → chat), where a 0.34s width animation read as the bar
+     drifting after the first message was sent. Height/padding/gap still
+     glide for the focus expansion. */
+  transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease);
 }
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused{
   border-color:hsl(var(--workbench-text-faint));
@@ -8619,7 +8634,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
   min-height:52px;
   padding:14px 16px 4px;
-  font-size:14.5px;
+  /* Font-size must match the final-authority rule below (line ~8842),
+     which is scaled by --app-font-scale and wins the unfocused cascade.
+     A fixed 14.5px here made focus SHRINK the placeholder / typed text
+     from 14.5×scale to 14.5px whenever the user raised the text-size
+     setting above default. */
+  font-size:calc(14.5px * var(--app-font-scale,1));
   line-height:22px;
 }
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .chat-input-footer .footer-left-group,
@@ -8836,7 +8856,20 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-view{max-width:var(--conversation-content-width)}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused,
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{width:min(calc(100% - 32px),var(--conversation-composer-width));max-width:var(--conversation-composer-width);border-color:hsl(var(--cowork-line));color:hsl(var(--cowork-text));background:hsl(var(--cowork-surface))}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{
+  /* Width-align — the composer spans the same column as the message
+     text above it. #msgList centers a --conversation-content-width
+     reading column and .chat-view caps at that same width with no
+     horizontal bar padding in this mode, so min(100%, column) makes
+     the composer's edges line up with the text edges exactly. The
+     old min(calc(100% - 32px), 620px) cap left the composer 140px
+     narrower than the transcript. */
+  width:min(100%,var(--conversation-content-width));
+  max-width:var(--conversation-content-width);
+  border-color:hsl(var(--cowork-line));
+  color:hsl(var(--cowork-text));
+  background:hsl(var(--cowork-surface));
+}
 [data-mode=light] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap{box-shadow:0 1px 2px hsl(var(--always-black)/.04),0 10px 30px hsl(36 20% 30%/.07)}
 [data-mode=light] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused{border-color:hsl(var(--accent-000)/.65);box-shadow:0 0 0 3px hsl(var(--accent-000)/.1),0 12px 32px hsl(36 20% 30%/.08)}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap,
@@ -8851,6 +8884,13 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 @media(max-width:768px){
   .topic-title.greeting{font-size:calc(34px * var(--app-font-scale,1))}
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList{padding-inline:16px}
+  /* Mobile composer font is pinned to 16px in every focus state (iOS
+     zoom-on-focus floor + no size change when the user taps the field).
+     Without this tail rule the unscaled 16px mid-file rules lose to the
+     final-authority scaled calc above, so blur/focus flip the size. */
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap .rich-composer[data-surface="chat"] .tiptap,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused .rich-composer[data-surface="chat"] .tiptap,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline .rich-composer[data-surface="chat"] .tiptap{font-size:16px;line-height:24px}
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-focused,
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{width:100%;max-width:none}
