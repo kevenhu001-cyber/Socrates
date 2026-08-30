@@ -48,7 +48,7 @@
   } catch (_) { /* not in Capacitor — fall through */ }
 })();
 </script>
-<!-- P_perf-self-host — fonts (Plus Jakarta Sans/Newsreader/Noto Sans SC),
+<!-- P_perf-self-host — fonts (Inter/Newsreader/Noto Sans SC),
      KaTeX CSS, marked,
      DOMPurify, KaTeX, highlight.js, and fuse.js are bundled by Vite from
      npm (see src/vendor/init.js); mermaid / echarts / plotly are dynamic
@@ -483,10 +483,10 @@
       <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat" data-action="toggleAppMode" data-action-guard="appMode:chat:neq">聊天</button>
       <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor" data-action="toggleAppMode" data-action-guard="appMode:tutor:neq">工作</button>
     </div>
-    <!-- P_mobile-topbar — mobile-only centered mode switcher. The desktop
-         segmented pill (#modeSegmentedTop) is hidden under 640px, so this
-         compact "Chat ˅" dropdown gives touch users the 对话/导师 switch
-         that the pill provided on desktop. Toggle + label sync live in
+    <!-- P_mobile-topbar — compatibility mode switcher kept mounted for
+         narrow layouts and accessibility. The final compact shell uses the
+         two-tab #modeSegmentedTop pill on phones as well; this dropdown still
+         remains wired for fallback states. Toggle + label sync live in
          src/ui/mobileModeSwitch.js. -->
     <div class="mobile-mode" id="mobileMode">
       <button type="button" class="mobile-mode-trigger" id="mobileModeTrigger" aria-haspopup="menu" aria-expanded="false" data-action="toggleMobileModeMenu">
@@ -518,13 +518,14 @@
            circle). Hidden on desktop. -->
       <button type="button" class="mobile-incognito-btn" id="mobileIncognitoBtn" data-action="toggleIncognito" aria-pressed="false" aria-label="Incognito chat" title="Incognito chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <!-- P_incognito-icon — domino / bandit mask: lens-shaped body
-               with two eye holes. Reads unambiguously as "incognito /
-               hidden identity" at 16 px, where hat silhouettes compete
-               with construction-helmet and bowler shapes. -->
-          <path d="M3 12c0-1.8 4-3.2 9-3.2s9 1.4 9 3.2c0 1.8-4 3.2-9 3.2s-9-1.4-9-3.2z"/>
-          <circle cx="8.5" cy="12" r="0.9" fill="currentColor" stroke="none"/>
-          <circle cx="15.5" cy="12" r="0.9" fill="currentColor" stroke="none"/>
+          <!-- P_incognito-icon — an interrupted circular mark that stays
+               legible at the compact mobile control size. -->
+          <path d="M7.2 4.8A8 8 0 0 1 19 9.6"/>
+          <path d="M19.2 14.4A8 8 0 0 1 7.5 19.3"/>
+          <path d="M4.7 15.6A8 8 0 0 1 5 8.1"/>
+          <path d="M5 8.1 4 4.8l3.3.8"/>
+          <path d="m19 9.6 1.2 3.2-3.4-.5"/>
+          <path d="m7.5 19.3-3.4-.1 1.7-2.9"/>
         </svg>
       </button>
       <div class="chat-model-wrap hidden" id="chatModelWrap">

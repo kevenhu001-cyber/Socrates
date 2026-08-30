@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ page }) => {
+test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -28,7 +28,7 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
   });
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('今天有什么可以帮你的');
-  expect(zhState.fontFamily.startsWith('"Plus Jakarta Sans"')).toBe(true);
+  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
   expect(zhState.fontFamily).toContain('Noto Sans SC');
   expect(zhState.fontFamily).not.toContain('Microsoft YaHei');
 
@@ -39,7 +39,7 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';
   });
-  expect(enFont).toContain('Plus Jakarta Sans');
+  expect(enFont).toContain('Inter');
 });
 
 test('landing greeting has no leading logo and keeps the western face in Chinese UI', async ({ page }) => {
@@ -61,7 +61,7 @@ test('landing greeting has no leading logo and keeps the western face in Chinese
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.startsWith('"Plus Jakarta Sans"')).toBe(true);
+  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
   expect(zhStyle.fontFamily).toContain('Noto Sans SC');
   expect(zhStyle.fontFamily).not.toContain('Microsoft YaHei');
   expect(zhStyle.paddingLeft).toBe('0px');
@@ -69,5 +69,5 @@ test('landing greeting has no leading logo and keeps the western face in Chinese
 
   await page.evaluate(() => window.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont.startsWith('"Plus Jakarta Sans"')).toBe(true);
+  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
 });

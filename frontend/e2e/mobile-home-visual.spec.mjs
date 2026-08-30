@@ -15,8 +15,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.waitForTimeout(350);
 
   const leftButton = page.locator('#sidebarOpenBtn');
-  /* The desktop segmented pill is replaced under 640px by the compact
-     "Chat ˅" dropdown, so that is the control to assert on here. */
+  /* ChatGPT keeps the two mode tabs visible on the compact landing surface;
+     the legacy dropdown remains mounted only for compatibility. */
   const modeTabs = page.locator('#modeSegmentedTop');
   const modeSwitch = page.locator('#mobileModeTrigger');
   const composer = page.locator('#topicInputWrap');
@@ -29,8 +29,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(page.locator('.home-ideas .home-idea')).toHaveCount(2);
   await expect(page.locator('.home-ideas .home-idea:visible')).toHaveCount(2);
   await expect(leftButton).toBeVisible();
-  await expect(modeTabs).toBeHidden();
-  await expect(modeSwitch).toBeVisible();
+  await expect(modeTabs).toBeVisible();
+  await expect(modeSwitch).toBeHidden();
   await expect(composer).toBeVisible();
 
   const geometry = await page.evaluate(() => {
@@ -41,7 +41,7 @@ test('mobile conversation home matches the compact dark reference layout', async
     return {
       left: rect('#sidebarOpenBtn'),
       right: rect('#mobileIncognitoBtn'),
-      modeSwitch: rect('#mobileModeTrigger'),
+      modeTabs: rect('#modeSegmentedTop'),
       composer: rect('#topicInputWrap'),
       ideas: rect('.home-ideas'),
       /* .main is a transparent layout box; the painted surface is
@@ -52,17 +52,17 @@ test('mobile conversation home matches the compact dark reference layout', async
     };
   });
 
-  expect(geometry.left?.width).toBe(28);
-  expect(geometry.left?.height).toBe(28);
-  expect(geometry.right?.width).toBe(28);
-  expect(geometry.modeSwitch?.width).toBeGreaterThanOrEqual(64);
-  expect(geometry.modeSwitch?.height).toBeGreaterThanOrEqual(28);
-  expect(geometry.composer?.width).toBeGreaterThanOrEqual(340);
+  expect(geometry.left?.width).toBe(44);
+  expect(geometry.left?.height).toBe(44);
+  expect(geometry.right?.width).toBe(44);
+  expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(168);
+  expect(geometry.modeTabs?.height).toBeGreaterThanOrEqual(40);
+  expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   expect(geometry.composer?.height).toBeLessThanOrEqual(132);
-  expect(geometry.ideas?.y).toBeGreaterThanOrEqual(geometry.composer?.bottom ?? 0);
-  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(620);
-  expect(geometry.composer?.y).toBeGreaterThan(300);
-  expect(geometry.composer?.y).toBeLessThan(520);
+  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(geometry.composer?.y ?? 0);
+  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(820);
+  expect(geometry.composer?.y).toBeGreaterThan(600);
+  expect(geometry.composer?.y).toBeLessThan(820);
   expect(geometry.background).toBe('rgb(0, 0, 0)');
   expect(geometry.pageToken).toBe('0 0% 0%');
 
@@ -77,10 +77,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(180);
 
-  /* The landing composer ships its two-row layout up front — input above,
-     run controls below — rather than growing into it on focus the way the
-     chat composer does. Focus must therefore keep the geometry stable and
-     leave every control reachable, which is what this asserts. */
+  /* Focus promotes the landing composer to the two-row layout shown in the
+     reference focused capture while keeping every control reachable. */
   const beforeFocus = (await composer.boundingBox())?.height ?? 0;
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);

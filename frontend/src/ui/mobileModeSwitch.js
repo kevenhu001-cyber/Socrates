@@ -1,9 +1,9 @@
 /* ui/mobileModeSwitch.js — mobile-only 对话/导师 (Chat/Tutor) switcher.
  *
- * P_mobile-topbar. The desktop segmented pill (#modeSegmentedTop) is
- * hidden under 640px, leaving touch users with no way to switch between
- * Chat and Tutor from the top bar. This module drives the compact
- * "Chat ˅" dropdown that replaces it on mobile:
+ * P_mobile-topbar. The compact segmented pill (#modeSegmentedTop) is now the
+ * primary control on both desktop and phone landing surfaces. This module
+ * keeps the legacy "Chat ˅" dropdown synchronized for fallback states and
+ * accessibility:
  *
  *   - toggleMobileModeMenu()  opens/closes the popover (#mobileModeMenu)
  *   - selectAppMode(mode)     switches mode via window.toggleAppMode()

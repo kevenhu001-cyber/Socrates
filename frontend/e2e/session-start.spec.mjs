@@ -104,13 +104,18 @@ for (const [name, viewport] of [
     const after = await composerSignature(page, '#chatInputWrap');
 
     /* Width-align: the in-conversation composer now spans the transcript's
-       reading column instead of the landing composer's 620px cap. The skin
-       contract therefore compares the shared shell properties (height,
-       surface, border, radius) — every child rect shifts with the wider
-       wrap — and the freed width is asserted directly below: the composer's
-       edges line up with the message column. */
-    const skinOf = ({ height, background, border, radius }) => ({ height, background, border, radius });
+       reading column instead of the landing composer's 620px cap. Desktop
+       keeps the same two-row shell; on mobile the landing field collapses
+       from its focused two-row state to the compact idle chat shell after
+       the first turn. */
+    const skinOf = ({ background, border, radius }) => ({ background, border, radius });
     expect(skinOf(after)).toEqual(skinOf(before));
+    if (name === 'desktop') {
+      expect(after.height).toBe(before.height);
+    } else {
+      expect(after.height).toBeLessThan(before.height);
+      expect(after.height).toBe(56);
+    }
     const widths = await page.evaluate(() => {
       const wrap = document.querySelector('#chatInputWrap');
       const body = document.querySelector('#msgList .msg.assistant .msg-body');

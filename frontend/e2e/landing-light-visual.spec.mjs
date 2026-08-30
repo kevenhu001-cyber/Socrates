@@ -87,11 +87,11 @@ test('light conversation home has a neutral readable palette and balanced compos
   await expect(page.locator('#topicInputWrap')).toBeVisible();
   await expect(page.locator('.home-ideas')).toBeVisible();
   const mobileComposer = await page.locator('#topicInputWrap').boundingBox();
-  /* The mobile empty state is a centered optical group rather than a fixed
-     bottom sheet: keep the composer comfortably below the greeting and
-     above the starter ideas. */
-  expect(mobileComposer?.y ?? 0).toBeGreaterThan(300);
-  expect(mobileComposer?.y ?? 844).toBeLessThan(520);
-  expect(mobileComposer?.bottom ?? 844).toBeLessThanOrEqual(520);
+  /* The compact empty state keeps the starter rows directly above the
+     bottom composer, with enough breathing room below the top bar. */
+  expect(mobileComposer?.y ?? 844).toBeGreaterThan(600);
+  expect(mobileComposer?.y ?? 844).toBeLessThan(820);
+  const mobileIdeas = await page.locator('.home-ideas').boundingBox();
+  expect(mobileIdeas?.bottom ?? 0).toBeLessThanOrEqual(mobileComposer?.y ?? 0);
   await page.screenshot({ path: '/tmp/socrates-landing-light-mobile.png', fullPage: true });
 });
