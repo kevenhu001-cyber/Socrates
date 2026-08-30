@@ -189,8 +189,9 @@ function normalizeFunction(spec) {
  * authoritative font family — system-ui is a fallback only if Inter is
  * unavailable, never the default. */
 /* P_viz-google-fonts — Chinese glyphs resolve to the bundled Noto Sans SC
-   rather than an OS-dependent fallback. Keep Inter first for Latin/numerals. */
-var VIZ_FONT_FAMILY = "'Inter', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
+   rather than an OS-dependent fallback. Keep Plus Jakarta Sans first for
+   Latin/numerals. */
+var VIZ_FONT_FAMILY = "'Plus Jakarta Sans', 'Noto Sans SC', 'Helvetica Neue', Arial, system-ui, sans-serif";
 
 function labelLength(value) {
   return Array.from(String(value == null ? '' : value)).length;

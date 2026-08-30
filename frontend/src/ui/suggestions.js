@@ -153,10 +153,10 @@ const FOLLOW_UP_TEMPLATES = {
   ],
 };
 
-/* Per-session picker offset so the same two suggestions don't repeat
-   back-to-back. The Math.random call below is OK here because this
-   module is loaded once per session and the offset is captured
-   immediately. */
+/* Per-session picker offset so a fresh session doesn't always show the same
+   two suggestions. Captured once at module load and then treated as
+   immutable — `pickFromLibrary` reads it but never advances it, so repeated
+   renders within a session are stable (no chip-text churn / flicker). */
 let _pickerOffset = 0;
 try {
   _pickerOffset = Math.floor(Math.random() * PROMPT_LIBRARY.length);
@@ -193,21 +193,22 @@ function deriveFromConversation(messages, lang) {
   return templates[idx];
 }
 
-/* Pick two library prompts at a session-stable offset, avoiding the
-   one we just used. Returns an array of {id, prompt, icon} objects. */
-function pickFromLibrary(lang, excludeIds) {
-  excludeIds = excludeIds || [];
+/* Pick two library prompts at the session-stable offset. This is a PURE
+   function of (lang, _pickerOffset): calling it twice in the same session
+   returns the same two prompts. The previous implementation advanced
+   `_pickerOffset` on every call as a side effect, so each render produced a
+   different pair — which changed the render signature and replayed the
+   fade-in animation on every chat-runtime event (the "疯狂刷新" flicker).
+   Keeping it pure means the row is stable for the life of the session. */
+function pickFromLibrary(lang) {
   var n = PROMPT_LIBRARY.length;
-  var first = PROMPT_LIBRARY[(_pickerOffset) % n];
-  var secondIdx = (_pickerOffset + 3 + (excludeIds.length ? 1 : 0)) % n;
+  var firstIdx = _pickerOffset % n;
+  var first = PROMPT_LIBRARY[firstIdx];
+  /* Step by a coprime-ish stride so the two chips are never adjacent and
+     never identical, without needing a mutation loop. */
+  var secondIdx = (firstIdx + 3) % n;
+  if (secondIdx === firstIdx) secondIdx = (firstIdx + 1) % n;
   var second = PROMPT_LIBRARY[secondIdx];
-  while (second && second.id === first.id) {
-    secondIdx = (secondIdx + 1) % n;
-    second = PROMPT_LIBRARY[secondIdx];
-  }
-  if (typeof _pickerOffset === "number") {
-    _pickerOffset = (_pickerOffset + 2) % n;
-  }
   return [
     { id: first.id, prompt: (first[lang] || first.en), icon: first.icon },
     { id: second.id, prompt: (second[lang] || second.en), icon: second.icon },
@@ -215,7 +216,9 @@ function pickFromLibrary(lang, excludeIds) {
 }
 
 /* Public selector. Returns an array of two suggestions, derived when
-   possible and otherwise randomly chosen from the library. */
+   possible and otherwise picked from the library at the session-stable
+   offset. The result is stable across calls within a session (same lang,
+   same conversation state) so repeated renders never churn the chip text. */
 export function pickSuggestions(messages, opts) {
   opts = opts || {};
   var lang = getLang();
@@ -223,7 +226,7 @@ export function pickSuggestions(messages, opts) {
   if (contextual) {
     return [
       { id: "follow-up", prompt: contextual, icon: "follow" },
-      ...pickFromLibrary(lang),
+      pickFromLibrary(lang)[0],
     ].slice(0, 2);
   }
   return pickFromLibrary(lang);
@@ -249,23 +252,48 @@ function chatSurfaceShouldRender(messages) {
 }
 
 /* SVG glyph cache so the renderer doesn't rebuild the same icon
-   string on every render. Keys are icon ids, values are SVG markup. */
+   string on every render. Keys are icon ids, values are SVG markup.
+
+   All glyphs share one drawing system so the row reads as a set:
+   • 24×24 viewBox, artwork inset to a ~16px optical box (x/y 4–20).
+   • stroke-only, 1.6px, round caps + round joins, no fills except
+     tiny dot accents rendered with fill="currentColor".
+   • coordinates snapped to 0.5 steps where practical so the 1.6px
+     stroke stays crisp instead of straddling a sub-pixel boundary.
+   Redrawn 2026-08-30 for consistent weight and geometry. */
+var _SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+function _glyph(body) { return _SVG_OPEN + body + '</svg>'; }
 var ICON_CACHE = {
-  briefing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v13H6a2 2 0 0 1-2-2z"/><path d="M16 8h2.5A1.5 1.5 0 0 1 20 9.5v7a2 2 0 0 1-2 2h-2"/><path d="M7 8h6M7 11h6M7 14h4"/></svg>',
-  inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 13.5 6 6.2A1.5 1.5 0 0 1 7.4 5.2h9.2a1.5 1.5 0 0 1 1.4 1L20.5 13.5"/><path d="M3.5 13.5h4l1.2 2.2h6.6l1.2-2.2h4v3.9a1.6 1.6 0 0 1-1.6 1.6H5.1a1.6 1.6 0 0 1-1.6-1.6z"/></svg>',
-  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9l4 4v12a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 20V5.5A1.5 1.5 0 0 1 6 4z"/><path d="M14 4v4h4"/><path d="M9 12h7M9 15h7M9 18h5"/></svg>',
-  code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 8-5 4 5 4M15 8l5 4-5 4"/></svg>',
-  database: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/></svg>',
-  regex: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 4v16M7 8l-3 4 3 4M12 16h6"/></svg>',
-  teach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.5 12 5l9 4.5L12 14Z"/><path d="M7 11.5v4.2c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.2"/></svg>',
-  quiz: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"/><circle cx="12" cy="16" r=".7" fill="currentColor"/></svg>',
-  compare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h7v12H4z"/><path d="M13 6h7v12h-7z"/><path d="M11 12h2"/></svg>',
-  summarize: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14M5 10h14M5 15h9"/></svg>',
-  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v6M12 14v6M4 12h6M14 12h6M6.3 6.3l4.2 4.2M13.5 13.5l4.2 4.2M17.7 6.3l-4.2 4.2M10.5 13.5l-4.2 4.2"/></svg>',
-  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 20 4-1 11-11-3-3L5 16Z"/><path d="m14 6 3 3"/></svg>',
-  globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 4 5.5 4 8.5s-1.5 6-4 8.5M12 3.5c-2.5 2.5-4 5.5-4 8.5s1.5 6 4 8.5"/></svg>',
-  scale: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 8h14M5 8l-2 6h4zM19 8l-2 6h4z"/></svg>',
-  follow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>',
+  /* briefing — a briefcase: body + lid + handle. */
+  briefing: _glyph('<rect x="4" y="8" width="16" height="11" rx="2"/><path d="M9 8V6.5A1.5 1.5 0 0 1 10.5 5h3A1.5 1.5 0 0 1 15 6.5V8"/><path d="M4 13h16"/>'),
+  /* inbox — a tray with the classic notch where mail drops in. */
+  inbox: _glyph('<path d="M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M4 13h4l1.5 2.5h5L16 13h4"/>'),
+  /* notes — a document with a folded corner and text lines. */
+  notes: _glyph('<path d="M6 4h8l4 4v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 4v4h4"/><path d="M8.5 12.5h7M8.5 15.5h7M8.5 18h4.5"/>'),
+  /* code — angle brackets with a slash, the universal "code" glyph. */
+  code: _glyph('<path d="m8.5 8-4 4 4 4"/><path d="m15.5 8 4 4-4 4"/><path d="M13.5 6.5 10.5 17.5"/>'),
+  /* database — a cylinder with two seams. */
+  database: _glyph('<ellipse cx="12" cy="6" rx="6.5" ry="2.5"/><path d="M5.5 6v6c0 1.38 2.91 2.5 6.5 2.5s6.5-1.12 6.5-2.5V6"/><path d="M5.5 12v6c0 1.38 2.91 2.5 6.5 2.5s6.5-1.12 6.5-2.5v-6"/>'),
+  /* regex — .* wildcard over an asterisk and a caret anchor. */
+  regex: _glyph('<path d="M12 5v7"/><path d="m9 6.5 6 4M15 6.5l-6 4"/><path d="M6.5 17.5h4M14 17.5h3.5"/><circle cx="12" cy="17.5" r=".7" fill="currentColor"/>'),
+  /* teach — a graduation cap with a tassel. */
+  teach: _glyph('<path d="M12 5 3.5 9 12 13l8.5-4z"/><path d="M7 11v4c0 1.3 2.24 2.4 5 2.4s5-1.1 5-2.4v-4"/><path d="M20.5 9v4"/>'),
+  /* quiz — a question mark inside a circle. */
+  quiz: _glyph('<circle cx="12" cy="12" r="8"/><path d="M9.8 9.6a2.2 2.2 0 0 1 4.3.6c0 1.5-2.1 1.9-2.1 3.4"/><circle cx="12" cy="16.3" r=".7" fill="currentColor"/>'),
+  /* compare — two panels weighed against each other. */
+  compare: _glyph('<rect x="4" y="6" width="6.5" height="12" rx="1"/><rect x="13.5" y="6" width="6.5" height="12" rx="1"/><path d="M10.5 12h3"/>'),
+  /* summarize — descending text lines (a condensed list). */
+  summarize: _glyph('<path d="M5 6h14M5 10h14M5 14h10M5 18h6"/>'),
+  /* spark — a four-point sparkle with two small accent stars. */
+  spark: _glyph('<path d="M11 4c0 3.3-1.7 5-5 5 3.3 0 5 1.7 5 5 0-3.3 1.7-5 5-5-3.3 0-5-1.7-5-5z"/><path d="M17.5 13.5c0 1.4-.6 2-2 2 1.4 0 2 .6 2 2 0-1.4.6-2 2-2-1.4 0-2-.6-2-2z"/>'),
+  /* pen — a slanted pen over its nib, drawing a stroke. */
+  pen: _glyph('<path d="m5 19 1-3.5L15.5 6l3 3L9 18.5z"/><path d="m13.5 8 3 3"/><path d="M5 19l1.2-1.2"/>'),
+  /* globe — a sphere with an equator and a meridian. */
+  globe: _glyph('<circle cx="12" cy="12" r="8"/><path d="M4 12h16"/><path d="M12 4c2.2 2.1 3.4 5 3.4 8s-1.2 5.9-3.4 8c-2.2-2.1-3.4-5-3.4-8s1.2-5.9 3.4-8z"/>'),
+  /* scale — a balance: center post, beam, and two hanging pans. */
+  scale: _glyph('<path d="M12 5v14"/><path d="M8.5 19h7"/><path d="M5 8h14"/><path d="M5 8l-2.2 4.2a2.6 2.6 0 0 0 4.4 0z"/><path d="M19 8l-2.2 4.2a2.6 2.6 0 0 0 4.4 0z"/>'),
+  /* follow — a forward arrow, used for contextual follow-ups. */
+  follow: _glyph('<path d="M4.5 12h13.5"/><path d="m12.5 6.5 5.5 5.5-5.5 5.5"/>'),
 };
 
 function iconMarkup(iconId) {
@@ -470,7 +498,30 @@ export function renderSuggestions(surface, messages) {
    changes. Each trigger fires renderSuggestions on both surfaces so
    the chat composer stays in sync when the user just sent the first
    message and the landing screen is about to disappear. */
-function onMessagesChanged() {
+
+/* High-frequency chat-runtime events that CANNOT change which
+   suggestions should show: they fire many times per second while a
+   reply streams in (one `stream-delta` per chunk) or while a tool run
+   ticks its status. Suggestions are gated on "is there a user turn
+   yet", which these events never flip, so re-running the render engine
+   on them only risks flicker and wastes frames. Skipping them at the
+   source is what actually kills the "疯狂刷新" during a conversation. */
+var HIGH_FREQUENCY_EVENTS = {
+  "stream-delta": true,
+  "tool-run-updated": true,
+  "stream-started": true,
+};
+
+function onMessagesChanged(event) {
+  /* Ignore the streaming firehose. `event` is the CustomEvent from
+     `socrates:chat-runtime-changed`; its detail.type tells us the
+     reason. Anything not in the high-frequency set (message-added,
+     state-synced, message-deleted, rollback, langchange, initial
+     paint with no event) proceeds to a normal re-derive. */
+  try {
+    var type = event && event.detail && event.detail.type;
+    if (type && HIGH_FREQUENCY_EVENTS[type]) return;
+  } catch (_) {}
   var state = (typeof window !== "undefined" && window.state) || null;
   var messages = state && Array.isArray(state.messages) ? state.messages : [];
   renderSuggestions("topic", []);

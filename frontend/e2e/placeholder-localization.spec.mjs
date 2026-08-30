@@ -37,7 +37,7 @@ test('zh UI localizes live with the bundled Noto Sans SC face', async ({ page })
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';
   });
-  expect(enFont).toContain('Inter');
+  expect(enFont).toContain('Plus Jakarta Sans');
 });
 
 test('landing greeting has no leading logo and Chinese uses Noto Sans SC', async ({ page }) => {
