@@ -22,12 +22,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   const composer = page.locator('#topicInputWrap');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
 
-  /* The reference keeps two lightweight suggestions directly above the
-     bottom composer. The third desktop idea remains in the DOM but is
-     intentionally hidden at this breakpoint. */
+  /* The landing surface keeps two lightweight suggestions directly above
+     the bottom composer. Chat follow-ups live in a separate container and
+     must not be counted as landing ideas. */
   await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
-  await expect(page.locator('.home-idea')).toHaveCount(3);
-  await expect(page.locator('.home-idea:visible')).toHaveCount(2);
+  await expect(page.locator('.home-ideas .home-idea')).toHaveCount(2);
+  await expect(page.locator('.home-ideas .home-idea:visible')).toHaveCount(2);
   await expect(leftButton).toBeVisible();
   await expect(modeTabs).toBeHidden();
   await expect(modeSwitch).toBeVisible();
@@ -45,8 +45,10 @@ test('mobile conversation home matches the compact dark reference layout', async
       composer: rect('#topicInputWrap'),
       ideas: rect('.home-ideas'),
       /* .main is a transparent layout box; the painted surface is
-         .main-content (the shell's page colour). */
+         .main-content (the shell's page colour). The dark workbench uses
+         the same pure-black page treatment as the reference. */
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
+      pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--cowork-page').trim(),
     };
   });
 
@@ -57,11 +59,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeSwitch?.height).toBeGreaterThanOrEqual(28);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(340);
   expect(geometry.composer?.height).toBeLessThanOrEqual(132);
-  expect(geometry.ideas?.y).toBeLessThan(geometry.composer?.y ?? 0);
-  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(geometry.composer?.y ?? 0);
-  expect(geometry.composer?.bottom).toBeGreaterThanOrEqual(816);
-  expect(geometry.composer?.bottom).toBeLessThanOrEqual(824);
+  expect(geometry.ideas?.y).toBeGreaterThanOrEqual(geometry.composer?.bottom ?? 0);
+  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(620);
+  expect(geometry.composer?.y).toBeGreaterThan(300);
+  expect(geometry.composer?.y).toBeLessThan(520);
   expect(geometry.background).toBe('rgb(0, 0, 0)');
+  expect(geometry.pageToken).toBe('0 0% 0%');
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
 
@@ -91,24 +94,28 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  await expect(menu.locator('.composer-tools-mobile-item')).toHaveCount(5);
+  await expect(menu.locator('.composer-tools-mobile-item')).toHaveCount(4);
   await expect(menu).toContainText('Camera');
   await expect(menu).toContainText('Photos');
   await expect(menu).toContainText('Files');
-  await expect(menu).toContainText('Plugins');
-  await expect(menu).toContainText('Think deeper');
+  await expect(menu).toContainText('Tools');
+  await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(4);
+  await expect(menu.locator('#composerToolsMobileMore [data-composer-action="extensiveThinking"]')).toBeHidden();
   const menuBox = await menu.boundingBox();
-  expect(menuBox?.width).toBeLessThanOrEqual(258);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(250);
+  expect(menuBox?.width).toBeLessThanOrEqual(224);
+  expect(menuBox?.width).toBeGreaterThanOrEqual(222);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 
+  await menu.getByRole('menuitem', { name: 'Tools' }).click();
+  await expect(menu.getByRole('menuitem', { name: 'Think deeper' })).toBeVisible();
   await menu.getByRole('menuitem', { name: 'Think deeper' }).click();
   await expect(menu).toBeHidden();
   await expect.poll(async () => page.evaluate(() => window.extensiveThinkingOn === true)).toBe(true);
 
   await page.locator('#topicComposerToolsBtn').click();
+  await menu.getByRole('menuitem', { name: 'Tools' }).click();
   const activeThinking = menu.getByRole('menuitem', { name: 'Think deeper' });
   await expect(activeThinking).toHaveClass(/is-active/);
-  await expect(activeThinking.locator('.composer-tools-check')).toBeVisible();
+  await expect(activeThinking.locator('.composer-tools-active-dot')).toBeVisible();
 });

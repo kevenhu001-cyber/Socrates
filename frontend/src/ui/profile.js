@@ -210,10 +210,22 @@ function toggleProfileWebSearch() {
 }
 
 function syncProfileWebSearchUI() {
+  var toggle = document.getElementById("profileWebSearchToggle");
+  if (toggle) toggle.setAttribute("aria-pressed", webSearchOn ? "true" : "false");
+  var track = document.getElementById("profileWebSearchTrack");
+  if (track) track.classList.toggle("on", !!webSearchOn);
   _publishProfileState();
 }
 
 function syncProfileLangToggle() {
+  var lang = window._currentLang || "en";
+  ["profileLangEn", "profileLangZh"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var active = id === "profileLang" + (lang === "zh" ? "Zh" : "En");
+    el.classList.toggle("active", active);
+    el.setAttribute("aria-pressed", active ? "true" : "false");
+  });
   _publishProfileState();
 }
 

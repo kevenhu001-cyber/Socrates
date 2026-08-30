@@ -190,7 +190,12 @@ function _publishSidebarNav(name) {
 export function setActiveNav(name) {
   NAV_NAMES.forEach(function (nav) {
     var button = document.querySelector('.sidebar-nav-btn[data-nav="' + nav + '"]');
-    if (button) button.classList.toggle("active", nav === name);
+    if (button) {
+      var active = nav === name;
+      button.classList.toggle("active", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    }
   });
   _publishSidebarNav(name);
 }

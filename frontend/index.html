@@ -113,9 +113,9 @@
       <span>Socrates</span>
     </div>
 
-    <div class="auth-tabs" id="authTabs">
-      <div class="auth-tab active" data-tab="signin" data-action="switchAuthTab" data-action-arg="signin">Sign in</div>
-      <div class="auth-tab" data-tab="register" data-action="switchAuthTab" data-action-arg="register">Create account</div>
+    <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access">
+      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin" data-action="switchAuthTab" data-action-arg="signin" data-action-keydown="focusAuthTab">Sign in</button>
+      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register" data-action="switchAuthTab" data-action-arg="register" data-action-keydown="focusAuthTab">Create account</button>
     </div>
 
     <div class="auth-views">
@@ -356,7 +356,7 @@
     </div>
     <div class="recents-panel" id="recentsPanel">
       <div class="recents-header">
-        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Tasks</span>
+        <span class="recents-title" data-i18n-key="sidebar.recentSessions">Recents</span>
       </div>
       <!-- P2.2 — tag filter chip row. "All" plus a few of the user's
            most-used tags. Renders inline; the active chip is highlighted. -->
@@ -615,7 +615,7 @@
                 <button type="button" class="effort-item" data-effort="low" role="option" data-action="setReasoningEffort" data-action-arg="low"><span data-i18n-key="effort.low">Low</span></button>
               </div>
             </div>
-            <button class="mobile-mic-btn" type="button" data-action="toggleSpeechInput" data-action-arg="topic" aria-label="Voice input" aria-pressed="false">
+            <button class="mobile-mic-btn" type="button" data-action="toggleSpeechInput" data-action-arg="topic" data-i18n-aria="voice.input" data-i18n-title="voice.input" aria-label="Voice input" aria-pressed="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></svg>
             </button>
             <button class="start-btn" id="startBtn" aria-label="Send" data-action="startSession">
@@ -780,7 +780,7 @@
                     </div>
                   </div>
                 </div>
-                <button class="mobile-mic-btn" type="button" data-action="toggleSpeechInput" data-action-arg="chat" aria-label="Voice input" aria-pressed="false">
+                <button class="mobile-mic-btn" type="button" data-action="toggleSpeechInput" data-action-arg="chat" data-i18n-aria="voice.input" data-i18n-title="voice.input" aria-label="Voice input" aria-pressed="false">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></svg>
                 </button>
                 <button class="send-btn" id="sendBtn" aria-label="Send" data-action="handleSendClick">
@@ -963,15 +963,15 @@
         <div class="profile-row">
           <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
           <div class="profile-lang-toggle" id="profileLangToggle">
-            <span class="profile-lang-option active" id="profileLangEn" data-action="setLang" data-action-arg="en">English</span>
-            <span class="profile-lang-option" id="profileLangZh" data-action="setLang" data-action-arg="zh">中文</span>
+            <button type="button" class="profile-lang-option active" id="profileLangEn" aria-pressed="true" data-action="setLang" data-action-arg="en">English</button>
+            <button type="button" class="profile-lang-option" id="profileLangZh" aria-pressed="false" data-action="setLang" data-action-arg="zh">中文</button>
           </div>
         </div>
         <div class="profile-toggle-desc" data-i18n-key="profile.webSearchDesc">Enable web search to include real-time results in questions.</div>
-        <div class="profile-toggle" id="profileWebSearchToggle" data-action="toggleProfileWebSearch">
+        <button type="button" class="profile-toggle" id="profileWebSearchToggle" aria-pressed="false" data-action="toggleProfileWebSearch">
           <span class="profile-toggle-label" data-i18n-key="profile.webSearch">Web search</span>
           <div class="stg-toggle-track" id="profileWebSearchTrack"><div class="stg-toggle-knob"></div></div>
-        </div>
+        </button>
         <!-- P1.3 — Custom Instructions. Two free-form textareas
              that are prepended to the system prompt on every chat
              turn. The first is "How should I respond?" (style /
@@ -1078,9 +1078,9 @@
   <div class="usage-modal" data-action="__stop">
     <div class="usage-header">
       <span class="usage-title" data-i18n-key="usage.title">Token Usage</span>
-      <span class="usage-close" data-action="closeUsageModal" tabindex="0" data-initial-focus="true" role="button" aria-label="Close">
+      <button type="button" class="usage-close" data-action="closeUsageModal" data-initial-focus="true" aria-label="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </span>
+      </button>
     </div>
     <div class="usage-body" id="usageBody">
       <div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> <span data-i18n-key="usage.loading">Loading usage data…</span></div>

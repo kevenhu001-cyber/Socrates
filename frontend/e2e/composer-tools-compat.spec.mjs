@@ -29,16 +29,19 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
 
   // All workflow items rendered with the expected data-action values.
   /* Scoped to the desktop list: the menu renders both item sets and lets CSS
-     pick one per breakpoint, so an unscoped query also returns the five
-     mobile rows. */
+     pick one per breakpoint, so an unscoped query also returns the mobile
+     rows. */
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'write', 'research', 'explore', 'deepResearch', 'analyze', 'codex', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'research', 'write', 'deepResearch', 'explore', 'analyze', 'codex', 'exam', 'skills']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(mobileActions).toEqual(['camera', 'photos', 'upload', 'skills', 'extensiveThinking']);
+  expect(mobileActions).toEqual([
+    'camera', 'photos', 'upload', 'write', 'research', 'deepResearch',
+    'explore', 'analyze', 'codex', 'exam', 'skills', 'extensiveThinking',
+  ]);
 });
 
 test('Composer tools menu opens via legacy entry point and React mirrors state', async ({ page }) => {
@@ -65,6 +68,17 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
     return s ? { isOpen: s.isOpen, mode: s.mode, triggerId: s.triggerId } : null;
   });
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
+  const desktopPrimary = menu.locator('.composer-tools-desktop-items > .composer-tools-item');
+  await expect(desktopPrimary).toHaveCount(2);
+  await expect(desktopPrimary.nth(0)).toContainText('Upload files');
+  await expect(desktopPrimary.nth(1)).toContainText('Web search');
+  const moreTools = menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle');
+  await expect(moreTools).toHaveAttribute('aria-expanded', 'false');
+  await expect(menu.locator('#composerToolsDesktopMore [data-composer-action="write"]')).toBeHidden();
+  await moreTools.click();
+  await expect(moreTools).toHaveAttribute('aria-expanded', 'true');
+  await expect(menu.locator('#composerToolsDesktopMore [data-composer-action="write"]')).toBeVisible();
+  await moreTools.click();
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,
@@ -109,7 +123,8 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   await expect(menu).not.toHaveClass(/hidden/);
 
   // Click the "write" item (closes the menu via the legacy handler).
-  await page.locator('#composerToolsMenu [data-composer-action="write"]').click();
+  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
+  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   // Re-open and click the "research" item.
@@ -120,7 +135,8 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
     }
   });
   await expect(menu).not.toHaveClass(/hidden/);
-  await page.locator('#composerToolsMenu [data-composer-action="research"]').click();
+  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
+  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="research"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   const calls = await page.evaluate(() => window.__composerCalls);
@@ -197,8 +213,8 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   expect(plusBox).not.toBeNull();
   expect(sheetBox.x).toBeGreaterThanOrEqual(8);
   expect(sheetBox.x + sheetBox.width).toBeLessThanOrEqual(382);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(250);
-  expect(sheetBox.width).toBeLessThanOrEqual(252);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(222);
+  expect(sheetBox.width).toBeLessThanOrEqual(224);
   expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(plusBox.y);
   // The open-state class still owns dismissal state, but the compact popover
   // no longer paints the full-screen bottom-sheet scrim.
@@ -221,8 +237,9 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await plus.click();
 
   const menu = page.locator('#composerToolsMenu');
-  const write = menu.locator('[data-composer-action="write"]');
+  const write = menu.locator('.composer-tools-desktop-items [data-composer-action="write"]');
   expect(await write.count()).toBe(1);
+  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
   await write.click();
 
   await expect(menu).toHaveClass(/hidden/);
@@ -242,7 +259,8 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await token.locator('.composer-extension-token-remove').click();
   await expect(editor.locator('.composer-extension-token')).toHaveCount(0);
   await plus.click();
-  await menu.locator('[data-composer-action="write"]').click();
+  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
+  await menu.locator('.composer-tools-desktop-items [data-composer-action="write"]').click();
 
   await page.evaluate(() => {
     window.state.phase = 'chat';

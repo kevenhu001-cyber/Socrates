@@ -53,8 +53,13 @@ var I18N={
     /* Composer "+" menu. The five mobile rows were briefly hardcoded to
        Chinese inside ComposerToolsMenu.tsx; the copy belongs here so both
        locales stay in sync. */
-    "composer.tools.heading":"Tools",
-    "composer.tools.headingHint":"Choose a workflow",
+    "composer.tools.heading":"Add to chat",
+    "composer.tools.headingHint":"More tools",
+    "composer.tools.more":"More tools",
+    "composer.tools.less":"Show fewer",
+    "composer.tools.mobile":"Tools",
+    "composer.tools.mobileLess":"Hide tools",
+    "composer.tools.webSearch":"Web search",
     "composer.tools.camera":"Camera",
     "composer.tools.photos":"Photos",
     "composer.tools.files":"Files",
@@ -70,7 +75,7 @@ var I18N={
     "home.idea.label":"Suggestion",
     "home.chatSuggestionsLabel":"Follow-ups",
     "sidebar.nav.new":"New",
-    "sidebar.nav.library":"Artifacts",
+    "sidebar.nav.library":"Library",
     "sidebar.nav.projects":"Projects",
     "sidebar.nav.scheduled":"Scheduled",
     "sidebar.nav.plugins":"Plugins",
@@ -129,8 +134,17 @@ var I18N={
     "sidebar.plugins.disabled":"Disabled",
     "topbar.modeChat":"Chat",
     "topbar.modeTutor":"Work",
-    "voice.soon":"Voice input coming soon",
-    "voice.toast":"Voice input coming soon",
+    "voice.input":"Voice input",
+    "voice.soon":"Voice input",
+    "voice.toast":"Voice input is unavailable",
+    "voice.listening":"Listening…",
+    "voice.processing":"Processing voice input…",
+    "voice.stop":"Stop voice input",
+    "voice.cancel":"Cancel voice input",
+    "voice.unsupported":"Voice input is not supported in this browser.",
+    "voice.permission":"Please allow microphone access to use voice input.",
+    "voice.error":"Voice input could not start. Please check microphone access.",
+    "voice.noSpeech":"No speech detected.",
     "profile.usage":"Token usage",
     "profile.usage.desc":"View daily token usage heatmap and monthly breakdown.",
     "profile.view":"View",
@@ -169,11 +183,10 @@ var I18N={
     "sidebar.recents":"Recents",
     "sidebar.mistakes":"Mistakes",
     "sidebar.searchPlaceholder":"Search chats",
-    /* P_cowork-landing — the session list heading. Was rendered by a
-       `.recents-title{font-size:0}` + `::after{content:"Tasks"}` CSS swap,
-       which left the real string in the accessibility tree while showing a
-       different one on screen. The copy lives here instead. */
-    "sidebar.recentSessions":"Tasks",
+    /* P_cowork-landing — the session list heading. Keep the visible label
+       aligned with the panel's actual contents instead of calling chat
+       history "Tasks". */
+    "sidebar.recentSessions":"Recents",
     "sidebar.new":"New",
     "sidebar.mistakeBook":"Mistake Book",
     "sidebar.all":"All",
@@ -960,8 +973,13 @@ var I18N={
     "greeting.tutor":"来一起探索吧，{name}。",
     "greeting.guest":"访客",
     /* Composer "+" menu. */
-    "composer.tools.heading":"工具",
-    "composer.tools.headingHint":"选择一个工作流",
+    "composer.tools.heading":"添加到对话",
+    "composer.tools.headingHint":"更多工具",
+    "composer.tools.more":"更多工具",
+    "composer.tools.less":"收起工具",
+    "composer.tools.mobile":"工具",
+    "composer.tools.mobileLess":"收起工具",
+    "composer.tools.webSearch":"联网搜索",
     "composer.tools.camera":"相机",
     "composer.tools.photos":"照片",
     "composer.tools.files":"文件",
@@ -975,7 +993,7 @@ var I18N={
     "home.idea.label":"建议",
     "home.chatSuggestionsLabel":"后续建议",
     "sidebar.nav.new":"新建",
-    "sidebar.nav.library":"作品库",
+    "sidebar.nav.library":"资料库",
     "sidebar.nav.projects":"项目",
     "sidebar.nav.scheduled":"已安排",
     "sidebar.nav.plugins":"插件",
@@ -1034,8 +1052,17 @@ var I18N={
     "sidebar.plugins.disabled":"已禁用",
     "topbar.modeChat":"聊天",
     "topbar.modeTutor":"工作",
-    "voice.soon":"语音输入即将上线",
-    "voice.toast":"语音输入即将上线",
+    "voice.input":"语音输入",
+    "voice.soon":"语音输入",
+    "voice.toast":"语音输入暂不可用",
+    "voice.listening":"正在聆听…",
+    "voice.processing":"正在处理语音…",
+    "voice.stop":"停止语音输入",
+    "voice.cancel":"取消语音输入",
+    "voice.unsupported":"当前浏览器不支持语音输入。",
+    "voice.permission":"请允许麦克风权限后使用语音输入。",
+    "voice.error":"语音输入启动失败，请检查麦克风权限。",
+    "voice.noSpeech":"没有检测到语音。",
     "profile.usage":"Token 用量",
     "profile.usage.desc":"查看每日 token 用量热力图和月度统计。",
     "profile.view":"查看",
@@ -1074,7 +1101,7 @@ var I18N={
     "sidebar.recents":"最近",
     "sidebar.mistakes":"错题",
     "sidebar.searchPlaceholder":"搜索对话",
-    "sidebar.recentSessions":"任务",
+    "sidebar.recentSessions":"最近",
     "sidebar.new":"新建",
     "sidebar.mistakeBook":"错题本",
     "sidebar.all":"全部",
@@ -1825,7 +1852,9 @@ function setLang(lang){
     var el=document.getElementById(optionIds[i]);
     if(!el)continue;
     var optLang=optionIds[i].replace("profileLang","").toLowerCase();
-    el.classList.toggle("active",optLang===lang);
+    var active=optLang===lang;
+    el.classList.toggle("active",active);
+    el.setAttribute("aria-pressed",active?"true":"false");
   }
   /* Update the small "EN/中" label in the sidebar header so the
      quick-toggle button reflects the active language. */
@@ -1865,7 +1894,9 @@ function applyI18n(){
       var langEl=document.getElementById(langIds[li]);
       if(!langEl)continue;
       var langOpt=langIds[li].replace("profileLang","").toLowerCase();
-      langEl.classList.toggle("active",langOpt===_currentLang);
+      var langActive=langOpt===_currentLang;
+      langEl.classList.toggle("active",langActive);
+      langEl.setAttribute("aria-pressed",langActive?"true":"false");
     }
   }catch(_){}
   /* Translate all elements with data-i18n-placeholder attribute

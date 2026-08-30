@@ -1,10 +1,11 @@
 // e2e/placeholder-localization.spec.mjs — the zh chat placeholder must
-// localize at runtime and keep the standard UI font stack.
+// localize at runtime and keep the bundled western UI face first in the
+// mixed-script stack, with Noto Sans SC available for CJK fallback.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('zh UI localizes live with the bundled Noto Sans SC face', async ({ page }) => {
+test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -27,7 +28,8 @@ test('zh UI localizes live with the bundled Noto Sans SC face', async ({ page })
   });
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('今天有什么可以帮你的');
-  expect(zhState.fontFamily.startsWith('"Noto Sans SC"')).toBe(true);
+  expect(zhState.fontFamily.startsWith('"Plus Jakarta Sans"')).toBe(true);
+  expect(zhState.fontFamily).toContain('Noto Sans SC');
   expect(zhState.fontFamily).not.toContain('Microsoft YaHei');
 
   /* Switching back to English must restore the Latin UI face. */
@@ -40,7 +42,7 @@ test('zh UI localizes live with the bundled Noto Sans SC face', async ({ page })
   expect(enFont).toContain('Plus Jakarta Sans');
 });
 
-test('landing greeting has no leading logo and Chinese uses Noto Sans SC', async ({ page }) => {
+test('landing greeting has no leading logo and keeps the western face in Chinese UI', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -49,22 +51,23 @@ test('landing greeting has no leading logo and Chinese uses Noto Sans SC', async
   await page.evaluate(() => window.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
 
-  /* The assertion only has to prove the zh string rendered so the CJK font
-     fallback below is measured against CJK glyphs — the copy itself moved
-     from "你好，{name}。" to the shorter landing greeting. */
+  /* The greeting is time-aware; this assertion only has to prove that a
+     localized greeting rendered so the CJK font fallback is measured against
+     real Chinese glyphs. */
   const greeting = page.locator('#topicTitle');
-  await expect(greeting).toContainText('你来了');
+  await expect(greeting).toContainText(/欢迎回来|早上好|下午好|晚上好|夜深了/);
   const zhStyle = await greeting.evaluate((el) => ({
     fontFamily: getComputedStyle(el).fontFamily,
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.startsWith('"Noto Sans SC"')).toBe(true);
+  expect(zhStyle.fontFamily.startsWith('"Plus Jakarta Sans"')).toBe(true);
+  expect(zhStyle.fontFamily).toContain('Noto Sans SC');
   expect(zhStyle.fontFamily).not.toContain('Microsoft YaHei');
   expect(zhStyle.paddingLeft).toBe('0px');
   expect(['none', 'normal']).toContain(zhStyle.beforeContent);
 
   await page.evaluate(() => window.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont).toContain('Newsreader');
+  expect(enFont.startsWith('"Plus Jakarta Sans"')).toBe(true);
 });

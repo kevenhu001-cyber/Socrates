@@ -130,9 +130,19 @@ function position(el, trigger) {
   el.style.top = "0px";
   var width = el.offsetWidth || 260;
   var height = el.offsetHeight || 300;
-  var left = Math.max(8, Math.min(r.left, viewportWidth - width - 8));
-  var top = r.top - height - 10;
-  if (top < viewportTop + 8) top = Math.min(viewportBottom - height - 8, r.bottom + 10);
+  /* The mobile reference card sits a few pixels to the left of the circular
+     plus control, so the card edge aligns with the composer instead of
+     looking like it is attached to the icon's center. Desktop keeps the
+     trigger edge alignment. */
+  var anchorLeft = viewportWidth <= 768 ? r.left - 12 : r.left;
+  var left = Math.max(8, Math.min(anchorLeft, viewportWidth - width - 8));
+  /* ChatGPT places the add-content menu below the composer whenever the
+     viewport has room. Falling back above is only necessary near the bottom
+     edge (most often on a phone), which keeps the desktop landing state from
+     covering the greeting. */
+  var belowTop = r.bottom + 8;
+  var aboveTop = r.top - height - 8;
+  var top = belowTop + height <= viewportBottom - 8 ? belowTop : aboveTop;
   top = Math.max(viewportTop + 8, Math.min(viewportBottom - height - 8, top));
   el.style.left = left + "px";
   el.style.top = top + "px";
@@ -141,6 +151,13 @@ function position(el, trigger) {
 function reposition() {
   var el = document.getElementById(MENU_ID);
   if (activeTrigger && el && !el.classList.contains("hidden")) position(el, activeTrigger);
+}
+
+/* React-owned disclosure rows can change the menu's height after the legacy
+ * open/position pass has already run. Expose the same geometry pass so the
+ * expanded list stays inside the visual viewport on short phones. */
+export function repositionComposerTools() {
+  reposition();
 }
 
 export function toggleComposerTools(trigger, mode) {

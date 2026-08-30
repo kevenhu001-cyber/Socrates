@@ -106,7 +106,7 @@ export function safeHljsLang(lang: string): string {
   return l;
 }
 
-/* P_viz-font-ready — wait for the document fonts (Inter, Noto Sans SC,
+/* P_viz-font-ready — wait for the document fonts (Plus Jakarta Sans, Noto Sans SC,
    KaTeX…) to actually load before a renderer measures text. Without
    this, ECharts/Plotly/Mermaid/sandboxed iframes compute their first
    layout with the fallback font, so CJK characters render at the

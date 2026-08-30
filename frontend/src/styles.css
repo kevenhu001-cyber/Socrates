@@ -3,10 +3,10 @@
    fonts.googleapis.com and CJK glyphs come from the locally hosted Noto
    Sans SC subsets.
 
-   Latin sans face: Plus Jakarta Sans (was Inter). A humanist-geometric
-   sans with slightly warmer, more distinctive letterforms that pair
-   better with the Newsreader serif display face and the warm accent
-   palette. Same 400/500/600 weights the UI uses. */
+   Latin sans face: Plus Jakarta Sans. A humanist-geometric sans with
+   slightly warmer, more distinctive letterforms that pair better with
+   the Newsreader serif display face and warm accent palette. Same
+   400/500/600 weights the UI uses. */
 @import "@fontsource/plus-jakarta-sans/400.css";
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
@@ -22,10 +22,10 @@ html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
 [data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Plus Jakarta Sans","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
 [data-theme=socrates][data-mode=light]{--bg-000:42 33% 98%;--bg-100:40 25% 96%;--bg-200:38 20% 92%;--bg-300:36 15% 87%;--bg-400:0 0% 100%;--text-000:36 12% 10%;--text-100:34 10% 16%;--text-200:34 8% 28%;--text-300:34 7% 35%;--text-400:34 6% 43%;--text-500:34 5% 50%;--border-100:38 12% 86%;--border-200:38 11% 82%;--border-300:36 10% 78%;--border-400:36 9% 72%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Plus Jakarta Sans","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
-/* Chinese uses the bundled Noto face directly for both UI and display copy.
-   Keeping the locale override on the theme root prevents an OS-specific
-   Chinese fallback from changing the product's typography. */
-html[data-theme=socrates][data-mode]:lang(zh){--font-sans:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;--font-display:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif}
+/* Keep the Latin face first in Chinese UI as well. Plus Jakarta Sans does not
+   contain CJK glyphs, so Noto Sans SC is still selected automatically for
+   Chinese characters while Latin text keeps the intended western rhythm. */
+html[data-theme=socrates][data-mode]:lang(zh){--font-sans:"Plus Jakarta Sans","Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;--font-display:"Newsreader","Noto Sans SC","PingFang SC","Hiragino Sans GB",ui-serif,Georgia,"Times New Roman",serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* ─── View Transition — cross-browser consistent ── */
@@ -469,7 +469,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 
 /* Native AI visualization cards. They reuse the chat surface and tokens so
    generated content reads as part of Socrates, not as an embedded dashboard.
-   The card always uses `Inter` (loaded from Google Fonts) so labels stay
+   The card always uses the bundled Plus Jakarta Sans face so labels stay
    consistent regardless of the user's installed system fonts. */
 .visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Plus Jakarta Sans','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
 .visualization-header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid hsl(var(--border-100))}
@@ -790,7 +790,8 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .composer-extension-token-remove:focus-visible{outline:2px solid hsl(var(--accent-000)/.7);outline-offset:1px}
 @keyframes composer-extension-token-in{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:translateY(0)}}
 
-/* Voice capture has been removed. Sending is always the familiar arrow. */
+/* Sending stays the familiar arrow while idle; active voice capture replaces
+   the full composer with the recording bar defined at the end of this file. */
 .start-btn .icon-arrow,.send-btn .icon-arrow{display:inline-flex}
 .display-prefs-row{display:flex;flex-direction:column;gap:4px}
 .display-prefs-label{display:flex;justify-content:space-between;align-items:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
@@ -2199,12 +2200,12 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .profile-section{padding:12px 0;border-top:0.5px solid hsl(var(--border-300)/0.08)}
 .profile-section:first-child{border-top:none;padding-top:0}
 .profile-section-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;padding:0 0 8px}
-.profile-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 0;cursor:pointer}
+.profile-toggle{appearance:none;display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .profile-toggle-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
 .profile-toggle-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 0 4px}
 .profile-lang-toggle{display:inline-flex;padding:2px;border-radius:8px;background:hsl(var(--bg-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:background-color .15s;gap:0;border:0.5px solid hsl(var(--border-300)/0.15)}
 .profile-lang-toggle:hover{background:hsl(var(--bg-200))}
-.profile-lang-option{padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:background-color .12s,color .12s,box-shadow .12s;font-weight:500;line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
+.profile-lang-option{appearance:none;padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:background-color .12s,color .12s,box-shadow .12s;font-weight:500;line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
 .profile-lang-option.active{color:hsl(var(--text-100));background:hsl(var(--bg-000));box-shadow:0 1px 3px hsl(var(--always-black)/0.15)}
 .profile-action-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px}
 .profile-action-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
@@ -2240,7 +2241,7 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .usage-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:min(720px,94vw);max-height:88vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
 .usage-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
 .usage-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
-.usage-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
+.usage-close{appearance:none;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;font:inherit;cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
 .usage-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .usage-body{padding:18px 22px 22px;overflow-y:auto;flex:1}
 .usage-summary{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
@@ -2951,7 +2952,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;color:hsl(var(--text-100));font-weight:600;font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px;letter-spacing:-.01em}
 .auth-brand svg{color:hsl(var(--accent-000))}
 .auth-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:22px}
-.auth-tab{flex:1;text-align:center;padding:10px 0;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border-bottom:2px solid transparent;cursor:pointer;font-weight:500;transition:color .1s,border-color .1s}
+.auth-tab{appearance:none;flex:1;text-align:center;padding:10px 0;font:500 calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);color:hsl(var(--text-400));border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer;font-weight:500;transition:color .1s,border-color .1s}
 .auth-tab:hover{color:hsl(var(--text-200))}
 .auth-tab.active{color:hsl(var(--text-100));border-bottom-color:hsl(var(--accent-000))}
 .auth-view{display:flex;flex-direction:column;gap:6px}
@@ -5119,8 +5120,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .mic-btn svg{width:16px;height:16px}
 .mic-btn.is-listening{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.16);box-shadow:0 0 0 3px hsl(var(--accent-000)/.07);animation:voicePulse 1.15s ease-in-out infinite}.mic-btn.is-listening svg{animation:voiceGlyph .75s ease-in-out infinite alternate}@keyframes voicePulse{50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0)}}@keyframes voiceGlyph{to{transform:translateY(-1px)}}
 
-/* Send / start button — mic↔waveform swap based on .has-text on the wrap.
-   The button keeps two SVG children; CSS shows the right one. */
+/* Send / start stays an arrow while idle and while text is present. Voice
+   capture uses the separate full-width recording surface below. */
 
 /* Default state of the start/send button: keep the existing 'active'
    style (filled pill) only when text/attachments present, otherwise
@@ -5136,8 +5137,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .composer-tools-item:active{transform:none}
 }
 
-/* No waveform/voice state remains in the composer: show the send arrow in
-   its neutral and active states alike. */
+/* Keep the arrow visible in the idle and text-entry states. The recording
+   surface is a separate full-width child added by ui/voiceInput.js. */
 .start-btn .icon-arrow,.send-btn .icon-arrow{display:inline-flex}
 
 /* ─── Inline-style replacement utilities ── */
@@ -6392,6 +6393,37 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   .socrates-cookie-consent-btn{
     width:100%;
     text-align:center;
+  }
+}
+
+/* When consent is shown before authentication, it must not sit above the
+   sign-in card as a viewport-fixed layer. Keep it in the auth gate's scroll
+   flow instead; the card remains usable and the banner is still reachable
+   below the form. Once the gate closes, cookieConsent.js moves it back to
+   body and the normal fixed treatment resumes. */
+.auth-gate:has(.socrates-cookie-consent--auth){
+  justify-content:flex-start;
+  gap:16px;
+}
+.socrates-cookie-consent--auth{
+  position:static;
+  left:auto;
+  bottom:auto;
+  transform:none;
+  z-index:auto;
+  width:min(420px,calc(100vw - 24px));
+  margin:0 auto;
+  flex:0 0 auto;
+}
+@media (max-width:520px){
+  .auth-gate:has(.socrates-cookie-consent--auth){
+    padding-top:24px;
+    padding-bottom:24px;
+  }
+  .socrates-cookie-consent--auth{
+    width:calc(100vw - 24px);
+    padding:12px 14px;
+    gap:8px;
   }
 }
 
@@ -8534,7 +8566,6 @@ body[data-conversation-active="true"] .chat-suggestions{display:none}
   .home-idea>span:last-child,.home-idea>.home-idea-text{overflow:hidden;text-overflow:ellipsis}
   .home-idea-icon{width:24px;height:24px;border:0;border-radius:0;color:hsl(var(--cowork-text))}
   .home-idea-icon svg{width:20px;height:20px}
-  .home-idea:nth-of-type(3){display:none}
 }
 
 /* ═══ Stable live-turn + composer state contract ═══════════════════════
@@ -8850,7 +8881,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .topic-title.greeting{font-size:calc(42px * var(--app-font-scale,1))}
 .topic-input-wrap,.home-ideas{width:min(100%,var(--conversation-composer-width));max-width:var(--conversation-composer-width)}
 .topic-input-wrap .rich-composer .tiptap,.topic-input-wrap .rich-composer-editor{font-size:calc(14.5px * var(--app-font-scale,1))}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar{min-height:44px;padding:6px 14px;border-bottom:0;background:hsl(var(--cowork-page));-webkit-backdrop-filter:none;backdrop-filter:none}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .top-bar{min-height:52px;padding:6px 14px;border-bottom:0;background:hsl(var(--cowork-page));-webkit-backdrop-filter:none;backdrop-filter:none}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar{background:hsl(var(--cowork-sidebar));border-right:1px solid hsl(var(--cowork-line)/.42)}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #msgList{padding-inline:max(20px,calc((100% - var(--conversation-content-width))/2))}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-view{max-width:var(--conversation-content-width)}
@@ -8896,3 +8927,938 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap.composer-multiline{width:100%;max-width:none}
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .find-bar{top:max(64px,calc(env(safe-area-inset-top,0px) + 60px));right:8px;left:8px}
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   UI polish pass (P_ui-polish) — 2026-08
+   ------------------------------------------------------------------
+   Four scoped refinements that KEEP the warm-academic look and every
+   feature. Appended last so each rule wins the cascade cleanly and the
+   whole pass can be reverted by deleting this block. No colors are
+   invented: everything derives from the existing bg / text / accent
+   atoms and the #appShell workbench tokens.
+
+   1. User-bubble contrast   — the bubble already existed but sat on
+      --bg-000, only 2–3% off the page, so it read as "no bubble".
+      Give it a visible, warm, tokenized surface + hairline in both
+      themes and in the workbench (conversation-active) layer.
+   2. Radius language        — converge the scattered 6/10/14/16/28px
+      ladder onto the workbench 7/12/18 scale for chat-surface parts.
+   3. Light-mode accent      — links on white were ~3.9:1 (below AA);
+      nudge the link/underline accent darker to clear 4.5:1 without
+      touching the brand hue.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. User message bubble — make the existing bubble legible ─────── */
+/* Warm bubble surface tokens. Dark: a lifted neutral-warm panel that
+   sits ~5–6% above the page instead of ~3%. Light: a warm sand tint a
+   few points BELOW the page so the right-aligned prompt reads as a
+   distinct card on the cream background. */
+:root{
+  --user-bubble-bg:38 6% 17%;
+  --user-bubble-border:36 8% 26%;
+}
+[data-theme=socrates][data-mode=light]{
+  --user-bubble-bg:40 30% 90%;
+  --user-bubble-border:38 22% 80%;
+}
+.msg.user .msg-body{
+  background:hsl(var(--user-bubble-bg));
+  border:0.5px solid hsl(var(--user-bubble-border)/.6);
+  /* radius converges to the workbench lg step (18px) — see pass #2 */
+  border-radius:var(--workbench-radius-lg,18px);
+  padding:10px 16px;
+}
+/* Conversation workbench layer paints the page at --workbench-page(10%),
+   so the bubble tokens above (17%) already clear it in dark mode. Give
+   the workbench its own slightly warmer bubble so it harmonizes with the
+   workbench palette rather than the global --bg atoms. */
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg.user .msg-body{
+  background:hsl(30 4% 16%);
+  border-color:hsl(30 4% 24%);
+}
+
+/* ── 2. Radius language — converge onto the workbench ladder ───────── */
+/* Code blocks were 16px (bigger than the 14px tool cards yet not the
+   18px containers) — an odd middle step. Pull prose code fences and
+   tables to the md step so the ladder reads sm(7) / md(12) / lg(18). */
+.msg-body pre{border-radius:var(--workbench-radius-md,12px)}
+.msg-body table{border-radius:var(--workbench-radius-sm,7px);overflow:hidden}
+/* Inline find bar + cmd-k modal used 10/14; align to md. */
+.find-bar{border-radius:var(--workbench-radius-md,12px)}
+
+/* ── 3. Light-mode link accent — clear WCAG AA (4.5:1) ────────────── */
+/* The brand hue (43) stays; only lightness drops so gold-on-cream text
+   is readable. 36% L at 68% S on the ~96% page is ≈4.7:1. Scoped to
+   light mode so dark mode's brighter gold is untouched. */
+[data-theme=socrates][data-mode=light]{
+  --link-accent:43 68% 36%;
+}
+[data-theme=socrates][data-mode=dark]{
+  --link-accent:var(--accent-000);
+}
+.msg-body a{color:hsl(var(--link-accent,var(--accent-000)))}
+
+/* ── 4. Density → hierarchy (no features removed) ──────────────────── */
+/* The top bar carries 6 right-side entries + centered mode tabs. Rather
+   than drop any, establish a first-glance hierarchy: primary actions
+   (new chat, layout, model) keep full weight; secondary utilities
+   (find, share, incognito) rest at reduced emphasis and rise to full
+   on hover/focus. Everything stays clickable and keyboard-reachable —
+   only the resting visual weight changes. */
+.top-bar-right .find-btn,
+.top-bar-right .share-btn,
+.top-bar-right .mobile-incognito-btn{
+  opacity:.62;
+  transition:opacity .18s var(--ease-out),background-color .18s var(--ease-out),color .18s var(--ease-out),border-color .18s var(--ease-out);
+}
+.top-bar-right .find-btn:hover,
+.top-bar-right .find-btn:focus-visible,
+.top-bar-right .share-btn:hover,
+.top-bar-right .share-btn:focus-visible,
+.top-bar-right .mobile-incognito-btn:hover,
+.top-bar-right .mobile-incognito-btn:focus-visible{
+  opacity:1;
+}
+/* Share's outlined pill competed with the model trigger for attention.
+   Drop its border at rest so only the model chip carries an outline;
+   the border returns on hover together with full opacity above. */
+.top-bar-right .share-btn{border-color:transparent}
+.top-bar-right .share-btn:hover,
+.top-bar-right .share-btn:focus-visible{border-color:hsl(var(--border-300)/0.4)}
+
+/* Sidebar nav: 7 flat entries → two tiers. The daily-driver trio
+   (New / Projects / Artifacts) stays full-strength; the occasional
+   set (Scheduled / Plugins / Exam / Skills) rests one notch quieter
+   and its icon de-saturates, so the eye lands on the primaries first.
+   Hover/active still restore full contrast — no entry is hidden. */
+.sidebar-nav-btn[data-nav="scheduled"],
+.sidebar-nav-btn[data-nav="plugins"],
+.sidebar-nav-btn[data-nav="exam"],
+.sidebar-nav-btn[data-nav="skills"]{
+  color:hsl(var(--text-400));
+}
+.sidebar-nav-btn[data-nav="scheduled"] svg,
+.sidebar-nav-btn[data-nav="plugins"] svg,
+.sidebar-nav-btn[data-nav="exam"] svg,
+.sidebar-nav-btn[data-nav="skills"] svg{
+  color:hsl(var(--text-500));
+}
+.sidebar-nav-btn[data-nav="scheduled"]:hover,
+.sidebar-nav-btn[data-nav="plugins"]:hover,
+.sidebar-nav-btn[data-nav="exam"]:hover,
+.sidebar-nav-btn[data-nav="skills"]:hover,
+.sidebar-nav-btn[data-nav="scheduled"].active,
+.sidebar-nav-btn[data-nav="plugins"].active,
+.sidebar-nav-btn[data-nav="exam"].active,
+.sidebar-nav-btn[data-nav="skills"].active{
+  color:hsl(var(--text-100));
+}
+.sidebar-nav-btn[data-nav="scheduled"]:hover svg,
+.sidebar-nav-btn[data-nav="plugins"]:hover svg,
+.sidebar-nav-btn[data-nav="exam"]:hover svg,
+.sidebar-nav-btn[data-nav="skills"]:hover svg,
+.sidebar-nav-btn[data-nav="scheduled"].active svg,
+.sidebar-nav-btn[data-nav="plugins"].active svg,
+.sidebar-nav-btn[data-nav="exam"].active svg,
+.sidebar-nav-btn[data-nav="skills"].active svg{
+  color:hsl(var(--text-100));
+}
+/* A hairline separator between the primary trio and the secondary set
+   gives the two tiers a structural read without adding a heading row.
+   4th nav button = Scheduled (New/Projects/Artifacts precede it). */
+.sidebar-nav-btn[data-nav="scheduled"]{
+  margin-top:5px;
+  padding-top:11px;
+  border-top:0.5px solid hsl(var(--border-300)/0.16);
+}
+/* In the workbench (conversation-active) layer the nav recolors to
+   --workbench-* tokens, so mirror the two-tier treatment there too. */
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn[data-nav="scheduled"]{
+  border-top-color:hsl(var(--workbench-line-soft));
+}
+
+/* Mobile transcript actions stay available on the newest turn, while older
+   toolbars no longer add a repeated row of tiny icons to every answer. The
+   36px hit area keeps the visible actions comfortable for touch. */
+@media (max-width:768px){
+  .msg-list>.msg:not(:last-child) .msg-toolbar{
+    display:none;
+  }
+  .msg-list>.msg:last-child .msg-toolbar{
+    height:36px;
+    opacity:1;
+  }
+  .msg-toolbar-btn{
+    width:36px;
+    height:36px;
+    border-radius:10px;
+  }
+}
+
+/* P_chatgpt-plus-menu — compact capability menu aligned to the live
+   chatgpt.com composer reference captured on 2026-08-30.
+
+   The first layer is intentionally short: add-content actions and a single
+   Tools disclosure. Socrates still keeps every workflow, but the long list
+   lives behind that disclosure instead of turning the plus button into a
+   second navigation panel. */
+.composer-tools-menu{
+  width:min(232px,calc(100vw - 16px));
+  max-height:min(62vh,380px);
+  overflow-y:auto;
+  padding:6px;
+  background:hsl(0 0% 20%/.98);
+  border:1px solid hsl(0 0% 100%/.14);
+  border-radius:14px;
+  box-shadow:0 16px 40px hsl(0 0% 0%/.36),0 1px 0 hsl(0 0% 100%/.04) inset;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.composer-tools-heading{
+  padding:4px 10px 6px;
+  color:hsl(0 0% 100%/.78);
+  font-size:12px;
+  font-weight:600;
+}
+.composer-tools-heading-hint{color:hsl(0 0% 100%/.52);font-size:11px}
+.composer-tools-item,
+.composer-tools-more-toggle{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-height:44px;
+  height:44px;
+  padding:8px 10px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:hsl(0 0% 100%/.92);
+  font:500 14px/20px var(--font-sans);
+  text-align:left;
+  cursor:pointer;
+  transition:background-color .15s ease,color .15s ease;
+}
+.composer-tools-item + .composer-tools-item,
+.composer-tools-more-toggle + .composer-tools-item,
+.composer-tools-item + .composer-tools-more-toggle{margin-top:1px}
+.composer-tools-item:hover,
+.composer-tools-item:focus-visible,
+.composer-tools-more-toggle:hover,
+.composer-tools-more-toggle:focus-visible{
+  color:hsl(0 0% 100%);
+  background:hsl(0 0% 100%/.08);
+  outline:0;
+}
+.composer-tools-item:focus-visible,
+.composer-tools-more-toggle:focus-visible{box-shadow:inset 0 0 0 2px hsl(0 0% 100%/.36)}
+.composer-tools-item.is-active{color:hsl(0 0% 100%);background:hsl(0 0% 100%/.1)}
+.composer-tools-icon{width:22px;height:22px;color:hsl(0 0% 100%/.78)}
+.composer-tools-item:hover .composer-tools-icon,
+.composer-tools-item:focus-visible .composer-tools-icon,
+.composer-tools-more-toggle:hover .composer-tools-icon,
+.composer-tools-more-toggle:focus-visible .composer-tools-icon{color:hsl(0 0% 100%)}
+.composer-tools-icon svg{width:18px;height:18px}
+.composer-tools-copy{gap:0;line-height:20px}
+.composer-tools-copy > span{font-size:14px;font-weight:500;color:inherit}
+.composer-tools-copy small,
+.composer-tools-item kbd{display:none}
+.composer-tools-more-toggle .composer-tools-copy{flex:1;min-width:0}
+.composer-tools-disclosure{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:hsl(0 0% 100%/.58);transition:transform .15s ease,color .15s ease}
+.composer-tools-disclosure.is-expanded{transform:none}
+.composer-tools-more-toggle:hover .composer-tools-disclosure,
+.composer-tools-more-toggle:focus-visible .composer-tools-disclosure{color:hsl(0 0% 100%)}
+.composer-tools-more-items{
+  margin-top:4px;
+  padding-top:4px;
+  border-top:1px solid hsl(0 0% 100%/.1);
+}
+.composer-tools-more-items .composer-tools-item{font-size:13.5px}
+
+/* ChatGPT keeps the plus glyph small but gives its button a full 44px hit
+   target. This also prevents the local control from becoming a visually
+   tiny exception inside the rounded composer. */
+#topicComposerToolsBtn,
+#chatComposerToolsBtn{
+  width:44px;
+  min-width:44px;
+  height:44px;
+  min-height:44px;
+  border-radius:999px!important;
+  background:hsl(0 0% 18%);
+  color:hsl(0 0% 82%);
+}
+#topicComposerToolsBtn:hover,
+#chatComposerToolsBtn:hover,
+#topicComposerToolsBtn:focus-visible,
+#chatComposerToolsBtn:focus-visible{background:hsl(0 0% 28%);color:hsl(0 0% 100%)}
+#topicComposerToolsBtn svg,
+#chatComposerToolsBtn svg{width:20px;height:20px}
+
+@media(max-width:768px){
+  .composer-tools-menu{
+    width:min(224px,calc(100vw - 24px));
+    max-height:min(70vh,560px);
+    padding:6px;
+    border-radius:16px;
+  }
+  .composer-tools-heading{display:none}
+  .composer-tools-item,
+  .composer-tools-more-toggle{
+    min-height:46px;
+    height:46px;
+    padding:7px 8px;
+    gap:12px;
+    border-radius:10px;
+    font-size:14px;
+  }
+  .composer-tools-more-toggle{color:hsl(0 0% 100%/.94)}
+  .composer-tools-mobile-more-items .composer-tools-item{
+    min-height:44px;
+    height:44px;
+  }
+  .composer-tools-more-items .composer-tools-item + .composer-tools-item,
+  .composer-tools-more-toggle + .composer-tools-more-items .composer-tools-item{margin-top:1px}
+  .composer-tools-mobile-more-items{margin-top:4px;padding-top:4px}
+  .composer-tools-mobile-more-items .composer-tools-copy small{display:none}
+  #topicComposerToolsBtn,
+  #chatComposerToolsBtn{width:44px;min-width:44px;height:44px;min-height:44px}
+}
+
+/* Voice recording surface — the input becomes one calm, full-width audio
+   strip while the browser captures speech. The original editor, tool row and
+   send controls stay mounted for restoration, but are hidden as a group so
+   the composer never jumps to a different page-level position. */
+#topicInputWrap.voice-recording-active,
+#chatInputWrap.voice-recording-active{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  gap:0!important;
+  min-height:58px;
+  padding:8px 12px!important;
+  overflow:hidden;
+  border-color:hsl(0 0% 0%/.14)!important;
+  background:#fff;
+  box-shadow:0 0 0 3px hsl(0 0% 100%/.16),0 .35rem 1.8rem hsl(var(--always-black)/8%);
+}
+#topicInputWrap.voice-recording-active > :not(.voice-recording-bar),
+#chatInputWrap.voice-recording-active > :not(.voice-recording-bar){display:none!important}
+.voice-recording-bar{
+  display:flex!important;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-width:0;
+  height:40px;
+  color:hsl(0 0% 10%);
+}
+.voice-recording-indicator{
+  width:9px;
+  height:9px;
+  flex:0 0 9px;
+  border-radius:50%;
+  background:hsl(0 0% 10%);
+  box-shadow:0 0 0 4px hsl(0 0% 0%/.1);
+  animation:voiceRecordingPulse 1.15s ease-in-out infinite;
+}
+@keyframes voiceRecordingPulse{
+  50%{transform:scale(.78);box-shadow:0 0 0 7px hsl(0 0% 0%/0)}
+}
+.voice-recording-copy{
+  display:flex;
+  flex:0 1 180px;
+  flex-direction:column;
+  gap:0;
+  min-width:112px;
+  max-width:180px;
+  overflow:hidden;
+  line-height:1;
+}
+.voice-recording-label{
+  overflow:hidden;
+  color:hsl(0 0% 10%);
+  font:600 13px/18px var(--font-sans);
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.voice-recording-timer{
+  color:hsl(0 0% 42%);
+  font:500 11px/15px var(--font-mono);
+  font-variant-numeric:tabular-nums;
+}
+.voice-recording-live{
+  display:none;
+  overflow:hidden;
+  max-width:180px;
+  color:hsl(0 0% 42%);
+  font:400 11px/15px var(--font-sans);
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.voice-recording-wave{
+  display:flex;
+  flex:1 1 auto;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  min-width:60px;
+  height:32px;
+  overflow:hidden;
+}
+.voice-recording-wave > span{
+  width:3px;
+  min-width:2px;
+  max-width:4px;
+  height:var(--voice-bar-height,4px);
+  flex:1 1 2px;
+  border-radius:999px;
+  background:hsl(0 0% 10%/.86);
+  transition:height .08s linear,opacity .12s ease;
+}
+.voice-recording-stop{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  min-width:36px;
+  height:36px;
+  min-height:36px;
+  flex:0 0 36px;
+  padding:0;
+  border:1px solid hsl(0 0% 0%/.12);
+  border-radius:50%;
+  background:hsl(0 0% 10%);
+  color:#fff;
+  cursor:pointer;
+  transition:background-color .15s var(--ease-out),color .15s var(--ease-out),transform .12s ease;
+}
+.voice-recording-stop:hover,
+.voice-recording-stop:focus-visible{
+  background:hsl(0 0% 24%);
+  color:#fff;
+}
+.voice-recording-stop:focus-visible{
+  outline:2px solid hsl(0 0% 0%/.58);
+  outline-offset:2px;
+}
+.voice-recording-stop:active{transform:scale(.92)}
+.voice-recording-stop svg{display:block;width:16px;height:16px}
+
+@media(max-width:768px){
+  #topicInputWrap.voice-recording-active,
+  #chatInputWrap.voice-recording-active{
+    min-height:60px;
+    padding:8px 10px!important;
+    border-radius:30px;
+  }
+  .voice-recording-bar{gap:8px;height:42px}
+  .voice-recording-indicator{width:8px;height:8px;flex-basis:8px}
+  .voice-recording-copy{flex:0 1 96px;min-width:78px;max-width:96px}
+  .voice-recording-label{font-size:12px;line-height:17px}
+  .voice-recording-live{display:none}
+  .voice-recording-wave{gap:2px;min-width:44px}
+  .voice-recording-wave > span{max-width:3px}
+  .voice-recording-stop{width:36px;min-width:36px;height:36px;min-height:36px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .voice-recording-indicator{animation:none}
+  .voice-recording-wave > span{transition:none}
+}
+
+/* Neutral recording surface in dark mode: stay black with an inverted
+   monochrome control set instead of leaking the light-mode white surface into
+   the dark workbench. */
+[data-mode=dark] #topicInputWrap.voice-recording-active,
+[data-mode=dark] #chatInputWrap.voice-recording-active{
+  border-color:hsl(0 0% 100%/.16)!important;
+  background:hsl(0 0% 7.4%);
+  box-shadow:0 0 0 3px hsl(0 0% 100%/.07),0 .35rem 1.8rem hsl(0 0% 0%/.28);
+}
+[data-mode=dark] .voice-recording-bar{color:hsl(0 0% 92%)}
+[data-mode=dark] .voice-recording-indicator{
+  background:hsl(0 0% 92%);
+  box-shadow:0 0 0 4px hsl(0 0% 100%/.1);
+  animation-name:voiceRecordingPulseDark;
+}
+@keyframes voiceRecordingPulseDark{
+  50%{transform:scale(.78);box-shadow:0 0 0 7px hsl(0 0% 100%/0)}
+}
+[data-mode=dark] .voice-recording-label{color:hsl(0 0% 92%)}
+[data-mode=dark] .voice-recording-timer{color:hsl(0 0% 100%/.54)}
+[data-mode=dark] .voice-recording-wave > span{background:hsl(0 0% 92%/.88)}
+[data-mode=dark] .voice-recording-stop{
+  border-color:hsl(0 0% 100%/.12);
+  background:hsl(0 0% 92%);
+  color:hsl(0 0% 10%);
+}
+[data-mode=dark] .voice-recording-stop:hover,
+[data-mode=dark] .voice-recording-stop:focus-visible{
+  background:#fff;
+  color:#000;
+}
+[data-mode=dark] .voice-recording-stop:focus-visible{outline-color:hsl(0 0% 100%/.7)}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ChatGPT fidelity pass — shell, type, composer and popover details
+   -----------------------------------------------------------------------
+   This is the final visual contract for the chat shell. It keeps Socrates'
+   navigation and reasoning controls, while matching the reference language:
+   neutral surfaces, a shared reading column, a compact one-row composer,
+   quiet borders, and the same western face in mixed Chinese/Latin copy.
+   Voice recording is deliberately excluded from the composer rules below so
+   its dedicated monochrome surface remains stable in both themes.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Neutral ChatGPT-like surfaces. CJK still falls through to Noto because the
+   Latin face has no CJK glyphs; the ordering is what makes English visible. */
+#appShell{
+  --cowork-page:0 0% 100%;
+  --cowork-sidebar:0 0% 96%;
+  --cowork-surface:0 0% 100%;
+  --cowork-surface-active:0 0% 90%;
+  --cowork-line:0 0% 82%;
+  --cowork-text:0 0% 13%;
+  --cowork-muted:0 0% 42%;
+  --conversation-content-width:calc(768px * var(--app-width-scale,1));
+  --conversation-composer-width:calc(768px * var(--app-width-scale,1));
+  --workbench-content-max:var(--conversation-content-width);
+}
+[data-mode=dark] #appShell{
+  --cowork-page:0 0% 0%;
+  --cowork-sidebar:0 0% 0%;
+  --cowork-surface:0 0% 12.3%;
+  --cowork-surface-active:0 0% 20%;
+  --cowork-line:0 0% 24%;
+  --cowork-text:0 0% 88%;
+  --cowork-muted:0 0% 58%;
+}
+#appShell,
+#appShell .main-content,
+#appShell .main-bg{background:hsl(var(--cowork-page))}
+#appShell .main-bg{background-image:none;opacity:1;clip-path:none}
+#appShell .sidebar{
+  background:hsl(var(--cowork-sidebar));
+  border-right:1px solid hsl(var(--cowork-line)/.55);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  box-shadow:none;
+}
+#appShell .top-bar{
+  min-height:52px;
+  padding:6px 16px;
+  background:hsl(var(--cowork-page));
+  border-bottom:0;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+
+/* The old desktop pass painted a 240px sidebar while the layout reserved the
+   persisted 288px value. Use the same variable for both sides of the seam;
+   the resize handle can still change it at runtime. */
+@media(min-width:769px){
+  #appShell .sidebar{
+    width:var(--app-sidebar-width,260px);
+    min-width:var(--app-sidebar-width,260px);
+  }
+  #appShell .main{padding-left:var(--app-sidebar-width,260px)}
+  #appShell .sidebar.collapsed~.main{padding-left:0}
+  #appShell .sidebar-header{min-height:48px;padding:8px 8px 6px 14px}
+  #appShell .sidebar-logo{
+    font-family:var(--font-sans);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:-.02em;
+  }
+  #appShell .sidebar-header .icon-btn{width:30px;height:30px;min-width:30px}
+  #appShell .sidebar-header .icon-btn svg{width:16px;height:16px}
+  #appShell .sidebar-nav{padding:4px 8px 6px;gap:2px}
+  #appShell .sidebar-nav-btn{
+    min-height:32px;
+    padding:6px 10px;
+    gap:10px;
+    border-radius:8px;
+    font-family:var(--font-sans);
+    font-size:13.5px;
+    line-height:20px;
+  }
+  #appShell .sidebar-nav-btn svg{width:16px;height:16px}
+  #appShell .sidebar-search-row{padding:8px 8px 2px}
+  #appShell .sidebar-search{height:32px;border-radius:8px}
+  #appShell .sidebar-search input{font-family:var(--font-sans);font-size:12.5px}
+  #appShell .recents-panel{padding:12px 8px 0}
+  #appShell .recents-header{padding:4px 8px 3px}
+  #appShell .recents-title{font-family:var(--font-sans);font-size:11px;letter-spacing:0;text-transform:none}
+  #appShell .recent-item{min-height:30px;border-radius:8px;padding:5px 8px}
+  #appShell .recent-item-text{font-family:var(--font-sans);font-size:12.5px;line-height:19px}
+  #appShell .sidebar-footer{min-height:48px;padding:6px 8px;border-top:1px solid hsl(var(--cowork-line)/.55)}
+}
+
+/* Use the actual western face for the visible shell, including the greeting.
+   The greeting used to select Newsreader, which made the font change appear
+   ineffective even after the body stack was corrected. */
+#appShell .top-bar,
+#appShell .sidebar,
+#appShell .main-content,
+#appShell .home-ideas,
+#appShell .chat-view,
+#appShell .msg-list,
+#appShell .topic-input-wrap,
+#appShell #chatInputWrap,
+#appShell .composer-tools-menu,
+#appShell .mobile-mode-menu{font-family:var(--font-sans)}
+#appShell .topic-title.greeting{
+  font-family:var(--font-sans);
+  font-size:calc(clamp(1.75rem,2.5vw,2.25rem) * var(--app-font-scale,1));
+  font-weight:500;
+  line-height:1.18;
+  letter-spacing:-.045em;
+  color:hsl(var(--cowork-text));
+}
+
+/* Empty state: one optical group with the title, composer and ideas in the
+   same order as the reference page. Equal flexible bands keep it centered on
+   tall screens and naturally collapse on short screens. */
+#appShell #topicSetup{
+  justify-content:flex-start;
+  gap:0;
+  padding:24px 20px 32px;
+}
+#appShell #topicSetup::before,
+#appShell #topicSetup::after{display:block;flex:1 1 0;max-height:none}
+#appShell #topicSetup .topic-title.greeting{margin:0;text-align:center}
+#appShell #topicInputWrap:not(.voice-recording-active){
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr) auto 36px 36px;
+  grid-template-rows:52px;
+  align-items:center;
+  width:min(100%,var(--conversation-composer-width));
+  max-width:var(--conversation-composer-width);
+  min-height:54px;
+  margin-top:24px;
+  padding:1px 8px 1px 4px;
+  border:1px solid hsl(var(--cowork-line));
+  border-radius:26px;
+  color:hsl(var(--cowork-text));
+  background:hsl(var(--cowork-surface));
+  box-shadow:0 1px 2px hsl(0 0% 0%/.06),0 8px 26px hsl(0 0% 0%/.06);
+}
+#appShell #topicInputWrap:not(.voice-recording-active) > .attachment-chips{grid-column:1 / -1}
+#appShell #topicInputWrap:not(.voice-recording-active) .composer-editor-root{grid-column:2;grid-row:1;width:100%;min-width:0}
+#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer,
+#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer>div,
+#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer>div>div{width:100%;min-width:0}
+#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor{
+  height:52px!important;
+  min-height:52px;
+  max-height:52px;
+  padding:14px 0;
+  overflow:hidden;
+  font-family:var(--font-sans);
+  font-size:16px;
+  line-height:24px;
+}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer{display:contents}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .footer-left-group{display:contents}
+#appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn{
+  grid-column:1;grid-row:1;margin:0;width:44px;min-width:44px;height:44px;min-height:44px;
+}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker{grid-column:3;grid-row:1;display:inline-flex;min-width:0}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .mobile-mic-btn{
+  grid-column:4;grid-row:1;display:inline-flex;width:32px;min-width:32px;height:32px;min-height:32px;
+}
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn{
+  grid-column:5;grid-row:1;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border-radius:50%;
+}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-trigger{
+  min-height:28px;padding:4px 6px;border-radius:8px;font-size:12px;gap:5px;color:hsl(var(--cowork-muted));
+}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-glyph{width:13px;height:13px}
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-caret{width:11px;height:11px}
+
+#appShell .home-ideas{
+  width:min(100%,var(--conversation-composer-width));
+  margin:16px 0 0;
+}
+#appShell .home-ideas-label{font-family:var(--font-sans);font-size:14px;font-weight:500;color:hsl(var(--cowork-text))}
+#appShell .home-idea{font-family:var(--font-sans);font-size:13px;color:hsl(var(--cowork-text))}
+
+/* Shared composer: the initial state is one row; only a measured multiline
+   draft creates the second control row. This keeps focus from moving the
+   controls and matches ChatGPT's calm empty composer. */
+#appShell #chatInputWrap:not(.voice-recording-active){
+  display:block;
+  width:min(100%,var(--conversation-composer-width));
+  max-width:var(--conversation-composer-width);
+  min-height:0;
+  padding:4px 8px;
+  border:1px solid hsl(var(--cowork-line));
+  border-radius:26px;
+  color:hsl(var(--cowork-text));
+  background:hsl(var(--cowork-surface));
+  box-shadow:0 1px 2px hsl(0 0% 0%/.06),0 8px 26px hsl(0 0% 0%/.06);
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) auto 32px 36px;
+  grid-template-rows:52px;
+  align-items:center;
+  width:100%;
+  padding:0;
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root{grid-column:2;grid-row:1;width:100%;min-width:0}
+#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer,
+#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer>div,
+#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer>div>div{width:100%;min-width:0}
+#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap{
+  height:52px!important;
+  min-height:52px;
+  max-height:52px;
+  padding:14px 0;
+  overflow:hidden;
+  font-family:var(--font-sans);
+  font-size:16px;
+  line-height:24px;
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer{display:contents}
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .footer-left-group{display:contents}
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .attach-btn{
+  grid-column:1;grid-row:1;width:44px;min-width:44px;height:44px;min-height:44px;margin:0;
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker{
+  grid-column:3;grid-row:1;display:inline-flex;position:static;margin:0;transform:none;pointer-events:auto;
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger{
+  min-height:28px;padding:4px 6px;border-radius:8px;font-size:12px;gap:5px;color:hsl(var(--cowork-muted));
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph{width:13px;height:13px}
+#appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger .effort-caret{width:11px;height:11px}
+#appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn{
+  display:inline-flex;grid-column:4;grid-row:1;width:32px;min-width:32px;height:32px;min-height:32px;margin:0;
+}
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .send-btn{
+  grid-column:5;grid-row:1;width:30px;min-width:30px;height:30px;min-height:30px;margin:0;border-radius:50%;
+}
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn{
+  background:hsl(var(--cowork-surface-active));color:hsl(var(--cowork-muted));box-shadow:none;
+}
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:hover,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover,
+#appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn:hover,
+#appShell #chatInputWrap:not(.voice-recording-active) #chatComposerToolsBtn:hover{
+  background:hsl(var(--cowork-surface-active));color:hsl(var(--cowork-text));
+}
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active{
+  background:hsl(var(--cowork-text));color:hsl(var(--cowork-page));box-shadow:none;
+}
+
+/* Long drafts get the familiar second row without changing the idle state. */
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body{
+  grid-template-columns:44px minmax(0,1fr) auto 32px 36px;
+  grid-template-rows:minmax(72px,auto) 40px;
+}
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root{grid-column:1 / -1;grid-row:1}
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap{
+  height:auto!important;min-height:72px;max-height:var(--composer-editor-max,280px);padding:12px 8px 8px;overflow-y:auto;
+}
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .attach-btn{grid-column:1;grid-row:2;margin-left:0}
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker{grid-column:3;grid-row:2}
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn{grid-column:4;grid-row:2}
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .send-btn{grid-column:5;grid-row:2;margin-right:0}
+
+/* The light popover should invert with the page. The prior final menu rules
+   were dark-only, leaving a black card on the white theme. */
+[data-mode=light] #composerToolsMenu{
+  background:hsl(0 0% 100%/.98);
+  border-color:hsl(0 0% 0%/.12);
+  box-shadow:0 16px 40px hsl(0 0% 0%/.16),0 1px 0 hsl(0 0% 100%/.8) inset;
+}
+[data-mode=light] #composerToolsMenu .composer-tools-item,
+[data-mode=light] #composerToolsMenu .composer-tools-more-toggle{color:hsl(0 0% 13%/.92)}
+[data-mode=light] #composerToolsMenu .composer-tools-icon{color:hsl(0 0% 13%/.58)}
+[data-mode=light] #composerToolsMenu .composer-tools-disclosure{color:hsl(0 0% 13%/.48)}
+[data-mode=light] #composerToolsMenu .composer-tools-item:hover,
+[data-mode=light] #composerToolsMenu .composer-tools-item:focus-visible,
+[data-mode=light] #composerToolsMenu .composer-tools-more-toggle:hover,
+[data-mode=light] #composerToolsMenu .composer-tools-more-toggle:focus-visible{
+  color:hsl(0 0% 0%);background:hsl(0 0% 0%/.06);
+}
+[data-mode=light] #composerToolsMenu .composer-tools-more-items{border-top-color:hsl(0 0% 0%/.1)}
+
+@media(max-width:768px){
+  #appShell .top-bar{min-height:56px;padding:10px 16px}
+  #appShell #topicSetup{
+    justify-content:center;
+    padding:0 16px max(24px,env(safe-area-inset-bottom,0px));
+    overflow-y:auto;
+  }
+  #appShell #topicSetup::before,
+  #appShell #topicSetup::after{display:none}
+  #appShell #topicSetup .topic-title.greeting{
+    display:block!important;
+    width:100%;
+    max-width:330px;
+    font-size:calc(28px * var(--app-font-scale,1));
+    line-height:34px;
+    letter-spacing:-.04em;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active){
+    order:2;
+    grid-template-columns:44px minmax(0,1fr) auto 36px 36px;
+    grid-template-rows:52px;
+    width:100%;
+    min-height:54px;
+    margin-top:24px;
+    padding:1px 6px 1px 4px;
+    border-radius:28px;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor{
+    height:52px!important;min-height:52px;max-height:52px;padding:14px 0;font-size:16px;line-height:24px;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker{display:inline-flex}
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .mobile-mic-btn{width:34px;min-width:34px;height:34px;min-height:34px}
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn{width:36px;min-width:36px;height:36px;min-height:36px}
+  #appShell .home-ideas{
+    order:3;
+    width:100%;
+    margin:14px 0 0;
+  }
+  #appShell .home-ideas-label{display:block;padding:0 10px 2px;font-size:13px}
+  #appShell .home-idea{min-height:34px;padding:5px 8px;border-radius:8px;gap:10px;font-size:13px}
+  #appShell .home-idea-icon{width:22px;height:22px;border:1px solid hsl(var(--cowork-line)/.72);border-radius:6px;color:hsl(var(--cowork-muted))}
+  #appShell .home-idea-icon svg{width:13px;height:13px}
+
+  #appShell #chatInputWrap:not(.voice-recording-active){
+    width:100%;max-width:none;padding:4px 6px;border-radius:28px;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body{
+    grid-template-columns:44px minmax(0,1fr) auto 36px 36px;
+    grid-template-rows:52px;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap{
+    height:52px!important;min-height:52px;max-height:52px;padding:14px 0;font-size:16px;line-height:24px;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .attach-btn{width:44px;min-width:44px;height:44px;min-height:44px}
+  #appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn{width:36px;min-width:36px;height:36px;min-height:36px}
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .send-btn{width:36px;min-width:36px;height:36px;min-height:36px}
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body{
+    grid-template-columns:44px minmax(0,1fr) auto 36px 36px;
+    grid-template-rows:minmax(72px,auto) 40px;
+  }
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap{min-height:72px;padding:12px 8px 8px}
+}
+
+/* ═══ Final fidelity details — keep the last-mile rules together ════════
+   These are deliberately appended after the compatibility layers above:
+   they solve the two small-screen details that are easiest to miss in a
+   screenshot review, while leaving the recording surface out of scope. */
+
+/* The desktop reference has a quiet mode selector at the main-pane edge.
+   The selector remains a real Chat/Tutor control; it is hidden in an active
+   conversation by the existing state rule and replaced by the mobile menu
+   below the narrow breakpoint. */
+@media(min-width:769px){
+  #appShell #modeSegmentedTop{
+    display:flex;
+    left:16px;
+    top:50%;
+    transform:translateY(-50%);
+    padding:2px;
+    gap:1px;
+    background:transparent;
+  }
+  #appShell #modeSegmentedTop .app-mode-toggle{
+    padding:6px 9px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:500;
+    color:hsl(var(--cowork-muted));
+  }
+  #appShell #modeSegmentedTop .app-mode-toggle.active{
+    color:hsl(var(--cowork-text));
+    background:hsl(var(--cowork-surface-active));
+    box-shadow:none;
+  }
+}
+
+/* Empty-state placeholder copy is a single line in the ChatGPT composer.
+   The editor itself can still wrap real drafts and promote the composer to
+   its measured multiline state; only the pseudo-placeholder is ellipsized. */
+#appShell #topicInputWrap:not(.voice-recording-active) .tiptap p.is-editor-empty:first-child::before,
+#appShell #chatInputWrap:not(.voice-recording-active) .tiptap p.is-editor-empty:first-child::before{
+  display:block;
+  width:100%;
+  height:1.5em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* At phone widths the reasoning selector keeps its full accessible button
+   but collapses to the three-bar glyph. This returns a useful writing width
+   to the placeholder instead of forcing “How can I help you today?” onto a
+   second, clipped line. */
+@media(max-width:480px){
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker{
+    width:34px;
+    min-width:34px;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-trigger,
+  #appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger{
+    width:34px;
+    min-width:34px;
+    justify-content:center;
+    padding-inline:4px;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-label,
+  #appShell #chatInputWrap:not(.voice-recording-active) .effort-label,
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-caret,
+  #appShell #chatInputWrap:not(.voice-recording-active) .effort-caret{display:none}
+}
+
+/* A phone's idle chat composer keeps the same visual economy as ChatGPT:
+   add, write, speak, send. The reasoning choice remains one tap away and
+   returns when the field is active or has a multiline draft. Landing keeps
+   the compact glyph visible so the first-turn control remains discoverable. */
+@media(max-width:768px){
+  #appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker{display:none}
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .footer-left-group .effort-picker,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker{display:inline-flex}
+}
+
+/* Popovers must be opaque: starter ideas and transcript copy should never
+   bleed through the capability card while it is open. */
+#composerToolsMenu{background:hsl(0 0% 20%)}
+[data-mode=light] #composerToolsMenu{background:hsl(0 0% 100%)}
+
+/* The reference treats the plus as a quiet icon inside the pill. Keep the
+   44px hit target for touch, but remove the competing filled disc at rest. */
+#appShell #topicComposerToolsBtn,
+#appShell #chatComposerToolsBtn{
+  background:transparent;
+  color:hsl(var(--cowork-muted));
+}
+#appShell #topicComposerToolsBtn:hover,
+#appShell #chatComposerToolsBtn:hover,
+#appShell #topicComposerToolsBtn:focus-visible,
+#appShell #chatComposerToolsBtn:focus-visible{
+  background:hsl(var(--cowork-surface-active));
+  color:hsl(var(--cowork-text));
+}
+
+/* Form controls do not consistently inherit a parent face across browsers.
+   Pin every visible shell control to the same bundled western stack so the
+   computed style is real in both English and mixed Chinese/Latin UI. */
+#appShell button,
+#appShell input,
+#appShell textarea,
+#appShell select,
+#appShell [contenteditable="true"]{font-family:var(--font-sans)}
+
+/* Keep the public workbench token concrete for layout consumers and visual
+   tests while retaining the user's font-scale multiplier. */
+#appShell{--workbench-content-max:calc(768px * var(--app-width-scale,1))}

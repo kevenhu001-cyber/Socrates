@@ -1,12 +1,15 @@
+import { useEffect, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
+import { repositionComposerTools } from '../../ui/composerTools';
 import { installComposerToolsBridge } from './composerToolsStore';
 import {
   useComposerToolsDispatch,
   useComposerToolsSnapshot,
 } from './legacyAdapter';
 import { registry } from '../../extensions/registry';
+import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';
 import type { ExtensionDefinition } from '../../extensions/types';
 import type { ComposerToolsAction } from './types';
 
@@ -14,10 +17,11 @@ const MENU_ID = 'composerToolsMenu';
 
 type MenuItemSpec = ExtensionDefinition;
 
-/* Labels go through the i18n pipeline like every other menu in the app: these
-   five were briefly hardcoded to Chinese, which shipped Chinese copy to the
-   English default locale. `labelKey` is resolved at render time so setLang()
-   repaints the menu with the rest of the chrome. */
+/* Labels go through the i18n pipeline like every other menu in the app. The
+   first layer intentionally mirrors ChatGPT's compact composer menu: media
+   actions stay together and workflows live behind one explicit disclosure.
+   `labelKey` is resolved at render time so setLang() repaints the menu with
+   the rest of the chrome. */
 const MOBILE_MENU_ITEMS: ReadonlyArray<{
   action: ComposerToolsAction;
   labelKey: string;
@@ -42,19 +46,25 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
     label: 'Files',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8.5 12.5 14 7a3 3 0 0 1 4.2 4.2l-7 7a5 5 0 0 1-7.1-7.1l7.2-7.2"/><path d="m7.1 14 7-7"/></svg>',
   },
-  {
-    action: 'skills',
-    labelKey: 'composer.tools.plugins',
-    label: 'Plugins',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M8.2 9.5a2.2 2.2 0 1 1 3.8-1.6v8.2a2.2 2.2 0 1 0 3.8-1.6"/><path d="m6.5 14.5 2-2 2 2M13.5 9.5l2 2 2-2"/></svg>',
-  },
-  {
-    action: 'extensiveThinking',
-    labelKey: 'composer.tools.thinkDeeper',
-    label: 'Think deeper',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.2 16a8.5 8.5 0 0 1 15.6 0"/><path d="m12 14 3.2-4.6"/><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none"/></svg>',
-  },
 ];
+
+/* Keep the first layer short enough to sit beside/above the composer without
+   becoming a second navigation panel. The desktop pair mirrors ChatGPT's
+   add-content/search affordances; every other workflow remains available in
+   the expanded layer below it. */
+const DESKTOP_PRIMARY_WORKFLOW_ORDER = ['upload', 'research'] as const;
+const DESKTOP_PRIMARY_WORKFLOW_KEYS = new Set<string>(DESKTOP_PRIMARY_WORKFLOW_ORDER);
+const WORKFLOW_ORDER = ['write', 'research', 'deepResearch', 'explore', 'analyze', 'codex', 'exam', 'skills'] as const;
+
+const TOOLS_DISCLOSURE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="2" fill="currentColor" stroke="none"/></svg>';
+
+const DISCLOSURE_CHEVRON = <svg className="composer-tools-disclosure" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>;
+
+const MOBILE_THINKING_SPEC: MenuItemSpec = {
+  ...extensiveThinkingExtension,
+  nameKey: 'composer.tools.thinkDeeper',
+  nameFallback: 'Think deeper',
+};
 
 function toolDefinitions(): MenuItemSpec[] {
   return registry.byPlacement('tools');
@@ -63,6 +73,16 @@ function toolDefinitions(): MenuItemSpec[] {
 function i18n(key: string, fallback: string): string {
   const value = _t(key);
   return value !== key ? value : fallback;
+}
+
+function menuCopy(spec: MenuItemSpec): { label: string; description: string } {
+  const labelKey = spec.key === 'research' ? 'composer.tools.webSearch' : spec.nameKey;
+  const labelFallback = spec.key === 'research' ? 'Web search' : spec.nameFallback;
+  const label = i18n(labelKey, labelFallback);
+  const description = spec.descriptionKey
+    ? i18n(spec.descriptionKey, spec.descriptionFallback ?? '')
+    : '';
+  return { label, description };
 }
 
 function MenuItem({
@@ -74,10 +94,7 @@ function MenuItem({
   active: boolean;
   onPick: (action: ComposerToolsAction) => void;
 }) {
-  const label = i18n(spec.nameKey, spec.nameFallback);
-  const description = spec.descriptionKey
-    ? i18n(spec.descriptionKey, spec.descriptionFallback ?? '')
-    : '';
+  const { label, description } = menuCopy(spec);
 
   return (
     <button
@@ -136,23 +153,88 @@ function MobileMenuItem({
   );
 }
 
+function ToolsDisclosure({
+  expanded,
+  mobile,
+  onToggle,
+}: {
+  expanded: boolean;
+  mobile?: boolean;
+  onToggle: () => void;
+}) {
+  const labelKey = mobile
+    ? (expanded ? 'composer.tools.mobileLess' : 'composer.tools.mobile')
+    : (expanded ? 'composer.tools.less' : 'composer.tools.more');
+  const fallback = mobile
+    ? (expanded ? 'Hide tools' : 'Tools')
+    : (expanded ? 'Show fewer' : 'More tools');
+
+  return (
+    <button
+      type="button"
+      className={`composer-tools-more-toggle${mobile ? ' composer-tools-mobile-item' : ''}`}
+      role="menuitem"
+      aria-expanded={expanded}
+      aria-controls={mobile ? 'composerToolsMobileMore' : 'composerToolsDesktopMore'}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggle();
+      }}
+    >
+      <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: TOOLS_DISCLOSURE_ICON }} />
+      <span className="composer-tools-copy"><span>{i18n(labelKey, fallback)}</span></span>
+      {expanded ? <svg className="composer-tools-disclosure is-expanded" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg> : DISCLOSURE_CHEVRON}
+    </button>
+  );
+}
+
 function MenuItems({
   activeKey,
   onPick,
+  isOpen,
 }: {
   activeKey: string | null;
   onPick: (action: ComposerToolsAction) => void;
+  isOpen: boolean;
 }) {
+  const [showMore, setShowMore] = useState(false);
+  useEffect(() => {
+    if (!isOpen) setShowMore(false);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const frame = window.requestAnimationFrame(() => repositionComposerTools());
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen, showMore]);
+
+  const definitions = toolDefinitions();
+  const primary = DESKTOP_PRIMARY_WORKFLOW_ORDER
+    .map((key) => definitions.find((spec) => spec.key === key))
+    .filter((spec): spec is MenuItemSpec => Boolean(spec));
+  const secondary = WORKFLOW_ORDER
+    .filter((key) => !DESKTOP_PRIMARY_WORKFLOW_KEYS.has(key))
+    .map((key) => definitions.find((spec) => spec.key === key))
+    .filter((spec): spec is MenuItemSpec => Boolean(spec));
+  const secondaryKeys = new Set(secondary.map((spec) => spec.key));
+  definitions.forEach((spec) => {
+    if (!DESKTOP_PRIMARY_WORKFLOW_KEYS.has(spec.key) && !secondaryKeys.has(spec.key)) {
+      secondary.push(spec);
+    }
+  });
+  const mobileSecondary = [
+    ...WORKFLOW_ORDER
+      .map((key) => definitions.find((spec) => spec.key === key))
+      .filter((spec): spec is MenuItemSpec => Boolean(spec)),
+    ...definitions.filter((spec) => spec.key !== 'upload' && !WORKFLOW_ORDER.includes(spec.key as typeof WORKFLOW_ORDER[number])),
+    MOBILE_THINKING_SPEC,
+  ];
+
   return (
     <>
       <div className="composer-tools-desktop-items">
-        <div className="composer-tools-heading">
-          <span>{i18n('composer.tools.heading', 'Tools')}</span>
-          <span className="composer-tools-heading-hint">
-            {i18n('composer.tools.headingHint', 'Choose a workflow')}
-          </span>
-        </div>
-        {toolDefinitions().map((spec) => (
+        {primary.map((spec) => (
           <MenuItem
             key={spec.key}
             spec={spec}
@@ -160,6 +242,17 @@ function MenuItems({
             onPick={onPick}
           />
         ))}
+        <ToolsDisclosure expanded={showMore} onToggle={() => setShowMore((value) => !value)} />
+        <div id="composerToolsDesktopMore" className="composer-tools-more-items" hidden={!showMore}>
+          {secondary.map((spec) => (
+            <MenuItem
+              key={spec.key}
+              spec={spec}
+              active={spec.key === activeKey}
+              onPick={onPick}
+            />
+          ))}
+        </div>
       </div>
       <div className="composer-tools-mobile-items">
         {MOBILE_MENU_ITEMS.map((item) => (
@@ -170,13 +263,24 @@ function MenuItems({
             onPick={onPick}
           />
         ))}
+        <ToolsDisclosure expanded={showMore} mobile onToggle={() => setShowMore((value) => !value)} />
+        <div id="composerToolsMobileMore" className="composer-tools-more-items composer-tools-mobile-more-items" hidden={!showMore}>
+          {mobileSecondary.map((spec) => (
+            <MenuItem
+              key={spec.key}
+              spec={spec}
+              active={spec.key === activeKey}
+              onPick={onPick}
+            />
+          ))}
+        </div>
       </div>
     </>
   );
 }
 
 function ComposerToolsMenu() {
-  useComposerToolsSnapshot();
+  const snapshot = useComposerToolsSnapshot();
   const { pick } = useComposerToolsDispatch();
   const extensionState = window as unknown as {
     _activeTemplate?: { extensionKey?: string } | null;
@@ -185,7 +289,7 @@ function ComposerToolsMenu() {
   const activeKey = extensionState._activeTemplate?.extensionKey
     ?? (extensionState.extensiveThinkingOn ? 'extensiveThinking' : null);
 
-  return <MenuItems activeKey={activeKey} onPick={pick} />;
+  return <MenuItems activeKey={activeKey} onPick={pick} isOpen={snapshot.isOpen} />;
 }
 
 export interface ComposerToolsHandle {

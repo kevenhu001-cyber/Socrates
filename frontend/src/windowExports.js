@@ -92,7 +92,7 @@ window.formatMsg = formatMsg;
 /* ─── auth/index.js ─── */
 import {
   hideGate, showGate, showAuthView, showAuthSignin,
-  switchAuthTab,
+  switchAuthTab, focusAuthTab,
   showAuthForgotPassword, showAuthCodeLogin,
   submitAuthSignin, submitAuthRegister, submitAuthVerify,
   submitAuthForgotPassword, submitAuthResetPassword,
@@ -104,6 +104,7 @@ window.showGate = showGate;
 window.showAuthView = showAuthView;
 window.showAuthSignin = showAuthSignin;
 window.switchAuthTab = switchAuthTab;
+window.focusAuthTab = focusAuthTab;
 window.showAuthForgotPassword = showAuthForgotPassword;
 window.showAuthCodeLogin = showAuthCodeLogin;
 window.submitAuthSignin = submitAuthSignin;
@@ -227,8 +228,9 @@ window.toggleComposerTools = toggleComposerTools;
 
 
 /* ─── ui/voiceInput.js ─── */
-import { toggleSpeechInput } from './ui/voiceInput.js';
+import { stopSpeechInput, toggleSpeechInput } from './ui/voiceInput.js';
 window.toggleSpeechInput = toggleSpeechInput;
+window.stopSpeechInput = stopSpeechInput;
 /* ─── ui/settings.js ─── */
 import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider } from './ui/settings.js';
 window.openSettings = openSettings;

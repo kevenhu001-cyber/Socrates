@@ -89,6 +89,9 @@ function buildActionMap() {
 
   // Auth
   registerAction('switchAuthTab', function (el, e, tab) { w.switchAuthTab(tab); });
+  registerAction('focusAuthTab', function (el, e) {
+    if (typeof w.focusAuthTab === 'function') w.focusAuthTab(el, e);
+  });
   registerAction('showAuthForgotPassword', function () { w.showAuthForgotPassword(); });
   registerAction('showAuthCodeLogin', function () { w.showAuthCodeLogin(); });
   registerAction('resendVerification', function () { w.resendVerification(); });
