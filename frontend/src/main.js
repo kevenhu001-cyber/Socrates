@@ -65,7 +65,7 @@ import {
   capSessions, getVisibleSessions, getArchivedSessionsFrom,
   sweepExpiredArchivesFrom, createDeletedSessionGuard,
 } from './session/store.js';
-import { esc, escAttr, escHTML, decodeEntities, stripTags, safeHljsLang } from './render/helpers.js';
+import { esc, escAttr, escHTML, decodeEntities, stripTags, safeHljsLang, stripCitationMarkers } from './render/helpers.js';
 import { parseQuizInner, parseExampleInner, parsePracticeInner, parseDefinitionInner, parseFlashcardInner, parseTheoremInner, parseProofInner, parseDerivationInner, parseKeyPointInner } from './render/widgetParsers.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
 import { callAPI, callAPIChat } from './chat/api.js';
@@ -5124,10 +5124,17 @@ function addMessage(role,text,type,actions,attachmentsArg){
      XML tags so every Tutor scaffold, including the math-book blocks,
      is converted to its typed widget instead of raw XML text. */
   var html;
-  if(role==="assistant"&&/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(text)){
-    try{html=renderAssistantHTML(text)}catch(_){html=formatMsg(text)}
+  var _displaySource=String(text||"");
+  if(role==="assistant"){
+    /* P_strip-citations — assistant bubbles never show [1]/[2] search
+       markers, including this direct-add path (re-explains, replayed
+       turns). User messages keep whatever the user typed. */
+    _displaySource=stripCitationMarkers(_displaySource);
+  }
+  if(role==="assistant"&&/<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(_displaySource)){
+    try{html=renderAssistantHTML(_displaySource)}catch(_){html=formatMsg(_displaySource)}
   }else{
-    html=formatMsg(text);
+    html=formatMsg(_displaySource);
   }
   var modelInfo=null;
   if(role==="assistant"){
@@ -6175,12 +6182,17 @@ function addStreamingMessage(opts){
     else if(sec>=20)setPlaceholderText(t("think.organizingAnswer"));
     else if(sec>=8)setPlaceholderText(t("think.reviewingContext"));
     /* Quiet elapsed cue after 12s: the phase copy stays primary, the
-       seconds suffix fades in beside it so long waits read as alive. */
+       seconds suffix fades in beside it so long waits read as alive.
+       The counter itself moves in 5s steps — a per-second rewrite made
+       the pill's width jitter constantly, which read as instability
+       rather than progress. */
+    var _elapsedQ=Math.max(10,Math.floor(sec/5)*5);
     if(sec>=12&&!placeholderRow.classList.contains("thinking-elapsed-shown")){
       placeholderRow.classList.add("thinking-elapsed-shown");
-    }
-    if(placeholderRow.classList.contains("thinking-elapsed-shown")){
-      placeholderRow.setAttribute("data-elapsed",sec+"s");
+      placeholderRow.setAttribute("data-elapsed",_elapsedQ+"s");
+    }else if(placeholderRow.classList.contains("thinking-elapsed-shown")
+             &&placeholderRow.getAttribute("data-elapsed")!==_elapsedQ+"s"){
+      placeholderRow.setAttribute("data-elapsed",_elapsedQ+"s");
     }
   },1000);
   var firstDeltaTimer=setTimeout(function(){
@@ -6455,7 +6467,7 @@ function doRender(){
      * text node) operates on the cleaned version. The raw `full`
      * is still kept in state.messages[msgIdx].rawText for save /
      * history so a later formatMsg can re-process it. */
-    var rawDisplayFull=stripChatArtifacts(full.slice(segBase));
+    var rawDisplayFull=stripCitationMarkers(stripChatArtifacts(full.slice(segBase)));
     var inlineThinkStart=rawDisplayFull.indexOf("<think>");
     var inlineThinkEnd=inlineThinkStart===-1?-1:rawDisplayFull.indexOf("</think>",inlineThinkStart);
     if(inlineThinkStart!==-1){
@@ -6745,8 +6757,21 @@ function doRender(){
   }
   function stampWaiting(sec){
     if(!reactLive||statusIsBusy())return;
+    /* Reasoning owns the line once it starts. Reasoning deltas re-stamp
+       phase "thinking" on every chunk; the 1s elapsed tick would otherwise
+       flip the pill back to the waiting shape between deltas. The two
+       shapes have different margins/padding, so the label visibly jumped
+       for the whole reasoning phase. One-way rule: waiting may not
+       overwrite a thinking line — only content (append/tool activity)
+       retires it. */
+    var _owner=liveMessage();
+    var _prev=_owner&&_owner._liveStatus;
+    if(_prev&&_prev.phase==="thinking")return;
+    /* The elapsed cue is quantized to 5s steps so the pill's width only
+       changes rarely and predictably, instead of ticking every second. */
+    var _elapsedQ=sec>=12?Math.max(10,Math.floor(sec/5)*5):undefined;
     setLiveStatus({phase:"waiting",label:waitingCopyFor(sec),mode:appMode,
-      clickable:appMode==="chat",elapsedSec:sec>=12?sec:undefined});
+      clickable:appMode==="chat",elapsedSec:_elapsedQ});
   }
   function stampThinking(){
     if(!reactLive||statusIsBusy())return;
@@ -7914,15 +7939,20 @@ function renderAssistantHTML(rawText){
     .replace(/<think>[\s\S]*?<\/think>/gi,"")
     .replace(/<think>[\s\S]*$/gi,"");
   /* Chat mode: strip a trailing "Sources: …" block the model
-     occasionally writes, but keep inline [N] markers so the
-     renderer can turn them into clickable citation links pointing
-     to the matching Source Card row. */
+     occasionally writes. */
   if(appMode==="chat"){
     text=text.replace(
       /(?:^|\n)\s*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)\s*[:：][\s\S]*$/i,
       ""
     );
   }
+  /* P_strip-citations — the answer body carries no [1]/[2] search-citation
+     markers. Sources stay in the search tool card; the models add inline
+     markers despite the prompt, so the renderer removes them (code and
+     math spans are protected inside the helper). This replaces the old
+     cite-linkify pass, which turned the markers into <sup class=cite-link>
+     links — the user reads them as noise in the prose. */
+  text=stripCitationMarkers(text);
   /* All placeholder lists — collected during the scan, mounted at the end. */
   var quizPH=[];
   var examplePH=[];
@@ -8227,23 +8257,6 @@ function renderAssistantHTML(rawText){
   /* formatMsg uses marked.parse, which passes raw <div> blocks through
      untouched. The slots will land in the final HTML intact. */
   var html=formatMsg(text);
-  var citeMasked = html.replace(/<(pre|code)\b[^>]*>[\s\S]*?<\/\1>/gi, function (m) {
-    return m.replace(/\[(\d+)\]/g, '&#91;$1&#93;');
-  });
-  /* Mask [N] inside <iframe> tags too. A viz/plot srcdoc embeds the
-     card's own JS, which contains array indexing like n[0]. Linkifying
-     that injects a <sup class="cite-link" …"> INSIDE the srcdoc="…"
-     attribute; the quote closes the attribute early, so the parser drops
-     srcdoc and sandbox and the canvas renders blank. Matches the opening
-     tag only — attributes are where the damage happens. */
-  citeMasked = citeMasked.replace(/<iframe\b[^>]*>/gi, function (m) {
-    return m.replace(/\[(\d+)\]/g, '&#91;$1&#93;');
-  });
-  citeMasked = citeMasked.replace(
-    /\[(\d+)\]/g,
-    '<sup class="cite-link"><a href="#socrates-src-$1" data-cite-target="$1" aria-label="Citation $1">[$1]</a></sup>'
-  );
-  html = citeMasked.replace(/&#91;(\d+)&#93;/g, '[$1]');
 
   /* Defer DOM mount until the html is actually inserted. */
   if(quizPH.length||examplePH.length||practicePH.length||definitionPH.length||stepPH.length||flashcardPH.length||derivationPH.length||proofPH.length||theoremPH.length||keyPointPH.length){
@@ -10198,7 +10211,9 @@ window.__socratesLegacy = {
        uses it for a live turn and renderAssistantHTML once the turn settles,
        which is the same hand-off the legacy pipeline did at finish(). */
     renderAssistantProgressive: function (rawText) {
-      return formatMsgProgressive(stripChatArtifacts(String(rawText || '')));
+      /* P_strip-citations — same body contract as renderAssistantHTML, so a
+         marker never flashes in the live tail and then vanishes at finish. */
+      return formatMsgProgressive(stripCitationMarkers(stripChatArtifacts(String(rawText || ''))));
     },
   },
   /* P_react-live-turn — the two surfaces a declarative turn has to hand back:
