@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -162,15 +162,24 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
      actually needs a second line. */
   const composerWrapRef = useRef<HTMLElement | null>(null);
   const shapeFrameRef = useRef<number | null>(null);
-  const shapeAnimationRef = useRef<Animation | null>(null);
+  const shapeAnimationRef = useRef<{ cancel(): void } | null>(null);
+  const shapeAnimationCleanupRef = useRef<(() => void) | null>(null);
+  const shapeHeightRef = useRef<number | null>(null);
   const collapsedMeasureRef = useRef<{
     editorWidth: number;
     wrapWidth: number;
     editorStyle: string;
+    singleLineHeight: number;
   } | null>(null);
-  const syncComposerShape = useCallback((editorDom: HTMLElement) => {
+  const captureShapeHeight = useCallback((editorDom: HTMLElement) => {
+    const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
+    if (wrap && wrap.getClientRects().length) {
+      shapeHeightRef.current = wrap.getBoundingClientRect().height;
+    }
+  }, []);
+  const syncComposerShape = useCallback((editorDom: HTMLElement, immediate = false) => {
     if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
-    shapeFrameRef.current = requestAnimationFrame(() => {
+    const run = () => {
       shapeFrameRef.current = null;
       const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
       if (!wrap) return;
@@ -182,6 +191,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         collapsedMeasureRef.current = {
           editorWidth: editorDom.getBoundingClientRect().width,
           wrapWidth,
+          singleLineHeight: editorDom.clientHeight,
           editorStyle: [
             `box-sizing:${style.boxSizing}`,
             `padding:${style.padding}`,
@@ -226,38 +236,149 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         document.body.appendChild(measureHost);
       }
 
-      const blocks = Array.from(measureDom.children) as HTMLElement[];
-      let contentTop = Number.POSITIVE_INFINITY;
-      let contentBottom = Number.NEGATIVE_INFINITY;
-      blocks.forEach((block) => {
-        const rect = block.getBoundingClientRect();
-        if (!rect.height) return;
-        contentTop = Math.min(contentTop, rect.top);
-        contentBottom = Math.max(contentBottom, rect.bottom);
-      });
-      const contentHeight = Number.isFinite(contentTop) ? contentBottom - contentTop : 0;
+      const measureStyle = getComputedStyle(measureDom);
+      const paddingY = (Number.parseFloat(measureStyle.paddingTop) || 0)
+        + (Number.parseFloat(measureStyle.paddingBottom) || 0);
+      const singleLineHeight = Math.max(
+        paddingY + lineHeight,
+        collapsedMeasureRef.current?.singleLineHeight ?? 0,
+      );
+      /* scrollHeight is the browser's own wrapped-content measurement. It
+         handles explicit newlines, paste, font changes and word wrapping
+         more reliably than summing child rectangles (whose margins may
+         collapse differently inside the off-screen probe). */
+      const contentHeight = measureDom.scrollHeight;
       measureHost?.remove();
-      const shouldExpand = contentHeight > lineHeight * 1.5;
-      if (wrap.classList.contains('composer-multiline') === shouldExpand) return;
-      shapeAnimationRef.current?.cancel();
-      const fromHeight = wrap.getBoundingClientRect().height;
-      wrap.classList.toggle('composer-multiline', shouldExpand);
+      const shouldExpand = contentHeight > singleLineHeight + 1;
+      const classChanges = wrap.classList.contains('composer-multiline') !== shouldExpand;
+      if (!shouldExpand && !classChanges) {
+        /* Empty and one-line drafts are contractually fixed at the CSS
+           baseline. Releasing min-height to measure their natural content
+           would incorrectly animate a 56px shell toward the editor's ~52px
+           intrinsic box. */
+        if (!shapeAnimationRef.current) {
+          shapeHeightRef.current = wrap.getBoundingClientRect().height;
+        }
+        return;
+      }
+
+      /* Capture the currently painted height before cancelling an in-flight
+         animation. Reading the class destination after cancel would rewind
+         rapid type/delete sequences and produce a visible backwards jump. */
+      const renderedHeight = wrap.getBoundingClientRect().height;
+      const fromHeight = shapeAnimationRef.current
+        ? renderedHeight
+        : (classChanges && shouldExpand
+          /* The collapsed shell is fixed-height. Use the larger of its live
+             rect and cached painted height so neither synthetic multi-step
+             paste nor early font settling can begin below the baseline. */
+          ? Math.max(renderedHeight, shapeHeightRef.current ?? 0)
+          : shapeHeightRef.current && shapeHeightRef.current > 0
+          ? shapeHeightRef.current
+          : renderedHeight);
+      if (shapeAnimationRef.current) {
+        shapeAnimationRef.current.cancel();
+        shapeAnimationRef.current = null;
+      }
+      shapeAnimationCleanupRef.current?.();
+      shapeAnimationCleanupRef.current = null;
+
+      const shouldAnimate = !matchMedia('(prefers-reduced-motion:reduce)').matches;
+      let cleanupTemporaryStyles: (() => void) | null = null;
+      if (shouldAnimate) {
+        /* CSS transitions outrank even important declarations while active.
+           Disable them before changing the class, otherwise the legacy
+           min-height transition keeps the shell clamped at 108px and the
+           first frame still jumps despite our inline measurement lock. */
+        const previousTransition = wrap.style.getPropertyValue('transition');
+        const previousTransitionPriority = wrap.style.getPropertyPriority('transition');
+        const previousMinHeight = wrap.style.getPropertyValue('min-height');
+        const previousMinHeightPriority = wrap.style.getPropertyPriority('min-height');
+        const previousOverflow = wrap.style.getPropertyValue('overflow');
+        const previousOverflowPriority = wrap.style.getPropertyPriority('overflow');
+        const previousHeight = wrap.style.getPropertyValue('height');
+        const previousHeightPriority = wrap.style.getPropertyPriority('height');
+        const previousBoxSizing = wrap.style.getPropertyValue('box-sizing');
+        const previousBoxSizingPriority = wrap.style.getPropertyPriority('box-sizing');
+        wrap.style.setProperty('transition', 'none', 'important');
+        wrap.style.setProperty('min-height', '0px', 'important');
+        wrap.style.setProperty('overflow', 'hidden', 'important');
+        /* The shell inherits content-box sizing in parts of the legacy
+           cascade. Temporarily use border-box so an interpolated `height`
+           is the same number returned by getBoundingClientRect(). */
+        wrap.style.setProperty('box-sizing', 'border-box', 'important');
+        wrap.style.setProperty('height', `${fromHeight}px`, 'important');
+        cleanupTemporaryStyles = () => {
+          const restore = (property: string, value: string, priority: string) => {
+            if (value) wrap.style.setProperty(property, value, priority);
+            else wrap.style.removeProperty(property);
+          };
+          /* Keep transitions disabled while restoring geometry. Restoring the
+             transition first starts a second, unintended min-height motion
+             from the temporary 0px lock to the class value. */
+          restore('min-height', previousMinHeight, previousMinHeightPriority);
+          restore('overflow', previousOverflow, previousOverflowPriority);
+          restore('height', previousHeight, previousHeightPriority);
+          restore('box-sizing', previousBoxSizing, previousBoxSizingPriority);
+          void wrap.getBoundingClientRect();
+          restore('transition', previousTransition, previousTransitionPriority);
+        };
+      }
+      if (classChanges) wrap.classList.toggle('composer-multiline', shouldExpand);
+      /* Read the class destination with the visual lock briefly released.
+         Both layouts are forced synchronously and the lock is restored before
+         this task yields, so the unlocked state is never painted. */
+      if (shouldAnimate) wrap.style.removeProperty('height');
       const toHeight = wrap.getBoundingClientRect().height;
+      if (shouldAnimate) wrap.style.setProperty('height', `${fromHeight}px`, 'important');
       if (
         Math.abs(toHeight - fromHeight) > 1
-        && matchMedia('(max-width:768px)').matches
-        && !matchMedia('(prefers-reduced-motion:reduce)').matches
+        && shouldAnimate
       ) {
-        const animation = wrap.animate(
-          [{ height: `${fromHeight}px` }, { height: `${toHeight}px` }],
-          { duration: 340, easing: 'cubic-bezier(.22,1,.36,1)' },
-        );
-        shapeAnimationRef.current = animation;
-        animation.addEventListener('finish', () => {
-          if (shapeAnimationRef.current === animation) shapeAnimationRef.current = null;
-        }, { once: true });
+        const cleanup = cleanupTemporaryStyles!;
+        shapeAnimationCleanupRef.current = cleanup;
+        const duration = 340;
+        const startedAt = performance.now();
+        let frame = 0;
+        let cancelled = false;
+        const controller = {
+          cancel() {
+            cancelled = true;
+            if (frame) cancelAnimationFrame(frame);
+          },
+        };
+        const tick = (now: number) => {
+          if (cancelled) return;
+          const progress = Math.min(1, (now - startedAt) / duration);
+          /* Cubic ease-out keeps the first frame below one line of travel
+             even for a large paste; quintic easing front-loads too much of
+             the distance and reads as a jump on 60 Hz displays. */
+          const eased = 1 - Math.pow(1 - progress, 3);
+          wrap.style.setProperty(
+            'height',
+            `${fromHeight + (toHeight - fromHeight) * eased}px`,
+            'important',
+          );
+          shapeHeightRef.current = fromHeight + (toHeight - fromHeight) * eased;
+          if (progress < 1) {
+            frame = requestAnimationFrame(tick);
+            return;
+          }
+          if (shapeAnimationRef.current !== controller) return;
+          shapeAnimationRef.current = null;
+          shapeAnimationCleanupRef.current = null;
+          cleanup();
+          shapeHeightRef.current = wrap.getBoundingClientRect().height;
+        };
+        shapeAnimationRef.current = controller;
+        frame = requestAnimationFrame(tick);
+      } else {
+        cleanupTemporaryStyles?.();
+        shapeHeightRef.current = wrap.getBoundingClientRect().height;
       }
-    });
+    };
+    if (immediate) run();
+    else shapeFrameRef.current = requestAnimationFrame(run);
   }, [surface]);
 
   const editor = useEditor({
@@ -294,6 +415,12 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         return false;
       },
       handleDOMEvents: {
+        beforeinput: (view) => {
+          /* Runs before ProseMirror applies typing, deletion or a text paste,
+             preserving the actually painted start height. */
+          captureShapeHeight(view.dom as HTMLElement);
+          return false;
+        },
         focus: (view) => {
           composerWrapRef.current = view.dom.closest('.chat-input-wrap, .topic-input-wrap');
           composerWrapRef.current?.classList.add('composer-focused');
@@ -326,7 +453,10 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         tokenWasPresent.current = activeToken;
       }
       notifyComposerChange(surface, current.getMarkdown());
-      syncComposerShape(current.view.dom as HTMLElement);
+      /* Tiptap calls onUpdate in the same task as the DOM mutation. Measure
+         and lock immediately so a delete/paste cannot paint its unanimated
+         intrinsic height before the next frame. */
+      syncComposerShape(current.view.dom as HTMLElement, true);
     },
   });
 
@@ -385,12 +515,15 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
     return registerComposer(surface, {
       getMarkdown,
       setMarkdown(value) {
+        captureShapeHeight(editor.view.dom as HTMLElement);
         editor.commands.setContent(value || '', { emitUpdate: true, contentType: 'markdown' });
       },
       insertText(value) {
+        captureShapeHeight(editor.view.dom as HTMLElement);
         editor.chain().focus().insertContent(value, { contentType: 'markdown' }).run();
       },
       clear() {
+        captureShapeHeight(editor.view.dom as HTMLElement);
         editor.commands.clearContent(true);
       },
       setExtensionToken,
@@ -404,15 +537,38 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         return editor.view.dom.closest('.hidden') === null && editor.view.dom.getClientRects().length > 0;
       },
     });
-  }, [editor, getMarkdown, setExtensionToken, surface]);
+  }, [captureShapeHeight, editor, getMarkdown, setExtensionToken, surface]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!editor) return;
     const editorDom = editor.view.dom as HTMLElement;
     const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
-    const observer = new ResizeObserver(() => syncComposerShape(editorDom));
+    let previousEditorWidth = -1;
+    let previousWrapWidth = -1;
+    const observer = new ResizeObserver(() => {
+      const editorWidth = editorDom.getBoundingClientRect().width;
+      const wrapWidth = wrap?.getBoundingClientRect().width ?? -1;
+      if (wrap && !shapeAnimationRef.current) {
+        /* Font loading and responsive CSS can adjust the settled baseline
+           without changing width. Keep the pre-mutation height cache current
+           even though those height-only entries need no remeasurement. */
+        shapeHeightRef.current = wrap.getBoundingClientRect().height;
+      }
+      /* Our own height animation also emits ResizeObserver entries. Only a
+         width change can alter line wrapping, so ignore height-only entries
+         instead of scheduling a competing measurement every frame. */
+      if (
+        Math.abs(editorWidth - previousEditorWidth) < 0.5
+        && Math.abs(wrapWidth - previousWrapWidth) < 0.5
+      ) return;
+      previousEditorWidth = editorWidth;
+      previousWrapWidth = wrapWidth;
+      syncComposerShape(editorDom);
+    });
     observer.observe(editorDom);
     if (wrap) observer.observe(wrap);
+    previousEditorWidth = editorDom.getBoundingClientRect().width;
+    previousWrapWidth = wrap?.getBoundingClientRect().width ?? -1;
     syncComposerShape(editorDom);
     return () => observer.disconnect();
   }, [editor, surface, syncComposerShape]);
@@ -423,9 +579,12 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       composerWrapRef.current?.classList.remove('composer-multiline');
       shapeAnimationRef.current?.cancel();
       shapeAnimationRef.current = null;
+      shapeAnimationCleanupRef.current?.();
+      shapeAnimationCleanupRef.current = null;
       if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
       shapeFrameRef.current = null;
       collapsedMeasureRef.current = null;
+      shapeHeightRef.current = null;
       composerWrapRef.current = null;
     };
   }, []);

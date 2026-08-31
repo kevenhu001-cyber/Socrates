@@ -103,19 +103,12 @@ for (const [name, viewport] of [
     await expect(page.locator('#msgList .msg.assistant .msg-body').first()).toBeVisible();
     const after = await composerSignature(page, '#chatInputWrap');
 
-    /* Width-align: the in-conversation composer now spans the transcript's
-       reading column instead of the landing composer's 620px cap. Desktop
-       keeps the same two-row shell; on mobile the landing field collapses
-       from its focused two-row state to the compact idle chat shell after
-       the first turn. */
+    /* Focus is geometry-neutral on both surfaces: a one-line landing draft
+       and the empty in-conversation composer keep the same shell height. */
     const skinOf = ({ background, border, radius }) => ({ background, border, radius });
     expect(skinOf(after)).toEqual(skinOf(before));
-    if (name === 'desktop') {
-      expect(after.height).toBe(before.height);
-    } else {
-      expect(after.height).toBeLessThan(before.height);
-      expect(after.height).toBe(56);
-    }
+    expect(after.height).toBe(before.height);
+    if (name === 'mobile') expect(after.height).toBe(56);
     const widths = await page.evaluate(() => {
       const wrap = document.querySelector('#chatInputWrap');
       const body = document.querySelector('#msgList .msg.assistant .msg-body');
