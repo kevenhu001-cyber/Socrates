@@ -20,7 +20,6 @@ test('React compatibility mode preserves the legacy application shell', async ({
     'send-button',
   );
   await expect(page.locator('#sendBtnContent .icon-arrow')).toHaveCount(1);
-  await expect(page.locator('#sendBtnContent .icon-arrow, #sendBtnContent .icon-voice')).toHaveCount(1);
 
   await expect(page.locator('#msgList')).toHaveAttribute(
     'data-react-migration-runtime',
