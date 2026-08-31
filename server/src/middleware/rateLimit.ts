@@ -317,3 +317,34 @@ export const oauthRegisterLimiter = rateLimit({
   legacyHeaders: false,
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many client registrations.'),
 });
+
+/* RFC 6749 token and revocation endpoints. Neither accepts a password
+ * grant (only authorization_code and refresh_token), so the issued
+ * tokens are not brute-forceable. What is left to defend is a client
+ * guessing `client_secret` against a known `client_id`, and the fact
+ * that every /token call costs DB work (authenticateClient plus the
+ * atomic code consumption) with no cap at all.
+ *
+ * Keyed on IP only. Keying on client_id would hand an attacker a fresh
+ * bucket per attempt — the same P_rate-limit-key-cardinality mistake
+ * the code/token limiters above were corrected for.
+ *
+ * 60 / 15min / IP is generous for real refresh traffic (~4/min) while
+ * still bounding credential guessing and DB load. */
+export const oauthTokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => `ip:${req.ip}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'Too many token requests; try again later.'),
+});
+
+export const oauthRevokeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => `ip:${req.ip}`,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: jsonLimit('TOO_MANY_REQUESTS', 'Too many revocation requests; try again later.'),
+});

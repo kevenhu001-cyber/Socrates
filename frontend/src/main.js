@@ -2,7 +2,7 @@
 /* P_perf-self-host — bundle the former CDN globals (marked, DOMPurify,
    katex, hljs, Fuse) before any consumer module evaluates. */
 import './vendor/init.js';
-import { ensureFuse, ensureHighlight, onKatexReady } from './vendor/lazy.js';
+import { ensureFuse, ensureHighlight, ensureKatex, onKatexReady } from './vendor/lazy.js';
 /* P_perf-react-eager — React compatibility runtime is a static import so
    Vite preloads it (and its Tiptap/React deps) alongside the main entry
    instead of the browser discovering it only after main.js executes. */
@@ -226,19 +226,24 @@ function rerenderMathAfterKatex(){
        KaTeX existed. Bumping this counter is what tells that cache to throw
        its entries away and re-typeset. */
     window.__socratesMathRenderRev=(window.__socratesMathRenderRev||0)+1;
+    var rev=window.__socratesMathRenderRev;
     var msgs=(typeof state!=="undefined"&&state&&Array.isArray(state.messages))?state.messages:[];
     var changed=false;
     for(var mi=0;mi<msgs.length;mi++){
       var m=msgs[mi];
       if(!m||m.role!=="assistant"||typeof m.rawText!=="string")continue;
       if(!/\$|\\\(/.test(m.rawText))continue;
+      /* Idempotent re-paint: a message whose html was recomputed after the
+         katex-ready bump is already correct — touching it again (e.g. a
+         second onKatexReady after a vendor retry) would only churn its DOM. */
+      if(m._katexRenderedRev===rev)continue;
       var html=renderAssistantHTML(m.rawText);
       /* React's MessageItem memo skips re-renders when the entry object
          reference is unchanged (the legacy finish() path relies on the
          entry being mounted fresh). Replacing the object with a shallow
          copy carrying the new html is what makes the katex-ready repaint
          actually land in the React message list. */
-      state.messages[mi]=Object.assign({},m,{html:html});
+      state.messages[mi]=Object.assign({},m,{html:html,_katexRenderedRev:rev});
       changed=true;
       var id=m.clientId||m.id||"";
       if(!id)continue;
@@ -10287,12 +10292,17 @@ try{
 /* P_perf-idle-vendor — highlight.js and fuse.js are non-critical: load
    them after first paint so the main entry no longer carries their
    parse cost. Cmd-K and code highlighting still work — they call the
-   same ensure* helpers if a user opens them before idle finishes. */
+   same ensure* helpers if a user opens them before idle finishes.
+   KaTeX joins the idle set so formulas render on the FIRST frame of a
+   stream instead of flashing raw $$…$$ until the 270 KB script arrives
+   mid-turn (the onKatexReady re-render remains as the slow-network
+   fallback). */
 window.__socratesEnsureHighlight = ensureHighlight;
 window.__socratesEnsureFuse = ensureFuse;
 function _loadIdleVendors(){
   try{ensureHighlight().catch(function(){})}catch(_){}
   try{ensureFuse().catch(function(){})}catch(_){}
+  try{ensureKatex().catch(function(){})}catch(_){}
 }
 if(typeof requestIdleCallback==="function"){
   try{requestIdleCallback(_loadIdleVendors,{timeout:3000})}catch(_){setTimeout(_loadIdleVendors,1500)}

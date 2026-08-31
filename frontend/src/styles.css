@@ -2917,6 +2917,12 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .katex-display::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
 .katex-display:hover::-webkit-scrollbar-thumb{background:hsl(var(--text-000)/0.25)}
 .katex-display>.katex{font-size:1.1em}
+/* Streaming math that is still arriving: render/markdown.ts neutralizes
+   KaTeX's own .katex-error spans (red, inline color:#cc0000) into this
+   class, so a half-typed formula reads as calm, dimmed live text instead
+   of an error message. The span keeps the partial source KaTeX preserved,
+   so the completed render is a seamless continuation of the last frame. */
+.math-stream-pending{color:hsl(var(--text-400));font-style:italic}
 .katex .mord{color:hsl(var(--text-100))}
 .katex .mbin{color:hsl(var(--accent-000))}
 .katex .mrel{color:hsl(var(--accent-000))}

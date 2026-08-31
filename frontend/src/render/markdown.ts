@@ -6,7 +6,7 @@
    formatTickSlice — convenience wrapper for the type-tick slider.
    All three exported for use by main.js / doRender / streaming. */
 
-import { decodeEntities, esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang, stripTags } from './helpers.js';
+import { decodeEntities, esc, escAttr, escHTML, KATEX_MACROS, _looksLikeLatex, safeHljsLang, stripTags } from './helpers.js';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './viz.js';
 import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
@@ -375,7 +375,12 @@ function _getStreamingVizId(lang: string, content: string): string {
 interface KatexLike {
   renderToString: (
     math: string,
-    opts: { displayMode: boolean; throwOnError: boolean; macros?: Record<string, string> },
+    opts: {
+      displayMode: boolean;
+      throwOnError: boolean;
+      macros?: Record<string, string>;
+      strict?: 'ignore' | 'warn' | 'error';
+    },
   ) => string;
 }
 
@@ -402,6 +407,106 @@ function getKatex(): KatexLike | undefined {
     }
   }
   return katex;
+}
+
+/* ── Streaming-safe math ──────────────────────────────────────────
+   KaTeX is an all-or-nothing parser: a formula that is still arriving
+   (`\frac{1}{`, an unclosed `\begin{aligned}`…) either throws or
+   renders its broken tail as red `.katex-error` spans. On a stream
+   frame both are wrong:
+     • a throw makes the live bubble fall back to raw LaTeX source,
+     • red error spans make a half-typed formula look like a crash.
+   The helpers below turn "incomplete" into a calm, stable state and
+   make the completed render a seamless continuation of it:
+     • closeUnclosedEnvironments appends the missing `\end{…}` so an
+       aligned / matrix block renders the rows typed so far, live;
+     • neutralizeKatexErrors strips the red class/style from the
+       remaining parse-error spans — their raw source text stays
+       visible, dimmed by the .math-stream-pending CSS rule;
+     • renderStreamMath renders strict-first (a complete formula comes
+       out in one pass) and degrades to the tolerant preview only on
+       the frames where the formula is genuinely unfinished. */
+
+function closeUnclosedEnvironments(src: string): string {
+  const begins = src.match(/\\begin\{([^}]+)\}/g) || [];
+  const ends = src.match(/\\end\{([^}]+)\}/g) || [];
+  const openNames: string[] = [];
+  begins.forEach(function (b) { openNames.push(b.slice(7, -1)); });
+  ends.forEach(function (e) {
+    const name = e.slice(5, -1);
+    for (let k = openNames.length - 1; k >= 0; k--) {
+      if (openNames[k] === name) { openNames.splice(k, 1); break; }
+    }
+  });
+  let closed = src;
+  for (let i = openNames.length - 1; i >= 0; i--) {
+    closed += '\n\\end{' + openNames[i] + '}';
+  }
+  return closed;
+}
+
+function neutralizeKatexErrors(html: string): string {
+  if (html.indexOf('katex-error') === -1) return html;
+  return html.replace(/<span class="katex-error"([^>]*)>([\s\S]*?)<\/span>/g,
+    function (_m, attrs: string, inner: string) {
+      return '<span class="math-stream-pending"' +
+        String(attrs)
+          .replace(/\s+style="[^"]*"/g, '')
+          .replace(/\s+title="[^"]*"/g, '') +
+        '>' + inner + '</span>';
+    });
+}
+
+/* Inline math is often written with no explicit operator: `x^2`,
+   `a_i`, `\alpha`. The shared _looksLikeLatex heuristic only fires on
+   commands or operator+letter pairs, which would leave a half-typed
+   `$x^2` as raw text. Broaden the check slightly for the streaming
+   "unclosed at end" case only — `^`/`_`/braces are rare in prose and
+   still guard "$5"-style amounts. */
+function _looksLikeLatexStreamingTail(s: string): boolean {
+  if (_looksLikeLatex(s)) return true;
+  return /[\\^_{}]/.test(s);
+}
+
+/* Render math for a possibly-unfinished stream frame. Returns the KaTeX
+   HTML, or null when KaTeX is not available yet (the caller keeps the
+   raw source so the one-shot re-render can fix it up later). */
+function renderStreamMath(math: string, displayMode: boolean, unclosed: boolean): string | null {
+  const katex = getKatex();
+  if (typeof katex === 'undefined') return null;
+  const opts = {
+    displayMode,
+    throwOnError: true,
+    macros: KATEX_MACROS,
+    strict: 'ignore' as const,
+  };
+  const render = (source: string, tolerant: boolean): string =>
+    katex.renderToString(source, tolerant ? { ...opts, throwOnError: false } : opts);
+
+  let source = String(math).trim();
+  /* Complete, valid math — the common case — renders in one pass. */
+  try {
+    return render(source, false);
+  } catch (_) { /* incomplete or malformed — tolerant passes below */ }
+
+  if (unclosed) {
+    /* Auto-close `\begin{aligned} …` so the rows typed so far render
+       live instead of hiding behind the missing `\end{aligned}`. */
+    const closed = closeUnclosedEnvironments(source);
+    try {
+      return render(closed, false);
+    } catch (_) { /* still structurally incomplete */ }
+    source = closed;
+  }
+
+  /* Tolerant pass: KaTeX recovers by marking the broken tail with
+     .katex-error spans; neutralize them so the frame reads as calm,
+     dimmed live math instead of a red error message. */
+  try {
+    return neutralizeKatexErrors(render(source, true));
+  } catch (_) {
+    return null;
+  }
 }
 
 interface MarkedLike {
@@ -475,17 +580,14 @@ export function formatMsgProgressive(t: string | null | undefined): string {
   function _streamScaffoldFallback(tag: string, content: string): string {
     const label = STREAM_SCAFFOLD_FALLBACK[tag] || '[' + tag + ']';
     let txt = _scaffoldText(content);
-    const katex = getKatex();
-    if (typeof katex !== 'undefined') {
-      txt = txt.replace(/\$\$([\s\S]*?)\$\$/g, function (_, math: string) {
-        try { return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS })); }
-        catch (e) { return save('<pre>$$' + escHTML(math) + '$$</pre>'); }
-      });
-      txt = txt.replace(/\$(.+?)\$/g, function (_, math: string) {
-        try { return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS })); }
-        catch (e) { return save('<code>$' + escHTML(math) + '$</code>'); }
-      });
-    }
+    txt = txt.replace(/\$\$([\s\S]*?)\$\$/g, function (_, math: string) {
+      const html = renderStreamMath(math, true, false);
+      return html === null ? _ : save(html);
+    });
+    txt = txt.replace(/\$(.+?)\$/g, function (_, math: string) {
+      const html = renderStreamMath(math, false, false);
+      return html === null ? _ : save(html);
+    });
     return save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
                 + label + '</span> ' + escHTML(txt) + '</div>');
   }
@@ -564,29 +666,34 @@ export function formatMsgProgressive(t: string | null | undefined): string {
   const katex = getKatex();
 
   if (typeof katex !== 'undefined') {
+    /* Closed display math. */
     s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
-      try {
-        return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS }));
-      } catch (e) {
-        return save('<pre>' + escHTML('$$' + math + '$$') + '</pre>');
-      }
+      const html = renderStreamMath(math, true, false);
+      return html === null ? _ : save(html);
     });
+    /* Display math still arriving: the closing `$$` has not appeared.
+       Auto-close open environments and neutralize parse-error spans so
+       the formula renders live, grows smoothly, and only visibly
+       "completes" when the last token lands. */
     s = s.replace(/\$\$([\s\S]+)$/g, function (_, math: string) {
-      try {
-        return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS }));
-      } catch (e) {
-        return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
-      }
+      const html = renderStreamMath(math, true, true);
+      return html === null ? _ : save(html);
     });
   }
 
   if (typeof katex !== 'undefined') {
+    /* Closed inline math. */
     s = s.replace(/\$(.+?)\$/g, function (_, math: string) {
-      try {
-        return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS }));
-      } catch (e) {
-        return save('<code>' + escHTML('$' + math + '$') + '</code>');
-      }
+      const html = renderStreamMath(math, false, false);
+      return html === null ? _ : save(html);
+    });
+    /* Inline math still arriving: the closing `$` has not appeared.
+       Only engage when the fragment actually looks like LaTeX, so
+       ordinary "$5"-style amounts keep their literal text. */
+    s = s.replace(/\$([^\n$]+)$/g, function (m, math: string) {
+      if (!_looksLikeLatexStreamingTail(math.trim())) return m;
+      const html = renderStreamMath(math, false, true);
+      return html === null ? m : save(html);
     });
   }
 
@@ -753,41 +860,21 @@ export function formatMsg(t: string | null | undefined): string {
 
   if (typeof katex !== 'undefined') {
     procT = procT.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
-      try {
-        return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS }));
-      } catch (e) {
-        return save('<pre>' + esc('$$' + math + '$$') + '</pre>');
-      }
+      const html = renderStreamMath(math, true, false);
+      return html === null ? _ : save(html);
     });
+    /* Final pass on a message whose `$$` never closed (truncated output,
+       a Stop mid-formula). Auto-close open environments and neutralize
+       parse-error spans so the stored answer shows calm partial math
+       instead of a red KaTeX error block. */
     procT = procT.replace(/\$\$([\s\S]+?)$/g, function (_, math: string) {
-      const src = math.trim();
-      const begins = src.match(/\\begin\{([^}]+)\}/g) || [];
-      const ends = src.match(/\\end\{([^}]+)\}/g) || [];
-      const openNames: string[] = [];
-      begins.forEach(function (b) { openNames.push(b.slice(7, -1)); });
-      ends.forEach(function (e) {
-        const name = e.slice(5, -1);
-        for (let k = openNames.length - 1; k >= 0; k--) {
-          if (openNames[k] === name) { openNames.splice(k, 1); break; }
-        }
-      });
-      let closed = src;
-      for (let i = openNames.length - 1; i >= 0; i--) {
-        closed += '\n\\end{' + openNames[i] + '}';
-      }
-      try {
-        return save(katex.renderToString(closed, { displayMode: true, throwOnError: false, macros: KATEX_MACROS }));
-      } catch (e) {
-        return save('<span class="math-partial" style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
-      }
+      const html = renderStreamMath(math, true, true);
+      return html === null ? _ : save(html);
     });
 
     procT = procT.replace(/\$([\s\S]+?)\$/g, function (_, math: string) {
-      try {
-        return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS }));
-      } catch (e) {
-        return save('<code>' + esc('$' + math + '$') + '</code>');
-      }
+      const html = renderStreamMath(math, false, false);
+      return html === null ? _ : save(html);
     });
   }
 

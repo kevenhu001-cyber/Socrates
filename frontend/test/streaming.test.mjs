@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import { marked } from 'marked';
 import {
   findInlineToolBoundary,
   getStreamRenderInterval,
@@ -8,6 +11,32 @@ import {
 } from '../src/render/streaming.js';
 import { formatMsg, formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
 import { stripChatArtifacts } from '../src/util/stripChatArtifacts.js';
+
+/* Load the vendored KaTeX UMD into a bare VM context and hand it back,
+   mirroring how lazy.js injects it into the page. Tests that need real
+   KaTeX output run with globalThis.katex set, like the browser. */
+function loadRealKatex() {
+  const code = readFileSync(
+    new URL('../src/vendor-files/katex/katex.min.js', import.meta.url),
+    'utf8',
+  );
+  const ctx = { console };
+  ctx.globalThis = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(code, ctx);
+  return ctx.katex;
+}
+
+function withKatex(fn) {
+  const previousKatex = globalThis.katex;
+  globalThis.katex = loadRealKatex();
+  try {
+    return fn();
+  } finally {
+    if (previousKatex === undefined) delete globalThis.katex;
+    else globalThis.katex = previousKatex;
+  }
+}
 
 test('stream cadence adapts to response length', () => {
   assert.equal(getStreamRenderInterval(0), 50);
@@ -80,6 +109,106 @@ test('Tutor scaffolds render as typed live cards before the closing tag arrives'
   assert.match(complete, /class="inline-quiz scaffold-stream-live"/);
   assert.match(complete, /inline-quiz-opt-letter">A\.<\/span>/);
   assert.match(complete, /inline-quiz-opt-letter">B\.<\/span>/);
+});
+
+/* ── Streaming-safe math ─────────────────────────────────────────
+   The streaming renderer must never leak raw LaTeX or red
+   .katex-error spans into the live bubble while a formula is still
+   arriving, and the completed render must be a seamless continuation
+   of the last partial frame. */
+
+test('unclosed display math renders live instead of waiting for the closing $$', () => {
+  withKatex(() => {
+    /* Formula mid-flight: no closing $$ yet. It must render as KaTeX
+       (not raw source, not a "…" placeholder) with no error styling. */
+    const partial = renderProgressive('Let me derive:\n\n$$x + y = ');
+    assert.match(partial, /class="katex/);
+    assert.doesNotMatch(partial, /katex-error/);
+    assert.doesNotMatch(partial, /math-partial/);
+    assert.doesNotMatch(partial, /\$\$/);
+
+    /* Once the closing $$ arrives, the same formula renders complete. */
+    const complete = renderProgressive('Let me derive:\n\n$$x + y = 1$$');
+    assert.match(complete, /class="katex/);
+    assert.doesNotMatch(complete, /katex-error/);
+    assert.doesNotMatch(complete, /\$\$/);
+  });
+});
+
+test('a structurally incomplete formula renders as calm pending text, never red', () => {
+  withKatex(() => {
+    /* \frac{1}{ cannot parse as-is; the tolerant pass neutralizes KaTeX's
+       red error spans into .math-stream-pending (the partial source stays
+       visible) and the frame still carries no raw $$. */
+    const broken = renderProgressive('$$\\frac{1}{');
+    assert.match(broken, /math-stream-pending/);
+    assert.doesNotMatch(broken, /katex-error/);
+    assert.doesNotMatch(broken, /color:#cc0000/);
+    assert.doesNotMatch(broken, /\$\$/);
+
+    /* Closed-but-malformed math gets the same neutral treatment. */
+    const malformed = renderProgressive('$$x + }$$');
+    assert.doesNotMatch(malformed, /katex-error/);
+    assert.doesNotMatch(malformed, /color:#cc0000/);
+    assert.match(malformed, /math-stream-pending/);
+  });
+});
+
+test('an unclosed \\begin{aligned} auto-closes so the rows typed so far render live', () => {
+  withKatex(() => {
+    const partial = renderProgressive('The system:\n\n$$\\begin{aligned} a &= b \\\\ c &= d');
+    assert.match(partial, /class="katex/);
+    assert.doesNotMatch(partial, /katex-error/);
+    assert.doesNotMatch(partial, /\$\$/);
+  });
+});
+
+test('unclosed inline math renders live, while $5-style amounts stay plain text', () => {
+  withKatex(() => {
+    const inline = renderProgressive('Solve for x: $x^2 + 3x');
+    assert.match(inline, /class="katex/);
+    assert.doesNotMatch(inline, /\$x\^2/);
+    assert.doesNotMatch(inline, /katex-error/);
+
+    const price = renderProgressive('That costs $5');
+    assert.doesNotMatch(price, /class="katex/);
+    assert.match(price, /\$5/);
+
+    const closed = renderProgressive('Solve $x^2 = 4$');
+    assert.match(closed, /class="katex/);
+    assert.doesNotMatch(closed, /\$x\^2 = 4\$/);
+  });
+});
+
+test('math stays as raw source when KaTeX has not loaded yet', () => {
+  const previousKatex = globalThis.katex;
+  delete globalThis.katex;
+  try {
+    const html = renderProgressive('$$\\frac{1}{2}$$');
+    assert.match(html, /\$\$/);
+    assert.doesNotMatch(html, /class="katex/);
+  } finally {
+    if (previousKatex === undefined) delete globalThis.katex;
+    else globalThis.katex = previousKatex;
+  }
+});
+
+test('final formatMsg neutralizes broken math instead of showing red errors', () => {
+  const previousKatex = globalThis.katex;
+  const previousMarked = globalThis.marked;
+  globalThis.katex = loadRealKatex();
+  globalThis.marked = marked; /* vendor/init.js bundles marked eagerly in the browser */
+  try {
+    const html = formatMsg('$$\\frac{1}{');
+    assert.doesNotMatch(html, /katex-error/);
+    assert.doesNotMatch(html, /color:#cc0000/);
+    assert.doesNotMatch(html, /\$\$/);
+  } finally {
+    if (previousKatex === undefined) delete globalThis.katex;
+    else globalThis.katex = previousKatex;
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
 });
 
 test('final Markdown rendering keeps horizontal rules when KaTeX is unavailable', () => {

@@ -208,6 +208,10 @@ async function main() {
       try { const { stopStatusMonitor } = await import('./services/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await stopRustFetchWorker().catch(() => {});
       try { const { codexHarness } = await import('./services/codexHarness.js'); await codexHarness.stop(); } catch {}
+      // Pubsub holds its own long-lived LISTEN connection (not from the
+      // pool), so closeDb() below does not reach it. Without this the
+      // process can linger after every other handle is closed.
+      try { const { shutdownPubsub } = await import('./lib/pubsub.js'); await shutdownPubsub(); } catch {}
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
       process.exit(0);

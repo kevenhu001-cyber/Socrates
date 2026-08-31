@@ -49,7 +49,10 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const desktopComposerBox = await chatComposer.boundingBox();
   // The workbench content column is the shared 768px reading column.
   expect(desktopComposerBox?.width).toBeLessThanOrEqual(820);
-  expect(desktopComposerBox?.height).toBeLessThanOrEqual(72);
+  // Desktop composer is the compact two-row surface: a 40px editor row plus
+  // a 40px control row (~98px with padding). It must never reach the
+  // multiline two-tier height while the draft is a single line.
+  expect(desktopComposerBox?.height).toBeLessThanOrEqual(112);
   const desktopControlBoxes = await page.evaluate(() => {
     const box = (selector) => {
       const element = document.querySelector(selector);
@@ -63,9 +66,12 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       send: box('#sendBtn'),
     };
   });
-  expect(desktopControlBoxes.attach?.right).toBeLessThanOrEqual(desktopControlBoxes.editor?.left ?? 0);
-  expect(desktopControlBoxes.editor?.right).toBeLessThanOrEqual(desktopControlBoxes.effort?.left ?? 0);
-  expect(desktopControlBoxes.effort?.right).toBeLessThanOrEqual(desktopControlBoxes.send?.left ?? 0);
+  /* The desktop composer is a two-row grid: the editor spans the top row
+     and the compact control rail (attach → effort → send) sits beneath
+     it, in that order left-to-right. */
+  expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.effort?.left ?? 0) + 1);
+  expect(desktopControlBoxes.effort?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
+  expect(desktopControlBoxes.editor?.bottom ?? 0).toBeLessThanOrEqual((desktopControlBoxes.attach?.bottom ?? 0) + 1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
   await page.evaluate(() => window.toggleTheme?.());
   await page.waitForTimeout(250);

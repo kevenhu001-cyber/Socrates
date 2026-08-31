@@ -19,12 +19,24 @@ test('React compatibility mode preserves the legacy application shell', async ({
     'data-react-migration-runtime',
     'send-button',
   );
-  await expect(page.locator('#sendBtnContent .icon-arrow')).toHaveCount(1);
+  /* Voice input is unified with the send button: idle (empty composer)
+     shows the voice icon, text arms the send arrow. */
+  await expect(page.locator('#sendBtnContent .icon-voice')).toHaveCount(1);
 
   await expect(page.locator('#msgList')).toHaveAttribute(
     'data-react-migration-runtime',
     'msg-list',
   );
+
+  /* Text in the chat composer arms the arrow (legacy updateSendBtn
+     toggles #sendBtn.active; React's SendButtonContent reads it). */
+  await page.evaluate(() => {
+    window.state.phase = 'chat';
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+  });
+  await page.locator('#chatComposerRoot .rich-composer-editor').first().fill('compat arrow');
+  await expect(page.locator('#sendBtnContent .icon-arrow')).toHaveCount(1);
 
   await page.evaluate(() => {
     window.setChatStopState(true);

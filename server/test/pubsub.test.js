@@ -5,15 +5,23 @@
  * PG-degraded fallback. We exercise the `local: true` opt-in and
  * the encoded-topic handler key without needing a live PG.
  */
-import { test, describe, before } from 'node:test';
+import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { publish, subscribeLocal, getStatus } from '../src/lib/pubsub.js';
+import { publish, subscribeLocal, getStatus, shutdownPubsub } from '../src/lib/pubsub.js';
 
 before(() => {
   /* The local listener that dispatches to in-process handlers is
      installed at module load. Each test below subscribes to a fresh
      topic; we don't need to reset the global state between tests
      because handlers are keyed per topic. */
+});
+
+/* The module opens a long-lived pg.Client at import time (lazy-init),
+   which keeps the event loop alive. Without this teardown the suite
+   passes all its assertions and then hangs until the runner's timeout
+   kills it. */
+after(async () => {
+  await shutdownPubsub();
 });
 
 describe('pubsub local delivery', () => {

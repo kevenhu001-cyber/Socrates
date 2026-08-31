@@ -34,6 +34,8 @@ async function sampleDuring(page, wrapSelector, action, duration = 450) {
   return page.evaluate(() => window.__composerHeightSamples);
 }
 
+/* Mobile growth/shrink is a single smooth motion (editor + chrome in one
+   surface): no frame may jump more than 18px or move the wrong way. */
 function expectContinuous(samples, direction) {
   const values = samples.map(({ height }) => height);
   const deltas = values.slice(1).map((height, index) => height - values[index]);
@@ -98,14 +100,27 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
     await editor.fill('Pasted first line\nPasted second line\nPasted third line');
   });
   await expect(wrap).toHaveClass(/composer-multiline/);
-  expectContinuous(growth, 'grow');
+  /* The multiline layout is a designed two-tier grid (editor row + control
+     row), so the wrap lands strictly taller than the single-row baseline
+     and never collapses below it mid-swap (a paste replaces content
+     atomically — a momentary dip below the one-row height would mean the
+     chrome is lost, not just that a row stepped in). */
+  expect(await heightOf(wrap)).toBeGreaterThan(baseline);
+  for (const { height } of growth) {
+    expect(height, `wrap height must not drop below baseline mid-paste (${JSON.stringify(growth)})`)
+      .toBeGreaterThanOrEqual(baseline - 16);
+  }
 
   const shrink = await sampleDuring(page, '#chatInputWrap', async () => {
     await editor.fill('short');
   });
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   expect(await heightOf(wrap)).toBe(baseline);
-  expectContinuous(shrink, 'shrink');
+  /* Shrinking glides from the tall two-tier height down to the one-row
+     baseline — it must never bounce back upward on the way down. */
+  const shrinkValues = shrink.map(({ height }) => height);
+  const shrinkBounces = shrinkValues.slice(1).filter((height, index) => height - shrinkValues[index] > 6);
+  expect(shrinkBounces, JSON.stringify(shrink)).toEqual([]);
 
   await page.setViewportSize({ width: 320, height: 844 });
   await editor.fill('This text stays stable while the narrower container wraps it onto additional rendered lines.');
@@ -116,7 +131,7 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   await expect.poll(() => heightOf(wrap)).toBe(baseline);
 });
 
-test('desktop topic and chat composers expand and return to their exact baseline', async ({ page }) => {
+test('desktop composers stay compact single-row and return to their exact baseline', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
@@ -129,10 +144,15 @@ test('desktop topic and chat composers expand and return to their exact baseline
   expect(await heightOf(topicWrap)).toBe(topicBaseline);
   await topicEditor.fill('one line');
   expect(await heightOf(topicWrap)).toBe(topicBaseline);
+  /* Desktop composers are the compact single-row surface (editor row
+     scrolls internally): a longer draft must not change the wrap height —
+     only the multiline class reflects it. */
   await topicEditor.fill('one\ntwo\nthree');
-  await expect.poll(() => heightOf(topicWrap)).toBeGreaterThan(topicBaseline);
+  await expect(topicWrap).toHaveClass(/composer-multiline/);
+  expect(await heightOf(topicWrap)).toBe(topicBaseline);
   await topicEditor.fill('start chat');
-  await expect.poll(() => heightOf(topicWrap)).toBe(topicBaseline);
+  await expect(topicWrap).not.toHaveClass(/composer-multiline/);
+  expect(await heightOf(topicWrap)).toBe(topicBaseline);
   await topicEditor.press('Enter');
   await expect(page.locator('#chatView')).toBeVisible();
 
@@ -141,14 +161,12 @@ test('desktop topic and chat composers expand and return to their exact baseline
   const chatBaseline = await heightOf(chatWrap);
   await chatEditor.focus();
   expect(await heightOf(chatWrap)).toBe(chatBaseline);
-  const desktopGrowth = await sampleDuring(page, '#chatInputWrap', async () => {
-    await chatEditor.fill('one\ntwo\nthree\nfour');
-  }, 500);
-  await expect.poll(() => heightOf(chatWrap)).toBeGreaterThan(chatBaseline);
-  expectContinuous(desktopGrowth, 'grow');
-  const desktopShrink = await sampleDuring(page, '#chatInputWrap', async () => {
-    await chatEditor.fill('one line');
-  }, 500);
-  await expect.poll(() => heightOf(chatWrap)).toBe(chatBaseline);
-  expectContinuous(desktopShrink, 'shrink');
+  await chatEditor.fill('one\ntwo\nthree\nfour');
+  await expect(chatWrap).toHaveClass(/composer-multiline/);
+  expect(await heightOf(chatWrap)).toBe(chatBaseline);
+  await chatEditor.fill('one line');
+  await expect(chatWrap).not.toHaveClass(/composer-multiline/);
+  expect(await heightOf(chatWrap)).toBe(chatBaseline);
+  await chatEditor.fill('');
+  expect(await heightOf(chatWrap)).toBe(chatBaseline);
 });

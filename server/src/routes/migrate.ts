@@ -3,13 +3,11 @@ import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { sessions, messages, apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
-import { encrypt, deriveEncryptionKey } from '../lib/crypto.js';
+import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { ensureSessionWorkspaceForSession } from '../services/agentRuntime.js';
 
 const router = Router();
 router.use(requireAuth);
-
-const ENC_KEY = deriveEncryptionKey(process.env.SESSION_SECRET || 'dev-secret');
 
 /* POST /api/migrate — import localStorage data on first login */
 router.post('/', async (req, res, next) => {
@@ -68,7 +66,7 @@ router.post('/', async (req, res, next) => {
         label: localApi.label || 'Migrated',
         url: localApi.url,
         model: localApi.model || 'gpt-4o',
-        keyCiphertext: encrypt(localApi.key, ENC_KEY),
+        keyCiphertext: encrypt(localApi.key, encryptionKey()),
         keyHint: localApi.key.slice(0, 8),
         isActive: true,
       }).onConflictDoNothing();

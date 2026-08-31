@@ -52,10 +52,24 @@ async function seedSixMessages(page) {
       m.appendChild(body);
       document.getElementById('msgList').appendChild(m);
     }
+  });
+  /* Layout settles only after the app fonts finish swapping in — setting
+     scrollTop before then clamps to the pre-font scrollHeight and the
+     transcript ends up scrolled ~90px short of the true bottom, which
+     looks exactly like the composer covering the last message. */
+  await page.evaluate(async () => {
+    try { await document.fonts.ready; } catch (_) {}
+  });
+  await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
   });
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(150);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+  });
+  await page.waitForTimeout(150);
 }
 
 /* Regression coverage for the "input box covers output" report. The

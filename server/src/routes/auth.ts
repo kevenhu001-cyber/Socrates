@@ -12,12 +12,11 @@ import { generateSessionToken } from '../lib/crypto.js';
 /* HMAC key for signing OAuth state parameters — derived from
    SESSION_SECRET so it stays consistent across restarts without
    introducing a separate env var. */
-const OAUTH_STATE_KEY = process.env.SESSION_SECRET || 'dev-secret';
 function signOAuthState(payload: unknown) {
   const nonce = randomBytes(16).toString('hex');
   const full = { ...(typeof payload === 'object' && payload !== null ? payload as Record<string, unknown> : {}), nonce };
   const encoded = Buffer.from(JSON.stringify(full)).toString('base64url');
-  const sig = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
+  const sig = createHmac('sha256', sessionSecret()).update(encoded).digest('base64url');
   return `${encoded}.${sig}`;
 }
 type OAuthState = { returnTo?: string; nonce?: string; mobileRedirectUri?: string };
@@ -27,7 +26,7 @@ function verifyOAuthState(state: unknown): OAuthState | null {
   if (dot < 0) return null;
   const encoded = state.slice(0, dot);
   const sig = state.slice(dot + 1);
-  const expected = createHmac('sha256', OAUTH_STATE_KEY).update(encoded).digest('base64url');
+  const expected = createHmac('sha256', sessionSecret()).update(encoded).digest('base64url');
   // Constant-time comparison to prevent timing attacks
   if (sig.length !== expected.length) return null;
   const valid = timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
