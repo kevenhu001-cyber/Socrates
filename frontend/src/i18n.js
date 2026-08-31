@@ -220,8 +220,6 @@ var I18N={
     "share.publicDesc":"No sign-in required. Anyone who has the link can view this conversation.",
     "share.privateTitle":"Only you",
     "share.privateDesc":"Must be logged into your account to view. Still shared via link.",
-    "share.copy":"Copy",
-    "share.copied":"Copied!",
     "share.revoke":"× Revoke share link",
     "share.create":"Create share link",
     "share.copySource":"Copy source",
@@ -364,8 +362,6 @@ var I18N={
     "clipboard.failed":"Copy failed",
     "share.linkLabel":"Share link",
     "exam.title":"Generate Exam",
-    "exam.back":"Back to chat",
-    "exam.cancel":"Cancel",
     "exam.generate":"Generate Exam",
     "exam.topic":"Topic",
     "exam.difficulty":"Difficulty",
@@ -374,7 +370,6 @@ var I18N={
     "exam.instructions":"Detailed instructions (optional)",
     "exam.submit":"Submit for Grading",
     "exam.new":"New Exam",
-    "exam.close":"Close",
     "exam.back":"Back to chat",
     "exam.backTitle":"Back to chat",
     "common.cancel":"Cancel",
@@ -420,9 +415,9 @@ var I18N={
     "tutor.kbTopicFirst":"Set a topic to build your knowledge map.",
     /* v3.0 design — §10 long-term plan. */
     "tutor.planTitle":"Teaching plan",
-    /* v3.0 design — mode banner (§11). */
-    "tutor.modeChat":"Chat",
-    "tutor.modeTutor":"Tutor",
+    /* v3.0 design — mode banner (§11). Keys tutor.modeChat /
+       tutor.modeTutor live further down; the duplicates that used to
+       sit here were shadowed and have been removed. */
     "tutor.modeChatDesc":"Plain conversation, no scaffolding",
     "tutor.modeTutorDesc":"AI asks, follows up, and tracks what you know",
     "tutor.modeSwitchToTutor":"Switch to Tutor",
@@ -1135,8 +1130,6 @@ var I18N={
     "share.publicDesc":"无需登录。任何有链接的人都可以查看这个对话。",
     "share.privateTitle":"仅限你",
     "share.privateDesc":"必须登录你的账户才能查看。仍通过链接分享。",
-    "share.copy":"复制",
-    "share.copied":"已复制！",
     "share.revoke":"× 撤销分享链接",
     "share.create":"创建分享链接",
     "share.copySource":"复制源代码",
@@ -1281,7 +1274,6 @@ var I18N={
     "exam.title":"生成考试",
     "exam.back":"返回对话",
     "exam.backTitle":"返回对话",
-    "exam.cancel":"取消",
     "exam.generate":"生成考试",
     "exam.topic":"主题",
     "exam.difficulty":"难度",
@@ -1290,7 +1282,6 @@ var I18N={
     "exam.instructions":"详细说明（可选）",
     "exam.submit":"提交批改",
     "exam.new":"新考试",
-    "exam.close":"关闭",
     "common.cancel":"取消",
     "common.save":"保存",
     "common.delete":"删除",
@@ -1331,9 +1322,10 @@ var I18N={
     "tutor.kbTopicFirst":"设置学习主题后，这里会显示知识地图。",
     /* v3.0 design — §10 long-term plan (zh) */
     "tutor.planTitle":"教学计划",
-    /* v3.0 design — mode banner (zh) */
-    "tutor.modeChat":"对话模式",
-    "tutor.modeTutor":"引导模式",
+    /* v3.0 design — mode banner (zh). Keys tutor.modeChat /
+       tutor.modeTutor live further down (聊天/辅导); the differently
+       worded duplicates that used to sit here were shadowed at runtime
+       and have been removed. */
     "tutor.modeChatDesc":"普通对话，无教学引导",
     "tutor.modeTutorDesc":"AI 主动提问并跟踪你的学习",
     "tutor.modeSwitchToTutor":"切换到引导模式",
