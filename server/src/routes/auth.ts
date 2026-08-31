@@ -7,7 +7,7 @@ import { authLimiter, codeLoginLimiter, resetLimiter } from '../middleware/rateL
 import * as authService from '../services/auth.js';
 import { audit } from '../middleware/audit.js';
 import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../lib/cookieEnv.js';
-import { generateSessionToken } from '../lib/crypto.js';
+import { generateSessionToken, sessionSecret } from '../lib/crypto.js';
 
 /* HMAC key for signing OAuth state parameters — derived from
    SESSION_SECRET so it stays consistent across restarts without

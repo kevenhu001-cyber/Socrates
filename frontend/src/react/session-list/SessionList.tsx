@@ -16,12 +16,6 @@ const DELETE_ICON =
 const PIN_ICON =
   '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="10" height="10"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/></svg>';
 
-function esc(s: string | undefined | null): string {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c,
-  );
-}
-
 function safeId(sessionId: string): string {
   let hash = 0;
   for (let i = 0; i < sessionId.length; i++) {
@@ -222,22 +216,58 @@ function SessionListInner() {
   }, []);
 
   if (sessions.length === 0) {
-    let emptyHtml: string;
+    const sessionActions = getLegacyActions().sessions;
+    let empty: React.ReactNode;
     if (searchQuery) {
-      const queryLabel = `<strong>&ldquo;${esc(searchQuery)}&rdquo;</strong>`;
-      emptyHtml = `<div class="recents-empty">${t('session.noSearchMatch').replace('{query}', queryLabel)}<br>` +
-        `<a href="#" onclick="setRecentsSearch('');return false">${t('session.clearSearch')}</a> ${t('session.showAllHint')}</div>`;
+      const [before, after] = t('session.noSearchMatch').split('{query}');
+      empty = (
+        <div className="recents-empty">
+          {before}<strong>&ldquo;{searchQuery}&rdquo;</strong>{after}<br />
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              sessionActions.setRecentsSearch('');
+            }}
+          >{t('session.clearSearch')}</a> {t('session.showAllHint')}
+        </div>
+      );
     } else if (fetchFailed && !filter) {
-      emptyHtml = `<div class="recents-empty">${t('session.loadListFailed')}<br>` +
-        `<a href="#" onclick="retryRecentsFetch();return false">${t('session.retry')}</a></div>`;
+      empty = (
+        <div className="recents-empty">
+          {t('session.loadListFailed')}<br />
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              sessionActions.retryRecentsFetch();
+            }}
+          >{t('session.retry')}</a>
+        </div>
+      );
     } else if (filter) {
       const filterLabel = filter.indexOf('project:') === 0 ? 'Project' : '#' + filter;
-      emptyHtml = `<div class="recents-empty">${t('session.noFilterMatch').replace('{filter}', `<strong>${esc(filterLabel)}</strong>`)}<br>` +
-        `<a href="#" onclick="clearRecentsFilter();return false">${t('session.clearFilter')}</a> ${t('session.showAllHint')}</div>`;
+      const [before, after] = t('session.noFilterMatch').split('{filter}');
+      empty = (
+        <div className="recents-empty">
+          {before}<strong>{filterLabel}</strong>{after}<br />
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              sessionActions.clearRecentsFilter();
+            }}
+          >{t('session.clearFilter')}</a> {t('session.showAllHint')}
+        </div>
+      );
     } else {
-      emptyHtml = `<div class="recents-empty">${t('session.empty')}<br>${t('session.emptyHint')}</div>`;
+      empty = (
+        <div className="recents-empty">
+          {t('session.empty')}<br />{t('session.emptyHint')}
+        </div>
+      );
     }
-    return <div className="recents-list-content" dangerouslySetInnerHTML={{ __html: emptyHtml }} />;
+    return <div className="recents-list-content">{empty}</div>;
   }
 
   const now = new Date();

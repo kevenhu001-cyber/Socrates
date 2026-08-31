@@ -43,8 +43,20 @@ Thumbs.db
 .omo/
 .opencode/
 .zcode/
+.kiro/
+.agents/
+.codex/
+.claude/
 apply_patch_example.txt
 *.tmp.cjs
+
+# ── Screenshot / audit scratch dirs (playwright QA runs) ──
+audit-shots/
+tmp-shots/
+frontend/tmp-shots/
+shots*.cjs
+audit_shots.cjs
+query_args.json
 
 # ── Firecrawl CLI cache ──
 .firecrawl/
@@ -86,6 +98,7 @@ frontend/e2e/_diag*.mjs
 frontend/e2e/_inspect.mjs
 frontend/e2e/zz-*.mjs
 frontend/e2e/tmp-*.mjs
+frontend/e2e/probe-*.mjs
 frontend/e2e/__probe*
 frontend/verify-cdn.mjs
 frontend/index.html.bak

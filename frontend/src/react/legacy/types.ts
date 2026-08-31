@@ -44,6 +44,9 @@ export interface LegacySessions {
   loadSession(sessionId: string): Promise<void> | void;
   setRecentsFilter(filter: string | null): void;
   getRecentsFilter?(): string | null;
+  setRecentsSearch(query: string): void;
+  retryRecentsFetch(): void;
+  clearRecentsFilter(): void;
   onRecentsFilterChipClick(value: string): void;
   openTagEditor(sessionId: string, event?: Event): void;
   deleteSession(sessionId: string, event?: Event): Promise<void> | void;
