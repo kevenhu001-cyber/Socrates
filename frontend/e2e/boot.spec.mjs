@@ -6,6 +6,7 @@
 //   - Vite plugin regressions (script-tag ordering in dist/index.html)
 //   - Bundle missing (process exits before content paint)
 //   - All 98 inline handlers still typed-correctly in dist/index.html
+//   - React components regressing to legacy inline on* handlers (source scan)
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle, login } from './_lib.mjs';
@@ -33,6 +34,9 @@ function snapshotHashFile() {
 }
 
 test.beforeAll(() => {
+  // Without a build there is nothing to hash; the boot test below
+  // reports the missing dist with an actionable message.
+  if (!fs.existsSync(distHtml)) return;
   const hash = inlineHandlerHash();
   const snap = snapshotHashFile();
   if (!fs.existsSync(snap)) {
@@ -43,6 +47,11 @@ test.beforeAll(() => {
 });
 
 test('page boots, dist HTML script ordering correct, inline-handler hash matches snapshot', async ({ page }) => {
+  expect(
+    fs.existsSync(distHtml),
+    'dist/index.html missing — run `npm run build` in frontend/ before the smoke suite',
+  ).toBeTruthy();
+
   const consoleErrors = [];
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
@@ -111,4 +120,30 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
 
   // No JS errors at boot.
   expect(consoleErrors, `unexpected JS errors: ${consoleErrors.join(' | ')}`).toEqual([]);
+});
+
+function collectSourceFiles(dir, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = resolve(dir, entry.name);
+    if (entry.isDirectory()) collectSourceFiles(full, out);
+    else if (/\.(?:tsx?|jsx?)$/.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+// Source-level twin of the dist hash above: the React tree must never
+// emit legacy inline handlers, whether or not a build exists. Limited
+// to src/react — legacy JS modules intentionally build inline-handler
+// HTML bridged through windowExports.js, but React components must use
+// onClick handlers via the typed gateway instead.
+test('no inline on* handlers built in src/react', async () => {
+  const reactDir = resolve(__dirname, '..', 'src', 'react');
+  const offenders = [];
+  for (const file of collectSourceFiles(reactDir)) {
+    const source = fs.readFileSync(file, 'utf8');
+    for (const m of source.matchAll(/\bon(?:click|input|change|submit|keydown|keyup|focus|blur|mouseover|mouseenter|mouseleave)="[^"]*"/gi)) {
+      offenders.push(`${file}: ${m[0].slice(0, 80)}`);
+    }
+  }
+  expect(offenders, `inline handlers found in src/react: ${offenders.join(' | ')}`).toEqual([]);
 });
