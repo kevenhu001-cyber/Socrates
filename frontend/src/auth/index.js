@@ -133,7 +133,7 @@ export async function afterAuthEnter(){
      affected UI surfaces (renderRecents, renderProviderList) so
      the empty state appears immediately. */
   if(typeof window.clearPerUserClientState==="function"){
-    try{window.clearPerUserClientState()}catch(e){/* ignore */}
+    try{window.clearPerUserClientState()}catch {/* ignore */}
   }
   /* Run the localStorage -> server migration once if there's anything to bring. */
   try{
@@ -148,9 +148,9 @@ export async function afterAuthEnter(){
         await apiFetch("/api/migrate",{method:"POST",body:payload});
         try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
         try{localStorage.removeItem("socrates-api")}catch(_){}
-      }catch(e){/* migrate failed */}
+      }catch {/* migrate failed */}
     }
-  }catch(e){/* migrate setup failed */}
+  }catch {/* migrate setup failed */}
   /* Boot-time data fetch helper — calls a `fn` once; if it throws
      an ApiError(401) DURING the post-login grace window
      (isInAuthGraceWindow), the brand-new `sid` cookie may not have
@@ -222,12 +222,12 @@ export async function afterAuthEnter(){
   var examId=window.getExamIdFromURL&&window.getExamIdFromURL();
   var state=window.state;
   if(chatId){
-    try{await window.loadSession(chatId)}catch(e){/* failed to load session */
+    try{await window.loadSession(chatId)}catch {/* failed to load session */
       state.currentSessionId=null;
       window.setChatIdInURL&&window.setChatIdInURL(null);
     }
   }else if(examId){
-    try{await window.loadSession(examId)}catch(e){/* failed to load session */
+    try{await window.loadSession(examId)}catch {/* failed to load session */
       state.currentSessionId=null;
       window.setExamIdInURL&&window.setExamIdInURL(null);
     }
@@ -254,7 +254,7 @@ export async function submitAuthSignin(){
   var markAuthSuccess=window.markAuthSuccess;
   try{
     var r=await apiFetch("/api/auth/login",{method:"POST",_authEndpoint:true,body:{email,password}});
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
+    if(guest)try{localStorage.setItem("socrates-guest","1")}catch {}
     markAuthSuccess&&markAuthSuccess();
     try{
       var me=await apiFetch("/api/auth/me",{_authEndpoint:true});
@@ -299,7 +299,7 @@ export async function submitAuthRegister(){
     /* The server stores the registration as pending and sends a
        verification email. No account or session is created until
        the user clicks the link in the email. */
-    var r=await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password}});
+    await apiFetch("/api/auth/register",{method:"POST",_authEndpoint:true,body:{email,password}});
     /* Always show the "verification sent" view — no auto-login. */
     document.getElementById("authVerifyEmail").textContent=email;
     var resendEl=document.getElementById("authResendEmail");
@@ -444,7 +444,7 @@ export async function submitAuthLoginWithCode(){
     }catch(_){
       window.setCurrentUser(r.user);
     }
-    if(guest)try{localStorage.setItem("socrates-guest","1")}catch(e){}
+    if(guest)try{localStorage.setItem("socrates-guest","1")}catch {}
     await afterAuthEnter();
     hideGate();
   }catch(e){

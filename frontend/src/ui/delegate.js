@@ -302,7 +302,7 @@ function resolveArg(argToken, el, event) {
 // when they need to suppress default behaviour — the chain never does it
 // automatically (matches the inline-handler contract, where some sites
 // had `event.preventDefault()` as the first statement and others did not).
-function runActionChain(el, event, actionStr, eventType) {
+function runActionChain(el, event, actionStr) {
   var actions = actionStr.split(';');
   var handled = false;
   for (var i = 0; i < actions.length; i++) {
@@ -387,7 +387,7 @@ function dispatchEvent(event, eventType) {
   if (!actionStr && (eventType === 'click' || eventType === 'submit' || perEventAction === 'true')) {
     actionStr = target.dataset.action;
   }
-  if (actionStr) runActionChain(target, event, actionStr, eventType);
+  if (actionStr) runActionChain(target, event, actionStr);
 }
 
 // Set up the single delegation listener

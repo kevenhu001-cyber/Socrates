@@ -153,10 +153,6 @@ async function createShareLink() {
   }
 }
 
-function showShareLink() {
-  renderShareModal();
-}
-
 function copyShareLink() {
   if (!_shareUrl) return;
   navigator.clipboard.writeText(_shareUrl).then(function () {
@@ -380,14 +376,14 @@ async function loadSharedSession(token) {
       });
     }
     if (r.kind === "exam" && r.examData) {
-      loadSharedExamSession(r, token);
+      loadSharedExamSession(r);
       return;
     }
     _switchToSharedChatView();
     _renderSharedMessageList(r.messages || []);
     document.documentElement.dataset.bootState = "app";
     if (typeof window.renderRecents === "function") window.renderRecents();
-  } catch (e) {
+  } catch {
     console.log("[share] load failed");
     document.documentElement.dataset.bootState = "app";
     if (typeof window.hideGate === "function") {
@@ -401,7 +397,7 @@ async function loadSharedSession(token) {
   }
 }
 
-async function loadSharedExamSession(session, token) {
+async function loadSharedExamSession(session) {
   if (!session) return;
   var exam = (session && session.examData) || {};
   var questions = Array.isArray(exam.questions) ? exam.questions : [];

@@ -145,13 +145,11 @@ export async function authBoot(){
    * failures, then show a "couldn't reach the server" toast and
    * stop on the topic-setup shell so the user can try again. */
   var me=null;
-  var meLastErr=null;
   for(var meAttempt=1;meAttempt<=3;meAttempt++){
     try{
       me=await apiFetch("/api/auth/me",{_authEndpoint:true});
       break;
     }catch(e){
-      meLastErr=e;
       if(e&&e.status===401){
         /* Genuine session expiry. Don't immediately kick to the gate on the
          * very first 401 — a transient race or a Set-Cookie propagation
@@ -194,7 +192,7 @@ export async function authBoot(){
 
 /* Run the boot. Wrapped in a .catch to keep the page responsive
    even if any boot step throws an unexpected error. */
-authBoot().catch(function(e){
+authBoot().catch(function(){
   try{
     window.showGate&&window.showGate();
     window.showAuthSignin&&window.showAuthSignin();

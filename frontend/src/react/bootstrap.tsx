@@ -41,7 +41,6 @@ const COMPOSER_TOOLS_MENU_ID = 'composerToolsMenu';
 const ATTACHMENT_CHIPS_ID = 'attachmentChips';
 const TOPIC_ATTACHMENT_CHIPS_ID = 'topicAttachmentChips';
 
-let sendButtonRoot: Root | null = null;
 let topicComposerRoot: Root | null = null;
 let chatComposerRoot: Root | null = null;
 
@@ -183,7 +182,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     </StrictMode>,
   );
 
-  sendButtonRoot = hydrateRoot(
+  hydrateRoot(
     sendButtonContent,
     <StrictMode>
       <SendButtonContent />
@@ -313,7 +312,6 @@ export function bootstrapReactCompatibilityRuntime(): Root {
 
   // Register workspace pages mount for React mode (library, projects, plugins)
   const workspacePageIds = ['libraryPanel', 'spacesPanel', 'pluginsPanel'];
-  const pageMap: Record<string, string> = { libraryPanel: 'library', spacesPanel: 'projects', pluginsPanel: 'plugins' };
   workspacePageIds.forEach((id) => {
     const panel = document.getElementById(id);
     if (panel && !panel.dataset.workspaceReactHydrated) {

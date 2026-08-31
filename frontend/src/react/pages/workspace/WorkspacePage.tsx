@@ -37,21 +37,6 @@ function fileMeta(item: { size?: number; uploadedAt?: string; updatedAt?: string
 /*  Library sub-components                                             */
 /* ------------------------------------------------------------------ */
 
-function LibraryTabBar({ tab, onSwitch }: { tab: string; onSwitch: (t: string) => void }) {
-  return (
-    <div className="library-tabs">
-      <button type="button" className={'library-tab' + (tab === 'files' ? ' active' : '')} onClick={() => onSwitch('files')}>{i18n('library.tabUploaded', 'Uploaded')}</button>
-      <button type="button" className={'library-tab' + (tab === 'artifacts' ? ' active' : '')} onClick={() => onSwitch('artifacts')}>{i18n('library.tabCreated', 'Created')}</button>
-    </div>
-  );
-}
-
-function LibrarySearch({ query, onSearch }: { query: string; onSearch: (q: string) => void }) {
-  return (
-    <input type="text" className="library-search" placeholder={i18n('library.filterPlaceholder', 'Filter items...')} value={query} onChange={(e) => onSearch(e.target.value)} aria-label={i18n('library.filterPlaceholder', 'Filter items...')} />
-  );
-}
-
 function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }: {
   item: { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string };
   itemKey: string; tab: string; selection: Record<string, boolean>; renameItem: string | null;

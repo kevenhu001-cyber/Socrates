@@ -389,16 +389,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   const getMessage = options.getMessage || ((): ToolMessage | null => null);
   const ensureToolContainer = options.ensureToolContainer || (() => body);
   const onToolActivity = options.onToolActivity || (() => { /* no-op */ });
-  const onSearchRetry = options.onSearchRetry || function (query: string) {
-    const retryText = '请重试搜索：' + query;
-    const w = window as unknown as Record<string, unknown>;
-    if (typeof w.addMessage === 'function') {
-      (w.addMessage as (role: string, text: string) => void)('user', retryText);
-    }
-    if (typeof w.askChatTurn === 'function') {
-      (w.askChatTurn as (text: string) => void)(retryText);
-    }
-  };
   const requestFrame = options.requestAnimationFrame || function (callback: () => void) {
     return requestAnimationFrame(callback);
   };
@@ -921,7 +911,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     const runAction = async (decision: string, button: HTMLButtonElement) => {
       try {
         await submitApprovalAction(approval, entry!.id, decision);
-      } catch (err) {
+      } catch {
         button.focus();
       }
     };
@@ -1737,7 +1727,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       // Non-image artifacts (CSVs, JSON) are persisted on the entry and
       // discoverable via the session history, so we drop them silently.
       if (mode === 'compact') {
-        let row = findInlineRow(entry.id);
+        const row = findInlineRow(entry.id);
         if (row) {
           /* P_tool-live-group — a merged row settling expands it: unhide
              and swap it into the live slot as the visible row. */

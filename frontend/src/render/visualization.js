@@ -167,7 +167,7 @@ function normalizeFunction(spec) {
   var payload = spec.payload || {}, allValues = [], minX = Infinity, maxX = -Infinity;
   var rawFunctions = Array.isArray(payload.functions) ? payload.functions : [];
   var series = [];
-  rawFunctions.forEach(function (fn, index) {
+  rawFunctions.forEach(function (fn) {
     if (!fn || typeof fn.expression !== 'string' || !fn.expression.trim()) return;
     var sample;
     try { sample = sampleFunction(fn.expression, fn.domain, 760); }

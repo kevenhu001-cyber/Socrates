@@ -1,10 +1,6 @@
 import type {
   WorkspaceBridge,
   WorkspaceSnapshot,
-  LibraryItem,
-  ProjectItem,
-  PluginItem,
-  McpServerItem,
 } from './types';
 
 type Listener = () => void;

@@ -24,13 +24,13 @@ import './state.js';
 import './i18n.js';
 import { initCookieConsent } from './cookieConsent.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
-import { initChatComposerReserve, scrollContainer, scrollToBottomIfPinned, smoothScrollToBottom, isPinnedToBottom, shouldAutoScroll } from './ui/scroll.js';
+import { initChatComposerReserve, scrollContainer, smoothScrollToBottom, isPinnedToBottom, shouldAutoScroll } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import './ui/suggestions.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
-import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+import { updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
 import {
   clearComposer,
   focusComposer,
@@ -43,20 +43,19 @@ import {
 import { wrapForCanvas } from './render/canvasWrap.ts';
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
-import { renderAttachmentChips, setupAttachmentInput, openAttachmentPicker } from './attachments/render.js';
+import { renderAttachmentChips, openAttachmentPicker } from './attachments/render.js';
 import {
-  STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS, STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
-  offlineGuard, sleepBackoff, makeAIWatchdog,
+  offlineGuard,
 } from './chat/offline.js';
-import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, renderUsageHeatmap, showUsageTip, hideUsageTip } from './ui/usage.js';
+import { closeUsageModal } from './ui/usage.js';
 import { createMistakeBook } from './ui/mistakeBook.js';
-import { batchSetItem, batchRemoveItem } from './batchStorage.js';
+import { batchSetItem } from './batchStorage.js';
 /* (side-effect-only import already loaded above; this named-import
    line just keeps the bundler from tree-shaking the module when only
    batchStorage is referenced via the side-effect import above.) */
-import { LOCAL_MEMORY_MAX, loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
+import { loadLocalMemory, appendLocalMemory, clearLocalMemory, _memKey } from './storage/localMemory.js';
 import { formatTickSlice, formatMsgProgressive, formatMsg, stripMarkdown, findLastUserMessage } from './render/markdown.js';
-import { findInlineToolBoundary, getStreamRenderInterval, splitStreamingMarkdown } from './render/streaming.js';
+import { findInlineToolBoundary, splitStreamingMarkdown } from './render/streaming.js';
 import { createStreamScheduler } from './render/streamScheduler.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import {
@@ -65,15 +64,14 @@ import {
   capSessions, getVisibleSessions, getArchivedSessionsFrom,
   sweepExpiredArchivesFrom, createDeletedSessionGuard,
 } from './session/store.js';
-import { esc, escAttr, escHTML, decodeEntities, stripTags, safeHljsLang, stripCitationMarkers } from './render/helpers.js';
+import { esc, decodeEntities, stripTags, safeHljsLang, stripCitationMarkers } from './render/helpers.js';
 import { parseQuizInner, parseExampleInner, parsePracticeInner, parseDefinitionInner, parseFlashcardInner, parseTheoremInner, parseProofInner, parseDerivationInner, parseKeyPointInner } from './render/widgetParsers.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions, renderViz, renderVizLoading, renderMermaid, openVizModal } from './render/viz.js';
-import { callAPI, callAPIChat } from './chat/api.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions } from './render/viz.js';
+import { callAPI } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { looksLikeUserMentionedSite, extractHttpUrls, fetchPagesForContext } from './chat/webLinks.js';
 import { fetchWebContext, shouldRefreshSearch } from './chat/webSearch.js';
 import { generateSessionTitle } from './chat/sessionTitle.js';
-import { parseOneDiagResponse } from './chat/diagnosticParser.js';
 import { generateDiagnosticQuestions } from './chat/diagnosticGenerator.js';
 import {
   buildFallbackDiagnosticQuestions,
@@ -86,13 +84,12 @@ import { applyDiagnosticResults } from './chat/diagnosticResults.js';
 import { generateTopicKBNodes } from './chat/topicKbNodes.js';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from './chat/teachingPlan.js';
 import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective, tutorTurnDirective } from './chat/socraticDirectives.js';
-import { aiGenerate } from './chat/mockDiagnostic.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT, HIGH_EFFORT_OUTPUT_GUIDANCE } from './chat/systemPrompts.js';
-import { appendInlineArtifact, renderToolTextOutput } from './ui/toolCards.js';
+import { renderToolTextOutput } from './ui/toolCards.js';
 import { initArtifactPreview } from './ui/artifactPreview.js';
 import { initLinkFavicons } from './ui/linkFavicons.js';
-import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
+import { appendThinking } from './ui/thinkingPill.js';
 /* ui/searchProgress.js is no longer a live-chat surface: the model announces
    what it is doing through `_liveStatus` (react/tool-run/TurnStatus) instead
    of a step card prepended to the bubble. The module still serves the
@@ -100,15 +97,14 @@ import { looksLikeMetaInstruction, appendThinking } from './ui/thinkingPill.js';
    e2e hook, both of which import it themselves. */
 import { createToolRuntime } from './chat/toolRuntime.js';
 import { settleInlineToolRowFromMessage } from './ui/toolInline.js';
-import { beginAgentTextStream, appendRunFooter } from './chat/agentStream.js';
-import { BUILTIN_TEMPLATES, SYSTEM_PROMPT_SUMMARIZE, SYSTEM_PROMPT_TRANSLATE, SYSTEM_PROMPT_EXPLAIN_CODE, SYSTEM_PROMPT_DEBUG, SYSTEM_PROMPT_QUIZ, SYSTEM_PROMPT_SOCRATIC, PROMPT_TEMPLATES_KEY, loadPromptTemplates, savePromptTemplates, findTemplateByShortcut, upsertCustomTemplate, deleteCustomTemplate } from './chat/promptTemplates.js';
+import { loadPromptTemplates } from './chat/promptTemplates.js';
 import { renderNoUrlHint, renderLinkPreviews } from './ui/linkPreviews.js';
 import { renderDiagResultsScreen } from './ui/diagnosticResults.js';
 import { renderDiagQuestion as renderDiagQuestionUI } from './ui/diagnosticQuestion.js';
-import { loadAndRenderCrossSessionKB, resetCrossSessionKBCache } from './ui/knowledgeCrossSession.js';
+import { resetCrossSessionKBCache } from './ui/knowledgeCrossSession.js';
 import { kbNodeHtml, toggleKBDetail } from './ui/knowledgeDetail.js';
 import { renderKnowledgeView } from './ui/knowledgeView.js';
-import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, switchAuthTab, setAuthError, showAuthForgotPassword, showAuthCodeLogin, submitAuthSignin, submitAuthRegister, submitAuthVerify, submitAuthForgotPassword, submitAuthResetPassword, submitAuthSendCode, submitAuthLoginWithCode, resendVerification, resendAuthCode, afterAuthEnter } from './auth/index.js';
+import { showGate, showAuthSignin } from './auth/index.js';
 
 /* Cookie consent — shown once on first visit; the choice is persisted in
    localStorage and a shared first-party consent cookie. Non-essential
@@ -117,29 +113,19 @@ import { hideGate, showGate, showAuthView, showAuthSignin, showAuthRegister, swi
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 initArtifactPreview();
 initLinkFavicons();
-import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
-import { toggleSidebar, getRecentsFilter, setRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
+import { toggleSidebar, getRecentsFilter, clearRecentsFilter } from './sidebar/index.js';
 import { stripChatArtifacts } from './util/stripChatArtifacts.js';
 import { renderRecentsFilterChips as renderRecentsFilterChipsUI } from './ui/recentsFilterChips.js';
-import {
-  formatRelativeTime, getKnownTagsFromSessions,
+import { getKnownTagsFromSessions,
   filterRecentsByChip,
 } from './ui/recentsHelpers.js';
-import {
-  displayPrefs, loadDisplayPrefs, applyDisplayPrefs, saveDisplayPrefs,
-  setDisplayFont, setDisplayWidth,
-  setBackgroundColor, setBackgroundDark, setBackgroundLight,
-  resetBackgroundColor, resetBackgroundDark, resetBackgroundLight,
-  toggleGrid, setAccentColor, setAccentCustom, resetAccentColor, toggleDisplayPrefs, toggleTheme,
+import { loadDisplayPrefs,
+  setDisplayFont, setDisplayWidth, setAccentColor, setAccentCustom, toggleTheme,
   initTheme
 } from './displayPrefs.js';
 import {
-  getActiveProvider,
-  pickActiveProviderById, toggleModelPicker, openModelPicker, closeModelPicker, syncModelPills,
-  syncChatModel, toggleChatModelMenu, closeChatModelMenu, pickChatModel,
-  renderExtensionsMenu, toggleExtensionByKey, countActiveExtensions, syncExtensionsUI,
-  toggleExtensionsPicker, openExtensionsPicker, closeExtensionsPicker, EXTENSIONS,
-  toggleWebSearch, syncWebSearchUI,
+  getActiveProvider, syncModelPills,
+  syncChatModel, syncExtensionsUI, syncWebSearchUI,
 } from './pickers.js';
 
 /* React migration bridge. The bridge only exists when `?react=1` loaded the
@@ -477,7 +463,6 @@ wireScrollPill();
 /* (functions defined in src/displayPrefs.js — window exports below) */
 
 /* Colors.js utilities consumed by displayPrefs.js */
-import { parseHexColor, applyCustomBg, removeCustomBg } from './util/colors.js';
 
 /* Expose display-pref functions to window for onclick handlers — the
    functions themselves are imported from displayPrefs.js; the window
@@ -519,17 +504,10 @@ try{
   if(sbPref==="0"||(sbPref===null&&window.innerWidth<768)){
     sidebarOpen=false;document.getElementById("sidebar").classList.add("collapsed")
   }
-}catch(e){}
+}catch {}
 syncSidebarBtns();
 window.sidebarOpen=sidebarOpen;
 /* toggleTheme() is imported from displayPrefs.js */
-function toggleAppLang(){
-  var next=_currentLang==="en"?"zh":"en";
-  setLang(next);
-  var lbl=document.getElementById("langToggleLabel");
-  if(lbl)lbl.textContent=next==="en"?"EN":"中";
-  showToast(next==="en"?"Language: English":"语言: 中文",1800);
-}
 /* Restore the saved theme preference, including the system-following mode.
    The inline boot script has already painted the correct mode; initTheme()
    adds the live OS preference listener and wires the selector in Display
@@ -546,7 +524,7 @@ try{
     if(savedHue)setAccentColor(parseInt(savedHue,10));
     else setAccentColor(40);
   }
-}catch(e){}
+}catch {}
 /* Apply text-size / content-width prefs (must run before any layout
    that depends on .main-inner max-width). */
 loadDisplayPrefs();
@@ -935,8 +913,8 @@ window.toggleSidebarView=toggleSidebarView;
 // The attach button + drag/drop + paste handlers all live there now.
 
 import {
-  attachments, addFiles, removeAttachment, resetAttachments,
-  buildMessageContent, MAX_TOTAL_ATTACHMENTS, validateImageAttachments,
+  attachments, resetAttachments,
+  buildMessageContent, validateImageAttachments,
 } from './attachments.js';
 
 /* attachments bridge + renderAttachmentChips + setupAttachmentInput + DOMContentLoaded
@@ -973,8 +951,6 @@ initChatComposerReserve();
 /* ============================================================
    SESSION PERSISTENCE (Recents)
    ============================================================ */
-var RECENTS_KEY="socrates-sessions-v2";
-var RECENTS_KEY_OLD="socrates-sessions";
 /* P2.3 — how long the client and server keep an archived
    session before it's permanently erased. The server is the
    source of truth (it runs a daily GC job); we mirror the
@@ -984,7 +960,7 @@ var RECENTS_KEY_OLD="socrates-sessions";
 /* Server-side session cache. The SPA keeps a copy of the user's chat
    sessions here so the UI can render the Recents / Knowledge / Mistakes
    tabs without a roundtrip on every action. We keep it fresh via
-   getRecents() / setRecents() — which now hit the server. */
+   getRecents() — which now hits the server. */
 var SERVER_SESSIONS=[];
 /* P_recents-fetch-fail — tracks whether the last refreshServerSessions()
    fetch failed. When true, doRenderRecents shows a "couldn't load" empty
@@ -1033,29 +1009,12 @@ function getRecents(){
      Recents list. Users restore them from the Storage modal. */
   return getVisibleSessions(SERVER_SESSIONS);
 }
-function setRecents(arr){SERVER_SESSIONS=capSessions(arr)}
 
 /* P2.2 — filter chip state. `null` = all; otherwise a tag
    string. Persisted in localStorage so the user's last filter
    survives a reload. */
 var RECENTS_FILTER_KEY="socrates-recents-filter";
 try{window.RECENTS_FILTER_KEY=RECENTS_FILTER_KEY}catch(_){}
-
-/* Session custom labels, stored client-side (keyed by session id).
-   Displayed prominently in the recent-item row next to the title. */
-var SESSION_LABELS_KEY="socrates-session-labels";
-function getSessionLabel(id){
-  if(!id)return"";
-  try{var m=JSON.parse(localStorage.getItem(SESSION_LABELS_KEY)||"{}");return m[id]||""}catch(e){return""}
-}
-function setSessionLabelStore(id,label){
-  if(!id)return;
-  try{
-    var m=JSON.parse(localStorage.getItem(SESSION_LABELS_KEY)||"{}");
-    if(label){m[id]=label}else{delete m[id]}
-    localStorage.setItem(SESSION_LABELS_KEY,JSON.stringify(m));
-  }catch(e){}
-}
 
 /* P2.2 — set of tag strings the user has ever used. Powers
    the autocomplete suggestions in the tag editor popover. */
@@ -1093,7 +1052,7 @@ async function refreshServerSessions(){
         var r2=await apiFetch("/api/sessions?limit=200");
         SERVER_SESSIONS=Array.isArray(r2&&r2.sessions)?r2.sessions:[];
         ok=true;
-      }catch(e2){/* still failing — surface below */}
+      }catch {/* still failing — surface below */}
     }
   }
   SERVER_SESSIONS_FETCH_FAILED=!ok;
@@ -1121,9 +1080,8 @@ try{window.retryRecentsFetch=retryRecentsFetch}catch(_){}
    ============================================================ */
 /* P_main-split — Wave 1b: Cmd-K palette extracted to ui/cmdK.js. */
 import {
-  rebuildCmdKIndex, openCmdK, closeCmdK, onCmdKInput, onCmdKKey,
-  renderCmdKResults, renderCmdKResultsHits, renderCmdKResultsHTML,
-  openCmdKResult, updateCmdKSelected,
+  rebuildCmdKIndex, openCmdK, closeCmdK,
+  openCmdKResult,
 } from './ui/cmdK.js';
 
 /* P_dup-session-race — when multiple saveCurrentSession() calls
@@ -1970,7 +1928,7 @@ async function loadSession(id){
           rec.messages.push({role:m.role,content:txt});
         });
         if(rec.messages.length)batchSetItem(_memKey(s.id),JSON.stringify(rec));
-      }catch(e){/* mirror failed */}
+      }catch {/* mirror failed */}
     }
     updateKB();
     updateChatStats();
@@ -2100,63 +2058,6 @@ async function loadSession(id){
    顶部 import。
    ============================================================ */
 
-/* P4.1 — two-step delete to prevent accidental loss of a session.
-   The user must press-and-hold the delete button for 600ms (mouse
-   / touch), OR press Enter / Space when focused, before the
-   inline confirmation bar appears. The bar is rendered inline
-   within the recent-item row, so the user can read the session
-   title they're about to delete. */
-var _deleteConfirmTimers={};   /* clientId → setTimeout handle */
-var _deleteConfirmStates={};   /* clientId → true while showing */
-
-function clearDeleteConfirmTimer(clientId){
-  if(_deleteConfirmTimers[clientId]){
-    clearTimeout(_deleteConfirmTimers[clientId]);
-    delete _deleteConfirmTimers[clientId];
-  }
-}
-function cancelDeleteConfirm(clientId){
-  clearDeleteConfirmTimer(clientId);
-  var row=document.querySelector('[data-recent-id="'+clientId+'"]');
-  if(!row)return;
-  var bar=row.querySelector(".recent-item-confirm");
-  if(bar)bar.remove();
-  var btn=row.querySelector(".recent-item-del");
-  if(btn){btn.classList.remove("holding");btn.style.display=""}
-  _deleteConfirmStates[clientId]=false;
-}
-function showDeleteConfirm(clientId){
-  _deleteConfirmStates[clientId]=true;
-  clearDeleteConfirmTimer(clientId);
-  var row=document.querySelector('[data-recent-id="'+clientId+'"]');
-  if(!row){_deleteConfirmStates[clientId]=false;return}
-  var btn=row.querySelector(".recent-item-del");
-  if(btn){btn.style.display="none"}
-  var bar=document.createElement("div");
-  bar.className="recent-item-confirm";
-  bar.innerHTML=
-    '<span class="recent-item-confirm-text">Delete this session?</span>'+
-    '<button class="recent-item-confirm-cancel" type="button">Cancel</button>'+
-    '<button class="recent-item-confirm-delete" type="button">Delete</button>';
-  row.appendChild(bar);
-  bar.querySelector(".recent-item-confirm-cancel").onclick=function(ev){
-    ev.stopPropagation();
-    cancelDeleteConfirm(clientId);
-  };
-  bar.querySelector(".recent-item-confirm-delete").onclick=function(ev){
-    ev.stopPropagation();
-    /* Extract the original session id (the data-recent-id is the
-       safe version; the actual id is in the data-recent-actual
-       attribute we set in renderRecents). */
-    var id=row.getAttribute("data-recent-actual")||clientId;
-    actuallyDeleteSession(id);
-  };
-  /* Auto-dismiss after 5s of no decision, to avoid a stuck
-     confirm bar if the user walks away. */
-  setTimeout(function(){
-    if(_deleteConfirmStates[clientId])cancelDeleteConfirm(clientId)}
-  ,5000);
-}
 /* P2.2 — open the inline tag editor popover anchored to a
    session row. The popover accepts comma / Enter separated
    tags and persists via PATCH. */
@@ -2286,7 +2187,7 @@ function removeTagFromSession(id,tag){
     method:"PUT",
     body:{tags:s.tags},
     timeoutMs:8000
-  }).catch(function(err){
+  }).catch(function(){
     /* tags sync failed */
   });
   renderRecents();
@@ -2301,8 +2202,6 @@ function findServerSessionIndex(id){
 
 async function actuallyDeleteSession(id,ev){
   if(!CURRENT_USER)return;
-  /* Helper declared first so the click-log below can read it. */
-  function inFlightId(){try{return _saveInFlight?"in-flight":null}catch(e){return null}}
   /* P_delete-stale-click — the trash button lives inside
      `.recent-item` which has onclick="loadSession(...)". Without
      stopping propagation here, clicking delete would ALSO trigger
@@ -2412,7 +2311,7 @@ function restoreSession(id){
   apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
     method:"DELETE",
     timeoutMs:8000
-  }).catch(function(err){
+  }).catch(function(){
     /* archive sync failed */
   });
   renderRecents();
@@ -2515,16 +2414,6 @@ function bounceOutOfArchivedSession(){
   updateStartBtn();
 }
 
-/* Backwards-compatible alias — now deletes immediately. */
-function deleteSession(id,e){
-  if(e){e.stopPropagation();e.preventDefault()}
-  if(!CURRENT_USER)return;
-  /* Find the row in the DOM and get the actual session ID. */
-  var row=(e&&e.currentTarget&&e.currentTarget.closest(".recent-item"))||null;
-  var actualId=row?row.getAttribute("data-recent-actual"):id;
-  actuallyDeleteSession(actualId);
-}
-
 /* ─── Session context menu (long-press / right-click) ───
    Delete, pin/unpin, and custom label via a floating popover.
    Uses touch timer for mobile, contextmenu for desktop. */
@@ -2535,119 +2424,6 @@ function deleteSession(id,e){
    the synthetic click from navigating. */
 var _ctxMenuSessionId = null;
 
-/* Open the context menu popover anchored near the clicked row. */
-function openSessionContextMenu(id,rowEl){
-  /* Close any existing menu first. */
-  closeSessionContextMenu();
-  /* Block all recent-item pointer events via a CSS class on #sidebar.
-     This physically prevents the synthetic click (from mobile
-     long-press) from reaching any .recent-item, at the browser
-     compositor level — before any JS runs. */
-  var sb=document.getElementById("sidebar");
-  if(sb)sb.classList.add("ctx-menu-block");
-  _ctxMenuSessionId=id;
-  var idx=findServerSessionIndex(id);
-  if(idx<0)return;
-  var s=SERVER_SESSIONS[idx];
-  if(!s)return;
-
-  var pop=document.createElement("div");
-  pop.id="sessionContextMenu";
-  pop.className="session-context-menu";
-  pop.dataset.sessionId=id;
-
-  var label=getSessionLabel(id);
-  var isPinned=!!s.pinned;
-
-  pop.innerHTML=
-    '<div class="session-context-head">'+
-      '<div class="session-context-title">'+esc(s.title||s.topic||"(untitled)")+'</div>'+
-    '</div>'+
-    '<div class="session-context-body">'+
-      /* Pin / Unpin */
-      '<button class="session-context-btn" data-action="pin">'+
-        '<span class="session-context-icon">'+(isPinned?unpinSvg():pinSvg())+'</span>'+
-        '<span>'+(isPinned?t("session.ctxUnpin"):t("session.ctxPin"))+'</span>'+
-      '</button>'+
-      /* Custom label */
-      '<div class="session-context-label-row">'+
-        '<button class="session-context-label-trigger" id="sessionCtxLabelTrigger" type="button">'+
-          '<span class="session-context-icon">'+labelSvg()+'</span>'+
-          '<span>'+t("session.ctxCustomLabel")+(label?' <mark>'+esc(label)+'</mark>':'')+'</span>'+
-        '</button>'+
-        '<div class="session-context-label-input-wrap hidden" id="sessionCtxLabelWrap">'+
-          '<span class="session-context-icon">'+labelSvg()+'</span>'+
-          '<input class="session-context-label-input" id="sessionCtxLabelInput" type="text" placeholder="'+esc(t("session.ctxCustomLabel"))+'\u2026" maxlength="30" value="'+esc(label)+'">'+
-        '</div>'+
-        '<button class="session-context-label-set hidden" id="sessionCtxLabelSet">'+t("session.ctxLabelSet")+'</button>'+
-      '</div>'+
-      /* Move to project */
-      '<div class="session-context-move-to-project">'+
-        '<div class="session-context-move-header">'+t("session.ctxMoveToProject")+'</div>'+
-        '<div class="session-context-project-list" id="sessionCtxProjectList"></div>'+
-      '</div>'+
-      /* Delete */
-      '<button class="session-context-btn session-context-btn-danger" data-action="delete">'+
-        '<span class="session-context-icon">'+deleteSvg()+'</span>'+
-        '<span>'+t("session.ctxDelete")+'</span>'+
-      '</button>'+
-    '</div>';
-
-  document.body.appendChild(pop);
-
-  /* Position near the row. The element is in the DOM but hidden
-     (CSS display:none), so getBoundingClientRect works. */
-  var r=rowEl.getBoundingClientRect();
-  var popW=260;
-  var left=r.left+window.scrollX;
-  var top=r.bottom+window.scrollY+4;
-  /* Keep within viewport. */
-  if(left+popW>window.innerWidth-8)left=window.innerWidth-popW-8;
-  if(left<8)left=8;
-  pop.style.left=left+"px";
-  pop.style.top=top+"px";
-  /* Make visible synchronously so click events occurring in the same
-     event-loop iteration (e.g. synthetic clicks after long-press on
-     mobile) see the menu and are suppressed. */
-  pop.classList.add("visible");
-
-  /* Wire handlers. */
-  pop.querySelector("[data-action='pin']").onclick=function(ev){
-    ev.stopPropagation();
-    togglePinSession(id);
-    closeSessionContextMenu();
-  };
-  pop.querySelector("[data-action='delete']").onclick=function(ev){
-    ev.stopPropagation();
-    closeSessionContextMenu();
-    actuallyDeleteSession(id);
-  };
-  /* Custom label: clicking the trigger shows the input. */
-  var trigger=pop.querySelector("#sessionCtxLabelTrigger");
-  var wrap=pop.querySelector("#sessionCtxLabelWrap");
-  var input=pop.querySelector("#sessionCtxLabelInput");
-  var setBtn=pop.querySelector("#sessionCtxLabelSet");
-  trigger.onclick=function(ev){
-    ev.stopPropagation();
-    trigger.classList.add("hidden");
-    wrap.classList.remove("hidden");
-    setBtn.classList.remove("hidden");
-    setTimeout(function(){input.focus();input.select()},50);
-  };
-  function commitLabel(){
-    var v=(input.value||"").trim().slice(0,30);
-    setSessionLabel(id,v||"");
-    closeSessionContextMenu();
-  }
-  setBtn.onclick=commitLabel;
-  input.onkeydown=function(ev){
-    if(ev.key==="Enter"){ev.preventDefault();commitLabel()}
-    else if(ev.key==="Escape"){ev.preventDefault();closeSessionContextMenu()}
-  };
-  /* Populate the "Move to project" list. */
-  populateProjectList(id);
-}
-
 function closeSessionContextMenu(){
   _ctxMenuSessionId=null;
   var sb=document.getElementById("sidebar");
@@ -2656,46 +2432,6 @@ function closeSessionContextMenu(){
   if(pop){pop.classList.remove("visible");setTimeout(function(){if(pop&&pop.parentNode)pop.parentNode.removeChild(pop)},200)}
 }
 
-/* Populate the "Move to project" sub-list in the session context menu. */
-function populateProjectList(sessionId){
-  var list = document.getElementById("sessionCtxProjectList");
-  if(!list) return;
-  var projects = window.__projectsCache || [];
-  if(!projects.length && !window.__projectsFetchFailed){
-    /* Fetch projects first. */
-    if(typeof apiFetch === "function"){
-      apiFetch("/api/projects").then(function(r){
-        window.__projectsCache = (r && r.projects) || [];
-        window.__projectsFetchFailed = false;
-        renderProjectListItems(list, sessionId);
-      }).catch(function(){
-        window.__projectsFetchFailed = true;
-        list.innerHTML = '<div class="session-context-project-item">No projects available</div>';
-      });
-    }
-    list.innerHTML = '<div class="session-context-project-item">Loading projects...</div>';
-    return;
-  }
-  if(!projects.length){
-    list.innerHTML = '<div class="session-context-project-item">No projects available</div>';
-    return;
-  }
-  renderProjectListItems(list, sessionId);
-}
-function renderProjectListItems(list, sessionId){
-  var projects = window.__projectsCache || [];
-  var currentProjectId = state ? state.currentProjectId : null;
-  list.innerHTML = projects.map(function(p){
-    var active = p.id === currentProjectId;
-    var color = /^#[0-9a-f]{3,8}$/i.test(p.color || "") ? p.color : "hsl(var(--accent-000))";
-    return '<button class="session-context-project-item' + (active ? ' active' : '') +
-      '" data-project-id="' + esc(p.id) + '" onclick="moveSessionToProject(\'' + esc(sessionId) + '\',\'' + esc(p.id) + '\')">' +
-      '<span class="project-swatch" style="background:' + esc(color) + '"></span>' +
-      '<span>' + esc(p.name) + '</span>' +
-      (active ? '<span class="session-context-project-check">✓</span>' : '') +
-      '</button>';
-  }).join("");
-}
 /* Drag-and-drop session onto a project. */
 var _dragSessionId = null;
 function onSessionDragStart(event, sessionId){
@@ -2765,52 +2501,6 @@ function moveSessionToProject(sessionId, projectId){
   });
 })();
 
-/* Toggle the pinned state of a session via PATCH. */
-async function togglePinSession(id){
-  if(!id||!CURRENT_USER)return;
-  var idx=findServerSessionIndex(id);
-  if(idx<0)return;
-  var s=SERVER_SESSIONS[idx];
-  var nextPinned=!s.pinned;
-  /* Optimistic update. */
-  s.pinned=nextPinned;
-  if(nextPinned)s.pinnedAt=Date.now();
-  renderRecents();
-  try{
-    await apiFetch("/api/sessions/"+encodeURIComponent(id),{
-      method:"PATCH",
-      body:{pinned:nextPinned},
-      timeoutMs:5000,
-    });
-  }catch(e){
-    /* Revert on failure. */
-    s.pinned=!nextPinned;
-    if(!nextPinned)delete s.pinnedAt;
-    renderRecents();
-  }
-}
-
-/* Set a custom display label for a session (client-side). */
-function setSessionLabel(id,label){
-  if(!id)return;
-  setSessionLabelStore(id,label);
-  renderRecents();
-}
-
-/* SVG icons for the context menu. */
-function pinSvg(){
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/><line x1="12" y1="18" x2="12" y2="22"/></svg>';
-}
-function unpinSvg(){
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M12 2v10l4 4v2H8v-2l4-4V2"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
-}
-function labelSvg(){
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
-}
-function deleteSvg(){
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
-}
-
 /* P_render-throttle — coalesce rapid renderRecents() calls into a
    single animation frame. Without this, saveCurrentSession (called
    3-5x per chat turn) triggers 3-5 full list rebuilds, causing
@@ -2836,7 +2526,7 @@ function _sessionRowFields(s){
     kind: s.kind||"",
     pinned: !!s.pinned,
     tags: Array.isArray(s.tags)?s.tags:[],
-    label: (typeof window.getSessionLabel==="function")?window.getSessionLabel(s.id):"",
+    label: "",
     archivedAt: typeof s.archivedAt==="number"?s.archivedAt:null,
     branchedFrom: s.branchedFrom||null,
   };
@@ -3092,10 +2782,10 @@ async function startSession(){
          requireOwnedSession() sees the row. The save runs concurrently
          with buildMessageContent instead of blocking the view swap. */
       var saveP = Promise.resolve(saveCurrentSession());
-      var startBuilt, saveResult;
+      var startBuilt;
       try {
-        [startBuilt, saveResult] = await Promise.all([builtP, saveP]);
-      } catch (e) {
+        [startBuilt] = await Promise.all([builtP, saveP]);
+      } catch {
         /* If either background call fails, fall back to a plain-text
            turn so the user can still chat; buildMessageContent failure
            on a topic without attachments is impossible, but defending
@@ -3266,7 +2956,7 @@ async function startSession(){
     }else{
       diagProgress(15, t("chat.knowledgeReady"));
     }
-  }catch(e){
+  }catch {
     diagProgress(15, t("chat.knowledgeReady"));
   }
 
@@ -3760,11 +3450,11 @@ async function askChatTurn(userText,pendingOverride){
    the same {text,html,widgets,cancelled} shape (or null on failure). */
 /* P_main-split — Wave 0b: parseToolCall, formatSourcesBlock,
    handleChatApiResult extracted to chat/format.js. No behavior change. */
-import { parseToolCall, formatSourcesBlock, handleChatApiResult } from './chat/format.js';
+import { handleChatApiResult } from './chat/format.js';
 
 
 /* P_main-split — Wave 0: mocks pool (region 14) extracted. */
-import { _origGenerateSocraticQuestion, _origGenerateFollowUp, extractKeyPhrase, _origGetExplanation } from './chat/mocks.js';
+import { _origGenerateSocraticQuestion, _origGenerateFollowUp, _origGetExplanation } from './chat/mocks.js';
 
 /* ============================================================
    CHAT INTERACTION
@@ -3828,7 +3518,7 @@ var EXTENSION_SIDE_EFFECTS={
   deepResearch:function(on){ window.deepResearchOn=!!on; if(typeof window.syncQuickChips==="function") window.syncQuickChips(); },
   extensiveThinking:function(on){
     window.extensiveThinkingOn=!!on;
-    try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){}
+    try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch {}
   }
 };
 function _applyExtensionSideEffects(prevExt,nextExt){
@@ -4580,7 +4270,7 @@ async function submitChatMessage(textOverride,opts){
              instead of dumping a textbook at the user. */
           if(typeof tutorSocratic==="object"&&tutorSocratic
              &&typeof tutorSocratic.showExplainPrompt==="function"){
-            try{tutorSocratic.showExplainPrompt(node&&node.name||"")}catch(_){}
+            try{tutorSocratic.showExplainPrompt()}catch(_){}
           }else{
             addMessage("assistant","Let's try a different approach.","suggest",[
               {text:t("tutor.explain"),action:"explain",primary:true},
@@ -4629,7 +4319,7 @@ function fireFeedback(messageId,rating,categories){
       method:"PUT",
       body:{rating:rating,categories:categories||null},
       timeoutMs:8000
-    }).catch(function(e){
+    }).catch(function(){
       /* Telemetry failures are non-fatal. */
       console.debug("[msg-feedback] not sent");
     });
@@ -4646,7 +4336,7 @@ function sendFeedback(messageId,rating,bar){
   }
   showToast(rating==="up"?"Thanks for the feedback":"Got it — we'll improve");
 }
-function editUserMessage(messageId,bar){
+function editUserMessage(messageId){
   var idx=findMessageIndex(messageId);
   if(idx<0){showToast(t("toast.messageNotFound"));return}
   var entry=state.messages[idx];
@@ -4728,7 +4418,7 @@ function editUserMessage(messageId,bar){
       if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
       if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
       patchPromise.then(function(){
-        try{ window.askChatTurn(editedText); }catch(e){/* msg-edit replay failed */}
+        try{ window.askChatTurn(editedText); }catch {/* msg-edit replay failed */}
       });
     }
     /* Avoid leaving the patch promise dangling — reference it so
@@ -4775,7 +4465,7 @@ function rollbackMessagesAfter(userMessageId){
   publishReactChatRuntime({type:"state-synced",reason:"rollback"});
   return toDrop.length;
 }
-function deleteUserMessage(messageId,bar){
+function deleteUserMessage(messageId){
   var idx=findMessageIndex(messageId);
   if(idx<0)return;
   state.messages.splice(idx,1);
@@ -4789,7 +4479,7 @@ function deleteUserMessage(messageId,bar){
     if(!e||e.status!==404)console.log("[msg-delete] not synced");
   });
 }
-function regenerateAssistantMessage(messageId,bar){
+function regenerateAssistantMessage(messageId){
   /* Hook into the existing streaming pipeline. Locate the user turn
      that produced this assistant reply, rewind the conversation to it
      (locally + server-side), then re-ask. */
@@ -4842,7 +4532,7 @@ function regenerateAssistantMessage(messageId,bar){
        can't land after the fresh reply is saved and wipe it. Mirrors
        editUserMessage. patchPromise resolves even on failure (.catch). */
     patchPromise.then(function(){
-      try{ window.askChatTurn(userText); }catch(e){/* regen failed */}
+      try{ window.askChatTurn(userText); }catch {/* regen failed */}
     });
   }
 }
@@ -5717,9 +5407,6 @@ var _liveRetryOwner=null;
 function claimLiveRetry(owner,run){
   _liveRetryOwner=owner?{owner:owner,run:run}:null;
 }
-function releaseLiveRetry(owner){
-  if(_liveRetryOwner&&_liveRetryOwner.owner===owner)_liveRetryOwner=null;
-}
 function retryLiveTurn(messageId){
   var owner=_liveRetryOwner;
   if(!owner)return false;
@@ -5738,10 +5425,6 @@ function retryLiveTurn(messageId){
    pending, which is exactly the window this map has to cover. Turns are
    serialized, so the cap is a backstop against an abandoned pending run. */
 var _liveTurnRuntimes=new Map();
-function liveTurnKey(message){
-  if(!message)return "";
-  return String(message.clientId||message.id||"");
-}
 function registerLiveTurnRuntime(messageId,runtime){
   if(!messageId||!runtime)return;
   _liveTurnRuntimes.set(String(messageId),runtime);
@@ -5806,7 +5489,6 @@ if(typeof document!=="undefined"&&!window.__socratesToolRetryWired){
 function addStreamingMessage(opts){
   opts=opts||{};
   var onRetry=opts.onRetry;
-  var onThinking=opts.onThinking;
   var retryViewport=consumeStreamRetryViewport();
   /* P1.4 — a new bubble starts with the user "at bottom" again.
      Suppress the pill for this stream and let the scroll listener
@@ -6221,7 +5903,7 @@ function addStreamingMessage(opts){
          has to be baked into `html` here. */
       setLiveStatus({phase:"error",label:_timeoutCopy,error:_timeoutCopy,retryable:true});
       claimLiveRetry(ret,function(){
-        if(typeof onRetry==="function"){try{onRetry()}catch(e){/* retry handler threw */}}
+        if(typeof onRetry==="function"){try{onRetry()}catch {/* retry handler threw */}}
       });
       updateChatStats();
       return;
@@ -6256,28 +5938,11 @@ function addStreamingMessage(opts){
            pill sat there loading, then a new conversation bubble
            appeared below, looking like two separate events. The
            new bubble's own thinking state is enough indication. */
-        if(typeof onRetry==="function"){try{onRetry()}catch(e){/* retry handler threw */}}
+        if(typeof onRetry==="function"){try{onRetry()}catch {/* retry handler threw */}}
       });
     }
     updateChatStats();
   },FIRST_DELTA_TIMEOUT_MS);
-
-  function highlightClosedCode(){
-    /* highlight.js — only on <pre><code> blocks that have BOTH opening
-       and closing fences. Unclosed blocks are skipped so we don't
-       mis-parse mid-stream. */
-    if(typeof hljs==="undefined")return;
-    var blocks=body.querySelectorAll("pre code");
-    for(var i=0;i<blocks.length;i++){
-      var code=blocks[i];
-      if(code.dataset.hljsDone)continue;
-      var raw=code.textContent||"";
-      /* Heuristic: an unclosed fence still ends with "```" on its own line
-         OR ends mid-word. Skip in that case. */
-      if(/```\s*$/.test(raw))continue;
-      try{hljs.highlightElement(code);code.dataset.hljsDone="1"}catch(_){}
-    }
-  }
 
   /* P0.7 — streaming state for inline <think>…</think> blocks.
      Reasoning models stream the chain-of-thought in-band with the
@@ -6655,7 +6320,7 @@ function doRender(){
                 try{hljs.highlightElement(c);c.dataset.hljsDone="1"}catch(_){}
               });
             }
-          }catch(e){
+          }catch {
             thinkState.thinkDiv.textContent=thinkContent;
           }
         }else{
@@ -7065,7 +6730,6 @@ function doRender(){
          This is the only place marked + KaTeX run for the FINAL render; doRender above
          now also uses marked + KaTeX via formatMsgProgressive for live streaming. */
       var total=full.length;
-      var firstChunkDuration=Date.now()-(thinkStarted||Date.now());
       /* P_react-live-turn — `reactLive`, captured when this bubble was created,
          is the single answer to "which surface owns the finalized DOM?". When it
          is true, React has painted this turn from rawText + toolCalls all along,
@@ -7073,13 +6737,7 @@ function doRender(){
          string that history reload and session save read. When it is false, the
          legacy bubble IS the surface: the swap, the artifact reseat and the
          post-render wiring all run as before. */
-      /* Skip the char-by-char animation when the response contains
-       * a <think> marker. The animation writes formatted HTML into
-       * a text node, so mid-stream the user would see literal
-       * `<details class="think-block">` tags flicker by. The final
-       * formatMsg pass renders properly, but going straight there
-       * is cleaner. */
-      var hasThinkMarker=full.indexOf("<think>")!==-1;
+      /* P_chunked-fade — the chunk-by-chunk fade-in during streaming<think>")!==-1;
       /* P_chunked-fade — the chunk-by-chunk fade-in during streaming
          is already the "animation". Running typeTick on top of it
          would replay the same content with a second typewriter pass
@@ -7117,7 +6775,7 @@ function doRender(){
                  escaped text or stripped by markdown — the user saw no
                  interactive widgets in live tutor mode. */
               var finalHtml;
-              try{finalHtml=renderAssistantHTML(full)}catch(e){
+              try{finalHtml=renderAssistantHTML(full)}catch {
                 console.log("[typeTick] render error");
                 finalHtml="<p>"+esc(full)+"</p>";
               }
@@ -7150,7 +6808,7 @@ function doRender(){
               }
             }
             requestAnimationFrame(typeTick);
-          }catch(e){
+          }catch {
             console.log("[typeTick] render error");
             try{
               var fb=renderAssistantHTML(full);
@@ -7207,7 +6865,7 @@ function doRender(){
             .replace(/<think>[\s\S]*?<\/think>/gi,"")
             .replace(/<think>[\s\S]*$/gi,"");
           finalHtml=renderAssistantHTML(visibleFinal);
-        }catch(e){
+        }catch {
           console.log("[finish] render error");
           finalHtml="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
         }
@@ -7320,7 +6978,7 @@ function doRender(){
           }
           state._canvasPendingId=null;
         }
-      }catch(e){
+      }catch {
         console.log("[finish] formatMsg error");
         var fb="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
         /* Same rule as the success path: only touch the legacy body when
@@ -7832,9 +7490,9 @@ function doRender(){
                 prepareStreamRetryViewport(list,msgIdx,clientId);
                 var innerRet=onRetry();
                 if(innerRet&&typeof innerRet.then==="function"){
-                  innerRet.catch(function(e){/* retry async handler failed */});
+                  innerRet.catch(function(){/* retry async handler failed */});
                 }
-              }catch(e){/* retry handler threw */}
+              }catch {/* retry handler threw */}
             };
             /* React's status line asks this closure to retry; it is the same
                handler the delegated legacy click below runs. */
@@ -7882,7 +7540,7 @@ function doRender(){
               });
             }
           }
-       }catch(e){
+       }catch {
          body.innerHTML='<p>'+esc(errMsg||'Generation failed')+'</p>';
        }
        updateChatStats();
@@ -8840,7 +8498,6 @@ const mistakeBook = createMistakeBook({
 const { recordMistake, removeMistakeForQuizSlot, updateMistakesBadge, renderMistakes } = mistakeBook;
 
 /* P_main-split — Wave 0: handleQuickAction (region 26) extracted. */
-import { handleQuickAction } from './chat/quickActions.js';
 
 /* ============================================================
    KNOWLEDGE BOUNDARY PANEL
@@ -8858,7 +8515,7 @@ function updateKB(){
      #kbContent body to that renderer. */
   if(typeof tutorSocratic==="object"&&tutorSocratic
      &&typeof tutorSocratic.renderKnowledgeBoundaryFile==="function"){
-    try{tutorSocratic.renderKnowledgeBoundaryFile()}catch(e){/* kb boundary render failed */}
+    try{tutorSocratic.renderKnowledgeBoundaryFile()}catch {/* kb boundary render failed */}
   }
   /* Mode banner and teaching plan re-render in the new module. */
   if(typeof tutorSocratic==="object"&&tutorSocratic){
@@ -9046,7 +8703,7 @@ async function resetApp(){
       sb.classList.add("collapsed");
       sidebarOpen=false;
       if(bd)bd.classList.remove("show");
-      try{localStorage.setItem("socrates-sb","0")}catch(e){}
+      try{localStorage.setItem("socrates-sb","0")}catch {}
     }
   }
   syncSidebarBtns();
@@ -9127,7 +8784,7 @@ window.setCurrentUser = setCurrentUser;
    installed once at boot via installAuthHooks() — see below.
    apiFetch / getCsrfToken are bridged via windowExports.js;
    apiFetchRaw / retryApiFetch are only used locally. */
-import { apiFetch, apiFetchRaw, retryApiFetch, makeApiError, installAuthHooks, getCsrfToken } from './util/api.js';
+import { apiFetch, installAuthHooks } from './util/api.js';
 
 /* Post-auth grace window. Right after a successful register or
  * login the browser hasn't always written the new `sid` cookie to
@@ -9193,7 +8850,7 @@ function handleAuthExpired(cause){
     }catch(_){}
     if(window._onAuthExpiredListeners){
       window._onAuthExpiredListeners.forEach(function(fn){
-        try{fn()}catch(e){/* auth listener threw */}
+        try{fn()}catch {/* auth listener threw */}
       });
     }
     /* Show the gate; the existing showGate() handles UI swap. */
@@ -9213,7 +8870,7 @@ function handleAuthExpired(cause){
         if(gate){gate.insertBefore(banner,gate.firstChild)}
       }
     },0);
-  }catch(e){/* handleAuthExpired failed */}
+  }catch {/* handleAuthExpired failed */}
 }
 window.handleAuthExpired=handleAuthExpired;
 
@@ -9227,16 +8884,9 @@ import { renderUserFooter, openProfile, closeProfile } from './ui/profile.js';
 
 /* ─── Exam view (standalone page) ─── */
 /* P_main-split — Wave 3b: exam generation form extracted to exam.js. */
-import {
-  openExamModal, closeExamModal, closeExamView, renderExamForm,
-  toggleExamType, startExamGeneration,
-  cancelExamGeneration,
-  parseSingleExamQuestion, parseExamArrayJSON,
-  renderAllQuestions, paintQuestionCard, replaceStreamingCardWithQuestion,
-  appendExamErrorCard, selectExamOpt, finishExamGeneration,
-  renderExamNav, examNavCurrentIdx, examNavJump, examNavStep,
-  syncExamNav, refreshExamNavTally, scheduleExamAnswerSave, submitExam,
-  saveExamSession, doSaveExamSession, renderExamResults,
+import { paintQuestionCard,
+  renderExamNav,
+  syncExamNav, renderExamResults,
 } from './exam.js';
 
 /* Usage modal — token heatmap & monthly breakdown. */
@@ -9246,16 +8896,12 @@ import {
    days-remaining countdown, plus a Restore / Delete-forever
    pair per row. The modal is a single instance that gets
    rebuilt every time it opens, so the count is always live. */
-import { openStorageModal, closeStorageModal } from './ui/storage.js';
+import { closeStorageModal } from './ui/storage.js';
 
 /* P5.8 — Prompt templates manager modal. Lists built-ins
    (read-only) and user customs (editable). The 'New
    template' button opens a lightweight editor inline. */
-import {
-  openPromptTemplatesModal, closePromptTemplatesModal,
-  renderPromptTemplatesModal, renderPromptRow,
-  onPromptRowDelete, openPromptTemplateEditor,
-  onPromptTemplateEditorSave,
+import { closePromptTemplatesModal,
 } from './ui/promptTemplates.js';
 
 import { renderArchivedList } from './ui/storage.js';
@@ -9269,19 +8915,17 @@ import { renderArchivedList } from './ui/storage.js';
    PATCH /api/users/me.customInstructions so the same value
    flows to the Android client on the next sign-in. */
 var _customInstructionsSaveTimer=null;
-import { loadCustomInstructions, saveCustomInstructions, loadCustomInstructionsIntoUI, onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState, getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI } from './ui/profile.js';
+import { getCustomInstructionsString, toggleProfileWebSearch } from './ui/profile.js';
 
 /* P_main-split — Wave 1a: showConfirm + closeConfirm extracted to ui/confirm.js. */
-import { showConfirm, closeConfirm } from './ui/confirm.js';
+import { showConfirm } from './ui/confirm.js';
 
 /* Clear local conversations. */
 /* P_main-split — Wave 2a: danger confirms extracted to ui/dangerConfirms.js. */
-import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
 
 /* escapeHtml / sanitizeUrl / sanitizeUrls are imported from
  * ./util/safe.js and used locally. The window bridge for these
  * is not needed — no external module reads them via window.X. */
-import { escapeHtml, sanitizeUrl, sanitizeUrls } from './util/safe.js';
 
 /* P_bleed-v2 — comprehensive per-user client-state cleanup.
    Wipes every module-level cache and localStorage entry that holds
@@ -9309,7 +8953,6 @@ function clearPerUserClientState(){
   try{SERVER_SESSIONS_FETCH_FAILED=false}catch(_){}
   try{apiConfig.activeId=null;apiConfig.providers=[]}catch(_){}
   try{_cmdKIndex=null;_cmdKIndexDocs=[];_cmdKResults=[];_cmdKSelected=0;_cmdKRecent=[]}catch(_){}
-  try{_deleteConfirmTimers={};_deleteConfirmStates={}}catch(_){}
   try{resetCrossSessionKBCache()}catch(_){}
   try{_examAnswerSaveTimer=null;_examSaveInFlight=null}catch(_){}
   try{_userMemories=[]}catch(_){}
@@ -9415,10 +9058,7 @@ async function signOut(){
    so it stays out of the source tree. Defined here (before authBoot)
    so the IIFE can reference it without relying on var-hoisting timing. */
 /* P_main-split — Wave 3c: provider config extracted to config/providers.js. */
-import {
-  BEAGLE_BUILT_IN, apiConfig, webSearchOn, appMode,
-  isReasoningProvider, pickStreamBudgets, hasUsableActive,
-  isMiniMaxProvider, ensureSessionShape,
+import { apiConfig, webSearchOn, appMode, hasUsableActive, ensureSessionShape,
   syncAppModeUI, syncSidebarForMode, setAppMode,
   refreshApiConfig,
 } from './config/providers.js';
@@ -9458,7 +9098,7 @@ async function toggleAppMode(targetMode){
      window.appMode, which could be stale). setAppMode() also synchronizes
      the legacy window binding. */
   setAppMode(nextMode);
-  try{localStorage.setItem("socrates-appmode",appMode)}catch(e){}
+  try{localStorage.setItem("socrates-appmode",appMode)}catch {}
   syncAppModeUI();
   syncSidebarForMode();
   updateModeBadge();
@@ -9511,10 +9151,8 @@ function updateModeBadge(){
 window.updateModeBadge = updateModeBadge;
 
 /* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
-import {
-  openSettings, closeSettings, toggleAPI, syncSettingsUI,
-  renderProviderList, addProvider, removeProvider,
-  setActiveProvider, updateProviderField, saveSettings, clearSettings,
+import { closeSettings,
+  renderProviderList,
   bindSettingsUI,
 } from './ui/settings.js';
 
@@ -9545,7 +9183,6 @@ var _userMemories=[];   /* cached memories injected into system context */
         previous user's data around "for safety" — an empty list is
         safer than stale data. */
 /* P_main-split — Wave 2: loadUserMemories extracted to ui/profile.js. */
-import { loadUserMemories } from './ui/profile.js';
 
 /* ============================================================
    SYSTEM PROMPTS
@@ -9896,20 +9533,6 @@ function buildFollowUpMessages(answer,node,domain,history){
     [{role:"system",content:prompt}].concat(history).concat([{role:"user",content:answer}])
   );
 }
-
-async function generateFollowUp(answer,node,domain){
-  if(hasUsableActive()){
-    var history=extractHistory();
-    var msgs=buildFollowUpMessages(answer,node,domain,history);
-    var resp=await callAPI(msgs,MAX_TOKENS_CHAT);
-    if(resp&&resp.trim()){
-      state.lastCallSource="api";
-      return resp.trim();
-    }
-    state.lastCallSource="mock";
-  } else { state.lastCallSource="mock"; }
-  return _origGenerateFollowUp(answer,node,domain);
-};
 
 async function generateFollowUpStream(answer,node,domain,onDelta,onThinking,streamOpts){
   if(hasUsableActive()){

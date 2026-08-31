@@ -31,7 +31,7 @@ var thinkingOn = true;
 try {
   var savedMode = localStorage.getItem("socrates-appmode");
   if (savedMode === "chat" || savedMode === "tutor") appMode = savedMode;
-} catch (e) {}
+} catch {}
 /* Web Search mode-aware default: chat mode → on, tutor mode → off.
    Tutor-mode Socratic tutoring doesn't need web search for conceptual
    topics (e.g. 复变函数), and the diagnostic-phase auto-search at
@@ -45,7 +45,7 @@ try {
   } else if (appMode === "tutor") {
     webSearchOn = false;
   }
-} catch (e) { /* localStorage blocked — keep chat-mode default (true) */ }
+} catch { /* localStorage blocked — keep chat-mode default (true) */ }
 /* Deep thinking now follows the reasoning-effort picker: High effort
  * enables the verbose prompt, Medium/Low use the concise one. Derive the
  * initial value from the persisted effort so the first turn matches the
@@ -53,15 +53,15 @@ try {
 try {
   var savedEffort = localStorage.getItem("socrates-reasoning-effort");
   extensiveThinkingOn = (savedEffort === "high");
-} catch (e) {}
+} catch {}
 
 /* P_privacy-leak — built-in providers don't expose their model name,
  * so the regex-based check below would always return false for them.
  * Use the boolean capability hint bridged from /api/config instead. */
 function setWebSearchOn(value) {
   webSearchOn = !!value;
-  try { window.webSearchOn = webSearchOn; } catch (e) {}
-  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch (e) {}
+  try { window.webSearchOn = webSearchOn; } catch {}
+  try { localStorage.setItem("socrates-websearch", JSON.stringify(webSearchOn)); } catch {}
   return webSearchOn;
 }
 
@@ -133,12 +133,12 @@ function syncAppModeUI() {
   if (segEl) segEl.setAttribute("data-seg-active", appMode);
   var topSegEl = document.getElementById("modeSegmentedTop");
   if (topSegEl) topSegEl.setAttribute("data-seg-active", appMode);
-  try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {}
+  try { localStorage.setItem("socrates-appmode", appMode); } catch {}
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}
      actually takes effect — hiding tutor-only tab buttons + panels
      in chat mode so the sidebar keeps a stable flex layout. */
-  try { document.body.setAttribute("data-app-mode", appMode); } catch (e) {}
+  try { document.body.setAttribute("data-app-mode", appMode); } catch {}
   /* P_mode-i18n — reroute the topic title / subtitle / disclaimer and
      the chat-input placeholder through applyI18n() so they reflect the
      active mode (chat vs tutor). Without this, toggling the mode from
@@ -259,7 +259,7 @@ async function refreshApiConfig() {
     try { window.renderProviderList(); } catch (_) {}
     try { window.syncChatModel(); } catch (_) {}
     return apiConfig;
-  } catch (e) {
+  } catch {
     apiConfig.activeId = null;
     apiConfig.providers = [];
     try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
@@ -276,14 +276,14 @@ function saveLastActiveId(id) {
       return;
     }
     localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
-  } catch (e) {}
+  } catch {}
 }
 
 function loadLastActiveId() {
   try {
     var value = localStorage.getItem(LAST_ACTIVE_ID_KEY);
     return value && value !== "null" && value !== "undefined" ? value : null;
-  } catch (e) { return null; }
+  } catch { return null; }
 }
 
 export {

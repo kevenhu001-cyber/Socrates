@@ -77,11 +77,11 @@ var _externalApiOn = true;
 try {
   var saved = localStorage.getItem("socrates-external-api");
   if (saved !== null) _externalApiOn = saved === "true";
-} catch (e) {}
+} catch {}
 
 function toggleAPI() {
   _externalApiOn = !_externalApiOn;
-  try { localStorage.setItem("socrates-external-api", JSON.stringify(_externalApiOn)); } catch (e) {}
+  try { localStorage.setItem("socrates-external-api", JSON.stringify(_externalApiOn)); } catch {}
   syncToggleUI();
   /* Collapse/expand the provider list as a visual hint */
   var rows = document.getElementById("providerList");

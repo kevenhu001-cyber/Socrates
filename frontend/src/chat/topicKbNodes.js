@@ -26,7 +26,7 @@ export async function generateTopicKBNodes(topic, language) {
     if (!Array.isArray(arr) || arr.length < 3) return null;
     while (arr.length < 5) arr.push('Dimension ' + arr.length);
     return arr.slice(0, 5).map(function (s) { return String(s).trim(); }).filter(function (s) { return s.length > 0; });
-  } catch (e) {
+  } catch {
     return null;
   }
 }

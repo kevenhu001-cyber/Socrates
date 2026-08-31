@@ -98,7 +98,7 @@ async function startDeepResearch(query) {
         return content
           ? { url: source.url, title: source.title || source.url, content: content }
           : null;
-      } catch (e) { return null; }
+      } catch { return null; }
     }))).filter(Boolean);
     _publishRun(runId, 'reading', 'succeeded', _tr("Read " + extracts.length + " sources", "已阅读 " + extracts.length + " 个来源"));
 
@@ -214,7 +214,7 @@ async function _searchTopic(query) {
           return { url: p.url, title: p.title, snippet: p.snippet, content: p.fullContent || p.snippet };
         });
       }
-    } catch (e) { /* search failed */ }
+    } catch { /* search failed */ }
   }
   return [];
 }
@@ -227,7 +227,7 @@ async function _fetchSource(url) {
       if (pages && pages.length && pages[0].content) {
         return pages[0].content.slice(0, 4000);
       }
-    } catch (e) { /* fetch failed */ }
+    } catch { /* fetch failed */ }
   }
   return null;
 }
@@ -246,10 +246,6 @@ function _deduplicateResults(results) {
 async function _synthesizeReport(query, plan, extracts) {
   var sourcesSection = extracts.map(function (e, i) {
     return "[" + (i + 1) + "] " + e.title + " (" + e.url + ")";
-  }).join("\n");
-
-  var contentSummary = extracts.map(function (e) {
-    return "--- Source: " + e.title + " ---\n" + (e.content || "").slice(0, 2000) + "\n";
   }).join("\n");
 
   /* Ask the configured model to synthesize evidence rather than exposing

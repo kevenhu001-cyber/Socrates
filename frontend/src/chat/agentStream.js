@@ -84,7 +84,7 @@ export function beginAgentTextStream(){
       }
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}
-    }catch(e){
+    }catch {
       live.innerHTML='<p>'+esc(full)+'</p>';
     }
     /* P_scroll-race — re-check user intent in case a passive wheel/touch

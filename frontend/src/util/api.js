@@ -70,7 +70,7 @@ export async function apiFetchRaw(path, opts = {}) {
   /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache.
      Idempotent: if the path is already /api/v2/* (or starts with the
      prefix from a wrapper), don't double-prepend into /api/v2/v2/*. */
-  if (!/^\/api\/v2\//.test(path)) path = path.replace(/^\/api\//, '/api/v2/');
+  if (!path.startsWith(API_PREFIX + '/')) path = path.replace(/^\/api\//, API_PREFIX + '/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
   if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
@@ -102,7 +102,7 @@ export async function apiFetchRaw(path, opts = {}) {
   let r;
   try {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
-  } catch (e) {
+  } catch {
     clearTimeout(tmo);
     if (opts.signal && onCallerAbort) {
       try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
@@ -134,7 +134,7 @@ export async function apiFetchRaw(path, opts = {}) {
 export async function apiFetch(path, opts = {}) {
   /* P_cdn-bypass — prepend /api/v2 prefix to bypass stale CDN cache.
      Idempotent: see apiFetchRaw. */
-  if (!/^\/api\/v2\//.test(path)) path = path.replace(/^\/api\//, '/api/v2/');
+  if (!path.startsWith(API_PREFIX + '/')) path = path.replace(/^\/api\//, API_PREFIX + '/');
   opts.credentials = 'include';
   if (!opts.headers) opts.headers = {};
   if (opts.body && typeof opts.body !== 'string' && !(opts.body instanceof FormData)) {
@@ -201,7 +201,7 @@ export async function apiFetch(path, opts = {}) {
     }
   }
   let text;
-  try { text = await r.text(); } catch (e) {
+  try { text = await r.text(); } catch {
     throw makeApiError(r.status || 0, '响应读取失败', null, 'READ_BODY', 0);
   }
   let json = null;

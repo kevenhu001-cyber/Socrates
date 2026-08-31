@@ -80,7 +80,7 @@ function loadTonePreset() {
       _currentTone = saved;
       return _currentTone;
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   _currentTone = "default";
   return _currentTone;
 }
@@ -89,7 +89,7 @@ function loadTonePreset() {
 function setTonePreset(tone) {
   if (!TONE_PRESETS[tone]) return;
   _currentTone = tone;
-  try { localStorage.setItem(TONE_KEY, tone); } catch (e) { /* ignore */ }
+  try { localStorage.setItem(TONE_KEY, tone); } catch { /* ignore */ }
   /* Sync the UI if the settings modal is open. */
   syncTonePresetUI();
 }

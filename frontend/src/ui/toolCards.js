@@ -252,13 +252,6 @@ function hostFromUrl(url) {
   }
 }
 
-function compactHostLabel(host) {
-  if (!host) return "Web";
-  var parts = host.split(".").filter(Boolean);
-  if (parts.length >= 2) return parts.slice(-2).join(".");
-  return host;
-}
-
 function trTool(key, fallback, vars) {
   var text = fallback;
   try {
@@ -586,7 +579,6 @@ export function updateToolCardCode(tcId, argsJson, language) {
   const refs = card._tcRefs;
   const codeEl = (refs && refs.code) || card.querySelector(".agent-tool-code");
   const codeInner = (refs && refs.codeInner) || (codeEl && codeEl.querySelector("code"));
-  const bodyEl = (refs && refs.body) || card.querySelector(".agent-tool-body");
   if (!codeEl || !codeInner) return null;
 
   const extracted = extractCodeFromArgs(card.dataset.tool, argsJson);
@@ -634,11 +626,6 @@ export function updateToolCardCode(tcId, argsJson, language) {
   }
   if (typeof window.scrollMainToBottom === "function") window.scrollMainToBottom();
   return extracted;
-}
-
-function head_set_aria(card, value) {
-  const head = card.querySelector(".agent-tool-head");
-  if (head) head.setAttribute("aria-expanded", value);
 }
 
 /* Update the most recently appended tool card's output. When outEl
@@ -895,7 +882,7 @@ export function makeArtifactError(fileId, mimeType, url, reason) {
         user is reading and a sudden large image is jarring. */
 export function appendInlineArtifact(fileId, mimeType, outEl, displayName) {
   const t = window.t || function (k) { return k; };
-  let out = outEl || document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
+  const out = outEl || document.querySelector(".msg.assistant .agent-tool-card:last-child .agent-tool-out");
   if (!out || !fileId) return;
   const url = "/api/files/" + encodeURIComponent(fileId) + "/raw";
   const selectorId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(String(fileId)) : String(fileId).replace(/[^a-zA-Z0-9_-]/g, '');

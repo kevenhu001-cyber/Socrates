@@ -44,7 +44,6 @@ export async function fetchWebContext(topic,opts){
     var bgWd=setTimeout(function(){
       try{setSearchPill("err",0,"Search refresh timed out")}catch(_){}
     },SEARCH_TIMEOUT_MS+2000);
-    var origPillOk=setSearchPill;
     /* No-op shim so subsequent successful setSearchPill clears the timer. */
     var _bgClearPillTimer=function(){
       try{clearTimeout(bgWd)}catch(_){}
@@ -177,7 +176,7 @@ export async function fetchWebContext(topic,opts){
     /* Merge: for each result, attach the fetched body if successful. */
     var byUrl={};
     fetched.forEach(function(f){if(f&&f.url)byUrl[f.url]=f});
-    var enriched=d.results.map(function(x,i){
+    var enriched=d.results.map(function(x){
       var f=byUrl[x.url];
       return Object.assign({},x,{fullContent:f&&f.ok?f.content:null,truncated:f&&f.ok&&f.truncated});
     });
@@ -350,8 +349,7 @@ function _buildJudgeDigest(sources){
 /* Judge the result set via a small non-streaming LLM call. Returns
  * {score: 0..5, rewrite: string}. Failure of the call is treated as
  * score=3 (don't retry). 4 s ceiling via AbortController. */
-async function judgeSearchQuality(sources, topic, opts){
-  opts=opts||{};
+async function judgeSearchQuality(sources, topic){
   if(!Array.isArray(sources)||!sources.length)return{score:0,rewrite:""};
   if(!hasUsableActive||!hasUsableActive())return{score:3,rewrite:""};
   var digest=_buildJudgeDigest(sources);
@@ -397,7 +395,7 @@ async function judgeSearchQuality(sources, topic, opts){
     if(isNaN(scoreN))scoreN=3;
     scoreN=Math.max(0,Math.min(5,scoreN));
     return{score:scoreN,rewrite:(typeof parsed.rewrite==="string")?parsed.rewrite:""};
-  }catch(e){
+  }catch {
     clearTimeout(timer);
     /* Treat judge failures as "good enough" (don't retry). */
     return{score:3,rewrite:""};
@@ -434,7 +432,7 @@ export async function webSearchWithRetry(topic, opts){
     return res||{ok:false,reason:"empty",results:0,context:""};
   }
   /* Judge */
-  var verdict=await judgeSearchQuality(res.sources,topic,opts);
+  var verdict=await judgeSearchQuality(res.sources,topic);
   _emit("scored",{avgRel:0,topRel:0,distribution:[0,0,0],judgeScore:verdict.score});
   if(verdict.score>=3||!verdict.rewrite||verdict.rewrite===topic){
     _emit("good",{score:verdict.score});
@@ -533,7 +531,7 @@ export async function rewriteQueryForSearch(rawText){
     if(_rewriterCache.size>64){_rewriterCache.clear()}
     _rewriterCache.set(rawText,cleaned);
     return cleaned;
-  }catch(e){
+  }catch {
     clearTimeout(tmo);
     console.log("[rewriter] failed");
     return null;

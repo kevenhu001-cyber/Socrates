@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react';
 
 import { getLegacyActions } from '../legacy/gateway';
 import { useUserInfo } from './legacyAdapter';

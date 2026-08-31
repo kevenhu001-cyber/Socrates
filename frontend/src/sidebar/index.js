@@ -28,7 +28,7 @@ export function toggleSidebar(){
   var nowOpen=!s.classList.contains("collapsed");
   window.sidebarOpen=nowOpen;
   window.syncSidebarBtns&&window.syncSidebarBtns();
-  try{localStorage.setItem("socrates-sb",nowOpen?"1":"0")}catch(e){}
+  try{localStorage.setItem("socrates-sb",nowOpen?"1":"0")}catch {}
 }
 
 /* Recents filter is a project-tag chip the user picked to narrow the

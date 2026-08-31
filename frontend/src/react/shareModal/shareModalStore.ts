@@ -1,7 +1,6 @@
 import type {
   ShareBridge,
   ShareSnapshot,
-  ShareVisibility,
 } from './types';
 
 type Listener = () => void;

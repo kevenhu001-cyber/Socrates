@@ -711,7 +711,7 @@ export function finishExamGeneration() {
     footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _L("Try Again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
   }
   renderExamNav();
-  saveExamSession({ submitted: false });
+  saveExamSession();
 }
 
 function renderExamNav() {
@@ -849,25 +849,24 @@ export function submitExam() {
     return;
   }
   window.state.examSubmitted = true;
-  saveExamSession({ submitted: true });
+  saveExamSession();
   renderExamResults();
 }
 
-function saveExamSession(opts) {
+function saveExamSession() {
   if (!window.CURRENT_USER) return;
   if (!window.state.examTopic) return;
   if (!window.state._examInView) return;
   if (window.state.examReadOnly) return;
-  opts = opts || {};
   if (_examSaveInFlight) {
     _examSaveDirty = true;
     return;
   }
   _examSaveDirty = false;
-  doSaveExamSession(opts);
+  doSaveExamSession();
 }
 
-function doSaveExamSession(opts) {
+function doSaveExamSession() {
   var body = {
     kind: "exam",
     topic: window.state.examTopic,
@@ -920,7 +919,7 @@ function doSaveExamSession(opts) {
       _examSaveInFlight = null;
       if (_examSaveDirty) {
         _examSaveDirty = false;
-        doSaveExamSession({});
+        doSaveExamSession();
       }
     });
 }

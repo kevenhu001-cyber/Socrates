@@ -28,10 +28,6 @@ function ProfileModal() {
     }
   }, []);
 
-  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch.saveName(e.target.value);
-  }, [dispatch]);
-
   return (
     <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
       <div className="profile-header">

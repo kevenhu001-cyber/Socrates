@@ -15,7 +15,7 @@
 function confirmClearCache() {
   window.showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
-    try { localStorage.removeItem("socrates-sessions-v2"); } catch (e) { /* ignore */ }
+    try { localStorage.removeItem("socrates-sessions-v2"); } catch { /* ignore */ }
     window.state.currentSessionId = null;
     window.renderRecents();
     window.resetApp();
@@ -41,8 +41,8 @@ function confirmClearSettings() {
     Promise.all(deletePromises).then(function(){
       apiConfig.activeId = null;
       apiConfig.providers = [Object.assign({}, window.BEAGLE_BUILT_IN)];
-      try { localStorage.removeItem("socrates-provider-keys"); } catch (e) { /* ignore */ }
-      try { localStorage.removeItem(window.LAST_ACTIVE_ID_KEY); } catch (e) { /* ignore */ }
+      try { localStorage.removeItem("socrates-provider-keys"); } catch { /* ignore */ }
+      try { localStorage.removeItem(window.LAST_ACTIVE_ID_KEY); } catch { /* ignore */ }
       window.renderProviderList();
       window.syncModelPills();
       window.syncSettingsUI();
@@ -58,10 +58,10 @@ function confirmDeleteAccount() {
       try {
         await window.apiFetch("/api/auth/account", { method: "DELETE" });
         window.CURRENT_USER = null;
-        try { localStorage.removeItem("socrates-sessions-v2"); } catch (e) {}
-        try { localStorage.removeItem("socrates-api"); } catch (e) {}
-        try { localStorage.removeItem("socrates-provider-keys"); } catch (e) {}
-        try { localStorage.removeItem("socrates-websearch"); } catch (e) {}
+        try { localStorage.removeItem("socrates-sessions-v2"); } catch {}
+        try { localStorage.removeItem("socrates-api"); } catch {}
+        try { localStorage.removeItem("socrates-provider-keys"); } catch {}
+        try { localStorage.removeItem("socrates-websearch"); } catch {}
         window.resetState();
         window.resetApp();
         window.showGate();

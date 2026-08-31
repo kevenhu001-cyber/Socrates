@@ -173,7 +173,7 @@
    * any explanation. If they pick 再想想 twice in a row, the
    * system auto-falls through to an explanation.
    * ---------------------------------------------------------------- */
-  function showExplainPrompt(nodeName) {
+  function showExplainPrompt() {
     if (typeof window.addMessage !== 'function') return;
     var msg = ti('tutor.explainPrompt', currentLang() === 'zh'
       ? '这里需要梳理一下吗？'

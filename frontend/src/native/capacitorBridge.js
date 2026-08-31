@@ -181,7 +181,7 @@ function setupDeepLinkHandler() {
 
   const handle = App.addListener('appUrlOpen', (data) => {
     try {
-      let url = (data && data.url) || '';
+      const url = (data && data.url) || '';
       if (!url) return;
 
       // Custom scheme: socrates://auth?code=... → /api/auth/oauth/github/callback?code=...

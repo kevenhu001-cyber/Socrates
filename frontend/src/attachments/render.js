@@ -9,7 +9,7 @@
 //
 // All inline handler references (window.renderAttachmentChips /
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
-import { attachments, addFiles, removeAttachment } from '../attachments.js';
+import { attachments, addFiles } from '../attachments.js';
 
 // i18n translator is bound on `window.t` by i18n.js. Resolve it lazily so
 // module evaluation order cannot freeze an English fallback before the
@@ -189,7 +189,6 @@ export function setupAttachmentInput(opts){
   const input = document.getElementById(opts.inputId);
   const wrap = document.getElementById(opts.wrapId);
   const textarea = opts.textareaId ? document.getElementById(opts.textareaId) : null;
-  const bar = opts.barId ? document.getElementById(opts.barId) : null;
   if(!input || !wrap) return;
 
   const cfg = {

@@ -240,7 +240,7 @@ document.addEventListener("click",function(e){
 /* Bind the chat model trigger via JS. */
 (function(){
   var btn=document.getElementById("chatModel");
-  if(btn)btn.addEventListener("click",function(e){
+  if(btn)btn.addEventListener("click",function(){
     toggleChatModelMenu();
   });
 })();
@@ -268,7 +268,7 @@ var EXTENSIONS=[
    icon: EXTENSION_ICONS.extensiveThinking,
    on:!!window.extensiveThinkingOn, onChange:function(v){
      window.extensiveThinkingOn=v;
-     try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch(e){}
+     try{localStorage.setItem("socrates-extensive-thinking",JSON.stringify(!!window.extensiveThinkingOn))}catch {}
      /* Use setActiveTemplate to show the chip when active */
      if(v && typeof window.setActiveTemplate === "function"){
        window.setActiveTemplate({
@@ -452,7 +452,7 @@ function toggleWebSearch(){
     window.state.searchContextQuery=null;
     window.setSearchPill("ok",0,"");
   }else if(window.state.topic){
-    window.fetchWebContext(window.state.topic).then(function(r){});
+    window.fetchWebContext(window.state.topic);
   }
 }
 function syncWebSearchUI(){
