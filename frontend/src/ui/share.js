@@ -84,6 +84,9 @@ function toggleChatTopBarEls(show) {
      its inline style.display here would defeat the landing control on reset. */
   var mobileEls = document.querySelectorAll("#mobileMode, #mobileIncognitoBtn");
   mobileEls.forEach(function (el) { el.style.display = show ? "none" : ""; });
+  if (typeof window.syncConversationActive === "function") {
+    try { window.syncConversationActive(); } catch (_) {}
+  }
 }
 
 function _show(el) { if (el) el.classList.remove("hidden"); }

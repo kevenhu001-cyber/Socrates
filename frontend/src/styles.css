@@ -18,7 +18,7 @@
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
-[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 11%;--bg-100:0 0% 8%;--bg-200:0 0% 13%;--bg-300:0 0% 18%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
+[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 5%;--bg-100:0 0% 13%;--bg-200:0 0% 16%;--bg-300:0 0% 21%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
 [data-theme=socrates][data-mode=light]{--bg-000:42 33% 98%;--bg-100:40 25% 96%;--bg-200:38 20% 92%;--bg-300:36 15% 87%;--bg-400:0 0% 100%;--text-000:36 12% 10%;--text-100:34 10% 16%;--text-200:34 8% 28%;--text-300:34 7% 35%;--text-400:34 6% 43%;--text-500:34 5% 50%;--border-100:38 12% 86%;--border-200:38 11% 82%;--border-300:36 10% 78%;--border-400:36 9% 72%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
 /* Keep the Latin face first in Chinese UI as well. Inter has no CJK glyphs,
    so Noto Sans SC is still selected automatically for Chinese characters
@@ -4795,11 +4795,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .rich-composer .tiptap blockquote{margin:.35em 0;padding-left:10px;border-left:2px solid hsl(var(--border-300));color:hsl(var(--text-300))}
 .rich-composer .tiptap pre{margin:.4em 0;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));font:400 .86em/1.5 var(--font-mono);white-space:pre-wrap}
 .rich-composer .tiptap a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.rich-composer .tiptap p.is-editor-empty:first-child{position:relative}
 .rich-composer .tiptap p.is-editor-empty:first-child::before{
   /* The hint copy comes from --composer-placeholder (React sets it on the
      .rich-composer root so the text survives runtime language switches);
      the Tiptap decoration only owns the empty-state classes. */
-  content:var(--composer-placeholder);float:left;height:0;pointer-events:none;color:hsl(var(--text-500));
+  content:var(--composer-placeholder);position:absolute;inset-inline-start:0;top:0;float:none;height:0;pointer-events:none;color:hsl(var(--text-500));
 }
 .rich-composer-editor[contenteditable="false"]{opacity:.65;cursor:not-allowed}
 /* Desktop chat composer: mirror the compact, single-row conversation
@@ -10173,10 +10174,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 #appShell .effort-glyph{width:13px;height:13px}
 #appShell .effort-caret{width:11px;height:11px}
 
-/* ChatGPT's idle action is the blue voice affordance. Keep the legacy arrow
-   in the DOM for the send-state contract, then replace its idle paint with a
-   small CSS waveform; typed/active and streaming states still show their
-   existing arrow/stop glyphs. */
+/* The primary action renders exactly one React-owned SVG: voice while the
+   composer is empty, send while it has text/attachments, and stop while a
+   response streams. Keeping the states mutually exclusive prevents glyphs
+   from stacking when the runtime status changes. */
 #appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn{
   background:hsl(217 91% 60%);
@@ -10187,34 +10188,17 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover{background:hsl(217 91% 55%);color:#fff}
 #appShell #startBtnContent,
 #appShell #sendBtn:not([data-stop="1"]) #sendBtnContent{
-  position:relative;
-  display:block;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   width:14px;
   height:14px;
 }
-#appShell #startBtn:not(.active) #startBtnContent::before,
-#appShell #sendBtn:not(.active):not([data-stop="1"]) #sendBtnContent::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  width:14px;
-  height:14px;
-  background:
-    linear-gradient(currentColor,currentColor) 0 50%/2px 6px no-repeat,
-    linear-gradient(currentColor,currentColor) 4px 50%/2px 10px no-repeat,
-    linear-gradient(currentColor,currentColor) 8px 50%/2px 14px no-repeat,
-    linear-gradient(currentColor,currentColor) 12px 50%/2px 8px no-repeat;
-  border-radius:3px;
-}
-#appShell #startBtn:not(.active) #startBtnContent .icon-arrow,
-#appShell #sendBtn:not(.active):not([data-stop="1"]) #sendBtnContent .icon-arrow{opacity:0}
-#appShell #startBtn.active #startBtnContent,
-#appShell #sendBtn.active:not([data-stop="1"]) #sendBtnContent{display:contents}
-#appShell #startBtn.active #startBtnContent::before,
-#appShell #sendBtn.active:not([data-stop="1"]) #sendBtnContent::before{display:none}
+#appShell #startBtnContent>svg,
+#appShell #sendBtnContent>svg{display:block;width:14px;height:14px;flex:0 0 14px}
 #appShell #startBtn.active,
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active{background:hsl(217 91% 55%);color:#fff}
-#appShell #sendBtn[data-stop="1"] #sendBtnContent{display:contents}
+#appShell #sendBtn[data-stop="1"] #sendBtnContent{display:flex}
 
 @media(max-width:768px){
   [data-mode="dark"] #appShell{
@@ -10339,9 +10323,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     grid-column:4;grid-row:1;width:36px;min-width:36px;height:36px;min-height:36px;
   }
 
-  /* Focusing the landing field promotes the controls to the second row, as
-     in the reference focused capture, and restores the effort selector. */
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active){
+  /* Focus is geometry-neutral. Only measured content that no longer fits on
+     one rendered line promotes the controls to the second row. */
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active){
     grid-template-columns:44px minmax(0,1fr) auto 36px 36px;
     grid-template-rows:minmax(64px,auto) 40px;
     height:auto;
@@ -10351,17 +10335,17 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     margin-inline:-20px;
     padding-bottom:4px;
   }
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .composer-editor-root{grid-column:1 / -1;grid-row:1}
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .rich-composer-editor{
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root{grid-column:1 / -1;grid-row:1}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor{
     height:auto!important;min-height:64px;max-height:240px;padding:12px 8px 8px;overflow-y:auto;
   }
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) #topicComposerToolsBtn{grid-column:1;grid-row:2}
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) > .effort-picker{
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicComposerToolsBtn{grid-column:1;grid-row:2}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) > .effort-picker{
     display:inline-flex;grid-column:3;grid-row:2;
   }
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) > .mobile-mic-btn,
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .topic-footer .mobile-mic-btn{grid-column:4;grid-row:2;display:inline-flex!important}
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) #startBtn{grid-column:5;grid-row:2}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) > .mobile-mic-btn,
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .mobile-mic-btn{grid-column:4;grid-row:2;display:inline-flex!important}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn{grid-column:5;grid-row:2}
 
   #appShell .home-ideas{
     order:1;
@@ -10464,13 +10448,114 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     min-height:36px;
     margin:0;
   }
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .topic-footer .effort-picker{
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker{
     display:inline-flex;
     grid-column:3;
     grid-row:2;
   }
-  #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .topic-footer .mobile-mic-btn{
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .mobile-mic-btn{
     grid-column:4;
     grid-row:2;
   }
+}
+
+/* ── Surface palette override (dark mode only) ─────────────────────
+   Sidebar = solid dark gray; chat main = pure black. `!important` is
+   intentional: cowork (#appShell) and workbench (body[data-conversation-
+   active]) both ship sidebar / main-bg rules with higher specificity, so
+   source order alone can't win. The override is scoped to dark mode and
+   only touches background + backdrop-filter, leaving the cowork tokens
+   intact for every other surface. */
+[data-mode=dark] .sidebar{
+  background:hsl(220 8% 18%) !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+[data-mode=dark] .main-bg{
+  background-color:hsl(0 0% 0%) !important;
+  background-image:none !important;
+  opacity:1 !important;
+  clip-path:none !important;
+}
+/* .main-content sits on top of .main-bg as the visible chat surface;
+   without this it stays at cowork-page (rgb 19/19/19) and the black
+   layer below is masked. */
+[data-mode=dark] .main-content{
+  background:hsl(0 0% 0%) !important;
+}
+
+/* ── Unified monochrome composer contract ──────────────────────────
+   Voice input and send share one primary action. The standalone mic is
+   retired; an empty composer shows the waveform and a non-empty composer
+   shows the arrow. These final rules also remove the grid slot that used to
+   be reserved for the separate microphone button. */
+#appShell .mobile-mic-btn{display:none!important}
+#appShell .rich-composer-editor,
+#appShell .rich-composer .tiptap,
+#appShell .rich-composer .tiptap p{
+  text-align:left!important;
+  direction:ltr;
+}
+body[data-conversation-active="true"] #appShell #mobileIncognitoBtn,
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #mobileIncognitoBtn{
+  display:none!important;
+}
+
+html[data-theme=socrates][data-mode=dark]{
+  --accent-000:0 0% 100%;
+  --accent-100:0 0% 88%;
+  --accent-900:0 0% 20%;
+  --brand-000:0 0% 88%;
+  --brand-100:0 0% 100%;
+}
+html[data-theme=socrates][data-mode=light]{
+  --accent-000:0 0% 10%;
+  --accent-100:0 0% 0%;
+  --accent-900:0 0% 90%;
+  --brand-000:0 0% 14%;
+  --brand-100:0 0% 0%;
+}
+[data-mode=dark] #appShell{
+  --cowork-page:0 0% 0%;
+  --cowork-sidebar:0 0% 7%;
+  --cowork-surface:0 0% 13%;
+  --cowork-surface-active:0 0% 22%;
+  --cowork-line:0 0% 25%;
+  --cowork-text:0 0% 92%;
+  --cowork-muted:0 0% 62%;
+}
+[data-mode=dark] .sidebar{background:hsl(0 0% 7%)!important}
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn{
+  background:hsl(var(--cowork-text));
+  color:hsl(var(--cowork-page));
+}
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:hover,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover,
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active{
+  background:hsl(var(--cowork-text));
+  color:hsl(var(--cowork-page));
+}
+
+@media(min-width:769px){
+  #appShell #topicInputWrap:not(.voice-recording-active){grid-template-columns:minmax(0,1fr) auto 36px}
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn{grid-column:3}
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body{grid-template-columns:44px auto minmax(0,1fr) 36px}
+  #appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker{grid-column:2}
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .send-btn{grid-column:4}
+}
+
+@media(max-width:768px){
+  #appShell #topicInputWrap:not(.voice-recording-active){grid-template-columns:44px minmax(0,1fr) 36px}
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn{grid-column:3}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active){grid-template-columns:44px minmax(0,1fr) auto 36px}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) > .effort-picker,
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker{grid-column:3}
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn{grid-column:4}
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body{grid-template-columns:44px minmax(0,1fr) 36px}
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .send-btn{grid-column:3}
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body{grid-template-columns:44px minmax(0,1fr) auto 36px}
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker{grid-column:3}
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .send-btn{grid-column:4}
 }

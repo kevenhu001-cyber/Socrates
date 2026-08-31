@@ -163,21 +163,70 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
   const composerWrapRef = useRef<HTMLElement | null>(null);
   const shapeFrameRef = useRef<number | null>(null);
   const shapeAnimationRef = useRef<Animation | null>(null);
+  const collapsedMeasureRef = useRef<{
+    editorWidth: number;
+    wrapWidth: number;
+    editorStyle: string;
+  } | null>(null);
   const syncComposerShape = useCallback((editorDom: HTMLElement) => {
-    if (surface !== 'chat') return;
     if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
     shapeFrameRef.current = requestAnimationFrame(() => {
       shapeFrameRef.current = null;
-      const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap');
+      const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
       if (!wrap) return;
       const style = getComputedStyle(editorDom);
       const lineHeight = Number.parseFloat(style.lineHeight) || 24;
-      /* Measure the rendered document blocks, not the editor's scrollHeight:
-         the expanded CSS state deliberately gives the editor a 64px minimum,
-         so scrollHeight cannot tell when a two-line draft is replaced by one
-         line. Child geometry reflects explicit paragraphs and soft wrapping
-         while remaining independent of the shell's reserved height. */
-      const blocks = Array.from(editorDom.children) as HTMLElement[];
+      const isMultiline = wrap.classList.contains('composer-multiline');
+      const wrapWidth = wrap.getBoundingClientRect().width;
+      if (!isMultiline) {
+        collapsedMeasureRef.current = {
+          editorWidth: editorDom.getBoundingClientRect().width,
+          wrapWidth,
+          editorStyle: [
+            `box-sizing:${style.boxSizing}`,
+            `padding:${style.padding}`,
+            `font:${style.font}`,
+            `line-height:${style.lineHeight}`,
+            `letter-spacing:${style.letterSpacing}`,
+            `word-break:${style.wordBreak}`,
+            `overflow-wrap:${style.overflowWrap}`,
+            `white-space:${style.whiteSpace}`,
+          ].join(';'),
+        };
+      }
+
+      /* Expanded layouts give the editor the full first row. Measuring that
+         wider row can immediately classify the same draft as one line again,
+         producing an expand/collapse loop near the wrap boundary. When the
+         shell is already expanded, measure a hidden copy at the width the
+         editor has in the collapsed row instead. */
+      let measureDom = editorDom;
+      let measureHost: HTMLElement | null = null;
+      if (isMultiline && collapsedMeasureRef.current) {
+        const collapsedWidth = Math.max(
+          1,
+          collapsedMeasureRef.current.editorWidth
+            + wrapWidth - collapsedMeasureRef.current.wrapWidth,
+        );
+        measureHost = document.createElement('div');
+        measureHost.className = 'rich-composer composer-shape-probe';
+        measureHost.dataset.surface = surface;
+        measureHost.setAttribute('aria-hidden', 'true');
+        measureHost.style.cssText = `position:fixed;left:-10000px;top:0;width:${collapsedWidth}px;visibility:hidden;pointer-events:none;contain:layout style;`;
+        measureDom = editorDom.cloneNode(true) as HTMLElement;
+        measureDom.removeAttribute('contenteditable');
+        measureDom.removeAttribute('aria-label');
+        measureDom.style.cssText = collapsedMeasureRef.current.editorStyle;
+        measureDom.style.setProperty('width', '100%', 'important');
+        measureDom.style.setProperty('height', 'auto', 'important');
+        measureDom.style.setProperty('min-height', '0', 'important');
+        measureDom.style.setProperty('max-height', 'none', 'important');
+        measureDom.style.setProperty('overflow', 'visible', 'important');
+        measureHost.appendChild(measureDom);
+        document.body.appendChild(measureHost);
+      }
+
+      const blocks = Array.from(measureDom.children) as HTMLElement[];
       let contentTop = Number.POSITIVE_INFINITY;
       let contentBottom = Number.NEGATIVE_INFINITY;
       blocks.forEach((block) => {
@@ -187,6 +236,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         contentBottom = Math.max(contentBottom, rect.bottom);
       });
       const contentHeight = Number.isFinite(contentTop) ? contentBottom - contentTop : 0;
+      measureHost?.remove();
       const shouldExpand = contentHeight > lineHeight * 1.5;
       if (wrap.classList.contains('composer-multiline') === shouldExpand) return;
       shapeAnimationRef.current?.cancel();
@@ -357,10 +407,12 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
   }, [editor, getMarkdown, setExtensionToken, surface]);
 
   useEffect(() => {
-    if (!editor || surface !== 'chat') return;
+    if (!editor) return;
     const editorDom = editor.view.dom as HTMLElement;
+    const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
     const observer = new ResizeObserver(() => syncComposerShape(editorDom));
     observer.observe(editorDom);
+    if (wrap) observer.observe(wrap);
     syncComposerShape(editorDom);
     return () => observer.disconnect();
   }, [editor, surface, syncComposerShape]);
@@ -373,6 +425,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       shapeAnimationRef.current = null;
       if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
       shapeFrameRef.current = null;
+      collapsedMeasureRef.current = null;
       composerWrapRef.current = null;
     };
   }, []);

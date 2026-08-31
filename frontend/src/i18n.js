@@ -1961,7 +1961,17 @@ function applyI18n(){
   var tp=document.getElementById("topicComposerRoot");
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
-  if(sb)sb.setAttribute("aria-label",t("topic.start"));
+  if(sb){
+    var startLabel=sb.classList.contains("active")?t("chat.send"):t("voice.input");
+    sb.setAttribute("aria-label",startLabel);
+    sb.setAttribute("title",startLabel);
+  }
+  var sendBtn=document.getElementById("sendBtn");
+  if(sendBtn&&!sendBtn.classList.contains("chat-stop")&&!sendBtn.classList.contains("agent-stop")){
+    var sendLabel=sendBtn.classList.contains("active")?t("chat.send"):t("voice.input");
+    sendBtn.setAttribute("aria-label",sendLabel);
+    sendBtn.setAttribute("title",sendLabel);
+  }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");
   /* Exam content is generated dynamically, so static data-i18n scanning

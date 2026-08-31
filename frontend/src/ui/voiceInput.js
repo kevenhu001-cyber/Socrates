@@ -28,7 +28,10 @@ function setListening(surface, listening) {
   });
 
   const primary = document.getElementById(surface === 'topic' ? 'startBtn' : 'sendBtn');
-  if (primary) primary.classList.toggle('is-listening', !!listening);
+  if (primary) {
+    primary.classList.toggle('is-listening', !!listening);
+    primary.setAttribute('aria-pressed', listening ? 'true' : 'false');
+  }
 
   const wrap = wrapForSurface(surface);
   if (wrap) {

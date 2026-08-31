@@ -34,37 +34,42 @@ export function parseHexColor(hex) {
 
 export function applyCustomBg(hex, mode) {
   var p = parseHexColor(hex);
-  var h = p.h, s = p.s, l = p.l;
+  /* Neutral-black theme contract: a custom background must never tint the
+     UI. We keep only the *lightness* of the user's pick and force hue and
+     saturation to 0, so every derived surface is a pure grayscale step.
+     This kills the historical "跑色" (green/warm cast) while still letting
+     users pick how light or dark the page is. */
+  var l = p.l;
   var b000, b100, b200, b300;
   if (mode === 'light') {
-    b100 = _hslStr(h, s, l);
+    b100 = _hslStr(0, 0, l);
     /* When the user picks near-white (l >= 95), the standard
        +4/-6/-14 offsets collapse to ~97/94/86 — barely distinguishable
        from a pure-white page. Branch to fixed gaps that always give
-       readable contrast, regardless of how saturated the pick is. */
+       readable contrast. */
     if (l >= 95) {
-      b000 = _hslStr(h, Math.min(s * 1.4, 12), 96);
-      b200 = _hslStr(h, Math.max(s * 0.7, 0), 88);
-      b300 = _hslStr(h, Math.max(s * 0.5, 0), 76);
+      b000 = _hslStr(0, 0, 96);
+      b200 = _hslStr(0, 0, 88);
+      b300 = _hslStr(0, 0, 76);
     } else {
-      b000 = _hslStr(h, Math.min(s * 1.4, 20), Math.min(l + 4, 97));
-      b200 = _hslStr(h, Math.max(s * 0.7, 0), Math.max(l - 6, 3));
-      b300 = _hslStr(h, Math.max(s * 0.5, 0), Math.max(l - 14, 0));
+      b000 = _hslStr(0, 0, Math.min(l + 4, 97));
+      b200 = _hslStr(0, 0, Math.max(l - 6, 3));
+      b300 = _hslStr(0, 0, Math.max(l - 14, 0));
     }
   } else {
-    b100 = _hslStr(h, s, l);
+    b100 = _hslStr(0, 0, l);
     /* Same idea for near-black picks (l <= 5): the standard +3.5/-2.7/-6.7
        offsets clamp so all four surfaces land between 0 and 3.5 — the
        sidebar / raised / hover states are indistinguishable. Branch
        to fixed gaps that always keep the surface tints visible. */
     if (l <= 5) {
-      b000 = _hslStr(h, Math.min(s * 1.2, 8), 8);
-      b200 = _hslStr(h, Math.max(s * 0.8, 0), 14);
-      b300 = _hslStr(h, Math.max(s * 0.6, 0), 22);
+      b000 = _hslStr(0, 0, 8);
+      b200 = _hslStr(0, 0, 14);
+      b300 = _hslStr(0, 0, 22);
     } else {
-      b000 = _hslStr(h, Math.min(s * 1.2, 15), Math.min(l + 3.5, 95));
-      b200 = _hslStr(h, Math.max(s * 0.8, 0), Math.max(l - 2.7, 0));
-      b300 = _hslStr(h, Math.max(s * 0.6, 0), Math.max(l - 6.7, 0));
+      b000 = _hslStr(0, 0, Math.min(l + 3.5, 95));
+      b200 = _hslStr(0, 0, Math.max(l - 2.7, 0));
+      b300 = _hslStr(0, 0, Math.max(l - 6.7, 0));
     }
   }
   var root = document.documentElement;
