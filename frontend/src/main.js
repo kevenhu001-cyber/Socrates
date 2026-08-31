@@ -6118,20 +6118,18 @@ function addStreamingMessage(opts){
   var placeholder=document.createElement("div");
   placeholder.className="thinking-placeholder";
   var placeholderRow=document.createElement("span");
-  placeholderRow.className="thinking-dot thinking-dot--orbit";
+  placeholderRow.className="thinking-dot";
   placeholderRow.setAttribute("data-mode",appMode);
-  var placeholderOrbit=document.createElement("span");
-  placeholderOrbit.className="thinking-orbit";
-  placeholderOrbit.setAttribute("aria-hidden","true");
-  ["thinking-orbit-track","thinking-orbit-dot thinking-orbit-dot-primary","thinking-orbit-dot thinking-orbit-dot-secondary","thinking-orbit-core"].forEach(function(className){
-    var part=document.createElement("span");
-    part.className=className;
-    placeholderOrbit.appendChild(part);
-  });
+  /* P_thinking-unified — same 14px arc + flat gray label as the reasoning
+     pill, so nothing swaps style when the first reasoning/tool status or
+     the first answer token lands. */
+  var placeholderSpinner=document.createElement("span");
+  placeholderSpinner.className="thinking-spinner";
+  placeholderSpinner.setAttribute("aria-hidden","true");
   var placeholderText=document.createElement("span");
-  placeholderText.className="shimmer-text";
+  placeholderText.className="thinking-dot-label";
   placeholderText.textContent=appMode==="chat"?t("think.thinking"):t("common.generating");
-  placeholderRow.appendChild(placeholderOrbit);
+  placeholderRow.appendChild(placeholderSpinner);
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
   /* P_thinking-clickable — in chat mode the waiting placeholder opens
@@ -6352,7 +6350,8 @@ function addStreamingMessage(opts){
     var sum=document.createElement("summary");
     sum.className="think-summary think-summary-streaming";
     var _streamingLabel=(typeof window!=="undefined"&&window.t)?window.t("think.thinking"):"Thinking…";
-    sum.innerHTML='<span class="think-summary-label shimmer-text">'+esc(_streamingLabel)+'</span>'+
+    sum.innerHTML='<span class="thinking-spinner" aria-hidden="true"></span>'+
+      '<span class="think-summary-label">'+esc(_streamingLabel)+'</span>'+
       '<span class="think-summary-chevron" aria-hidden="true"></span>';
     det.appendChild(sum);
 
@@ -6630,7 +6629,7 @@ function doRender(){
       /* When </think> has been seen, swap the summary to a
          static label and drop the pulse — the model is done
          thinking. */
-      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("shimmer-text")!==-1){
+      if(thinkClosed&&thinkState.summary.innerHTML.indexOf("thinking-spinner")!==-1){
         var _doneLabel=(typeof window!=="undefined"&&window.t)?window.t("think.title"):"Thought";
         thinkState.summary.innerHTML='<span class="think-summary-label">'+esc(_doneLabel)+'</span><span class="think-summary-chevron" aria-hidden="true"></span>';
       }

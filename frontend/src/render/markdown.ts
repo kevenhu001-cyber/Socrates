@@ -333,8 +333,12 @@ function _thinkSummary(opts: ThinkOpts): string {
   const meta = (!opts.streaming && opts.count > 0)
     ? '<span class="think-summary-meta">' + esc(_formatThinkMeta(opts.count)) + '</span>'
     : '';
-  const labelCls = opts.streaming ? 'think-summary-label shimmer-text' : 'think-summary-label';
+  const labelCls = 'think-summary-label';
+  const spinner = opts.streaming
+    ? '<span class="thinking-spinner" aria-hidden="true"></span>'
+    : '';
   return '<summary class="think-summary">' +
+    spinner +
     '<span class="' + labelCls + '">' + esc(label) + '</span>' +
     meta +
     '<span class="think-summary-chevron" aria-hidden="true"></span>' +
@@ -457,7 +461,7 @@ export function formatMsgProgressive(t: string | null | undefined): string {
     let inner = '';
     try {
       const c = content.trim().replace(/<\/?think>/g, '');
-      inner = c ? formatMsgProgressive(c) : '<span class="shimmer-text">Thinking…</span>';
+      inner = c ? formatMsgProgressive(c) : '<span class="scaffold-stream-placeholder">Thinking…</span>';
     } catch (_e) {
       inner = escHTML(content.trim());
     }
@@ -700,7 +704,7 @@ export function formatMsg(t: string | null | undefined): string {
     let inner = '';
     try {
       const c = content.trim().replace(/<\/?think>/g, '');
-      inner = c ? formatMsg(c) : '<span class="shimmer-text">Thinking…</span>';
+      inner = c ? formatMsg(c) : '<span class="scaffold-stream-placeholder">Thinking…</span>';
     } catch (_) {
       inner = esc(content.trim());
     }

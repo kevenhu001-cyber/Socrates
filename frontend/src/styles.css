@@ -626,9 +626,31 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 [data-mode=dark] .theme-toggle .theme-sun{display:none}
 [data-mode=light] .theme-toggle .theme-moon{display:none}
 .lang-toggle .lang-toggle-label{font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;letter-spacing:.03em;color:hsl(var(--text-300))}
-.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer;position:relative}
 .user-row:hover{background:hsl(var(--bg-300))}
 .user-row:active{transform:scale(.99)}
+
+/* ─── Clerk User Button (Motion style) ─── */
+.user-btn__root{position:relative;display:flex;align-items:center;width:100%;min-width:0}
+.user-btn__trigger{width:100%}
+.user-btn__avatar{background:linear-gradient(135deg, hsl(var(--accent-000)), #8b5cf6);color:#fff;font-weight:600}
+.user-btn__avatar--large{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.18);margin:0 auto}
+.user-btn__open{position:absolute;bottom:calc(100% + 8px);left:0;z-index:100;width:240px;padding:6px;border-radius:16px;background:hsl(var(--bg-100)/0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid hsl(var(--border-300)/0.28);box-shadow:0 16px 36px -6px rgba(0,0,0,0.45),0 6px 14px -2px rgba(0,0,0,0.25),inset 0 0 0 1px hsl(var(--border-300)/0.1);color:hsl(var(--text-100));transform-origin:bottom left;animation:clerkMenuEnter .22s cubic-bezier(0.16,1,0.3,1) forwards}
+[data-mode="light"] .user-btn__open{background:rgba(255,255,255,0.96);border:1px solid rgba(0,0,0,0.08);box-shadow:0 16px 36px -6px rgba(0,0,0,0.12),0 6px 14px -2px rgba(0,0,0,0.06),inset 0 0 0 1px rgba(255,255,255,0.8);color:#111827}
+@keyframes clerkMenuEnter{0%{opacity:0;transform:scale(0.92) translateY(8px);filter:blur(8px)}100%{opacity:1;transform:scale(1) translateY(0);filter:blur(0px)}}
+.user-btn__menu-header{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:12px 10px 10px;border-bottom:1px solid hsl(var(--border-300)/0.12)}
+.user-btn__menu-header-content{display:flex;flex-direction:column;align-items:center;width:100%;overflow:hidden}
+.user-btn__name{font-size:calc(13.5px * var(--app-font-scale, 1));font-weight:600;margin:0;line-height:1.25;color:hsl(var(--text-100));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
+.user-btn__email{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin:2px 0 0;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
+.user-btn__menu-content{display:flex;flex-direction:column;gap:2px;padding:6px 2px}
+.user-btn__menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border:none;border-radius:8px;background:transparent;font-size:calc(12.5px * var(--app-font-scale, 1));font-family:var(--font-sans);color:hsl(var(--text-200));cursor:pointer;text-align:left;transition:background .15s ease,color .15s ease}
+.user-btn__menu-item:hover{background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-100))}
+.user-btn__menu-item--danger{color:hsl(var(--text-300))}
+.user-btn__menu-item--danger:hover{background:hsl(0 60% 50%/0.15);color:hsl(0 75% 70%)}
+.user-btn__icon{width:14px;height:14px;flex-shrink:0;opacity:0.75}
+.user-btn__footer{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 4px;border-top:1px solid hsl(var(--border-300)/0.12);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+.user-btn__secured{display:flex;align-items:center;gap:4px;opacity:0.85}
+.user-btn__brand-tag{font-weight:600;color:hsl(var(--text-300))}
 
 /* Display / reading preferences (font size + content width) */
 .display-prefs-popover{position:fixed;min-width:240px;max-width:280px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.2);z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
@@ -2842,24 +2864,24 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
    - A 3px gold left stripe gives the block its own visual identity
       Minimal think-block: thin border, neutral colours, no accent stripe,
       no gradient, no animations, no decorative icons. */
-.think-block{margin:8px 0;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.1);background:hsl(var(--bg-200)/0.15)}
+.think-block{margin:4px 0;border-radius:7px;border:none;background:transparent}
 /* PERF: was `will-change:contents` — a no-op hint no browser promotes.
    `contain:layout style` is the real win: it stops the think text
    growing every stream frame from re-laying-out the whole message. */
 .think-block-streaming{contain:layout style}
 
-.think-summary{display:flex;align-items:center;gap:6px;min-height:32px;padding:6px 10px;font-size:calc(12px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-400));cursor:pointer;-webkit-user-select:none;user-select:none;list-style:none}
+.think-summary{display:inline-flex;align-items:center;gap:8px;min-height:26px;padding:4px 6px;font-size:calc(13px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-300));cursor:pointer;-webkit-user-select:none;user-select:none;list-style:none;border-radius:7px;transition:color .15s ease,background-color .15s ease}
 .think-summary::-webkit-details-marker{display:none}
 .think-summary::marker{display:none;content:""}
-.think-summary:hover{color:hsl(var(--text-300))}
-.think-summary:focus-visible{outline:1.5px solid hsl(var(--text-500)/0.3);outline-offset:-1px;border-radius:4px}
+.think-summary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.55)}
+.think-summary:focus-visible{outline:1.5px solid hsl(var(--text-500)/0.3);outline-offset:-1px;border-radius:7px}
 
-.think-summary-label{font-family:var(--font-sans);font-style:normal;font-weight:400;color:hsl(var(--text-300))}
+.think-summary-label{font-family:var(--font-sans);font-style:normal;font-weight:400;color:inherit}
 
 .think-summary-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500))}
 .think-summary-meta::before{content:"·";margin:0 4px}
 
-.think-summary-chevron{margin-left:auto;width:6px;height:6px;flex-shrink:0;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg);opacity:.45;color:hsl(var(--text-500))}
+.think-summary-chevron{margin-left:auto;width:6px;height:6px;flex-shrink:0;border-right:1.2px solid currentColor;border-bottom:1.2px solid currentColor;transform:rotate(45deg);opacity:.6;color:hsl(var(--text-400));transition:transform .18s var(--ease-out)}
 .think-block[open]>.think-summary .think-summary-chevron{transform:rotate(-135deg)}
 
 /* think-content: tight spacing for chain-of-thought prose.
@@ -3239,24 +3261,21 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    whether the request is in flight or the page is hung. We make it
    slightly bolder than the default and add a subtle background so
    it reads as a "live indicator" rather than a stray inline label. */
-.thinking-dot{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 0;line-height:1.3}
+.thinking-dot,
+.thinking-status{display:inline-flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 6px;margin:0;line-height:1.3;border-radius:7px;transition:color .15s ease,background-color .15s ease;user-select:none}
 .thinking-dot.thinking-elapsed-shown::after{content:attr(data-elapsed);font-size:11px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;opacity:0;animation:thinking-elapsed-in .6s ease forwards}
 @keyframes thinking-elapsed-in{to{opacity:1}}
-.thinking-dot[data-mode="chat"]{color:hsl(var(--text-400))}
+.thinking-dot[data-mode="chat"],
+.thinking-status[data-mode="tool"]{color:hsl(var(--text-300))}
 .thinking-dot .loading{width:14px;height:14px}
-.thinking-status{display:inline-flex;align-items:center;gap:7px;margin:4px 0;padding:5px 0;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale,1));line-height:1.3}
 /* P_thinking-clickable — the "Thinking…" pill and placeholder open the
    right-side thinking panel. They keep the live indicator look but gain
    an explicit affordance: pointer cursor, hover accent, focus ring. */
 .thinking-status-clickable,.thinking-dot-clickable{
   cursor:pointer;
-  border-radius:7px;
-  padding-left:3px;
-  padding-right:3px;
-  transition:color .15s ease,background-color .15s ease;
 }
 .thinking-status-clickable:hover,.thinking-dot-clickable:hover{
-  color:hsl(var(--text-200));
+  color:hsl(var(--text-100));
   background:hsl(var(--bg-300)/0.55);
 }
 .thinking-status-clickable:focus-visible,.thinking-dot-clickable:focus-visible{
@@ -3266,27 +3285,40 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .thinking-status-clickable:active,.thinking-dot-clickable:active{
   background:hsl(var(--bg-300));
 }
-/* ChatGPT-like thinking status: a low-contrast sheen travels across the
-   label while a tiny dot breathes beside it. The gradient is deliberately
-   close to the regular text color; the old dark-to-white sweep looked like
-   a hard shadow and visibly jumped when its loop restarted. */
-.thinking-dot::before,.thinking-status::before{
-  content:"";
-  width:5px;
-  height:5px;
-  flex:0 0 5px;
+/* P_thinking-unified — ONE live-status language from the first request to
+   the settled line: minimalist ChatGPT-style 14px indicator + flat label,
+   identical in waiting placeholder, reasoning pill, and in-bubble summary. */
+.thinking-spinner{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
   border-radius:50%;
-  background:hsl(var(--text-400));
-  opacity:.48;
-  transform:scale(.78);
-  animation:thinkingDotBreath 1.8s ease-in-out infinite;
+  box-sizing:border-box;
+  border:1.5px solid hsl(var(--text-400)/0.18);
+  border-top-color:hsl(var(--text-200));
+  border-right-color:hsl(var(--text-200)/0.65);
+  animation:ringSpin .9s cubic-bezier(.4,0,.2,1) infinite;
+  vertical-align:middle;
 }
-@keyframes thinkingDotBreath{
-  0%,100%{opacity:.38;transform:scale(.76)}
-  50%{opacity:.9;transform:scale(1)}
+.thinking-spinner::after{
+  content:"";
+  position:absolute;
+  inset:2.5px;
+  border-radius:50%;
+  background:hsl(var(--text-300)/0.35);
+  animation:thinkingDotPulse 1.8s ease-in-out infinite;
 }
-.thinking-status[data-state="done"]::before{background:hsl(145 55% 42%);opacity:.72;transform:none;animation:none}
-.thinking-status[data-state="error"]::before{background:hsl(0 58% 52%);opacity:.72;transform:none;animation:none}
+@keyframes thinkingDotPulse{
+  0%,100%{transform:scale(0.6);opacity:0.3}
+  50%{transform:scale(0.95);opacity:0.85}
+}
+.thinking-status[data-state="done"] .thinking-spinner,
+.thinking-status[data-state="error"] .thinking-spinner,
+.think-summary[data-state="done"] .thinking-spinner{display:none}
 .shimmer-text{
   color:hsl(var(--text-400));
   -webkit-text-fill-color:transparent;
@@ -3310,24 +3342,14 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   0%{background-position:150% 0}
   100%{background-position:-50% 0}
 }
-/* P_search-status — settled tool states. "done" freezes the ring and
-   tints it green so "Found N web results" reads as a completed step;
-   "error" stops the spin and flips the copy to the error hue. */
-.thinking-status[data-state="done"] .thinking-ring::before,
-.thinking-status[data-state="done"] .thinking-ring::after,
-.thinking-status[data-state="error"] .thinking-ring::before,
-.thinking-status[data-state="error"] .thinking-ring::after{animation:none}
-.thinking-status[data-state="done"] .thinking-ring::before{border-color:hsl(145 55% 42%)}
-.thinking-status[data-state="done"] .thinking-ring::after{border-color:hsl(145 55% 42%/.5)}
+/* P_search-status — settled tool states. The spinner is already gone
+   (see P_thinking-unified); "done" quiets the text, "error" flips the
+   copy to the error hue so "Web search failed" reads as a result line
+   rather than ongoing activity. */
 .thinking-status[data-state="done"]{color:hsl(var(--text-300))}
-.thinking-status[data-state="error"] .thinking-ring::before{border-color:hsl(0 58% 52%)}
-.thinking-status[data-state="error"] .thinking-ring::after{border-color:hsl(0 58% 52%/.5)}
 .thinking-status[data-state="error"]{color:hsl(0 58% 52%)}
-/* Container that stacks the "Thinking…" badge above the skeleton
-   shimmer lines. Used by addStreamingMessage in main.js. The skeleton
-   is the visual cue while waiting for the first delta — the streaming
-   text itself renders without chunked fade-in. */
-.thinking-placeholder{display:flex;flex-direction:column;gap:14px;padding:2px 0 4px}
+/* Container that holds the "Thinking…" badge. */
+.thinking-placeholder{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px;margin:0}
 /* Restore the small inline spinner used inside .thinking-dot,
    .think-summary, .chat-hint, .appendThinking pill, and the
    streaming body. Was deleted when the diff renamed every
@@ -5014,10 +5036,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     color:hsl(var(--text-400)) !important;
     -webkit-text-fill-color:currentColor;
   }
-  .thinking-dot::before,.thinking-status::before{
+  .thinking-spinner{
     animation:none !important;
-    opacity:.62;
-    transform:none;
+    border-color:hsl(var(--text-400)/0.55);
   }
   .tool-inline-spinner{animation:none !important;opacity:.65}
   .tool-inline-leaving{animation-duration:0.01ms !important;animation-iteration-count:1 !important}
@@ -6202,8 +6223,9 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   flex:0 0 7px;
   border-radius:50%;
   background:hsl(var(--accent-000)/0.85);
-  animation:thinkingDotBreath 1.8s ease-in-out infinite;
+  animation:thinkingLivePulse 1.8s ease-in-out infinite;
 }
+@keyframes thinkingLivePulse{0%,100%{opacity:.45}50%{opacity:1}}
 .thinking-panel-meta{
   flex:0 0 auto;
   font-size:calc(11px * var(--app-font-scale,1));
@@ -8572,90 +8594,11 @@ body[data-conversation-active="true"] .chat-suggestions{display:none}
    Focus never changes the composer's geometry. A measured second rendered
    line adds `.composer-multiline`; that is the sole trigger for the mobile
    two-tier layout. Landing and conversation surfaces share the same page,
-   border, radius and fill so sending the first message does not swap themes. */
-.thinking-status-label.shimmer-text,
-.thinking-dot > .shimmer-text{
-  color:hsl(var(--text-400));
-  -webkit-text-fill-color:currentColor;
-  background:none;
-  animation:none;
-  will-change:auto;
-}
-.thinking-dot::before,
-.thinking-status::before{
-  opacity:.62;
-  transform:none;
-  animation:none;
-}
-
-/* Mobile header + first-token loading contract. The header follows the
-   reference's hierarchy: one tactile sidebar control, then two quiet utility
-   icons. The orbit is deliberately monochrome so it belongs to Socrates'
-   conversation surface instead of looking like a generic progress spinner. */
+   border, radius and fill so sending the first message does not swap themes.
+   The old per-surface overrides (disabled shimmer, breathing-dot reset, and
+   the 30px "orbit" spinner) are gone: P_thinking-unified in the status
+   section is now the single source of truth for every live-status line. */
 .mobile-sidebar-status{display:none}
-.thinking-dot--orbit{gap:9px;min-height:30px}
-.thinking-dot--orbit::before{display:none}
-.thinking-orbit{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:30px;
-  height:30px;
-  flex:0 0 30px;
-  border-radius:50%;
-  color:hsl(var(--cowork-text,var(--text-200)));
-}
-.thinking-orbit-track{
-  position:absolute;
-  inset:4px;
-  border:1px solid currentColor;
-  border-left-color:transparent;
-  border-radius:50%;
-  opacity:.42;
-  animation:socratic-orbit-spin 1.45s linear infinite;
-}
-.thinking-orbit-dot{
-  position:absolute;
-  width:5px;
-  height:5px;
-  border-radius:50%;
-  background:currentColor;
-  box-shadow:0 0 0 2px hsl(var(--cowork-page,var(--bg-100)));
-}
-.thinking-orbit-dot-primary{
-  top:2px;
-  left:50%;
-  margin-left:-2.5px;
-  animation:socratic-orbit-primary 1.45s cubic-bezier(.45,0,.55,1) infinite;
-}
-.thinking-orbit-dot-secondary{
-  right:2px;
-  bottom:5px;
-  width:4px;
-  height:4px;
-  opacity:.58;
-  animation:socratic-orbit-secondary 1.45s cubic-bezier(.45,0,.55,1) infinite;
-}
-.thinking-orbit-core{
-  width:6px;
-  height:6px;
-  border:1px solid currentColor;
-  border-radius:50%;
-  opacity:.78;
-  animation:socratic-orbit-core 1.45s ease-in-out infinite;
-}
-@keyframes socratic-orbit-spin{to{transform:rotate(360deg)}}
-@keyframes socratic-orbit-primary{50%{transform:scale(.58);opacity:.45}}
-@keyframes socratic-orbit-secondary{50%{transform:scale(1.45);opacity:1}}
-@keyframes socratic-orbit-core{50%{transform:scale(.72);opacity:.32}}
-
-@media(prefers-reduced-motion:reduce){
-  .thinking-orbit-track,
-  .thinking-orbit-dot,
-  .thinking-orbit-core{animation:none}
-  .thinking-orbit-track{border-left-color:currentColor;transform:rotate(28deg)}
-}
 
 /* Focus and first-send are state changes, not a second visual theme. Keep
    both composer shells on their baseline edge treatment and prevent the

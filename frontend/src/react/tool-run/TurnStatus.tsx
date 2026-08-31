@@ -38,18 +38,12 @@ function panelKeyHandler(messageId: string) {
   };
 }
 
-/** A compact, CSS-driven "thinking orbit" used before the first answer token.
- * Keeping it structural (rather than an animated SVG) lets the stylesheet
- * honour reduced-motion without adding a runtime timer to each live turn. */
-function ThinkingOrbit() {
-  return (
-    <span className="thinking-orbit" aria-hidden="true">
-      <span className="thinking-orbit-track" />
-      <span className="thinking-orbit-dot thinking-orbit-dot-primary" />
-      <span className="thinking-orbit-dot thinking-orbit-dot-secondary" />
-      <span className="thinking-orbit-core" />
-    </span>
-  );
+/** The shared live-status icon: one quiet 14px arc (P_thinking-unified).
+ *  The waiting line, the reasoning pill and the in-bubble "Thinking"
+ *  summary all use it, so nothing re-themes when the first token lands. */
+/** The shared live-status icon: minimalist ChatGPT-style thinking indicator. */
+function ThinkingSpinner() {
+  return <span className="thinking-spinner" aria-hidden="true" />;
 }
 
 function WaitingLine({ status, messageId }: TurnStatusProps) {
@@ -58,7 +52,7 @@ function WaitingLine({ status, messageId }: TurnStatusProps) {
   return (
     <div className="thinking-placeholder">
       <span
-        className={`thinking-dot thinking-dot--orbit${clickable ? ' thinking-dot-clickable' : ''}${elapsed ? ' thinking-elapsed-shown' : ''}`}
+        className={`thinking-dot${clickable ? ' thinking-dot-clickable' : ''}${elapsed ? ' thinking-elapsed-shown' : ''}`}
         data-mode={status.mode || 'chat'}
         data-elapsed={elapsed || undefined}
         role={clickable ? 'button' : undefined}
@@ -67,14 +61,15 @@ function WaitingLine({ status, messageId }: TurnStatusProps) {
         onClick={clickable ? () => openThinkingPanel(messageId) : undefined}
         onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
       >
-        <ThinkingOrbit />
-        <span className="shimmer-text">{status.label}</span>
+        <ThinkingSpinner />
+        <span className="thinking-dot-label">{status.label}</span>
       </span>
     </div>
   );
 }
 
 function ReasoningLine({ status, messageId }: TurnStatusProps) {
+  const clickable = status.clickable !== false;
   return (
     <span
       className="thinking-status thinking-status-clickable"
@@ -89,13 +84,30 @@ function ReasoningLine({ status, messageId }: TurnStatusProps) {
       }}
       onKeyDown={panelKeyHandler(messageId)}
     >
-      <span
-        className={`thinking-status-label${status.state ? '' : ' shimmer-text'}`}
-        aria-live="polite"
-      >
+      <ThinkingSpinner />
+      <span className="thinking-status-label" aria-live="polite">
         {status.label}
+    <div className="thinking-placeholder">
+      <span
+        className={`thinking-dot thinking-status${clickable ? ' thinking-dot-clickable thinking-status-clickable' : ''}`}
+        data-mode="tool"
+        data-state={status.state || undefined}
+        role={clickable ? 'button' : undefined}
+        tabIndex={clickable ? 0 : undefined}
+        aria-label={i18n('think.openPanel', 'View thinking process')}
+        onClick={clickable ? (event) => {
+          event.preventDefault();
+          openThinkingPanel(messageId);
+        } : undefined}
+        onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
+      >
+        <ThinkingSpinner />
+        <span className="thinking-dot-label thinking-status-label" aria-live="polite">
+          {status.label}
+        </span>
       </span>
     </span>
+    </div>
   );
 }
 

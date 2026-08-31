@@ -43,8 +43,15 @@ export function appendThinking(messageId){
     status.setAttribute("role","button");
     status.setAttribute("tabindex","0");
     status.setAttribute("aria-label",openPanelLabel());
+    /* P_thinking-unified — the live-status icon is the shared 14px
+       .thinking-spinner arc. The label stays flat gray: no shimmer, so the
+       waiting line, this pill and the settled tool line read as one UI. */
+    var spinner=document.createElement("span");
+    spinner.className="thinking-spinner";
+    spinner.setAttribute("aria-hidden","true");
+    status.appendChild(spinner);
     var label=document.createElement("span");
-    label.className="thinking-status-label shimmer-text";
+    label.className="thinking-status-label";
     label.setAttribute("aria-live","polite");
     label.textContent=(typeof window.t==="function")?window.t("think.thinking"):"Thinking…";
     status.appendChild(label);
@@ -68,11 +75,11 @@ export function appendThinking(messageId){
     if(!lbl)return;
     lbl.textContent=String(text||"");
     status.dataset.mode="tool";
-    /* state: "" (running, text shimmers) | "done" | "error". Settled
-       states drop the shimmer so the pill reads as a result line
-       ("Found 8 web results") rather than an ongoing activity. */
-    if(state){status.dataset.state=state;lbl.classList.remove("shimmer-text");}
-    else{delete status.dataset.state;lbl.classList.add("shimmer-text");}
+    /* state: "" (running, spinner turns) | "done" | "error". Settled
+       states stop the animation via CSS so the pill reads as a result
+       line ("Found 8 web results") rather than an ongoing activity. */
+    if(state){status.dataset.state=state;}
+    else{delete status.dataset.state;}
     if(typeof window.scrollMainToBottom==="function")window.scrollMainToBottom();
   }
   return {append:function(){},finalize:remove,remove:remove,setLabel:setLabel};
