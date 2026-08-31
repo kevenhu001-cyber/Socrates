@@ -6118,11 +6118,20 @@ function addStreamingMessage(opts){
   var placeholder=document.createElement("div");
   placeholder.className="thinking-placeholder";
   var placeholderRow=document.createElement("span");
-  placeholderRow.className="thinking-dot";
+  placeholderRow.className="thinking-dot thinking-dot--orbit";
   placeholderRow.setAttribute("data-mode",appMode);
+  var placeholderOrbit=document.createElement("span");
+  placeholderOrbit.className="thinking-orbit";
+  placeholderOrbit.setAttribute("aria-hidden","true");
+  ["thinking-orbit-track","thinking-orbit-dot thinking-orbit-dot-primary","thinking-orbit-dot thinking-orbit-dot-secondary","thinking-orbit-core"].forEach(function(className){
+    var part=document.createElement("span");
+    part.className=className;
+    placeholderOrbit.appendChild(part);
+  });
   var placeholderText=document.createElement("span");
   placeholderText.className="shimmer-text";
   placeholderText.textContent=appMode==="chat"?t("think.thinking"):t("common.generating");
+  placeholderRow.appendChild(placeholderOrbit);
   placeholderRow.appendChild(placeholderText);
   placeholder.appendChild(placeholderRow);
   /* P_thinking-clickable — in chat mode the waiting placeholder opens
