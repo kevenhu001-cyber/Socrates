@@ -399,7 +399,6 @@ function clearLegacyMsgListChildren(){
       const correl = shortCorrel();
       // Full detail to console so dev tools / remote reporters can
       // see the stack; banner shows only the correlation token.
-      // eslint-disable-next-line no-console
       console.error('[global-error]', label, correl, payload);
       reportError(correl, label, payload);
       if (typeof document !== 'undefined' && document.body) {
@@ -2699,7 +2698,6 @@ function renderProjectListItems(list, sessionId){
 }
 /* Drag-and-drop session onto a project. */
 var _dragSessionId = null;
-/* eslint-disable no-unused-vars */
 function onSessionDragStart(event, sessionId){
   _dragSessionId = sessionId;
   event.dataTransfer.effectAllowed = "move";
@@ -2719,7 +2717,6 @@ function onProjectDrop(event, projectId){
   if(!sessionId || !projectId) return;
   moveSessionToProject(sessionId, projectId);
 }
-/* eslint-enable no-unused-vars */
 /* Expose drag functions globally so inline ondragstart/ondragend work. */
 window.onSessionDragStart = onSessionDragStart;
 window.onSessionDragEnd = onSessionDragEnd;
