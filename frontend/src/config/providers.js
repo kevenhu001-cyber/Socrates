@@ -112,7 +112,11 @@ function ensureSessionShape(s) {
 
 function syncAppModeUI() {
   var toggles = document.querySelectorAll(".app-mode-toggle");
-  toggles.forEach(function (el) { el.classList.toggle("active", el.dataset.mode === appMode); });
+  toggles.forEach(function (el) {
+    var active = el.dataset.mode === appMode;
+    el.classList.toggle("active", active);
+    if (el.getAttribute("role") === "tab") el.setAttribute("aria-selected", active ? "true" : "false");
+  });
   var chatEl = document.getElementById("chatModeToggle");
   var tutorEl = document.getElementById("tutorModeToggle");
   if (chatEl) chatEl.classList.toggle("active", appMode === "chat");
@@ -127,6 +131,8 @@ function syncAppModeUI() {
      is still useful as a JS-readable signal). */
   var segEl = document.getElementById("modeSegmented");
   if (segEl) segEl.setAttribute("data-seg-active", appMode);
+  var topSegEl = document.getElementById("modeSegmentedTop");
+  if (topSegEl) topSegEl.setAttribute("data-seg-active", appMode);
   try { localStorage.setItem("socrates-appmode", appMode); } catch (e) {}
   /* Mirror appMode to body[data-app-mode] so the CSS rule
      body[data-app-mode="chat"] .tutor-only{display:none !important}

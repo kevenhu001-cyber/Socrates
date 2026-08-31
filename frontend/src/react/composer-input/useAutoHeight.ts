@@ -50,13 +50,13 @@
  * On unmount the lock is cleared so the consumer does not retain an
  * inline style they did not set.
  *
- * Reduced-motion and unsupported environments degrade to a plain
- * height write so the box still tracks the content (without the
- * animation), and the absence of WAAPI falls back to a rAF chain.
+ * Reduced-motion environments degrade to a plain height write. The
+ * animated path uses a rAF chain so each important inline height wins
+ * the responsive stylesheet consistently.
  */
 
 import { useEffect, type DependencyList } from 'react';
-import { planMotionForUser, easeOutQuint } from '../../ui/motion.js';
+import { planMotionForUser } from '../../ui/motion.js';
 
 interface AutoHeightOptions {
   motion?: {
@@ -124,19 +124,29 @@ export function useAutoHeight(
     function readNatural(target: HTMLElement, cap: { min: number; max: number }): number {
       let naturalRaw: number;
       const locked = target.style.height;
+      const lockedPriority = target.style.getPropertyPriority('height');
       try {
-        if (locked) target.style.height = 'auto';
+        /* Several composer rules intentionally use `height:...!important`.
+           A normal inline assignment loses to those rules, so release the
+           lock completely for the intrinsic read and restore its priority
+           afterwards. */
+        if (locked) target.style.removeProperty('height');
         naturalRaw = target.scrollHeight;
       } catch (_) {
         naturalRaw = target.scrollHeight;
       } finally {
-        try { if (locked) target.style.height = locked; } catch (_) { /* detached */ }
+        try {
+          if (locked) target.style.setProperty('height', locked, lockedPriority);
+        } catch (_) { /* detached */ }
       }
       return Math.max(cap.min, Math.min(cap.max, naturalRaw));
     }
 
     function lockAt(target: HTMLElement, value: number): void {
-      try { target.style.height = value + 'px'; } catch (_) { /* detached */ }
+      /* Inline !important is deliberate: the responsive composer stylesheet
+         uses important fixed/auto heights, and the animation lock must win
+         while measuring and interpolating. */
+      try { target.style.setProperty('height', value + 'px', 'important'); } catch (_) { /* detached */ }
     }
 
     /* Run one animated transition from `from` to `natural`. When it
@@ -166,44 +176,10 @@ export function useAutoHeight(
         lockAt(target, natural);
         return;
       }
-      if (typeof target.animate === 'function') {
-        try {
-          /* Commit the DESTINATION to the inline lock before the
-             animation starts.
-
-             WAAPI runs with `fill: 'none'` (see below), so the instant
-             the animation's active interval ends the element falls back
-             to its underlying inline value. When that value was still
-             the OLD lock, the box snapped back to the pre-growth height
-             for the frames between the final animation tick and the
-             asynchronous `onfinish` callback that refreshed the lock —
-             a one-frame flash on every single expansion, which is
-             exactly the "闪现" the composer exhibited.
-
-             Writing `natural` up front makes the hand-off from animated
-             value to underlying value a no-op, and it also makes
-             `anim.cancel()` land on the destination instead of
-             rewinding to the start. */
-          lockAt(target, natural);
-          /* WAAPI animates the inline height alongside our lock. We
-             use `fill: 'none'` because `fill: 'forwards'` would keep
-             the final keyframe applied forever, which would re-freeze
-             the box even after the lock is refreshed at `finish`. */
-          const animation = target.animate(
-            { height: [from + 'px', natural + 'px'] },
-            {
-              duration: plan.duration,
-              easing: plan.easing,
-              fill: 'none',
-            }
-          );
-          animation.onfinish = finish;
-          animation.oncancel = function () { anim = null; };
-          anim = animation as unknown as { cancel(): void };
-          return;
-        } catch (_) { /* fall through */ }
-      }
-      /* WAAPI unavailable — rAF fallback on the JS thread. */
+      /* WAAPI animations sit below important author declarations in the
+         cascade. Because the responsive composer rules and our measurement
+         lock both require important heights, animate the lock directly on
+         rAF instead of starting an animation the browser would ignore. */
       const startedAt = performance.now();
       let cancelled = false;
       let handle = 0;
@@ -216,7 +192,9 @@ export function useAutoHeight(
           return;
         }
         const t = elapsed / plan.duration;
-        const eased = easeOutQuint(t);
+        /* Smoothstep starts and ends at zero velocity, avoiding a large first
+           frame when a pasted draft adds several lines at once. */
+        const eased = t * t * (3 - 2 * t);
         lockAt(target, from + (natural - from) * eased);
         handle = requestAnimationFrame(tick);
       };
@@ -351,7 +329,7 @@ export function useAutoHeight(
       updatePending = false;
       mutation.disconnect();
       resize.disconnect();
-      try { element.style.height = ''; } catch (_) { /* detached */ }
+      try { element.style.removeProperty('height'); } catch (_) { /* detached */ }
     };
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [element, JSON.stringify(options.motion)] as DependencyList);

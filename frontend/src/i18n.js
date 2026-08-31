@@ -1051,7 +1051,7 @@ var I18N={
     "sidebar.plugins.enabled":"已启用",
     "sidebar.plugins.disabled":"已禁用",
     "topbar.modeChat":"聊天",
-    "topbar.modeTutor":"工作",
+    "topbar.modeTutor":"辅导",
     "voice.input":"语音输入",
     "voice.soon":"语音输入",
     "voice.toast":"语音输入暂不可用",
@@ -1417,7 +1417,7 @@ var I18N={
     "tutor.stageCheck":"阶段检查",
     "tutor.done":"[已完成]",
     /* U-H1 / U-H2 — session mode segmented control + header badge (zh). */
-    "tutor.modeTutor":"工作",
+    "tutor.modeTutor":"辅导",
     "tutor.modeChat":"聊天",
     /* U-H4 — teaching-plan sub-topic mastery status labels (zh). */
     "tutor.statusBlank":"空白",

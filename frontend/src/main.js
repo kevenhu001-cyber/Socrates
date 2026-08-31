@@ -9413,13 +9413,23 @@ import {
   refreshApiConfig,
 } from './config/providers.js';
 
-async function toggleAppMode(){
+async function toggleAppMode(targetMode){
+  /* Segmented controls pass their exact destination; legacy callers without
+     an argument (for example the in-conversation banner) retain toggle
+     behaviour. Clicking the already-selected tab is intentionally a no-op. */
+  var nextMode=(targetMode==="chat"||targetMode==="tutor")
+    ? targetMode
+    : (appMode === "tutor" ? "chat" : "tutor");
+  if(nextMode===appMode){
+    syncAppModeUI();
+    return;
+  }
   /* Mid-session switch: confirm before discarding the live session. */
   var msgList=document.getElementById("msgList");
   var hasRealMsgs=msgList&&Array.from(msgList.children).some(function(c){return !c.hasAttribute('data-react-message-list-empty');});
   var inSession=state.topic||state.kbNodes&&state.kbNodes.length>0||(state.phase==="chat")||hasRealMsgs;
   if(inSession){
-    var next=appMode==="tutor"?t("tutor.modeChat"):t("tutor.modeTutor");
+    var next=t(nextMode==="tutor"?"tutor.modeTutor":"tutor.modeChat");
     var ok=await showConfirm(t("confirm.switchMode.title").replace("{mode}",next),
       t("confirm.switchMode.msg"),
       false);
@@ -9434,10 +9444,10 @@ async function toggleAppMode(){
     if(_sp){try{await _sp}catch(_){}}
     resetApp();
   }
-  /* P_tutor-sync — toggle from the module-level appMode (not
-     window.appMode, which could be stale). setAppMode() now syncs
-     window.appMode internally. */
-  setAppMode(appMode === "tutor" ? "chat" : "tutor");
+  /* P_tutor-sync — select the requested module-level mode directly (not
+     window.appMode, which could be stale). setAppMode() also synchronizes
+     the legacy window binding. */
+  setAppMode(nextMode);
   try{localStorage.setItem("socrates-appmode",appMode)}catch(e){}
   syncAppModeUI();
   syncSidebarForMode();

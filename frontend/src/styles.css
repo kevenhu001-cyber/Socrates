@@ -735,6 +735,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
    background:hsl(var(--bg-100));
    border:0;border-top:1px solid hsl(var(--border-300)/.35);border-radius:20px 20px 0 0;
    box-shadow:0 -16px 48px hsl(var(--always-black)/.3);
+   -webkit-backdrop-filter:none;
    backdrop-filter:none;
    animation:composer-tools-sheet-in .32s cubic-bezier(.22,1,.36,1);
    transform-origin:center bottom;
@@ -9110,8 +9111,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   border:1px solid hsl(0 0% 100%/.14);
   border-radius:14px;
   box-shadow:0 16px 40px hsl(0 0% 0%/.36),0 1px 0 hsl(0 0% 100%/.04) inset;
-  backdrop-filter:none;
   -webkit-backdrop-filter:none;
+  backdrop-filter:none;
 }
 .composer-tools-heading{
   padding:4px 10px 6px;

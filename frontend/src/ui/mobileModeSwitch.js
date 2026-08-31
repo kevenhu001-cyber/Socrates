@@ -57,10 +57,10 @@ export function selectAppMode(mode) {
   _setOpen(false);
   var target = mode === "tutor" ? "tutor" : "chat";
   if (target !== _currentMode() && typeof window.toggleAppMode === "function") {
-    /* toggleAppMode() flips between the two modes and re-syncs the UI
-       (including this switch via providers.syncAppModeUI). It may await a
-       confirm dialog when a live session is in progress. */
-    window.toggleAppMode();
+    /* Pass the clicked target explicitly. This keeps the interaction tied to
+       the selected position even if mode state changes before the async
+       confirmation completes. */
+    window.toggleAppMode(target);
   } else {
     syncMobileModeSwitch();
   }
