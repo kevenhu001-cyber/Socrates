@@ -3,12 +3,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { t as _t } from '../legacy/gateway';
 import {
   installShareBridge,
-} from './shareModalStore';
-import {
   useShareDispatch,
   useShareSnapshot,
-} from './legacyAdapter';
+} from './shareModal.bridge';
 import type { ShareVisibility } from './types';
+import { Icon } from '../../ui/Icon';
 
 const OVERLAY_ID = 'shareOverlay';
 
@@ -80,9 +79,7 @@ function ShareModal() {
           aria-label="Close"
           onClick={() => dispatch.close()}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M18 6 6 18M6 6l12 12" />
-          </svg>
+          <Icon name="close" size={16} strokeWidth={2.5} />
         </button>
       </div>
       <div className="share-visibility" role="radiogroup" aria-label={i18n('share.visibilityLabel', 'Link visibility')}>
@@ -185,23 +182,23 @@ export interface ShareModalHandle {
 export function hydrateShareModal(): ShareModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.shareReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (overlay.dataset.mountedBy === 'share-modal') {
     throw new Error('Share modal React runtime was initialized more than once.');
   }
-  overlay.dataset.shareReactHydrated = '1';
-  overlay.setAttribute('data-react-migration-runtime', 'share-modal');
 
   installShareBridge();
 
   const root = createRoot(overlay);
   root.render(<ShareModal />);
+  overlay.dataset.mountedBy = 'share-modal';
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.shareReactHydrated;
-      overlay.removeAttribute('data-react-migration-runtime');
+      delete overlay.dataset.mountedBy;
     },
   };
 }

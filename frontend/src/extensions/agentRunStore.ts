@@ -5,7 +5,7 @@
 // total, message} events as they progress; new UIs (the explore stage
 // stepper, the analyze workbench) subscribe via useSyncExternalStore
 // or window.__socratesAgentRunBridge. Modeled on the other
-// __socrates*Bridge objects (chatRuntimeStore, composerToolsStore).
+// __socrates*Bridge objects (chatRuntime.bridge, composerTools.bridge).
 //
 // Exploration note: DeepResearch today mutates .search-progress DOM
 // directly with string labels. This store is the structured event

@@ -15,10 +15,10 @@ test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({
   await waitForAppShell(page);
 
   const nav = page.locator('#sidebarNav');
-  await expect(nav).toHaveAttribute('data-react-migration-runtime', 'sidebar-nav');
+  await expect(nav).toHaveAttribute('data-mounted-by', 'sidebar-nav');
 
   const chips = page.locator('#recentsFilterChips');
-  await expect(chips).toHaveAttribute('data-react-migration-runtime', 'recents-filter-chips');
+  await expect(chips).toHaveAttribute('data-mounted-by', 'recents-filter-chips');
 
   // Both bridges installed.
   const bridges = await page.evaluate(() => ({
@@ -124,10 +124,10 @@ test('Sidebar React mode always loads (no ?react=1 flag needed)', async ({ page 
   await waitForAppShell(page);
 
   const nav = page.locator('#sidebarNav');
-  await expect(nav).toHaveAttribute('data-react-migration-runtime', 'sidebar-nav');
+  await expect(nav).toHaveAttribute('data-mounted-by', 'sidebar-nav');
 
   const chips = page.locator('#recentsFilterChips');
-  await expect(chips).toHaveAttribute('data-react-migration-runtime', 'recents-filter-chips');
+  await expect(chips).toHaveAttribute('data-mounted-by', 'recents-filter-chips');
 
   const installed = await page.evaluate(() => ({
     nav: typeof window.__socratesSidebarNavBridge === 'object' && window.__socratesSidebarNavBridge !== null,

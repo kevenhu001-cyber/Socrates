@@ -94,6 +94,11 @@ declare global {
     __socratesWorkspaceBridge?: unknown;
     __socratesScheduledBridge?: unknown;
     __socratesNavRenderScheduled?: () => void;
+
+    // ── Legacy inline handler functions (windowExports.js) ──────────
+
+    exploreAction?: () => void;
+    toggleComposerTools?: (trigger: HTMLElement, mode: string) => void;
   }
 }
 

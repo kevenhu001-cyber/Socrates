@@ -13,10 +13,10 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await expect(page.locator('#topicComposerRoot .rich-composer-editor').first()).toBeVisible();
 
   const compatibilityRoot = page.locator('#newReplyPill');
-  await expect(compatibilityRoot).toHaveAttribute('data-react-migration-runtime', 'new-reply-pill');
+  await expect(compatibilityRoot).toHaveAttribute('data-mounted-by', 'new-reply-pill');
   await expect(compatibilityRoot).toHaveText('↓ New reply');
   await expect(page.locator('#sendBtnContent')).toHaveAttribute(
-    'data-react-migration-runtime',
+    'data-mounted-by',
     'send-button',
   );
   /* Voice input is unified with the send button: idle (empty composer)
@@ -24,7 +24,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await expect(page.locator('#sendBtnContent .icon-voice')).toHaveCount(1);
 
   await expect(page.locator('#msgList')).toHaveAttribute(
-    'data-react-migration-runtime',
+    'data-mounted-by',
     'msg-list',
   );
 
@@ -65,9 +65,9 @@ test('React compatibility mode always loads (no ?react=1 flag needed)', async ({
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await expect(page.locator('#newReplyPill')).toHaveAttribute('data-react-migration-runtime', 'new-reply-pill');
-  await expect(page.locator('#sendBtnContent')).toHaveAttribute('data-react-migration-runtime', 'send-button');
-  await expect(page.locator('#sidebarUserRow')).toHaveAttribute('data-react-migration-runtime', 'sidebar-user-row');
+  await expect(page.locator('#newReplyPill')).toHaveAttribute('data-mounted-by', 'new-reply-pill');
+  await expect(page.locator('#sendBtnContent')).toHaveAttribute('data-mounted-by', 'send-button');
+  await expect(page.locator('#sidebarUserRow')).toHaveAttribute('data-mounted-by', 'sidebar-user-row');
 });
 
 test('React chat store observes legacy message and stream lifecycle', async ({ page }) => {

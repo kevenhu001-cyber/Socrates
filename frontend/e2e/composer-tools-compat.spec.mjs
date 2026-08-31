@@ -17,7 +17,7 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   // Eager creation: the menu element exists at boot, marked as React-owned.
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeAttached();
-  await expect(menu).toHaveAttribute('data-react-migration-runtime', 'composer-tools-menu');
+  await expect(menu).toHaveAttribute('data-mounted-by', 'composer-tools-menu');
   await expect(menu).toHaveClass(/hidden/);
 
   // Bridge installed.
@@ -152,7 +152,7 @@ test('Composer tools menu React mode always loads (no ?react=1 flag needed)', as
 
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeAttached();
-  await expect(menu).toHaveAttribute('data-react-migration-runtime', 'composer-tools-menu');
+  await expect(menu).toHaveAttribute('data-mounted-by', 'composer-tools-menu');
 
   const installed = await page.evaluate(
     () => typeof window.__socratesComposerToolsBridge === 'object' && window.__socratesComposerToolsBridge !== null,

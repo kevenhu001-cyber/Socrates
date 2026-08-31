@@ -6,7 +6,7 @@ import {
   useRecentsFilter,
   useRecentsFilterCommands,
   useRecentsFilterSnapshot,
-} from './legacyAdapter';
+} from './sidebar.bridge';
 
 const TARGET_ID = 'recentsFilterChips';
 
@@ -168,21 +168,21 @@ export interface RecentsChipsHandle {
 export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
   const target = document.getElementById(TARGET_ID);
   if (!target) return null;
-  if (target.dataset.recentChipsReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (target.dataset.mountedBy === 'recents-filter-chips') {
     throw new Error('Recents filter chips React runtime was initialized more than once.');
   }
-  target.dataset.recentChipsReactHydrated = '1';
-  target.setAttribute('data-react-migration-runtime', 'recents-filter-chips');
 
   const root = createRoot(target);
   root.render(<RecentsFilterChips />);
+  target.dataset.mountedBy = 'recents-filter-chips';
   return {
     target,
     root,
     destroy: () => {
       root.unmount();
-      delete target.dataset.recentChipsReactHydrated;
-      target.removeAttribute('data-react-migration-runtime');
+      delete target.dataset.mountedBy;
     },
   };
 }

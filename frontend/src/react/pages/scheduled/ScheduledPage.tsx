@@ -3,11 +3,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { t as _t } from '../../legacy/gateway';
 import {
   installScheduledBridge,
-} from './scheduledStore';
-import {
   useScheduledDispatch,
   useScheduledSnapshot,
-} from './legacyAdapter';
+} from './scheduled.bridge';
 
 const LIST_ID = 'scheduledList';
 

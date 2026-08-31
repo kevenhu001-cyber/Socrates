@@ -1,0 +1,9 @@
+/*
+ * styles/layout/app-shell.css
+ *
+ * M1 placeholder. Will own the `.app`, `.sidebar`, `.main`, `.top-bar`,
+ * and related shell-chrome rules in M2. For now the rules stay in
+ * `src/styles.css` so the cascade is byte-identical to the pre-M1
+ * bundle. Adding a rule here must be coordinated with an extraction
+ * from styles.css; do not duplicate selectors.
+ */

@@ -4,11 +4,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { t as _t } from '../legacy/gateway';
 import {
   installProfileBridge,
-} from './profileModalStore';
-import {
   useProfileDispatch,
   useProfileSnapshot,
-} from './legacyAdapter';
+} from './profileModal.bridge';
 
 const OVERLAY_ID = 'profileOverlay';
 
@@ -327,23 +325,23 @@ export interface ProfileModalHandle {
 export function hydrateProfileModal(): ProfileModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.profileReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (overlay.dataset.mountedBy === 'profile-modal') {
     throw new Error('Profile modal React runtime was initialized more than once.');
   }
-  overlay.dataset.profileReactHydrated = '1';
-  overlay.setAttribute('data-react-migration-runtime', 'profile-modal');
 
   installProfileBridge();
 
   const root = createRoot(overlay);
   root.render(<ProfileModal />);
+  overlay.dataset.mountedBy = 'profile-modal';
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.profileReactHydrated;
-      overlay.removeAttribute('data-react-migration-runtime');
+      delete overlay.dataset.mountedBy;
     },
   };
 }

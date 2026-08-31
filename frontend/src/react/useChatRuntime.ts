@@ -1,18 +1,13 @@
-import { useSyncExternalStore } from 'react';
-
+import { useBridge } from '../lib/bridge/useBridge';
 import {
+  chatRuntimeImmutableBridge,
   getChatRuntimeSnapshot,
   subscribeToChatRuntime,
-} from './chatRuntimeStore';
-import type { ChatRuntimeSnapshot } from './types/domain';
-import type { ChatStreamStatus } from './types/domain';
+} from './chatRuntime.bridge';
+import type { ChatRuntimeSnapshot, ChatStreamStatus } from './types/domain';
 
 export function useChatRuntimeSnapshot(): ChatRuntimeSnapshot {
-  return useSyncExternalStore(
-    subscribeToChatRuntime,
-    getChatRuntimeSnapshot,
-    getChatRuntimeSnapshot,
-  );
+  return useBridge(chatRuntimeImmutableBridge);
 }
 
 /**
@@ -20,17 +15,11 @@ export function useChatRuntimeSnapshot(): ChatRuntimeSnapshot {
  * derived primitive keeps delta publications from re-rendering the root.
  */
 export function useIsChatStreaming(): boolean {
-  return useSyncExternalStore(
-    subscribeToChatRuntime,
-    () => getChatRuntimeSnapshot().isStreaming,
-    () => false,
-  );
+  return useBridge(chatRuntimeImmutableBridge).isStreaming;
 }
 
 export function useChatStreamStatus(): ChatStreamStatus {
-  return useSyncExternalStore(
-    subscribeToChatRuntime,
-    () => getChatRuntimeSnapshot().stream.status,
-    () => 'idle',
-  );
+  return useBridge(chatRuntimeImmutableBridge).stream.status;
 }
+
+export { getChatRuntimeSnapshot, subscribeToChatRuntime };

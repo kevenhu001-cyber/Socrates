@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   getThinkingPanelSnapshot,
   installThinkingPanelBridge,
-} from '../src/react/thinking-panel/thinkingPanelStore.ts';
+} from '../src/react/thinking-panel/thinkingPanel.bridge.ts';
 
 /* The store targets the browser, but every window access happens inside
    functions (install / throttled publish), so pointing window at the Node

@@ -26,7 +26,7 @@ function fakeWindow() {
 globalThis.window = fakeWindow();
 
 const { installChatRuntimeBridge, getChatRuntimeSnapshot } = await import(
-  '../src/react/chatRuntimeStore.ts'
+  '../src/react/chatRuntime.bridge.ts'
 );
 
 function runFrames() {

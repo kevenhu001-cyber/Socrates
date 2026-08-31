@@ -1,0 +1,10 @@
+/*
+ * styles/components/tool-card.css
+ *
+ * M1 placeholder. Will own the tool-card design tokens + every
+ * tool-card surface (composer tools menu, inline tool rows, agent
+ * tool card, sources card, skill row, storage row). For now the
+ * token definitions stay in `src/styles.css`; M2 extracts the
+ * `[data-theme=socrates][data-mode]` token blocks alongside the
+ * surface rules.
+ */

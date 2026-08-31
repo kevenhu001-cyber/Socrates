@@ -3,11 +3,11 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
 import { repositionComposerTools } from '../../ui/composerTools';
-import { installComposerToolsBridge } from './composerToolsStore';
+import { installComposerToolsBridge } from './composerTools.bridge';
 import {
   useComposerToolsDispatch,
   useComposerToolsSnapshot,
-} from './legacyAdapter';
+} from './composerTools.bridge';
 import { registry } from '../../extensions/registry';
 import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';
 import type { ExtensionDefinition } from '../../extensions/types';
@@ -301,23 +301,23 @@ export interface ComposerToolsHandle {
 export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
   const menu = document.getElementById(MENU_ID);
   if (!menu) return null;
-  if (menu.dataset.composerToolsReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (menu.dataset.mountedBy === 'composer-tools-menu') {
     throw new Error('Composer tools menu React runtime was initialized more than once.');
   }
-  menu.dataset.composerToolsReactHydrated = '1';
-  menu.setAttribute('data-react-migration-runtime', 'composer-tools-menu');
 
   installComposerToolsBridge();
 
   const root = createRoot(menu);
   root.render(<ComposerToolsMenu />);
+  menu.dataset.mountedBy = 'composer-tools-menu';
   return {
     menu,
     root,
     destroy: () => {
       root.unmount();
-      delete menu.dataset.composerToolsReactHydrated;
-      menu.removeAttribute('data-react-migration-runtime');
+      delete menu.dataset.mountedBy;
     },
   };
 }

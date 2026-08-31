@@ -1,0 +1,8 @@
+/*
+ * styles/vendor/highlight.css
+ *
+ * M1 placeholder. Will own highlight.js theme overrides (mono font,
+ * contrast tuning, dark-mode colour swaps). The base highlight
+ * theme is still loaded by the npm-import path in
+ * `src/vendor/init.js`; M2 will move that import into this file.
+ */

@@ -4,6 +4,7 @@
    ============================================================ */
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.js';
+import { DEFAULT_DARK_PICKER, DEFAULT_LIGHT_PICKER } from './ui/tokens.js';
 
 /* ── constants ── */
 export const DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375];
@@ -233,9 +234,9 @@ export function syncDisplayPrefsUI() {
     else apply();
   });
   var darkInput = document.getElementById("displayPrefsBgDark");
-  if (darkInput) darkInput.value = displayPrefs.darkBg || "#212121";
+  if (darkInput) darkInput.value = displayPrefs.darkBg || DEFAULT_DARK_PICKER;
   var lightInput = document.getElementById("displayPrefsBgLight");
-  if (lightInput) lightInput.value = displayPrefs.lightBg || "#ffffff";
+  if (lightInput) lightInput.value = displayPrefs.lightBg || DEFAULT_LIGHT_PICKER;
   var gt = document.getElementById("gridToggle");
   if (gt) gt.classList.toggle("on", displayPrefs.showGrid !== false);
 }

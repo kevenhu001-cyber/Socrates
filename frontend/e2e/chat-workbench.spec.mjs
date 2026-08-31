@@ -20,7 +20,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   await expect(page.locator('.top-bar')).toBeVisible();
   await expect(page.locator('#msgList')).toBeVisible();
   await expect(page.locator('#chatInputWrap')).toBeVisible();
-  await expect(page.locator('#msgList')).toHaveAttribute('data-react-migration-runtime', 'msg-list');
+  await expect(page.locator('#msgList')).toHaveAttribute('data-mounted-by', 'msg-list');
 
   const geometry = await snapshotWorkbenchGeometry(page);
   expect(geometry.app).not.toBeNull();

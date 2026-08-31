@@ -1,0 +1,28 @@
+/*
+ * styles/index.css - aggregate entry for the modular styles tree.
+ *
+ * M1 replaces the single-file `src/styles.css` with a directory that
+ * can grow into per-component / per-layout / per-theme modules
+ * without further touching the HTML link. The cascade is preserved
+ * by composing in the order:
+ *
+ *   1. tokens.css   - `--ui-*` token *names* (no values).
+ *   2. themes.css   - `--ui-*` token *values* per mode.
+ *   3. ../styles.css - the existing 10K-line stylesheet (unchanged
+ *      for M1; M2 will extract logical sections into
+ *      `layout/`, `components/`, and `vendor/`).
+ *
+ * Vite inlines all `@import`s into the single bundled stylesheet,
+ * so the production HTML link still produces one hashed CSS file.
+ *
+ * Why three subfiles when styles.css keeps the bulk?
+ *  - The new `--ui-*` tokens are pure additive surface area; they
+ *    do not change any existing rule's resolved color / spacing.
+ *  - Future milestones can move cleanly-delineated sections out of
+ *    `styles.css` into the modular subdirectories without breaking
+ *    this entry, because the import order is stable.
+ */
+
+@import './tokens.css';
+@import './themes.css';
+@import '../styles.css';

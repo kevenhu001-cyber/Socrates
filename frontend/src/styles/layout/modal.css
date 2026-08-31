@@ -1,0 +1,8 @@
+/*
+ * styles/layout/modal.css
+ *
+ * M1 placeholder. Will own the `.overlay`, `.modal`, `.share-modal`,
+ * `.profile-modal`, `.cmd-k-modal`, and related overlay-shell rules
+ * in M2. Currently lives in `src/styles.css`; do not duplicate
+ * selectors until the main sheet is trimmed.
+ */
