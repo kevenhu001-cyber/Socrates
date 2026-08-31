@@ -7,7 +7,6 @@
 // (sidebar/index.js) are imported lazily to avoid a hard dep cycle:
 // the resize listener below calls syncSidebarBtns only after the
 // module has wired up.
-import { toggleSidebar } from '../sidebar/index.js';
 
 const SIDEBAR_MIN_PX = 200;
 const SIDEBAR_MAX_PX = 480;

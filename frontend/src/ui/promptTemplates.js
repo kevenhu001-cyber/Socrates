@@ -131,7 +131,7 @@ function openPromptTemplateEditor(id) {
   }, 50);
 }
 
-function onPromptTemplateEditorSave(id, wasExisting) {
+function onPromptTemplateEditorSave(id) {
   var title = ((document.getElementById("ptTitle") || {}).value || "").trim();
   var shortcut = ((document.getElementById("ptShortcut") || {}).value || "").trim();
   var description = ((document.getElementById("ptDescription") || {}).value || "").trim();

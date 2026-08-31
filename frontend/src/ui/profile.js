@@ -33,7 +33,7 @@ function _publishProfileState() {
         initials: initials,
         displayName: cu.displayName || "",
         email: cu.email || "",
-        joinedAt: cu.createdAt ? (function(){try{return new Date(cu.createdAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}catch(e){return cu.createdAt}})() : "—",
+        joinedAt: cu.createdAt ? (function(){try{return new Date(cu.createdAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}catch {return cu.createdAt}})() : "—",
         verifiedAt: cu.verifiedAt || null,
         userId: cu.id || "—",
         tier: cu.tier || "diophantus",
@@ -175,7 +175,7 @@ function onCustomInstructionsChange() {
       method: "PATCH",
       body: { customInstructions: buildCustomInstructionsString(value) },
       timeoutMs: 8000,
-    }).then(function () {}).catch(function (e) {
+    }).then(function () {}).catch(function () {
       console.log("[custom-inst] server sync failed");
     });
   }, 600);
@@ -239,11 +239,11 @@ function loadUserMemories() {
       if (r && Array.isArray(r)) {
         window._userMemories = r.filter(function (m) { return m.enabled !== false; }).map(function (m) { return m.text; });
       }
-    }).catch(function (e) {
+    }).catch(function () {
       console.log("[memories] load failed");
       window._userMemories = [];
     });
-  } catch (e) {
+  } catch {
     console.log("[memories] load threw");
     window._userMemories = [];
     return Promise.resolve();

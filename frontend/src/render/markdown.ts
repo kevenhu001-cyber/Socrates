@@ -600,7 +600,7 @@ export function formatMsgProgressive(t: string | null | undefined): string {
           const html = plugin.render(parsed);
           if (html) return save(html);
         }
-      } catch (e) {
+      } catch {
         /* Plugin threw — fall through to plain-text preview. */
       }
     }
@@ -739,7 +739,7 @@ export function formatMsg(t: string | null | undefined): string {
       const trimmed = content.trim();
       return trimmed ? saveFallbackViz(renderPlot(trimmed)) : '';
     });
-    raw = raw.replace(/```(?:viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function (_, content: string) {
+    raw = raw.replace(/```(?:viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function () {
       return saveFallbackViz(renderVizLoading({ streaming: true }));
     });
     const fallbackHtml = '<p>' + esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g, function (_, _l: string, c: string) { return '<pre><code>' + esc(c.trim()) + '</code></pre>'; }).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
@@ -783,11 +783,11 @@ export function formatMsg(t: string | null | undefined): string {
     if (typeof katex !== 'undefined') {
       txt = txt.replace(/\$\$([\s\S]*?)\$\$/g, function (_, math: string) {
         try { return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS })); }
-        catch (e) { return save('<pre>' + esc('$$' + math + '$$') + '</pre>'); }
+        catch { return save('<pre>' + esc('$$' + math + '$$') + '</pre>'); }
       });
       txt = txt.replace(/\$(.+?)\$/g, function (_, math: string) {
         try { return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS })); }
-        catch (e) { return save('<code>' + esc('$' + math + '$') + '</code>'); }
+        catch { return save('<code>' + esc('$' + math + '$') + '</code>'); }
       });
     }
     return save('<div class="scaffold-stream"><span class="scaffold-stream-label">' + label + '</span>' + esc(txt) + '</div>');

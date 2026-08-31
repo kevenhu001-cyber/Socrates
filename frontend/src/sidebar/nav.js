@@ -92,15 +92,6 @@ function esc(value) { return String(value == null ? "" : value).replace(/&/g, "&
 function api(path, options) { return window.apiFetch(path, options); }
 function toast(message) { if (typeof window.showToast === "function") window.showToast(message); }
 function confirmAction(title, message) { return typeof window.showConfirm === "function" ? window.showConfirm(title, message, true) : Promise.resolve(window.confirm(message)); }
-function icon(name) {
-  var icons = {
-    file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
-    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
-    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M8 2v4m8-4v4M3 10h18"/></svg>',
-    app: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>'
-  };
-  return icons[name] || icons.file;
-}
 function normaliseProviderId(provider) {
   return String(provider || "").toLowerCase().replace(/[_-]/g, "");
 }
@@ -158,20 +149,6 @@ window.getSlashApps = function () {
     return { id: c.id, title: c.name, shortcut: "/" + c.id, description: hint.description, icon: connectorIcon(c.id), insert: hint.insert };
   });
 };
-function formatTime(value) {
-  if (!value) return "No next run";
-  var date = new Date(value);
-  if (isNaN(date.getTime())) return String(value);
-  var diff = date.getTime() - Date.now();
-  if (diff > 0 && diff < 86400000) return "Today " + date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  if (diff > 0 && diff < 172800000) return "Tomorrow " + date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  return date.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-function fileMeta(item) {
-  var size = Number(item.size || 0);
-  var sizeLabel = size ? (size < 1024 * 1024 ? Math.max(1, Math.round(size / 1024)) + " KB" : (size / (1024 * 1024)).toFixed(1) + " MB") : "Created";
-  return sizeLabel + (item.uploadedAt || item.updatedAt ? " · " + formatTime(item.uploadedAt || item.updatedAt) : "");
-}
 
 /* React migration bridge — publishes the active nav name so the React
    compatibility root can mirror the .active class via useSyncExternalStore.
@@ -336,7 +313,7 @@ window.deleteSelectedLibrary = async function () {
   } catch (_) { toast(t("toast.deleteSomeFailed", "Could not delete some items")); }
 };
 
-window.startLibraryRename = function (id, key) {
+window.startLibraryRename = function (id) {
   workspaceCache.library.renameItem = id;
   paintLibrary();
   _publishWorkspaceState();
@@ -444,9 +421,6 @@ async function renderScheduled() {
         : t("scheduled.loadFailed", "Tasks could not be loaded. Try again.")
     });
   }
-}
-function paintScheduled() {
-  return;
 }
 
 export function openPlugins() {
@@ -561,7 +535,6 @@ function ensureDialog() {
   return dialog;
 }
 function showDialog(markup, cardClass) { var dialog = ensureDialog(); var extraClass = cardClass === "library-file-preview-card" ? " " + cardClass : ""; dialog.innerHTML = '<div class="workspace-dialog-card' + extraClass + '">' + markup + "</div>"; dialog.classList.remove("hidden"); var focus = dialog.querySelector("input, textarea, select"); if (focus) setTimeout(function () { focus.focus(); }, 0); }
-function field(label, name, value, type, extra) { return '<label class="workspace-field"><span>' + label + '</span><' + (type || "input") + ' name="' + name + '" ' + (type === "textarea" ? "" : 'type="text"') + ' ' + (extra || "") + ">" + (type === "textarea" ? esc(value || "") + "</textarea>" : "") + "</label>"; }
 function closeWorkspaceDialog() { var dialog = byId("workspaceDialog"); if (dialog) { dialog.classList.add("hidden"); dialog.innerHTML = ""; } }
 
 window.openCreateProject = function () { openProjectForm(null); };
@@ -684,16 +657,8 @@ function toLocalDateTimeValue(value) {
   var p = function (n) { return String(n).length < 2 ? "0" + n : String(n); };
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
 }
-function openTaskForm(task) {
-  var editing = !!task;
-  var next = task && task.nextRunAt ? toLocalDateTimeValue(task.nextRunAt) : "";
-  showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.note", "Tasks run in the background. Each result is saved as a chat in Recents.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : "") + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + "</button></div></form>");
-  var select = byId("taskForm").elements.frequency; select.value = (task && task.frequency) || "once";
-  byId("taskForm").addEventListener("submit", async function (event) { event.preventDefault(); var data = Object.fromEntries(new FormData(event.currentTarget)); /* datetime-local strings carry no timezone — convert to ISO so the server never re-interprets them in its own zone. An empty field means "start now" on create and "clear" on edit. */ if (data.nextRunAt) { var when = new Date(data.nextRunAt); data.nextRunAt = isNaN(when.getTime()) ? null : when.toISOString(); } else if (editing) { data.nextRunAt = null; } else { delete data.nextRunAt; } try { if (editing) await api("/api/scheduled-tasks/" + task.id, { method: "PATCH", body: data }); else await api("/api/scheduled-tasks", { method: "POST", body: data }); closeWorkspaceDialog(); renderScheduled(); toast(editing ? t("toast.taskUpdated", "Task updated") : t("toast.taskScheduled", "Task scheduled")); } catch (_) { toast(t("toast.taskSaveFailed", "Could not save task")); } });
-}
-/* Codex-aware scheduled task editor. Keep the legacy form above as a
-   compatibility fallback for older embedded shells, while the current
-   Scheduled page always reaches this first-class runtime form. */
+/* Codex-aware scheduled task editor — the Scheduled page's first-class
+   runtime form. */
 function openAgentTaskForm(task) {
   var editing = !!task;
   var next = task && task.nextRunAt ? toLocalDateTimeValue(task.nextRunAt) : "";

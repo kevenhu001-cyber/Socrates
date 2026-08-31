@@ -105,7 +105,7 @@ function _overrideStorageInstances() {
     var v = window.localStorage.getItem(probeKey);
     window.localStorage.removeItem(probeKey);
     if (v !== "1") { _overrideStorageInstances(); _notifyStorageBlockedOnce(); return; }
-  } catch (err) {
+  } catch {
     _overrideStorageInstances(); _notifyStorageBlockedOnce();
   }
 })();

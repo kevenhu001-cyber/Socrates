@@ -217,7 +217,6 @@ var STATE_FLAT_TO_NS={
       if(prop in target)return Reflect.getOwnPropertyDescriptor(target,prop);
       if(Object.prototype.hasOwnProperty.call(STATE_FLAT_TO_NS,prop)){
         var path=STATE_FLAT_TO_NS[prop];
-        var val=resolve(path);
         return{
           configurable:true,enumerable:true,
           get:function(){return resolve(path)},

@@ -31,7 +31,7 @@ export function loadLocalMemory(sid){
     var parsed=JSON.parse(raw);
     if(!parsed||!Array.isArray(parsed.messages))return null;
     return parsed;
-  }catch(e){
+  }catch {
     return null;
   }
 }
@@ -59,7 +59,7 @@ export function appendLocalMemory(role,content){
     var currentSid=state.currentSessionId;
     if(!currentSid||currentSid!==sid)return;
     batchSetItem(_memKey(currentSid),JSON.stringify(rec));
-  }catch(e){
+  }catch {
     /* QuotaExceeded or private-mode: drop silently. */
   }
 }

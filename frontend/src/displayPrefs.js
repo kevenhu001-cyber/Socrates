@@ -138,7 +138,7 @@ export function loadDisplayPrefs() {
       if (p.showGrid === true) displayPrefs.showGrid = true;
       else displayPrefs.showGrid = false;
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   /* One-time migration (bgMigratedV1): earlier builds shipped warm/green
      default background picks (#252220 / #ded6c8) and let users store any
      hue, which fought the neutral ChatGPT-black theme ("跑色"). Strip any
@@ -162,7 +162,7 @@ export function loadDisplayPrefs() {
       localStorage.setItem("socrates-bg-migrated-v1", "1");
       if (stripped) saveDisplayPrefs();
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   applyDisplayPrefs();
 }
 
@@ -185,7 +185,7 @@ export function applyDisplayPrefs() {
 }
 
 export function saveDisplayPrefs() {
-  try { localStorage.setItem("socrates-display", JSON.stringify(displayPrefs)); } catch (e) { /* ignore */ }
+  try { localStorage.setItem("socrates-display", JSON.stringify(displayPrefs)); } catch { /* ignore */ }
 }
 
 export function syncDisplayPrefsUI() {
@@ -309,15 +309,14 @@ export function setAccentColor(hue) {
   root.style.setProperty("--accent-900", num + " 40% 20%");
   /* Preset selection clears any custom-hex override so the two
      systems don't fight over who "owns" the accent. */
-  try { localStorage.removeItem("socrates-accent-hex"); } catch (e) {}
-  try { localStorage.setItem("socrates-accent-hue", String(num)); } catch (e) { /* ignore */ }
+  try { localStorage.removeItem("socrates-accent-hex"); } catch {}
+  try { localStorage.setItem("socrates-accent-hue", String(num)); } catch { /* ignore */ }
   var swatches = document.querySelectorAll(".color-swatch");
   swatches.forEach(function (s) {
     var isPreset = s.classList.contains("color-swatch") && !s.classList.contains("color-swatch-custom");
     s.classList.toggle("active", isPreset && parseInt(s.dataset.hue, 10) === num);
   });
   /* Reset the custom input swatch visually to its placeholder plus. */
-  var customInput = document.getElementById("accentCustomInput");
   var customSwatch = document.getElementById("accentCustomSwatch");
   if (customSwatch) customSwatch.classList.remove("active");
 }
@@ -369,10 +368,10 @@ export function setAccentCustom(hex) {
   root.style.setProperty("--accent-000", hslStr);
   root.style.setProperty("--accent-100", hslStr);
   root.style.setProperty("--accent-900", bgStr);
-  try { localStorage.setItem("socrates-accent-hex", hex); } catch (e) { /* ignore */ }
+  try { localStorage.setItem("socrates-accent-hex", hex); } catch { /* ignore */ }
   /* Custom overrides preset — clear the saved hue and any .active on
      preset swatches, then mark the custom swatch active. */
-  try { localStorage.removeItem("socrates-accent-hue"); } catch (e) {}
+  try { localStorage.removeItem("socrates-accent-hue"); } catch {}
   var swatches = document.querySelectorAll(".color-swatch");
   swatches.forEach(function (s) {
     if (s.classList.contains("color-swatch-custom")) {
@@ -389,7 +388,7 @@ export function setAccentCustom(hex) {
 /* Restore the default Amber accent: clears any saved hex + hue and
    re-applies setAccentColor(40) so the active-ring lands on Amber. */
 export function resetAccentColor() {
-  try { localStorage.removeItem("socrates-accent-hex"); } catch (e) {}
+  try { localStorage.removeItem("socrates-accent-hex"); } catch {}
   setAccentColor(40);
 }
 

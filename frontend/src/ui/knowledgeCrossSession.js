@@ -13,7 +13,7 @@ function loadCrossSessionKB(opts){
   return apiFetch("/api/knowledge-boundary",{method:"GET"}).then(function(r){
     _crossSessionKBCache={data:r,at:Date.now()};
     return r;
-  }).catch(function(e){
+  }).catch(function(){
     console.log("[kb] failed to load cross-session boundary");
     return {items:[],summary:{total:0,fuzzy:0,internalized:0,blank:0}};
   });

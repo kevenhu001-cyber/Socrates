@@ -126,7 +126,6 @@ export function resultCount(call: ToolCallLike | null | undefined): number {
    Match only summary shapes so we never promote an arbitrary first line. */
 const PASSED_RE = /(\d+)\s+passed/i;
 const FAILED_RE = /(\d+)\s+failed/i;
-const ERROR_RE = /\b(error|traceback|exception)\b/i;
 
 /** Short outcome summary for command/code runs, e.g. "8 passed" or "1 failed". */
 export function outcomeOf(output: unknown): string {

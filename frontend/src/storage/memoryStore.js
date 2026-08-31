@@ -32,7 +32,7 @@ function loadMemories() {
         return _memories;
       }
     }
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
   _memories = [];
   return _memories;
 }
@@ -41,7 +41,7 @@ function loadMemories() {
 function saveMemories() {
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(_memories || []));
-  } catch (e) { /* localStorage full or private mode */ }
+  } catch { /* localStorage full or private mode */ }
   /* Fire-and-forget sync to server. */
   _syncToServer();
 }
@@ -55,7 +55,7 @@ function _syncToServer() {
       body: { memories: _memories || [] },
       timeoutMs: 10000,
     }).catch(function () { /* server sync failed — local state is preserved */ });
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 /* Load memories from the server on boot. Merges with local state. */
@@ -70,7 +70,7 @@ function loadFromServer() {
         }
       })
       .catch(function () { /* server fetch failed — use local */ });
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 /* Generate a short unique id for a memory entry. */

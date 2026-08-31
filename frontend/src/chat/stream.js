@@ -5,7 +5,7 @@
    _activeChatAbort coordination stay in main.js's addStreamingMessage
    (deferred to a dedicated refactor PR).
    Reads main.js globals via window.* (state, getActiveProvider,
-   makeAIWatchdog, sleepBackoff, offlineGuard, isReasoningProvider,
+   sleepBackoff, offlineGuard, isReasoningProvider,
    STREAM_TIMEOUT_MS, etc.). */
 
 import { apiFetchRaw } from '../util/api.js';
@@ -67,8 +67,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* Read main.js globals via window — this module stays independent. */
   var state=window.state;
   var getActiveProvider=window.getActiveProvider;
-  var getCsrfToken=window.getCsrfToken;
-  var makeAIWatchdog=window.makeAIWatchdog;
   var offlineGuard=window.offlineGuard;
   /* P_reasoning_budget — pick the silence/total budget per provider.
      Reasoning models stream 30-90s of sparse thinking tokens; a 60s
@@ -550,7 +548,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
               hasWarnedMissingThinking=true;
               try{console.warn("[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).")}catch(_){}
             }
-          }catch(parseErr){
+          }catch {
             /* Could be a final [DONE] or unknown frame; ignore unless the
                payload looks like a truncated JSON error event (has "error"
                as a JSON key, not just the word "error" in prose). */

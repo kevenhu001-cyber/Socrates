@@ -219,8 +219,7 @@ function pickFromLibrary(lang) {
    possible and otherwise picked from the library at the session-stable
    offset. The result is stable across calls within a session (same lang,
    same conversation state) so repeated renders never churn the chip text. */
-export function pickSuggestions(messages, opts) {
-  opts = opts || {};
+export function pickSuggestions(messages) {
   var lang = getLang();
   var contextual = deriveFromConversation(messages, lang);
   if (contextual) {
@@ -488,7 +487,7 @@ export function renderSuggestions(surface, messages) {
       return;
     }
     wireSurface(container, surface);
-    var suggestions = pickSuggestions(messages, {});
+    var suggestions = pickSuggestions(messages);
     scheduleRender(container, suggestions, surface);
   } catch (_) {}
 }

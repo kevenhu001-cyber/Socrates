@@ -81,7 +81,7 @@ export function generateSessionTitle(){
       _titleGenRetryAfter=0;
       if (typeof window.saveCurrentSession === "function") window.saveCurrentSession();
     }
-  }).catch(function(e){
+  }).catch(function(){
     _titleGenQueued=false;
     console.log("[title gen] failed");
   });

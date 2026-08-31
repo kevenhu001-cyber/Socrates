@@ -84,7 +84,7 @@ export function renderUsageHeatmap(data,body,limits,period){
   /* Build weeks array: array of 7-element arrays */
   var weeks=[];
   var curWeek=[];
-  days.forEach(function(d,y){
+  days.forEach(function(d){
     var key=d.toISOString().slice(0,10);
     var e=lookup[key];
     curWeek.push({date:key,tokens:e?parseInt(e.tokens,10):0,msgs:e?parseInt(e.messages,10):0,day:d.getDay()});

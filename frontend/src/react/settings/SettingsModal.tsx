@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
 import { installSettingsBridge } from './settingsStore';
