@@ -1,16 +1,19 @@
-import { getLegacyActions } from '../legacy/gateway';
 import React, { useEffect, useRef, useState } from 'react';
 import { getLegacyActions, t as _t } from '../legacy/gateway';
-import { useUserInfo } from './legacyAdapter';
+import type { UserInfo } from './types';
+
+export interface ClerkUserButtonProps {
+  user: UserInfo;
+}
 
 function i18n(key: string, fallback: string): string {
   const v = _t(key);
   return v && v !== key ? v : fallback;
 }
 
-export function SidebarFooter() {
-  const user = useUserInfo();
+export function ClerkUserButton({ user }: ClerkUserButtonProps) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,7 +21,11 @@ export function SidebarFooter() {
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) {
+      if (
+        rootRef.current &&
+        !rootRef.current.contains(target) &&
+        (!menuRef.current || !menuRef.current.contains(target))
+      ) {
         setOpen(false);
       }
     };
@@ -42,42 +49,34 @@ export function SidebarFooter() {
   }, [open]);
 
   return (
-    <>
-      <div className="user-avatar">{user.initials}</div>
+    <div className="user-btn__root" ref={rootRef}>
+      {/* Closed Button / User Row Trigger */}
       <div
-        className="user-avatar user-btn__avatar"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
+        className={`user-row user-btn__trigger${open ? ' user-btn__trigger--active' : ''}`}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={i18n('profile.account', 'Account menu')}
+        onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setOpen((prev) => !prev);
+          }
         }}
       >
-        {user.initials}
-      </div>
-      {/* .user-identity is the styling hook the desktop shell uses to put the
-          name and the tier badge on one line; keep it in sync with the static
-          markup in index.html. */}
-      <div className="user-identity" style={{ flex: 1, minWidth: 0 }}>
-      <div
-        className="user-identity"
-        style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
-        }}
-      >
-        <div
-          className="user-name"
-          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
-          onClick={(e) => {
-            e.stopPropagation();
-            getLegacyActions().navigation.openProfile();
-          }}
-          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
-          {user.displayName}
-        </div>
-        <div className="user-plan">
-          <span className={`tier-badge ${user.tier}`}>{user.tierLabel}</span>
+        <div className="user-avatar user-btn__avatar">{user.initials}</div>
+        <div className="user-identity" style={{ flex: 1, minWidth: 0 }}>
+          <div
+            className="user-name"
+            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {user.displayName}
+          </div>
+          <div className="user-plan">
+            <span className={`tier-badge ${user.tier}`}>{user.tierLabel}</span>
+          </div>
         </div>
       </div>
 
@@ -189,6 +188,8 @@ export function SidebarFooter() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
+
+export default ClerkUserButton;
