@@ -41,7 +41,6 @@ function panelKeyHandler(messageId: string) {
 /** The shared live-status icon: one quiet 14px arc (P_thinking-unified).
  *  The waiting line, the reasoning pill and the in-bubble "Thinking"
  *  summary all use it, so nothing re-themes when the first token lands. */
-/** The shared live-status icon: minimalist ChatGPT-style thinking indicator. */
 function ThinkingSpinner() {
   return <span className="thinking-spinner" aria-hidden="true" />;
 }
@@ -69,7 +68,6 @@ function WaitingLine({ status, messageId }: TurnStatusProps) {
 }
 
 function ReasoningLine({ status, messageId }: TurnStatusProps) {
-  const clickable = status.clickable !== false;
   return (
     <span
       className="thinking-status thinking-status-clickable"
@@ -87,27 +85,8 @@ function ReasoningLine({ status, messageId }: TurnStatusProps) {
       <ThinkingSpinner />
       <span className="thinking-status-label" aria-live="polite">
         {status.label}
-    <div className="thinking-placeholder">
-      <span
-        className={`thinking-dot thinking-status${clickable ? ' thinking-dot-clickable thinking-status-clickable' : ''}`}
-        data-mode="tool"
-        data-state={status.state || undefined}
-        role={clickable ? 'button' : undefined}
-        tabIndex={clickable ? 0 : undefined}
-        aria-label={i18n('think.openPanel', 'View thinking process')}
-        onClick={clickable ? (event) => {
-          event.preventDefault();
-          openThinkingPanel(messageId);
-        } : undefined}
-        onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
-      >
-        <ThinkingSpinner />
-        <span className="thinking-dot-label thinking-status-label" aria-live="polite">
-          {status.label}
-        </span>
       </span>
     </span>
-    </div>
   );
 }
 
