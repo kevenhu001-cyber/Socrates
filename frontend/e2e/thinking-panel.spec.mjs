@@ -143,6 +143,9 @@ test('the thinking placeholder is clickable before reasoning arrives', async ({ 
   const dot = page.locator('.msg.assistant .thinking-dot').last();
   await expect(dot).toBeVisible();
   await expect(dot).toHaveAttribute('role', 'button');
+  const orbit = dot.locator('.thinking-orbit');
+  await expect(orbit).toBeVisible();
+  await expect(orbit.locator('.thinking-orbit-dot')).toHaveCount(2);
   await dot.click();
 
   const panel = page.locator('[data-thinking-panel="1"]');

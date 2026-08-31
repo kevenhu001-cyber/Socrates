@@ -66,6 +66,45 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.background).toBe('rgb(0, 0, 0)');
   expect(geometry.pageToken).toBe('0 0% 0%');
 
+  /* The active-chat header uses the reference's one tactile navigation
+     control plus two unframed utilities. Expose the session-only controls
+     without invoking a networked share action so this remains visual QA. */
+  const headerVisual = await page.evaluate(() => {
+    document.body.dataset.conversationActive = 'true';
+    document.getElementById('findBtn')?.classList.remove('hidden');
+    document.getElementById('shareBtn')?.classList.remove('hidden');
+    const measure = (selector) => {
+      const el = document.querySelector(selector);
+      const rect = el?.getBoundingClientRect();
+      const style = el ? getComputedStyle(el) : null;
+      return rect && style ? {
+        width: rect.width,
+        height: rect.height,
+        borderStyle: style.borderStyle,
+        borderWidth: style.borderWidth,
+        background: style.backgroundColor,
+      } : null;
+    };
+    return {
+      sidebar: measure('#sidebarOpenBtn'),
+      find: measure('#findBtn'),
+      share: measure('#shareBtn'),
+      sidebarStatus: measure('.mobile-sidebar-status'),
+      findIcon: measure('#findBtn svg'),
+      shareIcon: measure('#shareBtn svg'),
+      shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
+    };
+  });
+  expect(headerVisual.sidebar?.width).toBe(44);
+  expect(headerVisual.find?.width).toBe(44);
+  expect(headerVisual.share?.width).toBe(44);
+  expect(headerVisual.find?.borderWidth).toBe('0px');
+  expect(headerVisual.share?.borderWidth).toBe('0px');
+  expect(headerVisual.sidebarStatus?.width).toBe(8);
+  expect(headerVisual.findIcon?.width).toBe(24);
+  expect(headerVisual.shareIcon?.width).toBe(24);
+  expect(headerVisual.shareLabelVisible).toBe(false);
+
   await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
 
   /* The supplied visual's app-owned region normalizes to roughly 390×756

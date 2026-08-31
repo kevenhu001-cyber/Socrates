@@ -38,13 +38,27 @@ function panelKeyHandler(messageId: string) {
   };
 }
 
+/** A compact, CSS-driven "thinking orbit" used before the first answer token.
+ * Keeping it structural (rather than an animated SVG) lets the stylesheet
+ * honour reduced-motion without adding a runtime timer to each live turn. */
+function ThinkingOrbit() {
+  return (
+    <span className="thinking-orbit" aria-hidden="true">
+      <span className="thinking-orbit-track" />
+      <span className="thinking-orbit-dot thinking-orbit-dot-primary" />
+      <span className="thinking-orbit-dot thinking-orbit-dot-secondary" />
+      <span className="thinking-orbit-core" />
+    </span>
+  );
+}
+
 function WaitingLine({ status, messageId }: TurnStatusProps) {
   const clickable = status.clickable !== false;
   const elapsed = status.elapsedSec && status.elapsedSec >= 12 ? `${status.elapsedSec}s` : '';
   return (
     <div className="thinking-placeholder">
       <span
-        className={`thinking-dot${clickable ? ' thinking-dot-clickable' : ''}${elapsed ? ' thinking-elapsed-shown' : ''}`}
+        className={`thinking-dot thinking-dot--orbit${clickable ? ' thinking-dot-clickable' : ''}${elapsed ? ' thinking-elapsed-shown' : ''}`}
         data-mode={status.mode || 'chat'}
         data-elapsed={elapsed || undefined}
         role={clickable ? 'button' : undefined}
@@ -53,6 +67,7 @@ function WaitingLine({ status, messageId }: TurnStatusProps) {
         onClick={clickable ? () => openThinkingPanel(messageId) : undefined}
         onKeyDown={clickable ? panelKeyHandler(messageId) : undefined}
       >
+        <ThinkingOrbit />
         <span className="shimmer-text">{status.label}</span>
       </span>
     </div>
