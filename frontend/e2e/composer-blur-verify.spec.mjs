@@ -100,7 +100,7 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
   expect(selectionCleared).toBe(true);
 });
 
-test('chat-input-wrap transitions cover focus geometry', async ({ page }) => {
+test('chat-input-wrap transitions cover focus feedback without geometry animation', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -111,8 +111,13 @@ test('chat-input-wrap transitions cover focus geometry', async ({ page }) => {
     return { property: cs.transitionProperty, duration: cs.transitionDuration };
   });
   console.log('[transition]', JSON.stringify(t));
-  for (const prop of ['border-color', 'box-shadow', 'min-height', 'padding', 'border-radius']) {
+  /* The composer is in the flex flow: focus never changes its geometry, so
+     only the edge/surface feedback (border-color, background-color) may
+     transition — a geometry transition would animate the reveal of the
+     hidden chat shell out of its legacy one-row state. */
+  for (const prop of ['border-color', 'background-color']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
-  expect(t.duration).toContain('0.34s');
+  expect(t.property, 'no geometry property may transition').not.toMatch(/min-height|padding|border-radius|box-shadow/);
+  expect(t.duration).toContain('0.15s');
 });

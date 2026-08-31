@@ -5,11 +5,9 @@ import { apiKeys } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest, Forbidden } from '../lib/errors.js';
 import { audit } from '../middleware/audit.js';
-import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
+import { encrypt, decrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
-
-const ENCRYPTION_KEY = deriveEncryptionKey(process.env.SESSION_SECRET || 'dev-secret');
 
 /* P_apikey-ciphertext-leak — projection shared by every response that
  * returns an apiKeys row. The encrypted AES-GCM payload is stored
@@ -139,7 +137,7 @@ router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url
       throw new Forbidden('FORBIDDEN', `API key limit reached for ${tier} plan (${maxKeys} keys). Upgrade your plan to add more.`);
     }
 
-    const keyCiphertext = encrypt(key, ENCRYPTION_KEY);
+    const keyCiphertext = encrypt(key, encryptionKey());
 
     /* Deactivate all existing providers so the new one is the only
        active provider. Without this, creating a new provider leaves
@@ -187,7 +185,7 @@ router.patch('/:id', async (req, res, next) => {
     }
     if (req.body.model !== undefined) patch.model = req.body.model;
     if (req.body.key !== undefined) {
-      patch.keyCiphertext = encrypt(req.body.key, ENCRYPTION_KEY);
+      patch.keyCiphertext = encrypt(req.body.key, encryptionKey());
       patch.keyHint = req.body.key.slice(0, 8);
     }
     /* P_attachments-multimodal — accept the user-controlled flag.

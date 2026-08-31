@@ -1,11 +1,9 @@
 import { eq, and, isNotNull, ne } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
-import { encrypt, decrypt, deriveEncryptionKey } from '../lib/crypto.js';
+import { encrypt, decrypt, encryptionKey } from '../lib/crypto.js';
 
 type ApiKeyRow = typeof apiKeys.$inferSelect;
-
-const ENCRYPTION_KEY = deriveEncryptionKey(process.env.SESSION_SECRET || 'dev-secret');
 
 /**
  * Get the active API key/provider for a user.
@@ -48,7 +46,7 @@ function decryptProvider(key: ApiKeyRow) {
   let keyPlaintext = null;
   if (key.keyCiphertext) {
     try {
-      keyPlaintext = decrypt(key.keyCiphertext, ENCRYPTION_KEY);
+      keyPlaintext = decrypt(key.keyCiphertext, encryptionKey());
     } catch (err) {
       console.error('[apiKey] decrypt failed:', (err as Error).message);
     }
@@ -85,7 +83,7 @@ export async function seedBuiltInProvider() {
     const db = getDb();
     const model = process.env.MINIMAX_MODEL || 'MiniMax-M3';
     const url = (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/+$/, '');
-    const keyCiphertext = encrypt(apiKey, ENCRYPTION_KEY);
+    const keyCiphertext = encrypt(apiKey, encryptionKey());
 
     const [existing] = await db.select()
       .from(apiKeys)
@@ -148,7 +146,7 @@ export async function validateApiKeys() {
       if (!key.keyCiphertext) continue;
 
       try {
-        decrypt(key.keyCiphertext, ENCRYPTION_KEY);
+        decrypt(key.keyCiphertext, encryptionKey());
       } catch (err) {
         console.warn('[validateApiKeys] Corrupted key detected:', {
           id: key.id,
@@ -201,7 +199,7 @@ export async function createApiKey(userId: string, { label, url, model, key, isM
   key?: string;
   isMultimodal?: boolean;
 }) {
-  const keyCiphertext = key ? encrypt(key, ENCRYPTION_KEY) : null;
+  const keyCiphertext = key ? encrypt(key, encryptionKey()) : null;
   const keyHint = key ? key.slice(0, 8) : null;
 
   const db = getDb();

@@ -365,6 +365,14 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+/* P_rate-limit-headers — default bucket so every /api response carries
+   RateLimit-* headers. Mounted before ALL other /api middleware and
+   routers so no surface can end up outside the limiter; endpoint
+   limiters (client-error, auth, chat, …) compose on top. The
+   Idempotency-Key middleware sits beside it: writes that carry a key
+   get their JSON response replayed on retry (24 h). */
+app.use('/api', apiDefaultLimiter, idempotencyMiddleware);
+
 app.get('/api/health', async (_req, res) => {
   try {
     const db = getDb();
@@ -409,12 +417,6 @@ app.use('/api/mcp', mcpRouter);
 // ambient sid cookie, so csrf.ts#OAUTH_TOKEN_PATHS skips them; the consent
 // screen enforces its own hidden-field double-submit inside the router.
 app.use('/api/oauth', oauthRouter);
-
-// P_rate-limit-headers — default bucket so every /api response carries
-// RateLimit-* headers. Mounted before all routers; endpoint limiters
-// compose on top. The Idempotency-Key middleware sits beside it: writes
-// that carry a key get their JSON response replayed on retry (24 h).
-app.use('/api', apiDefaultLimiter, idempotencyMiddleware);
 
 /* P_docs-mcp — the "learn" half of MCP coverage. Separate server instance
  * from the product surface at /api/mcp; tools answer documentation

@@ -32,7 +32,7 @@ async function snapshotWrap(page, wrapSelector) {
   }, wrapSelector);
 }
 
-async function installHeightSampler(page) {
+async function installHeightSampler(page, selector = '#topicInputWrap') {
   await page.evaluate((sel) => {
     const wrap = document.querySelector(sel);
     const editor = wrap.querySelector('.rich-composer-editor');
@@ -48,7 +48,7 @@ async function installHeightSampler(page) {
     ro.observe(wrap);
     ro.observe(editor);
     window.__resetSamples = () => { window.__samples = []; };
-  }, '#topicInputWrap');
+  }, selector);
 }
 
 test('DEBUG: topic composer — focus alone must NOT change height', async ({ page }) => {
@@ -86,7 +86,7 @@ test('DEBUG: chat composer — focus + one line must NOT change wrap height', as
   await page.waitForTimeout(150);
   const before = await snapshotWrap(page, '#chatInputWrap');
   console.log('CHAT BEFORE:', JSON.stringify(before));
-  await installHeightSampler.bind(null)('#chatInputWrap'); // (no-op — we just want samples for chat)
+  await installHeightSampler(page, '#chatInputWrap');
   await page.evaluate(() => {
     const wrap = document.getElementById('chatInputWrap');
     const editor = wrap.querySelector('.rich-composer-editor');

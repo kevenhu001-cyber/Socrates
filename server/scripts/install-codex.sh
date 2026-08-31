@@ -35,7 +35,12 @@ SUMS_NAME="codex-package_SHA256SUMS"
 
 CODEX_INSTALL_DIR="${CODEX_INSTALL_DIR:-/opt/socrates-codex}"
 CODEX_HOME="${CODEX_HOME:-/var/lib/socrates-codex}"
-CODEX_CACHE_DIR="${CODEX_INSTALL_DIR}/.cache"
+# The download cache must live OUTSIDE the install dir: the install path
+# wipes CODEX_INSTALL_DIR with `rm -rf` before copying the package in, so
+# a cache nested under it (e.g. /opt/socrates-codex/.cache) would be
+# deleted mid-install — taking the staging directory with it and breaking
+# the `cp -a "$staging/."` step on every fresh install.
+CODEX_CACHE_DIR="${CODEX_CACHE_DIR:-${CODEX_INSTALL_DIR}.cache}"
 CODEX_WORKSPACES="${CODEX_HOME}/workspaces"
 
 RELEASE_URL_BASE="${CODEX_MIRROR:-https://github.com/${CODEX_REPO}/releases/download/${CODEX_TAG}}"
@@ -206,7 +211,9 @@ do_install() {
   verify_checksum "$tarball" "$PACKAGE_NAME"
 
   local staging
-  staging=$(mktemp -d "${CODEX_CACHE_DIR}/staging.XXXXXX")
+  # Stage outside the install/cache dirs so the `rm -rf "$CODEX_INSTALL_DIR"`
+  # below can never delete the extraction in progress.
+  staging=$(mktemp -d "${TMPDIR:-/tmp}/codex-staging.XXXXXX")
   log "extracting ${PACKAGE_NAME}…"
   tar -xzf "$tarball" -C "$staging"
 

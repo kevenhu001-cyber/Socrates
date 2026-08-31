@@ -102,3 +102,57 @@ export function deriveEncryptionKey(secret: string): Buffer {
     ),
   );
 }
+
+/* ─── Master secret ─────────────────────────────────────────────────
+ *
+ * Several modules derive encryption keys from SESSION_SECRET. They
+ * used to do it as `process.env.SESSION_SECRET || 'dev-secret'` (or
+ * 'local-development-only'), which meant a deployment that forgot the
+ * variable silently encrypted every stored LLM provider key and
+ * connector token with a constant published in this repository.
+ *
+ * Resolve it lazily and in one place instead:
+ *
+ *   - Production: SESSION_SECRET is required. There is no fallback, and
+ *     the import-time guard at the top of this file already refuses to
+ *     load at all without it.
+ *   - Everywhere else (local dev, CI): SESSION_SECRET is used when set.
+ *     When it is absent we still refuse unless the operator explicitly
+ *     opts in with SOCRATES_ALLOW_DEV_SECRET=1, so the weak key can only
+ *     be chosen deliberately and never by accident.
+ *
+ * Laziness matters: this runs on first use rather than at import time,
+ * so tests and CLI tools that never touch encryption are unaffected by
+ * a missing variable.
+ */
+const DEV_SECRET = 'dev-secret';
+
+export function sessionSecret(): string {
+  const secret = process.env.SESSION_SECRET;
+  if (secret) return secret;
+  if (process.env.SOCRATES_ALLOW_DEV_SECRET === '1') return DEV_SECRET;
+  throw new Error(
+    'SESSION_SECRET is not set — refusing to derive encryption keys from a ' +
+    'publicly known default. Set SESSION_SECRET in the environment, or set ' +
+    'SOCRATES_ALLOW_DEV_SECRET=1 to accept the insecure key for local development only.'
+  );
+}
+
+let cachedEncryptionKey: Buffer | null = null;
+
+/**
+ * Memoised AES-256 key for everything stored encrypted at rest
+ * (api_keys, connector tokens). Derived on first use.
+ */
+export function encryptionKey(): Buffer {
+  if (!cachedEncryptionKey) {
+    cachedEncryptionKey = deriveEncryptionKey(sessionSecret());
+  }
+  return cachedEncryptionKey;
+}
+
+/* Test-only: drop the memoised key so a suite can re-derive after
+   changing SESSION_SECRET. */
+export function _resetEncryptionKeyForTests(): void {
+  cachedEncryptionKey = null;
+}

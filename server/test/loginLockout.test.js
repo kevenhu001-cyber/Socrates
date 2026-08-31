@@ -42,15 +42,30 @@ beforeEach(async () => {
   await getDb().delete(loginFailures).where(eq(loginFailures.email, TEST_EMAIL));
 });
 
-describe('loginLockout.recordFailure — atomic concurrent increment', { skip: !dbAvailable && 'no database' }, () => {
-  test('20 concurrent failures for the same email reach count=20', async () => {
+/* No `skip` option on the describe: that would be evaluated at module
+   load, before the async before() below has had a chance to set
+   dbAvailable, so the suite would skip unconditionally. Skip inside
+   each test instead. */
+describe('loginLockout.recordFailure — atomic concurrent increment', () => {
+  /* 20 concurrent writers, but count stops at THRESHOLD (5): once the
+     upsert sets locked_until, further failures deliberately leave the
+     row untouched (see the CASE in recordFailure and the "count must
+     not grow while locked" test below). What this test really pins
+     down is that the increment is atomic — 20 racing upserts must
+     land on exactly 5, not on whatever the last writer happened to
+     read. */
+  test('20 concurrent failures for the same email settle on count=THRESHOLD', async (t) => {
+    if (!dbAvailable) return t.skip('no database');
     await Promise.all(Array.from({ length: 20 }, () => recordFailure(TEST_EMAIL)));
     const [row] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
     assert.ok(row, 'loginFailures row should exist after the first failure');
-    assert.equal(row.count, 20, 'count must reflect every concurrent failure');
+    assert.equal(row.count, 5, 'atomic upsert must settle on the threshold, never lose or double an increment');
+    assert.ok(row.lockedUntil instanceof Date, 'crossing the threshold must set lockedUntil');
+    assert.ok(row.lockedUntil.getTime() > Date.now(), 'lockedUntil must be in the future');
   });
 
-  test('threshold (5) triggers a lockedUntil > now()', async () => {
+  test('threshold (5) triggers a lockedUntil > now()', async (t) => {
+    if (!dbAvailable) return t.skip('no database');
     await Promise.all(Array.from({ length: 5 }, () => recordFailure(TEST_EMAIL)));
     const [row] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
     assert.ok(row.lockedUntil instanceof Date, 'lockedUntil must be a Date');
@@ -58,7 +73,8 @@ describe('loginLockout.recordFailure — atomic concurrent increment', { skip: !
     await assert.rejects(checkLockout(TEST_EMAIL), (err) => err.code === 'TOO_MANY_REQUESTS');
   });
 
-  test('further concurrent failures during an active lockout do not move the lockout clock', async () => {
+  test('further concurrent failures during an active lockout do not move the lockout clock', async (t) => {
+    if (!dbAvailable) return t.skip('no database');
     await Promise.all(Array.from({ length: 5 }, () => recordFailure(TEST_EMAIL)));
     const [first] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
     await new Promise((r) => setTimeout(r, 1100));

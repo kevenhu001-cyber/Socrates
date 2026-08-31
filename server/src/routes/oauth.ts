@@ -10,7 +10,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { parseScopeParam, ALL_SCOPES_SET } from '../middleware/scopes.js';
 import { rotateCsrfToken } from '../middleware/csrf.js';
-import { oauthRegisterLimiter } from '../middleware/rateLimit.js';
+import { oauthRegisterLimiter, oauthTokenLimiter, oauthRevokeLimiter } from '../middleware/rateLimit.js';
 import { sha256Hex } from '../services/agentKeys.js';
 import {
   ACCESS_TOKEN_TTL_S,
@@ -484,7 +484,7 @@ type TokenRow = typeof oauthAccessTokens.$inferSelect;
 
 /* ── POST /api/oauth/token ─────────────────────────────────── */
 
-router.post('/token', async (req, res, next) => {
+router.post('/token', oauthTokenLimiter, async (req, res, next) => {
   try {
     const client = await authenticateClient(req);
     if (!client) {
@@ -591,7 +591,7 @@ router.post('/token', async (req, res, next) => {
 
 /* ── POST /api/oauth/revoke (RFC 7009) ─────────────────────── */
 
-router.post('/revoke', async (req, res, next) => {
+router.post('/revoke', oauthRevokeLimiter, async (req, res, next) => {
   try {
     const client = await authenticateClient(req);
     if (!client) {

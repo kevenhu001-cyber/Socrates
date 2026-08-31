@@ -7,7 +7,7 @@
  * runner. The guard-rail tests verify the public surface and the
  * tool schema without touching the network or the DB.
  */
-import { test, describe } from 'node:test';
+import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter.js';
 import fs from 'node:fs';
@@ -15,6 +15,15 @@ import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+/* codeInterpreter imports lib/pubsub, which opens a long-lived pg.Client
+   at import time (lazy-init). That handle keeps the event loop alive, so
+   without this teardown the suite passes and then hangs until the
+   runner's timeout kills it. */
+after(async () => {
+  const { shutdownPubsub } = await import('../src/lib/pubsub.js');
+  await shutdownPubsub();
+});
 
 describe('codeInterpreter.execute — input guard rails', () => {
   test('resolves the compiled worker or the TypeScript worker in source mode', () => {

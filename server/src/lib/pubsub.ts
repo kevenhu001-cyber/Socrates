@@ -88,6 +88,9 @@ let pgClient: any = null;
 let pgConnectPromise: Promise<void> | null = null;
 let reconnectAttempt = 0;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+/* Sticky once shutdownPubsub() is called: the reconnect loop must not
+   resurrect a connection the caller deliberately closed. */
+let shuttingDown = false;
 
 /* ─── Public API ──────────────────────────────────────────────────── */
 
@@ -257,6 +260,7 @@ function isValidTopic(topic: string) {
 }
 
 async function ensureListener() {
+  if (shuttingDown) return;
   if (pgListenerReady) return;
   if (pgConnectPromise) return pgConnectPromise;
   pgConnectPromise = doConnect().catch((err) => {
@@ -264,6 +268,36 @@ async function ensureListener() {
     throw err;
   });
   return pgConnectPromise;
+}
+
+/**
+ * Close the dedicated LISTEN connection and stop the reconnect loop.
+ *
+ * This module opens a long-lived pg.Client at import time (see the
+ * lazy-init block at the bottom of the file). That connection keeps the
+ * event loop alive, so any process that imports pubsub — including the
+ * test runner — will hang on exit unless it is closed. Call this from
+ * test teardown and from graceful-shutdown paths.
+ */
+export async function shutdownPubsub(): Promise<void> {
+  shuttingDown = true;
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  const client = pgClient;
+  pgClient = null;
+  pgListenerReady = false;
+  pgConnectPromise = null;
+  listenedTopics.clear();
+  if (!client) return;
+  try {
+    await client.end();
+  } catch (err) {
+    logger.child({ module: 'pubsub', op: 'shutdown' }).warn('pg_listener_close_failed', {
+      error: (err as Error).message,
+    });
+  }
 }
 
 async function doConnect() {
@@ -284,6 +318,15 @@ async function doConnect() {
     });
     scheduleReconnect();
     throw err;
+  }
+
+  /* shutdownPubsub() may have landed while connect() was in flight —
+     don't leave an orphaned client holding the event loop open. */
+  if (shuttingDown) {
+    const orphan = pgClient;
+    pgClient = null;
+    await orphan.end().catch(() => { /* already going away */ });
+    return;
   }
 
   /* Re-issue LISTEN for any topics we already had subscribed before
@@ -352,7 +395,7 @@ function onPgError(err: Error) {
 }
 
 function scheduleReconnect() {
-  if (reconnectTimer) return;
+  if (shuttingDown || reconnectTimer) return;
   const delay = RECONNECT_BACKOFF_MS[Math.min(reconnectAttempt, RECONNECT_BACKOFF_MS.length - 1)];
   reconnectAttempt += 1;
   reconnectTimer = setTimeout(() => {
