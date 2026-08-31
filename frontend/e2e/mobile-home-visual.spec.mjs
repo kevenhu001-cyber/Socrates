@@ -77,17 +77,24 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(180);
 
-  /* Focus promotes the landing composer to the two-row layout shown in the
-     reference focused capture while keeping every control reachable. */
+  /* Focus is geometry-neutral; the second row appears only after the draft
+     actually renders on more than one line. */
   const beforeFocus = (await composer.boundingBox())?.height ?? 0;
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
-  expect(afterFocus).toBeGreaterThanOrEqual(beforeFocus);
-  expect(afterFocus).toBeLessThanOrEqual(200);
+  expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(2);
+  await expect(composer).not.toHaveClass(/composer-multiline/);
+  await expect(composer.locator('.effort-picker')).toBeHidden();
+
+  await editor.fill('This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.');
+  await expect(composer).toHaveClass(/composer-multiline/);
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
+    .toBeGreaterThan(beforeFocus + 24);
   await expect(composer.locator('.effort-picker')).toBeVisible();
-  await expect(composer.locator('.mobile-mic-btn')).toBeVisible();
+  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(0);
   await expect(composer.locator('.start-btn')).toBeVisible();
+  await expect(composer.locator('.start-btn')).toHaveAttribute('aria-label', 'Send');
 
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');

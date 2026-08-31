@@ -102,15 +102,80 @@ async function enterChat(page) {
   await page.waitForTimeout(300);
 }
 
-test('voice input replaces the landing composer with a live waveform and restores text', async ({ page }) => {
+test('incognito control is removed from the header once a conversation starts', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
+  const incognito = page.locator('#mobileIncognitoBtn');
+  await expect(incognito).toBeVisible();
+  await expect(incognito.locator('.incognito-glyph')).toHaveCount(1);
+  await expect(incognito.locator('.incognito-glyph path')).toHaveCount(3);
+  await expect(incognito.locator('.incognito-glyph circle')).toHaveCount(2);
+  await incognito.screenshot({ path: '/tmp/socrates-incognito-redesign.png' });
+
+  await incognito.click();
+  await expect(incognito).toHaveAttribute('aria-pressed', 'true');
+  await incognito.screenshot({ path: '/tmp/socrates-incognito-redesign-active.png' });
+  await incognito.click();
+  await expect(incognito).toHaveAttribute('aria-pressed', 'false');
+
+  await enterChat(page);
+
+  await expect(incognito).toBeHidden();
+});
+
+test('the empty landing primary action starts voice input and becomes send after transcription', async ({ page }) => {
+  const consoleErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  await bootVoiceFixture(page, { width: 390, height: 844 });
+  expect(new URL(page.url()).pathname).toBe('/');
+  expect(await page.title()).not.toBe('');
+  await expect(page.locator('#appShell')).toBeVisible();
+  await expect(page.locator('vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay')).toHaveCount(0);
 
   const wrap = page.locator('#topicInputWrap');
-  const mic = wrap.locator('.mobile-mic-btn');
+  const primary = page.locator('#startBtn');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
-  await expect(mic).toBeVisible();
+  await expect(wrap.locator('.mobile-mic-btn')).toHaveCount(0);
+  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
+  await expect(editor).toHaveCSS('text-align', 'left');
+  await expect(primary.locator('.icon-voice')).toHaveCount(1);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
 
-  await mic.click();
+  await editor.click();
+  const emptyCaret = await editor.evaluate((node) => {
+    const paragraph = node.querySelector('p');
+    const editorRect = node.getBoundingClientRect();
+    const paragraphRect = paragraph?.getBoundingClientRect();
+    const placeholder = paragraph ? getComputedStyle(paragraph, '::before') : null;
+    const selection = window.getSelection();
+    return {
+      anchorOffset: selection?.anchorOffset ?? -1,
+      editorLeft: editorRect.left,
+      paragraphLeft: paragraphRect?.left ?? -1,
+      paddingLeft: Number.parseFloat(getComputedStyle(node).paddingLeft),
+      placeholderPosition: placeholder?.position ?? '',
+      placeholderFloat: placeholder?.cssFloat ?? '',
+    };
+  });
+  expect(emptyCaret.anchorOffset).toBe(0);
+  expect(emptyCaret.paragraphLeft).toBeLessThanOrEqual(emptyCaret.editorLeft + emptyCaret.paddingLeft + 1);
+  expect(emptyCaret.placeholderPosition).toBe('absolute');
+  expect(emptyCaret.placeholderFloat).toBe('none');
+  await page.screenshot({ path: '/tmp/socrates-composer-empty-focused.png', fullPage: true });
+
+  await editor.pressSequentially('typed');
+  await expect(primary).toHaveClass(/active/);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await page.screenshot({ path: '/tmp/socrates-composer-with-text.png', fullPage: true });
+  await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
+  await editor.press('Backspace');
+  await expect(primary).not.toHaveClass(/active/);
+  await expect(primary.locator('.icon-voice')).toHaveCount(1);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+
+  await primary.click();
   const bar = wrap.locator('.voice-recording-bar');
   await expect(wrap).toHaveClass(/voice-recording-active/);
   await expect(bar).toBeVisible();
@@ -141,20 +206,26 @@ test('voice input replaces the landing composer with a live waveform and restore
   await expect(wrap).not.toHaveClass(/voice-recording-active/);
   await expect(editor).toContainText('voice test');
   await expect.poll(async () => page.evaluate(() => window.__voiceTrackStopped)).toBe(true);
-  await expect(mic).toHaveAttribute('aria-pressed', 'false');
+  await expect(primary).toHaveAttribute('aria-pressed', 'false');
+  await expect(primary).toHaveAttribute('aria-label', 'Send');
+  expect(consoleErrors).toEqual([]);
 });
 
-test('voice input uses the same recording bar in the chat composer', async ({ page }) => {
+test('the empty chat primary action uses the same recording bar', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
   await enterChat(page);
 
   const wrap = page.locator('#chatInputWrap');
-  const mic = wrap.locator('.mobile-mic-btn');
+  const primary = page.locator('#sendBtn');
   const editor = page.locator('#chatComposerRoot .rich-composer-editor');
   await expect(wrap).toBeVisible();
-  await expect(mic).toBeVisible();
+  await expect(wrap.locator('.mobile-mic-btn')).toHaveCount(0);
+  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
+  await expect(editor).toHaveCSS('text-align', 'left');
+  await expect(primary.locator('.icon-voice')).toHaveCount(1);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
 
-  await mic.click();
+  await primary.click();
   const bar = wrap.locator('.voice-recording-bar');
   await expect(bar).toBeVisible();
   await expect(wrap).toHaveClass(/voice-recording-active/);
@@ -164,4 +235,5 @@ test('voice input uses the same recording bar in the chat composer', async ({ pa
   await bar.locator('.voice-recording-stop').click();
   await expect(wrap).not.toHaveClass(/voice-recording-active/);
   await expect(editor).toContainText('voice test');
+  await expect(primary).toHaveAttribute('aria-label', 'Send');
 });

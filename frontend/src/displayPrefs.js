@@ -3,7 +3,7 @@
    accent color. Persisted in localStorage as `socrates-display`.
    ============================================================ */
 
-import { applyCustomBg, removeCustomBg } from './util/colors.js';
+import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.js';
 
 /* ── constants ── */
 export const DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375];
@@ -139,6 +139,30 @@ export function loadDisplayPrefs() {
       else displayPrefs.showGrid = false;
     }
   } catch (e) { /* ignore */ }
+  /* One-time migration (bgMigratedV1): earlier builds shipped warm/green
+     default background picks (#252220 / #ded6c8) and let users store any
+     hue, which fought the neutral ChatGPT-black theme ("跑色"). Strip any
+     custom bg whose saturation is non-trivial so those users fall back to
+     the neutral theme tokens. Runs once; users who deliberately pick a
+     color afterwards are never touched again. */
+  try {
+    if (localStorage.getItem("socrates-bg-migrated-v1") !== "1") {
+      var stripped = false;
+      ["darkBg", "lightBg"].forEach(function (field) {
+        var hex = displayPrefs[field];
+        if (typeof hex === "string" && /^#?[0-9a-fA-F]{3,6}$/.test(hex.trim())) {
+          var hsl = parseHexColor(hex.trim());
+          /* Any perceptible chroma → drop it back to the neutral default. */
+          if (hsl && hsl.s > 4) {
+            displayPrefs[field] = "";
+            stripped = true;
+          }
+        }
+      });
+      localStorage.setItem("socrates-bg-migrated-v1", "1");
+      if (stripped) saveDisplayPrefs();
+    }
+  } catch (e) { /* ignore */ }
   applyDisplayPrefs();
 }
 
@@ -209,9 +233,9 @@ export function syncDisplayPrefsUI() {
     else apply();
   });
   var darkInput = document.getElementById("displayPrefsBgDark");
-  if (darkInput) darkInput.value = displayPrefs.darkBg || "#252220";
+  if (darkInput) darkInput.value = displayPrefs.darkBg || "#212121";
   var lightInput = document.getElementById("displayPrefsBgLight");
-  if (lightInput) lightInput.value = displayPrefs.lightBg || "#ded6c8";
+  if (lightInput) lightInput.value = displayPrefs.lightBg || "#ffffff";
   var gt = document.getElementById("gridToggle");
   if (gt) gt.classList.toggle("on", displayPrefs.showGrid !== false);
 }

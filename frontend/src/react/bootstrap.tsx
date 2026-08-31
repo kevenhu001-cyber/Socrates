@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 
 import { ErrorBoundary } from './ErrorBoundary';
@@ -52,8 +52,63 @@ function NewReplyPillContent(): string {
   return '↓ New reply';
 }
 
+function VoiceInputIcon() {
+  return (
+    <svg
+      className="icon-voice"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4" />
+    </svg>
+  );
+}
+
+function SendArrowIcon() {
+  return (
+    <svg
+      className="icon-arrow"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  );
+}
+
+function useButtonActive(buttonId: string): boolean {
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const button = document.getElementById(buttonId);
+    if (!button) return undefined;
+    const sync = () => setActive(button.classList.contains('active'));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(button, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, [buttonId]);
+
+  return active;
+}
+
+function StartButtonContent() {
+  const active = useButtonActive('startBtn');
+  return active ? <SendArrowIcon /> : <VoiceInputIcon />;
+}
+
 function SendButtonContent() {
   const streamStatus = useChatStreamStatus();
+  const active = useButtonActive('sendBtn');
 
   if (streamStatus === 'streaming') {
     return (
@@ -71,20 +126,7 @@ function SendButtonContent() {
     );
   }
 
-  return (
-    <svg
-      className={streamStatus === 'idle' ? 'icon-arrow' : undefined}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 19V5M5 12l7-7 7 7" />
-    </svg>
-  );
+  return active ? <SendArrowIcon /> : <VoiceInputIcon />;
 }
 
 /**
@@ -129,9 +171,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     const startRoot = createRoot(startBtnContent);
     startRoot.render(
       <StrictMode>
-        <svg className="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M12 19V5M5 12l7-7 7 7" />
-        </svg>
+        <StartButtonContent />
       </StrictMode>,
     );
   }

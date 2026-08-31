@@ -34,7 +34,13 @@ export function updateStartBtn(){
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)
     && window.attachments.length > 0;
-  if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
+  var canSend = !!(v || hasAtt);
+  if(canSend) b.classList.add("active"); else b.classList.remove("active");
+  var label = canSend
+    ? (typeof window.t === "function" ? window.t("chat.send") : "Send")
+    : (typeof window.t === "function" ? window.t("voice.input") : "Voice input");
+  b.setAttribute("aria-label", label);
+  b.setAttribute("title", label);
   var wrap = document.getElementById("topicInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }
@@ -49,7 +55,13 @@ export function updateSendBtn(){
   var hasAtt = typeof window.attachments !== "undefined"
     && Array.isArray(window.attachments)
     && window.attachments.length > 0;
-  if(v || hasAtt) b.classList.add("active"); else b.classList.remove("active");
+  var canSend = !!(v || hasAtt);
+  if(canSend) b.classList.add("active"); else b.classList.remove("active");
+  var label = canSend
+    ? (typeof window.t === "function" ? window.t("chat.send") : "Send")
+    : (typeof window.t === "function" ? window.t("voice.input") : "Voice input");
+  b.setAttribute("aria-label", label);
+  b.setAttribute("title", label);
   var wrap = document.getElementById("chatInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

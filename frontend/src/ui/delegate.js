@@ -153,16 +153,14 @@ function buildActionMap() {
 
   registerAction('startSession', function (el, e) {
     if (e && e.type === 'keydown') e.preventDefault();
-    if (window.matchMedia && window.matchMedia('(max-width:768px)').matches &&
-        !el.classList.contains('active') && typeof w.toggleSpeechInput === 'function') {
+    if (!el.classList.contains('active') && typeof w.toggleSpeechInput === 'function') {
       w.toggleSpeechInput('topic');
       return;
     }
     w.startSession();
   });
   registerAction('handleSendClick', function (el) {
-    if (window.matchMedia && window.matchMedia('(max-width:768px)').matches &&
-        !el.classList.contains('active') &&
+    if (!el.classList.contains('active') &&
         !el.classList.contains('chat-stop') &&
         !el.classList.contains('agent-stop') &&
         typeof w.toggleSpeechInput === 'function') {

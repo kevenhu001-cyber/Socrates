@@ -202,6 +202,28 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(mobileComposer.attachSize).toBe(44);
   expect(mobileComposer.activeEditor).toBe(true);
 
+  /* A soft wrap used to oscillate: expanding gives the editor a wider first
+     row, which made the same draft look single-line and collapse again. */
+  await editor.fill('Short');
+  await expect(wrap).not.toHaveClass(/composer-multiline/);
+  await page.evaluate(() => {
+    const wrapNode = document.getElementById('chatInputWrap');
+    window.__composerShapeTransitions = [];
+    window.__composerShapeObserver = new MutationObserver(() => {
+      window.__composerShapeTransitions.push(wrapNode.classList.contains('composer-multiline'));
+    });
+    window.__composerShapeObserver.observe(wrapNode, { attributes: true, attributeFilter: ['class'] });
+  });
+  await editor.fill('This sentence is intentionally long enough to wrap naturally inside the compact mobile composer without an explicit newline.');
+  await expect(wrap).toHaveClass(/composer-multiline/);
+  await page.waitForTimeout(500);
+  const shapeTransitions = await page.evaluate(() => {
+    window.__composerShapeObserver?.disconnect();
+    return window.__composerShapeTransitions;
+  });
+  expect(shapeTransitions.filter((expanded) => expanded).length).toBe(1);
+  expect(shapeTransitions.at(-1)).toBe(true);
+
   await editor.fill('Send this single line');
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.waitForTimeout(360);
