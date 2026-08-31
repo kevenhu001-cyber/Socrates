@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import {
   getThinkingPanelSnapshot,
   subscribeToThinkingPanel,
-} from './thinkingPanelStore';
+} from './thinkingPanel.bridge';
 
 function translate(key: string, fallback: string): string {
   try {

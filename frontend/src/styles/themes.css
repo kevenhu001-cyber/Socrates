@@ -1,0 +1,80 @@
+/*
+ * themes.css — concrete token values for the light / dark / accent
+ * modes.
+ *
+ * This file is the *value* side of the design-token split:
+ *   tokens.css  → token *names* (`--ui-*`)
+ *   themes.css  → token *values* per mode
+ *
+ * Values mirror the legacy HSL palette already in styles.css so the
+ *   visual identity is preserved. The split lets future milestones
+ *   (per-component theme overrides, accent palettes) operate on a
+ *   single file without touching the rest of the cascade.
+ *
+ * Mode selection:
+ *   The [data-mode] attribute on <html> picks the active palette.
+ *   displayPrefs.js writes `data-mode=dark|light` after resolving
+ *   user preference (light / dark / system).
+ *
+ * Compatibility:
+ *   The legacy selectors in styles.css keep their existing `--bg-*`,
+ *   `--text-*`, `--border-*`, `--accent-*` definitions so older
+ *   component CSS still resolves the values it expects. M1 only
+ *   *adds* the `--ui-*` namespace; existing rules are unchanged.
+ */
+
+/* Dark mode — primary palette. */
+[data-mode="dark"] {
+  --ui-accent-strong: 43 77% 62%;
+  --ui-accent-soft: 43 40% 20%;
+  --ui-accent-surface: 43 40% 20%;
+  --ui-on-accent: 0 0% 100%;
+
+  --ui-bg-page: #101318;
+  --ui-bg-raised: 0 0% 13%;
+  --ui-bg-overlay: 0 0% 16%;
+  --ui-bg-hover: 0 0% 21%;
+  --ui-bg-sunken: 0 0% 5%;
+
+  --ui-text-primary: 0 0% 100%;
+  --ui-text-secondary: 0 0% 80%;
+  --ui-text-tertiary: 0 0% 65%;
+  --ui-text-muted: 0 0% 55%;
+  --ui-text-disabled: 0 0% 45%;
+
+  --ui-border-subtle: 0 0% 22%;
+  --ui-border-default: 0 0% 22%;
+  --ui-border-strong: 0 0% 32%;
+
+  --ui-danger: 0 60% 55%;
+  --ui-success: 142 60% 50%;
+  --ui-muted: 0 0% 50%;
+}
+
+/* Light mode — primary palette. */
+[data-mode="light"] {
+  --ui-accent-strong: 43 65% 42%;
+  --ui-accent-soft: 43 40% 90%;
+  --ui-accent-surface: 43 40% 90%;
+  --ui-on-accent: 0 0% 100%;
+
+  --ui-bg-page: #e6dec8;
+  --ui-bg-raised: 40 25% 96%;
+  --ui-bg-overlay: 38 20% 92%;
+  --ui-bg-hover: 36 15% 87%;
+  --ui-bg-sunken: 42 33% 98%;
+
+  --ui-text-primary: 36 12% 10%;
+  --ui-text-secondary: 34 8% 28%;
+  --ui-text-tertiary: 34 7% 35%;
+  --ui-text-muted: 34 6% 43%;
+  --ui-text-disabled: 34 5% 50%;
+
+  --ui-border-subtle: 38 12% 86%;
+  --ui-border-default: 36 10% 78%;
+  --ui-border-strong: 36 9% 72%;
+
+  --ui-danger: 0 60% 45%;
+  --ui-success: 142 50% 35%;
+  --ui-muted: 34 5% 50%;
+}

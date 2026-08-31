@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import {
-  installCmdKBridge,
-} from './cmdKRuntimeStore';
+import { installCmdKBridge } from './cmdk.bridge';
 import {
   useCmdKCommands,
   useCmdKResults,
   useCmdKSnapshot,
   useIsCmdKOpen,
-} from './legacyAdapter';
+} from './cmdk.bridge';
 import type { CmdKDoc, CmdKHit } from './types';
 
 const OVERLAY_ID = 'cmdKOverlay';
@@ -111,7 +109,7 @@ function CommandPalette() {
       <div
         className="cmd-k-modal"
         id={MODAL_ID}
-        data-react-migration-runtime="cmd-k"
+        data-mounted-by="cmd-k"
         data-react-cmdk-state="closed"
         onClick={(event) => event.stopPropagation()}
       >
@@ -126,7 +124,7 @@ function CommandPalette() {
     <div
       className="cmd-k-modal"
       id={MODAL_ID}
-      data-react-migration-runtime="cmd-k"
+      data-mounted-by="cmd-k"
       data-react-cmdk-state="open"
       onClick={(event) => event.stopPropagation()}
     >
@@ -242,23 +240,25 @@ export interface CmdKReactRootHandle {
 export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.cmdKReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. The registry writes the same
+     sentinel before delegating to mount, so a duplicate registry run
+     short-circuits here. */
+  if (overlay.dataset.mountedBy === 'cmd-k') {
     throw new Error('CmdK React runtime was initialized more than once.');
   }
-  overlay.dataset.cmdKReactHydrated = '1';
-  overlay.setAttribute('data-react-migration-runtime', 'cmd-k');
 
   installCmdKBridge();
 
   const root = createRoot(overlay);
   root.render(<CommandPalette />);
+  overlay.dataset.mountedBy = 'cmd-k';
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.cmdKReactHydrated;
-      overlay.removeAttribute('data-react-migration-runtime');
+      delete overlay.dataset.mountedBy;
     },
   };
 }

@@ -1,5 +1,11 @@
-export { installComposerInputBridge, getComposerInputSnapshot, subscribeToComposerInput } from './composerInputStore';
-export { useComposerInputSnapshot, useIsStreaming, useIsTopicSetup } from './legacyAdapter';
+export {
+  installComposerInputBridge,
+  getComposerInputSnapshot,
+  subscribeToComposerInput,
+  useComposerInputSnapshot,
+  useIsStreaming,
+  useIsTopicSetup,
+} from './composerInput.bridge';
 export { RichComposer } from './RichComposer';
 export {
   composerController,
@@ -13,4 +19,8 @@ export {
   subscribeComposer,
 } from './controller';
 export { tiptapJSONToMarkdown } from './markdown';
-export type { ComposerInputSnapshot, ComposerInputBridge } from './types';
+export type {
+  ComposerInputSnapshot,
+  ComposerInputBridge,
+  ComposerExtensionToken,
+} from './types';

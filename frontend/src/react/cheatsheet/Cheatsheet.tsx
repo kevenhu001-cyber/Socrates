@@ -1,7 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
-import { installCheatsheetBridge } from './cheatsheetStore';
-import { useCheatsheetSnapshot, useCheatsheetDispatch } from './legacyAdapter';
+import { installCheatsheetBridge, useCheatsheetSnapshot, useCheatsheetDispatch } from './cheatsheet.bridge';
 
 function esc(s: string): string {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));

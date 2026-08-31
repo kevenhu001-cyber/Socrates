@@ -3,11 +3,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { t as _t } from '../legacy/gateway';
 import {
   installMorePopoverBridge,
-} from './morePopoverStore';
-import {
   useMorePopoverDispatch,
   useMorePopoverSnapshot,
-} from './legacyAdapter';
+} from './morePopover.bridge';
 import type { MorePopoverAction } from './types';
 
 const POPOVER_ID = 'moreNavPopover';
@@ -103,23 +101,23 @@ export interface MorePopoverHandle {
 export function hydrateMorePopover(): MorePopoverHandle | null {
   const popover = document.getElementById(POPOVER_ID);
   if (!popover) return null;
-  if (popover.dataset.morePopoverReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (popover.dataset.mountedBy === 'more-popover') {
     throw new Error('More popover React runtime was initialized more than once.');
   }
-  popover.dataset.morePopoverReactHydrated = '1';
-  popover.setAttribute('data-react-migration-runtime', 'more-popover');
 
   installMorePopoverBridge();
 
   const root = createRoot(popover);
   root.render(<MorePopover />);
+  popover.dataset.mountedBy = 'more-popover';
   return {
     popover,
     root,
     destroy: () => {
       root.unmount();
-      delete popover.dataset.morePopoverReactHydrated;
-      popover.removeAttribute('data-react-migration-runtime');
+      delete popover.dataset.mountedBy;
     },
   };
 }

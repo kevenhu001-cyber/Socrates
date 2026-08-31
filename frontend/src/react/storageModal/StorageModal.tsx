@@ -1,7 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
-import { installStorageBridge } from './storageModalStore';
-import { useStorageSnapshot, useStorageDispatch } from './legacyAdapter';
+import { installStorageBridge, useStorageSnapshot, useStorageDispatch } from './storageModal.bridge';
 
 function esc(s: string | undefined | null): string {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c);

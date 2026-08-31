@@ -1,0 +1,8 @@
+/*
+ * styles/vendor/katex.css
+ *
+ * M1 placeholder. Will own the KaTeX-specific overrides (font
+ * tweaks, formula sizing in light mode). The base KaTeX sheet is
+ * still loaded by the npm-import path in `src/vendor/init.js`;
+ * M2 will move that import into this file.
+ */

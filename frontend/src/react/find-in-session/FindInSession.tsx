@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { installFindInSessionBridge, subscribeToFindInSession, getFindInSessionSnapshot } from './findRuntimeStore';
+import { installFindInSessionBridge, subscribeToFindInSession, getFindInSessionSnapshot } from './find.bridge';
 import { runHighlightQuery, navigateNext, navigatePrev, closeHighlights } from './findHighlight';
 import type { FindInSessionSnapshot } from './types';
 
@@ -185,23 +185,23 @@ export interface FindInSessionReactRootHandle {
 export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
   const bar = document.getElementById(FIND_BAR_ID);
   if (!bar) return null;
-  if (bar.dataset.findInSessionReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (bar.dataset.mountedBy === 'find-in-session') {
     throw new Error('FindInSession React runtime was initialized more than once.');
   }
-  bar.dataset.findInSessionReactHydrated = '1';
-  bar.setAttribute('data-react-migration-runtime', 'find-in-session');
 
   installFindInSessionBridge();
 
   const root = createRoot(bar);
   root.render(<FindInSession />);
+  bar.dataset.mountedBy = 'find-in-session';
 
   return {
     root,
     destroy: () => {
       root.unmount();
-      delete bar.dataset.findInSessionReactHydrated;
-      bar.removeAttribute('data-react-migration-runtime');
+      delete bar.dataset.mountedBy;
     },
   };
 }

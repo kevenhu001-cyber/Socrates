@@ -3,11 +3,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { t as _t } from '../legacy/gateway';
 import {
   installUsageBridge,
-} from './usageModalStore';
-import {
   useUsageDispatch,
   useUsageSnapshot,
-} from './legacyAdapter';
+} from './usageModal.bridge';
 
 const OVERLAY_ID = 'usageOverlay';
 
@@ -54,23 +52,23 @@ export interface UsageModalHandle {
 export function hydrateUsageModal(): UsageModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.usageReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (overlay.dataset.mountedBy === 'usage-modal') {
     throw new Error('Usage modal React runtime was initialized more than once.');
   }
-  overlay.dataset.usageReactHydrated = '1';
-  overlay.setAttribute('data-react-migration-runtime', 'usage-modal');
 
   installUsageBridge();
 
   const root = createRoot(overlay);
   root.render(<UsageModal />);
+  overlay.dataset.mountedBy = 'usage-modal';
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.usageReactHydrated;
-      overlay.removeAttribute('data-react-migration-runtime');
+      delete overlay.dataset.mountedBy;
     },
   };
 }

@@ -18,7 +18,7 @@ test('message list renders user messages through React', async ({ page }) => {
   });
 
   await expect(page.locator('#msgList')).toHaveAttribute(
-    'data-react-migration-runtime',
+    'data-mounted-by',
     'msg-list',
   );
 

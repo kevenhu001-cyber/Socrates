@@ -1,7 +1,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getLegacyActions, t as _t } from '../legacy/gateway';
-import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './legacyAdapter';
+import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './sidebar.bridge';
 import type { SidebarNavKey } from './types';
 
 const NAV_ID = 'sidebarNav';
@@ -127,23 +127,23 @@ export interface SidebarNavHandle {
 export function hydrateSidebarNav(): SidebarNavHandle | null {
   const nav = document.getElementById(NAV_ID);
   if (!nav) return null;
-  if (nav.dataset.sidebarReactHydrated === '1') {
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (nav.dataset.mountedBy === 'sidebar-nav') {
     throw new Error('Sidebar nav React runtime was initialized more than once.');
   }
-  nav.dataset.sidebarReactHydrated = '1';
-  nav.setAttribute('data-react-migration-runtime', 'sidebar-nav');
 
   seedSidebarBridgesFromLegacy();
 
   const root = createRoot(nav);
   root.render(<SidebarNav />);
+  nav.dataset.mountedBy = 'sidebar-nav';
   return {
     nav,
     root,
     destroy: () => {
       root.unmount();
-      delete nav.dataset.sidebarReactHydrated;
-      nav.removeAttribute('data-react-migration-runtime');
+      delete nav.dataset.mountedBy;
     },
   };
 }

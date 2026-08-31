@@ -12,40 +12,39 @@
 <title>Socrates</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <script>
-/* Capacitor early-detect — runs before the body parses any module.
-   When the app is loaded inside a Capacitor WebView, window.Capacitor
-   is injected synchronously by the runtime, so we can:
-     1. tag <html data-capacitor-platform="android|ios"> for CSS hooks,
-     2. paint the body background immediately to match the in-app theme
-        (avoids the white flash that the default WebView shows before
-        the bundle's first paint). */
+/* Resolve the theme preference before the stylesheet is parsed. This
+   keeps the system-following option from flashing the default dark
+   palette during a reload. `data-mode` remains the effective mode;
+   `data-theme-preference` records whether it is user-selected or
+   inherited from the OS. The pre-paint color is sourced from the
+   shared design-token module so the legacy `#e6dec8` / `#101318`
+   literals stay in one place. The bundle is an ES module and is not
+   loaded yet at this point, so the values are inlined as a tiny
+   function-style lookup that mirrors `resolveBackground()`. */
 (function () {
+  var initialPreference = "dark";
   try {
-    /* Resolve the theme preference before the stylesheet is parsed. This
-       keeps the system-following option from flashing the default dark
-       palette during a reload. `data-mode` remains the effective mode;
-       `data-theme-preference` records whether it is user-selected or
-       inherited from the OS. */
-    var initialPreference = "dark";
     var storedPreference = localStorage.getItem("socrates-theme");
     if (storedPreference === "light" || storedPreference === "dark" || storedPreference === "system") {
       initialPreference = storedPreference;
     }
-    var initialMode = initialPreference === "system"
-      ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-      : initialPreference;
-    document.documentElement.setAttribute('data-theme-preference', initialPreference);
-    document.documentElement.setAttribute('data-mode', initialMode);
-    var cap = window.Capacitor;
-    if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
-      var platform = typeof cap.getPlatform === 'function' ? cap.getPlatform() : 'native';
-      document.documentElement.setAttribute('data-capacitor-platform', platform);
-      document.documentElement.classList.add('is-native-app');
-      /* Paint the root with the effective surface colour so the first
-         frame is not white. The bundled CSS overrides this once it loads. */
-      document.documentElement.style.backgroundColor = initialMode === "light" ? '#e6dec8' : '#101318';
-    }
-  } catch (_) { /* not in Capacitor — fall through */ }
+  } catch (_) { /* ignore */ }
+  var initialMode = initialPreference === "system"
+    ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    : initialPreference;
+  document.documentElement.setAttribute('data-theme-preference', initialPreference);
+  document.documentElement.setAttribute('data-mode', initialMode);
+  var cap = window.Capacitor;
+  if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
+    var platform = typeof cap.getPlatform === 'function' ? cap.getPlatform() : 'native';
+    document.documentElement.setAttribute('data-capacitor-platform', platform);
+    document.documentElement.classList.add('is-native-app');
+    /* Paint the root with the effective surface colour so the first
+       frame is not white. The bundled CSS overrides this once it loads.
+       The two values mirror `resolveBackground()` in src/ui/tokens.ts;
+       the JS adapter in src/ui/tokens.js exports the same strings. */
+    document.documentElement.style.backgroundColor = initialMode === "light" ? '#e6dec8' : '#101318';
+  }
 })();
 </script>
 <!-- P_perf-self-host — fonts (Inter/Newsreader/Noto Sans SC),
@@ -80,7 +79,7 @@
   },12000);
 })();
 </script>
-<link rel="stylesheet" href="/src/styles.css">
+<link rel="stylesheet" href="/src/styles/index.css">
 </head>
 <body>
 

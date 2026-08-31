@@ -1,7 +1,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
-import { installPromptTemplatesBridge } from './promptTemplatesStore';
-import { usePromptTemplatesSnapshot, usePromptTemplatesDispatch } from './legacyAdapter';
+import { installPromptTemplatesBridge, usePromptTemplatesSnapshot, usePromptTemplatesDispatch } from './promptTemplates.bridge';
 
 function PromptTemplatesModal() {
   const snap = usePromptTemplatesSnapshot();

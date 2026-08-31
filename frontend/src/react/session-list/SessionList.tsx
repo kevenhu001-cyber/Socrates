@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { installSessionListBridge, setCurrentSessionId } from './sessionListStore';
-import { useSessionListSnapshot, formatRelativeTime } from './legacyAdapter';
+import { installSessionListBridge, setCurrentSessionId } from './sessionList.bridge';
+import { useSessionListSnapshot, formatRelativeTime } from './sessionList.bridge';
 import type { SessionItem } from './types';
 
 const TAG_ICON =
@@ -311,10 +311,9 @@ const LIST_ID = 'recentsList';
 export function mountSessionList(): void {
   const container = document.getElementById(LIST_ID);
   if (!container) return;
-  if (container.dataset.sessionListReactHydrated === '1') return;
-
-  container.dataset.sessionListReactHydrated = '1';
-  container.setAttribute('data-react-migration-runtime', 'session-list');
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (container.dataset.mountedBy === 'session-list') return;
 
   installSessionListBridge();
 
@@ -324,4 +323,5 @@ export function mountSessionList(): void {
       <SessionListInner />
     </ErrorBoundary>,
   );
+  container.dataset.mountedBy = 'session-list';
 }

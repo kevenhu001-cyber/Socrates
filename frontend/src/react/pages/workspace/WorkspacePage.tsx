@@ -2,8 +2,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
 
 import { t as _t } from '../../legacy/gateway';
-import { installWorkspaceBridge } from './workspaceStore';
-import { useWorkspaceSnapshot, useWorkspaceDispatch } from './legacyAdapter';
+import { installWorkspaceBridge, useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.bridge';
 
 /* ── LobeHub brand SVG icons (raw strings inlined by Vite) ── */
 import githubRaw from '@lobehub/icons-static-svg/icons/github.svg?raw';

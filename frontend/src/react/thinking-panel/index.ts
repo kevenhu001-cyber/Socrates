@@ -1,8 +1,9 @@
 export {
-  getThinkingPanelSnapshot,
   installThinkingPanelBridge,
+  getThinkingPanelSnapshot,
   subscribeToThinkingPanel,
-} from './thinkingPanelStore';
+  useThinkingPanelSnapshot,
+} from './thinkingPanel.bridge';
 export { mountThinkingPanel, ThinkingPanel } from './ThinkingPanel';
 export type {
   ThinkingPanelBridge,

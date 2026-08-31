@@ -4,7 +4,7 @@ import { useLayoutEffect, useSyncExternalStore } from 'react';
 import {
   getChatRuntimeSnapshot,
   subscribeToChatRuntime,
-} from '../chatRuntimeStore';
+} from '../chatRuntime.bridge';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { MessageItem } from './MessageItem';
 import type { LegacyChatMessage } from '../types/domain';
@@ -127,20 +127,20 @@ function MessageList() {
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
   if (!container) return { root: null };
-  if (container.dataset.msgListReactHydrated === '1') return { root: null };
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. main.js's `reactOwnsMsgList()`
+     now reads the same flag. */
+  if (container.dataset.mountedBy === 'msg-list') return { root: null };
   // The read-only share view renders #msgList itself; never mount over it.
   if (window.__socratesShareMsgListTakeover) return { root: null };
 
-  container.dataset.msgListReactHydrated = '1';
-  container.setAttribute('data-react-migration-runtime', 'msg-list');
-
   const root = createRoot(container);
   root.render(<ErrorBoundary><MessageList /></ErrorBoundary>);
+  container.dataset.mountedBy = 'msg-list';
 
   window.__socratesReleaseMsgListReact = () => {
     try { root.unmount(); } catch (_) { /* already unmounted */ }
-    delete container.dataset.msgListReactHydrated;
-    container.removeAttribute('data-react-migration-runtime');
+    delete container.dataset.mountedBy;
     delete window.__socratesReleaseMsgListReact;
   };
 

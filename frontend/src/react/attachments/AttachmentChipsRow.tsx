@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { installAttachmentsBridge } from './attachmentsStore';
 import {
+  installAttachmentsBridge,
   useAttachments,
   useAttachmentsRemove,
   useAttachmentsSnapshot,
-} from './legacyAdapter';
+} from './attachments.bridge';
 import { getAttachmentIcon } from './fileIcons';
 import type { AttachmentEntry } from './types';
 
@@ -149,19 +149,20 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
 
   const roots: Root[] = [];
 
-  if (chatTarget && !chatTarget.dataset.attachmentChipsReactHydrated) {
-    chatTarget.dataset.attachmentChipsReactHydrated = '1';
-    chatTarget.setAttribute('data-react-migration-runtime', 'attachment-chips');
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. Each host element is tagged
+     independently so the registry can mount them as separate specs. */
+  if (chatTarget && chatTarget.dataset.mountedBy !== 'attachment-chips') {
     const chatRoot = createRoot(chatTarget);
     chatRoot.render(<ChipsRow targetId={CHIPS_ID} />);
+    chatTarget.dataset.mountedBy = 'attachment-chips';
     roots.push(chatRoot);
   }
 
-  if (topicTarget && !topicTarget.dataset.attachmentChipsReactHydrated) {
-    topicTarget.dataset.attachmentChipsReactHydrated = '1';
-    topicTarget.setAttribute('data-react-migration-runtime', 'attachment-chips');
+  if (topicTarget && topicTarget.dataset.mountedBy !== 'attachment-chips') {
     const topicRoot = createRoot(topicTarget);
     topicRoot.render(<ChipsRow targetId={TOPIC_CHIPS_ID} />);
+    topicTarget.dataset.mountedBy = 'attachment-chips';
     roots.push(topicRoot);
   }
 
@@ -172,10 +173,10 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
     destroy: () => {
       roots.forEach((root) => root.unmount());
       if (chatTarget) {
-        delete chatTarget.dataset.attachmentChipsReactHydrated;
+        delete chatTarget.dataset.mountedBy;
       }
       if (topicTarget) {
-        delete topicTarget.dataset.attachmentChipsReactHydrated;
+        delete topicTarget.dataset.mountedBy;
       }
     },
   };

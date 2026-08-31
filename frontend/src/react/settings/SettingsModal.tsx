@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
-import { installSettingsBridge } from './settingsStore';
-import { useSettingsSnapshot } from './legacyAdapter';
+import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
 
 const OVERLAY_ID = 'settingsOverlay';
 const BODY_ID = 'settingsBody';
@@ -67,12 +66,13 @@ export function mountSettingsModal(): void {
   if (!container) {
     container = document.createElement('div');
     container.id = 'settingsModalReactRoot';
-    container.setAttribute('data-react-migration-runtime', 'settings-modal');
     document.body.appendChild(container);
   }
 
-  if (container.dataset.settingsReactHydrated === '1') return;
-  container.dataset.settingsReactHydrated = '1';
+  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
+     attribute with `dataset.mountedBy`. */
+  if (container.dataset.mountedBy === 'settings-modal') return;
+  container.dataset.mountedBy = 'settings-modal';
 
   installSettingsBridge();
   const root = createRoot(container);

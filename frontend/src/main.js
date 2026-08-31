@@ -158,8 +158,13 @@ function publishReactChatRuntime(event){
    the safety valve: if React is not mounted, the legacy writers keep the
    answer visible. */
 function reactOwnsMsgList(){
+  /* M2: replaced the `data-react-migration-runtime` attribute with the
+     shared `mountedBy` dataset sentinel written by runMountRegistry.
+     The legacy `msgListReactHydrated` dataset flag is kept as a
+     fallback so out-of-tree legacy writers keep working until M4
+     deletes the string. */
   var list=document.getElementById("msgList");
-  return !!(list&&((list.dataset&&list.dataset.msgListReactHydrated==="1")||
+  return !!(list&&((list.dataset&&(list.dataset.mountedBy==="msg-list"||list.dataset.msgListReactHydrated==="1"))||
     list.getAttribute("data-react-migration-runtime")==="msg-list"));
 }
 
@@ -4297,7 +4302,8 @@ async function submitChatMessage(textOverride,opts){
    `frontend/src/react/message-list/useMessageActions.ts` (the `stripHtmlToText`
    + `fallbackCopy` helpers there replace the legacy `buildMessageToolbar`
    family). All call sites in this file are guarded by
-   `data-react-migration-runtime === "msg-list"` and skip the legacy path. */
+   `host.dataset.mountedBy === "msg-list"` (the M2 replacement for the
+   legacy `data-react-migration-runtime` attribute) and skip the legacy path. */
 
 /* P1.1 — fire a POST /api/messages/<id>/feedback with the
    `copy` synthetic event. Backend may ignore unknown events. */

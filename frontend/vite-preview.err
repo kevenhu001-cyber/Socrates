@@ -352,3 +352,18 @@ Error: connect ECONNREFUSED 127.0.0.1:3037
 10:52:31 [vite] http proxy error: /api/v2/auth/me?cb=1788144751422
 Error: connect ECONNREFUSED 127.0.0.1:3037
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         23:05:42 [vite] http proxy error: /api/v2/auth/csrf-token
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)
+23:05:42 [vite] http proxy error: /api/v2/config
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)
+23:05:42 [vite] http proxy error: /api/v2/auth/me?cb=1788188742125
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)
+23:05:42 [vite] http proxy error: /api/v2/auth/me?cb=1788188742639
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)
+23:05:43 [vite] http proxy error: /api/v2/auth/me?cb=1788188743162
+Error: connect ECONNREFUSED 127.0.0.1:3037
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)

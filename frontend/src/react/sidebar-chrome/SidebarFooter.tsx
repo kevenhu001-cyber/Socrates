@@ -1,5 +1,5 @@
 import { getLegacyActions } from '../legacy/gateway';
-import { useUserInfo } from './legacyAdapter';
+import { useUserInfo } from './sidebarChrome.bridge';
 
 export function SidebarFooter() {
   const user = useUserInfo();

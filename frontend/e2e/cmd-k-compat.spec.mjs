@@ -17,11 +17,11 @@ test('Cmd-K React mode hydrates the overlay with React', async ({ page }) => {
   // The overlay element is the same DOM node the legacy app uses — only the
   // attribute set proves React took over.
   const overlay = page.locator('#cmdKOverlay');
-  await expect(overlay).toHaveAttribute('data-react-migration-runtime', 'cmd-k');
+  await expect(overlay).toHaveAttribute('data-mounted-by', 'cmd-k');
 
   // The modal child should also be marked (React owns its subtree).
   const modal = page.locator('#cmdKModal, .cmd-k-modal').first();
-  await expect(modal).toHaveAttribute('data-react-migration-runtime', 'cmd-k');
+  await expect(modal).toHaveAttribute('data-mounted-by', 'cmd-k');
 
   // Cmd-K bridge should be installed and expose a snapshot.
   const snapshot = await page.evaluate(() => {
@@ -86,7 +86,7 @@ test('Cmd-K React mode always loads (no ?react=1 flag needed)', async ({ page })
   await waitForAppShell(page);
 
   const overlay = page.locator('#cmdKOverlay');
-  await expect(overlay).toHaveAttribute('data-react-migration-runtime', 'cmd-k');
+  await expect(overlay).toHaveAttribute('data-mounted-by', 'cmd-k');
 
   const hasBridge = await page.evaluate(() => typeof window.__socratesCmdK === 'object' && window.__socratesCmdK !== null);
   expect(hasBridge).toBe(true);
