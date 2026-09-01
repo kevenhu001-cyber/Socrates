@@ -19,7 +19,7 @@ export function SidebarHeader() {
       <div className="sidebar-logo">
         <img
           className="sidebar-logo-img"
-          src="/logo.svg"
+          src="/logo.png"
           alt=""
           aria-hidden="true"
           width={20}
