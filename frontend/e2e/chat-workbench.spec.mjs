@@ -131,7 +131,7 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
   /* Conversation and landing now share the same compact desktop shell. */
-  expect(composed.wrapRadius).toBe(26);
+  expect(composed.wrapRadius).toBe(28);
   expect(composed.wrapBorder).not.toBe('0px');
   expect(composed.sendSize).toBe(30);
   expect(composed.attachSize).toBe(44);

@@ -22,8 +22,31 @@ export function mountLegacyShellListeners(actions) {
   click('shareBtn', actions.openShare);
   click('apiSettingsBtn', actions.openSettings);
   bind(document, 'socrates:open-settings', actions.openSettings);
-  click('startBtn', actions.startSession);
-  click('sendBtn', actions.sendMessage);
+  click('startBtn', (event) => {
+    /* Empty-topic voice input: the old document-wide data-action dispatcher
+       routed a non-active start button to toggleSpeechInput('topic'); keep
+       that behavior now that the button is bound directly. */
+    const button = byId('startBtn');
+    if (button && !button.classList.contains('active')
+        && typeof window.toggleSpeechInput === 'function') {
+      window.toggleSpeechInput('topic');
+      return;
+    }
+    actions.startSession();
+  });
+  click('sendBtn', (event) => {
+    /* Same empty-composer voice routing for the chat send button, matching
+       the legacy data-action="handleSendClick" behavior. */
+    const button = byId('sendBtn');
+    if (button && !button.classList.contains('active')
+        && !button.classList.contains('chat-stop')
+        && !button.classList.contains('agent-stop')
+        && typeof window.toggleSpeechInput === 'function') {
+      window.toggleSpeechInput('chat');
+      return;
+    }
+    actions.sendMessage();
+  });
   click('mobileModeTrigger', actions.toggleMobileMode);
 
   bind(byId('topicComposerToolsBtn'), 'click', (event) => actions.toggleComposerTools(event.currentTarget, 'topic'));

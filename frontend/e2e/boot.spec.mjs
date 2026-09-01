@@ -112,13 +112,16 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
     expect(currentHash, `inline-handler hash drifted: saved=${saved} current=${currentHash}`).toBe(saved);
   }
 
-  // After boot: the remaining legacy shell still has a meaningful set of
-  // data-action controls. Auth controls are mounted directly by auth/index.js
-  // as of M4 step 4.3a, so this floor intentionally excludes them.
-  const inlineCount = await page.evaluate(() =>
-    document.querySelectorAll('[data-action]').length,
+  // After boot: the legacy shell's interactive controls are now owned by
+  // direct listeners (ui/legacyShellListeners.js) and React roots, which
+  // replaced the document-wide data-action delegation. Guard that at least
+  // the primary nav stays React-hydrated so the shell is still interactive.
+  const reactNavCount = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('#sidebarNav .sidebar-nav-btn')).filter(
+      (el) => Object.keys(el).some((k) => k.startsWith('__reactProps$')),
+    ).length,
   );
-  expect(inlineCount, 'in-page data-action-element count').toBeGreaterThanOrEqual(30);
+  expect(reactNavCount, 'React-hydrated nav button count').toBeGreaterThanOrEqual(7);
 
   // No JS errors at boot.
   expect(consoleErrors, `unexpected JS errors: ${consoleErrors.join(' | ')}`).toEqual([]);

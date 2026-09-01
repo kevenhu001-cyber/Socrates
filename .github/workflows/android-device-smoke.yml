@@ -54,6 +54,20 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Free runner disk space
+        run: |
+          # GitHub's ubuntu-latest image ships large toolchains we do not need
+          # here. Removing them before the Detox build/emulator avoids the
+          # recurring 'No space left on device' failures on this lane. Keep the
+          # Android SDK in /usr/local/lib/android intact because setup-android
+          # has already pointed ANDROID_HOME at it.
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/Swift
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Install pinned Android build components
         run: |
           yes | sdkmanager --licenses >/dev/null || true
