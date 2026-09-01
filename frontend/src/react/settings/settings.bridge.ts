@@ -5,6 +5,10 @@
  * `window.__socratesSettingsBridge.publish(...)`. The M1 factory owns
  * the snapshot/reducer/listener loop; this module wraps it with the
  * legacy `publish` alias and exposes a React hook built on `useBridge`.
+ *
+ * M4 step 4.5b: the snapshot carries `{ open, externalApiOn }` only.
+ * React owns the overlay skeleton; legacy publishes visibility + toggle
+ * state (no more bodyHTML round-trip — React renders the static parts).
  */
 
 import { createImmutableBridge, useBridge } from '../../lib/bridge';
@@ -18,8 +22,18 @@ declare global {
 
 type Action = Omit<SettingsSnapshot, 'revision'>;
 
+/* Seed `externalApiOn` from the same localStorage key legacy settings.js
+   reads, so the toggle track renders correctly before the first publish. */
+function initialExternalApiOn(): boolean {
+  try {
+    const saved = localStorage.getItem('socrates-external-api');
+    if (saved !== null) return saved === 'true';
+  } catch (_) { /* ignore */ }
+  return true;
+}
+
 const factoryBridge = createImmutableBridge<SettingsSnapshot, Action>({
-  initial: { open: false, bodyHTML: '', revision: 0 },
+  initial: { open: false, externalApiOn: initialExternalApiOn(), revision: 0 },
   reducer: (_state, action) => action,
 });
 

@@ -98,8 +98,8 @@ function handleChatApiResult(result: { cancelled?: boolean; text?: string } | nu
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
     ctl.finish();
   } else {
-    const lastCallError = stateStore.read('lastCallError');
-    const reason = lastCallError || 'empty response (no error detail)';
+    const lastCallError = stateStore.read('lastCallError') as string | null;
+    const reason: string = lastCallError || 'empty response (no error detail)';
     const isCancel = /cancel|user-stop|superseded|new-session|session-switch|session-deleted|session-purged|session-reset|msg-edit/i.test(reason);
     if (isCancel) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'cancelled' });

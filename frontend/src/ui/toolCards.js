@@ -918,10 +918,10 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
   const actions = document.createElement("div");
   actions.className = "exec-artifact-actions";
   actions.innerHTML =
-    '<button type="button" class="exec-artifact-btn" data-action="exec-expand" title="Fullscreen" aria-label="Fullscreen">' +
+    '<button type="button" class="exec-artifact-btn" title="Fullscreen" aria-label="Fullscreen">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>' +
     '</button>' +
-    '<a class="exec-artifact-btn" data-action="exec-download" href="' + esc(url) + '" download target="_blank" rel="noopener" title="Download" aria-label="Download">' +
+    '<a class="exec-artifact-btn" href="' + esc(url) + '" download target="_blank" rel="noopener" title="Download" aria-label="Download">' +
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>' +
     '</a>';
   wrap.appendChild(actions);
@@ -1007,8 +1007,10 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
   wrap.addEventListener("click", function (ev) {
     var t = ev && ev.target;
     if (!t) return;
-    if (t.closest && t.closest('[data-action="exec-download"]')) return;
-    if (t.closest && t.closest('[data-action="exec-expand"]')) {
+    /* The download action is an <a download>: let its default behaviour
+       run (nothing to intercept). The expand action is the <button>. */
+    if (t.closest && t.closest('a.exec-artifact-btn')) return;
+    if (t.closest && t.closest('button.exec-artifact-btn')) {
       openLightbox(ev);
       return;
     }

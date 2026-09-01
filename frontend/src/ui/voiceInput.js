@@ -21,12 +21,6 @@ function wrapForSurface(surface) {
 }
 
 function setListening(surface, listening) {
-  document.querySelectorAll('[data-action="toggleSpeechInput"]').forEach(function (button) {
-    const matches = button.getAttribute('data-action-arg') === surface;
-    button.classList.toggle('is-listening', !!(listening && matches));
-    button.setAttribute('aria-pressed', listening && matches ? 'true' : 'false');
-  });
-
   const primary = document.getElementById(surface === 'topic' ? 'startBtn' : 'sendBtn');
   if (primary) {
     primary.classList.toggle('is-listening', !!listening);

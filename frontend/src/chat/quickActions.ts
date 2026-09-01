@@ -11,8 +11,8 @@ async function handleQuickAction(action: string): Promise<void> {
   const msgs = document.querySelectorAll('.msg.assistant:last-of-type .quick-opts');
   msgs.forEach(function (m) { (m as HTMLElement).style.display = 'none'; });
 
-  const kbNodes = stateStore.read('kbNodes');
-  const currentNode = stateStore.read('currentNode');
+  const kbNodes = stateStore.read('kbNodes') as Array<{ name?: string; status?: string }>;
+  const currentNode = stateStore.read('currentNode') as number;
   if (action === 'explain') {
     stateStore.dispatch({
       type: 'state/batch', patch: { explaining: true, substantiveCount: 0 },

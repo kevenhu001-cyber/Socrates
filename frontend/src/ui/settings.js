@@ -21,16 +21,21 @@
 /* ─── Track keys that are masked (existing saved keys not shown in DOM) ─── */
 var _maskedKeys = {};
 
-/* React migration bridge — publishes settings modal state + body HTML
-   so the React compatibility root can render the overlay. */
+/* React migration bridge — publishes settings modal state so the React
+   compatibility root renders the overlay. M4 step 4.5b: the snapshot
+   carries `{ open, externalApiOn }` only — React owns the skeleton
+   (toggle track, provider list container, tone preset container, action
+   buttons) and derives their classes from this state. The bodyHTML
+   round-trip is gone: legacy `renderProviderList()` / `renderTonePresets()`
+   write directly into the React-rendered containers. */
 function _publishSettingsState() {
   try {
     var bridge = window.__socratesSettingsBridge;
     if (bridge && typeof bridge.publish === "function") {
-      var body = document.getElementById("settingsBody");
+      var overlay = document.getElementById("settingsOverlay");
       bridge.publish({
-        open: !document.getElementById("settingsOverlay").classList.contains("hidden"),
-        bodyHTML: body ? body.innerHTML : "",
+        open: overlay ? !overlay.classList.contains("hidden") : false,
+        externalApiOn: _externalApiOn,
       });
     }
   } catch (_) { /* swallow */ }
@@ -50,27 +55,9 @@ function closeSettings() {
   _publishSettingsState();
 }
 
-/* ─── Bind settings UI events (called once from main.js boot) ─── */
-function bindSettingsUI() {
-  var overlay = document.getElementById("settingsOverlay");
-  if (overlay) {
-    overlay.addEventListener("click", function (e) {
-      if (e.target === overlay) closeSettings();
-    });
-  }
-  var closeBtn = document.getElementById("settingsCloseBtn");
-  if (closeBtn) closeBtn.addEventListener("click", closeSettings);
-  var toggle = document.getElementById("stgToggle");
-  if (toggle) toggle.addEventListener("click", toggleAPI);
-  var addBtn = document.getElementById("addProviderBtn");
-  if (addBtn) addBtn.addEventListener("click", addProvider);
-  var clearBtn = document.getElementById("clearSettingsBtn");
-  if (clearBtn) clearBtn.addEventListener("click", clearSettings);
-  var cancelBtn = document.getElementById("cancelSettingsBtn");
-  if (cancelBtn) cancelBtn.addEventListener("click", closeSettings);
-  var saveBtn = document.getElementById("saveSettingsBtn");
-  if (saveBtn) saveBtn.addEventListener("click", saveSettings);
-}
+/* The settings modal buttons are React-owned since M4 step 4.5b
+   (SettingsModal.tsx renders them with onClick handlers that call the
+   legacy actions below). There is no bindSettingsUI() anymore. */
 
 /* ─── "Use External API" toggle — now actually tracked and functional ─── */
 var _externalApiOn = true;
@@ -82,17 +69,14 @@ try {
 function toggleAPI() {
   _externalApiOn = !_externalApiOn;
   try { localStorage.setItem("socrates-external-api", JSON.stringify(_externalApiOn)); } catch {}
-  syncToggleUI();
-  /* Collapse/expand the provider list as a visual hint */
-  var rows = document.getElementById("providerList");
-  if (rows) rows.classList.toggle("collapsed", !_externalApiOn);
+  /* React owns the toggle-track `on` class and the provider-list
+     `collapsed` class (derived from snap.externalApiOn), so we only
+     publish — no direct classList toggling (M4 step 4.5b). */
+  _publishSettingsState();
 }
 
 function syncToggleUI() {
-  var track = document.getElementById("stgToggleTrack");
-  if (track) track.classList.toggle("on", _externalApiOn);
-  var rows = document.getElementById("providerList");
-  if (rows) rows.classList.toggle("collapsed", !_externalApiOn);
+  _publishSettingsState();
 }
 
 function syncSettingsUI() {
@@ -146,7 +130,7 @@ function renderProviderList() {
       var hint = esc2(t2 && t2("settings.builtInHint") || "Your built-in AI is ready to use. Add a custom provider below if you want to use your own API key.");
       cont.innerHTML =
         '<div class="provider-row built-in-row' + (builtInActive ? ' active' : '') + '" data-id="' + esc2(builtIn.id) + '">'
-        + '<button class="provider-active-btn" data-action="set-active" title="' + (builtInActive ? "Active model" : "Set as active") + '">' + (builtInActive ? "●" : "○") + '</button>'
+        + '<button class="provider-active-btn" title="' + (builtInActive ? "Active model" : "Set as active") + '">' + (builtInActive ? "●" : "○") + '</button>'
         + '<div class="provider-fields">'
         + '<div class="provider-builtin-label">' + biLabel + (builtInActive ? ' <span class="provider-builtin-tag">' + esc2(t2 && t2("settings.builtInTag") || "Built-in · Active") + '</span>' : '') + '</div>'
         + '<div class="provider-builtin-model">' + biModel + '</div>'
@@ -173,7 +157,7 @@ function renderProviderList() {
     var keyValue = (!hasKey || keyIsMasked) ? "" : esc(p.key);
     var keyPlaceholder = keyIsMasked ? "••••••••" : (esc(t("provider.placeholderKey") || "sk-..."));
     html += '<div class="provider-row' + (isActive ? " active" : "") + '" data-id="' + esc(p.id || "") + '">';
-    html += '<button class="provider-active-btn" data-action="set-active" title="' + (isActive ? "Active model" : "Set as active") + '">' + (isActive ? "●" : "○") + '</button>';
+    html += '<button class="provider-active-btn" title="' + (isActive ? "Active model" : "Set as active") + '">' + (isActive ? "●" : "○") + '</button>';
     html += '<div class="provider-fields">';
     html += '<input class="settings-input" data-field="label" placeholder="' + esc(t("provider.placeholderLabel") || "Label") + '" value="' + esc(p.label || "") + '">';
     html += '<input class="settings-input" data-field="url" placeholder="' + esc(t("provider.placeholderUrl") || "Base URL") + '" value="' + esc(p.url || "") + '">';
@@ -186,7 +170,7 @@ function renderProviderList() {
        + '<span data-i18n-key="provider.multimodal">Multimodal (vision-capable)</span>'
        + '</label>';
     html += '</div>';
-    html += '<button class="provider-del" data-action="remove-provider" title="Remove">&times;</button>';
+    html += '<button class="provider-del" title="Remove">&times;</button>';
     html += '</div>';
   });
   cont.innerHTML = html;
@@ -506,5 +490,4 @@ export {
   openSettings, closeSettings, toggleAPI, syncSettingsUI,
   renderProviderList, addProvider, removeProvider,
   setActiveProvider, updateProviderField, saveSettings, clearSettings,
-  bindSettingsUI,
 };

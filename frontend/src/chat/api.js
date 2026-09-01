@@ -131,7 +131,6 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
      visible chat stream. A probe never exposes partial text, so each
      attempt accumulates into a private buffer and is committed only after
      a complete response. */
-  var state=window.state;
   var getActiveProvider=window.getActiveProvider;
   var retryOptions=Object.assign({},options||{}, { source:'probe' });
   if(!getActiveProvider()){setLastCallError("no provider");return null}
@@ -250,10 +249,9 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
    - /api/chat for non-built-in providers
    Both paths use the same retry/timeout pattern. */
 export async function callAPI(messages,maxTokens,timeoutMs,options){
-  /* state, getActiveProvider, makeAIWatchdog, STREAM_TIMEOUT_MS,
+  /* getActiveProvider, makeAIWatchdog, STREAM_TIMEOUT_MS,
      STREAM_HEARTBEAT_MS, and getCsrfToken live in main.js — read them via
      window so this module stays independent. */
-  var state=window.state;
   var getActiveProvider=window.getActiveProvider;
   var makeAIWatchdog=window.makeAIWatchdog;
   var getCsrfToken=window.getCsrfToken;

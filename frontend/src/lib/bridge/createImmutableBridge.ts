@@ -70,17 +70,17 @@ export interface CreateImmutableBridgeOptions<Snapshot extends RevisionedSnapsho
 
 type Listener = () => void;
 
-function deepFreeze<T>(value: T): T {
+/**
+ * Shallow-freeze the top level of a snapshot so the snapshot
+ * identity is stable but nested objects/arrays remain mutable for
+ * legacy `state.kb.boundariesHistory.push(...)` patterns. The
+ * snapshot's `revision` is what gives consumers a stable identity
+ * for change detection (see `useSyncExternalStore`).
+ */
+function shallowFreeze<T>(value: T): T {
   if (value === null || typeof value !== 'object') return value;
   if (Object.isFrozen(value)) return value;
-  const objectValue = value as unknown as Record<string, unknown>;
-  Object.freeze(objectValue);
-  for (const key of Object.keys(objectValue)) {
-    const child = objectValue[key];
-    if (child !== null && typeof child === 'object' && !Object.isFrozen(child)) {
-      deepFreeze(child);
-    }
-  }
+  Object.freeze(value as unknown as Record<string, unknown>);
   return value;
 }
 
@@ -94,7 +94,7 @@ export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Actio
 ): ImmutableBridge<Snapshot, Action> {
   const { initial, reducer, windowKey } = options;
 
-  let snapshot: Snapshot = deepFreeze(initial);
+  let snapshot: Snapshot = shallowFreeze(initial);
   const listeners = new Set<Listener>();
 
   let pendingActions: Action[] = [];
@@ -118,7 +118,7 @@ export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Actio
         changed = true;
       }
       if (!changed) return;
-      snapshot = deepFreeze({
+      snapshot = shallowFreeze({
         ...next,
         revision: snapshot.revision + 1,
       });
@@ -160,7 +160,7 @@ export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Actio
       flush();
     },
     __resetForTests() {
-      snapshot = deepFreeze(initial);
+      snapshot = shallowFreeze(initial);
       pendingActions = [];
       if (rafHandle !== 0) {
         if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {

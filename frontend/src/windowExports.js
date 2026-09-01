@@ -232,12 +232,19 @@ import { stopSpeechInput, toggleSpeechInput } from './ui/voiceInput.js';
 window.toggleSpeechInput = toggleSpeechInput;
 window.stopSpeechInput = stopSpeechInput;
 /* ─── ui/settings.js ─── */
-import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider } from './ui/settings.js';
+import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider, toggleAPI, addProvider, clearSettings, saveSettings } from './ui/settings.js';
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.syncSettingsUI = syncSettingsUI;
 window.renderProviderList = renderProviderList;
 window.setActiveProvider = setActiveProvider;
+/* M4 step 4.5b — React's SettingsModal buttons call these via
+   __socratesLegacy.settings; the window.* aliases keep legacy JS + e2e
+   probes working. */
+window.toggleAPI = toggleAPI;
+window.addProvider = addProvider;
+window.clearSettings = clearSettings;
+window.saveSettings = saveSettings;
 
 /* ─── ui/share.js ─── */
 import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, _shareToken } from './ui/share.js';

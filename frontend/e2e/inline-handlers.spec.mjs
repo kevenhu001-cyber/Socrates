@@ -32,9 +32,6 @@ const DATA_ACTION_RE = /\bdata-action(?:-input|-keydown|-change|-focus)?="([^"]+
 // handled directly by React components (not via delegate.js → window.*).
 const BUILTIN_ACTIONS = new Set([
   '__stop', 'preventDefault', 'select', 'blur',
-  // close-settings-overlay is handled directly by React's SettingsModal
-  // (checks data-action in its onClick handler), not via delegate.js.
-  'close-settings-overlay',
 ]);
 
 /**

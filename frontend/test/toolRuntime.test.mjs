@@ -971,3 +971,64 @@ test('cancelling a turn publishes the stopped state', () => {
     delete globalThis.window.__socratesReactChatBridge;
   }
 });
+
+/* P_tool-postfinish-approval — regression: main.js's finish() pins the
+   runtime for a pending approval via dispose(), then applies the final
+   html/rawText patch through session/update-message, whose reducer
+   REPLACES the message object (`{ ...current, ...patch }`). activeMessage()
+   must keep treating the swapped object as the same message (by
+   clientId) or the approval POST is silently dropped. */
+test('decideApproval still POSTs after dispose when the store swaps the message object', async () => {
+  const runId = '11111111-1111-4111-8111-111111111111';
+  const approvalId = '22222222-2222-4222-8222-222222222222';
+  const pendingCall = {
+    id: 'tc-codex-1',
+    name: 'workspace_agent',
+    approval: {
+      id: 'tc-codex-1', runId, approvalId, status: 'pending',
+      kind: 'commandExecution', reason: 'Run the verification command',
+    },
+  };
+
+  let message = { clientId: 'msg-postfinish-1', id: 'msg-postfinish-1', toolCalls: [pendingCall] };
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts = {}) => {
+    calls.push({ url: String(url), method: opts.method || 'GET', body: opts.body });
+    if (String(url).includes('/approvals/')) {
+      return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true, status: 'accepted' }) };
+    }
+    /* Run-status poll: report completed so the poll self-terminates. */
+    return { ok: true, status: 200, text: async () => JSON.stringify({ run: { id: runId, status: 'completed' }, approvals: [] }) };
+  };
+
+  try {
+    const runtime = createToolRuntime({
+      body: makeBody(),
+      stillOwnsSlot: () => true,
+      getMessage: () => message,
+      EventSource: null,
+      mode: 'compact',
+    });
+    /* Finish the turn while an approval is pending: this pins
+       postFinishApprovalMessage and keeps the runtime alive. */
+    runtime.dispose();
+    assert.equal(typeof runtime.decideApproval, 'function', 'runtime must stay actionable after dispose');
+
+    /* The store then swaps the message object (same clientId, fresh
+       object with the same pending approval) — exactly what the final
+       session/update-message write-back does in main.js finish(). */
+    message = { clientId: 'msg-postfinish-1', id: 'msg-postfinish-1', toolCalls: [{ ...pendingCall }] };
+
+    await runtime.decideApproval('tc-codex-1', 'accept');
+
+    const post = calls.find((c) => c.method === 'POST' && c.url.includes('/approvals/'));
+    assert.ok(post, 'approval decision must be POSTed after finish');
+    assert.equal(JSON.parse(post.body).decision, 'accept');
+    assert.ok(post.url.includes(runId), 'POST uses the durable run id');
+    assert.ok(post.url.includes(approvalId), 'POST uses the durable approval id');
+    assert.equal(message.toolCalls[0].approval.status, 'accept', 'entry approval flips to accepted');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

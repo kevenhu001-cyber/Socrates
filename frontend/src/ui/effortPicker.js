@@ -110,7 +110,7 @@ function _modelSectionHTML() {
       html += "</button>";
     });
   }
-  html += '<button type="button" class="model-picker-add" data-action="manage-models">' +
+  html += '<button type="button" class="model-picker-add">' +
           _esc(providers.length ? _t("picker.manageModels", "Manage models…") : _t("picker.addModel", "Add a model…")) +
           "</button>";
   return html;
@@ -238,7 +238,7 @@ if (typeof document !== "undefined") {
     if (menu) {
       var effortBtn = e.target.closest(".effort-item");
       if (effortBtn) { setReasoningEffort(effortBtn.getAttribute("data-effort")); return; }
-      var manage = e.target.closest('[data-action="manage-models"]');
+      var manage = e.target.closest(".model-picker-add");
       if (manage) {
         _closeAll();
         if (typeof window.openSettings === "function") window.openSettings();

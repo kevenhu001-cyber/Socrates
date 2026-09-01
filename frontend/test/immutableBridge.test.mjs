@@ -54,7 +54,11 @@ test('immutable bridge reduces every queued action and notifies once per frame',
   assert.equal(bridge.getSnapshot().revision, 1, 'the factory owns revision bumps');
   assert.equal(notifications, 1, 'React subscribers render once');
   assert.ok(Object.isFrozen(bridge.getSnapshot()));
-  assert.ok(Object.isFrozen(bridge.getSnapshot().nested));
+  /* Nested objects stay mutable so legacy `state.kb.boundariesHistory
+     .push(...)` keeps working through the Proxy. The top-level
+     snapshot identity is what subscribers compare against (via
+     `revision`). */
+  assert.ok(!Object.isFrozen(bridge.getSnapshot().nested));
 });
 
 test('immutable bridge reset cancels pending work and restores the initial snapshot', () => {

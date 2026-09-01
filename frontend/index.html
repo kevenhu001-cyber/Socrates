@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="socrates" data-mode="dark">
 <head>
 <meta charset="UTF-8">
@@ -378,7 +378,7 @@
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <button class="icon-btn" data-action="toggleDisplayPrefs" title="Display settings" aria-label="Display settings">
+        <button class="icon-btn" id="displayPrefsBtn" data-action="toggleDisplayPrefs" title="Display settings" aria-label="Display settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
         </button>
         <button class="icon-btn" data-action="openSettings" title="API Settings">
@@ -813,273 +813,29 @@
      Indexed on first open and rebuilt whenever a session is
      saved. Recent queries persist under socrates-search-recent. -->
 <div class="cmd-k-overlay hidden" id="cmdKOverlay" role="dialog" aria-modal="true" aria-label="Command palette" data-action="closeCmdK" data-action-self-only="true">
-  <div class="cmd-k-modal" data-action="__stop">
-    <div class="cmd-k-input-row">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="cmd-k-icon"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" id="cmdKInput" name="cmdKInput" aria-label="Search sessions and messages" placeholder="Search sessions and messages…" autocomplete="off" spellcheck="false" data-action-input="onCmdKInput:value" data-action-keydown="onCmdKKey:event">
-      <kbd class="cmd-k-kbd">Esc</kbd>
-    </div>
-    <div class="cmd-k-results" id="cmdKResults"></div>
-    <div class="cmd-k-foot">
-      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
-      <span><kbd>↵</kbd> open</span>
-      <span><kbd>esc</kbd> close</span>
-    </div>
-  </div>
+  <!-- Inner markup is React-owned (cmdKOverlay) — mounted via createRoot at boot (M4 step 4.5). Host div + backdrop data-action stay for delegate.js. -->
 </div>
 
 <div class="share-overlay hidden" id="shareOverlay" role="dialog" aria-modal="true" aria-label="Share chat" data-action="closeShareModal" data-action-self-only="true">
-  <div class="share-modal" data-action="__stop">
-    <div class="share-header">
-      <span class="share-title" data-i18n-key="share.title">Share conversation</span>
-      <button class="share-close" aria-label="Close" data-action="closeShareModal" data-initial-focus="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="share-opt" id="shareOptPublic" data-share-vis="public" role="radio" tabindex="0" aria-checked="true" data-action="selectShareVis:public" data-action-keydown="selectShareVis:public" data-action-keydown-keys="Enter|Space">
-      <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
-      <div class="share-opt-body">
-        <div class="share-opt-title" data-i18n-key="share.publicTitle">Anyone with the link</div>
-        <div class="share-opt-desc" data-i18n-key="share.publicDesc">No sign-in required. Anyone who has the link can view this conversation.</div>
-      </div>
-    </div>
-    <div class="share-opt" id="shareOptPrivate" data-share-vis="private" role="radio" tabindex="0" aria-checked="false" data-action="selectShareVis:private" data-action-keydown="selectShareVis:private" data-action-keydown-keys="Enter|Space">
-      <div class="share-opt-radio"><span class="share-opt-radio-dot"></span></div>
-      <div class="share-opt-body">
-        <div class="share-opt-title" data-i18n-key="share.privateTitle">Only you</div>
-        <div class="share-opt-desc" data-i18n-key="share.privateDesc">Must be logged into your account to view. Still shared via link.</div>
-      </div>
-    </div>
-    <div id="shareLinkArea" class="share-link-area hidden">
-      <input class="share-link-input" id="shareLinkInput" name="shareLinkInput" type="text" readonly data-action="select" aria-label="Share link">
-      <button class="share-copy-btn" id="shareCopyBtn" data-action="copyShareLink" data-i18n-key="share.copy">Copy</button>
-    </div>
-    <div id="shareRevokeArea" class="hidden share-centered">
-      <button class="share-revoke" data-action="revokeShareLink" data-i18n-key="share.revoke">× Revoke share link</button>
-    </div>
-    <div class="share-error hidden" id="shareError"></div>
-    <div class="share-status hidden" id="shareStatus"></div>
-    <div id="shareCreateArea" class="share-create-area">
-      <button class="settings-btn primary share-create-btn" id="shareCreateBtn" data-action="createShareLink" data-i18n-key="share.create">Create share link</button>
-    </div>
-  </div>
+  <!-- Inner markup is React-owned (shareOverlay) — mounted via createRoot at boot (M4 step 4.5). Host div + backdrop data-action stay for delegate.js. -->
 </div>
 
-<div class="settings-overlay hidden" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" data-action="close-settings-overlay">
-  <div class="settings-modal">
-    <div class="settings-header">
-      <span class="settings-title" id="settingsTitle" data-i18n-key="settings.title">API Configuration</span>
-      <button class="settings-close" id="settingsCloseBtn" aria-label="Close" data-initial-focus="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="settings-body">
-      <div class="stg-toggle" id="stgToggle">
-        <span class="settings-label stg-toggle-label">Use External API</span>
-        <div class="stg-toggle-track" id="stgToggleTrack"><div class="stg-toggle-knob"></div></div>
-      </div>
-      <div class="settings-field">
-        <div class="settings-label-row">
-          <span class="settings-label">Models</span>
-          <button class="settings-btn-mini" id="addProviderBtn">+ Add</button>
-        </div>
-        <span class="settings-hint">Configure one or more providers. Click the circle to set one as active.</span>
-        <div class="provider-list" id="providerList"></div>
-      </div>
-      <div id="stgStatus"></div>
-
-      <!-- Tone Presets -->
-      <div class="settings-field">
-        <div class="settings-label-row">
-          <span class="settings-label">AI Tone</span>
-        </div>
-        <span class="settings-hint">Choose how the AI speaks to you. Works with the built-in AI and any provider you add.</span>
-        <div class="tone-preset-options" id="tonePresetOptions"></div>
-      </div>
-
-      <div class="settings-actions">
-        <button class="settings-btn danger" id="clearSettingsBtn">Clear all</button>
-        <button class="settings-btn secondary" id="cancelSettingsBtn">Cancel</button>
-        <button class="settings-btn primary" id="saveSettingsBtn">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Settings modal is React-owned (M4 step 4.5b): SettingsModal.tsx
+     renders #settingsOverlay into #settingsModalReactRoot at boot and
+     handles its own Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- profile modal -->
 <div class="profile-overlay hidden" id="profileOverlay" role="dialog" aria-modal="true" aria-label="Account" data-action="closeProfile" data-action-self-only="true">
-  <div class="profile-modal" data-action="__stop">
-    <div class="profile-header">
-      <div class="profile-avatar" id="profileAvatar">JH</div>
-      <input class="profile-name-input" id="profileName" type="text" maxlength="50" aria-label="Your name" data-action-change="saveProfileName:value" data-action-keydown="blur" data-action-keydown-keys="Enter">
-      <div class="profile-email" id="profileEmail">jiacheng@example.com</div>
-    </div>
-    <div class="profile-body" id="profileBody">
-      <!-- Account details section -->
-      <div class="profile-section">
-        <div class="profile-section-title" data-i18n-key="profile.account">Account</div>
-        <div class="profile-row">
-          <span class="profile-row-label" data-i18n-key="profile.joined">Joined</span>
-          <span class="profile-row-value" id="profileJoined">—</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-row-label" data-i18n-key="profile.emailVerified">Email verified</span>
-          <span class="profile-row-value" id="profileVerified">—</span>
-        </div>
-        <div class="profile-row">
-          <span class="profile-row-label" data-i18n-key="profile.userId">User ID</span>
-          <span class="profile-row-value" id="profileUserId"><span class="profile-id-text"></span></span>
-        </div>
-      </div>
-      <!-- Subscription section -->
-      <div class="profile-section">
-        <div class="profile-section-title" data-i18n-key="profile.subscription">Subscription</div>
-        <div class="profile-row">
-          <span class="profile-row-label" data-i18n-key="profile.currentPlan">Current plan</span>
-          <span class="profile-row-value profile-tier" id="profileTier"></span>
-        </div>
-        <div class="profile-row" id="profileSubEndRow">
-          <span class="profile-row-label" data-i18n-key="profile.renewal">Renewal</span>
-          <span class="profile-row-value" id="profileSubEnd">—</span>
-        </div>
-        <div class="profile-compare-wrap">
-          <a href="https://topodrive.top/pricing" class="profile-btn close-btn profile-compare-link" data-i18n-key="profile.comparePlans">Compare plans</a>
-        </div>
-      </div>
-      <!-- Preferences section -->
-      <div class="profile-section">
-        <div class="profile-section-title" data-i18n-key="profile.preferences">Preferences</div>
-        <!-- Language toggle — order matches the chat language directive's
-             detection order in main.js (zh / ja / ko / en). The label
-             text inside each option is intentionally not localized: the
-             button shows the language's own native name so a user can
-             find their own language regardless of UI state. -->
-        <div class="profile-row">
-          <span class="profile-row-label" data-i18n-key="profile.language">Language</span>
-          <div class="profile-lang-toggle" id="profileLangToggle">
-            <button type="button" class="profile-lang-option active" id="profileLangEn" aria-pressed="true" data-action="setLang" data-action-arg="en">English</button>
-            <button type="button" class="profile-lang-option" id="profileLangZh" aria-pressed="false" data-action="setLang" data-action-arg="zh">中文</button>
-          </div>
-        </div>
-        <div class="profile-toggle-desc" data-i18n-key="profile.webSearchDesc">Enable web search to include real-time results in questions.</div>
-        <button type="button" class="profile-toggle" id="profileWebSearchToggle" aria-pressed="false" data-action="toggleProfileWebSearch">
-          <span class="profile-toggle-label" data-i18n-key="profile.webSearch">Web search</span>
-          <div class="stg-toggle-track" id="profileWebSearchTrack"><div class="stg-toggle-knob"></div></div>
-        </button>
-        <!-- P1.3 — Custom Instructions. Two free-form textareas
-             that are prepended to the system prompt on every chat
-             turn. The first is "How should I respond?" (style /
-             tone / format); the second is "What do you know about
-             me?" (persisted context). Both are stored locally
-             under socrates-custom-instructions; when the backend
-             /api/users/me PATCH endpoint (docs/api/openapi.yaml
-             P1.3) is live, we sync to the server. -->
-        <div class="profile-instructions">
-          <label class="profile-instructions-label" for="profileInstResponse" data-i18n-key="profile.howShouldIRespond">How should I respond?</label>
-          <textarea id="profileInstResponse" name="profileInstResponse" class="profile-instructions-area" maxlength="4000" placeholder="e.g. Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language." data-action-input="onCustomInstructionsChange"></textarea>
-          <label class="profile-instructions-label profile-instructions-label-spaced" for="profileInstAbout" data-i18n-key="profile.whatDoYouKnow">What do you know about me?</label>
-          <textarea id="profileInstAbout" name="profileInstAbout" class="profile-instructions-area" maxlength="4000" placeholder="e.g. I'm a backend engineer working on a payments product. I'm allergic to puns." data-action-input="onCustomInstructionsChange"></textarea>
-          <div class="profile-instructions-foot">
-            <span id="profileInstSaveState" class="profile-instructions-state" data-i18n-key="profile.notYetSaved">Not yet saved</span>
-          </div>
-        </div>
-      </div>
-      <!-- Data management section -->
-      <div class="profile-section">
-        <div class="profile-section-title" data-i18n-key="profile.data">Data</div>
-        <!-- Usage / heatmap entry -->
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label" data-i18n-key="profile.usage">Token usage</div>
-            <div class="profile-action-desc" data-i18n-key="profile.usage.desc">View daily token usage heatmap and monthly breakdown.</div>
-          </div>
-          <button class="profile-btn profile-action-btn" data-action="openUsageModal" data-i18n-key="profile.view">View</button>
-        </div>
-        <!-- P2.3 — Storage entry. Opens a modal listing archived
-             sessions with restore / delete controls. The button
-             label shows the live count so the user knows if
-             there's anything to act on. -->
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label" data-i18n-key="profile.archivedSessions">Archived sessions</div>
-            <div class="profile-action-desc" data-i18n-key="profile.archivedSessionsDesc">Sessions you deleted are kept here for 30 days before being permanently erased.</div>
-          </div>
-          <button class="profile-btn profile-action-btn" data-action="openStorageModal" data-i18n-key="profile.manage">Manage</button>
-        </div>
-        <!-- P5.8 — Prompt templates. Opens a manager modal
-             where the user can add / edit / delete custom
-             templates. Built-ins are listed but read-only. -->
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label" data-i18n-key="profile.promptTemplates">Prompt templates</div>
-            <div class="profile-action-desc" data-i18n-key="profile.promptTemplatesDesc">Reusable prompts you can fire from the chat with <code>/shortcut</code>.</div>
-          </div>
-          <button class="profile-btn profile-action-btn" data-action="openPromptTemplatesModal" data-i18n-key="profile.manage">Manage</button>
-        </div>
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label" data-i18n-key="profile.clearConversations">Clear conversations</div>
-            <div class="profile-action-desc" data-i18n-key="profile.clearConversationsDesc">Remove all local chat history.</div>
-          </div>
-          <button class="profile-btn warning profile-action-btn" data-action="confirmClearCache" data-i18n-key="profile.clear">Clear</button>
-        </div>
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label" data-i18n-key="profile.clearApiSettings">Clear API settings</div>
-            <div class="profile-action-desc" data-i18n-key="profile.clearApiSettingsDesc">Remove all configured API providers and keys.</div>
-          </div>
-          <button class="profile-btn warning profile-action-btn" data-action="confirmClearSettings" data-i18n-key="profile.clear">Clear</button>
-        </div>
-      </div>
-      <!-- Danger zone section -->
-      <div class="profile-section profile-section-hidden">
-        <div class="profile-section-title profile-danger-color" data-i18n-key="profile.dangerZone">Danger zone</div>
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label" data-i18n-key="profile.signOut">Sign out</div>
-            <div class="profile-action-desc" data-i18n-key="profile.signOutDesc">End your session on this device.</div>
-          </div>
-          <button class="profile-btn signout profile-action-btn" data-action="signOut;closeProfile" data-i18n-key="profile.signOut">Sign out</button>
-        </div>
-        <div class="profile-action-row">
-          <div>
-            <div class="profile-action-label profile-danger-color" data-i18n-key="profile.deleteAccount">Delete account</div>
-            <div class="profile-action-desc" data-i18n-key="profile.deleteAccountDesc">Permanently delete your account and all data.</div>
-          </div>
-          <button class="profile-btn danger profile-action-btn" data-action="confirmDeleteAccount" data-i18n-key="profile.deleteAccount">Delete</button>
-        </div>
-      </div>
-    </div>
-    <div class="profile-actions profile-actions-sep">
-      <button class="profile-btn close-btn" data-action="closeProfile" data-i18n-key="common.close">Close</button>
-    </div>
-  </div>
+  <!-- Inner markup is React-owned (profileOverlay) — mounted via createRoot at boot (M4 step 4.5). Host div + backdrop data-action stay for delegate.js. -->
 </div>
-<!-- confirm dialog -->
-<div class="confirm-dialog hidden" id="confirmDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMsg" data-action="closeConfirm" data-action-self-only="true">
-  <div class="confirm-box" data-action="__stop">
-    <div class="confirm-title" id="confirmTitle" tabindex="-1" data-initial-focus="true">Are you sure?</div>
-    <div class="confirm-msg" id="confirmMsg">This action cannot be undone.</div>
-    <div class="confirm-actions" id="confirmActions">
-      <button class="confirm-btn cancel" data-action="closeConfirm" data-action-self-only="true" data-i18n-key="common.cancel">Cancel</button>
-      <button class="confirm-btn primary" id="confirmOkBtn" data-action="closeConfirm">OK</button>
-    </div>
-  </div>
-</div>
+
+<!-- Confirm dialog is React-owned (M4 step 4.5c): ConfirmDialog.tsx
+     renders #confirmDialog into #confirmDialogReactRoot at boot and
+     handles its own Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- usage modal -->
 <div class="usage-overlay hidden" id="usageOverlay" role="dialog" aria-modal="true" aria-label="Token usage" data-action="closeUsageModal" data-action-self-only="true">
-  <div class="usage-modal" data-action="__stop">
-    <div class="usage-header">
-      <span class="usage-title" data-i18n-key="usage.title">Token Usage</span>
-      <button type="button" class="usage-close" data-action="closeUsageModal" data-initial-focus="true" aria-label="Close">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="usage-body" id="usageBody">
-      <div class="usage-loading"><span class="loading"><span></span><span></span><span></span></span> <span data-i18n-key="usage.loading">Loading usage data…</span></div>
-    </div>
-  </div>
+  <!-- Inner markup is React-owned (usageOverlay) — mounted via createRoot at boot (M4 step 4.5). Host div + backdrop data-action stay for delegate.js. -->
 </div>
 
 </body>
