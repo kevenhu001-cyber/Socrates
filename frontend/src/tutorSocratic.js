@@ -1,4 +1,4 @@
-import { stateStore } from './state.js';
+import { stateStore } from './state/store.js';
 
 /* =====================================================================
  * tutorSocratic.js
@@ -301,7 +301,7 @@ import { stateStore } from './state.js';
     var N = nodes.length;
     if (!N) return '';
     var pos = kbLayout(nodes);
-    var cur = (window.state && typeof window.state.currentNode === 'number') ? window.state.currentNode : -1;
+    var cur = typeof stateStore.read("currentNode") === 'number' ? stateStore.read("currentNode") : -1;
     var s = '<div class="kb-graph-wrap">';
     s += '<div class="kb-graph-caption">'
       + (currentLang() === 'zh' ? '知识图谱 · 颜色=掌握度 · 大小=提问数' : 'Knowledge map · color = mastery · size = questions')
@@ -348,7 +348,7 @@ import { stateStore } from './state.js';
     var cont = document.getElementById('kbContent');
     if (!cont) return;
 
-    var nodes = (window.state && window.state.kbNodes) || [];
+    var nodes = window.stateStore.read("kbNodes") || [];
     if (!nodes.length) {
       cont.innerHTML = '<div class="kb-empty">'
         + (currentLang() === 'zh' ? '设置学习主题后，这里会显示知识地图。' : 'Set a topic to build your knowledge map.')
@@ -444,7 +444,7 @@ import { stateStore } from './state.js';
     }
     /* §6.5 — change log. Keep the most recent 8 entries; older ones
        stay in the session save and are not lost. */
-    var history = (window.state && window.state.boundariesHistory) || [];
+    var history = window.stateStore.read("boundariesHistory") || [];
     if (history.length) {
       html += '<div class="kb-section-title kb-section-title-secondary">'
            + ti('tutor.kbHistory', currentLang() === 'zh' ? '存档历史' : 'Snapshot history')
@@ -472,8 +472,7 @@ import { stateStore } from './state.js';
   }
 
   function saveBoundarySnapshot() {
-    if (!window.state) return;
-    var nodes = window.state.kbNodes || [];
+    var nodes = window.stateStore.read("kbNodes") || [];
     var counts = { internalized: 0, fuzzy: 0, blank: 0 };
     nodes.forEach(function (n) {
       var s = n.status === 'internalized' ? 'internalized'
@@ -515,11 +514,11 @@ import { stateStore } from './state.js';
   function renderTeachingPlan() {
     var cont = document.getElementById('teachingPlanContent');
     if (!cont) return;
-    var plan = window.state && window.state.teachingPlan;
+    var plan = window.stateStore.read("teachingPlan");
     var html = '';
     if (plan && plan.subtopics && plan.subtopics.length) {
       var curIdx = plan.currentSubtopicIdx || 0;
-      var stage = (window.state.teachingStage || 'motivate');
+      var stage = (window.stateStore.read("teachingStage") || 'motivate');
       var doneCount = 0;
       plan.subtopics.forEach(function (s) { if (s.status === 'internalized') doneCount++; });
       var totalCount = plan.subtopics.length;
@@ -552,7 +551,7 @@ import { stateStore } from './state.js';
              sub-topic advancement (ADVANCE_THRESHOLD = 3 in main.js).
              Without this the "3 substantive answers" rule was invisible
              and progress felt arbitrary. */
-          var subCount = Math.min((window.state && window.state.substantiveCount) || 0, 3);
+          var subCount = Math.min(window.stateStore.read("substantiveCount") || 0, 3);
           html += '<span class="teaching-plan-depth" title="'
                + ti('tutor.depthHint', currentLang() === 'zh' ? '达到 3 次深入回答后进入下一个子主题' : 'Reach 3 in-depth answers to advance to the next sub-topic')
                + '">' + subCount + '/3</span>';
@@ -591,10 +590,9 @@ import { stateStore } from './state.js';
         }
       }
     }
-    if (!window.state) { cont.innerHTML = ''; return; }
-    var phase = window.state.practicePhase;
+    var phase = window.stateStore.read("practicePhase");
     if (!phase) { cont.innerHTML = ''; return; }
-    var attempts = window.state.practiceAttempts || 0;
+    var attempts = window.stateStore.read("practiceAttempts") || 0;
     var phaseText = phase === 'foundation'
       ? ti('tutor.practiceFoundation', currentLang() === 'zh' ? '基础' : 'Foundation')
       : ti('tutor.practiceTransfer',   currentLang() === 'zh' ? '变式' : 'Transfer');
@@ -650,7 +648,7 @@ import { stateStore } from './state.js';
       var panel = document.getElementById('mistakesPanel');
       if (panel) panel.insertBefore(cont, panel.firstChild);
     }
-    var cur = (window.state && window.state.mistakeFilter) || 'all';
+    var cur = window.stateStore.read("mistakeFilter") || 'all';
     var opts = [
       { v: 'all',        key: 'tutor.mistakeFilterAll' },
       { v: 'unresolved', key: 'tutor.mistakeFilterUnresolved' },
@@ -675,11 +673,10 @@ import { stateStore } from './state.js';
    * ---------------------------------------------------------------- */
   function recordMistakeNotice(opts) {
     opts = opts || {};
-    if (!window.state) return null;
     var entry = {
       id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: opts.type || 'practice',
-      topic: opts.topic || (window.state.topic || ''),
+      topic: opts.topic || (window.stateStore.read("topic") || ''),
       q: opts.q || '',
       options: opts.options || [],
       correct: opts.correct || null,

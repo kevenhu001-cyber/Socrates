@@ -5,6 +5,27 @@
 // through src/windowExports.js.
 
 import { apiFetch } from '../util/api.js';
+var _usageListenersMounted=false;
+
+export function mountUsageListeners(){
+  var overlay=document.getElementById("usageOverlay");
+  if(!overlay||_usageListenersMounted)return;
+  _usageListenersMounted=true;
+  overlay.addEventListener("click",function(event){
+    var tab=event.target.closest&&event.target.closest("[data-usage-period]");
+    if(!tab)return;
+    if(tab.dataset.usagePeriod==="month")loadUsageMonth();
+    else loadUsageData();
+  });
+  overlay.addEventListener("mouseover",function(event){
+    var cell=event.target.closest&&event.target.closest(".usage-cal-day[data-date]");
+    if(cell)showUsageTip({currentTarget:cell});
+  });
+  overlay.addEventListener("mouseout",function(event){
+    var cell=event.target.closest&&event.target.closest(".usage-cal-day[data-date]");
+    if(cell&&!cell.contains(event.relatedTarget))hideUsageTip();
+  });
+}
 // i18n translator (window.t). Read lazily at call time: window.t is only
 // assigned after i18n.js evaluates, but this module is pulled in first via
 // windowExports.js, so a module-load capture would see undefined (and the
@@ -139,8 +160,8 @@ export function renderUsageHeatmap(data,body,limits,period){
   /* Period tabs */
   html+='<div class="usage-section-title">Daily Activity</div>';
   html+='<div class="usage-period-tabs">';
-  html+='<button class="usage-period-tab'+(period==='year'?' active':'')+'" onclick="loadUsageData()">Last 12 months</button>';
-  html+='<button class="usage-period-tab'+(period==='month'?' active':'')+'" onclick="loadUsageMonth()">This month</button>';
+  html+='<button class="usage-period-tab'+(period==='year'?' active':'')+'" data-usage-period="year">Last 12 months</button>';
+  html+='<button class="usage-period-tab'+(period==='month'?' active':'')+'" data-usage-period="month">This month</button>';
   html+='</div>';
 
   /* Heatmap grid */
@@ -169,7 +190,7 @@ export function renderUsageHeatmap(data,body,limits,period){
       if(row<w.length){
         var d=w[row];
         var lv=d.tokens>0?level(d.tokens):0;
-        html+='<div class="usage-cal-day lv'+lv+'" data-date="'+d.date+'" data-tokens="'+d.tokens+'" data-msgs="'+d.msgs+'" onmouseenter="showUsageTip(event)" onmouseleave="hideUsageTip()"></div>';
+        html+='<div class="usage-cal-day lv'+lv+'" data-date="'+d.date+'" data-tokens="'+d.tokens+'" data-msgs="'+d.msgs+'"></div>';
       }else{
         html+='<div></div>';
       }

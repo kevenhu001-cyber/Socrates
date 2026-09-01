@@ -125,32 +125,22 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
   const composer = page.locator('#chatComposerRoot');
   await expect(composer).toBeHidden();
 
-  // The state Proxy namespaces are preserved (the previous
-  // implementation overwrote state.session wholesale and broke
-  // state.session.kb / search / call / ui / exam). The proxy
-  // resolves `state.session` as a live reference, so we test
-  // for the typed shape of the namespaced fields it carries.
-  // Note: window.state.session only exposes `session.*` keys — kb /
-  // search / call / ui / exam live as separate top-level
-  // `state.kb` / `state.search` / etc. via the flat-namespace
-  // proxy. We assert via those flat lookups AND via the namespaced
-  // session shape.
+  // Shared loading must preserve every immutable namespace.
   const nsDiag = await page.evaluate(() => {
-    const s = window.state;
-    if (!s) return { ok: false, reason: 'no state' };
+    const s = window.stateStore.getSnapshot();
     const session = s.session;
     if (!session) return { ok: false, reason: 'no session' };
     return {
       ok: Array.isArray(session.messages)
         && typeof session.currentSessionId === 'string'
         && Array.isArray(s.kb.kbNodes)
-        && Array.isArray(s.search.results)
-        && s.call && typeof s.call.source === 'object',
+        && Array.isArray(s.search.searchResults)
+        && s.call && typeof s.call.lastCallSource === 'object',
       messages: Array.isArray(session.messages),
       currentSessionId: session.currentSessionId,
       kbNodes: Array.isArray(s.kb.kbNodes),
-      searchResults: Array.isArray(s.search.results),
-      callType: s.call && typeof s.call.source === 'object',
+      searchResults: Array.isArray(s.search.searchResults),
+      callType: s.call && typeof s.call.lastCallSource === 'object',
     };
   });
   expect(nsDiag.ok, 'namespaced state shape: ' + JSON.stringify(nsDiag)).toBe(true);
@@ -235,7 +225,7 @@ test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.state.session.currentSessionId = '11111111-1111-4111-8111-111111111111';
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
     window.openShareModal();
   });
   await page.evaluate(async () => { await window.createShareLink(); });

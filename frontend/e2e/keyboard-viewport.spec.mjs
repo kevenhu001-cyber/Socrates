@@ -48,7 +48,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   await expect(page.locator('#agentModeBtn')).toHaveCount(0);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
@@ -70,7 +70,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
   await page.waitForTimeout(350);
@@ -135,7 +135,7 @@ test('mobile composer follows a keyboard inset continuously without a position f
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
@@ -169,7 +169,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     for (let index = 0; index < 18; index += 1) {
@@ -185,7 +185,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
     list.scrollTop = list.scrollHeight;
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
     return { barHeight: bar.getBoundingClientRect().height };
   });
 
@@ -229,7 +229,7 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.addMessage(
@@ -272,7 +272,7 @@ test('conversation transcript remains independently scrollable', async ({ page }
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     for (let index = 0; index < 32; index += 1) {
@@ -316,7 +316,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     for (let index = 0; index < 18; index += 1) {
@@ -330,7 +330,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
   });
 
   await page.evaluate(() => {
@@ -366,7 +366,7 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     for (let index = 0; index < 20; index += 1) {
@@ -380,7 +380,7 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
     const body = list.querySelector('.msg:last-child .msg-body');
     const lateContent = document.createElement('div');
     lateContent.dataset.testLateContent = '1';
@@ -398,7 +398,7 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   const awayTop = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = Math.max(0, list.scrollTop - 240);
-    window.state._userScrolledAway = true;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: true });
     const top = list.scrollTop;
     const lateContent = list.querySelector('[data-test-late-content="1"]');
     lateContent.style.height = '420px';

@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import React, { useCallback, useEffect, useState, memo } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -311,7 +312,7 @@ const LIST_ID = 'recentsList';
 export function mountSessionList(): void {
   const container = document.getElementById(LIST_ID);
   if (!container) return;
-  if (container.dataset.mountedBy === 'session-list') return;
+  if (hostIsMountedBy(container, 'session-list')) return;
 
   installSessionListBridge();
 
@@ -321,5 +322,5 @@ export function mountSessionList(): void {
       <SessionListInner />
     </ErrorBoundary>,
   );
-  container.dataset.mountedBy = 'session-list';
+  markHostMountedBy(container, 'session-list');
 }

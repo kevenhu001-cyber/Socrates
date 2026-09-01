@@ -416,10 +416,10 @@ test('a running code call paints its program and stdout outside any collapsible'
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '55555555-5555-4555-8555-555555555555';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-code', role: 'user', rawText: 'Run it', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-code', role: 'user', rawText: 'Run it', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.__codeTurnPromise = window.askChatTurn('Run it');

@@ -23,11 +23,11 @@ export async function prepareChatWorkbench(page, options = {}) {
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await page.evaluate(({ sessionId, messages }) => {
-    window.state.phase = 'chat';
-    window.state.topic = 'Workbench fixture';
-    window.state.currentSessionId = sessionId;
-    if (window.state.session) window.state.session.currentSessionId = sessionId;
-    window.state.messages = Array.isArray(messages) ? messages : [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Workbench fixture' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    if (window.stateStore.read("session")) window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: Array.isArray(messages) ? messages : [] });
     document.getElementById('topicSetup')?.classList.add('hidden');
     document.getElementById('mainInner')?.classList.add('hidden');
     document.getElementById('chatView')?.classList.remove('hidden');

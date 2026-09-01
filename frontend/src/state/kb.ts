@@ -1,8 +1,3 @@
-export const KB_FLAT_KEYS = [
-  'kbNodes', 'currentNode', 'mistakes', 'boundariesHistory',
-  'boundariesSavedAt', 'mistakeFilter',
-] as const;
-
 export function createInitialKbState() {
   return {
     kbNodes: [],

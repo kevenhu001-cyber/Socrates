@@ -91,9 +91,9 @@ async function bootVoiceFixture(page, viewport) {
 
 async function enterChat(page) {
   await page.evaluate(() => {
-    window.state.phase = 'chat';
-    window.state.topic = 'Voice input check';
-    window.state.currentSessionId = '55555555-5555-4555-8555-555555555555';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Voice input check' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
     document.getElementById('topicSetup')?.classList.add('hidden');
     document.getElementById('mainInner')?.classList.add('hidden');
     document.getElementById('chatView')?.classList.remove('hidden');

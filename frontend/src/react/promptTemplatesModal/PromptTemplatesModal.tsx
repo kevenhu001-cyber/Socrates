@@ -1,10 +1,29 @@
 import { createRoot, type Root } from 'react-dom/client';
 import React from 'react';
+import {
+  closePromptTemplatesModal,
+  onPromptRowDelete,
+  onPromptTemplateEditorSave,
+  openPromptTemplateEditor,
+  renderPromptTemplatesModal,
+} from '../../ui/promptTemplates.js';
 import { installPromptTemplatesBridge, usePromptTemplatesSnapshot, usePromptTemplatesDispatch } from './promptTemplates.bridge';
 
 function PromptTemplatesModal() {
   const snap = usePromptTemplatesSnapshot();
   const dispatch = usePromptTemplatesDispatch();
+  const handleCommand = (event: React.MouseEvent) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>('[data-prompt-command]');
+    if (!button) return;
+    const command = button.dataset.promptCommand;
+    const id = button.dataset.templateId;
+    if (command === 'close') closePromptTemplatesModal();
+    else if (command === 'list') renderPromptTemplatesModal();
+    else if (command === 'create') openPromptTemplateEditor();
+    else if (command === 'edit') openPromptTemplateEditor(id);
+    else if (command === 'delete' && id) onPromptRowDelete(id);
+    else if (command === 'save' && id) onPromptTemplateEditorSave(id);
+  };
 
   if (!snap.open) return null;
 
@@ -15,7 +34,7 @@ function PromptTemplatesModal() {
   },
     React.createElement('div', {
       className: 'prompt-templates-modal',
-      onClick: (e: React.MouseEvent) => e.stopPropagation(),
+      onClick: (e: React.MouseEvent) => { e.stopPropagation(); handleCommand(e); },
       dangerouslySetInnerHTML: { __html: snap.bodyHTML },
     }),
   );

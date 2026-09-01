@@ -1,23 +1,21 @@
 import { apiFetch } from '../util/api.js';
 import { hasUsableActive } from '../config/providers.js';
-import { stateStore } from '../state.js';
-
-function getState() { return window.state; }
+import { stateStore } from '../state/store.js';
 
 /* Generate a declarative session title based on the user's first input.
    Called fire-and-forget on first save. A short cooldown prevents repeated
    saves from amplifying a 429 while still allowing a later retry.
-   Uses getState().topic (the user's initial topic) as context. */
+   Uses window.stateStore.read("topic") (the user's initial topic) as context. */
 var _titleGenQueued=false;
 var _titleGenSession=null;
 var _titleGenRetryAfter=0;
 export function generateSessionTitle(){
-  var sessionId=getState().session&&getState().session.currentSessionId;
-  if(!hasUsableActive()||_titleGenQueued||getState().sessionTitle)return;
+  var sessionId=stateStore.read("currentSessionId");
+  if(!hasUsableActive()||_titleGenQueued||window.stateStore.read("sessionTitle"))return;
   /* P_title-429 — background title generation must not turn repeated saves
      into a request storm after a rate-limit response. */
   if(sessionId&&_titleGenSession===sessionId&&Date.now()<_titleGenRetryAfter)return;
-  var topic=(getState().topic||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
+  var topic=(window.stateStore.read("topic")||"").replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,"").trim();
   if(!topic)return;
   _titleGenQueued=true;
   _titleGenSession=sessionId||null;
@@ -78,7 +76,7 @@ export function generateSessionTitle(){
          reset while the title generation was in-flight, and calling
          saveCurrentSession() would either resurrect the deleted
          session or attach a stale title to the wrong session. */
-      if(getState().session.currentSessionId)stateStore.dispatch({type:'state/set',key:'sessionTitle',value:title});
+      if(window.stateStore.read("currentSessionId"))stateStore.dispatch({type:'state/set',key:'sessionTitle',value:title});
       _titleGenRetryAfter=0;
       if (typeof window.saveCurrentSession === "function") window.saveCurrentSession();
     }

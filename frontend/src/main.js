@@ -7,6 +7,7 @@ import { ensureFuse, ensureHighlight, ensureKatex, onKatexReady } from './vendor
    Vite preloads it (and its Tiptap/React deps) alongside the main entry
    instead of the browser discovering it only after main.js executes. */
 import { bootstrapReactCompatibilityRuntime } from './react/bootstrap.tsx';
+import { isMsgListMounted } from './react/message-list/MessageList.tsx';
 /* Side-effect import: forces Vite/esbuild to keep windowExports.js
    (which re-exposes ~75 inline-handler-needed functions on window)
    in the bundle. Without this, esbuild's tree-shaking would drop
@@ -14,16 +15,21 @@ import { bootstrapReactCompatibilityRuntime } from './react/bootstrap.tsx';
 import './windowExports.js';
 /* P_storage-shim — import before any other module so the in-memory
    localStorage/sessionStorage shim is installed before downstream
-   imports (state.js, i18n.js, providers.js, displayPrefs.js, …)
+   imports (state/store.js, i18n.js, providers.js, displayPrefs.js, …)
    touch storage. Without this ordering, first-party storage calls
    made during module evaluation can fire one
    "Tracking Prevention blocked access to storage" warning each
    before the shim's IIFE kicks in. */
 import './batchStorage.js';
-import { state, stateStore, resetState } from './state.js';
+import { stateStore, resetState } from './state/store.js';
 import './i18n.js';
 import { initCookieConsent } from './cookieConsent.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
+import { mountLegacyShellListeners } from './ui/legacyShellListeners.js';
+import { toggleComposerTools } from './ui/composerTools.js';
+import { toggleEffortPicker } from './ui/effortPicker.js';
+import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.js';
+import { openFindInSession } from './ui/findInSession.js';
 import { initChatComposerReserve, scrollContainer, smoothScrollToBottom, isPinnedToBottom, shouldAutoScroll } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
@@ -47,7 +53,7 @@ import { renderAttachmentChips, openAttachmentPicker } from './attachments/rende
 import {
   offlineGuard,
 } from './chat/offline.js';
-import { closeUsageModal } from './ui/usage.js';
+import { closeUsageModal, mountUsageListeners } from './ui/usage.js';
 import { createMistakeBook } from './ui/mistakeBook.js';
 import { batchSetItem } from './batchStorage.js';
 /* (side-effect-only import already loaded above; this named-import
@@ -149,19 +155,6 @@ function publishReactChatRuntime(event){
   }catch(_){}
 }
 
-/* P_react-live-turn — does the React message list own this turn?
-   Read per call, not once at boot: the runtime is released and remounted
-   across session switches, and the read-only share view never mounts it at
-   all. While false, the streaming pipeline below paints its own bubble;
-   while true it writes only stateStore.read("messages") + `_liveStatus` and
-   react/tool-run renders the live turn from that data. The dataset flag is
-   the safety valve: if React is not mounted, the legacy writers keep the
-   answer visible. */
-function reactOwnsMsgList(){
-  var list=document.getElementById("msgList");
-  return !!(list&&list.dataset&&list.dataset.mountedBy==="msg-list");
-}
-
 /* The one live status line of a turn, as data. `status` is a LiveTurnStatus
    (phase waiting|thinking|retrying|error) or null to retire the line; see
    react/tool-run/TurnStatus for what each phase draws. Written onto the
@@ -231,7 +224,7 @@ function rerenderMathAfterKatex(){
        its entries away and re-typeset. */
     window.__socratesMathRenderRev=(window.__socratesMathRenderRev||0)+1;
     var rev=window.__socratesMathRenderRev;
-    var msgs=(typeof state!=="undefined"&&state&&Array.isArray(stateStore.read("messages")))?stateStore.read("messages"):[];
+    var msgs=Array.isArray(stateStore.read("messages"))?stateStore.read("messages"):[];
     var changed=false;
     for(var mi=0;mi<msgs.length;mi++){
       var m=msgs[mi];
@@ -682,7 +675,7 @@ document.addEventListener("keydown",function(e){
   /* Cmd+Shift+S — share. */
   if(cmd&&!e.altKey&&e.shiftKey&&key==="s"){
     e.preventDefault();
-    if(typeof openShareModal==="function"&&state.session.currentSessionId){
+    if(typeof openShareModal==="function"&&stateStore.read("currentSessionId")){
       openShareModal();
     }else{
       showToast(t("toast.shareStartFirst"));
@@ -751,7 +744,7 @@ document.addEventListener("keydown",function(e){
 });
 
 /* P5.6 — find the most recent user-authored message in
-   state.session.messages. Used by the Up-arrow-in-empty-input
+   stateStore.read("messages"). Used by the Up-arrow-in-empty-input
    shortcut to pop the previous prompt back into the input
    for editing. */
 /* D 区段(stripMarkdown / findLastUserMessage) 已抽到 src/render/markdown.js,
@@ -947,13 +940,13 @@ initChatComposerReserve();
    ============================================================ */
 /* P1.5 — state is now a multi-namespace object. Each sub-object
    is the source of truth for one concern; cross-namespace writes
-   go through the explicit field (e.g. `state.session.topic = ...`).
+   go through the explicit field (e.g. `stateStore.read("topic") = ...`).
    For backward compatibility, `state` itself is a Proxy that
    delegates the legacy flat-field accesses
    (`stateStore.read("topic")`, `stateStore.read("phase")`, `stateStore.read("kbNodes")`, `stateStore.read("mistakes")`,
    `stateStore.read("_userScrolledAway")`, `stateStore.read("searchContext")`, …) to the
    matching sub-namespace. New code should access via
-   `state.session.topic` etc.; the legacy form still works because
+   `stateStore.read("topic")` etc.; the legacy form still works because
    the read/write lookups resolve transparently. */
 
 /* ============================================================
@@ -1182,7 +1175,7 @@ function doSave(){
      "give it back so the user can re-create it" UX I'd half-
      designed at one point) would otherwise bypass the topic
      check and silently re-insert the deleted row. */
-  var sid=state.session.currentSessionId;
+  var sid=stateStore.read("currentSessionId");
   if(_deletedSessionGuard.has(sid)){
     _saveInFlight=null;
     _saveDirty=false;
@@ -1231,7 +1224,7 @@ function doSave(){
       toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
     };
   });
-  var sessionId=state.session.currentSessionId||generateId();
+  var sessionId=stateStore.read("currentSessionId")||generateId();
   /* P_context-race — snapshot the session ID at capture time so the
      POST callback can detect whether a session switch happened while
      the request was in-flight. If the active session changed, the
@@ -1240,39 +1233,39 @@ function doSave(){
   var capturedSessionId=sessionId;
   var payload={
     id:sessionId,
-    topic:state.session.topic,
-    title:state.session.sessionTitle||state.session.topic,
-    domain:state.session.domain||state.session.topic,
+    topic:stateStore.read("topic"),
+    title:stateStore.read("sessionTitle")||stateStore.read("topic"),
+    domain:stateStore.read("domain")||stateStore.read("topic"),
     projectId:stateStore.read("currentProjectId")||null,
     mode:appMode,
     messages:messages,
-    kbNodes:state.kb.kbNodes,
-    mistakes:state.kb.mistakes||[],
-    currentNode:state.kb.currentNode,
-    totalQ:state.session.totalQ,
+    kbNodes:stateStore.read("kbNodes"),
+    mistakes:stateStore.read("mistakes")||[],
+    currentNode:stateStore.read("currentNode"),
+    totalQ:stateStore.read("totalQ"),
     phase:stateStore.read("phase"),
     /* Task 2.4 — persist the teaching-stage state machine so a
        reloaded session resumes at the right stage. The backend
        sessions.js uses .passthrough() so these extra fields are
        accepted without schema changes. */
-    teachingStage:state.session.teachingStage||"motivate",
-    currentExampleIdx:state.session.currentExampleIdx||0,
-    practiceAttempts:state.session.practiceAttempts||0,
-    practicePhase:state.session.practicePhase||"foundation",
-    teachingPlan:state.session.teachingPlan||null,
+    teachingStage:stateStore.read("teachingStage")||"motivate",
+    currentExampleIdx:stateStore.read("currentExampleIdx")||0,
+    practiceAttempts:stateStore.read("practiceAttempts")||0,
+    practicePhase:stateStore.read("practicePhase")||"foundation",
+    teachingPlan:stateStore.read("teachingPlan")||null,
     /* v3.0 design — knowledge boundary history (snapshots) and
        mistake filter are also persisted so the sidebar state
        survives reloads. */
-    boundariesHistory:state.kb.boundariesHistory||[],
-    mistakeFilter:state.kb.mistakeFilter||"all",
+    boundariesHistory:stateStore.read("boundariesHistory")||[],
+    mistakeFilter:stateStore.read("mistakeFilter")||"all",
     /* P1.1 — persist branchedFrom metadata so a reloaded session
        shows "Branched from ..." in the sidebar. */
-    branchedFrom:state.session.branchedFrom||null,
+    branchedFrom:stateStore.read("branchedFrom")||null,
     updatedAt:now,
   };
   /* P_dup-session — sync the namespace mirror too. Without this,
      a second saveCurrentSession in the same tick reads
-     state.session.currentSessionId (still null because line 1228
+     stateStore.read("currentSessionId") (still null because line 1228
      only fires after the server responds), regenerates a new id,
      and the server creates a SECOND session record — the user
      sees the same chat appear twice in Recents. The two fields
@@ -1315,7 +1308,7 @@ function doSave(){
     /* P_context-race — if the user switched to a different session
        while this POST was in-flight, do NOT adopt the server's id
        (it belongs to the old session) and do NOT update the URL. */
-    if(state.session.currentSessionId!==capturedSessionId)return refreshServerSessions();
+    if(stateStore.read("currentSessionId")!==capturedSessionId)return refreshServerSessions();
     if(r&&r.id&&r.id!==sessionId){
       stateStore.dispatch({type:"state/set",key:"currentSessionId",value:r.id});
       pushChatIdToURL(r.id);
@@ -1326,7 +1319,7 @@ function doSave(){
        completed normally), clear the server-side streaming_text
        so a reload doesn't show partial content. Fire-and-forget;
        failure is harmless. */
-    var curSid=state.session.currentSessionId||stateStore.read("currentSessionId");
+    var curSid=stateStore.read("currentSessionId")||stateStore.read("currentSessionId");
     if(curSid){
       apiFetch("/api/sessions/"+encodeURIComponent(curSid),{
         method:"PATCH",
@@ -1385,7 +1378,7 @@ function doSave(){
   }
   function _beaconSave(){
     /* Only fire if we have data worth saving and a save is pending. */
-    if(!_saveInFlight||!state.session.currentSessionId||!CURRENT_USER)return;
+    if(!_saveInFlight||!stateStore.read("currentSessionId")||!CURRENT_USER)return;
     /* Snapshot only the data we need — rawText and role are enough
        for recovery; html is regenerated client-side on load. */
     var snapshot=stateStore.read("messages")
@@ -1406,9 +1399,9 @@ function doSave(){
       }});
     if(!snapshot.length)return;
     var payload={
-      id:state.session.currentSessionId,
-      topic:state.session.topic||stateStore.read("topic")||"",
-      title:state.session.sessionTitle||state.session.topic||"",
+      id:stateStore.read("currentSessionId"),
+      topic:stateStore.read("topic")||stateStore.read("topic")||"",
+      title:stateStore.read("sessionTitle")||stateStore.read("topic")||"",
       mode:appMode,
       messages:snapshot,
     };
@@ -1506,7 +1499,7 @@ async function loadExamSession(s){
   if(stateStore.read("examSubmitted")){
     renderExamResults();
   }else{
-    footer.innerHTML='<button class="exam-btn primary" onclick="submitExam()">Submit for Grading</button><button class="exam-btn secondary" onclick="closeExamView()">Close</button>';
+    footer.innerHTML='<button class="exam-btn primary" data-exam-command="submit">Submit for Grading</button><button class="exam-btn secondary" data-exam-command="close">Close</button>';
   }
   toggleShareBtn();
   renderRecents();
@@ -1548,16 +1541,18 @@ function paintRestoredQuestionCard(idx,q){
    pending-chat payload cannot leak into the next one. Called from
    loadSession() (server-driven switch) and startSession() (user
    clicks Begin with a new topic). */
-function resetSessionTransients(s){
-  s.search.context=null;
-  s.search.results=[];
-  s.search.contextAt=0;
-  s.search.contextCount=0;
-  s.search.contextQuery=null;
-  s.search.error=null;
-  s.call.source=null;
-  s.call.error=null;
-  s.session.sessionTitle=null;
+function resetSessionTransients(){
+  stateStore.dispatch({type:"state/batch",patch:{
+    searchContext:null,
+    searchResults:[],
+    searchContextAt:0,
+    searchContextCount:0,
+    searchContextQuery:null,
+    searchContextError:null,
+    lastCallSource:null,
+    lastCallError:null,
+    sessionTitle:null
+  }});
   try{clearComposer("chat")}catch(_){}
   try{updateSendBtn();}catch(_){}
   try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null;}catch(_){}
@@ -1572,8 +1567,8 @@ function resetSessionTransients(s){
 }
 
 /* F2d — write the active session id to every place it's mirrored
-   (stateStore.read("currentSessionId"), state.session.currentSessionId, window
-   mirror). The Proxy state.js already syncs the top-level ↔ namespace
+   (stateStore.read("currentSessionId"), stateStore.read("currentSessionId"), window
+   mirror). The Proxy state/store.js already syncs the top-level ↔ namespace
    via the lookup table, but the explicit triple-write keeps window
    readers in lock-step and removes the four manual duplications
    scattered through loadSession / startSession / resetState. */
@@ -1662,7 +1657,7 @@ async function loadSession(id){
     }else{ window.__activeProject=null; }
     /* P_context-race — currentSessionId and URL are set DEFERRED
        after messages are rebuilt below. Setting currentSessionId before
-       messages creates a window where state.session.currentSessionId
+       messages creates a window where stateStore.read("currentSessionId")
        points to the NEW session but stateStore.read("messages") still holds the OLD
        session's data. Any saveCurrentSession() that fires during this
        window (called from 23+ places) would capture mismatched state,
@@ -1675,7 +1670,7 @@ async function loadSession(id){
        below. Order matters: resetSessionTransients clears
        search/call/composer/plan, then this block restores sessionTitle
        + teachingStage + plan fields from the loaded session. */
-    resetSessionTransients(state);
+    resetSessionTransients();
     /* Update the URL to reflect the current chat session.
        MOVED DOWN — see comment above. */
     // pushChatIdToURL(s.id); ← MOVED DOWN
@@ -1953,9 +1948,9 @@ async function loadSession(id){
        first non-internalized sub-topic, matching proceedToTeaching. */
     if(appMode!=="chat"&&stateStore.read("kbNodes")&&stateStore.read("kbNodes").length){
       stateStore.dispatch({
-        type:"state/set",key:"teachingPlan",value:buildTeachingPlanFromKB(state)
+        type:"state/set",key:"teachingPlan",value:buildTeachingPlanFromKB(stateView())
       });
-      var restoredPlanSync=syncCurrentNodeFromTeachingPlan(state);
+      var restoredPlanSync=syncCurrentNodeFromTeachingPlan(stateView());
       if(restoredPlanSync){
         stateStore.dispatch({type:"state/batch",patch:restoredPlanSync});
       }
@@ -2110,7 +2105,7 @@ function openTagEditor(id,e){
       }).join("")+
     '</div>':'')+
     '<div class="tag-editor-foot">'+
-      '<button class="tag-editor-done" onclick="closeTagEditor()">Done</button>'+
+      '<button class="tag-editor-done">Done</button>'+
     '</div>';
   /* Position. */
   var row=(e&&e.currentTarget&&e.currentTarget.closest(".recent-item"))||null;
@@ -2142,6 +2137,7 @@ function openTagEditor(id,e){
     else if(ev.key==="Escape"){ev.preventDefault();closeTagEditor()}
   };
   addBtn.onclick=commitInput;
+  pop.querySelector(".tag-editor-done").onclick=closeTagEditor;
   pop.querySelectorAll("[data-tag-remove]").forEach(function(b){
     b.onclick=function(){
       removeTagFromSession(id,b.getAttribute("data-tag-remove"));
@@ -2238,7 +2234,7 @@ async function actuallyDeleteSession(id,ev){
   }
   /* P_delete-stale — bounce the user out of the chat view if the
      deleted session is EITHER (a) the one currently on screen
-     (state.session.currentSessionId) OR (b) referenced by the
+     (stateStore.read("currentSessionId")) OR (b) referenced by the
      top-level stateStore.read("currentSessionId") mirror. Without checking
      both, a session whose currentSessionId drifted onto the
      top-level mirror (the duplicate-session bug we fixed) would
@@ -2247,7 +2243,7 @@ async function actuallyDeleteSession(id,ev){
      in-flight chat stream so a half-written reply doesn't
      resurface after the delete. */
   
-  var wasActive=state.session.currentSessionId===id||stateStore.read("currentSessionId")===id;
+  var wasActive=stateStore.read("currentSessionId")===id||stateStore.read("currentSessionId")===id;
   if(wasActive){
     if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
     if(window._activeChatAbort){try{window._activeChatAbort("session-deleted")}catch(_){}}
@@ -2266,7 +2262,7 @@ async function actuallyDeleteSession(id,ev){
      see the tombstone and bail instead of re-inserting the row.
      We register both the canonical id and any alias we may have
      had for it (defence against the duplicate-session drift that
-     made state.session.currentSessionId / stateStore.read("currentSessionId")
+     made stateStore.read("currentSessionId") / stateStore.read("currentSessionId")
      disagree in past incidents). */
   rememberDeletedSession(id);
   /* Single-step: server's DELETE /api/sessions/:id now deletes
@@ -2359,7 +2355,7 @@ function confirmPurgeSession(id){
          shown. without this, the chat view continues displaying the
          deleted session's messages, topic badge, and knowledge
          graph until the user manually navigates away. */
-      var wasActive=state.session.currentSessionId===id||stateStore.read("currentSessionId")===id;
+      var wasActive=stateStore.read("currentSessionId")===id||stateStore.read("currentSessionId")===id;
       if(wasActive){
         if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
         if(window._activeChatAbort){try{window._activeChatAbort("session-purged")}catch(_){}}
@@ -2482,7 +2478,7 @@ function moveSessionToProject(sessionId, projectId){
     apiFetch("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: projectId } })
       .then(function(){
         /* Update local state. */
-        if(state && stateStore.read("currentSessionId") === sessionId){
+        if(stateStore.read("currentSessionId") === sessionId){
           stateStore.dispatch({type:"state/set",key:"currentProjectId",value:projectId});
           window.__activeProject = project;
         }
@@ -2601,7 +2597,7 @@ function _publishSessionList(){
     }
     bridge.publish({
       sessions: sessions.map(_stableSessionRow),
-      currentSessionId: window.state?window.state.session.currentSessionId:null,
+      currentSessionId: stateStore.read("currentSessionId"),
       searchQuery: searchQ,
       filter: filter,
       fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
@@ -2663,6 +2659,10 @@ function renderRecentsFilterChips(){
    extracted to chat/lang.js. No behavior change. */
 import { detectLanguage, languageDirectiveFor } from './chat/lang.js';
 
+
+var cancelDiagnostic=function(){};
+var retryDiagnostic=function(){};
+var useBuiltinDiagnostic=function(){};
 
 async function startSession(){
   publishThinkingTurnStart();
@@ -2775,7 +2775,7 @@ async function startSession(){
          new-session abort so even if the abort fires during the helper,
          we never carry the previous session's web-search result into the
          new chat. */
-      resetSessionTransients(state);
+      resetSessionTransients();
       /* P_new-session-context-leak — also abort any in-flight stream from
          a previous session so its late onDelta/finish callbacks can't
          write into the freshly-cleared stateStore.read("messages"). */
@@ -2895,11 +2895,11 @@ async function startSession(){
      Includes a cancel button so the user can bail out of a slow
      generation instead of watching the spinner indefinitely. */
   function diagLoadingHTML(){
-    return '<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+t("diag.analyzingTopic")+'</div></div><button type="button" class="diag-cancel-btn" onclick="cancelDiagnostic()">'+t("diag.cancel")+'</button></div>';
+    return '<div class="diag-loading"><div class="loading"><span></span><span></span><span></span></div><p class="diag-loading-text">'+t("tutor.loading")+'</p><div class="diag-progress"><div class="diag-progress-bar"><div class="diag-progress-fill" id="diagProgressFill"></div></div><div class="diag-progress-step" id="diagProgressStep"><span class="diag-progress-spin"></span>'+t("diag.analyzingTopic")+'</div></div><button type="button" class="diag-cancel-btn" data-diag-command="cancel">'+t("diag.cancel")+'</button></div>';
   }
   /* U-H3 — cancel handler: raise the cancel flag (checked inside
      generateDiagnosticQuestions) and return to the topic-setup screen. */
-  window.cancelDiagnostic=function(){
+  cancelDiagnostic=function(){
     stateStore.dispatch({type:"state/set",key:"diagCancel",value:true});
     /* AUDIT-R3 — the Begin click already auto-saved an empty session
        row (P_recents-auto) and set stateStore.read("topic"). Cancelling used to
@@ -2909,7 +2909,7 @@ async function startSession(){
        via the stateStore.read("topic") guard), then delete the server row after
        the in-flight Begin-save drains so the DELETE can't lose the
        race with its own POST. */
-    var cancelledSid=state.session.currentSessionId||stateStore.read("currentSessionId");
+    var cancelledSid=stateStore.read("currentSessionId")||stateStore.read("currentSessionId");
     stateStore.dispatch({type:"state/batch",patch:{topic:"",phase:"topic"}});
     setCurrentSessionId(null);
     setChatIdInURL(null);
@@ -3004,8 +3004,8 @@ async function startSession(){
       +'<p class="diag-error-title">'+_esc(t("diag.timeoutTitle"))+'</p>'
       +(reason?'<p class="diag-error-reason">'+_esc(reason)+'</p>':'')
       +'<div class="diag-error-actions">'
-      +'<button type="button" class="diag-error-retry" onclick="retryDiagnostic()">'+_esc(t("diag.retry"))+'</button>'
-      +'<button type="button" class="diag-error-builtin" onclick="useBuiltinDiagnostic()">'+_esc(t("diag.useBuiltin"))+'</button>'
+      +'<button type="button" class="diag-error-retry" data-diag-command="retry">'+_esc(t("diag.retry"))+'</button>'
+      +'<button type="button" class="diag-error-builtin" data-diag-command="builtin">'+_esc(t("diag.useBuiltin"))+'</button>'
       +'</div></div>';
   }
   async function attemptDiagGeneration(reinjectLoading){
@@ -3055,8 +3055,8 @@ async function startSession(){
   }
   /* U-H3 — retry re-runs generation from scratch; use-built-in accepts
      the mock questions the caller already prepared (gen.diagQuestions). */
-  window.retryDiagnostic = function(){ attemptDiagGeneration(true); };
-  window.useBuiltinDiagnostic = function(){
+  retryDiagnostic = function(){ attemptDiagGeneration(true); };
+  useBuiltinDiagnostic = function(){
     stateStore.dispatch({type:"state/set",key:"diagQuestions",value:buildFallbackDiagnosticQuestions(
       topic,
       tutorExploration.count,
@@ -3073,24 +3073,12 @@ async function startSession(){
   await attemptDiagGeneration(false);
 }
 
-/* P_inline-onclick-bridge — these handlers are referenced by
-   `onclick="X()"` attributes in dynamically generated HTML
-   (diagnostic flow buttons, tag editor done, slash row click, active
-   template chip). Inline attribute handlers resolve identifiers in the
-   global scope, so they must be bound on window at module load. */
-window.closeTagEditor = closeTagEditor;
-window.clearActiveTemplate = clearActiveTemplate;
-window.onSlashRowClick = onSlashRowClick;
-window.selectDiag = selectDiag;
-window.prevDiagQuestion = prevDiagQuestion;
-window.nextDiagQuestion = nextDiagQuestion;
-window.skipDiagQuestion = skipDiagQuestion;
-window.finishDiagnostic = finishDiagnostic;
-window.proceedToTeaching = proceedToTeaching;
-window.moveSessionToProject = moveSessionToProject;
-
+function stateView(){
+  var snapshot=stateStore.getSnapshot();
+  return Object.assign({},snapshot.session,snapshot.kb,snapshot.search,snapshot.call,snapshot.ui,snapshot.exam);
+}
 function renderDiagQuestion(){
-  renderDiagQuestionUI(state,t,formatMsg);
+  renderDiagQuestionUI(stateView(),t,formatMsg);
 }
 function skipDiagQuestion(){
   var skippedAnswers=stateStore.read("diagAnswers").slice();
@@ -3126,10 +3114,10 @@ function finishDiagnostic(){
   if(stateStore.read("diagAnswers")[stateStore.read("diagIndex")]===undefined)return;
 
   stateStore.dispatch({
-    type:"state/set",key:"kbNodes",value:applyDiagnosticResults(state)
+    type:"state/set",key:"kbNodes",value:applyDiagnosticResults(stateView())
   });
 
-  renderDiagResultsScreen(state,_currentLang==="zh");
+  renderDiagResultsScreen(stateView(),_currentLang==="zh");
 }
 
   /* P_test-interpretation — proceed from the results screen to the actual
@@ -3148,8 +3136,8 @@ function proceedToTeaching(){
      from basics regardless of diagnostic result. currentSubtopicIdx
      always points to the first node so teaching starts from the
      foundation. */
-  stateStore.dispatch({type:"state/set",key:"teachingPlan",value:buildTeachingPlanFromKB(state)});
-  var teachingPlanSync=syncCurrentNodeFromTeachingPlan(state);
+  stateStore.dispatch({type:"state/set",key:"teachingPlan",value:buildTeachingPlanFromKB(stateView())});
+  var teachingPlanSync=syncCurrentNodeFromTeachingPlan(stateView());
   if(teachingPlanSync){
     stateStore.dispatch({type:"state/batch",patch:teachingPlanSync});
   }
@@ -3168,6 +3156,22 @@ function proceedToTeaching(){
     askNextQuestion();
   },400);
 }
+
+var diagnosticView=document.getElementById("diagnosticView");
+if(diagnosticView)diagnosticView.addEventListener("click",function(event){
+  var button=event.target.closest&&event.target.closest("[data-diag-command]");
+  if(!button||!diagnosticView.contains(button))return;
+  var command=button.getAttribute("data-diag-command");
+  if(command==="cancel")cancelDiagnostic();
+  else if(command==="retry")retryDiagnostic();
+  else if(command==="builtin")useBuiltinDiagnostic();
+  else if(command==="select")selectDiag(Number(button.getAttribute("data-diag-index")));
+  else if(command==="previous")prevDiagQuestion();
+  else if(command==="next")nextDiagQuestion();
+  else if(command==="skip")skipDiagQuestion();
+  else if(command==="finish")finishDiagnostic();
+  else if(command==="proceed")proceedToTeaching();
+});
 
 /* ============================================================
    SOCRATIC QUESTIONS
@@ -3572,7 +3576,7 @@ function publishActiveWorkflowEvent(stage,status,extra){
 }
 function publishActiveWorkflowFinish(ok){
   publishActiveWorkflowEvent(ok?"completed":"failed",ok?"succeeded":"failed",
-    {message:ok?"Done":((window.state&&window.stateStore.read("lastCallError"))||"No response")});
+    {message:ok?"Done":(stateStore.read("lastCallError")||"No response")});
 }
 /* P_codex-agent-store — Codex runs use the same lightweight agent-run
  * bridge as Explore/Research. The inline tool row remains the primary
@@ -3833,7 +3837,7 @@ function renderSlashCommandPalette(){
         html.push('<div class="slash-command-group">'+(t._kind==="app"?"Connected apps":"Prompt templates")+'</div>');
       }
       html.push(
-        '<div class="slash-command-row '+(i===_slashSelected?"selected":"")+'" onclick="onSlashRowClick('+i+')" onmouseenter="_slashSelected='+i+';updateSlashSelected()">'+
+        '<div class="slash-command-row '+(i===_slashSelected?"selected":"")+'" data-slash-index="'+i+'">'+
           '<span class="slash-command-icon">'+(t.icon&&t.icon.indexOf("<svg")===0?t.icon:esc(t.icon||"pg"))+'</span>'+
           '<div class="slash-command-main">'+
             '<div class="slash-command-title">'+esc(t.title)+' <span class="slash-command-shortcut">'+esc(t.shortcut)+'</span></div>'+
@@ -3845,6 +3849,11 @@ function renderSlashCommandPalette(){
   }
   html.push('<div class="slash-command-foot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> insert</span><span><kbd>esc</kbd> close</span></div>');
   p.innerHTML=html.join("");
+  p.querySelectorAll(".slash-command-row").forEach(function(row){
+    var index=Number(row.getAttribute("data-slash-index"));
+    row.addEventListener("click",function(){onSlashRowClick(index)});
+    row.addEventListener("mouseenter",function(){_slashSelected=index;updateSlashSelected()});
+  });
 }
 function updateSlashSelected(){
   var rows=document.querySelectorAll("#slashCommandPalette .slash-command-row");
@@ -4019,7 +4028,7 @@ async function submitChatMessage(textOverride,opts){
     /* React scrolls after its MessageList commit. Keep the two-frame
        fallback only for legacy/share surfaces where React does not own the
        transcript, so send never has two independent scroll writers. */
-    if(!reactOwnsMsgList()){
+    if(!isMsgListMounted()){
       scheduleScrollMainToBottom({force:true,smooth:true});
     }
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
@@ -4343,14 +4352,14 @@ async function submitChatMessage(textOverride,opts){
 /* P1.1 — per-message action toolbar now lives in React. See
    `frontend/src/react/message-list/useMessageActions.ts` (the `stripHtmlToText`
    + `fallbackCopy` helpers there replace the legacy `buildMessageToolbar`
-   family). All call sites in this file are guarded by
-   `host.dataset.mountedBy === "msg-list"` and skip the legacy path. */
+   family). All call sites in this file consult isMsgListMounted() and skip
+   the legacy path while React owns the list. */
 
 /* P1.1 — fire a POST /api/messages/<id>/feedback with the
    `copy` synthetic event. Backend may ignore unknown events. */
 function messageApiPath(messageId,suffix){
   var path="/api/messages/"+encodeURIComponent(messageId)+(suffix||"");
-  var sid=state&&state.session&&(state.session.currentSessionId||stateStore.read("currentSessionId"));
+  var sid=stateStore.read("currentSessionId");
   /* Server routes accept the clientId only when it is scoped to the current
      session. This avoids the old unconditional 400 for `msg-*` ids while
      preserving UUID ownership checks. */
@@ -4604,13 +4613,13 @@ function branchFromMessage(messageId, opts){
   var branchMessages=stateStore.read("messages").slice(0,branchIdx+1).map(function(m){
     return {clientId:m.clientId,role:m.role,rawText:m.rawText,html:m.html,type:m.type,attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[]};
   });
-  var branchTopic=state.session.topic||stateStore.read("topic")||"";
-  var branchTitle=(state.session.sessionTitle||branchTopic)+" (branch)";
+  var branchTopic=stateStore.read("topic")||stateStore.read("topic")||"";
+  var branchTitle=(stateStore.read("sessionTitle")||branchTopic)+" (branch)";
   /* P1.1 — branchedFrom metadata: record the source session id and
      the message id where the branch was taken, so the sidebar can
      display "Branched from ..." and the user can navigate back. */
   var branchedFrom = {
-    sessionId: state.session.currentSessionId || stateStore.read("currentSessionId") || null,
+    sessionId: stateStore.read("currentSessionId") || stateStore.read("currentSessionId") || null,
     messageId: messageId,
     reExplain: reExplain,
   };
@@ -5179,8 +5188,8 @@ function scheduleActiveTurnToTop(list,assistant,msgIdx,retryViewport){
      bubble is already in the document, so the style goes straight on it. */
   function stampAnchor(mode,reserve,targetOffset){
     var mounted=row();
-    if(!mounted&&!reactOwnsMsgList())return;
-    if(reactOwnsMsgList()){
+    if(!mounted&&!isMsgListMounted())return;
+    if(isMsgListMounted()){
       if(!message)return;
       if(message._turnAnchorMinHeight===reserve&&message._turnAnchorMode===mode)return;
       message=updateMessageSnapshot(message,{
@@ -5493,7 +5502,7 @@ function registerLiveTurnRuntime(messageId,runtime){
 }
 function liveTurnMessage(messageId){
   var key=String(messageId||"");
-  var msgs=(state&&stateStore.read("messages"))||[];
+  var msgs=stateStore.read("messages")||[];
   if(!key)return null;
   for(var i=msgs.length-1;i>=0;i--){
     var m=msgs[i];
@@ -5558,7 +5567,7 @@ function addStreamingMessage(opts){
      released mid-stream without the session (and this bubble) going away, and
      a value that flipped halfway through would leave the answer rendered by
      neither surface. */
-  var reactLive=reactOwnsMsgList();
+  var reactLive=isMsgListMounted();
   var div=document.createElement("div");
   div.className="msg assistant";
   /* Override the CSS content-visibility:auto inherited from
@@ -5671,7 +5680,7 @@ function addStreamingMessage(opts){
      this streaming bubble is created (synchronously, before any await).
      All async callbacks (onDelta / onThinking / doRender / finish /
      recordToolUse ...) hold this closure; if the user switches sessions
-     mid-stream, state.session.currentSessionId flips to the new session
+     mid-stream, stateStore.read("currentSessionId") flips to the new session
      while the old stream's reader is still draining its SSE buffer.
      _disposed blocks most late writes, but abort() and the natural
      [DONE] frame can race: a finish() that already passed its _disposed
@@ -5681,9 +5690,9 @@ function addStreamingMessage(opts){
      still on the same session AND that the slot at msgIdx still holds
      OUR placeholder (by clientId), so no cross-session pollution is
      possible even in the race window. */
-  var ownerSessionId=state.session.currentSessionId||null;
+  var ownerSessionId=stateStore.read("currentSessionId")||null;
   function ownsMessageSlot(){
-    if(state.session.currentSessionId!==ownerSessionId)return false;
+    if(stateStore.read("currentSessionId")!==ownerSessionId)return false;
     if(msgIdx<0||!stateStore.read("messages")[msgIdx])return false;
     if(stateStore.read("messages")[msgIdx].clientId!==clientId)return false;
     return true;
@@ -6639,7 +6648,7 @@ function doRender(){
          (which now belongs to the new session).
          P_session-cross-talk — stillOwnsSlot() supersedes the bare
          _disposed check: it also returns false when the session has
-         switched (state.session.currentSessionId !== ownerSessionId)
+         switched (stateStore.read("currentSessionId") !== ownerSessionId)
          even if abort() hasn't propagated yet, closing the race
          window where a delta lands between session-switch and abort. */
       if(!stillOwnsSlot())return;
@@ -6750,7 +6759,7 @@ function doRender(){
          polluting the new session's memory. Abandon silently instead.
          We don't call abort() here because loadSession already called
          it; we just refuse to commit the stale write. */
-      if(state.session.currentSessionId!==ownerSessionId
+      if(stateStore.read("currentSessionId")!==ownerSessionId
          || msgIdx<0
          || !stateStore.read("messages")[msgIdx]
          || stateStore.read("messages")[msgIdx].clientId!==clientId){
@@ -8058,7 +8067,7 @@ function renderAssistantHTML(rawText){
     /* If finish() pre-allocated a canvasId, use that one instead so the
        React <CanvasBlock> reads the same id from stateStore.read("messages")[idx]. */
     try {
-      var _seed = (window.state && window.stateStore.read("_canvasPendingId")) || null;
+      var _seed = stateStore.read("_canvasPendingId") || null;
       if (_seed) _cid = _seed;
     } catch (_) {}
     html = wrapForCanvas(html, "canvas", _extKey, _cid);
@@ -8218,9 +8227,7 @@ function mountPracticeWidget(slot,parsed){
         /* Reset practiceAttempts to 0 (mirrors quiz-correct path at
            main.js ~6358). A future mistake book entry shouldn't pile up
            if the student nailed the self-graded one. */
-        if(typeof state!=="undefined"){
-          stateStore.dispatch({type:"state/set",key:"practiceAttempts",value:0});
-        }
+        stateStore.dispatch({type:"state/set",key:"practiceAttempts",value:0});
       }else{
         recordMistake({
           type:"practice",
@@ -8557,7 +8564,6 @@ function handleQuizPick(cardEl,optsEl,feedback,btns,picked,parsed){
 
 /* P_main-split - Wave 2: mistake-book runtime extracted. */
 const mistakeBook = createMistakeBook({
-  state: state,
   stateStore: stateStore,
   apiFetch: apiFetch,
   saveCurrentSession: saveCurrentSession,
@@ -8621,6 +8627,10 @@ function updateKB(){
     sections.blank.forEach(function(n){html+=kbNodeHtml(n,"blank")});
   }
   cont.innerHTML=html;
+  cont.onclick=function(event){
+    var row=event.target.closest&&event.target.closest(".kb-node[data-node-idx]");
+    if(row&&cont.contains(row))toggleKBDetail(Number(row.getAttribute("data-node-idx")));
+  };
 }
 
 /* Task 3.3 — render the structured teaching plan into the
@@ -8959,7 +8969,7 @@ import { renderUserFooter, openProfile, closeProfile } from './ui/profile.js';
 /* P_main-split — Wave 3b: exam generation form extracted to exam.js. */
 import { paintQuestionCard,
   renderExamNav,
-  syncExamNav, renderExamResults,
+  syncExamNav, renderExamResults, mountExamListeners,
 } from './exam.js';
 
 /* Usage modal — token heatmap & monthly breakdown. */
@@ -9033,7 +9043,7 @@ function clearPerUserClientState(){
   /* P_locale-ghost — `state.locale` was never a real field (the real
      language selector is window._currentLang, managed by i18n.js).
      The previous `window.state.locale=null` here only triggered the
-     state.js Proxy's "unknown flat key, setting on root: locale"
+     state/store.js Proxy's "unknown flat key, setting on root: locale"
      warning on every signin / user switch. Removed. */
   /* Persisted caches. */
   try{localStorage.removeItem("socrates-sessions-v2")}catch(_){}
@@ -9979,8 +9989,6 @@ if (typeof window.loadMemories === "function") window.loadMemories();
 /* M4 step 4.3a — the auth gate owns its own tab/link/form listeners;
    keep it out of the document-wide data-action dispatcher. */
 mountAuthListeners();
-import { installDelegate } from './ui/delegate.js';
-installDelegate();
 import { installModalA11y } from './ui/modalA11y.js';
 installModalA11y({ overlayId: 'cmdKOverlay', closeFn: function () { if (typeof window.closeCmdK === 'function') window.closeCmdK(); } });
 installModalA11y({ overlayId: 'shareOverlay', closeFn: function () { if (typeof window.closeShareModal === 'function') window.closeShareModal(); } });
@@ -9998,6 +10006,25 @@ try{
 }catch(error){
   console.error("[react-migration] compatibility runtime failed to initialize",error);
 }
+mountLegacyShellListeners({
+  toggleSidebar: toggleSidebar,
+  resetApp: resetApp,
+  toggleIncognito: toggleIncognito,
+  openFind: openFindInSession,
+  openShare: openShareModal,
+  openSettings: window.openSettings,
+  startSession: startSession,
+  sendMessage: window.handleSendClick,
+  toggleComposerTools: toggleComposerTools,
+  toggleEffort: toggleEffortPicker,
+  selectMode: selectAppMode,
+  toggleMobileMode: toggleMobileModeMenu,
+  searchRecents: setRecentsSearch,
+  switchTab: switchTab,
+  toggleSidebarView: toggleSidebarView,
+});
+mountExamListeners();
+mountUsageListeners();
 /* P_perf-idle-vendor — highlight.js and fuse.js are non-critical: load
    them after first paint so the main entry no longer carries their
    parse cost. Cmd-K and code highlighting still work — they call the

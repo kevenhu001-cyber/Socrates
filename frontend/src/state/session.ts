@@ -1,12 +1,3 @@
-export const SESSION_FLAT_KEYS = [
-  'topic', 'phase', 'diagIndex', 'diagAnswers', 'diagQuestions',
-  'currentSessionId', 'substantiveCount', 'explaining', 'sessionTitle',
-  'domain', 'totalQ', 'stuckCount', 'messages', 'currentProjectId',
-  'activeProjectFilter', 'diagCancel', 'teachingStage', 'currentExampleIdx',
-  'practiceAttempts', 'practicePhase', 'teachingPlan', 'branchedFrom',
-  'stuckCheckOffered', 'stuckCheckRejected', 'fourOptionDialog',
-] as const;
-
 export type ChatMessageShape = Record<string, unknown> & { clientId?: string };
 
 export function createInitialSessionState(): {
@@ -35,6 +26,8 @@ export function createInitialSessionState(): {
   stuckCheckRejected: number;
   fourOptionDialog: unknown;
   diagCancel: boolean;
+  tutorAttachments: unknown;
+  tutorPartsTemplate: unknown;
 } {
   return {
     topic: '',
@@ -62,6 +55,8 @@ export function createInitialSessionState(): {
     stuckCheckRejected: 0,
     fourOptionDialog: null,
     diagCancel: false,
+    tutorAttachments: null,
+    tutorPartsTemplate: null,
   };
 }
 

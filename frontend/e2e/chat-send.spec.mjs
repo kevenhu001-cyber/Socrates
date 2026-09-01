@@ -54,9 +54,9 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
-    window.state.topic = 'Mobile scroll smoke';
-    window.state.currentSessionId = '22222222-2222-4222-8222-222222222222';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Mobile scroll smoke' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     document.documentElement.style.setProperty('--keyboard-inset', '280px');
@@ -66,7 +66,7 @@ test('mobile send places the submitted prompt and thinking state at the viewport
     }
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
   });
 
   const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
@@ -131,10 +131,10 @@ test('retry replaces the failed answer and resumes at the visible error position
 
   await page.evaluate(() => {
     const sessionId = '44444444-4444-4444-8444-444444444444';
-    window.state.phase = 'chat';
-    window.state.topic = 'Retry viewport smoke';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Retry viewport smoke' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     for (let i = 0; i < 18; i += 1) {
@@ -223,10 +223,10 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
   await waitForAppShell(page);
 
   const clientId = await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.topic = 'Streaming ownership';
-    window.state.currentSessionId = '33333333-3333-4333-8333-333333333333';
-    window.state.session.currentSessionId = window.state.currentSessionId;
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Streaming ownership' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: window.stateStore.read("currentSessionId") });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.addMessage('user', 'Keep the next streamed answer visible.');
@@ -235,7 +235,7 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
        test a co-ownership state the app no longer enters — addStreamingMessage
        skips its own appendChild as soon as React owns #msgList. */
     window.__streamPromise = window.askChatTurn('Keep the next streamed answer visible.');
-    const streaming = window.state.messages.filter((m) => m.type === 'streaming').pop();
+    const streaming = window.stateStore.read("messages").filter((m) => m.type === 'streaming').pop();
     return streaming ? streaming.clientId : '';
   });
   expect(clientId, 'a streaming entry is in state.messages').toBeTruthy();

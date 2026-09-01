@@ -38,9 +38,9 @@ async function prepareStream(page, options = {}) {
       }));
     };
 
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '77777777-7777-4777-8777-777777777777';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '77777777-7777-4777-8777-777777777777' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
 
@@ -51,7 +51,7 @@ async function prepareStream(page, options = {}) {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
 
     // instrumentation: record every scroll position change
     window.__scrollLog = [];
@@ -60,15 +60,14 @@ async function prepareStream(page, options = {}) {
         t: Math.round(performance.now()),
         top: Math.round(list.scrollTop),
         dfb: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
-        away: window.state._userScrolledAway,
+        away: window.stateStore.read("_userScrolledAway"),
       });
     });
     // track flag flips
     window.__awayLog = [];
-    let _away = window.state._userScrolledAway;
-    Object.defineProperty(window.state, '_userScrolledAway', {
-      get() { return _away; },
-      set(v) {
+    let _away = window.stateStore.read("_userScrolledAway");
+    window.stateStore.subscribe(() => {
+        const v = window.stateStore.read("_userScrolledAway");
         if (v !== _away) {
           window.__awayLog.push({
             t: Math.round(performance.now()),
@@ -79,8 +78,6 @@ async function prepareStream(page, options = {}) {
           });
         }
         _away = v;
-      },
-      configurable: true,
     });
     // track programmatic scrollTop writes on the list
     window.__setLog = [];
@@ -159,7 +156,7 @@ test('instrumented: new turn anchors the question near the top after finish (thi
       setLog: (window.__setLog || []).slice(-12),
       fullScrollLog: (window.__scrollLog || []).slice(-10),
       topEl,
-      userScrolledAway: window.state._userScrolledAway,
+      userScrolledAway: window.stateStore.read("_userScrolledAway"),
     };
   }, tFinish);
 

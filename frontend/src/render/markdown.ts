@@ -12,6 +12,7 @@ import { preprocessMarkdown, preprocessMarkdownForStreaming } from './preprocess
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { sanitizeUrls } from '../util/safe.js';
 import { ensureKatex, onKatexReady } from '../vendor/lazy.js';
+import { stateStore } from '../state/store.js';
 /* M4 — bundled DOMPurify fallback. The CDN <script> in index.html is
    still preferred (shared global, SRI-pinned), but if it fails to load
    (offline, blocked CDN, flaky network) sanitisation used to silently
@@ -1092,8 +1093,7 @@ export function stripMarkdown(s: string | null | undefined): string {
    Used by the `↑` (empty input) shortcut to pop the previous prompt
    back into the input for editing. */
 export function findLastUserMessage(): string | null {
-  const stateAny = window.state as unknown as { session?: { messages?: Array<{ role?: string; rawText?: string }> } } | undefined;
-  const list = stateAny?.session?.messages || [];
+  const list = (stateStore.read('messages') || []) as Array<{ role?: string; rawText?: string }>;
   for (let i = list.length - 1; i >= 0; i--) {
     if (list[i].role === 'user' && list[i].rawText) return stripMarkdown(list[i].rawText);
   }

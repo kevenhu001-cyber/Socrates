@@ -3,26 +3,26 @@ import test from 'node:test';
 
 globalThis.window = {};
 
-const { createInitialAppState, FLAT_STATE_PATHS } = await import(
-  '../src/state/index.ts'
-);
-await import('../src/state.js');
+const { createInitialAppState } = await import('../src/state/index.ts');
+const { stateStore } = await import('../src/state/store.js');
 
-test('flat state compatibility resolves from namespace metadata', () => {
-  window.state.topic = 'immutable migration';
-  assert.equal(window.state.session.topic, 'immutable migration');
-
-  window.state.session.phase = 'chat';
-  assert.equal(window.state.phase, 'chat');
-  window.state.stuckCheckRejected = 3;
-  assert.equal(window.state.session.stuckCheckRejected, 3);
-  assert.equal(FLAT_STATE_PATHS.searchContextError, 'search.error');
-  assert.ok(Object.keys(window.state).includes('examDifficulty'));
+test('named state reads resolve fields without a flat compatibility table', () => {
+  stateStore.dispatch({ type: 'state/batch', patch: {
+    topic: 'immutable migration',
+    phase: 'chat',
+    stuckCheckRejected: 3,
+    searchContextError: 'offline',
+  } });
+  assert.equal(stateStore.read('topic'), 'immutable migration');
+  assert.equal(stateStore.read('session.topic'), 'immutable migration');
+  assert.equal(stateStore.read('phase'), 'chat');
+  assert.equal(stateStore.read('stuckCheckRejected'), 3);
+  assert.equal(stateStore.read('searchContextError'), 'offline');
 });
 
 test('stateStore supports named reads and explicit actions', () => {
-  const beforeSession = window.state.session;
-  const before = window.state.messages;
+  const beforeSession = stateStore.getSnapshot().session;
+  const before = stateStore.read('messages');
   let notifications = 0;
   const dispose = window.stateStore.subscribe(() => { notifications += 1; });
 
@@ -32,29 +32,29 @@ test('stateStore supports named reads and explicit actions', () => {
     payload: { clientId: 'm-1', role: 'user', rawText: 'hello' },
   });
 
-  assert.equal(window.stateStore.read('session.topic'), 'actions');
-  assert.equal(window.stateStore.read('topic'), 'actions');
-  assert.equal(window.state.messages.length, 1);
-  assert.notStrictEqual(window.state.session, beforeSession, 'state/set replaces its namespace');
-  assert.notStrictEqual(window.state.messages, before, 'append replaces the array');
+  assert.equal(stateStore.read('session.topic'), 'actions');
+  assert.equal(stateStore.read('topic'), 'actions');
+  assert.equal(stateStore.read('messages').length, 1);
+  assert.notStrictEqual(stateStore.getSnapshot().session, beforeSession, 'state/set replaces its namespace');
+  assert.notStrictEqual(stateStore.read('messages'), before, 'append replaces the array');
   assert.equal(notifications, 2);
   dispose();
 });
 
 test('state batch replaces touched namespaces with one notification', () => {
-  const beforeSession = window.state.session;
-  const beforeUi = window.state.ui;
+  const beforeSession = stateStore.getSnapshot().session;
+  const beforeUi = stateStore.getSnapshot().ui;
   let notifications = 0;
   const dispose = window.stateStore.subscribe(() => { notifications += 1; });
   window.stateStore.dispatch({
     type: 'state/batch',
     patch: { topic: 'batched', phase: 'chat', _userScrolledAway: true },
   });
-  assert.equal(window.state.topic, 'batched');
-  assert.equal(window.state.phase, 'chat');
-  assert.equal(window.state._userScrolledAway, true);
-  assert.notStrictEqual(window.state.session, beforeSession);
-  assert.notStrictEqual(window.state.ui, beforeUi);
+  assert.equal(stateStore.read('topic'), 'batched');
+  assert.equal(stateStore.read('phase'), 'chat');
+  assert.equal(stateStore.read('_userScrolledAway'), true);
+  assert.notStrictEqual(stateStore.getSnapshot().session, beforeSession);
+  assert.notStrictEqual(stateStore.getSnapshot().ui, beforeUi);
   assert.equal(notifications, 1);
   dispose();
 });
@@ -64,7 +64,7 @@ test('message actions replace arrays and guard indexed updates by client id', ()
     { clientId: 'm-1', role: 'user', rawText: 'one' },
     { clientId: 'm-2', role: 'assistant', rawText: 'two' },
   ] });
-  const initialMessages = window.state.messages;
+  const initialMessages = stateStore.read('messages');
   const initialFirst = initialMessages[0];
 
   const appendedIndex = window.stateStore.dispatch({
@@ -72,20 +72,20 @@ test('message actions replace arrays and guard indexed updates by client id', ()
     payload: { clientId: 'm-3', role: 'user', rawText: 'three' },
   });
   assert.equal(appendedIndex, 2);
-  assert.notStrictEqual(window.state.messages, initialMessages);
-  assert.strictEqual(window.state.messages[0], initialFirst);
+  assert.notStrictEqual(stateStore.read('messages'), initialMessages);
+  assert.strictEqual(stateStore.read('messages')[0], initialFirst);
 
   const wrongOwner = window.stateStore.dispatch({
     type: 'session/update-message', index: 1, clientId: 'stale', patch: { rawText: 'bad' },
   });
   assert.equal(wrongOwner, null);
-  const beforeUpdate = window.state.messages;
+  const beforeUpdate = stateStore.read('messages');
   const updated = window.stateStore.dispatch({
     type: 'session/update-message', index: 1, clientId: 'm-2', patch: { rawText: 'updated' },
   });
   assert.equal(updated.rawText, 'updated');
-  assert.notStrictEqual(window.state.messages, beforeUpdate);
-  assert.notStrictEqual(window.state.messages[1], beforeUpdate[1]);
+  assert.notStrictEqual(stateStore.read('messages'), beforeUpdate);
+  assert.notStrictEqual(stateStore.read('messages')[1], beforeUpdate[1]);
 
   const removed = window.stateStore.dispatch({
     type: 'session/remove-message-at', index: 1, clientId: 'm-2',
@@ -93,7 +93,7 @@ test('message actions replace arrays and guard indexed updates by client id', ()
   assert.equal(removed.clientId, 'm-2');
   const dropped = window.stateStore.dispatch({ type: 'session/truncate-messages-after', index: 0 });
   assert.deepEqual(dropped.map((message) => message.clientId), ['m-3']);
-  assert.deepEqual(window.state.messages.map((message) => message.clientId), ['m-1']);
+  assert.deepEqual(stateStore.read('messages').map((message) => message.clientId), ['m-1']);
 });
 
 test('deferred stream updates coalesce subscriber notifications', async () => {
@@ -114,7 +114,7 @@ test('deferred stream updates coalesce subscriber notifications', async () => {
     });
   }
 
-  assert.equal(window.state.messages[0].rawText, 'abc');
+  assert.equal(stateStore.read('messages')[0].rawText, 'abc');
   assert.equal(notifications, 0);
   await Promise.resolve();
   assert.equal(notifications, 1);
@@ -122,21 +122,25 @@ test('deferred stream updates coalesce subscriber notifications', async () => {
 });
 
 test('state reset replaces every namespace from the shared initial factories', () => {
-  window.state.stuckCheckRejected = 9;
-  window.state.kb.boundariesHistory.push({ savedAt: 1 });
-  window.state.search.error = 'stale';
-  window.state.call.source = 'stale';
-  window.state.ui._canvasPendingId = 'canvas-old';
-  window.state.exam._examPrevActiveId = 'provider-old';
-  window.state.tutorAttachments = [{ id: 'attachment-old' }];
+  stateStore.dispatch({ type: 'state/batch', patch: {
+    stuckCheckRejected: 9,
+    boundariesHistory: [{ savedAt: 1 }],
+    searchContextError: 'stale',
+    lastCallSource: 'stale',
+    _canvasPendingId: 'canvas-old',
+    _examPrevActiveId: 'provider-old',
+    tutorAttachments: [{ id: 'attachment-old' }],
+  } });
 
   window.stateStore.dispatch({ type: 'state/reset' });
 
   const initial = createInitialAppState();
   for (const namespace of ['session', 'kb', 'search', 'call', 'ui', 'exam']) {
-    assert.deepEqual(window.state[namespace], initial[namespace], namespace);
+    const actual = { ...stateStore.getSnapshot()[namespace] };
+    delete actual.revision;
+    assert.deepEqual(actual, initial[namespace], namespace);
   }
-  assert.equal(window.state.tutorAttachments, null);
-  assert.equal(window.state.tutorPartsTemplate, null);
-  assert.equal(window.state.stuckCheckRejected, 0);
+  assert.equal(stateStore.read('tutorAttachments'), null);
+  assert.equal(stateStore.read('tutorPartsTemplate'), null);
+  assert.equal(stateStore.read('stuckCheckRejected'), 0);
 });

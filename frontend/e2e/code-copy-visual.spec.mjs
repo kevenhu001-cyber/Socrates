@@ -73,10 +73,10 @@ function installClipboardStub(page) {
 async function bootChatWithCodeBlock(page) {
   await page.evaluate(async (payload) => {
     const sessionId = '88888888-8888-4888-8888-888888888888';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    try { window.state.session.currentSessionId = sessionId; } catch (_) {}
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    try { window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId }); } catch (_) {}
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
 

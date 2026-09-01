@@ -14,10 +14,10 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Eager creation: the menu element exists at boot, marked as React-owned.
+  // Eager creation: the menu element exists at boot without a DOM sentinel.
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeAttached();
-  await expect(menu).toHaveAttribute('data-mounted-by', 'composer-tools-menu');
+  await expect(menu).not.toHaveAttribute('data-mounted-by', /.+/);
   await expect(menu).toHaveClass(/hidden/);
 
   // Bridge installed.
@@ -152,7 +152,7 @@ test('Composer tools menu React mode always loads (no ?react=1 flag needed)', as
 
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeAttached();
-  await expect(menu).toHaveAttribute('data-mounted-by', 'composer-tools-menu');
+  await expect(menu).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const installed = await page.evaluate(
     () => typeof window.__socratesComposerToolsBridge === 'object' && window.__socratesComposerToolsBridge !== null,
@@ -168,7 +168,7 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
@@ -263,7 +263,7 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await menu.locator('.composer-tools-desktop-items [data-composer-action="write"]').click();
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });

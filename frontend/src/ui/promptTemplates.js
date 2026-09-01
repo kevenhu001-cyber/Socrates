@@ -14,10 +14,7 @@
  *   - esc (from render/helpers.js)
  *   - showConfirm (from ui/confirm.js — Wave 1a)
  *   - showToast, t (from i18n.js)
- * Inline onclick handlers inside the published HTML rely on window
- * exports of: closePromptTemplatesModal, renderPromptTemplatesModal,
- * openPromptTemplateEditor, onPromptRowDelete, onPromptTemplateEditorSave
- * (see windowExports.js).
+ * React delegates commands from the published markup to these module APIs.
  */
 
 var _ptOpen = false;
@@ -49,7 +46,7 @@ function renderPromptTemplatesModal() {
   _ptBodyHTML =
     '<div class="modal-head">' +
       '<span class="modal-title">Skills &amp; shortcuts</span>' +
-      '<button class="modal-close" onclick="closePromptTemplatesModal()">×</button>' +
+      '<button class="modal-close" data-prompt-command="close">×</button>' +
     '</div>' +
     '<div class="prompt-templates-body">' +
       '<p class="prompt-templates-intro">Use a skill for a focused workflow, or create one with your own instructions and <code>/shortcut</code>.</p>' +
@@ -58,7 +55,7 @@ function renderPromptTemplatesModal() {
       '<div class="prompt-templates-section-label" style="margin-top:14px">Your skills (' + customs.length + ')</div>' +
       (customs.length ? customs.map(function (t) { return renderPromptRow(t, true); }).join("") :
         '<div class="prompt-templates-empty">No custom skills yet.</div>') +
-      '<button class="prompt-templates-new" onclick="openPromptTemplateEditor()">+ Create skill</button>' +
+      '<button class="prompt-templates-new" data-prompt-command="create">+ Create skill</button>' +
     '</div>';
   _publishPromptTemplatesState();
 }
@@ -73,8 +70,8 @@ function renderPromptRow(t, editable) {
     '</div>' +
     (editable ?
       '<div class="prompt-row-actions">' +
-        '<button class="prompt-row-edit" onclick="openPromptTemplateEditor(\'' + window.esc(t.id) + '\')">Edit</button>' +
-        '<button class="prompt-row-delete" onclick="onPromptRowDelete(\'' + window.esc(t.id) + '\')">Delete</button>' +
+        '<button class="prompt-row-edit" data-prompt-command="edit" data-template-id="' + window.esc(t.id) + '">Edit</button>' +
+        '<button class="prompt-row-delete" data-prompt-command="delete" data-template-id="' + window.esc(t.id) + '">Delete</button>' +
       '</div>' : '') +
   '</div>';
 }
@@ -96,7 +93,7 @@ function openPromptTemplateEditor(id) {
   _ptBodyHTML =
     '<div class="modal-head">' +
       '<span class="modal-title">' + (existing ? "Edit skill" : "Create skill") + '</span>' +
-      '<button class="modal-close" onclick="renderPromptTemplatesModal()">×</button>' +
+      '<button class="modal-close" data-prompt-command="list">×</button>' +
     '</div>' +
     '<div class="prompt-templates-body">' +
       '<div class="prompt-editor-grid">' +
@@ -119,8 +116,8 @@ function openPromptTemplateEditor(id) {
     '</div>' +
     '<div class="modal-foot">' +
       '<div class="modal-spacer"></div>' +
-      '<button class="modal-cancel" onclick="renderPromptTemplatesModal()">Cancel</button>' +
-      '<button class="modal-save" onclick="onPromptTemplateEditorSave(\'' + window.esc(t.id) + '\',' + (existing ? '1' : '0') + ')">Save</button>' +
+      '<button class="modal-cancel" data-prompt-command="list">Cancel</button>' +
+      '<button class="modal-save" data-prompt-command="save" data-template-id="' + window.esc(t.id) + '">Save</button>' +
     '</div>';
   _publishPromptTemplatesState();
   /* React renders the published HTML asynchronously; wait a tick

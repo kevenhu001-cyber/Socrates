@@ -59,8 +59,8 @@ function installControllableStream(page) {
    Mirrors prepareDelayedStream() in streaming-render.spec.mjs. */
 async function bootStreamingChat(page) {
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '88888888-8888-4888-8888-888888888888';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
 
@@ -72,7 +72,7 @@ async function bootStreamingChat(page) {
       const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
       earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
     }
-    window.state.messages = [{ clientId: 'user-scroll', role: 'user', rawText: 'Scroll smoothly', html: null }, ...earlier];
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-scroll', role: 'user', rawText: 'Scroll smoothly', html: null }, ...earlier] });
     /* The renderer re-reads state.messages when the turn publishes its first
        event, so start the stream, then wait for the list to actually overflow
        before pinning — "at the bottom" is meaningless while nothing scrolls. */
@@ -94,7 +94,7 @@ async function bootStreamingChat(page) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     list.scrollTop = list.scrollHeight;
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
   });
 }
 
@@ -137,7 +137,7 @@ test('pinned reader stays at the bottom while content streams', async ({ page })
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
 
   // The scroll-away flag must remain clear for a pinned reader.
-  expect(await page.evaluate(() => window.state._userScrolledAway)).toBe(false);
+  expect(await page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
   await expect(page.locator('#newReplyPill')).not.toHaveClass(/visible/);
 
   await page.evaluate(() => window.__finishStream());
@@ -168,7 +168,7 @@ test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it
 
   // Auto-scroll must stop: the flag flips and the reader stays off the
   // bottom even as more content streams in.
-  await expect.poll(() => page.evaluate(() => window.state._userScrolledAway)).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(true);
   const distanceAfterGesture = await distanceFromBottom(page);
   expect(distanceAfterGesture).toBeGreaterThan(64);
 
@@ -181,7 +181,7 @@ test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it
 
   // Clicking the pill clears the scrolled-away flag and snaps to bottom.
   await page.locator('#newReplyPill').click();
-  await expect.poll(() => page.evaluate(() => window.state._userScrolledAway)).toBe(false);
+  await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   await expect(page.locator('#newReplyPill')).not.toHaveClass(/visible/);
 

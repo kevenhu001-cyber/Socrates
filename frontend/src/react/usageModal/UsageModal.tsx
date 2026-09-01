@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
@@ -52,7 +53,7 @@ export interface UsageModalHandle {
 export function hydrateUsageModal(): UsageModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.mountedBy === 'usage-modal') {
+  if (hostIsMountedBy(overlay, 'usage-modal')) {
     throw new Error('Usage modal React runtime was initialized more than once.');
   }
 
@@ -60,13 +61,13 @@ export function hydrateUsageModal(): UsageModalHandle | null {
 
   const root = createRoot(overlay);
   root.render(<UsageModal />);
-  overlay.dataset.mountedBy = 'usage-modal';
+  markHostMountedBy(overlay, 'usage-modal');
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.mountedBy;
+      clearHostMounted(overlay);
     },
   };
 }

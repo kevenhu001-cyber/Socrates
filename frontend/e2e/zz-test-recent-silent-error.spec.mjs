@@ -76,7 +76,7 @@ test('Recent list surfaces fetch failure instead of misleading "no sessions" mes
       recentsHTML: list.innerHTML || '',
       serverSessionsLen: (window.SERVER_SESSIONS || []).length,
       fetchFailedFlag: window.SERVER_SESSIONS_FETCH_FAILED,
-      activeProjectFilter: window.state && window.state.session && window.state.session.activeProjectFilter,
+      activeProjectFilter: window.stateStore.read("activeProjectFilter"),
       recentsFilter: window.getRecentsFilter && window.getRecentsFilter(),
     };
   });

@@ -26,7 +26,7 @@ test('formulas recover after a transient KaTeX chunk failure', async ({ page }) 
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });

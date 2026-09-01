@@ -302,7 +302,7 @@ export function renderViz(htmlStr, opts) {
      updated in-place (innerHTML swap), which keeps the layout
      stable and avoids the iframe tearing down + re-mounting. */
   var id = opts.stableId || "viz-card-" + (++_vizId);
-  var title = (window.state && window.state.topic || "Canvas").toString().slice(0, 40);
+  var title = (window.stateStore.read("topic") || "Canvas").toString().slice(0, 40);
   // P_svg-no-xml-pi — strip the `<?xml version="1.0"?>` processing
   // instruction if the user pasted a standalone SVG document. Inside
   // an HTML <body>, the HTML5 tokenizer turns `<?...?>` into a bogus

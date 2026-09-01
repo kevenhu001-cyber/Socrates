@@ -12,12 +12,7 @@
 // - If localStorage is full or unavailable, every write is silently
 //   dropped — never throws.
 import { batchSetItem } from '../batchStorage.js';
-// state is exposed on window by state.js (line 220: window.state = state).
-// We import the side-effect module so the Proxy is registered before
-// any localMemory call runs; the actual read happens via window.state.
-import '../state.js';
-
-const state = window.state;
+import { stateStore } from '../state/store.js';
 
 export var LOCAL_MEMORY_MAX = 200;
 
@@ -37,13 +32,13 @@ export function loadLocalMemory(sid){
 }
 
 export function appendLocalMemory(role,content){
-  var sid=state.currentSessionId;
+  var sid=stateStore.read('currentSessionId');
   if(!sid)return;
   /* Skip "suggest" placeholders — they are UI, not dialogue. */
   if(!content||(typeof content==="string"&&!content.trim()))return;
   try{
-    var rec=loadLocalMemory(sid)||{topic:state.topic||"",ts:Date.now(),messages:[]};
-    rec.topic=state.topic||rec.topic;
+    var rec=loadLocalMemory(sid)||{topic:stateStore.read('topic')||"",ts:Date.now(),messages:[]};
+    rec.topic=stateStore.read('topic')||rec.topic;
     rec.ts=Date.now();
     rec.messages.push({role:role,content:String(content)});
     if(rec.messages.length>LOCAL_MEMORY_MAX){
@@ -56,7 +51,7 @@ export function appendLocalMemory(role,content){
        `sid` read and this write, we'd be appending to the OLD session's
        cache — the next load of the old session would show messages from
        the new session. Re-reading ensures we write to the correct key. */
-    var currentSid=state.currentSessionId;
+    var currentSid=stateStore.read('currentSessionId');
     if(!currentSid||currentSid!==sid)return;
     batchSetItem(_memKey(currentSid),JSON.stringify(rec));
   }catch {

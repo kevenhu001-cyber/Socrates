@@ -1,3 +1,5 @@
+import { stateStore } from '../state/store.js';
+
 /* ui/cmdK.js — Wave 1b of main-js-split plan.
  * Cmd-K global search palette: indexer (fuse.js), open/close, render,
  * keyboard navigation, hit selection. Extracted from main.js L844-L1067.
@@ -74,16 +76,16 @@ function rebuildCmdKIndex() {
       snippet: s.preview || (s.title || s.topic || "").slice(0, 140),
     });
   });
-  var messages = ((window.state && window.state.session) || {}).messages || [];
+  var messages = stateStore.read('messages') || [];
   messages.forEach(function (m) {
     if (!m.rawText) return;
     var role = m.role === "user" ? "You" : "Assistant";
     docs.push({
       kind: "message",
       id: m.clientId || m.id,
-      sessionId: (window.state.session || {}).currentSessionId,
+      sessionId: stateStore.read('currentSessionId'),
       title: role + ": " + (m.rawText || "").slice(0, 80),
-      topic: ((window.state.session || {}).topic) || "",
+      topic: stateStore.read('topic') || "",
       snippet: (m.rawText || "").slice(0, 200),
     });
   });
@@ -162,48 +164,9 @@ function onCmdKInput(q) {
   _publishCmdKState();
 }
 
-function renderCmdKResultsHits(q, hits) {
-  var html = [];
-  if (hits.length) {
-    html.push('<div class="cmd-k-section"><div class="cmd-k-section-label">' + hits.length + ' result' + (hits.length === 1 ? "" : "s") + ' for "' + window.esc(q) + '"</div>');
-    hits.forEach(function (h, idx) {
-      var item = h.item || h;
-      var meta = item.kind === "message" ? "Message" : (item.mode === "chat" ? "Chat" : "Tutor");
-      html.push(
-        '<div class="cmd-k-row ' + (idx === _cmdKSelected ? "selected" : "") + '" data-idx="' + idx + '" data-kind="' + item.kind + '" data-id="' + window.esc(item.id || "") + '" onclick="openCmdKResult(' + idx + ')" onmouseenter="_cmdKSelected=' + idx + ';updateCmdKSelected()">' +
-          '<div class="cmd-k-row-title">' + window.esc(item.title || "") + '</div>' +
-          '<div class="cmd-k-row-snippet">' + window.esc(item.snippet || "") + '</div>' +
-          '<div class="cmd-k-row-meta">' + meta + '</div>' +
-        '</div>'
-      );
-    });
-    html.push('</div>');
-  } else {
-    html.push('<div class="cmd-k-empty">No results. Press <kbd>↵</kbd> to search on the server.</div>');
-  }
-  renderCmdKResultsHTML(html.join(""));
-}
+function renderCmdKResultsHits(_q, _hits) {}
 
-function renderCmdKResults(sections) {
-  if (!sections.length) {
-    renderCmdKResultsHTML('<div class="cmd-k-empty">Type to search across all your sessions.</div>');
-    return;
-  }
-  var html = sections.map(function (sec) {
-    var rows = sec.items.map(function (it) {
-      return '<div class="cmd-k-row" data-recent="' + window.esc(it) + '" onclick="document.getElementById(\'cmdKInput\').value=\'' + window.esc(it) + '\';onCmdKInput(\'' + window.esc(it) + '\')">' +
-        '<div class="cmd-k-row-title">' + window.esc(it) + '</div>' +
-        '<div class="cmd-k-row-meta">Recent</div>' +
-      '</div>';
-    }).join("");
-    return '<div class="cmd-k-section"><div class="cmd-k-section-label">' + window.esc(sec.label) + '</div>' + rows + '</div>';
-  }).join("");
-  renderCmdKResultsHTML(html);
-}
-
-function renderCmdKResultsHTML(_html) {
-  // no-op: React owns #cmdKResults.
-}
+function renderCmdKResults(_sections) {}
 
 function updateCmdKSelected() {
   var rows = document.querySelectorAll("#cmdKResults .cmd-k-row");
@@ -287,6 +250,6 @@ function onCmdKKey(ev) {
 export {
   rebuildCmdKIndex, openCmdK, closeCmdK,
   onCmdKInput, onCmdKKey, renderCmdKResults,
-  renderCmdKResultsHits, renderCmdKResultsHTML,
+  renderCmdKResultsHits,
   openCmdKResult, updateCmdKSelected,
 };

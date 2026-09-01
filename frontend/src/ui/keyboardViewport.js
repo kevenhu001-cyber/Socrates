@@ -181,7 +181,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const list = typeof document !== 'undefined'
       ? document.getElementById('msgList')
       : null;
-    const readerMovedAway = Boolean(window.state && window.state._userScrolledAway);
+    const readerMovedAway = Boolean(window.stateStore.read("_userScrolledAway"));
     const wasPinned = Boolean(
       list
       && !readerMovedAway
@@ -198,7 +198,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       if (pinFrame) cancelAnimationFrame(pinFrame);
       pinFrame = requestAnimationFrame(() => {
         pinFrame = 0;
-        if (!window.state || !window.state._userScrolledAway) {
+        if (!window.stateStore.read("_userScrolledAway")) {
           smoothScrollToBottom(list, { smooth: false });
         }
       });

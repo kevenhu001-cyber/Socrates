@@ -19,11 +19,13 @@ function fakeWindow() {
     cancelAnimationFrame(id) {
       frames.delete(id);
     },
-    state: { session: { messages: [], currentSessionId: 's-1', phase: 'chat' } },
   };
 }
 
 globalThis.window = fakeWindow();
+
+const { stateStore } = await import('../src/state/store.js');
+stateStore.dispatch({ type: 'state/batch', patch: { currentSessionId: 's-1', phase: 'chat' } });
 
 const { installChatRuntimeBridge, getChatRuntimeSnapshot } = await import(
   '../src/react/chatRuntime.bridge.ts'
@@ -45,17 +47,17 @@ function message(clientId, rawText) {
   return { clientId, role: 'assistant', type: 'streaming', rawText, toolCalls: [] };
 }
 
-test('a tool-run publish re-reads the mutated message list', () => {
+test('a tool-run publish re-reads the immutable message list', () => {
   const bridge = freshBridge();
   const messages = [message('m-1', 'he')];
-  globalThis.window.state.session.messages = messages;
+  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
   bridge.publish({ type: 'stream-started', messageId: 'm-1' });
 
   const before = bridge.getSnapshot();
-  /* Same object, same array: only a nested field moved. */
-  messages[0].toolCalls.push({ id: 'tc-1', name: 'web_search' });
-  messages[0].toolCalls[0].phase = 'running';
-  messages[0].rawText = 'hello';
+  stateStore.dispatch({
+    type: 'session/update-message', index: 0, clientId: 'm-1',
+    patch: { rawText: 'hello', toolCalls: [{ id: 'tc-1', name: 'web_search', phase: 'running' }] },
+  });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-1' });
   runFrames();
   const after = bridge.getSnapshot();
@@ -71,14 +73,19 @@ test('a tool-run publish re-reads the mutated message list', () => {
 test('stream and tool-run publishes coalesce to one commit per frame', () => {
   const bridge = freshBridge();
   const messages = [message('m-2', '')];
-  globalThis.window.state.session.messages = messages;
+  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
   const start = bridge.getSnapshot().revision;
 
   for (let i = 1; i <= 5; i++) {
-    messages[0].rawText = 'x'.repeat(i);
+    stateStore.dispatch({
+      type: 'session/update-message', index: 0, clientId: 'm-2',
+      patch: { rawText: 'x'.repeat(i) }, deferNotify: true,
+    });
     bridge.publish({ type: 'stream-delta', messageId: 'm-2', textLength: i });
   }
-  messages[0]._toolRunRev = 1;
+  stateStore.dispatch({
+    type: 'session/update-message', index: 0, clientId: 'm-2', patch: { _toolRunRev: 1 },
+  });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-2' });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-2' });
 
@@ -92,12 +99,14 @@ test('stream and tool-run publishes coalesce to one commit per frame', () => {
 test('a terminal event flushes pending work before it commits', () => {
   const bridge = freshBridge();
   const messages = [message('m-3', 'partial')];
-  globalThis.window.state.session.messages = messages;
+  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
 
   bridge.publish({ type: 'stream-delta', messageId: 'm-3', textLength: 7 });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-3' });
-  messages[0].rawText = 'complete answer';
-  messages[0].type = 'assistant';
+  stateStore.dispatch({
+    type: 'session/update-message', index: 0, clientId: 'm-3',
+    patch: { rawText: 'complete answer', type: 'assistant' },
+  });
   bridge.publish({ type: 'stream-finished', messageId: 'm-3', textLength: 15 });
 
   const snap = bridge.getSnapshot();

@@ -6,7 +6,7 @@
 import { esc } from './render/helpers.js';
 import { formatMsg } from './render/markdown.js';
 import { callAPIStream } from './chat/stream.js';
-import { stateStore } from './state.js';
+import { stateStore } from './state/store.js';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -14,6 +14,38 @@ var _examDifficulty = "intermediate";
 var _examAnswerSaveTimer = null;
 var _examSaveInFlight = null;
 var _examSaveDirty = false;
+var _examListenersMounted = false;
+
+export function mountExamListeners() {
+  var view = document.getElementById("examView");
+  if (!view || _examListenersMounted) return;
+  _examListenersMounted = true;
+  view.addEventListener("click", function (event) {
+    var target = event.target.closest && event.target.closest("[data-exam-command]");
+    if (!target || !view.contains(target)) return;
+    var command = target.getAttribute("data-exam-command");
+    if (command === "close") closeExamView();
+    else if (command === "form") renderExamForm();
+    else if (command === "generate") startExamGeneration();
+    else if (command === "cancel") cancelExamGeneration();
+    else if (command === "submit") submitExam();
+    else if (command === "toggle-model") toggleExamModelMenu();
+    else if (command === "select-model") selectExamModel(target.dataset.mid || "");
+    else if (command === "toggle-type") toggleExamType(target.dataset.type || "");
+    else if (command === "difficulty") selectExamDifficulty(target.dataset.diff || "intermediate");
+    else if (command === "count") adjustExamCount(Number(target.dataset.delta || 0));
+    else if (command === "answer-option") selectExamOpt(Number(target.dataset.eidx), Number(target.dataset.oidx));
+    else if (command === "nav-step") examNavStep(Number(target.dataset.delta || 0));
+    else if (command === "nav-jump") examNavJump(Number(target.dataset.navIdx || 0));
+  });
+  view.addEventListener("input", function (event) {
+    var input = event.target.closest && event.target.closest(".exam-q-fill-input[data-eidx]");
+    if (!input || !view.contains(input)) return;
+    setExamAnswer(Number(input.dataset.eidx), input.value);
+    refreshExamNavTally();
+    scheduleExamAnswerSave();
+  });
+}
 
 export function setExamAnswer(index, value) {
   var answers = Object.assign({}, stateStore.read('examAnswers') || {});
@@ -68,7 +100,7 @@ export function prepareExamView() {
      visual rhythm of a chat-session top bar. */
   toggleExamOnlyTopBar(true);
   /* The top bar is the single visible exam title. */
-  _setExamTitle(window.state.examTopic || (window._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
+  _setExamTitle(window.stateStore.read("examTopic") || (window._currentLang === "zh" ? "生成考卷" : "Generate Exam"));
   window.toggleChatTopBarEls(true);
   /* Hide chat-specific top-bar elements that are meaningless in exam mode. */
   ["chatStats", "chatModelWrap"].forEach(function (id) {
@@ -76,17 +108,17 @@ export function prepareExamView() {
     if (el) el.classList.add("hidden");
   });
   stateStore.dispatch({type:'state/set',key:'_examInView',value:true});
-  if (!window.state._examScrollBound) {
+  if (!window.stateStore.read("_examScrollBound")) {
     var cont = document.getElementById("examViewBody");
     if (cont) {
       cont.addEventListener("scroll", function () {
-        if (window.state._examInView) syncExamNav();
+        if (window.stateStore.read("_examInView")) syncExamNav();
       });
     }
     var sc = document.getElementById("scrollContainer") || document.getElementById("msgScroll");
     if (sc) {
       sc.addEventListener("scroll", function () {
-        if (window.state._examInView) syncExamNav();
+        if (window.stateStore.read("_examInView")) syncExamNav();
       });
     }
     stateStore.dispatch({type:'state/set',key:'_examScrollBound',value:true});
@@ -120,10 +152,10 @@ export function closeExamView() {
   /* Decide what to reveal behind the exam panel. Mirrors the
      chat/tutor pattern: if a session is open, go back to chatView;
      otherwise surface the topic-setup landing page. */
-  if (window.state.currentSessionId) {
+  if (window.stateStore.read("currentSessionId")) {
     document.getElementById("chatView").classList.remove("hidden");
     window.toggleChatTopBarEls(true);
-    try { window.pushChatIdToURL(window.state.currentSessionId) } catch (_) { }
+    try { window.pushChatIdToURL(window.stateStore.read("currentSessionId")) } catch (_) { }
   } else {
     document.getElementById("topicSetup").classList.remove("hidden");
     window.toggleChatTopBarEls(false);
@@ -187,7 +219,7 @@ export function renderExamForm() {
       fb: L("Recall key terms", "回忆关键概念或结果"),
       sa: L("Explain your reasoning", "用自己的语言说明推理")
     };
-    return '<button type="button" class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" aria-pressed="' + isActive + '" onclick="toggleExamType(\'' + type + '\')"><span class="tog-dot"></span><span class="exam-type-copy"><strong>' + esc(label) + '</strong><small>' + esc(descriptions[type]) + '</small></span></button>';
+    return '<button type="button" class="exam-form-toggle-card' + activeClass + '" data-type="' + type + '" data-exam-command="toggle-type" aria-pressed="' + isActive + '"><span class="tog-dot"></span><span class="exam-type-copy"><strong>' + esc(label) + '</strong><small>' + esc(descriptions[type]) + '</small></span></button>';
   }
 
   function sectionHeader(index, title, description) {
@@ -204,13 +236,13 @@ export function renderExamForm() {
   ];
   var diffHtml = DIFFS.map(function (d) {
     return '<button type="button" class="exam-seg-btn' + (d.v === _examDifficulty ? ' active' : '') +
-      '" data-diff="' + d.v + '" onclick="selectExamDifficulty(\'' + d.v + '\')">' + esc(d.label) + '</button>';
+      '" data-diff="' + d.v + '" data-exam-command="difficulty">' + esc(d.label) + '</button>';
   }).join("");
 
   /* Build custom model dropdown HTML */
   var modelOptsHtml = "";
   provItems.forEach(function (p) {
-    modelOptsHtml += '<button class="exam-model-opt' + (p.id === activeId ? ' active' : '') + '" data-mid="' + esc(p.id) + '" onclick="selectExamModel(\'' + esc(p.id) + '\')">' + esc(p.label) + '</button>';
+    modelOptsHtml += '<button class="exam-model-opt' + (p.id === activeId ? ' active' : '') + '" data-mid="' + esc(p.id) + '" data-exam-command="select-model">' + esc(p.label) + '</button>';
   });
   if (!modelOptsHtml) {
     modelOptsHtml = '<button class="exam-model-opt" disabled style="color:hsl(var(--text-500));cursor:default">' + L("No models available", "无可用模型") + '</button>';
@@ -235,7 +267,7 @@ export function renderExamForm() {
     /* Model */
     + '<div class="exam-form-field"><label class="exam-form-label" for="examModelTrigger">' + L("Model", "生成模型") + '</label>'
     + '<div class="exam-model-wrap">'
-    + '<button class="exam-model-trigger" id="examModelTrigger" type="button" onclick="toggleExamModelMenu()">'
+    + '<button class="exam-model-trigger" id="examModelTrigger" type="button" data-exam-command="toggle-model">'
     + '<span class="exam-model-label" id="examModelLabel">' + esc(activeLabel) + '</span>'
     + '<svg class="exam-model-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>'
     + '</button>'
@@ -250,9 +282,9 @@ export function renderExamForm() {
     /* Count */
     + '<div class="exam-form-field"><label class="exam-form-label">' + window.t("exam.count") + '</label>'
     + '<div class="exam-stepper">'
-    + '<button type="button" class="exam-stepper-btn" aria-label="' + L("Fewer", "减少") + '" onclick="adjustExamCount(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>'
+    + '<button type="button" class="exam-stepper-btn" data-exam-command="count" data-delta="-1" aria-label="' + L("Fewer", "减少") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>'
     + '<span class="exam-stepper-val" id="examCountDisplay">5</span>'
-    + '<button type="button" class="exam-stepper-btn" aria-label="' + L("More", "增加") + '" onclick="adjustExamCount(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>'
+    + '<button type="button" class="exam-stepper-btn" data-exam-command="count" data-delta="1" aria-label="' + L("More", "增加") + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>'
     + '<input type="hidden" id="examCount" value="5">'
     + '</div></div>'
     + '</div>'
@@ -275,7 +307,7 @@ export function renderExamForm() {
 
   html += '</div>';
   body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn secondary" onclick="closeExamView()">' + window.t("common.cancel") + '</button><button class="exam-btn primary" onclick="startExamGeneration()">' + window.t("exam.generate") + '</button>';
+  footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="close">' + window.t("common.cancel") + '</button><button class="exam-btn primary" data-exam-command="generate">' + window.t("exam.generate") + '</button>';
 }
 
 /* ── Custom model dropdown ── */
@@ -374,7 +406,7 @@ export function startExamGeneration() {
     var body = _examBody();
     if (body) body.innerHTML = '<div class="exam-empty" style="padding:40px;text-align:center;color:hsl(var(--text-500))">' + window.esc(_msg) + '</div>';
     var footer = _examFooter();
-    if (footer) footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Back", "返回") + '</button>';
+    if (footer) footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Back", "返回") + '</button>';
     return;
   }
   var count = Math.max(1, Math.min(50, parseInt(document.getElementById("examCount").value, 10) || 5));
@@ -428,12 +460,12 @@ export function startExamGeneration() {
     '<div class="exam-progress-step" id="examGenProgressStep"><span class="exam-progress-spin"></span>' + _examUiL("Preparing…", "准备出题…") + '</div></div>' +
     '<div class="exam-loading-sub" id="examGenSubMsg">' + _examUiL("The AI is preparing your questions — this usually takes a few seconds.", "AI 正在为您出题，请稍候片刻") + '</div>' +
     '</div>';
-  _examFooter().innerHTML = '<button class="exam-btn secondary" onclick="cancelExamGeneration()">' + _examUiL("Cancel", "取消") + '</button>';
+  _examFooter().innerHTML = '<button class="exam-btn secondary" data-exam-command="cancel">' + _examUiL("Cancel", "取消") + '</button>';
   generateAllQuestions(topic, count, difficulty, typeStr, instructions, lang);
 }
 
 function restoreExamActiveProvider() {
-  var prev = window.state._examPrevActiveId;
+  var prev = window.stateStore.read("_examPrevActiveId");
   if (!prev) return;
   if (window.apiConfig.activeId === prev) return;
   var prevProv = Array.isArray(window.apiConfig.providers) ? window.apiConfig.providers.find(function (p) { return p && p.id === prev }) : null;
@@ -453,7 +485,7 @@ export function cancelExamGeneration() {
   restoreExamActiveProvider();
   var body = _examBody();
   body.innerHTML = '<div class="exam-empty">' + (_examUiL("Generation cancelled", "已取消出题") + '.</div>');
-  _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>';
+  _examFooter().innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
   _setExamTitle(_examUiL("Cancelled", "已取消"));
 }
 
@@ -480,11 +512,11 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
     restoreExamActiveProvider();
     var bodyE = _examBody();
     bodyE.innerHTML = '<div class="exam-empty"><strong>' + esc(errMsg) + '</strong>' + (detail ? '<div style="margin-top:10px;font-size:13px;color:hsl(var(--text-500));line-height:1.5">' + esc(detail) + '</div>' : '') + '</div>';
-    _examFooter().innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>';
+    _examFooter().innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
   }
 
   for (var i = 0; i < count; i++) {
-    if (window.state.examCancel) { restoreExamActiveProvider(); return; }
+    if (window.stateStore.read("examCancel")) { restoreExamActiveProvider(); return; }
     var qType = allowedTypes[i % allowedTypes.length] || "multiple-choice";
     updateProgress(i, _examUiIsZh()
       ? "正在生成第 " + (i + 1) + " 题…"
@@ -523,10 +555,10 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
        hardcoded cap. */
     var tokens = window.MAX_TOKENS_CHAT;
     var result = await callAPIStream(msgs, tokens, function () { });
-    if (window.state.examCancel) return;
+    if (window.stateStore.read("examCancel")) return;
     var text = typeof result === "string" ? result : (result && (result.text || result.content)) || "";
     if (!text || !text.trim()) {
-      var errReason = window.state.lastCallError || _examUiL("no response", "模型无响应");
+      var errReason = window.stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
       if (i === 0) {
         failExam(_examUiL("Generation failed — no response", "生成失败：模型无响应"), errReason);
         return;
@@ -550,14 +582,14 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
     previousTexts.push(q.q);
   }
   restoreExamActiveProvider();
-  if (window.state.examCancel) return;
+  if (window.stateStore.read("examCancel")) return;
   questions.forEach(function (q) {
     stateStore.dispatch({
       type:'state/set',key:'examQuestions',
-      value:window.state.examQuestions.concat([q])
+      value:window.stateStore.read("examQuestions").concat([q])
     });
   });
-  if (window.state.examQuestions.length === 0) {
+  if (window.stateStore.read("examQuestions").length === 0) {
     failExam(_examUiL("Generation failed — no questions", "生成失败：没有成功生成任何题目"));
     return;
   }
@@ -642,7 +674,7 @@ export function renderAllQuestions() {
   body.innerHTML = '<div id="examQuestionsContainer"></div>';
   var cont = document.getElementById("examQuestionsContainer");
   if (!cont) return;
-  window.state.examQuestions.forEach(function (q, idx) {
+  window.stateStore.read("examQuestions").forEach(function (q, idx) {
     var ph = document.createElement("div");
     ph.className = "exam-q-card";
     ph.id = "examQ" + idx;
@@ -652,28 +684,28 @@ export function renderAllQuestions() {
 }
 
 export function paintQuestionCard(idx, q, container) {
-  var savedAnswer = (window.state.examAnswers || {})[idx];
+  var savedAnswer = (window.stateStore.read("examAnswers") || {})[idx];
   var typeLabels = {
     "multiple-choice": _examUiL("Multiple choice", "选择题"),
     "fill-blank": _examUiL("Fill blank", "填空题"),
     "short-answer": _examUiL("Short answer", "简答题"),
     "error": _examUiL("Failed", "生成失败")
   };
-  var html = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (idx + 1) + ' / ' + window.state.examQuestions.length + ' <span class="exam-q-type">' + esc(typeLabels[q.type] || q.type) + '</span></div>';
+  var html = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (idx + 1) + ' / ' + window.stateStore.read("examQuestions").length + ' <span class="exam-q-type">' + esc(typeLabels[q.type] || q.type) + '</span></div>';
   html += '<div class="exam-q-text">' + formatMsg(q.q) + '</div>';
   if (q.type === "multiple-choice" && q.opts) {
     html += '<div class="exam-q-opts">';
     q.opts.forEach(function (o, oi) {
-      html += '<button class="exam-q-opt' + (savedAnswer === oi ? ' selected' : '') + '" data-eidx="' + idx + '" data-oidx="' + oi + '" onclick="selectExamOpt(' + idx + ',' + oi + ')">';
+      html += '<button class="exam-q-opt' + (savedAnswer === oi ? ' selected' : '') + '" data-eidx="' + idx + '" data-oidx="' + oi + '" data-exam-command="answer-option">';
       html += '<span class="exam-q-opt-letter">' + o.letter + '</span>';
       html += '<span class="exam-q-opt-text">' + formatMsg(o.text) + '</span>';
       html += '</button>';
     });
     html += '</div>';
   } else if (q.type === "fill-blank") {
-    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" oninput="setExamAnswer(' + idx + ',this.value);refreshExamNavTally();scheduleExamAnswerSave()">';
+    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '">';
   } else if (q.type === "short-answer") {
-    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" oninput="setExamAnswer(' + idx + ',this.value);refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
+    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
   }
   container.innerHTML = html;
 }
@@ -692,7 +724,7 @@ export function appendExamErrorCard(i, msg) {
   ph.innerHTML = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-wrong">' + _examUiL("Failed", "生成失败") + '</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">' + esc(msg) + '</div>';
   stateStore.dispatch({
     type:'state/set',key:'examQuestions',
-    value:window.state.examQuestions.concat([{ q:"[failed]",type:"error",explanation:"",_idx:i }])
+    value:window.stateStore.read("examQuestions").concat([{ q:"[failed]",type:"error",explanation:"",_idx:i }])
   });
   var cont = document.getElementById("examQuestionsContainer");
   if (cont) cont.appendChild(ph);
@@ -700,7 +732,7 @@ export function appendExamErrorCard(i, msg) {
 }
 
 export function selectExamOpt(qidx, oidx) {
-  if (window.state.examSubmitted) return;
+  if (window.stateStore.read("examSubmitted")) return;
   setExamAnswer(qidx,oidx);
   var btns = document.querySelectorAll('.exam-q-opt[data-eidx="' + qidx + '"]');
   btns.forEach(function (b, i) { b.classList.toggle("selected", i === oidx); });
@@ -711,34 +743,34 @@ export function selectExamOpt(qidx, oidx) {
 export function finishExamGeneration() {
   var st = document.getElementById("examGenStatus");
   if (st) st.style.display = "none";
-  var valid = window.state.examQuestions.filter(function (q) { return q.type !== "error"; });
+  var valid = window.stateStore.read("examQuestions").filter(function (q) { return q.type !== "error"; });
   var footer = _examFooter();
   var _L = _examUiL;
-  if (window.state.examCancel) {
-    footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _L("Start New Exam", "新考试") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
+  if (window.stateStore.read("examCancel")) {
+    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _L("Start New Exam", "新考试") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
     renderExamNav();
     return;
   }
   if (valid.length > 0) {
-    footer.innerHTML = '<button class="exam-btn primary" onclick="submitExam()">' + _L("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
+    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="submit">' + _L("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
   } else {
-    footer.innerHTML = '<button class="exam-btn primary" onclick="renderExamForm()">' + _L("Try Again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
+    footer.innerHTML = '<button class="exam-btn primary" data-exam-command="form">' + _L("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
   }
   renderExamNav();
   saveExamSession();
 }
 
 function renderExamNav() {
-  if (!window.state._examInView) return;
+  if (!window.stateStore.read("_examInView")) return;
   var body = _examBody();
   if (!body) return;
   var existing = document.getElementById("examNavBar");
   if (existing) existing.parentNode.removeChild(existing);
-  var total = window.state.examQuestions.length;
+  var total = window.stateStore.read("examQuestions").length;
   if (total === 0) return;
-  var isSubmitted = !!window.state.examSubmitted;
-  var answeredKeys = Object.keys(window.state.examAnswers || {}).filter(function (k) {
-    var v = window.state.examAnswers[k];
+  var isSubmitted = !!window.stateStore.read("examSubmitted");
+  var answeredKeys = Object.keys(window.stateStore.read("examAnswers") || {}).filter(function (k) {
+    var v = window.stateStore.read("examAnswers")[k];
     if (v === undefined || v === null) return false;
     if (typeof v === "string") return v.trim().length > 0;
     return true;
@@ -746,7 +778,7 @@ function renderExamNav() {
   var answered = answeredKeys.length;
   var L = _examUiL;
   var html = '<div class="exam-nav-bar" id="examNavBar" style="display:flex;">';
-  html += '<button class="exam-nav-btn" id="examNavPrev" onclick="examNavStep(-1)" aria-label="' + L("Previous question", "上一题") + '">‹</button>';
+  html += '<button class="exam-nav-btn" id="examNavPrev" data-exam-command="nav-step" data-delta="-1" aria-label="' + L("Previous question", "上一题") + '">‹</button>';
   html += '<div class="exam-nav-counter" id="examNavCounter">';
   html += '<span class="exam-nav-current" id="examNavCurrent">1</span>';
   html += '<span class="exam-nav-sep">/</span>';
@@ -755,7 +787,7 @@ function renderExamNav() {
     html += '<span class="exam-nav-progress" id="examNavProgress">· ' + answered + ' ' + L("answered", "已答") + '</span>';
   }
   html += '</div>';
-  html += '<button class="exam-nav-btn" id="examNavNext" onclick="examNavStep(1)" aria-label="' + L("Next question", "下一题") + '">›</button>';
+  html += '<button class="exam-nav-btn" id="examNavNext" data-exam-command="nav-step" data-delta="1" aria-label="' + L("Next question", "下一题") + '">›</button>';
   html += '</div>';
   html += '<div class="exam-nav-pills" id="examNavPills">';
   for (var j = 0; j < total; j++) {
@@ -763,7 +795,7 @@ function renderExamNav() {
     var isCur = (j === examNavCurrentIdx());
     var cls = "exam-nav-pill" + (isCur ? " current" : "") + (isAns ? " answered" : "");
     var lbl = (j + 1) + (isAns ? " \u00B7" : "");
-    html += '<button class="' + cls + '" data-nav-idx="' + j + '" onclick="examNavJump(' + j + ')">' + lbl + '</button>';
+    html += '<button class="' + cls + '" data-nav-idx="' + j + '" data-exam-command="nav-jump">' + lbl + '</button>';
   }
   html += '</div>';
   var first = body.firstChild;
@@ -796,7 +828,7 @@ export function examNavJump(idx) {
 
 export function examNavStep(dir) {
   var i = examNavCurrentIdx();
-  var total = window.state.examQuestions.length;
+  var total = window.stateStore.read("examQuestions").length;
   if (total === 0) return;
   var next = Math.max(0, Math.min(total - 1, i + dir));
   examNavJump(next);
@@ -804,7 +836,7 @@ export function examNavStep(dir) {
 
 function syncExamNav() {
   var i = examNavCurrentIdx();
-  var total = window.state.examQuestions.length;
+  var total = window.stateStore.read("examQuestions").length;
   var cur = document.getElementById("examNavCurrent");
   if (cur) cur.textContent = (i + 1);
   var prev = document.getElementById("examNavPrev");
@@ -818,10 +850,10 @@ function syncExamNav() {
 }
 
 export function refreshExamNavTally() {
-  var total = window.state.examQuestions.length;
+  var total = window.stateStore.read("examQuestions").length;
   if (total === 0) return;
-  var answered = Object.keys(window.state.examAnswers || {}).filter(function (k) {
-    var v = window.state.examAnswers[k];
+  var answered = Object.keys(window.stateStore.read("examAnswers") || {}).filter(function (k) {
+    var v = window.stateStore.read("examAnswers")[k];
     if (v === undefined || v === null) return false;
     if (typeof v === "string") return v.trim().length > 0;
     return true;
@@ -848,8 +880,8 @@ export function scheduleExamAnswerSave() {
 }
 
 export function submitExam() {
-  var qs = window.state.examQuestions;
-  var ans = window.state.examAnswers;
+  var qs = window.stateStore.read("examQuestions");
+  var ans = window.stateStore.read("examAnswers");
   var validQs = qs.filter(function (q) { return q.type !== "error"; });
   if (!validQs.length) return;
   var missing = [];
@@ -869,9 +901,9 @@ export function submitExam() {
 
 function saveExamSession() {
   if (!window.CURRENT_USER) return;
-  if (!window.state.examTopic) return;
-  if (!window.state._examInView) return;
-  if (window.state.examReadOnly) return;
+  if (!window.stateStore.read("examTopic")) return;
+  if (!window.stateStore.read("_examInView")) return;
+  if (window.stateStore.read("examReadOnly")) return;
   if (_examSaveInFlight) {
     _examSaveDirty = true;
     return;
@@ -883,9 +915,9 @@ function saveExamSession() {
 function doSaveExamSession() {
   var body = {
     kind: "exam",
-    topic: window.state.examTopic,
-    title: window.state.examTopic,
-    domain: window.state.examTopic,
+    topic: window.stateStore.read("examTopic"),
+    title: window.stateStore.read("examTopic"),
+    domain: window.stateStore.read("examTopic"),
     /* P_exam-mode — previously hardcoded to "chat" regardless of
        the active user mode. A tutor-mode session that branched into
        an exam would save as "chat", and on reload loadSession would
@@ -895,25 +927,25 @@ function doSaveExamSession() {
     mode: window.appMode || "chat",
     phase: "chat",
     examData: {
-      topic: window.state.examTopic,
-      difficulty: window.state.examDifficulty || "intermediate",
-      count: window.state.examCount,
-      lang: window.state.examLang || "English",
-      types: Array.isArray(window.state.examTypes) ? window.state.examTypes : [],
-      questions: window.state.examQuestions.map(function (q) {
+      topic: window.stateStore.read("examTopic"),
+      difficulty: window.stateStore.read("examDifficulty") || "intermediate",
+      count: window.stateStore.read("examCount"),
+      lang: window.stateStore.read("examLang") || "English",
+      types: Array.isArray(window.stateStore.read("examTypes")) ? window.stateStore.read("examTypes") : [],
+      questions: window.stateStore.read("examQuestions").map(function (q) {
         var c = { q: q.q, type: q.type, explanation: q.explanation || "" };
         if (q.opts) c.opts = q.opts;
         if (q.answer !== undefined) c.answer = q.answer;
         if (q.answers) c.answers = q.answers;
         return c;
       }),
-      answers: window.state.examAnswers || {},
-      submitted: !!window.state.examSubmitted,
+      answers: window.stateStore.read("examAnswers") || {},
+      submitted: !!window.stateStore.read("examSubmitted"),
       generatedAt: Date.now(),
     },
   };
-  if (window.state.currentSessionId) {
-    body.id = window.state.currentSessionId;
+  if (window.stateStore.read("currentSessionId")) {
+    body.id = window.stateStore.read("currentSessionId");
   }
   _examSaveInFlight = window.apiFetch("/api/sessions", { method: "POST", body: body })
     .then(function (r) {
@@ -939,12 +971,12 @@ function doSaveExamSession() {
 }
 
 export function renderExamResults() {
-  var qs = window.state.examQuestions;
-  var ans = window.state.examAnswers;
+  var qs = window.stateStore.read("examQuestions");
+  var ans = window.stateStore.read("examAnswers");
   var body = _examBody();
   var footer = _examFooter();
   var _L = _examUiL;
-  _setExamTitle(_L("Exam Results", "考试结果") + ": " + window.state.examTopic);
+  _setExamTitle(_L("Exam Results", "考试结果") + ": " + window.stateStore.read("examTopic"));
   var correct = 0, total = 0;
   var resultDetails = [];
   qs.forEach(function (q, i) {
@@ -1007,7 +1039,7 @@ export function renderExamResults() {
     html += '</div>';
   });
   body.innerHTML = html;
-  footer.innerHTML = '<button class="exam-btn success" onclick="renderExamForm()">' + _L("New Exam", "新考试") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _L("Close", "关闭") + '</button>';
+  footer.innerHTML = '<button class="exam-btn success" data-exam-command="form">' + _L("New Exam", "新考试") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _L("Close", "关闭") + '</button>';
 }
 
 /* Repaint dynamic exam chrome when the application language changes.
@@ -1015,7 +1047,7 @@ export function renderExamResults() {
    while labels, controls, placeholders and results follow the UI language.
    Form values and in-progress answers are preserved across the repaint. */
 export function refreshExamI18n() {
-  if (!window.state || !window.state._examInView) return;
+  if (!window.stateStore.read("_examInView")) return;
   var form = document.querySelector(".exam-form-container");
   if (form) {
     var snapshot = {
@@ -1048,18 +1080,18 @@ export function refreshExamI18n() {
     if (snapshot.model) selectExamModel(snapshot.model);
     return;
   }
-  if (window.state.examSubmitted) {
+  if (window.stateStore.read("examSubmitted")) {
     renderExamResults();
     return;
   }
-  if (Array.isArray(window.state.examQuestions) && window.state.examQuestions.length) {
+  if (Array.isArray(window.stateStore.read("examQuestions")) && window.stateStore.read("examQuestions").length) {
     renderAllQuestions();
     renderExamNav();
     var footer = _examFooter();
-    var valid = window.state.examQuestions.some(function (q) { return q.type !== "error"; });
+    var valid = window.stateStore.read("examQuestions").some(function (q) { return q.type !== "error"; });
     footer.innerHTML = valid
-      ? '<button class="exam-btn primary" onclick="submitExam()">' + _examUiL("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>'
-      : '<button class="exam-btn primary" onclick="renderExamForm()">' + _examUiL("Try Again", "重新出题") + '</button><button class="exam-btn secondary" onclick="closeExamView()">' + _examUiL("Close", "关闭") + '</button>';
+      ? '<button class="exam-btn primary" data-exam-command="submit">' + _examUiL("Submit for Grading", "提交批改") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>'
+      : '<button class="exam-btn primary" data-exam-command="form">' + _examUiL("Try Again", "重新出题") + '</button><button class="exam-btn secondary" data-exam-command="close">' + _examUiL("Close", "关闭") + '</button>';
     return;
   }
   var genMsg = document.getElementById("examGenMsg");
@@ -1070,7 +1102,7 @@ export function refreshExamI18n() {
   if (genSub) genSub.textContent = _examUiL("The AI is preparing your questions. This usually takes a few seconds.", "AI 正在为您出题，请稍候片刻");
   var footer2 = _examFooter();
   if (footer2 && document.getElementById("examGenStatus")) {
-    footer2.innerHTML = '<button class="exam-btn secondary" onclick="cancelExamGeneration()">' + _examUiL("Cancel", "取消") + '</button>';
+    footer2.innerHTML = '<button class="exam-btn secondary" data-exam-command="cancel">' + _examUiL("Cancel", "取消") + '</button>';
   }
 }
 

@@ -79,7 +79,7 @@ test('DEBUG: topic composer — multiline content must trigger height growth', a
 test('DEBUG: chat composer — focus + one line must NOT change wrap height', async ({ page }) => {
   await setup(page, { width: 390, height: 844 })(page);
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
@@ -116,7 +116,7 @@ test('DEBUG: chat composer — focus + one line must NOT change wrap height', as
 test('DEBUG: chat composer — multiline content must grow smoothly', async ({ page }) => {
   await setup(page, { width: 390, height: 844 })(page);
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.__samples = [];

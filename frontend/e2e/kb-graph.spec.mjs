@@ -21,8 +21,8 @@ async function renderGraph(page, { currentNode = -1 } = {}) {
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(({ nodes, currentNode }) => {
-    window.state.kbNodes = nodes;
-    if (currentNode >= 0) window.state.currentNode = currentNode;
+    window.stateStore.dispatch({ type: "state/set", key: "kbNodes", value: nodes });
+    if (currentNode >= 0) window.stateStore.dispatch({ type: "state/set", key: "currentNode", value: currentNode });
     // The KB panel is a `tutor-only` element hidden in chat mode
     // (body[data-app-mode="chat"] .tutor-only{display:none !important}).
     // The app's syncAppModeUI keeps re-stamping data-app-mode from the

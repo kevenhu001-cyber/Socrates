@@ -9,7 +9,7 @@
    STREAM_TIMEOUT_MS, etc.). */
 
 import { apiFetchRaw } from '../util/api.js';
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 import { buildChatRequestBody } from './api.js';
 import {
   AI_MAX_ATTEMPTS,
@@ -70,7 +70,6 @@ function clearActiveChatAbort(){
    - User Stop click returns cancelled:true (not an error). */
 export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* Read main.js globals via window — this module stays independent. */
-  var state=window.state;
   var getActiveProvider=window.getActiveProvider;
   var offlineGuard=window.offlineGuard;
   /* P_reasoning_budget — pick the silence/total budget per provider.
@@ -684,7 +683,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       return null;
     }
     if(cancelled){
-      if(!state.lastCallError)setLastCallError("Stream cancelled (parse error)");
+      if(!stateStore.read('lastCallError'))setLastCallError("Stream cancelled (parse error)");
       finishTurn();
       return null;
     }

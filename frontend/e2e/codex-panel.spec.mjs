@@ -21,10 +21,10 @@ test.beforeEach(async ({ page }) => {
 function enterChat(page) {
   return page.evaluate(() => {
     const sessionId = '33333333-3333-4333-8333-333333333333';
-    window.state.phase = 'chat';
-    window.state.topic = 'Codex integration smoke';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Codex integration smoke' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
     document.getElementById('topicSetup')?.classList.add('hidden');
     document.getElementById('chatView')?.classList.remove('hidden');
   });

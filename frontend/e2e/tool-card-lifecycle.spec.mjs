@@ -38,7 +38,7 @@ async function mountRunningCard(page, { tool = 'code_interpreter', input = { cod
     // Reveal the chat view so the mounted card is actually laid out and
     // clickable (the composer/topic-setup shell hides #msgList otherwise).
     try {
-      window.state.phase = 'chat';
+      window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
       document.getElementById('topicSetup')?.classList.add('hidden');
       document.getElementById('chatView')?.classList.remove('hidden');
     } catch (_) {}

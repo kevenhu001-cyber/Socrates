@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
+test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -28,8 +28,9 @@ test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
   });
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('今天有什么可以帮你的');
-  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
+  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
   expect(zhState.fontFamily).toContain('Noto Sans SC');
+  expect(zhState.fontFamily).toContain('Inter');
   expect(zhState.fontFamily).not.toContain('Microsoft YaHei');
 
   /* Switching back to English must restore the Latin UI face. */
@@ -39,10 +40,10 @@ test('zh UI localizes live with the bundled Inter face', async ({ page }) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';
   });
-  expect(enFont).toContain('Inter');
+  expect(enFont).toContain('Plus Jakarta Sans');
 });
 
-test('landing greeting has no leading logo and keeps the western face in Chinese UI', async ({ page }) => {
+test('landing greeting has no leading logo and keeps the western Plus Jakarta Sans face in Chinese UI', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -61,13 +62,14 @@ test('landing greeting has no leading logo and keeps the western face in Chinese
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
+  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
   expect(zhStyle.fontFamily).toContain('Noto Sans SC');
+  expect(zhStyle.fontFamily).toContain('Inter');
   expect(zhStyle.fontFamily).not.toContain('Microsoft YaHei');
   expect(zhStyle.paddingLeft).toBe('0px');
   expect(['none', 'normal']).toContain(zhStyle.beforeContent);
 
   await page.evaluate(() => window.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Inter');
+  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
 });

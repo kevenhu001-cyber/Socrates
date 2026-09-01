@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useMemo, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -109,7 +110,6 @@ function CommandPalette() {
       <div
         className="cmd-k-modal"
         id={MODAL_ID}
-        data-mounted-by="cmd-k"
         data-react-cmdk-state="closed"
         onClick={(event) => event.stopPropagation()}
       >
@@ -124,7 +124,6 @@ function CommandPalette() {
     <div
       className="cmd-k-modal"
       id={MODAL_ID}
-      data-mounted-by="cmd-k"
       data-react-cmdk-state="open"
       onClick={(event) => event.stopPropagation()}
     >
@@ -233,14 +232,14 @@ export interface CmdKReactRootHandle {
  * preserved (same id, same classes, same `onclick` contract for the
  * backdrop-click dismissal) — React owns only `#cmdKModal`'s contents.
  *
- * Callers claim the overlay through `dataset.mountedBy`, so the legacy
- * renderer becomes a no-op the moment React takes over.
+ * Callers claim the overlay through the module-private ownership registry,
+ * so the legacy renderer becomes a no-op the moment React takes over.
  */
 export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
   /* A duplicate registry run short-circuits on the ownership marker. */
-  if (overlay.dataset.mountedBy === 'cmd-k') {
+  if (hostIsMountedBy(overlay, 'cmd-k')) {
     throw new Error('CmdK React runtime was initialized more than once.');
   }
 
@@ -248,13 +247,13 @@ export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
 
   const root = createRoot(overlay);
   root.render(<CommandPalette />);
-  overlay.dataset.mountedBy = 'cmd-k';
+  markHostMountedBy(overlay, 'cmd-k');
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.mountedBy;
+      clearHostMounted(overlay);
     },
   };
 }

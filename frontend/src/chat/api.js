@@ -7,7 +7,7 @@
    window globals + ~750 lines of streaming state). */
 
 import { apiFetchRaw } from '../util/api.js';
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 import {
   AI_MAX_ATTEMPTS,
   AI_MAX_RETRIES,
@@ -92,10 +92,8 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
      as the ordinary turn. These are context selectors only; the server
      re-checks ownership and chooses the real workspace/policy. */
   try {
-    var runtimeState = window.state || {};
-    var runtimeSession = runtimeState.session || {};
-    var activeSessionId = runtimeSession.currentSessionId || runtimeState.currentSessionId || null;
-    var activeProjectId = runtimeState.currentProjectId || null;
+    var activeSessionId = stateStore.read('currentSessionId') || null;
+    var activeProjectId = stateStore.read('currentProjectId') || null;
     if (activeSessionId) body.sessionId = activeSessionId;
     if (activeProjectId) body.projectId = activeProjectId;
   } catch (_) { /* keep request compatible with isolated test harnesses */ }

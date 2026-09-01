@@ -3,8 +3,16 @@
    fonts.googleapis.com and CJK glyphs come from the locally hosted Noto
    Sans SC subsets.
 
-   Latin sans face: Inter. It is loaded locally so mixed Chinese/Latin
-   strings do not silently fall back to a platform-dependent western face. */
+   Latin sans face: Plus Jakarta Sans (primary) + Inter (fallback).
+   Plus Jakarta Sans is the planned western face — a humanist-geometric
+   sans with warmer, more distinctive letterforms that pairs with the
+   Newsreader serif display face. Inter remains as a local fallback so
+   mixed Chinese/Latin strings never silently fall back to a
+   platform-dependent western face. Both families are bundled from
+   @fontsource so production and local dev share the same file set. */
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
@@ -18,12 +26,13 @@
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
-[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 5%;--bg-100:0 0% 13%;--bg-200:0 0% 16%;--bg-300:0 0% 21%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
-[data-theme=socrates][data-mode=light]{--bg-000:42 33% 98%;--bg-100:40 25% 96%;--bg-200:38 20% 92%;--bg-300:36 15% 87%;--bg-400:0 0% 100%;--text-000:36 12% 10%;--text-100:34 10% 16%;--text-200:34 8% 28%;--text-300:34 7% 35%;--text-400:34 6% 43%;--text-500:34 5% 50%;--border-100:38 12% 86%;--border-200:38 11% 82%;--border-300:36 10% 78%;--border-400:36 9% 72%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
-/* Keep the Latin face first in Chinese UI as well. Inter has no CJK glyphs,
-   so Noto Sans SC is still selected automatically for Chinese characters
-   while Latin text keeps the intended western rhythm. */
-html[data-theme=socrates][data-mode]:lang(zh){--font-sans:"Inter","Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;--font-display:"Newsreader","Noto Sans SC","PingFang SC","Hiragino Sans GB",ui-serif,Georgia,"Times New Roman",serif}
+[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 5%;--bg-100:0 0% 13%;--bg-200:0 0% 16%;--bg-300:0 0% 21%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:43 77% 62%;--accent-100:43 77% 62%;--accent-900:43 40% 20%;--brand-000:36 60% 55%;--brand-100:36 65% 60%;--oncolor-100:0 0% 100%;--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
+[data-theme=socrates][data-mode=light]{--bg-000:42 33% 98%;--bg-100:40 25% 96%;--bg-200:38 20% 92%;--bg-300:36 15% 87%;--bg-400:0 0% 100%;--text-000:36 12% 10%;--text-100:34 10% 16%;--text-200:34 8% 28%;--text-300:34 7% 35%;--text-400:34 6% 43%;--text-500:34 5% 50%;--border-100:38 12% 86%;--border-200:38 11% 82%;--border-300:36 10% 78%;--border-400:36 9% 72%;--accent-000:43 65% 42%;--accent-100:43 65% 38%;--accent-900:43 40% 90%;--brand-000:36 55% 42%;--brand-100:36 60% 47%;--oncolor-100:0 0% 100%;--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
+/* Keep the Latin face first in Chinese UI as well. Plus Jakarta Sans and
+   Inter have no CJK glyphs, so Noto Sans SC is still selected
+   automatically for Chinese characters while Latin text keeps the intended
+   western rhythm. */
+html[data-theme=socrates][data-mode]:lang(zh){--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;--font-display:"Newsreader","Noto Sans SC","PingFang SC","Hiragino Sans GB",ui-serif,Georgia,"Times New Roman",serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* ─── View Transition — cross-browser consistent ── */
@@ -467,12 +476,13 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 
 /* Native AI visualization cards. They reuse the chat surface and tokens so
    generated content reads as part of Socrates, not as an embedded dashboard.
-   The card uses the same bundled Inter face as the rest of the shell so labels stay
-   consistent regardless of the user's installed system fonts. */
-.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
+   The card uses the same bundled Plus Jakarta Sans + Inter face as the rest
+   of the shell so labels stay consistent regardless of the user's installed
+   system fonts. */
+.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
 .visualization-header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid hsl(var(--border-100))}
-.visualization-header h3{margin:0;font:600 14px/1.35 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
-.visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{-webkit-appearance:none;appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
+.visualization-header h3{margin:0;font:600 14px/1.35 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
+.visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{-webkit-appearance:none;appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
 .visualization-stage{height:350px;min-width:0;padding:4px 4px 0;position:relative}
 .visualization-card[data-visualization-renderer="tldraw"] .visualization-stage{height:520px;padding:0}
 .visualization-card[data-visualization-renderer="geogebra"] .visualization-stage{height:480px;padding:0}
@@ -488,9 +498,9 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
    at its natural content size. */
 .visualization-stage>div:first-child{width:100%;height:100%}
 /* Force ECharts chart background transparent — the default theme sets white. */
-.visualization-stage canvas,.visualization-stage svg{background:transparent!important}.visualization-data{padding:0 16px 14px}.visualization-table-wrap{overflow:auto;border:1px solid hsl(var(--border-100));border-radius:9px;max-height:260px}.visualization-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-table th,.visualization-table td{padding:8px 10px;text-align:left;border-bottom:1px solid hsl(var(--border-100));white-space:nowrap;color:hsl(var(--text-100))}.visualization-table th{position:sticky;top:0;background:hsl(var(--bg-100));color:hsl(var(--text-300));font-weight:600}.visualization-table tr:last-child td{border-bottom:0}
-.visualization-diagram{display:block;width:100%;height:100%;color:hsl(var(--text-300));font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-edge{fill:none;stroke:currentColor;stroke-width:1.4}.visualization-edge-label{fill:currentColor;font:500 12px 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node rect{fill:hsl(var(--bg-100));stroke:hsl(var(--border-200));stroke-width:1.4}.visualization-node text{fill:hsl(var(--text-100));font:600 13px 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node .visualization-node-detail{fill:hsl(var(--text-300));font:11px 'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
-.visualization-extension{display:block;width:100%;height:100%;border:0;background:transparent}.visualization-fallback{display:grid;place-content:center;gap:8px;height:100%;padding:20px;color:hsl(var(--text-300));text-align:center;font-family:'Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-fallback strong{color:hsl(var(--text-100))}.visualization-fallback p{margin:0;font-size:13px;line-height:1.5}.visualization-fallback button{justify-self:center;border:1px solid hsl(var(--border-200));border-radius:7px;padding:6px 9px;background:hsl(var(--bg-100));color:hsl(var(--text-100));cursor:pointer;font:inherit}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.visualization-stage canvas,.visualization-stage svg{background:transparent!important}.visualization-data{padding:0 16px 14px}.visualization-table-wrap{overflow:auto;border:1px solid hsl(var(--border-100));border-radius:9px;max-height:260px}.visualization-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-table th,.visualization-table td{padding:8px 10px;text-align:left;border-bottom:1px solid hsl(var(--border-100));white-space:nowrap;color:hsl(var(--text-100))}.visualization-table th{position:sticky;top:0;background:hsl(var(--bg-100));color:hsl(var(--text-300));font-weight:600}.visualization-table tr:last-child td{border-bottom:0}
+.visualization-diagram{display:block;width:100%;height:100%;color:hsl(var(--text-300));font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-edge{fill:none;stroke:currentColor;stroke-width:1.4}.visualization-edge-label{fill:currentColor;font:500 12px 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node rect{fill:hsl(var(--bg-100));stroke:hsl(var(--border-200));stroke-width:1.4}.visualization-node text{fill:hsl(var(--text-100));font:600 13px 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node .visualization-node-detail{fill:hsl(var(--text-300));font:11px 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
+.visualization-extension{display:block;width:100%;height:100%;border:0;background:transparent}.visualization-fallback{display:grid;place-content:center;gap:8px;height:100%;padding:20px;color:hsl(var(--text-300));text-align:center;font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-fallback strong{color:hsl(var(--text-100))}.visualization-fallback p{margin:0;font-size:13px;line-height:1.5}.visualization-fallback button{justify-self:center;border:1px solid hsl(var(--border-200));border-radius:7px;padding:6px 9px;background:hsl(var(--bg-100));color:hsl(var(--text-100));cursor:pointer;font:inherit}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media (max-width:520px){.visualization-card{margin-left:-2px;margin-right:-2px;border-radius:12px}.visualization-header{padding:12px;gap:8px}.visualization-actions button{padding:5px;font-size:10px}.visualization-stage{height:292px;padding:2px}.visualization-data{padding:0 10px 10px}}
 @media (prefers-reduced-motion:reduce){.visualization-card *, .visualization-card *:before, .visualization-card *:after{transition:none!important;animation:none!important}}
 .recent-mode-badge.mode-tutor{background:hsl(36 70% 55%)}
@@ -8466,10 +8476,19 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;
   font:400 13px var(--font-sans);text-align:left;cursor:pointer;
   opacity:1;
+  /* P_idea-overflow — flex children default to min-width:auto, so a long
+     Chinese/English prompt can stretch the chip past its parent. Pair
+     min-width:0 on the chip with overflow:hidden + text-overflow:ellipsis
+     so the row clips inside its grid instead of overflowing the page. */
+  min-width:0;max-width:100%;overflow:hidden;
   transition:background-color .18s var(--ease-out),color .18s var(--ease-out),opacity .18s var(--ease-out),transform .18s var(--ease-out);
 }
 .home-idea:hover,.suggestion-chip:hover{background:hsl(var(--cowork-surface))}
 .home-idea:focus-visible,.suggestion-chip:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:1px}
+.home-idea>.home-idea-text,.suggestion-chip>.home-idea-text{
+  min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;
+}
 /* Enter: the chip starts hidden + slightly nudged down and animates
    to its resting state over ~180ms. The JS toggles the .suggestion-enter
    class on a rAF after appending, so the browser commits the start
@@ -8588,11 +8607,15 @@ body[data-conversation-active="true"] .chat-suggestions{display:none}
     border-radius:10px;
     font-size:16px;
     color:hsl(var(--cowork-muted));
-    white-space:nowrap;
+    /* P_idea-mobile-overflow — on phones the chip must stay inside the
+       safe area. min-width:0 lets the flex child shrink below its
+       intrinsic width; the .home-idea-text inside carries the ellipsis
+       clip so the icon and label keep their 24px / wrap as needed. */
+    min-width:0;max-width:100%;
     overflow:hidden;
   }
-  .home-idea>span:last-child,.home-idea>.home-idea-text{overflow:hidden;text-overflow:ellipsis}
-  .home-idea-icon{width:24px;height:24px;border:0;border-radius:0;color:hsl(var(--cowork-text))}
+  .home-idea>span:last-child,.home-idea>.home-idea-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .home-idea-icon{width:24px;height:24px;flex:0 0 auto;border:0;border-radius:0;color:hsl(var(--cowork-text))}
   .home-idea-icon svg{width:20px;height:20px}
 }
 
@@ -10634,6 +10657,644 @@ html[data-theme=socrates][data-mode=light]{
   #appShell #findBtn:focus-visible,
   #appShell #shareBtn:focus-visible{background:hsl(0 0% 100%/.1);color:#fff}
   #appShell #shareBtn .share-btn-label{display:none}
-  #appShell #topBarNewChatBtn,
-  #appShell .cg-layout-btn{display:none!important}
+}
+
+/* ==========================================================================
+   P_chatgpt-mimic — ChatGPT (chatgpt.com) fidelity pass
+   Mirrors the screenshot and live site (dark #000 page, #212121 composer,
+   28px pill, centered “今天有什么计划？” headline, muted suggestion line,
+   minimal sidebar). See /tmp/chatgpt-dark.html + screenshot analysis.
+   ========================================================================== */
+
+/* ---- Page & shell: pure black in dark, paper white in light ---- */
+[data-theme="socrates"][data-mode="dark"] body,
+[data-theme="socrates"][data-mode="dark"] .app,
+[data-theme="socrates"][data-mode="dark"] .main,
+[data-theme="socrates"][data-mode="dark"] .main-content{
+  background:hsl(0 0% 0%);
+}
+[data-theme="socrates"][data-mode="dark"] .main-bg{
+  background:hsl(0 0% 0%);
+}
+[data-theme="socrates"][data-mode="light"] body,
+[data-theme="socrates"][data-mode="light"] .app,
+[data-theme="socrates"][data-mode="light"] .main,
+[data-theme="socrates"][data-mode="light"] .main-content{
+  background:hsl(0 0% 100%);
+}
+[data-theme="socrates"][data-mode="light"] .main-bg{
+  background:hsl(0 0% 100%);
+}
+
+/* ---- Sidebar: solid, no blur, ChatGPT 260px, subtle separator ---- */
+[data-theme="socrates"][data-mode="dark"] .sidebar{
+  background:hsl(0 0% 0%);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  border-right:0.5px solid hsl(0 0% 100% / 0.08);
+}
+[data-theme="socrates"][data-mode="light"] .sidebar{
+  background:hsl(0 0% 98%);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+  border-right:0.5px solid hsl(0 0% 0% / 0.06);
+}
+.sidebar{
+  --app-sidebar-width:16.25rem; /* 260px — ChatGPT rail width */
+  min-width:var(--app-sidebar-width);
+  width:var(--app-sidebar-width);
+}
+.sidebar.collapsed{
+  width:var(--app-sidebar-width);
+  min-width:var(--app-sidebar-width);
+}
+/* Sidebar header: tighter, muted */
+.sidebar-header{
+  padding:10px 10px 10px 12px;
+}
+.sidebar-logo{
+  font-family:var(--font-sans);
+  font-weight:600;
+  font-size:calc(14px * var(--sidebar-font-scale));
+  letter-spacing:-0.02em;
+}
+.sidebar-logo span{
+  color:hsl(var(--text-100));
+}
+/* Nav: ChatGPT-like — 14px, 8px radius, subtle hover, active = #212121 */
+.sidebar-nav{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:4px 8px 8px;
+}
+.sidebar-nav-btn{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  min-height:32px;
+  padding:6px 10px;
+  border-radius:8px;
+  background:transparent;
+  color:hsl(var(--text-200));
+  font-size:calc(13px * var(--sidebar-font-scale));
+  font-weight:400;
+  line-height:1.2;
+  text-align:left;
+  transition:background-color .14s ease, color .14s ease;
+}
+.sidebar-nav-btn svg{
+  width:16px;
+  height:16px;
+  flex-shrink:0;
+  opacity:0.9;
+}
+.sidebar-nav-btn:hover{
+  background:hsl(0 0% 13%);
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] .sidebar-nav-btn:hover{
+  background:hsl(0 0% 94%);
+  color:hsl(0 0% 10%);
+}
+.sidebar-nav-btn.active,
+.sidebar-nav-btn[aria-current="page"]{
+  background:hsl(0 0% 13%);
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] .sidebar-nav-btn.active{
+  background:hsl(0 0% 92%);
+  color:hsl(0 0% 10%);
+}
+/* New chat primary — ChatGPT’s “新聊天” row is filled subtly */
+#navNew.sidebar-nav-btn{
+  background:hsl(0 0% 13%);
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] #navNew.sidebar-nav-btn{
+  background:hsl(0 0% 94%);
+  color:hsl(0 0% 10%);
+}
+#navNew.sidebar-nav-btn:hover{
+  background:hsl(0 0% 16%);
+}
+/* Search row: ChatGPT uses a thin pill, not a card */
+.sidebar-search{
+  height:32px;
+  border-radius:999px;
+  background:hsl(0 0% 13%);
+  border:0.5px solid hsl(0 0% 100% / 0.08);
+}
+[data-mode="light"] .sidebar-search{
+  background:hsl(0 0% 96%);
+  border-color:hsl(0 0% 0% / 0.08);
+}
+.sidebar-search:focus-within{
+  background:hsl(0 0% 16%);
+  border-color:hsl(0 0% 100% / 0.14);
+}
+[data-mode="light"] .sidebar-search:focus-within{
+  background:hsl(0 0% 100%);
+  border-color:hsl(0 0% 0% / 0.14);
+}
+/* Recents: ChatGPT hides filter chips on the landing screenshot — keep them
+   but make them ultra-minimal so they don’t compete with the title. */
+.recents-filter-chips{
+  padding:4px 6px 6px;
+  gap:4px;
+}
+.recents-filter-chip-btn{
+  font-size:calc(11px * var(--sidebar-font-scale));
+  padding:3px 8px;
+  border-radius:999px;
+  background:transparent;
+  border:0.5px solid hsl(0 0% 100% / 0.08);
+  color:hsl(var(--text-400));
+}
+[data-mode="light"] .recents-filter-chip-btn{
+  border-color:hsl(0 0% 0% / 0.08);
+}
+.recents-filter-chip-btn:hover,
+.recents-filter-chip-btn.active{
+  background:hsl(0 0% 13%);
+  color:hsl(0 0% 100%);
+  border-color:transparent;
+}
+.recents-filter-chip-btn.active::after{
+  display:none;
+}
+.recents-header{
+  padding:10px 10px 4px;
+}
+.recents-title{
+  font-size:calc(11px * var(--sidebar-font-scale));
+  font-weight:600;
+  letter-spacing:0.04em;
+  color:hsl(var(--text-500));
+  text-transform:none;
+}
+.recent-item{
+  padding:6px 10px;
+  border-radius:8px;
+  gap:8px;
+}
+.recent-item:hover{
+  background:hsl(0 0% 13%);
+}
+[data-mode="light"] .recent-item:hover{
+  background:hsl(0 0% 94%);
+}
+.recent-item.active{
+  background:hsl(0 0% 13%);
+}
+[data-mode="light"] .recent-item.active{
+  background:hsl(0 0% 94%);
+}
+.recent-item-text{
+  font-size:calc(13px * var(--sidebar-font-scale));
+  font-weight:400;
+  color:hsl(var(--text-200));
+  line-height:1.35;
+}
+.recent-item:hover .recent-item-text,
+.recent-item.active .recent-item-text{
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] .recent-item:hover .recent-item-text,
+[data-mode="light"] .recent-item.active .recent-item-text{
+  color:hsl(0 0% 10%);
+}
+.recent-item-meta{
+  font-size:calc(11px * var(--sidebar-font-scale));
+}
+
+/* ---- Top bar: ChatGPT — centered pill, 44-56px, no border, #000 ---- */
+.top-bar{
+  min-height:52px;
+  padding:0 16px;
+  background:transparent;
+  border-bottom:0;
+}
+[data-mode="dark"] .top-bar{
+  background:hsl(0 0% 0%);
+  border-bottom:0.5px solid hsl(0 0% 100% / 0.06);
+}
+[data-mode="light"] .top-bar{
+  background:hsl(0 0% 100%);
+  border-bottom:0.5px solid hsl(0 0% 0% / 0.06);
+}
+/* Centered Chat / Work pill — ChatGPT uses #212121 pill, 28px radius, 2px gap */
+.top-mode-tabs{
+  top:50%;
+  transform:translate(-50%,-50%);
+  padding:3px;
+  gap:2px;
+  border-radius:999px;
+  background:hsl(0 0% 13%);
+  box-shadow:0 0 0 0.5px hsl(0 0% 100% / 0.08) inset;
+}
+[data-mode="light"] .top-mode-tabs{
+  background:hsl(0 0% 94%);
+  box-shadow:0 0 0 0.5px hsl(0 0% 0% / 0.06) inset;
+}
+.top-mode-tabs .app-mode-toggle{
+  font-size:calc(13px * var(--app-font-scale, 1));
+  font-weight:500;
+  padding:5px 16px;
+  border-radius:999px;
+  color:hsl(0 0% 60%);
+  letter-spacing:0.01em;
+}
+[data-mode="light"] .top-mode-tabs .app-mode-toggle{
+  color:hsl(0 0% 45%);
+}
+.top-mode-tabs .app-mode-toggle:hover{
+  color:hsl(0 0% 90%);
+}
+.top-mode-tabs .app-mode-toggle.active{
+  background:hsl(0 0% 22%);
+  color:hsl(0 0% 100%);
+  box-shadow:0 1px 2px hsl(0 0% 0% / 0.2), 0 0 0 0.5px hsl(0 0% 100% / 0.06) inset;
+}
+[data-mode="light"] .top-mode-tabs .app-mode-toggle.active{
+  background:hsl(0 0% 100%);
+  color:hsl(0 0% 10%);
+  box-shadow:0 1px 3px hsl(0 0% 0% / 0.1), 0 0 0 0.5px hsl(0 0% 0% / 0.06) inset;
+}
+/* Top bar icon buttons — ChatGPT uses minimal 32px ghost circles */
+.top-bar .toggle-sidebar,
+.top-bar .icon-btn,
+.top-bar .cg-circle-btn{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  background:transparent;
+  color:hsl(0 0% 65%);
+  border:0;
+}
+.top-bar .toggle-sidebar:hover,
+.top-bar .icon-btn:hover,
+.top-bar .cg-circle-btn:hover{
+  background:hsl(0 0% 13%);
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] .top-bar .toggle-sidebar:hover,
+[data-mode="light"] .top-bar .icon-btn:hover{
+  background:hsl(0 0% 94%);
+  color:hsl(0 0% 10%);
+}
+
+/* ---- Main landing: ChatGPT centers headline + pill, 48rem max ---- */
+.main-inner{
+  max-width:48rem; /* ChatGPT: 40rem / 48rem — use 48rem */
+}
+.topic-setup{
+  padding-top:clamp(80px, 18vh, 160px);
+  gap:24px;
+  padding-bottom:24px;
+}
+.topic-title{
+  font-family:var(--font-sans);
+  font-size:calc(clamp(1.6rem, 1.2rem + 1.2vw, 2rem) * var(--app-font-scale, 1));
+  font-weight:500;
+  line-height:1.25;
+  letter-spacing:-0.02em;
+  color:hsl(0 0% 100%);
+  text-align:center;
+  max-width:36rem;
+}
+[data-mode="light"] .topic-title{
+  color:hsl(0 0% 10%);
+}
+.topic-sub{
+  font-size:calc(14px * var(--app-font-scale, 1));
+  color:hsl(0 0% 60%);
+  text-align:center;
+  max-width:36rem;
+}
+[data-mode="light"] .topic-sub{
+  color:hsl(0 0% 45%);
+}
+/* Composer pill — the hero element. ChatGPT: 28px radius, #212121 dark,
+   #fff light with thin border, min-h 52px, shadow, grid leading/primary/trailing */
+.topic-input-wrap,
+.chat-input-wrap{
+  max-width:48rem;
+  border-radius:28px;
+  border:0.5px solid hsl(0 0% 100% / 0.10);
+  box-shadow:0 4px 24px hsl(0 0% 0% / 0.12), 0 1px 3px hsl(0 0% 0% / 0.08);
+  overflow:hidden;
+  transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+[data-mode="dark"] .topic-input-wrap,
+[data-mode="dark"] .chat-input-wrap{
+  background:hsl(0 0% 13%); /* #212121 */
+  border-color:hsl(0 0% 100% / 0.10);
+  box-shadow:0 4px 24px hsl(0 0% 0% / 0.22), 0 1px 2px hsl(0 0% 0% / 0.18);
+}
+[data-mode="light"] .topic-input-wrap,
+[data-mode="light"] .chat-input-wrap{
+  background:hsl(0 0% 100%);
+  border-color:hsl(0 0% 0% / 0.08);
+  box-shadow:0 4px 24px hsl(0 0% 0% / 0.06), 0 1px 3px hsl(0 0% 0% / 0.06);
+}
+.topic-input-wrap:focus-within,
+.chat-input-wrap:focus-within{
+  border-color:hsl(0 0% 100% / 0.16);
+  box-shadow:0 6px 32px hsl(0 0% 0% / 0.18), 0 0 0 1px hsl(0 0% 100% / 0.06) inset;
+}
+[data-mode="light"] .topic-input-wrap:focus-within,
+[data-mode="light"] .chat-input-wrap:focus-within{
+  border-color:hsl(0 0% 0% / 0.14);
+  box-shadow:0 6px 32px hsl(0 0% 0% / 0.08), 0 0 0 1px hsl(0 0% 0% / 0.04) inset;
+}
+/* Editor surface: transparent, 16px, relaxed line-height, placeholder muted */
+.topic-input-wrap .composer-editor-root,
+.chat-input-wrap .composer-editor-root{
+  min-height:52px;
+}
+.rich-composer-editor,
+.ProseMirror{
+  font-family:var(--font-sans);
+  font-size:calc(15px * var(--app-font-scale, 1));
+  line-height:1.55;
+  color:hsl(0 0% 100%);
+  padding:14px 4px 14px 2px;
+}
+[data-mode="light"] .rich-composer-editor,
+[data-mode="light"] .ProseMirror{
+  color:hsl(0 0% 10%);
+}
+.rich-composer-editor .placeholder::before,
+.ProseMirror p.is-editor-empty:first-child::before{
+  color:hsl(0 0% 60%);
+  font-weight:400;
+}
+[data-mode="light"] .rich-composer-editor .placeholder::before{
+  color:hsl(0 0% 45%);
+}
+/* Footer controls inside the pill — ChatGPT keeps them on one row,
+   leading (+) on left, trailing mic + wave on right */
+.topic-footer,
+.chat-input-footer{
+  padding:0 10px 10px;
+  gap:8px;
+  background:transparent;
+}
+.footer-left-group .attach-btn,
+.chat-input-footer .attach-btn{
+  width:32px;
+  height:32px;
+  border-radius:999px;
+  background:transparent;
+  color:hsl(0 0% 60%);
+  border:0;
+}
+.footer-left-group .attach-btn:hover,
+.chat-input-footer .attach-btn:hover{
+  background:hsl(0 0% 100% / 0.08);
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] .footer-left-group .attach-btn:hover{
+  background:hsl(0 0% 0% / 0.06);
+  color:hsl(0 0% 10%);
+}
+/* Effort picker inside the pill — make it look like a ChatGPT tool badge */
+.effort-trigger{
+  font-size:calc(12px * var(--app-font-scale, 1));
+  padding:6px 10px;
+  border-radius:999px;
+  background:transparent;
+  border:0.5px solid hsl(0 0% 100% / 0.08);
+  color:hsl(0 0% 60%);
+}
+[data-mode="light"] .effort-trigger{
+  border-color:hsl(0 0% 0% / 0.08);
+  color:hsl(0 0% 45%);
+}
+.effort-trigger:hover{
+  background:hsl(0 0% 100% / 0.06);
+  color:hsl(0 0% 90%);
+}
+/* Send / voice button — ChatGPT’s blue wave when active, neutral otherwise */
+.start-btn,
+.send-btn{
+  width:32px;
+  height:32px;
+  min-width:32px;
+  min-height:32px;
+  border-radius:999px;
+  padding:0;
+  font-size:0;
+  background:hsl(0 0% 22%);
+  color:hsl(0 0% 90%);
+  border:0;
+  box-shadow:none;
+}
+.start-btn:hover,
+.send-btn:hover{
+  background:hsl(0 0% 26%);
+  color:hsl(0 0% 100%);
+}
+.start-btn.active,
+.send-btn.active{
+  background:hsl(212 100% 52%); /* ChatGPT wave blue */
+  color:#fff;
+  box-shadow:0 2px 8px hsl(212 100% 52% / 0.35);
+}
+.start-btn.active:hover,
+.send-btn.active:hover{
+  background:hsl(212 100% 56%);
+}
+/* The voice glyph inside the button should be 18px and centered */
+.start-btn .icon-voice,
+.send-btn svg{
+  width:18px;
+  height:18px;
+}
+/* ---- Suggestions below the pill — ChatGPT shows a subtle helper row,
+   not pill chips. One line with small icon + muted text, centered. ---- */
+.home-ideas,
+.chat-suggestions{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+  max-width:48rem;
+  width:100%;
+  padding:2px 0 0;
+  margin:4px auto 0;
+}
+.home-ideas-label{
+  display:none; /* ChatGPT has no “Ideas for you” label on this screenshot */
+}
+.home-idea,
+.suggestion-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  border-radius:999px;
+  background:transparent;
+  border:0.5px solid hsl(0 0% 100% / 0.08);
+  color:hsl(0 0% 70%);
+  font-size:calc(13px * var(--app-font-scale, 1));
+  font-weight:400;
+  line-height:1.3;
+  cursor:pointer;
+  transition:background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+[data-mode="light"] .home-idea,
+[data-mode="light"] .suggestion-chip{
+  border-color:hsl(0 0% 0% / 0.08);
+  color:hsl(0 0% 45%);
+}
+.home-idea:hover,
+.suggestion-chip:hover{
+  background:hsl(0 0% 13%);
+  border-color:hsl(0 0% 100% / 0.12);
+  color:hsl(0 0% 100%);
+}
+[data-mode="light"] .home-idea:hover{
+  background:hsl(0 0% 96%);
+  color:hsl(0 0% 10%);
+}
+.home-idea-icon{
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
+  color:hsl(0 0% 60%);
+  background:transparent;
+  border:0;
+}
+.home-idea-icon svg{
+  width:16px;
+  height:16px;
+}
+.home-idea-text{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+/* When there is only one suggestion (e.g. the screenshot’s “Give me…” line),
+   render it as a plain helper row without a pill border. The JS still emits
+   the same chip element — we detect the single-child case and strip the pill. */
+.home-ideas:has(> .home-idea:only-child) .home-idea{
+  border:0;
+  background:transparent;
+  padding:4px 8px;
+  color:hsl(0 0% 65%);
+  font-size:calc(13px * var(--app-font-scale, 1));
+}
+.home-ideas:has(> .home-idea:only-child) .home-idea:hover{
+  background:transparent;
+  color:hsl(0 0% 90%);
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+[data-mode="light"] .home-ideas:has(> .home-idea:only-child) .home-idea:hover{
+  color:hsl(0 0% 20%);
+}
+/* ChatGPT’s composer toolbar “+ / mic / wave” row is inside the pill’s
+   grid — ensure the Tiptap surface doesn’t add extra padding */
+.composer-tools-trigger{
+  width:32px;
+  height:32px;
+  border-radius:999px !important;
+}
+/* ---- Scrollbar & message list — keep minimal, no heavy track ---- */
+.main-content::-webkit-scrollbar,
+.topic-setup::-webkit-scrollbar{
+  width:4px;
+}
+.main-content::-webkit-scrollbar-thumb{
+  background:hsl(0 0% 100% / 0.12);
+}
+[data-mode="light"] .main-content::-webkit-scrollbar-thumb{
+  background:hsl(0 0% 0% / 0.12);
+}
+
+/* ---- Responsive: on mobile ChatGPT stacks the pill full-width ---- */
+@media (max-width:768px){
+  .topic-input-wrap,
+  .chat-input-wrap{
+    border-radius:24px;
+    max-width:calc(100vw - 24px);
+  }
+  .topic-setup{
+    padding-top:clamp(48px, 12vh, 96px);
+    gap:20px;
+  }
+  .topic-title{
+    font-size:calc(1.5rem * var(--app-font-scale, 1));
+    padding:0 12px;
+  }
+  .home-ideas,
+  .chat-suggestions{
+    padding:0 12px;
+  }
+  .top-mode-tabs{
+    display:none; /* ChatGPT hides the pill on mobile — we show the dropdown */
+  }
+}
+
+/* ---- P_chatgpt-mimic — force overrides for cowork cascade ----
+   Cowork and legacy rules use IDs and !important, so these post-cascade
+   rules match that specificity with #appShell and !important. */
+#appShell .sidebar{
+  background:hsl(0 0% 0%) !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  border-right:0.5px solid hsl(0 0% 100% / 0.06) !important;
+}
+[data-mode="light"] #appShell .sidebar{
+  background:hsl(0 0% 98%) !important;
+  border-right-color:hsl(0 0% 0% / 0.06) !important;
+}
+#appShell .topic-title,
+#appShell .topic-title.greeting{
+  font-family:var(--font-sans) !important;
+  font-size:calc(clamp(1.6rem, 1.2rem + 1.2vw, 1.95rem) * var(--app-font-scale, 1)) !important;
+  font-weight:500 !important;
+  letter-spacing:-0.02em !important;
+  color:hsl(0 0% 100%) !important;
+  line-height:1.25 !important;
+}
+[data-mode="light"] #appShell .topic-title,
+[data-mode="light"] #appShell .topic-title.greeting{
+  color:hsl(0 0% 10%) !important;
+}
+#appShell #topicInputWrap,
+#appShell .topic-input-wrap,
+#appShell #chatInputWrap,
+#appShell .chat-input-wrap{
+  background:hsl(0 0% 13%) !important;
+  border:0.5px solid hsl(0 0% 100% / 0.10) !important;
+  border-radius:28px !important;
+  box-shadow:0 4px 24px hsl(0 0% 0% / 0.22), 0 1px 2px hsl(0 0% 0% / 0.18) !important;
+  max-width:48rem !important;
+}
+[data-mode="light"] #appShell #topicInputWrap,
+[data-mode="light"] #appShell .topic-input-wrap,
+[data-mode="light"] #appShell #chatInputWrap,
+[data-mode="light"] #appShell .chat-input-wrap{
+  background:hsl(0 0% 100%) !important;
+  border-color:hsl(0 0% 0% / 0.08) !important;
+  box-shadow:0 4px 24px hsl(0 0% 0% / 0.06), 0 1px 3px hsl(0 0% 0% / 0.06) !important;
+}
+#appShell .top-mode-tabs{
+  background:hsl(0 0% 13%) !important;
+  box-shadow:0 0 0 0.5px hsl(0 0% 100% / 0.08) inset !important;
+}
+[data-mode="light"] #appShell .top-mode-tabs{
+  background:hsl(0 0% 94%) !important;
+}
+#appShell .top-mode-tabs .app-mode-toggle.active{
+  background:hsl(0 0% 22%) !important;
+  color:hsl(0 0% 100%) !important;
+}
+[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle.active{
+  background:hsl(0 0% 100%) !important;
+  color:hsl(0 0% 10%) !important;
 }

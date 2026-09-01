@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useCallback } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -325,7 +326,7 @@ export interface ProfileModalHandle {
 export function hydrateProfileModal(): ProfileModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.mountedBy === 'profile-modal') {
+  if (hostIsMountedBy(overlay, 'profile-modal')) {
     throw new Error('Profile modal React runtime was initialized more than once.');
   }
 
@@ -333,13 +334,13 @@ export function hydrateProfileModal(): ProfileModalHandle | null {
 
   const root = createRoot(overlay);
   root.render(<ProfileModal />);
-  overlay.dataset.mountedBy = 'profile-modal';
+  markHostMountedBy(overlay, 'profile-modal');
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.mountedBy;
+      clearHostMounted(overlay);
     },
   };
 }

@@ -1,3 +1,5 @@
+import { stateStore } from '../state/store.js';
+
 /* ui/mobileModeSwitch.js — mobile-only 对话/导师 (Chat/Tutor) switcher.
  *
  * P_mobile-topbar. The compact segmented pill (#modeSegmentedTop) is now the
@@ -75,11 +77,10 @@ export function selectAppMode(mode) {
    callers invoke this via syncAppModeUI() / resetApp() — the
    MutationObserver on msgList covers the message-driven path. */
 function _isConversationActive() {
-  var state = (typeof window !== "undefined") ? window.state : null;
-  if (!state) return false;
-  if (state.topic) return true;
-  if (state.kbNodes && state.kbNodes.length > 0) return true;
-  if (state.phase === "chat") return true;
+  if (stateStore.read('topic')) return true;
+  var kbNodes = stateStore.read('kbNodes');
+  if (kbNodes && kbNodes.length > 0) return true;
+  if (stateStore.read('phase') === "chat") return true;
   var msgList = (typeof document !== "undefined") ? document.getElementById("msgList") : null;
   /* React's MessageList always renders an empty placeholder
      (<div data-react-message-list-empty>) in #msgList even when there

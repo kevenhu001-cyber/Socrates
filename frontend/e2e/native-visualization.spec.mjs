@@ -25,9 +25,9 @@ async function renderLn(page) {
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '99999999-9999-4999-8999-999999999999';
-    window.state.messages = [{ clientId: 'user-ln', role: 'user', rawText: 'draw y = ln(x)', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '99999999-9999-4999-8999-999999999999' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-ln', role: 'user', rawText: 'draw y = ln(x)', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('draw y = ln(x)');
