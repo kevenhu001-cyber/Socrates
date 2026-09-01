@@ -11310,7 +11310,9 @@ html[data-theme=socrates][data-mode=light]{
   border:0.5px solid hsl(0 0% 100% / 0.10) !important;
   border-radius:28px !important;
   box-shadow:0 4px 24px hsl(0 0% 0% / 0.22), 0 1px 2px hsl(0 0% 0% / 0.18) !important;
-  max-width:48rem !important;
+  /* Keep the display-prefs content-width control live: the composer's
+     max-width must still scale with --app-width-scale (default 1). */
+  max-width:calc(48rem * var(--app-width-scale, 1)) !important;
 }
 [data-mode="light"] #appShell #topicInputWrap,
 [data-mode="light"] #appShell .topic-input-wrap,

@@ -9676,6 +9676,10 @@ async function generateFollowUpStream(answer,node,domain,onDelta,onThinking,stre
 /* Exposed so windowExports.js composeAction (撰写或编辑) can activate a
    Writing/Editing template on demand, injecting its system prompt. */
 window.setActiveTemplate = setActiveTemplate;
+/* Mirror of setActiveTemplate — RichComposer's extension-token remove
+   button and pickers.js clear it through the window bridge. Was dropped
+   when the document-wide data-action dispatcher was deleted. */
+window.clearActiveTemplate = clearActiveTemplate;
 
 /* P_bulk-restore-2026-07-07-chat — chat module helpers missing from
    the bridge. stream.js:91 / api.js consume `window.isReasoningProvider`
