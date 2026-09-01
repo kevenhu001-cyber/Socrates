@@ -38,7 +38,7 @@ export function buildTeachingPlanFromKB(state) {
 }
 
 export function syncCurrentNodeFromTeachingPlan(state) {
-  if (!state.teachingPlan || !state.teachingPlan.subtopics.length) return;
+  if (!state.teachingPlan || !state.teachingPlan.subtopics.length) return null;
   var firstActive = -1;
   for (var pi = 0; pi < state.teachingPlan.subtopics.length; pi++) {
     if (state.teachingPlan.subtopics[pi].status !== 'internalized') {
@@ -46,8 +46,8 @@ export function syncCurrentNodeFromTeachingPlan(state) {
       break;
     }
   }
-  if (firstActive < 0) return;
-  state.teachingPlan.currentSubtopicIdx = firstActive;
+  if (firstActive < 0) return null;
+  var teachingPlan = Object.assign({}, state.teachingPlan, { currentSubtopicIdx: firstActive });
   var targetName = state.teachingPlan.subtopics[firstActive].name;
   var matchedIdx = -1;
   for (var kni = 0; kni < state.kbNodes.length; kni++) {
@@ -56,5 +56,8 @@ export function syncCurrentNodeFromTeachingPlan(state) {
       break;
     }
   }
-  state.currentNode = matchedIdx >= 0 ? matchedIdx : Math.min(firstActive, state.kbNodes.length - 1);
+  return {
+    teachingPlan: teachingPlan,
+    currentNode: matchedIdx >= 0 ? matchedIdx : Math.min(firstActive, state.kbNodes.length - 1)
+  };
 }

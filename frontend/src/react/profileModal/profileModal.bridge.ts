@@ -7,7 +7,7 @@
  * hooks.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type { ProfileBridge, ProfileSnapshot } from './types';
 
@@ -43,10 +43,9 @@ type Action = Omit<ProfileSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<ProfileSnapshot, Action>({
   initial: HIDDEN,
-  reducer: (state, action) => ({
+  reducer: (_state, action) => ({
     ...action,
     user: { ...action.user },
-    revision: state.revision + 1,
   }),
 });
 
@@ -77,7 +76,7 @@ export function useProfileSnapshot(): ProfileSnapshot {
 }
 
 export function useIsProfileOpen(): boolean {
-  return useBridge(factoryBridge).isOpen;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
 export function useProfileDispatch() {

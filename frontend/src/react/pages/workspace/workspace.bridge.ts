@@ -57,13 +57,12 @@ function cloneLibraryData(d: WorkspaceSnapshot['libraryData']) {
 
 const factoryBridge = createImmutableBridge<WorkspaceSnapshot, Action>({
   initial: INITIAL,
-  reducer: (state, action) => ({
+  reducer: (_state, action) => ({
     ...action,
     libraryData: Object.freeze(cloneLibraryData(action.libraryData)),
     projectsData: Object.freeze([...action.projectsData]),
     pluginsData: Object.freeze([...action.pluginsData]),
     mcpData: Object.freeze([...action.mcpData]),
-    revision: state.revision + 1,
   }),
 });
 

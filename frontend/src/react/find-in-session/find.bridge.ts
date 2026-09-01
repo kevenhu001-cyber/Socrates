@@ -38,7 +38,7 @@ type Action = FindInSessionSnapshot;
 
 const factoryBridge = createImmutableBridge<FindInSessionSnapshot & { revision: number }, Action>({
   initial: { ...CLOSED, revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: FindInSessionBridge = Object.assign(factoryBridge, {

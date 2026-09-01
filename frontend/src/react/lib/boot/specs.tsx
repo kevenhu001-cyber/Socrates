@@ -3,8 +3,7 @@
  *
  * Each spec describes one host element React takes over at bootstrap.
  * The list is in execution order so the comment blocks below describe
- * the bootstrap sequence (chat-runtime bridge first, global React
- * roots last).
+ * the bootstrap sequence (required roots first, global React roots last).
  */
 
 import { StrictMode } from 'react';
@@ -22,7 +21,6 @@ import { hydrateShareModal } from '../../shareModal';
 import { hydrateUsageModal } from '../../usageModal';
 import { mountScheduledPage } from '../../pages/scheduled';
 import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
-import { installChatRuntimeBridge } from '../../chatRuntime.bridge';
 import { mountWorkspacePage } from '../../pages/workspace';
 import { mountStorageModal } from '../../storageModal';
 import { mountCheatsheet } from '../../cheatsheet';
@@ -74,14 +72,9 @@ function ensureWorkflowHost(doc: Document): HTMLElement | null {
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
   return [
-    /* 1. Bridge bootstrap runs first — every other mount may subscribe
-       to the chat runtime through `window.__socratesReactChatBridge`.
-       We bind this to the msgList host element so the registry tracks
-       it; the bridge install runs before the React mount spec hits
-       msgList so the second spec can still tag the element with the
-       `msg-list` label. */
-    { hostId: 'msgList', label: 'chat-runtime', mount: () => installChatRuntimeBridge() },
-    { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList() },
+    /* 1. Bootstrap installs the chat runtime bridge before this registry
+       runs, so every root can subscribe during mount. */
+    { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList().root !== null },
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
       setPillRoot(hydrateRoot(host, <StrictMode><NewReplyPill /></StrictMode>));
     } },
@@ -154,7 +147,6 @@ export function mountRegistryList(): MountSpec[] {
         onSubmit={() => legacyComposer.submitChatMessage()}
         onEscape={() => legacyComposer.stopChatResponse()} /></ErrorBoundary>);
     } },
-    { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList() },
     { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',
       ensureHost: ensureWorkflowHost,
       mount: (host) => { createRoot(host).render(<ErrorBoundary><WorkflowLayer /></ErrorBoundary>); } },

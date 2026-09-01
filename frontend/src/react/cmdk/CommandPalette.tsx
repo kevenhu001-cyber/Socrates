@@ -233,17 +233,13 @@ export interface CmdKReactRootHandle {
  * preserved (same id, same classes, same `onclick` contract for the
  * backdrop-click dismissal) — React owns only `#cmdKModal`'s contents.
  *
- * Callers must set `data-react-migration-runtime="cmd-k"` on the overlay
- * before invoking this, so the legacy `renderCmdKResultsHTML` becomes a
- * no-op the moment React takes over.
+ * Callers claim the overlay through `dataset.mountedBy`, so the legacy
+ * renderer becomes a no-op the moment React takes over.
  */
 export function hydrateCmdKOverlay(): CmdKReactRootHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. The registry writes the same
-     sentinel before delegating to mount, so a duplicate registry run
-     short-circuits here. */
+  /* A duplicate registry run short-circuits on the ownership marker. */
   if (overlay.dataset.mountedBy === 'cmd-k') {
     throw new Error('CmdK React runtime was initialized more than once.');
   }

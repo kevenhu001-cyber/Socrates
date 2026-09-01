@@ -6,6 +6,7 @@
 
 import { esc } from './render/helpers.js';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
+import { stateStore } from './state.js';
 
 /* P_init-sync — providers가 서버에서 로드되었는지 추적.
    syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
@@ -445,11 +446,13 @@ function toggleWebSearch(){
   var next = setWebSearchOn(!webSearchOn);
   syncWebSearchUI();
   if(!next){
-    window.state.searchContext="";
-    window.state.searchContextAt=0;
-    window.state.searchContextCount=0;
-    window.state.searchContextError=null;
-    window.state.searchContextQuery=null;
+    stateStore.dispatch({type:"state/batch",patch:{
+      searchContext:"",
+      searchContextAt:0,
+      searchContextCount:0,
+      searchContextError:null,
+      searchContextQuery:null
+    }});
     window.setSearchPill("ok",0,"");
   }else if(window.state.topic){
     window.fetchWebContext(window.state.topic);

@@ -101,8 +101,6 @@ export interface MorePopoverHandle {
 export function hydrateMorePopover(): MorePopoverHandle | null {
   const popover = document.getElementById(POPOVER_ID);
   if (!popover) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (popover.dataset.mountedBy === 'more-popover') {
     throw new Error('More popover React runtime was initialized more than once.');
   }

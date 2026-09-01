@@ -301,8 +301,6 @@ export interface ComposerToolsHandle {
 export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
   const menu = document.getElementById(MENU_ID);
   if (!menu) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (menu.dataset.mountedBy === 'composer-tools-menu') {
     throw new Error('Composer tools menu React runtime was initialized more than once.');
   }

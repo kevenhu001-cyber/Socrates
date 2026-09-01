@@ -24,10 +24,9 @@ type Action = Omit<ScheduledSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<ScheduledSnapshot, Action>({
   initial: { tasks: [], loading: false, error: null, revision: 0 },
-  reducer: (state, action) => ({
+  reducer: (_state, action) => ({
     ...action,
     tasks: Object.freeze([...action.tasks]),
-    revision: state.revision + 1,
   }),
 });
 

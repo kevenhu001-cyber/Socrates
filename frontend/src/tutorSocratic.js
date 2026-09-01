@@ -1,3 +1,5 @@
+import { stateStore } from './state.js';
+
 /* =====================================================================
  * tutorSocratic.js
  * ---------------------------------------------------------------------
@@ -209,7 +211,13 @@
       { text: ti('tutor.fourOptionSkip',     currentLang() === 'zh' ? '跳过' : 'Skip'),          action: 'skip' }
     ];
     window.addMessage('assistant', msg, 'suggest', actions);
-    try { window.state.session.fourOptionDialog = { questionPreview: preview, at: Date.now() }; } catch (_) {}
+    try {
+      stateStore.dispatch({
+        type: 'state/set',
+        key: 'session.fourOptionDialog',
+        value: { questionPreview: preview, at: Date.now() }
+      });
+    } catch (_) {}
   }
 
   /* ----------------------------------------------------------------
@@ -480,8 +488,13 @@
       counts: counts
     };
     try {
-      window.state.boundariesHistory = (window.state.boundariesHistory || []).concat([snap]).slice(-30);
-      window.state.boundariesSavedAt = Date.now();
+      stateStore.dispatch({
+        type: 'state/batch',
+        patch: {
+          boundariesHistory: (stateStore.read('boundariesHistory') || []).concat([snap]).slice(-30),
+          boundariesSavedAt: Date.now()
+        }
+      });
     } catch (_) {}
     renderKnowledgeBoundaryFile();
     if (typeof window.saveCurrentSession === 'function') {
@@ -623,8 +636,7 @@
    * "all" / "unresolved" / "by node" so the view stops being noise.
    * ---------------------------------------------------------------- */
   function setMistakeFilter(value) {
-    if (!window.state) return;
-    try { window.state.mistakeFilter = value; } catch (_) {}
+    try { stateStore.dispatch({ type: 'state/set', key: 'mistakeFilter', value: value }); } catch (_) {}
     if (typeof window.renderMistakes === 'function') {
       try { window.renderMistakes(); } catch (_) {}
     }
@@ -664,7 +676,6 @@
   function recordMistakeNotice(opts) {
     opts = opts || {};
     if (!window.state) return null;
-    if (!Array.isArray(window.state.mistakes)) window.state.mistakes = [];
     var entry = {
       id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: opts.type || 'practice',
@@ -677,7 +688,12 @@
       source: opts.source || 'four-option',
       resolved: false
     };
-    window.state.mistakes.unshift(entry);
+    var mistakes = stateStore.read('mistakes');
+    stateStore.dispatch({
+      type: 'state/set',
+      key: 'mistakes',
+      value: [entry].concat(Array.isArray(mistakes) ? mistakes : [])
+    });
     if (typeof window.renderMistakes === 'function') {
       try { window.renderMistakes(); } catch (_) {}
     }

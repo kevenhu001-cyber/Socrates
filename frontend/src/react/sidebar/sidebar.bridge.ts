@@ -15,7 +15,7 @@
  *    render doesn't show a flash of "no nav selected".
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type {
   RecentsFilterBridge,
@@ -36,7 +36,7 @@ declare global {
 
 const navBridge = createImmutableBridge<SidebarNavSnapshot, Omit<SidebarNavSnapshot, 'revision'>>({
   initial: { activeNav: null, revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const navWindowBridge: SidebarNavBridge = Object.assign(navBridge, {
@@ -70,14 +70,14 @@ export function useSidebarNavSnapshot(): SidebarNavSnapshot {
 }
 
 export function useActiveNav(): SidebarNavKey {
-  return useBridge(navBridge).activeNav;
+  return useBridgeSelector(navBridge, (snapshot) => snapshot.activeNav);
 }
 
 // ── recents filter bridge ───────────────────────────────────────────────
 
 const filterBridge = createImmutableBridge<RecentsFilterSnapshot, Omit<RecentsFilterSnapshot, 'revision'>>({
   initial: { filter: null, revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const filterWindowBridge: RecentsFilterBridge = Object.assign(filterBridge, {
@@ -111,7 +111,7 @@ export function useRecentsFilterSnapshot(): RecentsFilterSnapshot {
 }
 
 export function useRecentsFilter(): string | null {
-  return useBridge(filterBridge).filter;
+  return useBridgeSelector(filterBridge, (snapshot) => snapshot.filter);
 }
 
 // ── commands (legacy gateway dispatch) ──────────────────────────────────

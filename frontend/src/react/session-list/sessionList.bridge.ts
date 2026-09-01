@@ -14,7 +14,7 @@
  *  - React subscribers use `useBridge(bridge)` directly.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import type { SessionItem, SessionListBridge, SessionListSnapshot } from './types';
 
 declare global {
@@ -36,7 +36,7 @@ type Action = Omit<SessionListSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<SessionListSnapshot, Action>({
   initial: INITIAL,
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: SessionListBridge = Object.assign(factoryBridge, {
@@ -103,11 +103,11 @@ export function useSessionListSnapshot(): SessionListSnapshot {
 }
 
 export function useSessions(): ReadonlyArray<SessionItem> {
-  return useBridge(factoryBridge).sessions;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.sessions);
 }
 
 export function useCurrentSessionId(): string | null {
-  return useBridge(factoryBridge).currentSessionId;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.currentSessionId);
 }
 
 export function formatRelativeTime(value: string | number | null | undefined): string {

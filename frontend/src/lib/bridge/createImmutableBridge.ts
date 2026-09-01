@@ -13,12 +13,13 @@
  *    rather than new abstractions.
  *
  * Behavior
- *  - Snapshots are deep-frozen (`Object.freeze`) and a monotonic
- *    `revision` is appended on every commit. Subscribers only run
+ *  - Snapshots are deep-frozen (`Object.freeze`) and the factory bumps a
+ *    monotonic `revision` on every commit. Subscribers only run
  *    after a successful commit; failed reducers leave the previous
  *    snapshot untouched and surface the error in development.
- *  - `publish(action)` coalesces calls per animation frame: many
- *    rapid updates collapse into a single snapshot bump. This
+ *  - `dispatch(action)` queues calls per animation frame: reducers run
+ *    in dispatch order, then subscribers receive one notification. This
+ *    preserves every state transition while still coalescing renders and
  *    matches the RAF pattern already in use by
  *    `src/react/attachments/attachmentsStore.ts`.
  *  - `subscribe(listener)` returns a disposer that removes the
@@ -47,11 +48,18 @@ export interface ImmutableBridge<Snapshot, Action> {
   __resetForTests(): void;
 }
 
-export interface CreateImmutableBridgeOptions<Snapshot, Action> {
+export interface RevisionedSnapshot {
+  revision: number;
+}
+
+export interface CreateImmutableBridgeOptions<Snapshot extends RevisionedSnapshot, Action> {
   /** Initial snapshot value. Will be deep-frozen by the factory. */
   initial: Snapshot;
   /** Pure reducer `(state, action) => nextState`. */
-  reducer: (state: Snapshot, action: Action) => Snapshot;
+  reducer: (
+    state: Snapshot,
+    action: Action,
+  ) => Snapshot | Omit<Snapshot, 'revision'>;
   /**
    * Optional window-name the bridge should expose itself on. M1
    * preserves the existing `window.__socratesXxxBridge` slots so
@@ -81,7 +89,7 @@ function deepFreeze<T>(value: T): T {
  * caller's choice. Reducers must be pure; the factory deep-freezes
  * every committed snapshot before notifying subscribers.
  */
-export function createImmutableBridge<Snapshot, Action>(
+export function createImmutableBridge<Snapshot extends RevisionedSnapshot, Action>(
   options: CreateImmutableBridgeOptions<Snapshot, Action>,
 ): ImmutableBridge<Snapshot, Action> {
   const { initial, reducer, windowKey } = options;
@@ -89,18 +97,31 @@ export function createImmutableBridge<Snapshot, Action>(
   let snapshot: Snapshot = deepFreeze(initial);
   const listeners = new Set<Listener>();
 
-  let pendingAction: Action | null = null;
+  let pendingActions: Action[] = [];
   let rafHandle = 0;
 
   const flush = (): void => {
     rafHandle = 0;
-    if (pendingAction === null) return;
-    const action = pendingAction;
-    pendingAction = null;
+    if (pendingActions.length === 0) return;
+    const actions = pendingActions;
+    pendingActions = [];
     try {
-      const next = reducer(snapshot, action);
-      if (next === snapshot) return;
-      snapshot = deepFreeze(next);
+      let next = snapshot;
+      let changed = false;
+      for (const action of actions) {
+        const reduced = reducer(next, action);
+        if (reduced === next) continue;
+        next = {
+          ...reduced,
+          revision: next.revision,
+        } as Snapshot;
+        changed = true;
+      }
+      if (!changed) return;
+      snapshot = deepFreeze({
+        ...next,
+        revision: snapshot.revision + 1,
+      });
     } catch (error) {
       /* Reducer errors leave the previous snapshot in place so
          subscribers always see consistent state. The error is
@@ -126,7 +147,7 @@ export function createImmutableBridge<Snapshot, Action>(
   const bridge: ImmutableBridge<Snapshot, Action> = {
     getSnapshot: () => snapshot,
     dispatch(action) {
-      pendingAction = action;
+      pendingActions.push(action);
       scheduleFlush();
     },
     subscribe(listener) {
@@ -140,7 +161,7 @@ export function createImmutableBridge<Snapshot, Action>(
     },
     __resetForTests() {
       snapshot = deepFreeze(initial);
-      pendingAction = null;
+      pendingActions = [];
       if (rafHandle !== 0) {
         if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
           window.cancelAnimationFrame(rafHandle);

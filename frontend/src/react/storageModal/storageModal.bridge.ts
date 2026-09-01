@@ -21,10 +21,9 @@ type Action = Omit<StorageSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<StorageSnapshot, Action>({
   initial: { archived: [], open: false, revision: 0 },
-  reducer: (state, action) => ({
+  reducer: (_state, action) => ({
     ...action,
     archived: Object.freeze([...action.archived]),
-    revision: state.revision + 1,
   }),
 });
 

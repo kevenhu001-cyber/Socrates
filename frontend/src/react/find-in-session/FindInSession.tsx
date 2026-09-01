@@ -185,8 +185,6 @@ export interface FindInSessionReactRootHandle {
 export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
   const bar = document.getElementById(FIND_BAR_ID);
   if (!bar) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (bar.dataset.mountedBy === 'find-in-session') {
     throw new Error('FindInSession React runtime was initialized more than once.');
   }

@@ -9,6 +9,7 @@
    STREAM_TIMEOUT_MS, etc.). */
 
 import { apiFetchRaw } from '../util/api.js';
+import { stateStore } from '../state.js';
 import { buildChatRequestBody } from './api.js';
 import {
   AI_MAX_ATTEMPTS,
@@ -16,6 +17,10 @@ import {
   waitForAIRetry,
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
+
+function setLastCallError(value){
+  stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
+}
 
 /* P_log-gating — DEV-only diagnostics. Tool-event frames used to be
    parsed inside bare `catch(_){}` blocks, so a malformed tool_use /
@@ -92,10 +97,10 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
 
   var provider=getActiveProvider();
   if(!provider){
-    state.lastCallError="no provider";
+    setLastCallError("no provider");
     return null;
   }
-  state.lastCallError=null;
+  setLastCallError(null);
 
   /* Built-in identity + custom-instructions prepending + reasoning
      knobs are all centralized in buildChatRequestBody (chat/api.js),
@@ -127,7 +132,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* Offline precheck — fail fast (don't waste the fixed retry delay
      if the OS already knows we have no network). */
   if(offlineGuard()){
-    state.lastCallError="offline: you appear to be offline";
+    setLastCallError("offline: you appear to be offline");
     finishTurn();
     return null;
   }
@@ -191,7 +196,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       }
       lastErr=requestError;
       console.error("[API stream] request failed:",e);
-      state.lastCallError=requestError.message;
+      setLastCallError(requestError.message);
       finishTurn();
       return null;
     }
@@ -207,7 +212,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         finishTurn();
         return {text:"",html:null,widgets:[],cancelled:true};
       }
-      state.lastCallError=lastErr.message;
+      setLastCallError(lastErr.message);
       finishTurn();
       return null;
     }
@@ -671,15 +676,15 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           finishTurn();
           return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:true};
         }
-        state.lastCallError=lastErr||attemptError.message;
+        setLastCallError(lastErr||attemptError.message);
       }else{
-        state.lastCallError=String(e&&e.message||e);
+        setLastCallError(String(e&&e.message||e));
       }
       finishTurn();
       return null;
     }
     if(cancelled){
-      if(!state.lastCallError)state.lastCallError="Stream cancelled (parse error)";
+      if(!state.lastCallError)setLastCallError("Stream cancelled (parse error)");
       finishTurn();
       return null;
     }
@@ -701,7 +706,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         finishTurn();
         return {text:"",html:null,widgets:[],cancelled:true};
       }
-      state.lastCallError=streamError.message||'stream request failed';
+      setLastCallError(streamError.message||'stream request failed');
       finishTurn();
       return null;
     }
@@ -723,7 +728,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         finishTurn();
         return {text:"",html:null,widgets:[],cancelled:true};
       }
-      state.lastCallError=lastErr.message;
+      setLastCallError(lastErr.message);
       finishTurn();
       return null;
     }
@@ -738,7 +743,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         finishTurn();
         return {text:"",html:null,widgets:[],cancelled:true};
       }
-      state.lastCallError=lastErr.message;
+      setLastCallError(lastErr.message);
       finishTurn();
       return null;
     }
@@ -754,7 +759,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
      falsy — otherwise the caller (generateFollowUpStream /
      askChatTurn) falls through to a mock response, silently
      replacing the AI reply with a generic question. */
-  state.lastCallError=lastErr&&lastErr.message||"Stream failed after all retries";
+  setLastCallError(lastErr&&lastErr.message||"Stream failed after all retries");
   finishTurn();
   return null;
 }

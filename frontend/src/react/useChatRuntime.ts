@@ -1,4 +1,4 @@
-import { useBridge } from '../lib/bridge/useBridge';
+import { useBridge, useBridgeSelector } from '../lib/bridge/useBridge';
 import {
   chatRuntimeImmutableBridge,
   getChatRuntimeSnapshot,
@@ -15,11 +15,17 @@ export function useChatRuntimeSnapshot(): ChatRuntimeSnapshot {
  * derived primitive keeps delta publications from re-rendering the root.
  */
 export function useIsChatStreaming(): boolean {
-  return useBridge(chatRuntimeImmutableBridge).isStreaming;
+  return useBridgeSelector(
+    chatRuntimeImmutableBridge,
+    (snapshot) => snapshot.isStreaming,
+  );
 }
 
 export function useChatStreamStatus(): ChatStreamStatus {
-  return useBridge(chatRuntimeImmutableBridge).stream.status;
+  return useBridgeSelector(
+    chatRuntimeImmutableBridge,
+    (snapshot) => snapshot.stream.status,
+  );
 }
 
 export { getChatRuntimeSnapshot, subscribeToChatRuntime };

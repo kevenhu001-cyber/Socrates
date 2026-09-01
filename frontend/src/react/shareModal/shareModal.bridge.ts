@@ -7,7 +7,7 @@
  * and the React hooks consumed by `ShareModal.tsx`.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type { ShareBridge, ShareSnapshot, ShareVisibility } from './types';
 
@@ -31,7 +31,7 @@ type Action = Omit<ShareSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<ShareSnapshot, Action>({
   initial: HIDDEN,
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: ShareBridge = Object.assign(factoryBridge, {
@@ -61,7 +61,7 @@ export function useShareSnapshot(): ShareSnapshot {
 }
 
 export function useIsShareOpen(): boolean {
-  return useBridge(factoryBridge).isOpen;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
 export function useShareDispatch() {

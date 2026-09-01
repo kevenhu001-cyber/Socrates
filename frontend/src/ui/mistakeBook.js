@@ -8,6 +8,7 @@ import { formatRelativeTime } from './recentsHelpers.js';
  */
 export function createMistakeBook({
   state,
+  stateStore,
   apiFetch,
   saveCurrentSession,
   mountQuizWidget,
@@ -38,7 +39,6 @@ export function createMistakeBook({
   }
 
   function recordMistake(rec) {
-    if (!state.mistakes) state.mistakes = [];
     var node = state.kbNodes[state.currentNode] || {};
     var mistake = {
       id: 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
@@ -55,7 +55,10 @@ export function createMistakeBook({
       redoCount: 0,
       quizSlotId: rec.quizSlotId || null,
     };
-    state.mistakes.unshift(mistake);
+    stateStore.dispatch({
+      type: 'state/set', key: 'mistakes',
+      value: [mistake].concat(state.mistakes || []),
+    });
     persistMistake({
       nodeName: mistake.node || null,
       questionContent: mistake.q || '',
@@ -71,8 +74,9 @@ export function createMistakeBook({
   function removeMistakeForQuizSlot(slotId) {
     if (!slotId || !state.mistakes) return;
     var before = state.mistakes.length;
-    state.mistakes = state.mistakes.filter(function (mistake) { return mistake.quizSlotId !== slotId; });
-    if (state.mistakes.length !== before) {
+    var remaining = state.mistakes.filter(function (mistake) { return mistake.quizSlotId !== slotId; });
+    if (remaining.length !== before) {
+      stateStore.dispatch({ type: 'state/set', key: 'mistakes', value: remaining });
       saveCurrentSession();
       renderMistakes();
       updateMistakesBadge();
@@ -139,7 +143,14 @@ export function createMistakeBook({
   function handleMistakeRedo(mistakeId) {
     var mistake = (state.mistakes || []).find(function (item) { return item.id === mistakeId; });
     if (!mistake) return;
-    mistake.redoCount = (mistake.redoCount || 0) + 1;
+    var updatedMistake = Object.assign({}, mistake, { redoCount: (mistake.redoCount || 0) + 1 });
+    stateStore.dispatch({
+      type: 'state/set', key: 'mistakes',
+      value: (state.mistakes || []).map(function (item) {
+        return item.id === mistakeId ? updatedMistake : item;
+      }),
+    });
+    mistake = updatedMistake;
     saveCurrentSession();
     /* U-L4 — practice mistakes have no options, so mounting a quiz
        widget produced an empty shell. Mount the free-form practice

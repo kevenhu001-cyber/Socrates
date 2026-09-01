@@ -14,6 +14,7 @@
 import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
+import { stateStore } from '../state.js';
 
 function isEmbeddedNativeWebView(){
   try{
@@ -220,15 +221,14 @@ export async function afterAuthEnter(){
      loadSession() handles either via its existing kind==='exam' branch. */
   var chatId=window.getChatIdFromURL&&window.getChatIdFromURL();
   var examId=window.getExamIdFromURL&&window.getExamIdFromURL();
-  var state=window.state;
   if(chatId){
     try{await window.loadSession(chatId)}catch {/* failed to load session */
-      state.currentSessionId=null;
+      stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       window.setChatIdInURL&&window.setChatIdInURL(null);
     }
   }else if(examId){
     try{await window.loadSession(examId)}catch {/* failed to load session */
-      state.currentSessionId=null;
+      stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       window.setExamIdInURL&&window.setExamIdInURL(null);
     }
   }

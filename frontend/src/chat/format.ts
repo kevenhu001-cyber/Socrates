@@ -1,8 +1,8 @@
 /* chat/format.ts — Wave 0b of main-js-split plan.
- * Three pure-ish chat-formatting helpers extracted from main.js region 13
- * (L3965–L4096). One mutates state (handleChatApiResult) via the global
- * window.state proxy — same wiring as if it lived in main.js.
+ * Three chat-formatting helpers extracted from main.js region 13.
  */
+
+import { stateStore } from '../state.js';
 
 /* Detect a tool envelope in the model's response. Returns:
       null — not a tool call
@@ -95,23 +95,24 @@ function handleChatApiResult(result: { cancelled?: boolean; text?: string } | nu
     return;
   }
   if (result && result.text && typeof result.text === 'string' && result.text.trim()) {
-    (window as any).state.lastCallSource = 'api';
+    stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
     ctl.finish();
   } else {
-    const reason = (window as any).state.lastCallError || 'empty response (no error detail)';
+    const lastCallError = stateStore.read('lastCallError');
+    const reason = lastCallError || 'empty response (no error detail)';
     const isCancel = /cancel|user-stop|superseded|new-session|session-switch|session-deleted|session-purged|session-reset|msg-edit/i.test(reason);
     if (isCancel) {
-      (window as any).state.lastCallSource = 'cancelled';
+      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'cancelled' });
       ctl.abort();
-    } else if ((window as any).state.lastCallError) {
-      (window as any).state.lastCallSource = 'error';
-      ctl.replaceWithError((window as any).state.lastCallError, function () {
+    } else if (lastCallError) {
+      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
+      ctl.replaceWithError(lastCallError, function () {
         if ((window as any).askChatTurn) (window as any).askChatTurn(userText);
       });
     } else {
-      (window as any).state.lastCallSource = 'error';
+      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
       ctl.abort();
-      console.warn('[chat] stream returned no result with no error. result=', result, 'lastCallError=', (window as any).state.lastCallError);
+      console.warn('[chat] stream returned no result with no error. result=', result, 'lastCallError=', lastCallError);
       if ((window as any).addMessage) (window as any).addMessage('assistant', '(response interrupted — no content received)');
     }
   }

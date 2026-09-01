@@ -7,7 +7,7 @@
  * and React hooks.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import type {
   ComposerInputBridge,
   ComposerInputSnapshot,
@@ -33,7 +33,7 @@ type Action = Omit<ComposerInputSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<ComposerInputSnapshot, Action>({
   initial: INITIAL,
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: ComposerInputBridge = Object.assign(factoryBridge, {
@@ -63,9 +63,9 @@ export function useComposerInputSnapshot(): ComposerInputSnapshot {
 }
 
 export function useIsStreaming(): boolean {
-  return useBridge(factoryBridge).isStreaming;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isStreaming);
 }
 
 export function useIsTopicSetup(): boolean {
-  return useBridge(factoryBridge).isTopicSetup;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isTopicSetup);
 }

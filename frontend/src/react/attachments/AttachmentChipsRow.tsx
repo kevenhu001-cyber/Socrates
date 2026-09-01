@@ -149,9 +149,8 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
 
   const roots: Root[] = [];
 
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. Each host element is tagged
-     independently so the registry can mount them as separate specs. */
+  /* Each host is tagged independently so the registry can mount them as
+     separate specs. */
   if (chatTarget && chatTarget.dataset.mountedBy !== 'attachment-chips') {
     const chatRoot = createRoot(chatTarget);
     chatRoot.render(<ChipsRow targetId={CHIPS_ID} />);

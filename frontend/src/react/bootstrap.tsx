@@ -10,8 +10,9 @@
 
 import type { Root } from 'react-dom/client';
 
-import { mountRegistry, runMountRegistry } from './lib/boot/registry';
+import { configureMountRegistry, runMountRegistry } from './lib/boot/registry';
 import { mountRegistryList } from './lib/boot/specs';
+import { installChatRuntimeBridge } from './chatRuntime.bridge';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run';
 import type { LegacyChatMessage } from './types/domain';
 
@@ -22,6 +23,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
   window.__socratesMountAssistantTurn = (container, message, options) =>
     mountAssistantTurn(container, message as LegacyChatMessage, options);
   window.__socratesReleaseAssistantTurns = releaseAssistantTurns;
+  installChatRuntimeBridge();
 
   /* Hard-required React-owned hosts: bootstrap throws when they are
      absent because the legacy code paths that depend on them would
@@ -32,7 +34,7 @@ export function bootstrapReactCompatibilityRuntime(): Root {
     }
   }
 
-  mountRegistry.push(...mountRegistryList());
+  configureMountRegistry(mountRegistryList());
   runMountRegistry(document);
 
   /* Re-sync the workspace route now that __socratesMountWorkspace

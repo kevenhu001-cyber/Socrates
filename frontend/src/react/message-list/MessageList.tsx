@@ -127,9 +127,7 @@ function MessageList() {
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
   if (!container) return { root: null };
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. main.js's `reactOwnsMsgList()`
-     now reads the same flag. */
+  /* main.js's `reactOwnsMsgList()` reads the same ownership flag. */
   if (container.dataset.mountedBy === 'msg-list') return { root: null };
   // The read-only share view renders #msgList itself; never mount over it.
   if (window.__socratesShareMsgListTakeover) return { root: null };

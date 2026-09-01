@@ -12,8 +12,7 @@ import { scrollContainer } from './scroll.js';
 // state is exposed on window by state.js (line 220: window.state = state).
 // Import the side-effect module so the Proxy is registered before this
 // module's wireScrollPill() runs.
-import '../state.js';
-const state = window.state;
+import { state, stateStore } from '../state.js';
 
 const SCROLL_SLACK = 64;   /* pixels from bottom considered "pinned" */
 
@@ -54,7 +53,9 @@ export function wireScrollPill(){
 
   function releasePin(){
     upIntentAt = Date.now();
-    if(!state._userScrolledAway) state._userScrolledAway = true;
+    if(!state._userScrolledAway){
+      stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:true});
+    }
   }
 
   document.addEventListener("wheel", function(ev){
@@ -108,7 +109,7 @@ export function wireScrollPill(){
       /* Ignore "back at bottom" while an upward intent is fresh — it is
          the streaming snap fighting the user, not the user returning. */
       if(Date.now() - upIntentAt < UP_INTENT_GUARD_MS) return;
-      state._userScrolledAway = false;
+      stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});
       hideNewReplyPill();
     } else if(!state._userScrolledAway){
       /* Only an upward position change means the reader left the latest
@@ -126,7 +127,7 @@ export function wireScrollPill(){
          12px position threshold is safe. */
       const movedUp = previousTop != null && sc.scrollTop < previousTop - 12;
       if(movedUp&&!debounceTmo){
-        state._userScrolledAway = true;
+        stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:true});
         debounceTmo = setTimeout(function(){ debounceTmo = null; }, 300);
       }
     }
@@ -141,7 +142,7 @@ export function wireScrollPill(){
         const sc = scrollContainer();
         if(sc) sc.scrollTop = sc.scrollHeight;
         upIntentAt = 0;
-        state._userScrolledAway = false;
+        stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});
         hideNewReplyPill();
         return;
       }

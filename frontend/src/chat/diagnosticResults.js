@@ -1,10 +1,15 @@
 export function applyDiagnosticResults(state) {
+  var kbNodes = (state.kbNodes || []).map(function (node) {
+    return Object.assign({}, node, {
+      history: Array.isArray(node.history) ? node.history.slice() : node.history
+    });
+  });
   state.diagQuestions.forEach(function (q, i) {
     var ans = state.diagAnswers[i];
     if (ans === undefined || ans === -1) return;
     var level = q.opts[ans].level;
-    var nodeIdx = typeof q.nodeIdx === 'number' ? Math.max(0, Math.min(q.nodeIdx, state.kbNodes.length - 1)) : i;
-    var node = state.kbNodes[nodeIdx];
+    var nodeIdx = typeof q.nodeIdx === 'number' ? Math.max(0, Math.min(q.nodeIdx, kbNodes.length - 1)) : i;
+    var node = kbNodes[nodeIdx];
     if (!node) return;
     var newStatus = level === 'blank' ? 'blank' : 'fuzzy';
     if (node.status !== newStatus) {
@@ -25,4 +30,5 @@ export function applyDiagnosticResults(state) {
       node.system_note = (node.system_note || '') + 'Sub-area: ' + q.subarea + '. ';
     }
   });
+  return kbNodes;
 }

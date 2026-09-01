@@ -3,6 +3,7 @@ import { callAPI } from './api.js';
 import { offlineGuard } from './offline.js';
 import { hasUsableActive, webSearchOn } from '../config/providers.js';
 import { loadLocalMemory } from '../storage/localMemory.js';
+import { stateStore } from '../state.js';
 
 function getState() { return window.state; }
 function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
@@ -135,7 +136,7 @@ export async function fetchWebContext(topic,opts){
       var firstErr=searchResps.find(function(x){return x&&!x.ok&&(x.status||x.reason)});
       var emsg=firstErr?(firstErr.status?"HTTP "+firstErr.status:(firstErr.reason||"failed")):"no results";
       console.log("[web search] all queries failed");
-      getState().searchContextError=emsg;
+      stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
       _emit("error",{message:emsg,code:"no-results"});
       try{setSearchPill("err",0,"Search failed: "+emsg)}catch(_){}
       return{ok:false,reason:emsg,results:0,context:opts.background?getState().searchContext||"":""};
@@ -143,11 +144,13 @@ export async function fetchWebContext(topic,opts){
     var d={results:searchResults,query:queries.join(" | ")};
     clearTimeout(tmo);
     if(!d.results||!d.results.length){
-      getState().searchContextError=null;
-      getState().searchContext="";
-      getState().searchContextAt=Date.now();
-      getState().searchContextCount=0;
-      getState().searchResults=[];
+      stateStore.dispatch({type:'state/batch',patch:{
+        searchContextError:null,
+        searchContext:"",
+        searchContextAt:Date.now(),
+        searchContextCount:0,
+        searchResults:[]
+      }});
       try{setSearchPill("ok",0,"No results")}catch(_){}
       return{ok:true,reason:"empty",results:0,context:""};
     }
@@ -280,12 +283,14 @@ export async function fetchWebContext(topic,opts){
       "Do NOT invent facts not supported by the results. "+
       "If multiple results contradict each other, prefer [high relevance] sources.\n"+
       lines.join("\n");
-    getState().searchContext=ctx;
-    getState().searchContextAt=Date.now();
-    getState().searchContextCount=enriched.length;
-    getState().searchContextError=null;
-    getState().searchContextQuery=topic;
-    getState().searchResults=enriched;   /* [{title,url,snippet,fullContent?,truncated?}] */
+    stateStore.dispatch({type:'state/batch',patch:{
+      searchContext:ctx,
+      searchContextAt:Date.now(),
+      searchContextCount:enriched.length,
+      searchContextError:null,
+      searchContextQuery:topic,
+      searchResults:enriched
+    }});   /* searchResults: [{title,url,snippet,fullContent?,truncated?}] */
     var fetchedCount=enriched.filter(function(x){return!!x.fullContent}).length;
     /* Phase 3: emit per-source engine breakdown so the UI can render
        "Wikipedia ×2, arXiv ×1, Bing ×3" in the summary. */
@@ -304,7 +309,7 @@ export async function fetchWebContext(topic,opts){
     clearTimeout(tmo);
     var emsg=(e&&e.message)||String(e);
     console.log("[web search] failed");
-    getState().searchContextError=emsg;
+    stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
     _emit("error",{message:emsg,code:"exception"});
     try{setSearchPill("err",0,"Search: "+emsg)}catch(_){}
     /* Keep the previous context so a transient failure doesn't drop

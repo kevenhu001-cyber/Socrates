@@ -33,7 +33,7 @@ type Action = Omit<CheatsheetSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<CheatsheetSnapshot, Action>({
   initial: { open: false, revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 /* Augment the factory bridge with a `publish` alias so legacy code

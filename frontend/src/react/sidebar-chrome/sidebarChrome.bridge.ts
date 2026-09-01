@@ -7,7 +7,7 @@
  * read through `useBridge`.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import type {
   SidebarChromeBridge,
   SidebarChromeSnapshot,
@@ -33,7 +33,7 @@ type Action = Omit<SidebarChromeSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<SidebarChromeSnapshot, Action>({
   initial: { user: GUEST_USER, revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: SidebarChromeBridge = Object.assign(factoryBridge, {
@@ -63,5 +63,5 @@ export function useSidebarChromeSnapshot(): SidebarChromeSnapshot {
 }
 
 export function useUserInfo(): UserInfo {
-  return useBridge(factoryBridge).user;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.user);
 }
