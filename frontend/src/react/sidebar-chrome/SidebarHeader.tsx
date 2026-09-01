@@ -17,6 +17,14 @@ export function SidebarHeader() {
   return (
     <>
       <div className="sidebar-logo">
+        <img
+          className="sidebar-logo-img"
+          src="/logo.svg"
+          alt=""
+          aria-hidden="true"
+          width={20}
+          height={20}
+        />
         <span>Socrates</span>
         <svg className="cg-sidebar-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="m7 10 5 5 5-5" />
