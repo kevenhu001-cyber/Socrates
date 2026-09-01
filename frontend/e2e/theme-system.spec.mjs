@@ -14,7 +14,7 @@ test('theme selector follows the operating system and persists explicit modes', 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
 
-  await page.locator('[data-action="toggleDisplayPrefs"]').click();
+  await page.locator('#displayPrefsBtn').click();
   const themeSegs = page.locator('#displayThemeSegs');
   await expect(themeSegs).toBeVisible();
   await expect(themeSegs.locator('[data-theme-option="system"]')).toHaveAttribute('aria-checked', 'true');

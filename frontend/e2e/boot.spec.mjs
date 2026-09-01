@@ -112,11 +112,13 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
     expect(currentHash, `inline-handler hash drifted: saved=${saved} current=${currentHash}`).toBe(saved);
   }
 
-  // After boot: at least one element with data-action present in DOM.
+  // After boot: the remaining legacy shell still has a meaningful set of
+  // data-action controls. Auth controls are mounted directly by auth/index.js
+  // as of M4 step 4.3a, so this floor intentionally excludes them.
   const inlineCount = await page.evaluate(() =>
     document.querySelectorAll('[data-action]').length,
   );
-  expect(inlineCount, 'in-page data-action-element count').toBeGreaterThanOrEqual(50);
+  expect(inlineCount, 'in-page data-action-element count').toBeGreaterThanOrEqual(30);
 
   // No JS errors at boot.
   expect(consoleErrors, `unexpected JS errors: ${consoleErrors.join(' | ')}`).toEqual([]);

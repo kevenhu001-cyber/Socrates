@@ -119,6 +119,73 @@ export function showAuthCodeLogin(){
   clearAuthTabSelection();
 }
 
+/* The auth gate is still static markup, but it owns its own interactions.
+ * Keeping these listeners here means the auth flow no longer depends on the
+ * document-wide data-action dispatcher. The returned disposer makes the
+ * mount safe for tests and for the later React auth-gate replacement. */
+export function mountAuthListeners(){
+  var gate=document.getElementById("authGate");
+  if(!gate||gate.dataset.authListenersMounted==="1")return null;
+  gate.dataset.authListenersMounted="1";
+  var cleanups=[];
+
+  function bind(selector,type,handler,options){
+    gate.querySelectorAll(selector).forEach(function(el){
+      el.addEventListener(type,handler,options);
+      cleanups.push(function(){el.removeEventListener(type,handler,options)});
+    });
+  }
+
+  bind(".auth-tab","click",function(e){
+    switchAuthTab(e.currentTarget.getAttribute("data-tab"));
+  });
+  bind(".auth-tab","keydown",function(e){
+    focusAuthTab(e.currentTarget,e);
+  });
+
+  function bindClick(selector,handler){
+    bind(selector,"click",function(e){
+      e.preventDefault();
+      handler(e.currentTarget,e);
+    });
+  }
+
+  function bindSubmit(selector,handler){
+    bind(selector,"submit",function(e){
+      e.preventDefault();
+      handler(e);
+    });
+  }
+
+  bindClick("#authSigninView .auth-inline-link-right",function(){showAuthForgotPassword()});
+  bindClick("#authSigninView .auth-code-login-link",function(){showAuthCodeLogin()});
+  bindClick("#authSigninView .auth-foot a",function(){switchAuthTab("register")});
+  bindClick("#authRegisterView .auth-foot a",function(){showAuthSignin()});
+  bindClick("#authVerifySentView button.auth-btn.secondary",function(){resendVerification()});
+  bindClick("#authVerifySentView .auth-foot a",function(){showAuthSignin()});
+  bindClick("#authVerifyFailedView .auth-foot a",function(){showAuthSignin()});
+  bindClick("#authForgotPasswordView .auth-back-link",function(){showAuthSignin()});
+  bindClick("#authForgotSentView .auth-foot a",function(){showAuthSignin()});
+  bindClick("#authResetSuccessView button.auth-btn.primary",function(){showAuthSignin()});
+  bindClick("#authCodeLoginView .auth-back-link",function(){showAuthSignin()});
+  bindClick("#authCodeLoginView #authCodeResendWrap a",function(){resendAuthCode()});
+  bindClick("#authCodeLoginView .auth-foot:not(#authCodeResendWrap) a",function(){showAuthSignin()});
+
+  bindSubmit("#authSigninView",function(){submitAuthSignin()});
+  bindSubmit("#authRegisterView",function(){submitAuthRegister()});
+  bindSubmit("#authVerifyFailedView form",function(){resendVerification()});
+  bindSubmit("#authForgotPasswordView",function(){submitAuthForgotPassword()});
+  bindSubmit("#authResetPasswordView",function(){submitAuthResetPassword()});
+
+  bindClick("#authCodeSendBtn",function(){submitAuthSendCode()});
+  bindClick("#authCodeLoginBtn",function(){submitAuthLoginWithCode()});
+
+  return function unmountAuthListeners(){
+    cleanups.splice(0).forEach(function(cleanup){cleanup()});
+    if(gate.dataset.authListenersMounted==="1")delete gate.dataset.authListenersMounted;
+  };
+}
+
 /* ── Post-auth hydration ──
    Runs after a successful signin/register/verify/code-login. Loads
    the user's projects, sessions, providers, memories, etc. Reads

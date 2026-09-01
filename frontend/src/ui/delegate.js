@@ -11,7 +11,6 @@
  *   <button data-action="resetApp">New Chat</button>
  *   <button data-action="openNav" data-action-arg="library">Library</button>
  *   <input  data-action="setRecentsSearch" data-action-arg="value">
- *   <form   data-action="submitAuthSignin" data-action-submit="true">
  *   <div    data-action="closeCmdK"        data-action-self-only="true">
  *   <button data-action="closeMorePopover;openSettings">Settings</button>
  *
@@ -31,6 +30,9 @@
  *   Used on overlay backdrop elements. The action only fires when the
  *   event target is the element itself (i.e. the backdrop was clicked,
  *   not a child). Lets us drop `if(event.target===this)closeX()` patterns.
+ *
+ * The auth gate is mounted by src/auth/index.js and is intentionally not
+ * part of this document-wide dispatcher.
  */
 
 var DELEGATE_ACTIONS = {};
@@ -86,34 +88,6 @@ function byLegacy(domain, name) {
 function buildActionMap() {
   registerBuiltinActions();
   var w = window;
-
-  // Auth
-  registerAction('switchAuthTab', function (el, e, tab) { w.switchAuthTab(tab); });
-  registerAction('focusAuthTab', function (el, e) {
-    if (typeof w.focusAuthTab === 'function') w.focusAuthTab(el, e);
-  });
-  registerAction('showAuthForgotPassword', function () { w.showAuthForgotPassword(); });
-  registerAction('showAuthCodeLogin', function () { w.showAuthCodeLogin(); });
-  registerAction('resendVerification', function () { w.resendVerification(); });
-  registerAction('showAuthSignin', function () { w.showAuthSignin(); });
-  registerAction('submitAuthSendCode', function () { w.submitAuthSendCode(); });
-  registerAction('submitAuthLoginWithCode', function () { w.submitAuthLoginWithCode(); });
-  registerAction('resendAuthCode', function () { w.resendAuthCode(); });
-  registerAction('submitAuthSignin', function () { w.submitAuthSignin(); });
-  registerAction('submitAuthRegister', function () { w.submitAuthRegister(); });
-  registerAction('submitAuthForgotPassword', function () { w.submitAuthForgotPassword(); });
-  registerAction('submitAuthResetPassword', function () { w.submitAuthResetPassword(); });
-
-  registerAction('toggleGrid', function () { w.toggleGrid(); });
-  registerAction('setAccentColor', function (el, e, hue) { w.setAccentColor(parseInt(hue, 10)); });
-  registerAction('toggleDisplayPrefs', function () { byLegacy('navigation', 'toggleDisplayPrefs')(); });
-  registerAction('toggleTheme', function () { w.toggleTheme(); });
-  registerAction('resetAccentColor', function () { w.resetAccentColor(); });
-  registerAction('setAccentCustom', function (el) { w.setAccentCustom(el.value); });
-  registerAction('setBackgroundDark', function (el) { w.setBackgroundDark(el.value); });
-  registerAction('setBackgroundLight', function (el) { w.setBackgroundLight(el.value); });
-  registerAction('resetBackgroundDark', function () { w.resetBackgroundDark(); });
-  registerAction('resetBackgroundLight', function () { w.resetBackgroundLight(); });
 
   // Sidebar / Navigation
   registerAction('resetApp', function () { byLegacy('navigation', 'resetApp')(); });
@@ -319,7 +293,7 @@ function runActionChain(el, event, actionStr) {
       handler(el, event, arg);
     } else if (el.getAttribute('data-action-arg') != null) {
       /* Fallback to data-action-arg attribute when the action name
-         (e.g. "setAccentColor") doesn't carry an inline :arg token.
+         (e.g. "openNav") doesn't carry an inline :arg token.
          Buttons using separate data-action-arg keep the HTML declarative
          while still getting the right argument through. */
       var dtArg = resolveArg(el.getAttribute('data-action-arg'), el, event);

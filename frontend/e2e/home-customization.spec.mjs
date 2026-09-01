@@ -26,7 +26,7 @@ test('display settings change theme, text scale, and content width', async ({ pa
 
   const before = await page.locator('#topicInputWrap').boundingBox();
   const beforeTitleSize = await page.locator('#topicTitle').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
-  await page.locator('[data-action="toggleDisplayPrefs"]').click();
+  await page.locator('#displayPrefsBtn').click();
   await page.locator('#displayPrefsFontSegs [data-font="1.375"]').click();
   await page.locator('#displayPrefsWidthSegs [data-width="1.7"]').click();
   await page.locator('#displayThemeSegs [data-theme-option="light"]').click();
