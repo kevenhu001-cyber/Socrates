@@ -9239,7 +9239,6 @@ window.updateModeBadge = updateModeBadge;
 /* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
 import { closeSettings,
   renderProviderList,
-  bindSettingsUI,
 } from './ui/settings.js';
 
 /* ============================================================
@@ -9827,6 +9826,18 @@ window.__socratesLegacy = {
     toggleDisplayPrefs: window.toggleDisplayPrefs,
     signOut: window.signOut,
   },
+  settings: {
+    toggleAPI: window.toggleAPI,
+    addProvider: window.addProvider,
+    clearSettings: window.clearSettings,
+    saveSettings: window.saveSettings,
+    renderProviderList: window.renderProviderList,
+    syncSettingsUI: window.syncSettingsUI,
+  },
+  confirm: {
+    showConfirm: window.showConfirm,
+    closeConfirm: window.closeConfirm,
+  },
   sessions: {
     loadSession: window.loadSession,
     setRecentsFilter: window.setRecentsFilter,
@@ -9978,17 +9989,16 @@ syncSidebarForMode();
 /* Init tone presets and memory store. */
 if (typeof window.loadTonePreset === "function") window.loadTonePreset();
 if (typeof window.loadMemories === "function") window.loadMemories();
-/* Bind settings UI event handlers (replaces inline onclick attributes) */
-bindSettingsUI();
 import { installDelegate } from './ui/delegate.js';
 installDelegate();
 import { installModalA11y } from './ui/modalA11y.js';
 installModalA11y({ overlayId: 'cmdKOverlay', closeFn: function () { if (typeof window.closeCmdK === 'function') window.closeCmdK(); } });
-installModalA11y({ overlayId: 'settingsOverlay', closeFn: function () { if (typeof window.closeSettings === 'function') window.closeSettings(); } });
 installModalA11y({ overlayId: 'shareOverlay', closeFn: function () { if (typeof window.closeShareModal === 'function') window.closeShareModal(); } });
 installModalA11y({ overlayId: 'usageOverlay', closeFn: function () { if (typeof window.closeUsageModal === 'function') window.closeUsageModal(); } });
 installModalA11y({ overlayId: 'profileOverlay', closeFn: function () { if (typeof window.closeProfile === 'function') window.closeProfile(); } });
-installModalA11y({ overlayId: 'confirmDialog', closeFn: function () { if (typeof window.closeConfirm === 'function') window.closeConfirm(false); }, skipObserve: true });
+/* M4 step 4.5c — the confirm dialog is React-owned (ConfirmDialog.tsx
+   handles Esc + focus management itself); the installModalA11y
+   registration for #confirmDialog is gone. */
 /* React migration. Bootstrap the React compatibility runtime on every
    load — the legacy runtime still owns the visible document, but React
    hydrates specific feature slices (sidebar, cmd-k, session list, etc.)

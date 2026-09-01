@@ -51,6 +51,9 @@ test('Recent list surfaces fetch failure instead of misleading "no sessions" mes
   });
 
   await page.addInitScript(() => {
+    /* The failure empty-state copy is asserted in English below, and the
+       app boots with zh as the default language — pin the locale. */
+    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
     try { localStorage.removeItem('socrates-projects'); } catch (_) {}
     try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
   });
@@ -154,6 +157,7 @@ test('auto-retry recovers sessions when the server comes back after a transient 
   });
 
   await page.addInitScript(() => {
+    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
     try { localStorage.removeItem('socrates-projects'); } catch (_) {}
     try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
   });

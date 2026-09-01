@@ -106,11 +106,11 @@ function vizRuntime(vizId) {
 function vizActions(cardId, showSource) {
   return '<div class="viz-actions">' +
     '<span class="viz-status" role="status"><span class="viz-status-dot"></span><span class="viz-status-label"></span></span>' +
-    (showSource ? '<button type="button" class="viz-btn viz-btn-source" title="View source" aria-label="View source" data-action="viz-source" data-viz-card="' + cardId + '">' +
+    (showSource ? '<button type="button" class="viz-btn viz-btn-source" title="View source" aria-label="View source" data-viz-card="' + cardId + '">' +
       VIZ_ICON_SOURCE + '</button>' : '') +
-    '<button type="button" class="viz-btn viz-btn-reload" title="Reload" aria-label="Reload" data-action="viz-reload" data-viz-card="' + cardId + '">' +
+    '<button type="button" class="viz-btn viz-btn-reload" title="Reload" aria-label="Reload" data-viz-card="' + cardId + '">' +
       VIZ_ICON_RELOAD + '</button>' +
-    '<button type="button" class="viz-btn viz-btn-expand" title="Expand" aria-label="Expand" data-action="viz-expand" data-viz-card="' + cardId + '">' +
+    '<button type="button" class="viz-btn viz-btn-expand" title="Expand" aria-label="Expand" data-viz-card="' + cardId + '">' +
       VIZ_ICON_EXPAND + '</button>' +
   '</div>';
 }
@@ -121,7 +121,7 @@ function vizErrorHtml(message, source) {
   return '<div class="viz-error">' +
     '<span class="viz-error-icon">!</span>' +
     '<span class="viz-error-msg">' + msg + '</span>' +
-    '<button type="button" class="viz-error-btn" data-action="viz-toggle-source">Show source</button>' +
+    '<button type="button" class="viz-error-btn">Show source</button>' +
     '<pre class="viz-error-source" hidden>' + src + '</pre>' +
   '</div>';
 }
@@ -584,13 +584,12 @@ export function processPendingViz(root) {
           var banner = document.createElement('div');
           banner.className = 'viz-error';
           banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">Canvas took too long to render</span>' +
-            '<button type="button" class="viz-error-btn" data-action="viz-toggle-source">Show source</button>' +
+            '<button type="button" class="viz-error-btn">Show source</button>' +
             '<pre class="viz-error-source" hidden>' + esc(iframe.getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
           // Insert banner ABOVE the iframe
           if (iframe.parentNode === body) body.insertBefore(banner, iframe);
-          // Bind the toggle-source button immediately. We no longer
-          // rely on the global document-wide [data-action] scan that
-          // ran every stream tick, so cards must self-bind.
+          // Bind the toggle-source button immediately. The card
+          // self-binds; there is no global data-action scan anymore.
           _bindAction(banner.querySelector('.viz-error-btn'));
         }
         _hideLoading(card);
@@ -675,7 +674,7 @@ function _markError(id, message) {
     var banner = document.createElement('div');
     banner.className = 'viz-error';
     banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(message || 'Canvas failed to render') + '</span>' +
-      '<button type="button" class="viz-error-btn" data-action="viz-toggle-source">Show source</button>' +
+      '<button type="button" class="viz-error-btn">Show source</button>' +
       '<pre class="viz-error-source" hidden>' + esc((entry && entry.iframe && entry.iframe.getAttribute('data-srcdoc')) || card.querySelector('iframe') && card.querySelector('iframe').getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
     var iframeEl = entry && entry.iframe;
     if (!iframeEl) iframeEl = card.querySelector('iframe');
@@ -923,7 +922,7 @@ export function processPendingVizActions(root) {
      so bind only actions within the supplied message body. Calls without a
      root keep the pending-queue-only behavior and never scan the document. */
   if (root && typeof root.querySelectorAll === 'function') {
-    var rootActions = root.querySelectorAll('.viz [data-action]');
+    var rootActions = root.querySelectorAll('.viz .viz-btn, .viz .viz-error-btn');
     for (var ri = 0; ri < rootActions.length; ri++) _bindAction(rootActions[ri]);
   }
   var pending = _pendingActions;
@@ -934,13 +933,20 @@ export function processPendingVizActions(root) {
 function _bindActionsInCard(item) {
   var el = document.getElementById(item && item.id);
   if (!el) return;
-  var actions = el.querySelectorAll('[data-action]');
+  var actions = el.querySelectorAll('.viz-btn, .viz-error-btn');
   for (var i = 0; i < actions.length; i++) _bindAction(actions[i]);
 }
 
 function _bindAction(el) {
   if (!el || el.__vizActionBound) return;
-  var act = el.getAttribute('data-action');
+  /* Dispatch by class, not data-action: the buttons no longer carry the
+     attribute (M4 Step 4.2). A data-action fallback is kept only for any
+     legacy markup still floating around during the migration. */
+  var act = el.classList.contains('viz-btn-reload') ? 'viz-reload'
+    : el.classList.contains('viz-btn-source') ? 'viz-source'
+    : el.classList.contains('viz-btn-expand') ? 'viz-expand'
+    : el.classList.contains('viz-error-btn') ? 'viz-toggle-source'
+    : el.getAttribute('data-action');
   if (act === 'viz-reload') {
     el.addEventListener('click', function (ev) {
       ev.preventDefault();

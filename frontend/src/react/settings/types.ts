@@ -1,14 +1,17 @@
 /**
  * Shared contracts for the settings modal React migration boundary.
  *
- * The legacy `ui/settings.js` generates the full settings body HTML.
- * This bridge publishes the open state and body HTML so the React
- * shell can render them declaratively.
+ * React owns the overlay shell and the static skeleton (toggle, provider
+ * list container, tone preset container, action buttons). Legacy
+ * `ui/settings.js` renders the dynamic content (provider rows, tone
+ * presets) into the React-owned containers and publishes the open state
+ * plus the external-API toggle so React can mirror visibility and the
+ * toggle track.
  */
 
 export interface SettingsSnapshot {
   open: boolean;
-  bodyHTML: string;
+  externalApiOn: boolean;
   revision: number;
 }
 

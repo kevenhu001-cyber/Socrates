@@ -1,267 +1,548 @@
-import { createInitialAppState, FLAT_STATE_PATHS } from './state/index.ts';
+/* M3 state facade — bridges own the canonical state.
+   ─────────────────────────────────────────────────────────────
+   Per-namespace `createImmutableBridge` instances in `./state/bridges.ts`
+   own the snapshots. `stateStore` is a thin facade that:
+     • forwards each action to the correct bridge via `dispatch`,
+     • calls `.flush()` after dispatch so synchronous reads (main.js
+       expects `state.X = Y; …; var v = state.X` to see the new value),
+     • aggregates snapshots into the legacy root `state` shape for
+       Proxy reads,
+     • forwards subscriptions to every bridge so any namespace change
+       wakes the listener once.
 
-var state=createInitialAppState();
+The `state` Proxy is kept as a backward-compat surface. Reads return live
+bridge snapshots (frozen refs). Writes (`state.session.topic = "x"`)
+are translated into the corresponding `state/set` dispatch. The legacy
+`state.X` form works as long as `X` is registered in `FLAT_STATE_PATHS`
+(see `./state/index.ts`); new fields belong in the appropriate
+namespace module (`session.ts`, `kb.ts`, etc.).
 
-/* P1.5 — flat-name lookup table for the Proxy. Maps a legacy
-   `state.<field>` access to its sub-namespace + property. Update
-   this whenever a new field is added to a sub-namespace; existing
-   fields are listed below. */
+`resetState()` is now a single action — `stateStore.dispatch({type:
+'state/reset'})` — no more 60-line hand-maintained field list. */
 
-/* P1.5 — Proxy that translates flat legacy reads/writes into
-   the new namespace structure. The Proxy is the value of the
-   module-level `state` identifier from this point on. Reads
-   always return the live sub-namespace value (so `state.topic`
-   and `state.session.topic` see the same data). Writes update
-   the sub-namespace. Deletes are no-ops (legacy code never
-   `delete state.<x>`).
-   ─────────────────────────────────────────────────────────────────
-   The flat-namespace compat shim is preserved by design:
-   main.js has ~200 references to `state.topic`, `state.messages`,
-   `state.kbNodes` etc. that all flow through this Proxy. Removing
-   the shim is a single-shot full rewrite of those call sites,
-   which belongs in a dedicated refactor PR. Until then the
-   Proxy is the contract: any new field MUST be added to
-   FLAT_STATE_PATHS (or live on the `state` root directly)
-   for the legacy `state.<name>` form to work. */
-(function(){
-  function resolve(path){
-    var parts=path.split(".");
-    var cur=state;
-    for(var i=0;i<parts.length;i++){
-      if(cur==null)return undefined;
-      cur=cur[parts[i]];
-    }
-    return cur;
+import {
+  callBridge,
+  examBridge,
+  FLAT_STATE_PATHS,
+  kbBridge,
+  namespaceBridges,
+  searchBridge,
+  sessionBridge,
+  uiBridge,
+} from './state/index.ts';
+
+/* Read the live root state from the bridges. The returned object's
+   namespaces are the bridge snapshots (frozen). */
+function readRootState() {
+  return {
+    session: sessionBridge.getSnapshot(),
+    kb: kbBridge.getSnapshot(),
+    search: searchBridge.getSnapshot(),
+    call: callBridge.getSnapshot(),
+    ui: uiBridge.getSnapshot(),
+    exam: examBridge.getSnapshot(),
+    tutorAttachments: null,
+    tutorPartsTemplate: null,
+  };
+}
+
+function pathFor(key) {
+  if (typeof key !== 'string') return null;
+  return FLAT_STATE_PATHS[key] || key;
+}
+
+function readPath(path) {
+  if (!path) return undefined;
+  var parts = path.split('.');
+  var value = readRootState();
+  for (var i = 0; i < parts.length; i++) {
+    if (value == null) return undefined;
+    value = value[parts[i]];
   }
-  var proxy=new Proxy(state,{
-    get:function(target,prop){
-      if(typeof prop!=="string")return Reflect.get(target,prop);
-      if(prop in target)return Reflect.get(target,prop);
-      if(Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS,prop)){
-        return resolve(FLAT_STATE_PATHS[prop]);
-      }
-      return undefined;
-    },
-    set:function(target,prop,value){
-      if(typeof prop!=="string")return Reflect.set(target,prop,value);
-      if(prop in target)return Reflect.set(target,prop,value);
-      if(Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS,prop)){
-        var path=FLAT_STATE_PATHS[prop].split(".");
-        var cur=state;
-        for(var i=0;i<path.length-1;i++){
-          if(cur[path[i]]==null)cur[path[i]]={};
-          cur=cur[path[i]];
+  return value;
+}
+
+function setPath(path, value) {
+  var parts = path.split('.');
+  if (parts.length === 1) {
+    throw new TypeError('setPath requires a namespace, got: ' + path);
+  }
+  var namespace = parts[0];
+  var key = parts[1];
+  var bridge = namespaceBridges[namespace];
+  if (!bridge) {
+    throw new TypeError('Unknown state namespace: ' + namespace);
+  }
+  bridge.dispatch({ type: namespace + '/set', key: key, value: value });
+  bridge.flush();
+}
+
+function setNamespacePatch(namespace, patch) {
+  var bridge = namespaceBridges[namespace];
+  if (!bridge) {
+    throw new TypeError('Unknown state namespace: ' + namespace);
+  }
+  stateStore.dispatch({ type: namespace + '/patch', patch: patch });
+}
+
+function resetBridges() {
+  for (var key in namespaceBridges) {
+    namespaceBridges[key].dispatch({ type: key + '/reset' });
+  }
+  for (var key2 in namespaceBridges) {
+    namespaceBridges[key2].flush();
+  }
+}
+
+/* Aggregate subscriptions across all bridges so a single listener
+   fires on every commit. (Currently `stateStore.dispatch` calls its
+   own listeners directly; this helper is kept for callers that want
+   to bridge directly without going through `stateStore`.) */
+export function subscribeAll(listener) {
+  var disposers = [];
+  for (var key in namespaceBridges) {
+    disposers.push(namespaceBridges[key].subscribe(listener));
+  }
+  return function () {
+    for (var i = 0; i < disposers.length; i++) disposers[i]();
+  };
+}
+
+/* Build the Proxy that turns legacy `state.X` reads/writes into
+   bridge dispatches. The Proxy is the value of the module-level
+   `state` identifier from this point on. The root Proxy returns
+   nested proxies for namespace reads (`state.session`, `state.kb`,
+   etc.) so writes through `state.session.phase = "x"` route through
+   `sessionBridge.dispatch` exactly as `state.phase = "x"` does. */
+var ROOT_NAMESPACES = {
+  session: sessionBridge,
+  kb: kbBridge,
+  search: searchBridge,
+  call: callBridge,
+  ui: uiBridge,
+  exam: examBridge,
+};
+
+function createNamespaceProxy(namespace, bridge) {
+  return new Proxy({}, {
+    get: function (_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) {
+        var path = FLAT_STATE_PATHS[prop];
+        /* `path` is "<namespace>.<key>" for this namespace's own keys.
+           Translate to a bridge key read. */
+        if (path.indexOf(namespace + '.') === 0) {
+          var snapshot = bridge.getSnapshot();
+          return snapshot[path.slice(namespace.length + 1)];
         }
-        cur[path[path.length-1]]=value;
-        return true;
+        return readPath(path);
       }
-      /* Unknown property — set on the root target so we don't
-         lose data, and warn. This preserves the previous
-         behaviour of `state.foo = bar` silently working. */
-      console.warn("[state] unknown flat key, setting on root:",prop);
-      target[prop]=value;
+      /* Anything else is an arbitrary sub-property — read the live
+         snapshot. */
+      return bridge.getSnapshot()[prop];
+    },
+    set: function (_target, prop, value) {
+      if (typeof prop !== 'string') return false;
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) {
+        var path = FLAT_STATE_PATHS[prop];
+        if (path.indexOf(namespace + '.') === 0) {
+          var bridgeKey = path.slice(namespace.length + 1);
+          bridge.dispatch({ type: namespace + '/set', key: bridgeKey, value: value });
+          bridge.flush();
+          return true;
+        }
+      }
+      bridge.dispatch({ type: namespace + '/set', key: prop, value: value });
+      bridge.flush();
       return true;
     },
-    deleteProperty:function(target,prop){
-      if(typeof prop!=="string")return Reflect.deleteProperty(target,prop);
-      // Flat-namespace keys: resolve to the sub-namespace path and delete there.
-      if(Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS,prop)){
-        var path=FLAT_STATE_PATHS[prop].split(".");
-        var cur=state;
-        for(var i=0;i<path.length-1;i++){
-          if(cur[path[i]]==null)return true;
-          cur=cur[path[i]];
-        }
-        delete cur[path[path.length-1]];
-        return true;
-      }
-      // Unknown property — no-op (don't delete from root to preserve Proxy integrity).
-      return true;
+    has: function (_target, prop) {
+      if (typeof prop !== 'string') return false;
+      return prop in bridge.getSnapshot();
     },
-    has:function(target,prop){
-      if(typeof prop!=="string")return Reflect.has(target,prop);
-      if(prop in target)return true;
-      return Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS,prop);
+    ownKeys: function (_target) {
+      var keys = Object.keys(bridge.getSnapshot());
+      /* The bridge appends `revision` for change detection — hide it
+         from the legacy compat surface so deepEqual(initial.session,
+         state.session) continues to match. */
+      var idx = keys.indexOf('revision');
+      if (idx >= 0) keys.splice(idx, 1);
+      return keys;
     },
-    ownKeys:function(target){
-      return Array.from(new Set([].concat(
-        Reflect.ownKeys(target),
-        Object.keys(FLAT_STATE_PATHS)
-      )));
+    getOwnPropertyDescriptor: function (_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (prop === 'revision') return undefined;
+      var snapshot = bridge.getSnapshot();
+      if (!(prop in snapshot)) return undefined;
+      return {
+        configurable: true,
+        enumerable: true,
+        get: function () { return bridge.getSnapshot()[prop]; },
+        set: function (v) {
+          bridge.dispatch({ type: namespace + '/set', key: prop, value: v });
+          bridge.flush();
+        },
+      };
     },
-    getOwnPropertyDescriptor:function(target,prop){
-      if(typeof prop!=="string")return Reflect.getOwnPropertyDescriptor(target,prop);
-      if(prop in target)return Reflect.getOwnPropertyDescriptor(target,prop);
-      if(Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS,prop)){
-        var path=FLAT_STATE_PATHS[prop];
-        return{
-          configurable:true,enumerable:true,
-          get:function(){return resolve(path)},
-          set:function(v){
-            var parts=path.split(".");
-            var cur=state;
-            for(var i=0;i<parts.length-1;i++){if(cur[parts[i]]==null)cur[parts[i]]={};cur=cur[parts[i]]}
-            cur[parts[parts.length-1]]=v;
-          }
+  });
+}
+
+function createProxy() {
+  /* Sibling state slots (tutorAttachments / tutorPartsTemplate) live
+     outside any namespace bridge. They are mutable per the legacy
+     `state.tutorAttachments = [...]` pattern but reset to null on
+     `state/reset`. */
+  var siblingState = { tutorAttachments: null, tutorPartsTemplate: null };
+  function refreshSiblingsOnReset() {
+    siblingState.tutorAttachments = null;
+    siblingState.tutorPartsTemplate = null;
+  }
+  /* We never cache `target` here — every read goes through the live
+     bridges so legacy `state.X` always sees the current snapshot. */
+  var proxyTarget = new Proxy({}, {
+    getOwnPropertyDescriptor: function (_t, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (prop in siblingState) {
+        return {
+          configurable: true,
+          enumerable: true,
+          get: function () { return siblingState[prop]; },
+          set: function (v) { siblingState[prop] = v; },
         };
       }
       return undefined;
-    }
+    },
+    ownKeys: function () { return Object.keys(siblingState); },
+    has: function (_t, prop) {
+      return typeof prop === 'string' && prop in siblingState;
+    },
+    get: function (_t, prop) {
+      if (typeof prop === 'string' && prop in siblingState) return siblingState[prop];
+      return undefined;
+    },
+    set: function (_t, prop, value) {
+      if (typeof prop !== 'string') return false;
+      siblingState[prop] = value;
+      return true;
+    },
   });
-  /* Replace the module-level `state` with the proxy. */
-  state=proxy;
-})();
-
-/* Expose as a global for backward compat with the rest of the code.
-   main.js and other modules reference `state` as a bare name; since
-   ES module scope does not share var/let/const across import chains,
-   we put it on window so all code sees the same instance. */
-window.state = state;
-
-/* M3 migration facade. New legacy call sites use read/dispatch while older
-   direct state mutations remain compatible during the incremental rewrite. */
-var stateStore=(function(){
-  var listeners=new Set();
-  var notifyScheduled=false;
-  function pathFor(key){
-    if(typeof key!=="string")return null;
-    return FLAT_STATE_PATHS[key]||key;
-  }
-  /** @param {string} key @returns {any} */
-  function read(key){
-    var path=pathFor(key);
-    if(!path)return undefined;
-    var parts=path.split(".");
-    var value=state;
-    for(var i=0;i<parts.length;i++){
-      if(value==null)return undefined;
-      value=value[parts[i]];
-    }
-    return value;
-  }
-  function setPath(path,value){
-    var parts=path.split(".");
-    if(parts.length===1){state[parts[0]]=value;return}
-    var rootKey=parts[0];
-    var root=Object.assign({},state[rootKey]);
-    var cursor=root;
-    var source=state[rootKey];
-    for(var index=1;index<parts.length-1;index++){
-      var key=parts[index];
-      source=source&&source[key];
-      cursor[key]=Array.isArray(source)?source.slice():Object.assign({},source||{});
-      cursor=cursor[key];
-    }
-    cursor[parts[parts.length-1]]=value;
-    state[rootKey]=root;
-  }
-  function notify(){listeners.forEach(function(listener){listener()})}
-  function notifyDeferred(){
-    if(notifyScheduled)return;
-    notifyScheduled=true;
-    var flush=function(){notifyScheduled=false;notify()};
-    if(typeof requestAnimationFrame==="function")requestAnimationFrame(flush);
-    else queueMicrotask(flush);
-  }
-  function dispatch(action){
-    if(!action||typeof action.type!=="string")throw new TypeError("stateStore.dispatch requires an action");
-    var result;
-    if(action.type==="state/set"){
-      var path=pathFor(action.key);
-      if(!path)throw new TypeError("state/set requires a key");
-      setPath(path,action.value);
-    }else if(action.type==="state/batch"){
-      if(!action.patch||typeof action.patch!=="object")throw new TypeError("state/batch requires a patch");
-      Object.keys(action.patch).forEach(function(key){
-        var batchPath=pathFor(key);
-        if(!batchPath)throw new TypeError("state/batch contains an invalid key");
-        setPath(batchPath,action.patch[key]);
-      });
-    }else if(action.type==="state/patch-namespace"){
-      if(!action.namespace||!state[action.namespace])throw new TypeError("Unknown state namespace");
-      state[action.namespace]=Object.assign({},state[action.namespace],action.patch||{});
-    }else if(action.type==="session/append-message"){
-      state.session.messages=state.session.messages.concat([action.payload]);
-      result=state.session.messages.length-1;
-    }else if(action.type==="session/replace-messages"){
-      if(!Array.isArray(action.payload))throw new TypeError("session/replace-messages requires an array payload");
-      state.session.messages=action.payload.slice();
-      result=state.session.messages;
-    }else if(action.type==="session/update-message"){
-      var updateIndex=Number(action.index);
-      var current=state.session.messages[updateIndex];
-      if(!Number.isInteger(updateIndex)||!current)return null;
-      if(action.clientId&&current.clientId!==action.clientId)return null;
-      var updated=Object.assign({},current,action.patch||{});
-      state.session.messages=state.session.messages.slice(0,updateIndex)
-        .concat([updated],state.session.messages.slice(updateIndex+1));
-      result=updated;
-    }else if(action.type==="session/remove-message-at"){
-      var removeIndex=Number(action.index);
-      var candidate=state.session.messages[removeIndex];
-      if(!Number.isInteger(removeIndex)||!candidate)return null;
-      if(action.clientId&&candidate.clientId!==action.clientId)return null;
-      state.session.messages=state.session.messages.slice(0,removeIndex)
-        .concat(state.session.messages.slice(removeIndex+1));
-      result=candidate;
-    }else if(action.type==="session/truncate-messages-after"){
-      var keepIndex=Number(action.index);
-      if(!Number.isInteger(keepIndex)||keepIndex < -1)return [];
-      result=state.session.messages.slice(keepIndex+1);
-      if(!result.length)return result;
-      state.session.messages=state.session.messages.slice(0,keepIndex+1);
-    }else if(action.type==="state/reset"){
-      resetState();
-    }else{
-      throw new TypeError("Unknown state action: "+action.type);
-    }
-    if(action.deferNotify)notifyDeferred();
-    else notify();
-    return result;
-  }
-  return Object.freeze({
-    read:read,
-    dispatch:dispatch,
-    getSnapshot:function(){return state},
-    subscribe:function(listener){listeners.add(listener);return function(){listeners.delete(listener)}},
+  /* Subscribe to the bridge subscription so reset also clears
+     sibling state. The listener is a no-op but its lifecycle ties
+     `siblingState` to the bridges' notification cycle. */
+  stateStore.subscribe(refreshSiblingsOnReset);
+  return new Proxy(proxyTarget, {
+    get: function (_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (Object.prototype.hasOwnProperty.call(ROOT_NAMESPACES, prop)) {
+        return createNamespaceProxy(prop, ROOT_NAMESPACES[prop]);
+      }
+      var liveRoot = readRootState();
+      if (prop in liveRoot) return liveRoot[prop];
+      if (prop in siblingState) return siblingState[prop];
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) {
+        return readPath(FLAT_STATE_PATHS[prop]);
+      }
+      return undefined;
+    },
+    set: function (_target, prop, value) {
+      if (typeof prop !== 'string') return false;
+      if (Object.prototype.hasOwnProperty.call(ROOT_NAMESPACES, prop)) {
+        var setBridge = ROOT_NAMESPACES[prop];
+        if (value && typeof value === 'object') {
+          setBridge.dispatch({ type: prop + '/patch', patch: value });
+          setBridge.flush();
+          return true;
+        }
+        return false;
+      }
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) {
+        setPath(FLAT_STATE_PATHS[prop], value);
+        return true;
+      }
+      siblingState[prop] = value;
+      return true;
+    },
+    deleteProperty: function (_target, prop) {
+      if (typeof prop !== 'string') return false;
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) {
+        var path = FLAT_STATE_PATHS[prop];
+        var parts = path.split('.');
+        var namespace = parts[0];
+        var bridge = namespaceBridges[namespace];
+        if (!bridge) return true;
+        bridge.dispatch({ type: namespace + '/set', key: parts[1], value: undefined });
+        bridge.flush();
+        return true;
+      }
+      if (prop in siblingState) {
+        delete siblingState[prop];
+        return true;
+      }
+      return true;
+    },
+    has: function (_target, prop) {
+      if (typeof prop !== 'string') return false;
+      if (Object.prototype.hasOwnProperty.call(ROOT_NAMESPACES, prop)) return true;
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) return true;
+      if (prop in siblingState) return true;
+      return prop in readRootState();
+    },
+    ownKeys: function (_target) {
+      return Array.from(new Set([].concat(
+        Object.keys(ROOT_NAMESPACES),
+        Object.keys(siblingState),
+        Object.keys(FLAT_STATE_PATHS),
+      )));
+    },
+    getOwnPropertyDescriptor: function (_target, prop) {
+      if (typeof prop !== 'string') return undefined;
+      if (Object.prototype.hasOwnProperty.call(ROOT_NAMESPACES, prop)) {
+        return {
+          configurable: true,
+          enumerable: true,
+          get: function () { return createNamespaceProxy(prop, ROOT_NAMESPACES[prop]); },
+          set: function () { /* namespace replacement is via stateStore.dispatch */ },
+        };
+      }
+      if (Object.prototype.hasOwnProperty.call(FLAT_STATE_PATHS, prop)) {
+        var path = FLAT_STATE_PATHS[prop];
+        return {
+          configurable: true,
+          enumerable: true,
+          get: function () { return readPath(path); },
+          set: function (v) { setPath(path, v); },
+        };
+      }
+      if (prop in siblingState) {
+        return {
+          configurable: true,
+          enumerable: true,
+          get: function () { return siblingState[prop]; },
+          set: function (v) { siblingState[prop] = v; },
+        };
+      }
+      return undefined;
+    },
   });
-})();
-window.stateStore=stateStore;
-
-/* Task 3.1 — teachingPlan structure (stored in state.session.teachingPlan):
-   {
-     subtopics: [
-       {
-         name:            <string>,  // sub-topic display name (mirrors kbNode.name)
-         status:          <"blank"|"fuzzy"|"internalized">,
-         objective:       <string>,  // e.g. "Master <name>"
-         exampleCount:    <number>,  // how many worked examples to present (default 2)
-         practiceCount:   <number>,  // how many practice problems (default 1)
-         inspectionType:  <"concept"|"procedural"|"application">,
-         prerequisites:   <string[]> // names of sub-topics that should precede this one
-       }
-     ],
-     currentSubtopicIdx: <number>,   // index into subtopics[] currently being taught
-     createdAt:          <number>    // Date.now() when the plan was generated
-   }
-   Generated by finishDiagnostic in main.js; rendered by renderKnowledgeView. */
-
-/* Replace each namespace reference from one source of truth. Keeping the
-   root Proxy intact preserves legacy flat reads while eliminating the
-   hand-maintained reset list. */
-function resetState(){
-  var initial=createInitialAppState();
-  state.session=initial.session;
-  state.kb=initial.kb;
-  state.search=initial.search;
-  state.call=initial.call;
-  state.ui=initial.ui;
-  state.exam=initial.exam;
-  state.tutorAttachments=initial.tutorAttachments;
-  state.tutorPartsTemplate=initial.tutorPartsTemplate;
-  try{if(typeof setCurrentSessionId==="function")setCurrentSessionId(null)}catch(_){}
 }
-/* Expose for modules that reference resetState via onclick handlers. */
-window.resetState = resetState;
+
+/* stateStore — the public facade.
+   ─────────────────────────────────────────────────────────────
+   Subscribers live in a single Set on this facade. stateStore
+   calls them synchronously after each successful dispatch,
+   matching the original notify() contract (and the `deferNotify`
+   RAF path is preserved for `session/*` actions that used it).
+   Per-bridge listeners are kept available on each bridge for
+   code that wants raw bridge access (useSessionSnapshot etc.). */
+var stateStore = (function () {
+  var listeners = new Set();
+  var notifyScheduled = false;
+  function notify() { listeners.forEach(function (listener) { listener(); }); }
+  function notifyDeferred() {
+    if (notifyScheduled) return;
+    notifyScheduled = true;
+    var flush = function () { notifyScheduled = false; notify(); };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
+    else if (typeof queueMicrotask === 'function') queueMicrotask(flush);
+    else Promise.resolve().then(flush);
+  }
+  /**
+   * @param {string} key
+   * @returns {unknown}
+   */
+  function read(key) { return readPath(pathFor(key)); }
+  /**
+   * @param {StateStoreAction | { type: string; [k: string]: unknown }} action
+   * @returns {unknown}
+   */
+  function dispatch(action) {
+      if (!action || typeof action.type !== 'string') {
+        throw new TypeError('stateStore.dispatch requires an action');
+      }
+      var result;
+      var namespaceActionMatch = /^([a-z]+)\/(set|patch|reset)$/.exec(action.type);
+      if (namespaceActionMatch && namespaceBridges[namespaceActionMatch[1]]) {
+        var ns = namespaceActionMatch[1];
+        var nsBridge = namespaceBridges[ns];
+        nsBridge.dispatch(action);
+        nsBridge.flush();
+        notify();
+        return undefined;
+      }
+      switch (action.type) {
+        case 'state/set': {
+          var setPathValue = pathFor(action.key);
+          if (!setPathValue) {
+            throw new TypeError('state/set requires a key, got: ' + action.key);
+          }
+          var setParts = setPathValue.split('.');
+          var setNamespace = setParts[0];
+          var setBridge = namespaceBridges[setNamespace];
+          if (!setBridge) throw new TypeError('Unknown namespace: ' + setNamespace);
+          setBridge.dispatch({
+            type: setNamespace + '/set',
+            key: setParts[1],
+            value: action.value,
+          });
+          setBridge.flush();
+          break;
+        }
+        case 'state/batch': {
+          if (!action.patch || typeof action.patch !== 'object') {
+            throw new TypeError('state/batch requires a patch');
+          }
+          /* Group by namespace so we can dispatch a single patch per
+             bridge (and flush once per bridge). */
+          var perNamespace = {};
+          Object.keys(action.patch).forEach(function (key) {
+            var batchPath = pathFor(key);
+            if (!batchPath) {
+              throw new TypeError('state/batch contains an invalid key: ' + key);
+            }
+            var batchParts = batchPath.split('.');
+            var batchNamespace = batchParts[0];
+            if (!perNamespace[batchNamespace]) perNamespace[batchNamespace] = {};
+            perNamespace[batchNamespace][batchParts[1]] = action.patch[key];
+          });
+          Object.keys(perNamespace).forEach(function (ns) {
+            var batchBridge = namespaceBridges[ns];
+            batchBridge.dispatch({
+              type: ns + '/patch',
+              patch: perNamespace[ns],
+            });
+            batchBridge.flush();
+          });
+          break;
+        }
+        case 'state/patch-namespace': {
+          if (!action.namespace) {
+            throw new TypeError('state/patch-namespace requires a namespace');
+          }
+          setNamespacePatch(action.namespace, action.patch || {});
+          namespaceBridges[action.namespace].flush();
+          break;
+        }
+        case 'state/reset':
+          resetBridges();
+          break;
+        case 'session/append-message':
+          sessionBridge.dispatch({
+            type: 'session/append-message',
+            payload: action.payload,
+          });
+          sessionBridge.flush();
+          result = sessionBridge.getSnapshot().messages.length - 1;
+          break;
+        case 'session/replace-messages':
+          sessionBridge.dispatch({
+            type: 'session/replace-messages',
+            payload: action.payload,
+          });
+          sessionBridge.flush();
+          result = sessionBridge.getSnapshot().messages;
+          break;
+        case 'session/update-message':
+          {
+            var beforeMsg = sessionBridge.getSnapshot().messages[Number(action.index)];
+            var beforeClientId = beforeMsg && beforeMsg.clientId;
+            sessionBridge.dispatch({
+              type: 'session/update-message',
+              index: action.index,
+              clientId: action.clientId,
+              patch: action.patch || {},
+            });
+            sessionBridge.flush();
+            var afterMsg = sessionBridge.getSnapshot().messages[Number(action.index)];
+            result = (action.clientId && beforeClientId !== action.clientId) ? null : afterMsg || null;
+          }
+          break;
+        case 'session/remove-message-at':
+          {
+            var beforeRemove = sessionBridge.getSnapshot().messages[Number(action.index)];
+            sessionBridge.dispatch({
+              type: 'session/remove-message-at',
+              index: action.index,
+              clientId: action.clientId,
+            });
+            sessionBridge.flush();
+            result = (action.clientId && beforeRemove && beforeRemove.clientId !== action.clientId)
+              ? null
+              : beforeRemove;
+            break;
+          }
+        case 'session/truncate-messages-after':
+          {
+            var beforeTruncate = sessionBridge.getSnapshot().messages;
+            sessionBridge.dispatch({
+              type: 'session/truncate-messages-after',
+              index: action.index,
+            });
+            sessionBridge.flush();
+            var keep = Number(action.index);
+            if (!Number.isInteger(keep) || keep < -1) {
+              result = [];
+              break;
+            }
+            /* Return the messages that were dropped, not the kept ones. */
+            result = beforeTruncate.slice(keep + 1);
+          }
+          break;
+        default:
+          throw new TypeError('Unknown state action: ' + action.type);
+      }
+      if (action.deferNotify) notifyDeferred();
+      else notify();
+      return result;
+    }
+    return Object.freeze({
+      read: read,
+      dispatch: dispatch,
+      getSnapshot: function () { return readRootState(); },
+      subscribe: function (listener) {
+        listeners.add(listener);
+        return function () { listeners.delete(listener); };
+      },
+    });
+})();
+
+/* Reset entry point used by main.js / onclick handlers. */
+function resetState() {
+  stateStore.dispatch({ type: 'state/reset' });
+  try { if (typeof setCurrentSessionId === 'function') setCurrentSessionId(null); } catch (_) {}
+}
+
+/* Module-level `state` Proxy — the legacy compat shim. */
+var state = createProxy();
+
+/* Expose as a global for backward compat with the rest of the code. */
+if (typeof window !== 'undefined') {
+  window.state = state;
+  window.stateStore = stateStore;
+  window.resetState = resetState;
+} else if (typeof globalThis !== 'undefined') {
+  globalThis.state = state;
+  globalThis.stateStore = stateStore;
+  globalThis.resetState = resetState;
+}
+
+/* Window slots for per-namespace bridges — same convention as the
+   React-side `xxx.bridge.ts` files. Useful for advanced subscribers
+   that want a single-namespace read without iterating `namespaceBridges`. */
+if (typeof window !== 'undefined') {
+  window.__socratesSessionBridge = sessionBridge;
+  window.__socratesKbBridge = kbBridge;
+  window.__socratesSearchBridge = searchBridge;
+  window.__socratesCallBridge = callBridge;
+  window.__socratesUiBridge = uiBridge;
+  window.__socratesExamBridge = examBridge;
+}
 
 export { state, stateStore, resetState };
+export {
+  callBridge,
+  examBridge,
+  kbBridge,
+  searchBridge,
+  sessionBridge,
+  uiBridge,
+};

@@ -25,6 +25,8 @@ import { mountWorkspacePage } from '../../pages/workspace';
 import { mountStorageModal } from '../../storageModal';
 import { mountCheatsheet } from '../../cheatsheet';
 import { mountPromptTemplatesModal } from '../../promptTemplatesModal';
+import { mountSettingsModal } from '../../settings';
+import { mountConfirmDialog } from '../../confirm';
 import { installSidebarChromeBridge } from '../../sidebar-chrome/sidebarChrome.bridge';
 import { SidebarHeader } from '../../sidebar-chrome/SidebarHeader';
 import { SidebarFooter } from '../../sidebar-chrome/SidebarFooter';
@@ -132,8 +134,23 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'promptTemplatesReactRoot', label: 'prompt-templates',
       ensureHost: (doc) => ensureBodyChild(doc, 'promptTemplatesReactRoot'),
       mount: () => mountPromptTemplatesModal() },
-    { hostId: 'sessionListReactRoot', label: 'session-list',
-      ensureHost: (doc) => doc.getElementById('sessionListReactRoot'),
+    /* M4 step 4.5b — settings modal is React-owned. The static
+       index.html #settingsOverlay markup was removed; the mount spec
+       lazily creates the body-level root the component renders into. */
+    { hostId: 'settingsModalReactRoot', label: 'settings-modal',
+      ensureHost: (doc) => ensureBodyChild(doc, 'settingsModalReactRoot'),
+      mount: () => mountSettingsModal() },
+    /* M4 step 4.5c — confirm dialog is React-owned. The static
+       index.html #confirmDialog markup was removed; the mount spec
+       lazily creates the body-level root the component renders into. */
+    { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
+      ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
+      mount: () => mountConfirmDialog() },
+    /* 5. Lazy portal roots. The session list mounts into the existing
+       `#recentsList` host (mountSessionList targets that id directly);
+       the hostId must match it or the registry skips the spec and the
+       Recents list stays empty. */
+    { hostId: 'recentsList', label: 'session-list',
       mount: () => mountSessionList() },
     /* 6. Global React roots — composer, message list, workflow layer, thinking panel */
     { hostId: 'topicComposerRoot', label: 'rich-composer', mount: (host) => {

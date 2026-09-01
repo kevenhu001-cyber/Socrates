@@ -40,10 +40,10 @@ test('message list renders user messages through React', async ({ page }) => {
 
   const toolbar = page.locator('[data-client-id^="msg-"].msg.user .msg-toolbar');
   await expect(toolbar).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="copy"]')).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="edit"]')).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="delete"]')).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="regenerate"]')).toHaveCount(0);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Copy"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Edit message"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Delete message"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]')).toHaveCount(0);
 });
 
 test('message list renders assistant messages with toolbar and model label', async ({ page }) => {
@@ -81,10 +81,10 @@ test('message list renders assistant messages with toolbar and model label', asy
     '[data-client-id^="msg-"].msg.assistant .msg-toolbar',
   );
   await expect(toolbar).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="thumbs-up"]')).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="thumbs-down"]')).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="regenerate"]')).toHaveCount(1);
-  await expect(toolbar.locator('[data-action="branch"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Helpful"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Not helpful"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]')).toHaveCount(1);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Branch from here"]')).toHaveCount(1);
 });
 
 test('message list snapshots react to message-added events', async ({ page }) => {
@@ -143,7 +143,7 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
 
   const userBubble = page.locator('[data-client-id^="msg-"].msg.user').first();
   await userBubble.hover();
-  await userBubble.locator('[data-action="copy"]').click();
+  await userBubble.locator('button.msg-toolbar-btn[aria-label="Copy"]').click();
 
   await expect.poll(async () => {
     return await page.evaluate(() => window.__messageListSpecToast || null);
@@ -188,8 +188,8 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
 
   const userBubble = page.locator('[data-client-id^="msg-"].msg.user').first();
   await userBubble.hover();
-  await userBubble.locator('[data-action="edit"]').click();
-  await userBubble.locator('[data-action="delete"]').click();
+  await userBubble.locator('button.msg-toolbar-btn[aria-label="Edit message"]').click();
+  await userBubble.locator('button.msg-toolbar-btn[aria-label="Delete message"]').click();
 
   const result = await page.evaluate(() => window.__msgSpecEditCalls);
   expect(result.length).toBe(2);
@@ -206,9 +206,9 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
     '[data-client-id^="msg-"].msg.assistant',
   ).first();
   await assistantBubble.hover();
-  await assistantBubble.locator('[data-action="regenerate"]').click();
-  await assistantBubble.locator('[data-action="thumbs-up"]').click();
-  await assistantBubble.locator('[data-action="branch"]').click();
+  await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]').click();
+  await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Helpful"]').click();
+  await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Branch from here"]').click();
 
   const assistantResult = await page.evaluate(() => ({
     edits: window.__msgSpecEditCalls,
@@ -278,5 +278,5 @@ test('streaming bubble is removed at finish and React renders the finalized entr
   await expect(page.locator('[data-client-id^="msg-"].msg.user')).toHaveCount(1);
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant')).toHaveCount(1);
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-body')).toContainText('stream-final');
-  await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-toolbar [data-action="copy"]')).toHaveCount(1);
+  await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-toolbar button.msg-toolbar-btn[aria-label="Copy"]')).toHaveCount(1);
 });

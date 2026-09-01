@@ -45,7 +45,7 @@ export function parseOneDiagResponse(resp,index){
     parsed.nodeIdx=index;
     return normalizeDiagQuestions([parsed])[0]||null;
   }catch(e){
-    setLastCallError("Diag JSON parse failed: "+(e&&e.message?e.message:String(e));
+    setLastCallError("Diag JSON parse failed: "+(e&&e.message?e.message:String(e)));
     return null;
   }
 }

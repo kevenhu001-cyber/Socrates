@@ -46,7 +46,6 @@ export function CanvasToolbar({
         <button
           type="button"
           className="canvas-btn"
-          data-action="canvas-original"
           aria-pressed={mode === 'view-original'}
           onClick={onToggleOriginal}
         >
@@ -57,7 +56,6 @@ export function CanvasToolbar({
         <button
           type="button"
           className="canvas-btn"
-          data-action="canvas-edit"
           aria-pressed={mode === 'edit'}
           onClick={onToggleEdit}
         >
@@ -66,7 +64,6 @@ export function CanvasToolbar({
         <button
           type="button"
           className="canvas-btn"
-          data-action="canvas-copy"
           onClick={onCopy}
         >
           {t('composer.canvas.copy')}
@@ -74,7 +71,6 @@ export function CanvasToolbar({
         <button
           type="button"
           className="canvas-btn"
-          data-action="canvas-iterate"
           onClick={onIterate}
         >
           {t('composer.canvas.iterate')}
@@ -82,7 +78,6 @@ export function CanvasToolbar({
         <button
           type="button"
           className="canvas-btn"
-          data-action="canvas-fullscreen"
           onClick={onFullscreen}
         >
           {t('composer.canvas.fullscreen')}

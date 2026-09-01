@@ -397,7 +397,7 @@ export function resetAccentColor() {
 export function toggleDisplayPrefs() {
   var p = document.getElementById("displayPrefsPopover");
   if (!p) return;
-  var btn = document.querySelector('[data-action="toggleDisplayPrefs"]') || document.getElementById("displayPrefsBtn");
+  var btn = document.getElementById("displayPrefsBtn");
   var isOpen = !p.classList.contains("hidden");
   if (isOpen) { p.classList.add("hidden"); return; }
   if (btn) {

@@ -667,7 +667,19 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (disposed) return null;
     if (postFinishApprovalMessage) {
       const current = getMessage() || null;
-      return current === postFinishApprovalMessage ? current : null;
+      if (!current) return null;
+      /* P_tool-postfinish-approval — the store replaces the message
+         object on every update (`{ ...current, ...patch }`), and
+         main.js's finish() applies its final html/rawText patch AFTER
+         this runtime's dispose() captured postFinishApprovalMessage.
+         A strict identity check (`current === postFinishApprovalMessage`)
+         would therefore always fail for a finished turn and silently
+         drop the approval POST. Compare ownership by clientId/id
+         instead: that survives the object swap while still refusing to
+         act on a different message (e.g. after a session switch). */
+      const pinned = String(postFinishApprovalMessage.clientId || postFinishApprovalMessage.id || '');
+      const now = String(current.clientId || current.id || '');
+      return pinned && pinned === now ? current : null;
     }
     if (!stillOwnsSlot()) return null;
     return getMessage() || null;

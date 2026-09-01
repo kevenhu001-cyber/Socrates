@@ -1,35 +1,49 @@
 /* ui/confirm.js — Wave 1a of main-js-split plan.
  * Generic confirm-dialog modal. Extracted from main.js L10359-L10378.
  * State: module-private _confirmResolve (single in-flight promise).
- * Reads via window.t() (i18n) for button labels.
+ *
+ * M4 step 4.5c: the overlay skeleton is React-owned (ConfirmDialog.tsx
+ * renders #confirmDialog into #confirmDialogReactRoot at boot). This
+ * module keeps the Promise resolver semantics and publishes
+ * `{ open, title, msg, danger }` through `window.__socratesConfirmBridge`;
+ * React mirrors visibility and renders the buttons, calling
+ * `closeConfirm(true/false)` via `__socratesLegacy.confirm`.
  */
 
 var _confirmResolve = null;
+var _state = { open: false, title: "", msg: "", danger: false };
+
+function _publishConfirmState() {
+  try {
+    var bridge = window.__socratesConfirmBridge;
+    if (bridge && typeof bridge.publish === "function") {
+      bridge.publish({
+        open: _state.open,
+        title: _state.title,
+        msg: _state.msg,
+        danger: _state.danger,
+      });
+    }
+  } catch (_) { /* swallow */ }
+}
 
 function showConfirm(title, msg, isDanger) {
   return new Promise(function (resolve) {
     _confirmResolve = resolve;
-    document.getElementById("confirmTitle").textContent = title;
-    document.getElementById("confirmMsg").textContent = msg;
-    var okBtn = document.getElementById("confirmOkBtn");
-    okBtn.className = "confirm-btn " + (isDanger ? "danger" : "primary");
-    okBtn.textContent = isDanger ? window.t("common.delete") : window.t("common.ok");
-    /* OK button fires in the target phase (before the delegated handler),
-       so the explicit `onclick` drives the resolve(true). The cancel button
-       is handled by the delegated data-action="closeConfirm" handler in
-       delegate.js, which calls closeConfirm() (no args = false). No need
-       to wire a second listener here. */
-    okBtn.onclick = function () { closeConfirm(true); };
-    var dlg = document.getElementById("confirmDialog");
-    dlg.classList.remove("hidden");
-    if (typeof dlg.__handleOpen === "function") dlg.__handleOpen();
+    _state = {
+      open: true,
+      title: title || "",
+      msg: msg || "",
+      danger: !!isDanger,
+    };
+    _publishConfirmState();
   });
 }
 
 function closeConfirm(resolveWith) {
-  var dlg = document.getElementById("confirmDialog");
-  dlg.classList.add("hidden");
-  if (typeof dlg.__handleClose === "function") dlg.__handleClose();
+  if (!_state.open && !_confirmResolve) return;
+  _state = { open: false, title: _state.title, msg: _state.msg, danger: _state.danger };
+  _publishConfirmState();
   if (_confirmResolve) {
     _confirmResolve(resolveWith === undefined ? false : resolveWith);
     _confirmResolve = null;

@@ -40,6 +40,26 @@ export interface LegacyNavigation {
   signOut(): void;
 }
 
+/* M4 step 4.5b — settings modal button actions, called from React's
+   SettingsModal.tsx (which owns the overlay skeleton). Backed by
+   ui/settings.js exports. */
+export interface LegacySettings {
+  toggleAPI(): void;
+  addProvider(): void;
+  clearSettings(): void;
+  saveSettings(): void;
+  renderProviderList(): void;
+  syncSettingsUI(): void;
+}
+
+/* M4 step 4.5c — confirm-dialog actions, called from React's
+   ConfirmDialog.tsx (which owns the overlay skeleton). Backed by
+   ui/confirm.js exports; showConfirm keeps the Promise semantics. */
+export interface LegacyConfirm {
+  showConfirm(title: string, msg: string, isDanger?: boolean): Promise<boolean>;
+  closeConfirm(resolveWith?: boolean): void;
+}
+
 export interface LegacySessions {
   loadSession(sessionId: string): Promise<void> | void;
   setRecentsFilter(filter: string | null): void;
@@ -199,6 +219,8 @@ export interface LegacyLiveTurn {
 export interface LegacyActions {
   messages: LegacyMessages;
   navigation: LegacyNavigation;
+  settings: LegacySettings;
+  confirm: LegacyConfirm;
   sessions: LegacySessions;
   composer: LegacyComposer;
   cmdK: LegacyCmdK;

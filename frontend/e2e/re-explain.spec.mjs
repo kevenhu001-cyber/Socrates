@@ -35,7 +35,7 @@ test('re-explain sends a visible prompt and streams an answer', async ({ page })
   const streamBodies = [];
   await bootChat(page, streamBodies);
 
-  await page.locator('#msgList .msg.assistant [data-action="re-explain"]').click();
+  await page.locator('#msgList .msg.assistant button.msg-toolbar-btn[aria-label="Re-explain from a different angle"]').click();
   const confirmBtn = page.locator('#confirmOkBtn');
   if (await confirmBtn.isVisible().catch(() => false)) {
     await confirmBtn.click();
@@ -54,9 +54,11 @@ test('cancelling the re-explain confirm pushes nothing and fires no turn', async
   const streamBodies = [];
   await bootChat(page, streamBodies);
 
-  await page.locator('#msgList .msg.assistant [data-action="re-explain"]').click();
+  await page.locator('#msgList .msg.assistant button.msg-toolbar-btn[aria-label="Re-explain from a different angle"]').click();
   await expect(page.locator('#confirmDialog')).not.toHaveClass(/hidden/);
-  await page.locator('[data-action="closeConfirm"]').first().click();
+  /* M4 step 4.5c — the confirm dialog is React-owned; the cancel
+     button is now #confirmCancelBtn (no more data-action closeConfirm). */
+  await page.locator('#confirmCancelBtn').click();
   await page.waitForTimeout(500);
 
   const state = await page.evaluate(() => ({

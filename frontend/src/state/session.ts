@@ -7,7 +7,35 @@ export const SESSION_FLAT_KEYS = [
   'stuckCheckOffered', 'stuckCheckRejected', 'fourOptionDialog',
 ] as const;
 
-export function createInitialSessionState() {
+export type ChatMessageShape = Record<string, unknown> & { clientId?: string };
+
+export function createInitialSessionState(): {
+  topic: string;
+  phase: string;
+  diagIndex: number;
+  diagAnswers: unknown[];
+  diagQuestions: unknown[];
+  currentSessionId: string | null;
+  substantiveCount: number;
+  explaining: boolean;
+  sessionTitle: string | null;
+  domain: string | null;
+  totalQ: number;
+  stuckCount: number;
+  branchedFrom: string | null;
+  messages: ChatMessageShape[];
+  currentProjectId: string | null;
+  activeProjectFilter: string | null;
+  teachingStage: string;
+  currentExampleIdx: number;
+  practiceAttempts: number;
+  practicePhase: string;
+  teachingPlan: unknown;
+  stuckCheckOffered: boolean;
+  stuckCheckRejected: number;
+  fourOptionDialog: unknown;
+  diagCancel: boolean;
+} {
   return {
     topic: '',
     phase: 'topic',
