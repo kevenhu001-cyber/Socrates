@@ -104,7 +104,7 @@ import { renderDiagQuestion as renderDiagQuestionUI } from './ui/diagnosticQuest
 import { resetCrossSessionKBCache } from './ui/knowledgeCrossSession.js';
 import { kbNodeHtml, toggleKBDetail } from './ui/knowledgeDetail.js';
 import { renderKnowledgeView } from './ui/knowledgeView.js';
-import { showGate, showAuthSignin } from './auth/index.js';
+import { showGate, showAuthSignin, mountAuthListeners } from './auth/index.js';
 
 /* Cookie consent — shown once on first visit; the choice is persisted in
    localStorage and a shared first-party consent cookie. Non-essential
@@ -120,8 +120,8 @@ import { getKnownTagsFromSessions,
   filterRecentsByChip,
 } from './ui/recentsHelpers.js';
 import { loadDisplayPrefs,
-  setDisplayFont, setDisplayWidth, setAccentColor, setAccentCustom, toggleTheme,
-  initTheme
+  setAccentColor, setAccentCustom, toggleTheme,
+  initTheme, mountDisplayPrefsListeners
 } from './displayPrefs.js';
 import {
   getActiveProvider, syncModelPills,
@@ -485,13 +485,9 @@ wireScrollPill();
 
 /* Colors.js utilities consumed by displayPrefs.js */
 
-/* Expose display-pref functions to window for onclick handlers — the
-   functions themselves are imported from displayPrefs.js; the window
-   bindings for toggleGrid / setAccentColor / toggleDisplayPrefs /
-   toggleTheme are handled by windowExports.js. The remaining display
-   helpers (setDisplayFont, setBackgroundColor, etc.) are only used
-   locally via direct function references and do not need window
-   exposure. */
+/* Display-pref functions remain exposed by windowExports.js for legacy
+   callers and the typed bridge. Static display controls are mounted by
+   displayPrefs.js itself; they no longer need document delegation. */
 
 function syncSidebarBtns(){
   var ob=document.getElementById("sidebarOpenBtn");
@@ -549,17 +545,8 @@ try{
 /* Apply text-size / content-width prefs (must run before any layout
    that depends on .main-inner max-width). */
 loadDisplayPrefs();
-/* Wire the segmented buttons inside the popover. */
-(function wireDisplayPrefsSegs(){
-  var fw=document.getElementById("displayPrefsFontSegs");
-  if(fw)Array.from(fw.children).forEach(function(b){
-    b.onclick=function(){setDisplayFont(parseFloat(b.dataset.font))};
-  });
-  var ww=document.getElementById("displayPrefsWidthSegs");
-  if(ww)Array.from(ww.children).forEach(function(b){
-    b.onclick=function(){setDisplayWidth(parseFloat(b.dataset.width))};
-  });
-})();
+/* M4 step 4.3b — display preferences own their static controls. */
+mountDisplayPrefsListeners();
 
 /* Sidebar drag + responsive collapse live in ui/sidebarResize.js.
    Keep initialization here, after the DOM-backed sidebar state is restored. */
@@ -9989,6 +9976,9 @@ syncSidebarForMode();
 /* Init tone presets and memory store. */
 if (typeof window.loadTonePreset === "function") window.loadTonePreset();
 if (typeof window.loadMemories === "function") window.loadMemories();
+/* M4 step 4.3a — the auth gate owns its own tab/link/form listeners;
+   keep it out of the document-wide data-action dispatcher. */
+mountAuthListeners();
 import { installDelegate } from './ui/delegate.js';
 installDelegate();
 import { installModalA11y } from './ui/modalA11y.js';

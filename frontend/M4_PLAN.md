@@ -76,11 +76,11 @@ For each non-React file with `data-action` literals:
 
 **Acceptance**: `ui/delegate.js` is no longer imported by `main.js`. The data-action attribute string disappears from `src/ui/**` and `src/render/**`.
 
-### Step 4.3 — `ui/delegate.js` deletion
+### Step 4.3 — Static shell listener migration and `ui/delegate.js` deletion
 
-After step 4.2, `delegate.js` is dead. Remove the import in `main.js` and delete the file. The `data-action` HTML5 contract becomes purely React-internal (used only by `MessageToolbar`, which step 4.1 already rewrote).
+Step 4.2 removes the `data-action` emitters from legacy-rendered UI, but the static shell in `index.html` still has its own controls. Migrate those controls in focused substeps before deleting the dispatcher: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, then the final delegate removal.
 
-**Acceptance**: `grep -r "data-action" src/` returns zero hits outside of `MessageToolbar.tsx` (which step 4.1 will have rewritten) and any test fixtures.
+**Acceptance**: after Step 4.3g, `ui/delegate.js` is no longer imported, the remaining static controls use direct listeners or React ownership, and `data-action` is absent from non-React source except for documented compatibility fixtures.
 
 ### Step 4.4 — `windowExports.js` audit
 
@@ -180,6 +180,33 @@ New files: `src/react/settings/{SettingsModal.tsx, settings.bridge.ts, types.ts,
 New files: `src/react/confirm/{ConfirmDialog.tsx, confirm.bridge.ts, types.ts, index.ts}`. Mount spec added to `src/react/lib/boot/specs.tsx`. The snapshot hash regenerated from `d0995e29f01587a8` → `69b6237ce92445fd` (the 4.5a–4.5c static markup removal netted `index.html` to 842 lines / 66 KB; `data-action` count is now ~146).
 
 **Verification**: `npm run lint` pass · `lint:eslint` 0 errors · `test:unit` 309/309 · `npm run build` pass · Playwright: `re-explain.spec.mjs` "cancelling the re-explain confirm" + `settings-modal.spec.mjs` (which exercises the legacy `addProvider` flow and the React settings overlay) both pass.
+
+### Step 4.3 rebaseline (2026-09-01)
+
+The original Step 4.3 estimate assumed that Step 4.2 would leave `ui/delegate.js` unused. The audit after 4.2 found that the static shell in `index.html` still contained 143 `data-action` attributes across roughly 40 actions, while `windowExports.js` still exposed about 100 `window.X = X` bindings. Step 4.3 is therefore split into independently reviewable substeps: Auth, display preferences, sidebar/navigation, composer/mode, workspace controls, modal backdrops, and finally delegate deletion.
+
+### Step 4.3a — DONE (2026-09-01)
+
+The static auth gate now owns its interactions through `mountAuthListeners()` in `src/auth/index.js`. The module mounts idempotent direct listeners (with a disposer) for auth tabs and roving keyboard navigation, view links, code-login controls, and all auth form submissions. The auth markup in `index.html` no longer emits auth `data-action`, `data-action-submit`, or `data-action-keydown` attributes, and the corresponding 14 registrations were removed from `ui/delegate.js`.
+
+| Surface | Change |
+|---|---|
+| Auth tabs | Direct click + keyboard listeners for `switchAuthTab` / `focusAuthTab` |
+| Auth links | Direct listeners for sign-in, register, forgot-password, verification, and code-login transitions |
+| Auth forms | Direct `submit` listeners for sign-in, register, resend, forgot-password, and reset-password |
+| Verification/code actions | Direct listeners for resend, send-code, login-with-code, and reset-success sign-in |
+
+Regression coverage: `e2e/auth-direct-handlers.spec.mjs` verifies the auth gate with zero auth `data-action` nodes, exercises the register/forgot/code flows, checks submit validation, and checks roving-tab keyboard behavior. The boot hash snapshot was regenerated for the new static attribute set; its remaining `data-action` floor now intentionally excludes the directly-mounted auth gate.
+
+**Verification**: `npm run lint` pass · `npm run lint:eslint` pass (pre-existing warnings only) · `npm run test:unit` pass · `npm run build` pass · focused Playwright smoke **11/11 passed** (`boot`, `auth-direct-handlers`, `inline-handlers`, `settings-modal`, `re-explain`).
+
+### Step 4.3b — DONE (2026-09-01)
+
+The display-preferences module now owns the static display controls through `mountDisplayPrefsListeners()`. It mounts direct listeners for the popover trigger, theme toggle, text-size and content-width segments, accent presets/custom color, grid toggle, and dark/light background pickers plus reset buttons. The corresponding display `data-action` / `data-action-input` attributes and 10 registrations were removed from `index.html` and `ui/delegate.js`; `windowExports.js` bindings remain intentionally available for the 4.4 bridge audit.
+
+`home-customization.spec.mjs` and `theme-system.spec.mjs` now target the stable `#displayPrefsBtn`. New coverage in `e2e/display-prefs-direct-handlers.spec.mjs` verifies that the display subtree has no delegated actions and exercises persistence for font, width, accent, grid, and both background modes, including reset paths and outside-click close behavior.
+
+**Verification**: `npm run lint` pass · `npm run lint:eslint` pass (pre-existing warnings only) · `npm run build` pass · focused Playwright smoke **10/10 passed** (`display-prefs-direct-handlers`, `home-customization`, `theme-system`, `boot`, `auth-direct-handlers`, `inline-handlers`).
 
 ### Step 4.2 — DONE (2026-09-01)
 

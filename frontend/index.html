@@ -113,29 +113,29 @@
     </div>
 
     <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Account access">
-      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin" data-action="switchAuthTab" data-action-arg="signin" data-action-keydown="focusAuthTab">Sign in</button>
-      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register" data-action="switchAuthTab" data-action-arg="register" data-action-keydown="focusAuthTab">Create account</button>
+      <button type="button" class="auth-tab active" id="authSigninTab" role="tab" aria-controls="authSigninView" aria-selected="true" tabindex="0" data-tab="signin">Sign in</button>
+      <button type="button" class="auth-tab" id="authRegisterTab" role="tab" aria-controls="authRegisterView" aria-selected="false" tabindex="-1" data-tab="register">Create account</button>
     </div>
 
     <div class="auth-views">
       <!-- Sign in -->
-      <form class="auth-view" id="authSigninView" data-action="submitAuthSignin" data-action-submit="true">
+      <form class="auth-view" id="authSigninView">
         <label class="auth-label" for="authSigninEmail">Email</label>
         <input class="auth-input" id="authSigninEmail" name="authSigninEmail" type="email" autocomplete="email" required placeholder="you@example.com">
         <label class="auth-label" for="authSigninPassword">Password</label>
         <input class="auth-input" id="authSigninPassword" name="authSigninPassword" type="password" autocomplete="current-password" required placeholder="••••••••">
-        <a class="auth-inline-link auth-inline-link-right" href="#" data-action="showAuthForgotPassword">Forgot password?</a>
+        <a class="auth-inline-link auth-inline-link-right" href="#">Forgot password?</a>
         <div class="auth-error" id="authSigninError"></div>
         <label class="auth-guest-label" for="authGuestCheckbox"><input type="checkbox" id="authGuestCheckbox" name="authGuestCheckbox"> Guest mode</label>
         <button class="auth-btn primary" id="authSigninBtn" type="submit">Sign in</button>
         <div class="auth-view-separator">or</div>
         <a class="auth-btn secondary auth-github-btn" id="authGithubBtn" href="/api/auth/oauth/github/start?return_to=/"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.92.58.1.79-.25.79-.56v-2.16c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.27 3.39.97.1-.76.4-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.28 1.2-3.09-.12-.3-.52-1.49.11-3.1 0 0 .98-.31 3.2 1.18a11.2 11.2 0 015.84 0c2.22-1.49 3.2-1.18 3.2-1.18.63 1.61.23 2.8.11 3.1.75.81 1.2 1.83 1.2 3.09 0 4.43-2.7 5.4-5.26 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>Continue with GitHub</a>
-        <a class="auth-inline-link auth-code-login-link" href="#" data-action="showAuthCodeLogin">Login with verification code</a>
-        <div class="auth-foot">No account? <a href="#" data-action="switchAuthTab" data-action-arg="register">Create one</a></div>
+        <a class="auth-inline-link auth-code-login-link" href="#">Login with verification code</a>
+        <div class="auth-foot">No account? <a href="#">Create one</a></div>
       </form>
 
       <!-- Register -->
-      <form class="auth-view hidden" id="authRegisterView" data-action="submitAuthRegister" data-action-submit="true">
+      <form class="auth-view hidden" id="authRegisterView">
         <p class="auth-lede">Sign up with your email. We'll send a verification link — no codes to memorize.</p>
         <label class="auth-label" for="authRegisterEmail">Email</label>
         <input class="auth-input" id="authRegisterEmail" name="authRegisterEmail" type="email" autocomplete="email" required placeholder="you@example.com">
@@ -143,7 +143,7 @@
         <input class="auth-input" id="authRegisterPassword" name="authRegisterPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
         <div class="auth-error" id="authRegisterError"></div>
         <button class="auth-btn primary" id="authRegisterBtn" type="submit">Send verification link</button>
-        <div class="auth-foot">Already verified? <a href="#" data-action="switchAuthTab" data-action-arg="signin">Sign in</a></div>
+        <div class="auth-foot">Already verified? <a href="#">Sign in</a></div>
       </form>
 
       <!-- Verify-sent -->
@@ -153,8 +153,8 @@
         </div>
         <h2 class="auth-title">Check your inbox</h2>
         <p class="auth-lede">We sent a verification link to <strong id="authVerifyEmail"></strong>. Click the button in the email to start learning with Socrates. The link expires in 24 hours.</p>
-        <button class="auth-btn secondary" data-action="resendVerification">Resend the link</button>
-        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Use a different email</a></div>
+        <button class="auth-btn secondary">Resend the link</button>
+        <div class="auth-foot"><a href="#">Use a different email</a></div>
       </div>
 
       <!-- Verify-failed -->
@@ -164,13 +164,13 @@
         </div>
         <h2 class="auth-title" id="authVerifyFailedTitle">This link is invalid or expired</h2>
         <p class="auth-lede" id="authVerifyFailedMsg">Verification links expire after 24 hours. Enter your email and we'll send a fresh one.</p>
-        <form data-action="resendVerification" data-action-submit="true">
+        <form>
           <label class="auth-label" for="authResendEmail">Email</label>
           <input class="auth-input" id="authResendEmail" name="authResendEmail" type="email" required placeholder="you@example.com">
           <div class="auth-error" id="authVerifyFailedError"></div>
           <button class="auth-btn primary" type="submit">Send a new link</button>
         </form>
-        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Back to sign in</a></div>
+        <div class="auth-foot"><a href="#">Back to sign in</a></div>
       </div>
 
       <!-- Verified-success transition (shown briefly after clicking the
@@ -184,8 +184,8 @@
       </div>
 
       <!-- Forgot-password (enter email to receive reset link) -->
-      <form class="auth-view hidden" id="authForgotPasswordView" data-action="submitAuthForgotPassword" data-action-submit="true">
-        <a class="auth-back-link" href="#" data-action="showAuthSignin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+      <form class="auth-view hidden" id="authForgotPasswordView">
+        <a class="auth-back-link" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
@@ -204,11 +204,11 @@
         </div>
         <h2 class="auth-title">Check your inbox</h2>
         <p class="auth-lede">If an account exists for <strong id="authForgotSentEmail"></strong>, we sent a password reset link. The link expires in 1 hour.</p>
-        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Back to sign in</a></div>
+        <div class="auth-foot"><a href="#">Back to sign in</a></div>
       </div>
 
       <!-- Reset-password (accessed via ?reset_token= URL param) -->
-      <form class="auth-view hidden" id="authResetPasswordView" data-action="submitAuthResetPassword" data-action-submit="true">
+      <form class="auth-view hidden" id="authResetPasswordView">
         <div class="auth-icon auth-icon-ok">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         </div>
@@ -236,12 +236,12 @@
         </div>
         <h2 class="auth-title">Password updated</h2>
         <p class="auth-lede">Your password has been reset successfully. Sign in with your new password.</p>
-        <button class="auth-btn primary" data-action="showAuthSignin">Sign in</button>
+        <button class="auth-btn primary">Sign in</button>
       </div>
 
       <!-- Code-login (email + verification code) -->
       <div class="auth-view hidden" id="authCodeLoginView">
-        <a class="auth-back-link" href="#" data-action="showAuthSignin"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
+        <a class="auth-back-link" href="#"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to sign in</a>
         <div class="auth-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 11v4"/><circle cx="12" cy="8" r=".5" fill="currentColor"/></svg>
         </div>
@@ -256,10 +256,10 @@
         </div>
         <div class="auth-error" id="authCodeError"></div>
         <label class="auth-guest-label" for="authCodeGuestCheckbox"><input type="checkbox" id="authCodeGuestCheckbox" name="authCodeGuestCheckbox"> Guest mode</label>
-        <button class="auth-btn primary" id="authCodeSendBtn" data-action="submitAuthSendCode">Send code</button>
-        <button class="auth-btn primary hidden" id="authCodeLoginBtn" data-action="submitAuthLoginWithCode">Log in</button>
-        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#" data-action="resendAuthCode">Resend code</a></div>
-        <div class="auth-foot"><a href="#" data-action="showAuthSignin">Back to sign in</a></div>
+        <button class="auth-btn primary" id="authCodeSendBtn" type="button">Send code</button>
+        <button class="auth-btn primary hidden" id="authCodeLoginBtn" type="button">Log in</button>
+        <div class="auth-foot hidden" id="authCodeResendWrap"><a href="#">Resend code</a></div>
+        <div class="auth-foot"><a href="#">Back to sign in</a></div>
       </div>
     </div>
   </div>
@@ -374,17 +374,17 @@
            class, so both paths style identically. -->
       <div class="user-row" id="sidebarUserRow"><div class="user-avatar">JH</div><div class="user-identity"><div class="user-name">Jiacheng Hu</div><div class="user-plan">Free plan</div></div></div>
       <div class="sidebar-footer-actions">
-        <button class="icon-btn theme-toggle" id="themeToggle" data-action="toggleTheme" data-action-arg="event" title="Toggle theme">
+        <button type="button" class="icon-btn theme-toggle" id="themeToggle" title="Toggle theme">
           <svg class="theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           <svg class="theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <button class="icon-btn" id="displayPrefsBtn" data-action="toggleDisplayPrefs" title="Display settings" aria-label="Display settings">
+        <button type="button" class="icon-btn" id="displayPrefsBtn" title="Display settings" aria-label="Display settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="6" x2="14" y2="6"/><line x1="10" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="16" y2="18"/><line x1="12" y1="18" x2="3" y2="18"/></svg>
         </button>
         <button class="icon-btn" data-action="openSettings" title="API Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <div class="display-prefs-popover hidden" id="displayPrefsPopover" data-action="__stop">
+        <div class="display-prefs-popover hidden" id="displayPrefsPopover">
           <div class="display-prefs-row">
             <div class="display-prefs-label">
               <span data-i18n-key="display.theme">Theme</span>
@@ -399,19 +399,19 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Text size</span><span class="value" id="displayPrefsFontLabel">M</span></div>
             <div class="display-prefs-segs" id="displayPrefsFontSegs">
-              <button class="display-prefs-seg" data-font="1">S</button>
-              <button class="display-prefs-seg" data-font="1.125">M</button>
-              <button class="display-prefs-seg" data-font="1.25">L</button>
-              <button class="display-prefs-seg" data-font="1.375">XL</button>
+              <button type="button" class="display-prefs-seg" data-font="1">S</button>
+              <button type="button" class="display-prefs-seg" data-font="1.125">M</button>
+              <button type="button" class="display-prefs-seg" data-font="1.25">L</button>
+              <button type="button" class="display-prefs-seg" data-font="1.375">XL</button>
             </div>
           </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Content width</span><span class="value" id="displayPrefsWidthLabel">M</span></div>
             <div class="display-prefs-segs" id="displayPrefsWidthSegs">
-              <button class="display-prefs-seg" data-width="0.85" title="Narrow">S</button>
-              <button class="display-prefs-seg" data-width="1" title="Medium">M</button>
-              <button class="display-prefs-seg" data-width="1.3" title="Wide">L</button>
-              <button class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
+              <button type="button" class="display-prefs-seg" data-width="0.85" title="Narrow">S</button>
+              <button type="button" class="display-prefs-seg" data-width="1" title="Medium">M</button>
+              <button type="button" class="display-prefs-seg" data-width="1.3" title="Wide">L</button>
+              <button type="button" class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
             </div>
           </div>
           <!-- Accent color picker — Ant Design ColorPicker-inspired.
@@ -420,21 +420,21 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label">
               <span>Accent color</span>
-              <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default" data-action="resetAccentColor">Reset</button>
+              <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default">Reset</button>
             </div>
             <div class="display-prefs-colors" id="displayAccentColors">
-              <button class="color-swatch" data-hue="35" title="Gold" data-action="setAccentColor" data-action-arg="35"></button>
-              <button class="color-swatch" data-hue="160" title="Teal" data-action="setAccentColor" data-action-arg="160"></button>
-              <button class="color-swatch" data-hue="210" title="Blue" data-action="setAccentColor" data-action-arg="210"></button>
-              <button class="color-swatch" data-hue="270" title="Purple" data-action="setAccentColor" data-action-arg="270"></button>
-              <button class="color-swatch" data-hue="330" title="Rose" data-action="setAccentColor" data-action-arg="330"></button>
-              <button class="color-swatch" data-hue="40" title="Amber (default)" data-action="setAccentColor" data-action-arg="40"></button>
+              <button type="button" class="color-swatch" data-hue="35" title="Gold"></button>
+              <button type="button" class="color-swatch" data-hue="160" title="Teal"></button>
+              <button type="button" class="color-swatch" data-hue="210" title="Blue"></button>
+              <button type="button" class="color-swatch" data-hue="270" title="Purple"></button>
+              <button type="button" class="color-swatch" data-hue="330" title="Rose"></button>
+              <button type="button" class="color-swatch" data-hue="40" title="Amber (default)"></button>
               <!-- Custom accent: a native color input styled as a swatch.
                    oninput fires every time the user drags in the picker,
                    so the UI updates live. The default value matches the
                    Amber preset so it doesn't start blank. -->
               <label class="color-swatch color-swatch-custom" id="accentCustomSwatch" title="Custom color">
-                <input type="color" id="accentCustomInput" value="#d99a2b" aria-label="Accent color" data-action-input="setAccentCustom" data-action-arg="value">
+                <input type="color" id="accentCustomInput" value="#d99a2b" aria-label="Accent color">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </label>
             </div>
@@ -442,7 +442,7 @@
           <!-- Grid background toggle -->
           <div class="display-prefs-row display-prefs-toggle-row">
             <div class="display-prefs-label"><span>Background grid</span></div>
-            <button class="grid-toggle" id="gridToggle" type="button" data-action="toggleGrid" title="Toggle background grid" aria-label="Toggle background grid">
+            <button class="grid-toggle" id="gridToggle" type="button" title="Toggle background grid" aria-label="Toggle background grid">
               <div class="toggle-knob"></div>
             </button>
           </div>
@@ -450,15 +450,15 @@
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Dark mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgDark" value="#212121" title="Dark mode page background" data-action-input="setBackgroundDark" data-action-arg="value">
-              <button class="display-prefs-bg-reset" data-action="resetBackgroundDark" title="Reset dark mode to theme default">↺</button>
+              <input type="color" id="displayPrefsBgDark" value="#212121" title="Dark mode page background">
+              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgDarkReset" title="Reset dark mode to theme default">↺</button>
             </div>
           </div>
           <div class="display-prefs-row">
             <div class="display-prefs-label"><span>Light mode BG</span></div>
             <div class="display-prefs-bg-picker">
-              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background" data-action-input="setBackgroundLight" data-action-arg="value">
-              <button class="display-prefs-bg-reset" data-action="resetBackgroundLight" title="Reset light mode to theme default">↺</button>
+              <input type="color" id="displayPrefsBgLight" value="#ffffff" title="Light mode page background">
+              <button type="button" class="display-prefs-bg-reset" id="displayPrefsBgLightReset" title="Reset light mode to theme default">↺</button>
             </div>
           </div>
         </div>

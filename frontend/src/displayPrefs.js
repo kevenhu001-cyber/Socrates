@@ -393,6 +393,80 @@ export function resetAccentColor() {
   setAccentColor(40);
 }
 
+/* The display-preferences popover is legacy markup, but it owns its own
+ * controls. Mounting the listeners here keeps theme/accent/background
+ * changes independent from the document-wide data-action dispatcher. */
+export function mountDisplayPrefsListeners(){
+  var popover=document.getElementById("displayPrefsPopover");
+  var button=document.getElementById("displayPrefsBtn");
+  if(!popover||!button||popover.dataset.displayPrefsListenersMounted==="1")return null;
+  popover.dataset.displayPrefsListenersMounted="1";
+  var cleanups=[];
+
+  function bind(el,type,handler){
+    if(!el)return;
+    el.addEventListener(type,handler);
+    cleanups.push(function(){el.removeEventListener(type,handler)});
+  }
+  function bindAll(selector,type,handler){
+    popover.querySelectorAll(selector).forEach(function(el){bind(el,type,handler)});
+  }
+
+  bind(button,"click",function(e){
+    e.preventDefault();
+    toggleDisplayPrefs();
+  });
+  bind(document.getElementById("themeToggle"),"click",function(e){
+    e.preventDefault();
+    toggleTheme();
+  });
+  /* Keep clicks inside the popover from reaching unrelated document
+     delegates. toggleDisplayPrefs()'s capture-phase outside listener still
+     sees the event first and explicitly ignores targets inside this host. */
+  bind(popover,"click",function(e){e.stopPropagation()});
+
+  bindAll("#displayPrefsFontSegs [data-font]","click",function(e){
+    setDisplayFont(parseFloat(e.currentTarget.dataset.font));
+  });
+  bindAll("#displayPrefsWidthSegs [data-width]","click",function(e){
+    setDisplayWidth(parseFloat(e.currentTarget.dataset.width));
+  });
+  bind(document.getElementById("accentResetBtn"),"click",function(e){
+    e.preventDefault();
+    resetAccentColor();
+  });
+  bindAll("#displayAccentColors .color-swatch[data-hue]","click",function(e){
+    e.preventDefault();
+    setAccentColor(e.currentTarget.dataset.hue);
+  });
+  bind(document.getElementById("accentCustomInput"),"input",function(e){
+    setAccentCustom(e.currentTarget.value);
+  });
+  bind(document.getElementById("gridToggle"),"click",function(e){
+    e.preventDefault();
+    toggleGrid();
+  });
+  bind(document.getElementById("displayPrefsBgDark"),"input",function(e){
+    setBackgroundDark(e.currentTarget.value);
+  });
+  bind(document.getElementById("displayPrefsBgDarkReset"),"click",function(e){
+    e.preventDefault();
+    resetBackgroundDark();
+  });
+  bind(document.getElementById("displayPrefsBgLight"),"input",function(e){
+    setBackgroundLight(e.currentTarget.value);
+  });
+  bind(document.getElementById("displayPrefsBgLightReset"),"click",function(e){
+    e.preventDefault();
+    resetBackgroundLight();
+  });
+
+  return function unmountDisplayPrefsListeners(){
+    cleanups.splice(0).forEach(function(cleanup){cleanup()});
+    if(popover.dataset.displayPrefsListenersMounted==="1")delete popover.dataset.displayPrefsListenersMounted;
+  };
+}
+
 /* ── popover ── */
 export function toggleDisplayPrefs() {
   var p = document.getElementById("displayPrefsPopover");
