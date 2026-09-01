@@ -1,4 +1,8 @@
-function getState() { return window.state; }
+import { stateStore } from '../state.js';
+
+function setLastCallError(value) {
+  stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
+}
 
 /* Parse a single-question JSON object from the model response.
    Returns the normalized question or null. Sets getState().lastCallError
@@ -16,7 +20,7 @@ export function parseOneDiagResponse(resp,index){
     raw=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
     var start=raw.indexOf("{"),end=raw.lastIndexOf("}");
     if(start<0||end<=start){
-      getState().lastCallError="Diag response had no JSON object";
+      setLastCallError("Diag response had no JSON object");
       return null;
     }
     var jsonStr=raw.slice(start,end+1);
@@ -32,7 +36,7 @@ export function parseOneDiagResponse(resp,index){
       if(!parsed)throw parseErr;
     }
     if(!parsed||typeof parsed.q!=="string"||!Array.isArray(parsed.opts)||parsed.opts.length<3){
-      getState().lastCallError="Diag response not a valid question object";
+      setLastCallError("Diag response not a valid question object");
       return null;
     }
     /* Pin nodeIdx to the question slot so each step maps to its
@@ -41,7 +45,7 @@ export function parseOneDiagResponse(resp,index){
     parsed.nodeIdx=index;
     return normalizeDiagQuestions([parsed])[0]||null;
   }catch(e){
-    getState().lastCallError="Diag JSON parse failed: "+(e&&e.message?e.message:String(e));
+    setLastCallError("Diag JSON parse failed: "+(e&&e.message?e.message:String(e));
     return null;
   }
 }

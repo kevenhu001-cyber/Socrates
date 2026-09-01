@@ -13,7 +13,7 @@
  *  - React subscribers use `useBridge(bridge)` directly.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type {
   AttachmentsBridge,
@@ -36,10 +36,9 @@ type Action = Omit<AttachmentsSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<AttachmentsSnapshot, Action>({
   initial: INITIAL,
-  reducer: (state, action) => ({
+  reducer: (_state, action) => ({
     ...action,
     attachments: Object.freeze([...action.attachments]),
-    revision: state.revision + 1,
   }),
 });
 
@@ -70,7 +69,7 @@ export function useAttachmentsSnapshot(): AttachmentsSnapshot {
 }
 
 export function useAttachments(): ReadonlyArray<AttachmentEntry> {
-  return useBridge(factoryBridge).attachments;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.attachments);
 }
 
 export function useAttachmentsRemove(): (id: string) => void {

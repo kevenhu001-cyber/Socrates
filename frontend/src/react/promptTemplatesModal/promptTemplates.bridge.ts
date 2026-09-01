@@ -22,7 +22,7 @@ type Action = Omit<PromptTemplatesSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<PromptTemplatesSnapshot, Action>({
   initial: { open: false, bodyHTML: '', revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: PromptTemplatesBridge = Object.assign(factoryBridge, {

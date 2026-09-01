@@ -1,4 +1,5 @@
 import { esc } from '../render/helpers.js';
+import { stateStore } from '../state.js';
 
 function getState() { return window.state; }
 function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
@@ -70,6 +71,15 @@ function renderKBDetailInner(node,idx){
 function wireKBDetailEvents(detail,idx){
   var node=getState().kbNodes[idx];
   if(!node)return;
+  function updateNode(patch){
+    var nodes=stateStore.read('kbNodes')||[];
+    var current=nodes[idx];
+    if(!current)return null;
+    var next=Object.assign({},current,patch);
+    stateStore.dispatch({type:'state/set',key:'kbNodes',value:nodes.map(function(item,index){return index===idx?next:item})});
+    node=next;
+    return next;
+  }
   /* "→ go" button. */
   var goBtn=detail.querySelector('[data-go]');
   if(goBtn){goBtn.onclick=function(e){e.stopPropagation();jumpToNode(idx)}}
@@ -78,7 +88,7 @@ function wireKBDetailEvents(detail,idx){
     btn.onclick=function(e){
       e.stopPropagation();
       var v=parseInt(btn.getAttribute("data-conf"),10);
-      node.confidence_score=(node.confidence_score===v)?0:v;
+      updateNode({confidence_score:(node.confidence_score===v)?0:v});
       detail.querySelectorAll('[data-conf]').forEach(function(b){
         var n=parseInt(b.getAttribute("data-conf"),10);
         b.classList.toggle("on",n<=node.confidence_score);
@@ -93,7 +103,7 @@ function wireKBDetailEvents(detail,idx){
     ta.oninput=function(){
       clearTimeout(debounceTimer);
       debounceTimer=setTimeout(function(){
-        node.user_note=ta.value;
+        updateNode({user_note:ta.value});
         saveCurrentSessionSafe();
       },500);
     };
@@ -102,9 +112,7 @@ function wireKBDetailEvents(detail,idx){
 }
 
 async function jumpToNode(idx){
-  getState().currentNode=idx;
-  getState().stuckCount=0;
-  getState().substantiveCount=0;
+  stateStore.dispatch({type:'state/batch',patch:{currentNode:idx,stuckCount:0,substantiveCount:0}});
   if (typeof window.askNextQuestion === "function") await window.askNextQuestion();
   saveCurrentSessionSafe();
 }

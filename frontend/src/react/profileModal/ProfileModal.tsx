@@ -325,8 +325,6 @@ export interface ProfileModalHandle {
 export function hydrateProfileModal(): ProfileModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (overlay.dataset.mountedBy === 'profile-modal') {
     throw new Error('Profile modal React runtime was initialized more than once.');
   }

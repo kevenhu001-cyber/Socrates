@@ -1,5 +1,6 @@
 import { apiFetch } from '../util/api.js';
 import { hasUsableActive } from '../config/providers.js';
+import { stateStore } from '../state.js';
 
 function getState() { return window.state; }
 
@@ -77,7 +78,7 @@ export function generateSessionTitle(){
          reset while the title generation was in-flight, and calling
          saveCurrentSession() would either resurrect the deleted
          session or attach a stale title to the wrong session. */
-      if(getState().session.currentSessionId)getState().sessionTitle=title;
+      if(getState().session.currentSessionId)stateStore.dispatch({type:'state/set',key:'sessionTitle',value:title});
       _titleGenRetryAfter=0;
       if (typeof window.saveCurrentSession === "function") window.saveCurrentSession();
     }

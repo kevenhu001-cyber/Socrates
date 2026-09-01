@@ -116,19 +116,13 @@ export interface SidebarNavHandle {
  * preserved (same id, same `aria-label`, same nav DOM siblings); React
  * owns only its direct children (the 7 buttons).
  *
- * Callers should set `data-react-migration-runtime="sidebar-nav"` on the
- * element before invoking this so the legacy `setActiveNav()` querySelector
- * still works on the React-owned buttons (or, in practice, the React
- * buttons re-publish the active state via the bridge and the legacy
- * querySelector becomes a harmless no-op when there are no `.sidebar-nav-btn`
- * matches in the document — except React renders them inside the same
- * element so the querySelector still hits them).
+ * Callers claim the element through `dataset.mountedBy`. The React buttons
+ * re-publish active state through the bridge, while legacy selectors keep
+ * working because the buttons remain inside the same host.
  */
 export function hydrateSidebarNav(): SidebarNavHandle | null {
   const nav = document.getElementById(NAV_ID);
   if (!nav) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (nav.dataset.mountedBy === 'sidebar-nav') {
     throw new Error('Sidebar nav React runtime was initialized more than once.');
   }

@@ -6,7 +6,7 @@
  * subscribers.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type { UsageBridge, UsageSnapshot } from './types';
 
@@ -20,7 +20,7 @@ type Action = Omit<UsageSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<UsageSnapshot, Action>({
   initial: { isOpen: false, bodyHtml: '', revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: UsageBridge = Object.assign(factoryBridge, {
@@ -50,7 +50,7 @@ export function useUsageSnapshot(): UsageSnapshot {
 }
 
 export function useIsUsageOpen(): boolean {
-  return useBridge(factoryBridge).isOpen;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
 export function useUsageDispatch(): { close: () => void } {

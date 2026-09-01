@@ -14,7 +14,7 @@
  *    bumps the revision and subscribers re-render.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridgeSelector } from '../../lib/bridge';
 import type { MessageListBridge } from './types';
 
 declare global {
@@ -29,7 +29,7 @@ interface MessageListState {
 
 const factoryBridge = createImmutableBridge<MessageListState, { type: 'notify' }>({
   initial: { revision: 0 },
-  reducer: (state) => ({ revision: state.revision + 1 }),
+  reducer: (state) => ({ ...state }),
 });
 
 const bridge: MessageListBridge = Object.assign(factoryBridge, {
@@ -51,5 +51,5 @@ export function subscribeToMessageList(listener: () => void): () => void {
 }
 
 export function useMessageListRevision(): number {
-  return useBridge(factoryBridge).revision;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.revision);
 }

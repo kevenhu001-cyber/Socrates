@@ -370,10 +370,12 @@ import {
   selectExamOpt,
   examNavJump, examNavStep,
   submitExam,
+  setExamAnswer,
   renderExamForm,
   refreshExamI18n,
 } from './exam.js';
 window.renderExamForm = renderExamForm;
+window.setExamAnswer = setExamAnswer;
 window.openExamPanel = openExamPanel;
 window.prepareExamView = prepareExamView;
 window.openExamModal = openExamModal;

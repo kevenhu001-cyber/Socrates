@@ -20,7 +20,7 @@ type Action = Omit<SettingsSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<SettingsSnapshot, Action>({
   initial: { open: false, bodyHTML: '', revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: SettingsBridge = Object.assign(factoryBridge, {

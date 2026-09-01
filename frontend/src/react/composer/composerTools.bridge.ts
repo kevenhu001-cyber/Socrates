@@ -8,7 +8,7 @@
  * `ComposerToolsMenu.tsx`.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type {
   ComposerMode,
@@ -34,7 +34,7 @@ type Action = Omit<ComposerToolsSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<ComposerToolsSnapshot, Action>({
   initial: HIDDEN,
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: ComposerToolsBridge = Object.assign(factoryBridge, {
@@ -64,7 +64,7 @@ export function useComposerToolsSnapshot(): ComposerToolsSnapshot {
 }
 
 export function useIsComposerToolsOpen(): boolean {
-  return useBridge(factoryBridge).isOpen;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
 function openMobileAttachmentPicker(

@@ -14,7 +14,7 @@
  *    `useSyncExternalStore` wrapper is gone.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type {
   CmdKBridge,
@@ -41,11 +41,10 @@ type Action = Omit<CmdKSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<CmdKSnapshot, Action>({
   initial: HIDDEN,
-  reducer: (state, action) => ({
+  reducer: (_state, action) => ({
     ...action,
     results: Object.freeze([...action.results]),
     recent: Object.freeze([...action.recent]),
-    revision: state.revision + 1,
   }),
 });
 
@@ -76,11 +75,11 @@ export function useCmdKSnapshot(): CmdKSnapshot {
 }
 
 export function useIsCmdKOpen(): boolean {
-  return useBridge(factoryBridge).isOpen;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
 export function useCmdKResults(): ReadonlyArray<CmdKHit> {
-  return useBridge(factoryBridge).results;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.results);
 }
 
 // ── command dispatch (legacy gateway) ───────────────────────────────────

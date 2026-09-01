@@ -1247,9 +1247,13 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     input?: unknown;
     executionId?: string;
   }): HTMLElement | null {
-    const message = activeMessage();
-    if (!message || !call || !call.name) return null;
+    if (!call || !call.name || !activeMessage()) return null;
+    /* onToolActivity may retire the live status through an immutable message
+     * update. Re-read the active entry afterwards so toolCalls never land on
+     * the superseded object captured before that update. */
     onToolActivity();
+    const message = activeMessage();
+    if (!message) return null;
     const requestedId = String(call.id || ('tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)));
     const existing = findEntry(message, requestedId);
     if (existing) {
@@ -1427,7 +1431,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   }
 
   function recordAgentStep(frame: AgentStepFrame): void {
-    const message = activeMessage();
+    let message = activeMessage();
     if (!message || !frame || !frame.stepId) return;
     const entry = agentEntryFor(message, String(frame.id || ''));
     if (!entry) {
@@ -1435,7 +1439,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       return;
     }
     onToolActivity();
-    if (frame.runId) entry.runId = String(frame.runId);
+    message = activeMessage();
+    const currentEntry = message ? agentEntryFor(message, String(frame.id || '')) : null;
+    if (!message || !currentEntry) return;
+    const liveEntry = currentEntry;
+    if (frame.runId) liveEntry.runId = String(frame.runId);
     /* Persisted shape: plain data only, keyed by stepId so the started and
        completed events collapse into one entry. */
     const stored: AgentStepData = {
@@ -1450,21 +1458,21 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       diffStat: frame.diffStat ?? null,
       output: frame.output ?? null,
     };
-    if (!Array.isArray(entry.steps)) entry.steps = [];
-    const existingIndex = entry.steps.findIndex((candidate) => candidate.stepId === stored.stepId);
-    if (existingIndex >= 0) entry.steps[existingIndex] = stored;
+    if (!Array.isArray(liveEntry.steps)) liveEntry.steps = [];
+    const existingIndex = liveEntry.steps.findIndex((candidate) => candidate.stepId === stored.stepId);
+    if (existingIndex >= 0) liveEntry.steps[existingIndex] = stored;
     /* Bounded, in reading order: a run that reports more than this keeps the
        steps the reader saw first, and the session route caps what persists. */
-    else if (entry.steps.length < 60) entry.steps.push(stored);
+    else if (liveEntry.steps.length < 60) liveEntry.steps.push(stored);
     notifyToolRun(message);
 
-    const host = ensureAgentRunHost(entry.id);
+    const host = ensureAgentRunHost(liveEntry.id);
     if (!host) return;
-    try { upsertAgentStep(host, stored, entry.runId || null); } catch (_) { /* presentation only */ }
+    try { upsertAgentStep(host, stored, liveEntry.runId || null); } catch (_) { /* presentation only */ }
   }
 
   function recordAgentPlan(frame: AgentPlanFrame): void {
-    const message = activeMessage();
+    let message = activeMessage();
     if (!message || !frame || !Array.isArray(frame.steps) || frame.steps.length === 0) return;
     const entry = agentEntryFor(message, String(frame.id || ''));
     if (!entry) {
@@ -1472,12 +1480,15 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       return;
     }
     onToolActivity();
-    if (frame.runId) entry.runId = String(frame.runId);
-    entry.plan = { steps: frame.steps.slice(0, 40), explanation: frame.explanation ?? null };
+    message = activeMessage();
+    const liveEntry = message ? agentEntryFor(message, String(frame.id || '')) : null;
+    if (!message || !liveEntry) return;
+    if (frame.runId) liveEntry.runId = String(frame.runId);
+    liveEntry.plan = { steps: frame.steps.slice(0, 40), explanation: frame.explanation ?? null };
     notifyToolRun(message);
-    const host = ensureAgentRunHost(entry.id);
+    const host = ensureAgentRunHost(liveEntry.id);
     if (!host) return;
-    try { upsertAgentPlan(host, entry.plan, entry.runId || null); } catch (_) { /* presentation only */ }
+    try { upsertAgentPlan(host, liveEntry.plan, liveEntry.runId || null); } catch (_) { /* presentation only */ }
   }
 
   /** Replay frames that arrived before their tool_use landed. */

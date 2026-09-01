@@ -5,7 +5,7 @@
  * `window.__socratesMorePopoverBridge.publish(...)`.
  */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
 import { getLegacyActions } from '../legacy/gateway';
 import type {
   MorePopoverAction,
@@ -23,7 +23,7 @@ type Action = Omit<MorePopoverSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<MorePopoverSnapshot, Action>({
   initial: { isOpen: false, revision: 0 },
-  reducer: (state, action) => ({ ...action, revision: state.revision + 1 }),
+  reducer: (_state, action) => action,
 });
 
 const bridge: MorePopoverBridge = Object.assign(factoryBridge, {
@@ -53,7 +53,7 @@ export function useMorePopoverSnapshot(): MorePopoverSnapshot {
 }
 
 export function useIsMorePopoverOpen(): boolean {
-  return useBridge(factoryBridge).isOpen;
+  return useBridgeSelector(factoryBridge, (snapshot) => snapshot.isOpen);
 }
 
 export function useMorePopoverDispatch(): { pick: (action: MorePopoverAction) => void } {

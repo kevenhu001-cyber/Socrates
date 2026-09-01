@@ -311,8 +311,6 @@ const LIST_ID = 'recentsList';
 export function mountSessionList(): void {
   const container = document.getElementById(LIST_ID);
   if (!container) return;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (container.dataset.mountedBy === 'session-list') return;
 
   installSessionListBridge();

@@ -6,6 +6,7 @@
 import { esc } from './render/helpers.js';
 import { formatMsg } from './render/markdown.js';
 import { callAPIStream } from './chat/stream.js';
+import { stateStore } from './state.js';
 
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
@@ -13,6 +14,12 @@ var _examDifficulty = "intermediate";
 var _examAnswerSaveTimer = null;
 var _examSaveInFlight = null;
 var _examSaveDirty = false;
+
+export function setExamAnswer(index, value) {
+  var answers = Object.assign({}, stateStore.read('examAnswers') || {});
+  answers[index] = value;
+  stateStore.dispatch({ type: 'state/set', key: 'examAnswers', value: answers });
+}
 
 /* ── helpers ── */
 function _examBody() { return document.getElementById("examViewBody"); }
@@ -68,7 +75,7 @@ export function prepareExamView() {
     var el = document.getElementById(id);
     if (el) el.classList.add("hidden");
   });
-  window.state._examInView = true;
+  stateStore.dispatch({type:'state/set',key:'_examInView',value:true});
   if (!window.state._examScrollBound) {
     var cont = document.getElementById("examViewBody");
     if (cont) {
@@ -82,7 +89,7 @@ export function prepareExamView() {
         if (window.state._examInView) syncExamNav();
       });
     }
-    window.state._examScrollBound = true;
+    stateStore.dispatch({type:'state/set',key:'_examScrollBound',value:true});
   }
 }
 
@@ -106,9 +113,9 @@ export function closeExamView() {
      state itself (questions / answers / topic) is preserved — closing
      the view is not the same as discarding the exam; resetState()
      handles the latter and is called from resetApp(). */
-  window.state.examCancel = true;
-  window.state._examInView = false;
-  window.state.examReadOnly = false;
+  stateStore.dispatch({type:'state/batch',patch:{
+    examCancel:true,_examInView:false,examReadOnly:false
+  }});
   try { restoreExamActiveProvider() } catch (_) { }
   /* Decide what to reveal behind the exam panel. Mirrors the
      chat/tutor pattern: if a session is open, go back to chatView;
@@ -152,10 +159,9 @@ export function renderExamForm() {
   _setExamTitle(window._currentLang === "zh" ? "生成考卷" : "Generate Exam");
   var meta = document.getElementById("examViewMeta");
   if (meta) meta.textContent = "";
-  window.state.examCancel = false;
-  window.state.examQuestions = [];
-  window.state.examAnswers = {};
-  window.state.examSubmitted = false;
+  stateStore.dispatch({type:'state/batch',patch:{
+    examCancel:false,examQuestions:[],examAnswers:{},examSubmitted:false
+  }});
   _examSelectedTypes = { mc: true, fb: true, sa: false };
   _examDifficulty = "intermediate";
   var L = function (en, zh) { return window._currentLang === "zh" ? zh : en };
@@ -383,17 +389,19 @@ export function startExamGeneration() {
   if (!types.length) { types = ["multiple-choice", "fill-blank", "short-answer"]; }
   var typeStr = types.join(", ");
   var lang = detectExamLang(topic);
-  window.state.examCancel = false;
-  window.state.examQuestions = [];
-  window.state.examAnswers = {};
-  window.state.examSubmitted = false;
-  window.state.examTopic = topic;
-  window.state.examCount = count;
-  window.state.examLang = lang;
-  window.state.examDifficulty = difficulty;
-  window.state.examInstructions = instructions;
-  window.state.examTypes = types.slice();
-  window.state._examPrevActiveId = window.apiConfig.activeId;
+  stateStore.dispatch({type:'state/batch',patch:{
+    examCancel:false,
+    examQuestions:[],
+    examAnswers:{},
+    examSubmitted:false,
+    examTopic:topic,
+    examCount:count,
+    examLang:lang,
+    examDifficulty:difficulty,
+    examInstructions:instructions,
+    examTypes:types.slice(),
+    _examPrevActiveId:window.apiConfig.activeId
+  }});
   if (chosenModel && Array.isArray(window.apiConfig.providers)) {
     var chosenProv = window.apiConfig.providers.find(function (p) { return p && p.id === chosenModel; });
     if (chosenProv) {
@@ -437,11 +445,11 @@ function restoreExamActiveProvider() {
       try { window.apiFetch("/api/api-key/" + encodeURIComponent(prev), { method: "PATCH", body: { isActive: true } }).catch(function () { }) } catch (_) { }
     }
   }
-  window.state._examPrevActiveId = null;
+  stateStore.dispatch({type:'state/set',key:'_examPrevActiveId',value:null});
 }
 
 export function cancelExamGeneration() {
-  window.state.examCancel = true;
+  stateStore.dispatch({type:'state/set',key:'examCancel',value:true});
   restoreExamActiveProvider();
   var body = _examBody();
   body.innerHTML = '<div class="exam-empty">' + (_examUiL("Generation cancelled", "已取消出题") + '.</div>');
@@ -544,7 +552,10 @@ async function generateAllQuestions(topic, count, difficulty, typeStr, instructi
   restoreExamActiveProvider();
   if (window.state.examCancel) return;
   questions.forEach(function (q) {
-    window.state.examQuestions.push(q);
+    stateStore.dispatch({
+      type:'state/set',key:'examQuestions',
+      value:window.state.examQuestions.concat([q])
+    });
   });
   if (window.state.examQuestions.length === 0) {
     failExam(_examUiL("Generation failed — no questions", "生成失败：没有成功生成任何题目"));
@@ -660,9 +671,9 @@ export function paintQuestionCard(idx, q, container) {
     });
     html += '</div>';
   } else if (q.type === "fill-blank") {
-    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" oninput="window.state.examAnswers[' + idx + ']=this.value;refreshExamNavTally();scheduleExamAnswerSave()">';
+    html += '<input class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" value="' + esc(savedAnswer == null ? "" : savedAnswer) + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" oninput="setExamAnswer(' + idx + ',this.value);refreshExamNavTally();scheduleExamAnswerSave()">';
   } else if (q.type === "short-answer") {
-    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" oninput="window.state.examAnswers[' + idx + ']=this.value;refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
+    html += '<textarea class="exam-q-fill-input" data-eidx="' + idx + '" name="examAnswer' + idx + '" aria-label="' + _examUiL("Answer for question ", "第 ") + (idx + 1) + _examUiL("", " 题答案") + '" placeholder="' + _examUiL("Type your answer…", "输入你的答案…") + '" rows="3" oninput="setExamAnswer(' + idx + ',this.value);refreshExamNavTally();scheduleExamAnswerSave()" style="min-height:80px;resize:vertical">' + esc(savedAnswer == null ? "" : savedAnswer) + '</textarea>';
   }
   container.innerHTML = html;
 }
@@ -679,7 +690,10 @@ export function appendExamErrorCard(i, msg) {
   ph.className = "exam-q-card";
   ph.id = "examQ" + i;
   ph.innerHTML = '<div class="exam-q-num">' + _examUiL("Question", "题目") + ' ' + (i + 1) + ' — <span class="exam-result-wrong">' + _examUiL("Failed", "生成失败") + '</span></div><div class="exam-q-text" style="color:hsl(0 60% 55%)">' + esc(msg) + '</div>';
-  window.state.examQuestions.push({ q: "[failed]", type: "error", explanation: "", _idx: i });
+  stateStore.dispatch({
+    type:'state/set',key:'examQuestions',
+    value:window.state.examQuestions.concat([{ q:"[failed]",type:"error",explanation:"",_idx:i }])
+  });
   var cont = document.getElementById("examQuestionsContainer");
   if (cont) cont.appendChild(ph);
   renderExamNav();
@@ -687,7 +701,7 @@ export function appendExamErrorCard(i, msg) {
 
 export function selectExamOpt(qidx, oidx) {
   if (window.state.examSubmitted) return;
-  window.state.examAnswers[qidx] = oidx;
+  setExamAnswer(qidx,oidx);
   var btns = document.querySelectorAll('.exam-q-opt[data-eidx="' + qidx + '"]');
   btns.forEach(function (b, i) { b.classList.toggle("selected", i === oidx); });
   renderExamNav();
@@ -848,7 +862,7 @@ export function submitExam() {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
-  window.state.examSubmitted = true;
+  stateStore.dispatch({type:'state/set',key:'examSubmitted',value:true});
   saveExamSession();
   renderExamResults();
 }
@@ -904,7 +918,7 @@ function doSaveExamSession() {
   _examSaveInFlight = window.apiFetch("/api/sessions", { method: "POST", body: body })
     .then(function (r) {
       if (r && r.id) {
-        window.state.currentSessionId = r.id;
+        stateStore.dispatch({type:'state/set',key:'currentSessionId',value:r.id});
         try { window.pushExamIdToURL(r.id) } catch (_) { }
       }
       return window.refreshServerSessions().then(function () {

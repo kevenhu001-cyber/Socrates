@@ -12,11 +12,13 @@
  *     LAST_ACTIVE_ID_KEY
  */
 
+import { stateStore } from '../state.js';
+
 function confirmClearCache() {
   window.showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
     try { localStorage.removeItem("socrates-sessions-v2"); } catch { /* ignore */ }
-    window.state.currentSessionId = null;
+    stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
     window.renderRecents();
     window.resetApp();
     location.reload();

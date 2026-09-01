@@ -46,7 +46,9 @@ export function StartButton() {
 }
 
 export function SendButton() {
-  return useChatStreamStatus() === 'streaming'
+  const streamStatus = useChatStreamStatus();
+  const isActive = useButtonActive('sendBtn');
+  return streamStatus === 'streaming'
     ? <StopSquareIcon />
-    : useButtonActive('sendBtn') ? <SendArrowIcon /> : <VoiceIcon />;
+    : isActive ? <SendArrowIcon /> : <VoiceIcon />;
 }

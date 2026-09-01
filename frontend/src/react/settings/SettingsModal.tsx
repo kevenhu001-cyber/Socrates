@@ -69,8 +69,6 @@ export function mountSettingsModal(): void {
     document.body.appendChild(container);
   }
 
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (container.dataset.mountedBy === 'settings-modal') return;
   container.dataset.mountedBy = 'settings-modal';
 

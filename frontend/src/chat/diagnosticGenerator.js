@@ -1,5 +1,6 @@
 import { callAPI } from './api.js';
 import { parseOneDiagResponse } from './diagnosticParser.js';
+import { stateStore } from '../state.js';
 
 const MAX_TOKENS_DIAG = 8000;
 /* U-H3 — shorter total-timeout for the FIRST diagnostic question so a
@@ -73,7 +74,7 @@ export async function generateDiagnosticQuestions(topic,language,onProgress,shou
     var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
     var resp=await callAPI(msgs,MAX_TOKENS_DIAG,i===0?DIAG_FIRST_TIMEOUT_MS:undefined);
     if(!resp){
-      if(!getState().lastCallError)getState().lastCallError="Diag call returned empty response";
+      if(!getState().lastCallError)stateStore.dispatch({type:'state/set',key:'lastCallError',value:"Diag call returned empty response"});
       break;
     }
     var q=parseOneDiagResponse(resp,i);

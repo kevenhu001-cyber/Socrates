@@ -182,8 +182,6 @@ export interface ShareModalHandle {
 export function hydrateShareModal(): ShareModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (overlay.dataset.mountedBy === 'share-modal') {
     throw new Error('Share modal React runtime was initialized more than once.');
   }

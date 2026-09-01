@@ -168,8 +168,6 @@ export interface RecentsChipsHandle {
 export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
   const target = document.getElementById(TARGET_ID);
   if (!target) return null;
-  /* M2 sentinel: replaced the legacy `data-react-migration-runtime`
-     attribute with `dataset.mountedBy`. */
   if (target.dataset.mountedBy === 'recents-filter-chips') {
     throw new Error('Recents filter chips React runtime was initialized more than once.');
   }

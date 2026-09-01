@@ -7,12 +7,17 @@
    window globals + ~750 lines of streaming state). */
 
 import { apiFetchRaw } from '../util/api.js';
+import { stateStore } from '../state.js';
 import {
   AI_MAX_ATTEMPTS,
   AI_MAX_RETRIES,
   isUserAbort,
   waitForAIRetry,
 } from './retryPolicy.ts';
+
+function setLastCallError(value) {
+  stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: value });
+}
 
 function makeAIError(message, status, body) {
   var error = new Error(String(message || 'model request failed'));
@@ -129,8 +134,8 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
   var state=window.state;
   var getActiveProvider=window.getActiveProvider;
   var retryOptions=Object.assign({},options||{}, { source:'probe' });
-  if(!getActiveProvider()){state.lastCallError="no provider";return null}
-  state.lastCallError=null;
+  if(!getActiveProvider()){setLastCallError("no provider");return null}
+  setLastCallError(null);
   var maxAttempts=(retryOptions.maxRetries==null?AI_MAX_RETRIES:Math.max(0,retryOptions.maxRetries))+1;
   var effectiveTimeout=timeoutMs||15000;
   var lastErr=null;
@@ -224,11 +229,11 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
     }catch(e){
       lastErr=e;
       if(isUserAbort(e,retryOptions.signal)||isUserAbort(e,ac.signal)){
-        state.lastCallError='request cancelled';
+        setLastCallError('request cancelled');
         return null;
       }
       if(!semanticActivity&&await waitForRetry(attempt,e,retryOptions))continue;
-      state.lastCallError=errorMessage(e,'probe request failed');
+      setLastCallError(errorMessage(e,'probe request failed'));
       return null;
     }finally{
       clearTimeout(tmo);
@@ -236,7 +241,7 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
       try{if(reader)await reader.cancel()}catch(_){}
     }
   }
-  state.lastCallError=errorMessage(lastErr,'probe request failed');
+  setLastCallError(errorMessage(lastErr,'probe request failed'));
   return null;
 }
 
@@ -265,10 +270,10 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
 
   var provider=getActiveProvider();
   if(!provider){
-    state.lastCallError="no provider";
+    setLastCallError("no provider");
     return null; /* fall back to mock */
   }
-  state.lastCallError=null;
+  setLastCallError(null);
   /* Built-in identity + custom-instructions prepending is handled centrally
     inside buildChatRequestBody, so the built-in branch here only has to
     deal with the direct MiniMax API hop (the proxy can't route to it). */
@@ -322,9 +327,9 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
           try{beagleBody=JSON.parse(respText)}catch(_){}
           lastBeagleErr=makeAIError(resp.status+" "+(respText||"").slice(0,200),resp.status,beagleBody);
           var beagleQuota=monthlyLimitMessage(lastBeagleErr);
-          if(beagleQuota){state.lastCallError=beagleQuota;return null;}
+          if(beagleQuota){setLastCallError(beagleQuota);return null;}
           if(await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;
-          state.lastCallError=errorMessage(lastBeagleErr,'Beagle request failed');
+          setLastCallError(errorMessage(lastBeagleErr,'Beagle request failed'));
           return null;
         }
         var json=null;
@@ -332,7 +337,7 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
         if(!json||!json.choices||!json.choices[0]||!json.choices[0].message||typeof json.choices[0].message.content!=='string'){
           lastBeagleErr=makeAIError("malformed response");
           if(await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;
-          state.lastCallError=errorMessage(lastBeagleErr,'malformed response');
+          setLastCallError(errorMessage(lastBeagleErr,'malformed response'));
           return null;
         }
         return json.choices[0].message.content;
@@ -351,17 +356,17 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
       lastBeagleErr.code=e&&e.code;
       lastBeagleErr.reason=wdReason;
       var caughtBeagleQuota=monthlyLimitMessage(lastBeagleErr);
-      if(caughtBeagleQuota){state.lastCallError=caughtBeagleQuota;return null;}
+      if(caughtBeagleQuota){setLastCallError(caughtBeagleQuota);return null;}
       var userCancelled=isUserAbort(e,retryOptions.signal)
           ||wdReason==="user-stop"||wdReason==="user_stop";
         if(!userCancelled&&await waitForRetry(beagleAttempt,lastBeagleErr,retryOptions))continue;
-        state.lastCallError=errorMessage(lastBeagleErr,'Beagle request failed');
+        setLastCallError(errorMessage(lastBeagleErr,'Beagle request failed'));
         return null;
       }finally{
         unbindBeagle();
       }
     }
-    state.lastCallError=lastBeagleErr||"Beagle non-stream request failed";
+    setLastCallError(lastBeagleErr||"Beagle non-stream request failed");
     return null;
   }
   /* Non-built-in provider: same retry logic, same timeouts. */
@@ -379,7 +384,7 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
       if(!resp||typeof resp.content!=="string"){
         lastNsErr=makeAIError("malformed response");
         if(await waitForRetry(nsAttempt,lastNsErr,retryOptions))continue;
-        state.lastCallError=errorMessage(lastNsErr,'malformed response');
+        setLastCallError(errorMessage(lastNsErr,'malformed response'));
         return null;
       }
       return resp.content;
@@ -399,17 +404,17 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
       lastNsErr.code=e&&e.code;
       lastNsErr.reason=wdReasonN;
       var caughtNsQuota=monthlyLimitMessage(lastNsErr);
-      if(caughtNsQuota){state.lastCallError=caughtNsQuota;return null;}
+      if(caughtNsQuota){setLastCallError(caughtNsQuota);return null;}
       var userCancelledN=isUserAbort(e,retryOptions.signal)
         ||wdReasonN==="user-stop"||wdReasonN==="user_stop";
       if(!userCancelledN&&await waitForRetry(nsAttempt,lastNsErr,retryOptions))continue;
       console.error("[API] call failed:",e);
-      state.lastCallError=errorMessage(lastNsErr,'non-stream request failed');
+      setLastCallError(errorMessage(lastNsErr,'non-stream request failed'));
       return null;
     }finally{
       unbindNonBuiltin();
     }
   }
-  state.lastCallError=errorMessage(lastNsErr,'non-stream request failed');
+  setLastCallError(errorMessage(lastNsErr,'non-stream request failed'));
   return null;
 }
