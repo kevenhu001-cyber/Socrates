@@ -68,7 +68,7 @@ export function beginAgentTextStream(){
     if(finished)return;
     lastRenderAt=performance.now();
     var sc=list||scrollContainer();
-    var wasPinned=!!sc&&(!window.state||!window.state._userScrolledAway)&&
+    var wasPinned=!!sc&&(!window.stateStore.read("_userScrolledAway"))&&
       sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96;
     try{
       var parts=splitStreamingMarkdown(full);
@@ -89,7 +89,7 @@ export function beginAgentTextStream(){
     }
     /* P_scroll-race — re-check user intent in case a passive wheel/touch
        event moved the viewport between the wasPinned measurement and now. */
-    if(wasPinned&&sc&&(!window.state||!window.state._userScrolledAway)){
+    if(wasPinned&&sc&&(!window.stateStore.read("_userScrolledAway"))){
       sc.scrollTop=sc.scrollHeight;
     }
   }
@@ -118,7 +118,7 @@ export function beginAgentTextStream(){
       clearTimeout(firstDeltaTimer);
       cancelScheduled();
       var sc=list||scrollContainer();
-      var wasPinned=!!sc&&(!window.state||!window.state._userScrolledAway)&&
+      var wasPinned=!!sc&&(!window.stateStore.read("_userScrolledAway"))&&
         sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96;
       try{body.innerHTML=formatMsg(full)}catch(_){body.innerHTML='<p>'+esc(full)+'</p>'}
       body.classList.remove("stream-content");
@@ -134,7 +134,7 @@ export function beginAgentTextStream(){
          updates (formatMsg, hljs, Mermaid, viz) above. A passive
          wheel/touch event may have scrolled the viewport since the
          wasPinned measurement. */
-      if(wasPinned&&sc&&(!window.state||!window.state._userScrolledAway)){
+      if(wasPinned&&sc&&(!window.stateStore.read("_userScrolledAway"))){
         sc.scrollTop=sc.scrollHeight;
       }
     }

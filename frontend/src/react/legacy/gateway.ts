@@ -82,24 +82,12 @@ export function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
-// ─── Legacy state snapshot access ────────────────────────────────────────────
+// ─── Temporary global cache access ───────────────────────────────────────────
 
-/**
- * Read a snapshot of the legacy global state object (window.state).
- * Returns undefined if the state has not been initialized.
- */
-export function getLegacyState<T = Record<string, unknown>>(): T | undefined {
-  return (window as any).state as T | undefined;
-}
-
-/**
- * Read a specific value from the legacy global state with a fallback.
- */
-export function getLegacyStateValue<K extends string, V = unknown>(
+export function getLegacyGlobalValue<K extends string, V = unknown>(
   key: K,
   fallback: V,
 ): V {
-  const s = (window as any).state;
-  if (s && key in s) return s[key] as V;
+  if (key in (window as any)) return (window as any)[key] as V;
   return fallback;
 }

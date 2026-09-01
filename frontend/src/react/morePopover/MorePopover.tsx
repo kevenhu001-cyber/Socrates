@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
@@ -101,7 +102,7 @@ export interface MorePopoverHandle {
 export function hydrateMorePopover(): MorePopoverHandle | null {
   const popover = document.getElementById(POPOVER_ID);
   if (!popover) return null;
-  if (popover.dataset.mountedBy === 'more-popover') {
+  if (hostIsMountedBy(popover, 'more-popover')) {
     throw new Error('More popover React runtime was initialized more than once.');
   }
 
@@ -109,13 +110,13 @@ export function hydrateMorePopover(): MorePopoverHandle | null {
 
   const root = createRoot(popover);
   root.render(<MorePopover />);
-  popover.dataset.mountedBy = 'more-popover';
+  markHostMountedBy(popover, 'more-popover');
   return {
     popover,
     root,
     destroy: () => {
       root.unmount();
-      delete popover.dataset.mountedBy;
+      clearHostMounted(popover);
     },
   };
 }

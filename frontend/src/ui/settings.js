@@ -161,7 +161,7 @@ function renderProviderList() {
     html += '<div class="provider-fields">';
     html += '<input class="settings-input" data-field="label" placeholder="' + esc(t("provider.placeholderLabel") || "Label") + '" value="' + esc(p.label || "") + '">';
     html += '<input class="settings-input" data-field="url" placeholder="' + esc(t("provider.placeholderUrl") || "Base URL") + '" value="' + esc(p.url || "") + '">';
-    html += '<form style="display:contents" onsubmit="return false"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" data-field="key" type="password" autocomplete="new-password" placeholder="' + keyPlaceholder + '" value="' + keyValue + '"></form>';
+    html += '<form style="display:contents"><input type="text" name="username" autocomplete="username" style="display:none" aria-hidden="true"><input class="settings-input" data-field="key" type="password" autocomplete="new-password" placeholder="' + keyPlaceholder + '" value="' + keyValue + '"></form>';
     html += '<input class="settings-input" data-field="model" placeholder="' + esc(t("provider.placeholderModel") || "Model ID") + '" value="' + esc(p.model || "") + '">';
     html += '<label class="provider-multimodal" title="' + esc(t("provider.multimodalHint") || "") + '">'
        + '<input type="checkbox" data-field="vision"'
@@ -194,6 +194,7 @@ function _bindProviderListEvents(cont) {
   cont.addEventListener("input", _onProviderListInput);
   cont.addEventListener("change", _onProviderListChange);
   cont.addEventListener("focusin", _onProviderListFocusIn);
+  cont.addEventListener("submit", function(event){event.preventDefault()});
   _providerListBound = true;
 }
 

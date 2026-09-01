@@ -2,7 +2,7 @@
  * Three chat-formatting helpers extracted from main.js region 13.
  */
 
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
 /* Detect a tool envelope in the model's response. Returns:
       null — not a tool call

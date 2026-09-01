@@ -1,7 +1,7 @@
 /* chat/lang.ts — Wave 0a of main-js-split plan.
  * Pure functions for language detection and language-specific system-message
  * directives. Extracted from main.js region 7 (L2725-2867) verbatim.
- * No mutation, no DOM, no state.js reads. Only consumer is askChatTurn.
+ * No mutation, no DOM, no state/store.js reads. Only consumer is askChatTurn.
  */
 
 /* Detect user language from input text. Returns one of: zh, ja, ko, ru, ar, en.

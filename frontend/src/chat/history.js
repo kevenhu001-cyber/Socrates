@@ -1,7 +1,5 @@
 import { loadLocalMemory } from '../storage/localMemory.js';
 
-function getState() { return window.state; }
-
 var HISTORY_MAX_TURNS=30;      /* user+assistant pairs to keep (increased for longer context) */
 var HISTORY_MAX_CHARS=2000;    /* per-message truncation ceiling (increased from 500) */
 
@@ -53,27 +51,27 @@ export function buildUserContentParts(rawText, attachments){
 
 export function extractHistory(){
   /* P1.1 — three-tier source-of-truth, preferred in order:
-     1. getState().messages.rawText (authoritative, in-memory, never
+     1. window.stateStore.read("messages").rawText (authoritative, in-memory, never
        re-rendered, never has half-streamed text)
      2. localStorage mirror (good for cross-tab / post-reload)
      3. live DOM (legacy fallback — only used when neither 1 nor 2
        is available, e.g. a session that was loaded from the server
        but the in-memory list hasn't been hydrated yet) */
-  if(Array.isArray(getState().messages)&&getState().messages.length){
+  if(Array.isArray(window.stateStore.read("messages"))&&window.stateStore.read("messages").length){
     var maxTurns=HISTORY_MAX_TURNS*2;
-    var tooMany=getState().messages.length>maxTurns;
+    var tooMany=window.stateStore.read("messages").length>maxTurns;
     var summary=null;
     if(tooMany){
       /* Compress the overflow messages into a summary prefix. */
-      var overflow=getState().messages.slice(0,getState().messages.length-maxTurns);
+      var overflow=window.stateStore.read("messages").slice(0,window.stateStore.read("messages").length-maxTurns);
       summary=compressMessages(overflow);
     }
     var out=[];
     if(summary){
       out.push({role:"system",content:"[Conversation summary of earlier messages]: "+summary});
     }
-    for(var i=Math.max(0,getState().messages.length-maxTurns);i<getState().messages.length;i++){
-      var m=getState().messages[i];
+    for(var i=Math.max(0,window.stateStore.read("messages").length-maxTurns);i<window.stateStore.read("messages").length;i++){
+      var m=window.stateStore.read("messages")[i];
       if(!m||!m.rawText)continue;
       var txt=String(m.rawText).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       /* P_regen-empty-stream — strip embedded <think>…</think> blocks
@@ -142,7 +140,7 @@ export function extractHistory(){
      shared key that may contain stale messages from a previous
      session — reading it would inject wrong history into the LLM
      context ("会话串台"). */
-  var sid=getState().currentSessionId;
+  var sid=window.stateStore.read("currentSessionId");
   if(!sid)return[];
   var rec=loadLocalMemory(sid);
   if(rec&&rec.messages&&rec.messages.length){

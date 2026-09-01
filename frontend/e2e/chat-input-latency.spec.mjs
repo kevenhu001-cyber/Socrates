@@ -77,11 +77,11 @@ async function bootChat(page) {
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '10101010-1010-4101-8101-101010101010';
-    window.state.phase = 'chat';
-    window.state.topic = 'Input latency during streaming';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-latency', role: 'user', rawText: 'Keep me responsive', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Input latency during streaming' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-latency', role: 'user', rawText: 'Keep me responsive', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     // Kick off a turn; the held stub keeps it streaming.

@@ -45,7 +45,7 @@ export function renderDiagResultsScreen(state, isZh){
   html+='</div>';
 
   html+='<div class="diag-results-actions">';
-  html+='<button class="diag-results-continue" onclick="proceedToTeaching()">'+(isZh?"开始系统学习":"Start Systematic Learning")+'</button>';
+  html+='<button class="diag-results-continue" data-diag-command="proceed">'+(isZh?"开始系统学习":"Start Systematic Learning")+'</button>';
   html+='</div>';
   html+='</div>';
 

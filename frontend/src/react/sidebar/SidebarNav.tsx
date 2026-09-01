@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getLegacyActions, t as _t } from '../legacy/gateway';
@@ -116,14 +117,14 @@ export interface SidebarNavHandle {
  * preserved (same id, same `aria-label`, same nav DOM siblings); React
  * owns only its direct children (the 7 buttons).
  *
- * Callers claim the element through `dataset.mountedBy`. The React buttons
- * re-publish active state through the bridge, while legacy selectors keep
- * working because the buttons remain inside the same host.
+ * Callers claim the element through the module-private ownership registry.
+ * The React buttons re-publish active state through the bridge, while legacy
+ * selectors keep working because the buttons remain inside the same host.
  */
 export function hydrateSidebarNav(): SidebarNavHandle | null {
   const nav = document.getElementById(NAV_ID);
   if (!nav) return null;
-  if (nav.dataset.mountedBy === 'sidebar-nav') {
+  if (hostIsMountedBy(nav, 'sidebar-nav')) {
     throw new Error('Sidebar nav React runtime was initialized more than once.');
   }
 
@@ -131,13 +132,13 @@ export function hydrateSidebarNav(): SidebarNavHandle | null {
 
   const root = createRoot(nav);
   root.render(<SidebarNav />);
-  nav.dataset.mountedBy = 'sidebar-nav';
+  markHostMountedBy(nav, 'sidebar-nav');
   return {
     nav,
     root,
     destroy: () => {
       root.unmount();
-      delete nav.dataset.mountedBy;
+      clearHostMounted(nav);
     },
   };
 }

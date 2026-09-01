@@ -17,17 +17,14 @@ test('message list renders user messages through React', async ({ page }) => {
     document.getElementById('chatView')?.classList.remove('hidden');
   });
 
-  await expect(page.locator('#msgList')).toHaveAttribute(
-    'data-mounted-by',
-    'msg-list',
-  );
+  await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
 
   await page.evaluate(() => {
     const bridge = window.__socratesReactChatBridge;
     if (!bridge) throw new Error('React chat runtime bridge was not installed');
-    window.state.phase = 'chat';
-    window.state.currentSessionId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'msg-list-spec' });
     window.addMessage('user', 'Hello from the message-list compat spec.');
   });
@@ -60,9 +57,9 @@ test('message list renders assistant messages with toolbar and model label', asy
   await page.evaluate(() => {
     const bridge = window.__socratesReactChatBridge;
     if (!bridge) throw new Error('bridge missing');
-    window.state.phase = 'chat';
-    window.state.currentSessionId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'msg-list-assistant' });
     /* Replicate the same finalize step addStreamingMessage → finish()
        takes (body.innerHTML gets set, html is computed via
@@ -101,9 +98,9 @@ test('message list snapshots react to message-added events', async ({ page }) =>
   await page.evaluate(() => {
     const bridge = window.__socratesReactChatBridge;
     if (!bridge) throw new Error('bridge missing');
-    window.state.phase = 'chat';
-    window.state.currentSessionId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'msg-list-bridge-2' });
   });
 
@@ -134,9 +131,9 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
     window.showToast = showToastMock;
     if (window.__socratesLegacy?.messages) window.__socratesLegacy.messages.showToast = showToastMock;
     const bridge = window.__socratesReactChatBridge;
-    window.state.phase = 'chat';
-    window.state.currentSessionId = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'ffffffff-ffff-4fff-8fff-ffffffffffff' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'msg-list-copy' });
     window.addMessage('user', 'copy me please');
   });
@@ -179,9 +176,9 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
       window.__socratesLegacy.messages.sendFeedback = feedbackMock;
     }
     const bridge = window.__socratesReactChatBridge;
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '11111111-1111-4111-8111-111111111111';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'msg-list-toolbar-actions' });
     window.addMessage('user', 'edit and delete me');
   });
@@ -230,9 +227,9 @@ test('streaming bubble is removed at finish and React renders the finalized entr
     document.getElementById('topicSetup')?.classList.add('hidden');
     document.getElementById('chatView')?.classList.remove('hidden');
     const bridge = window.__socratesReactChatBridge;
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '22222222-2222-4222-8222-222222222222';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'msg-list-stream-handoff' });
     window.addMessage('user', 'kick off a stream');
   });

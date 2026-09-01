@@ -9,10 +9,7 @@
 // read by addStreamingMessage (in main.js) to decide whether to auto
 // snap-to-bottom.
 import { scrollContainer } from './scroll.js';
-// state is exposed on window by state.js (line 220: window.state = state).
-// Import the side-effect module so the Proxy is registered before this
-// module's wireScrollPill() runs.
-import { state, stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
 const SCROLL_SLACK = 64;   /* pixels from bottom considered "pinned" */
 
@@ -53,7 +50,7 @@ export function wireScrollPill(){
 
   function releasePin(){
     upIntentAt = Date.now();
-    if(!state._userScrolledAway){
+    if(!stateStore.read('_userScrolledAway')){
       stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:true});
     }
   }
@@ -111,7 +108,7 @@ export function wireScrollPill(){
       if(Date.now() - upIntentAt < UP_INTENT_GUARD_MS) return;
       stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});
       hideNewReplyPill();
-    } else if(!state._userScrolledAway){
+    } else if(!stateStore.read('_userScrolledAway')){
       /* Only an upward position change means the reader left the latest
          answer. Composer growth, keyboard avoidance, and late rich-content
          layout all reduce the visible viewport without changing scrollTop;

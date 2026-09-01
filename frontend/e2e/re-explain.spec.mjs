@@ -20,9 +20,9 @@ async function bootChat(page, streamBodies) {
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.state.phase = 'chat';
-    window.state.topic = 'Branch repro';
-    window.state.currentSessionId = '55555555-5555-4555-8555-555555555555';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Branch repro' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.addMessage('user', 'Explain how derivatives work.');

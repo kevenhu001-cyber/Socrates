@@ -33,10 +33,10 @@ test('exam UI follows language changes without losing form values or answers', a
   await expect(page.locator('#examInstructions')).toHaveValue('Focus on eigenvalues');
 
   await page.evaluate(() => {
-    window.state.examQuestions = [
+    window.stateStore.dispatch({ type: "state/set", key: "examQuestions", value: [
       { type: 'fill-blank', q: 'A matrix with a nonzero determinant is ____.' },
-    ];
-    window.state.examAnswers = { 0: 'invertible' };
+    ] });
+    window.stateStore.dispatch({ type: "state/set", key: "examAnswers", value: { 0: 'invertible' } });
     document.getElementById('examViewBody').innerHTML = '';
     window.refreshExamI18n();
   });

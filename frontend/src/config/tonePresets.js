@@ -132,11 +132,15 @@ function renderTonePresets() {
   container.innerHTML = presets.map(function (p) {
     var label = lang === "zh" ? (p.labelZh || p.label) : p.label;
     var desc = lang === "zh" ? (p.descriptionZh || p.description) : p.description;
-    return '<button class="tone-preset-btn' + (p.id === _currentTone ? ' active' : '') + '" data-tone="' + p.id + '" onclick="window.setTonePreset(\'' + p.id + '\')">' +
+    return '<button class="tone-preset-btn' + (p.id === _currentTone ? ' active' : '') + '" data-tone="' + p.id + '">' +
       '<span class="tone-preset-label">' + label + '</span>' +
       '<span class="tone-preset-desc">' + desc + '</span>' +
       '</button>';
   }).join("");
+  container.onclick = function (event) {
+    var button = event.target.closest && event.target.closest('.tone-preset-btn[data-tone]');
+    if (button && container.contains(button)) setTonePreset(button.dataset.tone);
+  };
 }
 
 /* Export for window bridge. */

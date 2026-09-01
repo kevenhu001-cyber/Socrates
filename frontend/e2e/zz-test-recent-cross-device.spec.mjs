@@ -70,7 +70,7 @@ test('Recent list renders sessions whose projectId is unknown to the local PROJE
       recentsHTML: (document.getElementById('recentsList') || {}).innerHTML || '',
       serverSessionsLen: (window.SERVER_SESSIONS || []).length,
       projectsLen: (window.PROJECTS || []).length,
-      activeProjectFilter: window.state && window.state.session && window.state.session.activeProjectFilter,
+      activeProjectFilter: window.stateStore.read("activeProjectFilter"),
       recentsFilter: window.getRecentsFilter && window.getRecentsFilter(),
     };
   });

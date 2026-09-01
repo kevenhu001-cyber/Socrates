@@ -19,6 +19,7 @@ function createHarness() {
     mistakeFilter: 'all',
   };
   const stateStore = {
+    read(key) { return state[key]; },
     dispatch(action) {
       // Minimal shim for the M3 flat-namespace facade. The MistakeBook
       // only ever writes `mistakes`, so we can mirror that onto `state`.
@@ -31,7 +32,6 @@ function createHarness() {
     },
   };
   const runtime = createMistakeBook({
-    state,
     stateStore,
     apiFetch(path, request) {
       calls.push({ path, request });

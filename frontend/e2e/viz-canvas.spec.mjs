@@ -58,9 +58,9 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
   });
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '22222222-2222-4222-8222-222222222222';
-    window.state.messages = [{ clientId: 'user-2', role: 'user', rawText: 'render a canvas', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-2', role: 'user', rawText: 'render a canvas', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('render a canvas');
@@ -160,9 +160,9 @@ test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => 
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '88888888-8888-4888-8888-888888888888';
-    window.state.messages = [{ clientId: 'user-8', role: 'user', rawText: 'render fullscreen canvas', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-8', role: 'user', rawText: 'render fullscreen canvas', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('render fullscreen canvas');
@@ -209,9 +209,9 @@ test('viz card surfaces a synchronous script failure instead of claiming readine
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '44444444-4444-4444-8444-444444444444';
-    window.state.messages = [{ clientId: 'user-4', role: 'user', rawText: 'broken canvas', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '44444444-4444-4444-8444-444444444444' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-4', role: 'user', rawText: 'broken canvas', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('broken canvas');
@@ -237,9 +237,9 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '33333333-3333-4333-8333-333333333333';
-    window.state.messages = [{ clientId: 'user-3', role: 'user', rawText: 'plot sin', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-3', role: 'user', rawText: 'plot sin', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('plot sin');
@@ -280,9 +280,9 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '55555555-5555-4555-8555-555555555555';
-    window.state.messages = [{ clientId: 'user-5', role: 'user', rawText: 'draw ready', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-5', role: 'user', rawText: 'draw ready', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('draw ready');

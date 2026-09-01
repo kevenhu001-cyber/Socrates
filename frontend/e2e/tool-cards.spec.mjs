@@ -57,9 +57,9 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '11111111-1111-4111-8111-111111111111';
-    window.state.messages = [{ clientId: 'user-1', role: 'user', rawText: 'Run the tools', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-1', role: 'user', rawText: 'Run the tools', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Run the tools');
@@ -102,11 +102,11 @@ test('tool activity lands at the call site without splitting a sentence', async 
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     const sessionId = '11111111-1111-4111-8111-111111111111';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-boundary', role: 'user', rawText: 'Check it', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-boundary', role: 'user', rawText: 'Check it', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Check it');
@@ -187,10 +187,10 @@ test('live chat shows a Searching label while the model is searching', async ({ 
 
   await page.evaluate(() => {
     const sessionId = '22222222-2222-4222-8222-222222222222';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-2', role: 'user', rawText: 'Look something up', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-2', role: 'user', rawText: 'Look something up', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.__searchTurnPromise = window.askChatTurn('Look something up');
@@ -251,10 +251,10 @@ test('code execution switches from executing to data analysis without thinking o
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '55555555-5555-4555-8555-555555555555';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-code', role: 'user', rawText: 'Run code', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-code', role: 'user', rawText: 'Run code', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.__codeTurnPromise = window.askChatTurn('Run code');
@@ -289,13 +289,13 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   await page.evaluate(async () => {
     const sessionId = '33333333-3333-4333-8333-333333333333';
     window.setAppMode?.('tutor');
-    window.state.phase = 'chat';
-    window.state.topic = 'Tutor tools';
-    window.state.domain = 'Tutor tools';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.currentNode = 0;
-    window.state.kbNodes = [{ name: 'Evidence', status: 'blank', questions: 0 }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Tutor tools' });
+    window.stateStore.dispatch({ type: "state/set", key: "domain", value: 'Tutor tools' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentNode", value: 0 });
+    window.stateStore.dispatch({ type: "state/set", key: "kbNodes", value: [{ name: 'Evidence', status: 'blank', questions: 0 }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askNextQuestion();
@@ -335,10 +335,10 @@ test('live chat shows only the latest tool card during a burst but persists ever
 
   await page.evaluate(async () => {
     const sessionId = '44444444-4444-4444-8444-444444444444';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-burst', role: 'user', rawText: 'Run three tools', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-burst', role: 'user', rawText: 'Run three tools', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Run three tools');
@@ -351,7 +351,7 @@ test('live chat shows only the latest tool card during a burst but persists ever
      baked-HTML implementation. Stage 2 removes that baking; the assertions
      below hold either way.) The single-card slot stays presentation-only. */
   const finalized = await page.evaluate(() => {
-    const last = window.state.messages[window.state.messages.length - 1];
+    const last = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
     const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
     return { ids: calls.map((t) => t.id), offsets: calls.map((t) => t.textOffset) };
   });
@@ -382,10 +382,10 @@ test('consecutive same-category tools aggregate under one collapsible header', a
 
   await page.evaluate(async () => {
     const sessionId = '66666666-6666-4666-8666-666666666666';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-group', role: 'user', rawText: 'Search twice', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-group', role: 'user', rawText: 'Search twice', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Search twice');
@@ -423,7 +423,7 @@ test('consecutive same-category tools aggregate under one collapsible header', a
   /* Same split-point contract as the burst test above: the merged row is a
      rendering decision, the persistence is one record per call. */
   const groupCalls = await page.evaluate(() => {
-    const last = window.state.messages[window.state.messages.length - 1];
+    const last = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
     const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
     return { ids: calls.map((t) => t.id), offsets: calls.map((t) => t.textOffset) };
   });
@@ -451,10 +451,10 @@ test('a failed member marks the grouped run and keeps its own error detail', asy
 
   await page.evaluate(async () => {
     const sessionId = '77777777-7777-4777-8777-777777777777';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-fail', role: 'user', rawText: 'Search', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-fail', role: 'user', rawText: 'Search', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Search');

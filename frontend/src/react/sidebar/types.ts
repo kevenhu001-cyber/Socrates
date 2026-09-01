@@ -1,7 +1,7 @@
 /**
  * Shared contracts for the sidebar React migration boundary.
  *
- * The legacy state lives in `window.state.session.activeProjectFilter`
+ * The legacy state lives in `window.stateStore.read("activeProjectFilter")`
  * (read via `getRecentsFilter()`) and in the `.active` class on
  * `.sidebar-nav-btn[data-nav]` (managed by `setActiveNav()`). Both are
  * mirrored here as typed snapshots over dedicated bridges.

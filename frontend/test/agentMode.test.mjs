@@ -16,9 +16,7 @@ test('chat requests never carry a manual agent-mode flag', async () => {
   const { buildChatRequestBody } = await import('../src/chat/api.js');
   window.appMode = 'chat';
 
-  window.state = { agentMode: false };
   assert.equal(buildChatRequestBody([{ role: 'user', content: 'hi' }], 100, 0.7).agentMode, undefined);
-  window.state = { agentMode: true };
   const body = buildChatRequestBody([{ role: 'user', content: 'hi' }], 100, 0.7);
   assert.equal(body.agentMode, undefined);
   assert.equal(body.mode, 'chat');

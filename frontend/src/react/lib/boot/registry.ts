@@ -12,9 +12,8 @@
  *    scrolling through every block.
  *  - M2 collapses all of that into a flat array of mount specs. The
  *    spec describes the host id, the mount function, and a label so
- *    `runMountRegistry` can mount the component and tag the host
- *    with `dataset.mountedBy = label` (M2's replacement for the
- *    old migration sentinel).
+ *    `runMountRegistry` can mount the component and record ownership
+ *    outside the DOM.
  *
  * Surface area
  *  - `MountSpec` is `{ hostId, label, mount, ensureHost? }`. The
@@ -26,14 +25,13 @@
  *    each entry, recording which specs mounted and which were skipped
  *    (host missing, already mounted).
  *
- * Mount sentinel semantics
- *  - The registry owns `host.dataset.mountedBy` as the canonical
- *    "React is mounted here" marker. Mount functions may set the same
- *    value themselves; the registry normalizes it after a successful mount.
- *  - `main.js`'s `reactOwnsMsgList()` (now `reactOwnsHost(label)`)
- *    reads `host.dataset.mountedBy` to decide whether the legacy
- *    pipeline may own the DOM underneath.
+ * Ownership semantics
+ *  - The registry records mounted hosts in a module-private WeakMap.
+ *  - Legacy code uses explicit module APIs for the few remaining ownership
+ *    decisions, rather than inspecting migration attributes in the DOM.
  */
+
+import { hostIsMounted, hostIsMountedBy as ownsHost, markHostMountedBy as markOwnership } from './ownership.ts';
 
 export type EnsureHostFn = (document: Document) => HTMLElement | null;
 
@@ -47,10 +45,9 @@ export interface MountSpec {
   /** DOM id the React root mounts into. Required. */
   hostId: string;
   /**
-   * Stable label used to set `host.dataset.mountedBy`. A label may be
+   * Stable ownership label. A label may be
    * shared by equivalent hosts (for example both composer roots). It is what
-   * `main.js`'s `reactOwnsHost(label)` checks, so it must match the
-   * legacy ownership label verbatim.
+   * shared by equivalent roots.
    */
   label: string;
   /**
@@ -86,7 +83,7 @@ export function runMountRegistry(document: Document): MountRegistryResult {
       skipped.push(spec);
       continue;
     }
-    if (host.dataset.mountedBy) {
+    if (hostIsMounted(host)) {
       skipped.push(spec);
       continue;
     }
@@ -95,7 +92,7 @@ export function runMountRegistry(document: Document): MountRegistryResult {
       skipped.push(spec);
       continue;
     }
-    markHostMountedBy(host, spec.label);
+    if (spec.label !== 'msg-list') markHostMountedBy(host, spec.label);
     mounted.push(spec);
   }
 
@@ -113,17 +110,14 @@ export function hostIsMountedBy(
   label: string,
 ): boolean {
   const host = document.getElementById(hostId);
-  return !!host && host.dataset.mountedBy === label;
+  return ownsHost(host, label);
 }
 
 /**
- * Tag a host element as mounted by the given label. Mount functions
- * call this once they're committed; legacy code (e.g. test teardown,
- * inline handlers) can use it to read whether React is the owner of
- * a DOM subtree.
+ * Record that a host element is mounted by the given label.
  */
 export function markHostMountedBy(host: HTMLElement, label: string): void {
-  host.dataset.mountedBy = label;
+  markOwnership(host, label);
 }
 
 /**

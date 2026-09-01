@@ -12,7 +12,7 @@
  *     LAST_ACTIVE_ID_KEY
  */
 
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
 function confirmClearCache() {
   window.showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {

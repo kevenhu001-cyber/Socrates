@@ -1930,7 +1930,7 @@ function applyI18n(){
      doesn't revert them to the wrong mode's text.
      P_tutor-leak — appMode is a top-level `var` in main.js and is
      mirrored onto `window.appMode` at boot (see main.js:13243). It is
-     NOT a field on `window.state` (state.js has no `appMode`), so
+     NOT a field on `window.state` (state/store.js has no `appMode`), so
      reading `window.state.appMode` was always undefined and we fell
      back to "tutor" — silently flipping a chat-mode user into tutor
      copy on every language toggle. Read the real global and default
@@ -1969,7 +1969,7 @@ function applyI18n(){
   /* Exam content is generated dynamically, so static data-i18n scanning
      cannot update it. Repaint its UI chrome while preserving form values,
      generated questions and answers. */
-  if(window.state&&window.state._examInView&&typeof window.refreshExamI18n==="function"){
+  if(window.stateStore.read("_examInView")&&typeof window.refreshExamI18n==="function"){
     try{window.refreshExamI18n()}catch(_){}
   }
   /* P_chatgpt-landing — the reasoning-effort trigger label (高/中/低) is

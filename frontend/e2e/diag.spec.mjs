@@ -8,13 +8,13 @@ test('diag', async ({ page }) => {
   await waitForAppShell(page);
   await page.waitForTimeout(400);
   await page.evaluate(() => {
-    window.state.phase='chat';
-    window.state.topic='Diag';
-    window.state.currentSessionId='33333333-3333-4333-8333-333333333333';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Diag' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     for(let i=0;i<20;i++)window.addMessage(i%2?'assistant':'user','Msg '+(i+1)+': long enough text to wrap lines so it scrolls.');
-    window.state._userScrolledAway=false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
   });
   for (const vp of [[1280,800,'desktop'],[390,844,'mobile']]) {
     await page.setViewportSize({ width: vp[0], height: vp[1] });

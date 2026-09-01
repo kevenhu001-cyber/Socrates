@@ -1,5 +1,5 @@
 import { toggleMorePopover } from "./morePopover.js";
-import { stateStore } from "../state.js";
+import { stateStore } from "../state/store.js";
 
 /* React migration bridge — publishes scheduled task state so the React
    compatibility root can render the page. Installed by
@@ -436,7 +436,7 @@ async function renderPlugins() {
   /* #pluginsList is React-owned (WorkspacePage) — never write its DOM
      here; fetch, update the cache, and publish through the bridge. */
   try {
-    var projectId = (window.state && window.state.currentProjectId) || null;
+    var projectId = window.stateStore.read("currentProjectId") || null;
     var res = await api("/api/project-connectors").catch(function () { return {}; });
     var mcp = await api("/api/agent-mcp" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")).catch(function () { return { enabled: false, configured: false, servers: [] }; });
     workspaceCache.connectors = (res && res.connectors) || [];
@@ -462,7 +462,7 @@ function paintPlugins() {
 
 window.toggleCodexMcp = async function (key, enabled) {
   try {
-    var projectId = workspaceCache.mcpProjectId || (window.state && window.state.currentProjectId) || null;
+    var projectId = workspaceCache.mcpProjectId || window.stateStore.read("currentProjectId") || null;
     await api("/api/agent-mcp/" + encodeURIComponent(key), { method: "PATCH", body: { enabled: !!enabled, projectId: projectId || null } });
     await renderPlugins();
     toast(enabled ? "Codex tool enabled" : "Codex tool disabled");
@@ -471,7 +471,7 @@ window.toggleCodexMcp = async function (key, enabled) {
 
 window.checkCodexMcpHealth = async function (key) {
   try {
-    var projectId = workspaceCache.mcpProjectId || (window.state && window.state.currentProjectId) || null;
+    var projectId = workspaceCache.mcpProjectId || window.stateStore.read("currentProjectId") || null;
     await api("/api/agent-mcp/" + encodeURIComponent(key) + "/health", { method: "POST", body: { projectId: projectId || null } });
     await renderPlugins();
   } catch (error) { toast((error && error.message) || "Could not check MCP server"); }
@@ -646,7 +646,7 @@ window.openAgentRunDetails = async function (runId) {
 };
 window.openProjectWorkspace = function (id) { var project = workspaceCache.projects.filter(function (item) { return item.id === id; })[0]; if (!project) return; showDialog('<div class="workspace-dialog-title"><div><h2>' + esc(project.name) + '</h2><p>' + esc(project.description || t("dialog.project.defaultDesc", "A focused place for related work.")) + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div class="project-workspace-actions"><button class="workspace-primary" onclick="startProjectChat(\'' + esc(id) + '\')">' + t("dialog.project.newChat", "New chat in project") + '</button><button class="workspace-secondary" onclick="moveCurrentChatToProject(\'' + esc(id) + '\')">' + t("dialog.project.moveCurrent", "Move current chat here") + '</button></div><p class="workspace-note">' + t("dialog.project.note", "Project instructions are saved with the project. Files and chats remain available as shared context for future work.") + '</p><div id="projectRunHistory" class="project-run-history"></div>'); renderProjectRunHistory(id); };
 window.startProjectChat = async function (id) { window._nextProjectId = id; window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; closeWorkspaceDialog(); if (typeof window.resetApp === "function") await window.resetApp(); };
-window.moveCurrentChatToProject = async function (id) { var state = window.state; if (!state) return; stateStore.dispatch({ type: "state/set", key: "currentProjectId", value: id }); window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; var sessionId = state.currentSessionId; try { if (sessionId) await api("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: id } }); closeWorkspaceDialog(); toast(t("toast.chatMoved", "Current chat moved to project")); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); } catch (_) { toast(t("toast.chatMoveFailed", "Could not move the current chat")); } };
+window.moveCurrentChatToProject = async function (id) { stateStore.dispatch({ type: "state/set", key: "currentProjectId", value: id }); window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; var sessionId = stateStore.read("currentSessionId"); try { if (sessionId) await api("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: id } }); closeWorkspaceDialog(); toast(t("toast.chatMoved", "Current chat moved to project")); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); } catch (_) { toast(t("toast.chatMoveFailed", "Could not move the current chat")); } };
 
 window.openCreateScheduledTask = function () { openAgentTaskForm(null); };
 window.openEditScheduledTask = function (id) { openAgentTaskForm(workspaceCache.tasks.filter(function (task) { return task.id === id; })[0] || null); };
@@ -663,7 +663,7 @@ function toLocalDateTimeValue(value) {
 function openAgentTaskForm(task) {
   var editing = !!task;
   var next = task && task.nextRunAt ? toLocalDateTimeValue(task.nextRunAt) : "";
-  var activeProjectId = (task && task.projectId) || (window.state && window.state.currentProjectId) || "";
+  var activeProjectId = (task && task.projectId) || window.stateStore.read("currentProjectId") || "";
   var projectOptions = '<option value="">' + esc(t("dialog.task.noProject", "No project")) + '</option>';
   (workspaceCache.projects || []).forEach(function (project) { projectOptions += '<option value="' + esc(project.id) + '">' + esc(project.name) + '</option>'; });
   showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.agent", "Agent") + '</span><select name="agentKind"><option value="native">' + t("dialog.task.nativeAgent", "Socrates · native tools") + '</option><option value="codex">' + t("dialog.task.codexAgent", "Codex · project workspace") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.project", "Project") + '</span><select name="projectId">' + projectOptions + '</select></label></div><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.codexNote", "Codex scheduled runs share the selected project workspace. Read-only work runs unattended; file changes, commands, and network side effects pause for approval.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : '') + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + '</button></div></form>');

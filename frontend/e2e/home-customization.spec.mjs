@@ -55,9 +55,9 @@ test('light conversation is readable and find opens at the upper right', async (
     document.getElementById('topicSetup')?.classList.add('hidden');
     document.getElementById('chatView')?.classList.remove('hidden');
     document.getElementById('findBtn')?.classList.remove('hidden');
-    window.state.phase = 'chat';
-    window.state.topic = 'Readability check';
-    window.state.currentSessionId = 'light-conversation-test';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Readability check' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'light-conversation-test' });
     window.addMessage('user', 'Hello');
     window.addMessage('assistant', 'A readable answer with strong contrast.');
     window.syncConversationActive?.();

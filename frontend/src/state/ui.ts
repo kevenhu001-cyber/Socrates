@@ -1,7 +1,3 @@
-export const UI_FLAT_KEYS = [
-  '_userScrolledAway', '_examInView', '_canvasPendingId',
-] as const;
-
 export function createInitialUiState() {
   return {
     _userScrolledAway: false,

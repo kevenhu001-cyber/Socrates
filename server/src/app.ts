@@ -11,6 +11,10 @@ import { searchLimiter, fetchLimiter, clientErrorLimiter } from './middleware/ra
 import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions.js';
+/* P_suggestions-ai — landing-page starter prompts, derived from the
+   user's recent sessions via the LLM. Mounted before /api/chat so its
+   /api/suggestions/* paths are not claimed by the chat router. */
+import suggestionsRouter from './routes/suggestions.js';
 import chatRouter from './routes/chat.js';
 import apiKeyRouter from './routes/apiKeys.js';
 import shareRouter from './routes/share.js';
@@ -481,6 +485,11 @@ app.use('/api/auth', authRouter);
 
 // Sessions (Phase 2)
 app.use('/api/sessions', sessionRouter);
+
+// P_suggestions-ai — landing-page starter prompts, derived from the
+// user's recent sessions via the LLM. Mounted before /api/chat so its
+// /api/suggestions/* paths are not claimed by the chat router.
+app.use('/api/suggestions', suggestionsRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);

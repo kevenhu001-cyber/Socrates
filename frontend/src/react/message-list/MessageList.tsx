@@ -6,6 +6,7 @@ import {
   subscribeToChatRuntime,
 } from '../chatRuntime.bridge';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { stateStore } from '../../state/store.js';
 import { MessageItem } from './MessageItem';
 import type { LegacyChatMessage } from '../types/domain';
 
@@ -73,10 +74,7 @@ function MessageList() {
   // finalization, history restore) never move the viewport: the page must
   // stay exactly where it is when an answer finishes.
   useLayoutEffect(() => {
-    const w = window as unknown as {
-      state?: { _userScrolledAway?: boolean };
-    };
-    if (w.state?._userScrolledAway) return;
+    if (stateStore.read('_userScrolledAway')) return;
     const list = document.getElementById(MSG_LIST_ID);
     if (!list) return;
     const last = items.length ? items[items.length - 1] : null;
@@ -108,6 +106,12 @@ function MessageList() {
   );
 }
 
+let messageListMounted = false;
+
+export function isMsgListMounted(): boolean {
+  return messageListMounted;
+}
+
 /**
  * Mounts the React message list into the existing `#msgList` element.
  *
@@ -127,18 +131,17 @@ function MessageList() {
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
   if (!container) return { root: null };
-  /* main.js's `reactOwnsMsgList()` reads the same ownership flag. */
-  if (container.dataset.mountedBy === 'msg-list') return { root: null };
+  if (messageListMounted) return { root: null };
   // The read-only share view renders #msgList itself; never mount over it.
   if (window.__socratesShareMsgListTakeover) return { root: null };
 
   const root = createRoot(container);
   root.render(<ErrorBoundary><MessageList /></ErrorBoundary>);
-  container.dataset.mountedBy = 'msg-list';
+  messageListMounted = true;
 
   window.__socratesReleaseMsgListReact = () => {
     try { root.unmount(); } catch (_) { /* already unmounted */ }
-    delete container.dataset.mountedBy;
+    messageListMounted = false;
     delete window.__socratesReleaseMsgListReact;
   };
 

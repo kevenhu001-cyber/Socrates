@@ -4,8 +4,7 @@ function chip(label, val, isActive, icon) {
   var safeVal = val == null ? "all" : val;
   var iconHtml = icon ? '<span class="recents-filter-chip-icon">' + icon + '</span>' : '';
   return '<button class="recents-filter-chip-btn' + (isActive ? " active" : "") +
-    '" data-filter="' + esc(safeVal) +
-    '" onclick="onRecentsFilterChipClick(\'' + esc(safeVal) + '\')">' +
+    '" data-filter="' + esc(safeVal) + '">' +
     iconHtml + esc(label) + '</button>';
 }
 

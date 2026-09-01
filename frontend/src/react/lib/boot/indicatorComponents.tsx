@@ -1,6 +1,5 @@
 /**
- * Indicator components — small React roots the legacy pipeline reads
- * through `host.dataset.mountedBy`.
+ * Indicator components — small React roots registered by the boot registry.
  *
  * These render only the parts of the legacy shell that needed
  * declarative state; the rest stays in legacy markup. Extracted out

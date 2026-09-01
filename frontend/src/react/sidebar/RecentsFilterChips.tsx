@@ -1,7 +1,8 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsHelpers.js';
-import { getLegacyStateValue, t } from '../legacy/gateway';
+import { getLegacyGlobalValue, t } from '../legacy/gateway';
 import {
   useRecentsFilter,
   useRecentsFilterCommands,
@@ -30,12 +31,12 @@ interface AllChip {
 type ChipDescriptor = (AllChip | ProjectChip | TagChip) & { active: boolean };
 
 function readProjects(): ReadonlyArray<{ id: string; name: string }> {
-  const cache = getLegacyStateValue('__projectsCache', []);
+  const cache = getLegacyGlobalValue('__projectsCache', []);
   return Array.isArray(cache) ? cache as ReadonlyArray<{ id: string; name: string }> : [];
 }
 
 function readTags(): string[] {
-  const sessions = getLegacyStateValue('SERVER_SESSIONS', []);
+  const sessions = getLegacyGlobalValue('SERVER_SESSIONS', []);
   return getKnownTagsFromSessions(Array.isArray(sessions) ? sessions as Array<{ tags?: string[] }> : []).slice(0, 8);
 }
 
@@ -168,19 +169,19 @@ export interface RecentsChipsHandle {
 export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
   const target = document.getElementById(TARGET_ID);
   if (!target) return null;
-  if (target.dataset.mountedBy === 'recents-filter-chips') {
+  if (hostIsMountedBy(target, 'recents-filter-chips')) {
     throw new Error('Recents filter chips React runtime was initialized more than once.');
   }
 
   const root = createRoot(target);
   root.render(<RecentsFilterChips />);
-  target.dataset.mountedBy = 'recents-filter-chips';
+  markHostMountedBy(target, 'recents-filter-chips');
   return {
     target,
     root,
     destroy: () => {
       root.unmount();
-      delete target.dataset.mountedBy;
+      clearHostMounted(target);
     },
   };
 }

@@ -45,8 +45,8 @@ async function prepareDelayedStream(page, options = {}) {
       }));
     };
 
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '77777777-7777-4777-8777-777777777777';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '77777777-7777-4777-8777-777777777777' });
     /* A tall transcript, through state.messages: #msgList is React-owned, so
        foreign nodes appended to it are not something the renderer promises to
        keep — and the scroll maths below only mean something if the height
@@ -56,7 +56,7 @@ async function prepareDelayedStream(page, options = {}) {
       const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
       earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
     }
-    window.state.messages = [{ clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }, ...earlier];
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }, ...earlier] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
 
@@ -75,13 +75,13 @@ async function prepareDelayedStream(page, options = {}) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     list.scrollTop = list.scrollHeight;
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    window.state._userScrolledAway = false;
+    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
   }, { delay, finishDelay });
 }
 
 async function waitForStreamHandoff(page) {
   await page.waitForFunction(() => {
-    const id = window.state.messages.at(-1)?.clientId;
+    const id = window.stateStore.read("messages").at(-1)?.clientId;
     if (!id) return false;
     return document.querySelector(`[data-client-id="${id}"][data-react-owned]`)
       && !Array.from(document.querySelectorAll(`[data-client-id="${id}"]`))
@@ -122,7 +122,7 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
      hooks). The prose *segment* does change class when the last block settles,
      so identity is checked on the row, not on the settled div. */
   expect(await page.evaluate(() => {
-    const id = window.state.messages.at(-1)?.clientId;
+    const id = window.stateStore.read("messages").at(-1)?.clientId;
     window.__streamRow = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
     return Boolean(window.__streamRow);
   })).toBe(true);
@@ -138,7 +138,7 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
   await expect(bubble).toContainText('The final Markdown remains correct.');
   await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
   expect(await page.evaluate(() => {
-    const id = window.state.messages.at(-1)?.clientId;
+    const id = window.stateStore.read("messages").at(-1)?.clientId;
     const current = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
     return current === window.__streamRow && Boolean(current?.isConnected);
   })).toBe(true);
@@ -158,7 +158,7 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
     list.scrollTop = 0;
     list.dispatchEvent(new Event('scroll', { bubbles: true }));
   });
-  await expect.poll(() => page.evaluate(() => window.state._userScrolledAway)).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(true);
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('pinned scrolling behavior');
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
   await expect(page.locator('#newReplyPill')).toHaveClass(/visible/);

@@ -11,12 +11,11 @@
  * the final report is rendered as a formatted assistant message.
  */
 
+import { stateStore } from '../state/store.js';
+
 /* Start a deep research session. Returns a Promise that resolves
    when the research is complete and the report has been posted. */
 async function startDeepResearch(query) {
-  var state = window.state;
-  if (!state) return;
-
   /* Show progress indicator. */
   var progressId = "deep-research-" + Date.now().toString(36);
   var runId = progressId;
@@ -314,12 +313,12 @@ function _reportToLatex(title, report, extracts) {
 }
 
 async function _saveResearchArtifacts(query, report, extracts) {
-  if (!window.state || !window.state.currentSessionId) return;
+  if (!stateStore.read("currentSessionId")) return;
   var title = _tr("Research report: ", "研究报告：") + query;
   var common = {
     title: title,
-    sessionId: window.state.currentSessionId || null,
-    projectId: window.state.currentProjectId || null
+    sessionId: stateStore.read("currentSessionId") || null,
+    projectId: stateStore.read("currentProjectId") || null
   };
   await Promise.all([
     apiFetch("/api/artifacts", {

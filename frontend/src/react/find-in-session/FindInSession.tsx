@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -185,7 +186,7 @@ export interface FindInSessionReactRootHandle {
 export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
   const bar = document.getElementById(FIND_BAR_ID);
   if (!bar) return null;
-  if (bar.dataset.mountedBy === 'find-in-session') {
+  if (hostIsMountedBy(bar, 'find-in-session')) {
     throw new Error('FindInSession React runtime was initialized more than once.');
   }
 
@@ -193,13 +194,13 @@ export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
 
   const root = createRoot(bar);
   root.render(<FindInSession />);
-  bar.dataset.mountedBy = 'find-in-session';
+  markHostMountedBy(bar, 'find-in-session');
 
   return {
     root,
     destroy: () => {
       root.unmount();
-      delete bar.dataset.mountedBy;
+      clearHostMounted(bar);
     },
   };
 }

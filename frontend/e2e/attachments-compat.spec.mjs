@@ -17,11 +17,11 @@ test('Attachment chip rows React mode hydrates both containers', async ({ page }
 
   const chatChips = page.locator('#attachmentChips');
   await expect(chatChips).toBeAttached();
-  await expect(chatChips).toHaveAttribute('data-mounted-by', 'attachment-chips');
+  await expect(chatChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const topicChips = page.locator('#topicAttachmentChips');
   await expect(topicChips).toBeAttached();
-  await expect(topicChips).toHaveAttribute('data-mounted-by', 'attachment-chips');
+  await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   // Bridge installed.
   const installed = await page.evaluate(() => ({
@@ -130,10 +130,10 @@ test('Attachment chips React mode always loads (no ?react=1 flag needed)', async
   await waitForAppShell(page);
 
   const chatChips = page.locator('#attachmentChips');
-  await expect(chatChips).toHaveAttribute('data-mounted-by', 'attachment-chips');
+  await expect(chatChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const topicChips = page.locator('#topicAttachmentChips');
-  await expect(topicChips).toHaveAttribute('data-mounted-by', 'attachment-chips');
+  await expect(topicChips).not.toHaveAttribute('data-mounted-by', /.+/);
 
   const installed = await page.evaluate(
     () => typeof window.__socratesAttachmentsBridge === 'object' && window.__socratesAttachmentsBridge !== null,

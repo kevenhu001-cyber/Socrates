@@ -67,10 +67,10 @@ async function bootChatTurn(page) {
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '88888888-8888-4888-8888-888888888888';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-stop', role: 'user', rawText: 'Stop me mid-stream', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-stop', role: 'user', rawText: 'Stop me mid-stream', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.__stopTurnPromise = window.askChatTurn('Stop me mid-stream');

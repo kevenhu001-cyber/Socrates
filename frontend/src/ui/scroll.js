@@ -187,7 +187,7 @@ export function velocityScrollTo(list, targetTop, opts){
         stop();
         return;
       }
-      if (typeof window !== 'undefined' && window.state && window.state._userScrolledAway) {
+      if (typeof window !== 'undefined' && window.stateStore.read("_userScrolledAway")) {
         stop();
         return;
       }
@@ -267,7 +267,7 @@ export function initChatComposerReserve(options){
     };
   }
   function userScrolledAway(){
-    return !!(window.state&&window.state._userScrolledAway);
+    return !!window.stateStore.read("_userScrolledAway");
   }
   function wasPinned(metrics){
     return !!metrics&&!userScrolledAway()&&

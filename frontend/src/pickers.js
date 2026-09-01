@@ -6,7 +6,7 @@
 
 import { esc } from './render/helpers.js';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
-import { stateStore } from './state.js';
+import { stateStore } from './state/store.js';
 
 /* P_init-sync — providers가 서버에서 로드되었는지 추적.
    syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
@@ -128,7 +128,7 @@ function syncModelPills(){
   if (html) {
     html += '<div class="model-picker-divider"></div>';
   }
-  html += '<button type="button" class="model-picker-add" onclick="closeModelPicker();window.openSettings()">';
+  html += '<button type="button" class="model-picker-add">';
   html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
   html += providers.length ? 'Manage models…' : 'Add a model…';
   html += '</button>';
@@ -153,6 +153,13 @@ document.addEventListener("keydown",function(e){
 });
 /* Event delegation on model picker menu items */
 document.addEventListener("click", function(e){
+  var add = e.target.closest(".model-picker-add");
+  if (add && add.closest("#modelPickerMenu, #chatModelMenu")) {
+    closeModelPicker();
+    closeChatModelMenu();
+    document.dispatchEvent(new CustomEvent("socrates:open-settings"));
+    return;
+  }
   var item = e.target.closest(".model-picker-item");
   if (!item) return;
   var menu = item.closest("#modelPickerMenu, #chatModelMenu");
@@ -201,7 +208,7 @@ function toggleChatModelMenu(){
   if (html) {
     html += '<div class="model-picker-divider"></div>';
   }
-  html += '<button type="button" class="model-picker-add" onclick="closeChatModelMenu();window.openSettings()">';
+  html += '<button type="button" class="model-picker-add">';
   html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="5" opacity="0.25"/><path d="M12 8v8M8 12h8"/></svg>';
   html+=providers.length?'Manage models…':'Add a model…';
   html+='</button>';
@@ -454,14 +461,14 @@ function toggleWebSearch(){
       searchContextQuery:null
     }});
     window.setSearchPill("ok",0,"");
-  }else if(window.state.topic){
-    window.fetchWebContext(window.state.topic);
+  }else if(window.stateStore.read("topic")){
+    window.fetchWebContext(window.stateStore.read("topic"));
   }
 }
 function syncWebSearchUI(){
   syncExtensionsUI();
-  if(webSearchOn&&window.state.topic&&!window.state.searchContext){
-    window.fetchWebContext(window.state.topic);
+  if(webSearchOn&&window.stateStore.read("topic")&&!window.stateStore.read("searchContext")){
+    window.fetchWebContext(window.stateStore.read("topic"));
   }
 }
 

@@ -14,7 +14,7 @@
 import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
 function isEmbeddedNativeWebView(){
   try{

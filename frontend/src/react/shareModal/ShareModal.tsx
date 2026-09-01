@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
@@ -182,7 +183,7 @@ export interface ShareModalHandle {
 export function hydrateShareModal(): ShareModalHandle | null {
   const overlay = document.getElementById(OVERLAY_ID);
   if (!overlay) return null;
-  if (overlay.dataset.mountedBy === 'share-modal') {
+  if (hostIsMountedBy(overlay, 'share-modal')) {
     throw new Error('Share modal React runtime was initialized more than once.');
   }
 
@@ -190,13 +191,13 @@ export function hydrateShareModal(): ShareModalHandle | null {
 
   const root = createRoot(overlay);
   root.render(<ShareModal />);
-  overlay.dataset.mountedBy = 'share-modal';
+  markHostMountedBy(overlay, 'share-modal');
   return {
     overlay,
     root,
     destroy: () => {
       root.unmount();
-      delete overlay.dataset.mountedBy;
+      clearHostMounted(overlay);
     },
   };
 }

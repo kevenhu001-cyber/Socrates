@@ -3,7 +3,7 @@
  *
  * Carries the runtime snapshot that the React message list, the chat
  * composer, and the send-button indicator all subscribe to. The legacy
- * pipeline mutates `window.state.session.messages` in place; this bridge
+ * pipeline mutates `window.stateStore.read("messages")` in place; this bridge
  * re-reads it on every commit so React sees the latest text, tool
  * results, and streaming bubble.
  *
@@ -32,6 +32,7 @@
 
 import type { ImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
 import { useBridge } from '../lib/bridge/useBridge.ts';
+import { stateStore } from '../state/store.js';
 import type {
   ChatRuntimeEvent,
   ChatRuntimeSnapshot,
@@ -41,21 +42,8 @@ import type {
 
 type Listener = () => void;
 
-interface LegacyChatState {
-  phase?: unknown;
-  currentSessionId?: unknown;
-  messages?: unknown;
-  _userScrolledAway?: boolean;
-  session?: {
-    phase?: unknown;
-    currentSessionId?: unknown;
-    messages?: unknown;
-  };
-}
-
 declare global {
   interface Window {
-    state?: LegacyChatState;
     __socratesReactChatBridge?: ChatRuntimeBridge;
   }
 }
@@ -102,18 +90,16 @@ function asString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function readLegacyChatState(): {
+function readChatState(): {
   currentSessionId: string | null;
   phase: string;
   messages: LegacyChatMessage[];
 } {
-  const state = window.state;
-  const session = state?.session;
-  const messagesCandidate = session?.messages ?? state?.messages;
+  const messagesCandidate = stateStore.read('messages');
 
   return {
-    currentSessionId: asString(session?.currentSessionId ?? state?.currentSessionId),
-    phase: asString(session?.phase ?? state?.phase) ?? 'topic',
+    currentSessionId: asString(stateStore.read('currentSessionId')),
+    phase: asString(stateStore.read('phase')) ?? 'topic',
     messages: Array.isArray(messagesCandidate)
       ? (messagesCandidate as LegacyChatMessage[])
       : [],
@@ -184,7 +170,7 @@ function streamFromEvent(
 }
 
 function commit(event: ChatRuntimeEvent): void {
-  const legacy = readLegacyChatState();
+  const legacy = readChatState();
   const last = legacy.messages.length > 0
     ? legacy.messages[legacy.messages.length - 1]
     : undefined;

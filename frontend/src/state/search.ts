@@ -1,20 +1,11 @@
-export const SEARCH_FLAT_KEYS = {
-  searchContext: 'context',
-  searchResults: 'results',
-  searchContextAt: 'contextAt',
-  searchContextCount: 'contextCount',
-  searchContextQuery: 'contextQuery',
-  searchContextError: 'error',
-} as const;
-
 export function createInitialSearchState() {
   return {
-    context: null,
-    results: [],
-    contextAt: 0,
-    contextCount: 0,
-    contextQuery: null,
-    error: null,
+    searchContext: null,
+    searchResults: [],
+    searchContextAt: 0,
+    searchContextCount: 0,
+    searchContextQuery: null,
+    searchContextError: null,
   };
 }
 

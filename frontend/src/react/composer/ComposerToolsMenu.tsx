@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -301,7 +302,7 @@ export interface ComposerToolsHandle {
 export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
   const menu = document.getElementById(MENU_ID);
   if (!menu) return null;
-  if (menu.dataset.mountedBy === 'composer-tools-menu') {
+  if (hostIsMountedBy(menu, 'composer-tools-menu')) {
     throw new Error('Composer tools menu React runtime was initialized more than once.');
   }
 
@@ -309,13 +310,13 @@ export function hydrateComposerToolsMenu(): ComposerToolsHandle | null {
 
   const root = createRoot(menu);
   root.render(<ComposerToolsMenu />);
-  menu.dataset.mountedBy = 'composer-tools-menu';
+  markHostMountedBy(menu, 'composer-tools-menu');
   return {
     menu,
     root,
     destroy: () => {
       root.unmount();
-      delete menu.dataset.mountedBy;
+      clearHostMounted(menu);
     },
   };
 }

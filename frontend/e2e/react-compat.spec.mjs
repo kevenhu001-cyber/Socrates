@@ -13,25 +13,17 @@ test('React compatibility mode preserves the legacy application shell', async ({
   await expect(page.locator('#topicComposerRoot .rich-composer-editor').first()).toBeVisible();
 
   const compatibilityRoot = page.locator('#newReplyPill');
-  await expect(compatibilityRoot).toHaveAttribute('data-mounted-by', 'new-reply-pill');
   await expect(compatibilityRoot).toHaveText('↓ New reply');
-  await expect(page.locator('#sendBtnContent')).toHaveAttribute(
-    'data-mounted-by',
-    'send-button',
-  );
   /* Voice input is unified with the send button: idle (empty composer)
      shows the voice icon, text arms the send arrow. */
   await expect(page.locator('#sendBtnContent .icon-voice')).toHaveCount(1);
 
-  await expect(page.locator('#msgList')).toHaveAttribute(
-    'data-mounted-by',
-    'msg-list',
-  );
+  await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
 
   /* Text in the chat composer arms the arrow (legacy updateSendBtn
      toggles #sendBtn.active; React's SendButtonContent reads it). */
   await page.evaluate(() => {
-    window.state.phase = 'chat';
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
   });
@@ -65,9 +57,9 @@ test('React compatibility mode always loads (no ?react=1 flag needed)', async ({
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  await expect(page.locator('#newReplyPill')).toHaveAttribute('data-mounted-by', 'new-reply-pill');
-  await expect(page.locator('#sendBtnContent')).toHaveAttribute('data-mounted-by', 'send-button');
-  await expect(page.locator('#sidebarUserRow')).toHaveAttribute('data-mounted-by', 'sidebar-user-row');
+  await expect(page.locator('#newReplyPill')).toHaveText('↓ New reply');
+  await expect(page.locator('#sendBtnContent .icon-voice')).toHaveCount(1);
+  await expect(page.locator('#sidebarUserRow')).toBeAttached();
 });
 
 test('React chat store observes legacy message and stream lifecycle', async ({ page }) => {
@@ -85,9 +77,9 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
       window.__reactChatSnapshots.push(bridge.getSnapshot());
     });
 
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '88888888-8888-4888-8888-888888888888';
-    window.state.messages = [];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
     bridge.publish({ type: 'state-synced', reason: 'e2e-setup' });
     window.addMessage('user', 'Observe the compatibility bridge.');
 

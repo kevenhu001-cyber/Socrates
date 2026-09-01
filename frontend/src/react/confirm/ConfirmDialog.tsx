@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -137,8 +138,8 @@ export function mountConfirmDialog(): void {
     document.body.appendChild(container);
   }
 
-  if (container.dataset.mountedBy === 'confirm-dialog') return;
-  container.dataset.mountedBy = 'confirm-dialog';
+  if (hostIsMountedBy(container, 'confirm-dialog')) return;
+  markHostMountedBy(container, 'confirm-dialog');
 
   installConfirmBridge();
   const root = createRoot(container);

@@ -5,7 +5,7 @@
  * getExplanation).
  */
 
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
 async function handleQuickAction(action: string): Promise<void> {
   const msgs = document.querySelectorAll('.msg.assistant:last-of-type .quick-opts');

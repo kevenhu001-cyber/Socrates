@@ -44,9 +44,9 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '22222222-2222-4222-8222-222222222222';
-    window.state.messages = [{ clientId: 'user-1', role: 'user', rawText: 'Do the workspace task', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-1', role: 'user', rawText: 'Do the workspace task', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Do the workspace task');
@@ -84,7 +84,7 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
      The DOM above already proves the list rendered; pinning html to it again
      would only re-test the implementation this change removes. */
   const persisted = await page.evaluate(() => {
-    const message = window.state.messages[window.state.messages.length - 1];
+    const message = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
     return message && message.html ? message.html : '';
   });
   expect(persisted, 'the answer text is still stored as html').toContain('notes.txt');
@@ -92,7 +92,7 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   expect(persisted, 'no step markup is baked into the answer').not.toContain('agent-step');
 
   const stored = await page.evaluate(() => {
-    const message = window.state.messages[window.state.messages.length - 1];
+    const message = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
     const call = (message.toolCalls || []).find((entry) => entry.name === 'workspace_agent');
     return call ? { runId: call.runId, steps: (call.steps || []).map((s) => s.stepId), plan: !!call.plan } : null;
   });

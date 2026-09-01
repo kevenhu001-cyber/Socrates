@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -147,8 +148,8 @@ export function mountSettingsModal(): void {
     document.body.appendChild(container);
   }
 
-  if (container.dataset.mountedBy === 'settings-modal') return;
-  container.dataset.mountedBy = 'settings-modal';
+  if (hostIsMountedBy(container, 'settings-modal')) return;
+  markHostMountedBy(container, 'settings-modal');
 
   installSettingsBridge();
   const root = createRoot(container);

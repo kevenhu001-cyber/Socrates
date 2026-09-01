@@ -21,9 +21,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await page.screenshot({ path: 'test-results/visual-qa/topic-dark.png', fullPage: true });
 
   await page.evaluate(async () => {
-    window.state.phase = 'chat';
-    window.state.currentSessionId = '11111111-1111-4111-8111-111111111111';
-    window.state.messages = [{ clientId: 'visual-user', role: 'user', rawText: 'Explore Socratic learning', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'visual-user', role: 'user', rawText: 'Explore Socratic learning', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     await window.askChatTurn('Explore Socratic learning');

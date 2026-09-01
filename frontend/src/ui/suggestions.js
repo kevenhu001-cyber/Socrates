@@ -13,9 +13,13 @@
 // Each surface renders two chips. The selection rules:
 //   • If there is at least one user turn in the active conversation,
 //     derive follow-up prompts from the latest user + assistant turn.
-//   • Otherwise pick two prompts from the built-in library, biased by
-//     the user's locale so Chinese UI gets Chinese suggestions and
-//     English UI gets English ones.
+//   • Otherwise the LANDING surface (no messages) first paints two
+//     library chips so the row never flashes empty, then asks the
+//     backend (GET /api/suggestions/starters) for two AI-generated
+//     prompts derived from the user's recent sessions. On success
+//     the row re-renders with the personalised prompts. On error /
+//     network failure / no-history / no-provider, the row stays on
+//     the library so the surface is always populated.
 //
 // The module emits DOM updates through a small rAF-coalesced renderer
 // (see #scheduleRender) so a flood of events — the React message list
@@ -164,6 +168,73 @@ try {
   _pickerOffset = 0;
 }
 
+/* P_suggestions-ai — landing surface pulls two AI-generated prompts from
+   GET /api/suggestions/starters (server reads the user's recent sessions
+   and asks the LLM to propose follow-ups). The fetch is memoised so
+   lang flips, message-list re-renders, and React commits do not all
+   re-hit the network.
+
+   The library rows stay mounted while the request is in flight so the
+   row never appears empty; once the response lands, the renderer
+   fades in the AI chips on the next rAF. */
+let _aiStartersPromise = null;
+let _aiStarters = null;
+let _aiStartersLang = null;
+
+function _ensureCsrf() {
+  /* apiFetch already primes the CSRF cookie; we expose a separate helper
+     for callers that want to keep the fetch self-contained. */
+}
+
+async function fetchAiStarters(lang) {
+  /* Dedupe in-flight requests per lang. A lang flip while a request is
+     in flight lets the in-flight call resolve; the language mismatch
+     is harmless because the server regenerates per lang anyway and
+     the next render call will start a new request. */
+  if (_aiStarters && _aiStartersLang === lang) {
+    return _aiStarters;
+  }
+  if (_aiStartersPromise && _aiStartersLang === lang) {
+    return _aiStartersPromise;
+  }
+  _aiStartersLang = lang;
+  _aiStartersPromise = (async () => {
+    try {
+      var mod = await import('../util/api.js');
+      var apiFetch = mod.apiFetch || mod.default || mod;
+      var qs = '?lang=' + encodeURIComponent(lang);
+      var res = await apiFetch('/api/suggestions/starters' + qs, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+      var data = await res.json().catch(function () { return {}; });
+      var list = Array.isArray(data && data.suggestions) ? data.suggestions : [];
+      /* Filter to shape the renderer expects; drop anything the LLM
+         hallucinated. */
+      var safe = list
+        .map(function (s) {
+          return {
+            id: (s && s.id) ? String(s.id) : 'ai-' + Math.random().toString(36).slice(2, 8),
+            prompt: (s && s.prompt) ? String(s.prompt) : '',
+            icon: (s && s.icon) ? String(s.icon) : 'follow',
+          };
+        })
+        .filter(function (s) { return s.prompt.length > 0; })
+        .slice(0, 2);
+      _aiStarters = safe.length === 2 ? safe : null;
+      return _aiStarters;
+    } catch (_) {
+      _aiStarters = null;
+      return null;
+    } finally {
+      /* Keep the promise reference around so concurrent callers
+         awaiting this same fetch share the result. Drop it only
+         when the language changes (handled by the gate above). */
+    }
+  })();
+  return _aiStartersPromise;
+}
+
 function getLang() {
   try {
     var lang = (typeof window !== "undefined" && window._currentLang) || "en";
@@ -218,7 +289,14 @@ function pickFromLibrary(lang) {
 /* Public selector. Returns an array of two suggestions, derived when
    possible and otherwise picked from the library at the session-stable
    offset. The result is stable across calls within a session (same lang,
-   same conversation state) so repeated renders never churn the chip text. */
+   same conversation state) so repeated renders never churn the chip text.
+
+   P_suggestions-ai — when called with an empty messages array (the
+   landing surface), prefer the AI starters if they have already
+   arrived. Library rows paint during the network round-trip and the
+   re-render after the fetch lands swaps them in. The chat surface
+   never consults the AI cache: it is conversation-scoped, and the
+   per-turn follow-up is the better signal there. */
 export function pickSuggestions(messages) {
   var lang = getLang();
   var contextual = deriveFromConversation(messages, lang);
@@ -227,6 +305,10 @@ export function pickSuggestions(messages) {
       { id: "follow-up", prompt: contextual, icon: "follow" },
       pickFromLibrary(lang)[0],
     ].slice(0, 2);
+  }
+  /* Landing surface (no messages): prefer AI starters if present. */
+  if ((!messages || messages.length === 0) && _aiStarters && _aiStartersLang === lang) {
+    return _aiStarters.slice();
   }
   return pickFromLibrary(lang);
 }
@@ -489,6 +571,37 @@ export function renderSuggestions(surface, messages) {
     wireSurface(container, surface);
     var suggestions = pickSuggestions(messages);
     scheduleRender(container, suggestions, surface);
+
+    /* P_suggestions-ai — kick off the AI starters fetch on the
+       landing surface only. The library rows already mounted will
+       fade out and the AI chips will fade in when the response
+       lands. Chat surface never triggers the fetch (no messages
+       there means an empty in-session view, not the landing). */
+    if (surface === "topic" && (!messages || messages.length === 0)) {
+      var lang = getLang();
+      if (_aiStartersLang !== lang) {
+        /* Language flipped — drop the stale cache so the next
+           fetch pulls a fresh prompt set in the new locale. */
+        _aiStarters = null;
+      }
+      if (!_aiStarters || _aiStartersLang !== lang) {
+        fetchAiStarters(lang).then(function (arr) {
+          if (!arr) return;
+          /* Re-check that the surface still wants AI chips:
+             a lang flip or a session reset can race the fetch. */
+          if (_aiStartersLang !== lang) return;
+          var c = document.querySelector(".home-ideas");
+          if (!c) return;
+          /* Drop the cached signature so the renderer treats the
+             new prompts as a different content slice and runs the
+             enter animation; otherwise the diff would see the same
+             two strings and skip the paint. */
+          _lastSignature.delete(c);
+          var next = pickSuggestions(messages || []);
+          scheduleRender(c, next, "topic");
+        }).catch(function () { /* network failures stay on library */ });
+      }
+    }
   } catch (_) {}
 }
 
@@ -497,6 +610,8 @@ export function renderSuggestions(surface, messages) {
    changes. Each trigger fires renderSuggestions on both surfaces so
    the chat composer stays in sync when the user just sent the first
    message and the landing screen is about to disappear. */
+
+import { stateStore } from '../state/store.js';
 
 /* High-frequency chat-runtime events that CANNOT change which
    suggestions should show: they fire many times per second while a
@@ -521,13 +636,20 @@ function onMessagesChanged(event) {
     var type = event && event.detail && event.detail.type;
     if (type && HIGH_FREQUENCY_EVENTS[type]) return;
   } catch (_) {}
-  var state = (typeof window !== "undefined" && window.state) || null;
-  var messages = state && Array.isArray(state.messages) ? state.messages : [];
+  var messages = stateStore.read('messages');
+  if (!Array.isArray(messages)) messages = [];
   renderSuggestions("topic", []);
   renderSuggestions("chat", messages);
 }
 
 function onLangChange() {
+  /* P_suggestions-ai — drop the cached AI starters on lang change so
+     the next render fetches prompts in the new locale instead of
+     re-rendering the old-language chips. Library chips also flip via
+     the normal re-render below. */
+  _aiStarters = null;
+  _aiStartersPromise = null;
+  _aiStartersLang = null;
   /* Lang change is a no-op on already-rendered chips (the prompt text
      is part of the chip itself, so a re-render is the right move).
      The CSS .suggestion-enter transition handles the swap without a

@@ -45,10 +45,10 @@ async function bootChat(page) {
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '99999999-9999-4999-8999-999999999999';
-    window.state.phase = 'chat';
-    window.state.currentSessionId = sessionId;
-    window.state.session.currentSessionId = sessionId;
-    window.state.messages = [{ clientId: 'user-think', role: 'user', rawText: 'Think it through', html: null }];
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-think', role: 'user', rawText: 'Think it through', html: null }] });
     document.getElementById('topicSetup').classList.add('hidden');
     document.getElementById('chatView').classList.remove('hidden');
     window.__thinkTurnPromise = window.askChatTurn('Think it through');

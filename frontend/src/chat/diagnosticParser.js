@@ -1,11 +1,11 @@
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
 function setLastCallError(value) {
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
 }
 
 /* Parse a single-question JSON object from the model response.
-   Returns the normalized question or null. Sets getState().lastCallError
+   Returns the normalized question or null. Sets window.stateStore.read("lastCallError")
    on failure for the api-badge to surface. */
 export function parseOneDiagResponse(resp,index){
   try{

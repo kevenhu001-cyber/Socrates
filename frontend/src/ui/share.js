@@ -15,6 +15,7 @@
 
 import { esc } from '../render/helpers.js';
 import { apiFetch } from '../util/api.js';
+import { stateStore } from '../state/store.js';
 
 var _shareVisibility = "public";
 var _shareToken = null;
@@ -52,7 +53,7 @@ function toggleShareBtn() {
      is `.hidden { display: none !important }` (styles.css:1979),
      which beats any inline `style.display` we set. We must toggle
      the class itself, not the style attribute. */
-  var show = !!(window.CURRENT_USER && (window.state.session.currentSessionId || window.state._examInView));
+  var show = !!(window.CURRENT_USER && (window.stateStore.read("currentSessionId") || window.stateStore.read("_examInView")));
   btn.classList.toggle("hidden", !show);
   /* P0.2 — the in-session Find button lives next to Share in the
      top bar and shares the exact same visibility rule (only useful
@@ -130,7 +131,7 @@ function _setShareStatus(msg) {
 }
 
 async function createShareLink() {
-  var sessionId = window.state.session.currentSessionId;
+  var sessionId = window.stateStore.read("currentSessionId");
   if (!sessionId) { _setShareError("No active session"); return; }
   _setShareError("");
   _setShareStatus("Creating share link…");
@@ -164,7 +165,7 @@ function copyShareLink() {
 }
 
 async function revokeShareLink() {
-  var sessionId = window.state.session.currentSessionId;
+  var sessionId = window.stateStore.read("currentSessionId");
   if (!_shareToken || !sessionId) return;
   try {
     await apiFetch("/api/sessions/" + encodeURIComponent(sessionId) + "/share", { method: "DELETE" });
@@ -341,26 +342,14 @@ async function loadSharedSession(token) {
   try {
     var r = await apiFetch("/api/shares/" + encodeURIComponent(token), { _authEndpoint: true });
     if (!r || !r.id) throw new Error("Invalid response");
-    /* Write through the namespaced proxy instead of replacing
-       state.session wholesale. The previous implementation did
-       `window.state.session = r.session`, which clobbered every
-       other sub-namespace (kb, search, call, ui, exam) and the
-       Proxy's per-property semantics — subsequent reads via
-       `state.session.kb` etc. silently returned undefined. */
-    var s = window.state;
-    if (s && s.session) {
-      try { s.session.topic = r.topic || ""; } catch (_) {}
-      try { s.session.currentSessionId = r.id; } catch (_) {}
-      try { s.session.sessionTitle = r.title || null; } catch (_) {}
-      try { s.session.domain = r.domain || null; } catch (_) {}
-      try { s.session.kind = r.kind || "chat"; } catch (_) {}
-    }
-    if (s && s.topic !== undefined) {
-      try { s.topic = r.topic || ""; } catch (_) {}
-      try { s.currentSessionId = r.id; } catch (_) {}
-    }
-    if (s && Array.isArray(s.messages)) {
-      s.messages = (r.messages || []).map(function (m) {
+    stateStore.dispatch({ type: 'state/batch', patch: {
+      topic: r.topic || '',
+      currentSessionId: r.id,
+      sessionTitle: r.title || null,
+      domain: r.domain || null,
+    } });
+    stateStore.dispatch({ type: 'session/replace-messages', payload:
+      (r.messages || []).map(function (m) {
         return {
           clientId: m.id || ("shared-" + Math.random().toString(36).slice(2, 10)),
           role: m.role || "user",
@@ -373,8 +362,8 @@ async function loadSharedSession(token) {
           toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls : [],
           restoredFromHistory: true,
         };
-      });
-    }
+      })
+    });
     if (r.kind === "exam" && r.examData) {
       loadSharedExamSession(r);
       return;
@@ -402,14 +391,15 @@ async function loadSharedExamSession(session) {
   var exam = (session && session.examData) || {};
   var questions = Array.isArray(exam.questions) ? exam.questions : [];
   var answers = (exam && exam.answers) || {};
-  var s = window.state;
-  if (s) {
-    if (s.exam) {
-      try { s.exam.readOnly = true; s.exam.questions = questions; s.exam.answers = answers; s.exam.submitted = !!exam.submitted; s.exam.topic = exam.topic || session.topic || ""; s.exam.count = questions.length; } catch (_) {}
-    }
-    try { s.examReadOnly = true; } catch (_) {}
-    try { s._examInView = true; } catch (_) {}
-  }
+  stateStore.dispatch({ type: 'state/batch', patch: {
+    examReadOnly: true,
+    examQuestions: questions,
+    examAnswers: answers,
+    examSubmitted: !!exam.submitted,
+    examTopic: exam.topic || session.topic || '',
+    examCount: questions.length,
+    _examInView: true,
+  } });
   ["topicSetup", "diagnosticView", "chatView"].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.classList.add("hidden");
@@ -438,7 +428,7 @@ async function loadSharedExamSession(session) {
   var footer = document.getElementById("examViewFooter");
   if (footer) {
     var closeLabel = (window._currentLang === "zh") ? "关闭" : "Close";
-    footer.innerHTML = '<button class="exam-btn secondary" onclick="closeExamView()">' + closeLabel + '</button>';
+    footer.innerHTML = '<button class="exam-btn secondary" data-exam-command="close">' + closeLabel + '</button>';
   }
   var gate = document.getElementById("authGate");
   if (gate) gate.classList.add("hidden");
@@ -451,9 +441,9 @@ async function loadSharedExamSession(session) {
 function renderSharedQuestionCard(idx, q) {
   var ph = document.getElementById("examQ" + idx);
   if (!ph) return;
-  var saved = (window.state && window.state.examAnswers && window.state.examAnswers[idx]);
+  var saved = (window.stateStore.read("examAnswers") && window.stateStore.read("examAnswers")[idx]);
   var zh = window._currentLang === "zh";
-  var html = '<div class="exam-q-num">' + (zh ? "题目" : "Question") + ' ' + (idx + 1) + ' / ' + ((window.state && window.state.examCount) || 0) + ' <span class="exam-q-type">' + esc(q.type || "") + '</span></div>';
+  var html = '<div class="exam-q-num">' + (zh ? "题目" : "Question") + ' ' + (idx + 1) + ' / ' + (window.stateStore.read("examCount") || 0) + ' <span class="exam-q-type">' + esc(q.type || "") + '</span></div>';
   html += '<div class="exam-q-text">' + (typeof window.formatMsg === "function" ? window.formatMsg(q.q || "") : esc(q.q || "")) + '</div>';
   if (q.type === "multiple-choice" && Array.isArray(q.opts)) {
     html += '<div class="exam-q-opts">';

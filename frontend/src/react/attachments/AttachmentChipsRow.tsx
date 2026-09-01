@@ -1,3 +1,4 @@
+import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -151,17 +152,17 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
 
   /* Each host is tagged independently so the registry can mount them as
      separate specs. */
-  if (chatTarget && chatTarget.dataset.mountedBy !== 'attachment-chips') {
+  if (chatTarget && !hostIsMountedBy(chatTarget, 'attachment-chips')) {
     const chatRoot = createRoot(chatTarget);
     chatRoot.render(<ChipsRow targetId={CHIPS_ID} />);
-    chatTarget.dataset.mountedBy = 'attachment-chips';
+    markHostMountedBy(chatTarget, 'attachment-chips');
     roots.push(chatRoot);
   }
 
-  if (topicTarget && topicTarget.dataset.mountedBy !== 'attachment-chips') {
+  if (topicTarget && !hostIsMountedBy(topicTarget, 'attachment-chips')) {
     const topicRoot = createRoot(topicTarget);
     topicRoot.render(<ChipsRow targetId={TOPIC_CHIPS_ID} />);
-    topicTarget.dataset.mountedBy = 'attachment-chips';
+    markHostMountedBy(topicTarget, 'attachment-chips');
     roots.push(topicRoot);
   }
 
@@ -172,10 +173,10 @@ export function hydrateAttachmentChipsRows(): AttachmentChipsHandle | null {
     destroy: () => {
       roots.forEach((root) => root.unmount());
       if (chatTarget) {
-        delete chatTarget.dataset.mountedBy;
+        clearHostMounted(chatTarget);
       }
       if (topicTarget) {
-        delete topicTarget.dataset.mountedBy;
+        clearHostMounted(topicTarget);
       }
     },
   };

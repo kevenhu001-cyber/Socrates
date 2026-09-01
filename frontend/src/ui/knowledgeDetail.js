@@ -1,7 +1,6 @@
 import { esc } from '../render/helpers.js';
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
-function getState() { return window.state; }
 function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
 function saveCurrentSessionSafe() { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); }
 
@@ -10,7 +9,7 @@ export function kbNodeHtml(n,cls){
      "→ go" button (added in mountKBDetail) is what actually jumps the
      chat to this node — so reading a note never accidentally triggers a
      new question. */
-  return '<div class="kb-node" data-node-idx="'+n.idx+'" onclick="toggleKBDetail('+n.idx+')"><div class="kb-dot '+cls+'"></div><span class="kb-name">'+esc(n.name)+'</span>'+(n.questions?'<span class="kb-count">'+n.questions+' Qs</span>':'')+'</div>';
+  return '<div class="kb-node" data-node-idx="'+n.idx+'"><div class="kb-dot '+cls+'"></div><span class="kb-name">'+esc(n.name)+'</span>'+(n.questions?'<span class="kb-count">'+n.questions+' Qs</span>':'')+'</div>';
 }
 
 export function toggleKBDetail(idx){
@@ -20,7 +19,7 @@ export function toggleKBDetail(idx){
   /* Close any other open detail panels (accordion behaviour). */
   var others=cont.querySelectorAll('.kb-node-detail');
   others.forEach(function(o){o.remove()});
-  var node=getState().kbNodes[idx];
+  var node=window.stateStore.read("kbNodes")[idx];
   if(!node)return;
   var detail=document.createElement("div");
   detail.className="kb-node-detail";
@@ -69,7 +68,7 @@ function renderKBDetailInner(node,idx){
 }
 
 function wireKBDetailEvents(detail,idx){
-  var node=getState().kbNodes[idx];
+  var node=window.stateStore.read("kbNodes")[idx];
   if(!node)return;
   function updateNode(patch){
     var nodes=stateStore.read('kbNodes')||[];

@@ -7,7 +7,6 @@ import { formatRelativeTime } from './recentsHelpers.js';
  * mounting) so this module stays independent from the main application file.
  */
 export function createMistakeBook({
-  state,
   stateStore,
   apiFetch,
   saveCurrentSession,
@@ -17,7 +16,7 @@ export function createMistakeBook({
   getTutorSocratic = () => window.tutorSocratic,
 }) {
   function persistMistake(mistakeData) {
-    var sid = state.currentSessionId;
+    var sid = stateStore.read('currentSessionId');
     if (typeof sid !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid)) sid = null;
     try {
       apiFetch('/api/mistakes', {
@@ -39,13 +38,15 @@ export function createMistakeBook({
   }
 
   function recordMistake(rec) {
-    var node = state.kbNodes[state.currentNode] || {};
+    var kbNodes = stateStore.read('kbNodes') || [];
+    var currentNode = stateStore.read('currentNode');
+    var node = kbNodes[currentNode] || {};
     var mistake = {
       id: 'm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6),
       type: rec.type || 'quiz',
-      topic: state.topic || '',
+      topic: stateStore.read('topic') || '',
       node: node.name || '',
-      nodeIdx: state.currentNode,
+      nodeIdx: currentNode,
       q: rec.q,
       options: rec.options || [],
       correct: rec.correct || null,
@@ -57,7 +58,7 @@ export function createMistakeBook({
     };
     stateStore.dispatch({
       type: 'state/set', key: 'mistakes',
-      value: [mistake].concat(state.mistakes || []),
+      value: [mistake].concat(stateStore.read('mistakes') || []),
     });
     persistMistake({
       nodeName: mistake.node || null,
@@ -72,9 +73,10 @@ export function createMistakeBook({
   }
 
   function removeMistakeForQuizSlot(slotId) {
-    if (!slotId || !state.mistakes) return;
-    var before = state.mistakes.length;
-    var remaining = state.mistakes.filter(function (mistake) { return mistake.quizSlotId !== slotId; });
+    var mistakes = stateStore.read('mistakes');
+    if (!slotId || !mistakes) return;
+    var before = mistakes.length;
+    var remaining = mistakes.filter(function (mistake) { return mistake.quizSlotId !== slotId; });
     if (remaining.length !== before) {
       stateStore.dispatch({ type: 'state/set', key: 'mistakes', value: remaining });
       saveCurrentSession();
@@ -86,7 +88,7 @@ export function createMistakeBook({
   function updateMistakesBadge() {
     var badge = document.getElementById('mistakesTabBadge');
     if (!badge) return;
-    var count = (state.mistakes || []).length;
+    var count = (stateStore.read('mistakes') || []).length;
     badge.textContent = count > 0 ? String(count) : '';
   }
 
@@ -97,12 +99,13 @@ export function createMistakeBook({
     if (tutorSocratic && typeof tutorSocratic.renderMistakeFilterBar === 'function') {
       try { tutorSocratic.renderMistakeFilterBar(); } catch (_) {}
     }
-    if (!state.mistakes || state.mistakes.length === 0) {
+    var mistakes = stateStore.read('mistakes') || [];
+    if (mistakes.length === 0) {
       cont.innerHTML = '<div class="recents-empty">No mistakes yet.<br>Wrong quiz picks and incorrect practice attempts will land here for review.</div>';
       return;
     }
-    var filter = state.mistakeFilter || 'all';
-    var filtered = state.mistakes.slice();
+    var filter = stateStore.read('mistakeFilter') || 'all';
+    var filtered = mistakes.slice();
     if (filter === 'unresolved') {
       filtered = filtered.filter(function (mistake) { return !mistake.resolved && !mistake.isResolved; });
     } else if (filter === 'resolved') {
@@ -141,12 +144,13 @@ export function createMistakeBook({
   }
 
   function handleMistakeRedo(mistakeId) {
-    var mistake = (state.mistakes || []).find(function (item) { return item.id === mistakeId; });
+    var mistakes = stateStore.read('mistakes') || [];
+    var mistake = mistakes.find(function (item) { return item.id === mistakeId; });
     if (!mistake) return;
     var updatedMistake = Object.assign({}, mistake, { redoCount: (mistake.redoCount || 0) + 1 });
     stateStore.dispatch({
       type: 'state/set', key: 'mistakes',
-      value: (state.mistakes || []).map(function (item) {
+      value: mistakes.map(function (item) {
         return item.id === mistakeId ? updatedMistake : item;
       }),
     });

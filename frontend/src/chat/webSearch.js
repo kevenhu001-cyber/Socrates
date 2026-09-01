@@ -3,20 +3,19 @@ import { callAPI } from './api.js';
 import { offlineGuard } from './offline.js';
 import { hasUsableActive, webSearchOn } from '../config/providers.js';
 import { loadLocalMemory } from '../storage/localMemory.js';
-import { stateStore } from '../state.js';
+import { stateStore } from '../state/store.js';
 
-function getState() { return window.state; }
 function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; }
 
 /* Fetch web context for `topic`. Returns a structured result so the UI
    can show a "N sources" pill (or an error pill). The `state` fields
    are populated as a side effect so any prompt builder can read
-   `getState().searchContext` synchronously.
+   `window.stateStore.read("searchContext")` synchronously.
 
    Refresh strategy (set per the user):
    - First fetch: at session start (tutor mode) or at first chat turn (chat mode)
-   - Re-fetch: every 5 user turns (counted by getState().totalQ mod 5)
-   - Old context is KEPT in getState().searchContext until the new fetch
+   - Re-fetch: every 5 user turns (counted by window.stateStore.read("totalQ") mod 5)
+   - Old context is KEPT in window.stateStore.read("searchContext") until the new fetch
      resolves, so a slow refresh never causes a turn to ship without
      grounding. */
 var SEARCH_REFRESH_EVERY=5;
@@ -61,7 +60,7 @@ export async function fetchWebContext(topic,opts){
   if(offlineGuard()){
     if(opts.background){try{window.__bgPillTimerClear&&window.__bgPillTimerClear()}catch(_){}}
     try{setSearchPill("err",0,"Offline")}catch(_){}
-    return{ok:false,reason:"offline",results:0,context:opts.background?getState().searchContext||"":""};
+    return{ok:false,reason:"offline",results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
   }
   /* Collect search queries. If the rewriter returns good ones, we also
      always append the raw topic as a baseline — this guarantees at least
@@ -139,7 +138,7 @@ export async function fetchWebContext(topic,opts){
       stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
       _emit("error",{message:emsg,code:"no-results"});
       try{setSearchPill("err",0,"Search failed: "+emsg)}catch(_){}
-      return{ok:false,reason:emsg,results:0,context:opts.background?getState().searchContext||"":""};
+      return{ok:false,reason:emsg,results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
     }
     var d={results:searchResults,query:queries.join(" | ")};
     clearTimeout(tmo);
@@ -314,7 +313,7 @@ export async function fetchWebContext(topic,opts){
     try{setSearchPill("err",0,"Search: "+emsg)}catch(_){}
     /* Keep the previous context so a transient failure doesn't drop
        grounding from the next turn. */
-    return{ok:false,reason:emsg,results:0,context:opts.background?getState().searchContext||"":""};
+    return{ok:false,reason:emsg,results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
   }
 }
 
@@ -467,18 +466,18 @@ export async function webSearchWithRetry(topic, opts){
 export function extractChatQuery(){
   /* Walk the last few user messages, take the most recent non-trivial
      one, fall back to the session topic. */
-  var rec=getState().currentSessionId?loadLocalMemory(getState().currentSessionId):null;
+  var rec=window.stateStore.read("currentSessionId")?loadLocalMemory(window.stateStore.read("currentSessionId")):null;
   if(rec&&rec.messages){
     for(var i=rec.messages.length-1;i>=0;i--){
       var m=rec.messages[i];
       if(m.role==="user"&&m.content&&m.content.trim().length>=4){
         var q=m.content.trim().slice(0,200);
-        if(getState().topic&&q.length<20){q=getState().topic+" — "+q}
+        if(window.stateStore.read("topic")&&q.length<20){q=window.stateStore.read("topic")+" — "+q}
         return q;
       }
     }
   }
-  return getState().topic||"";
+  return window.stateStore.read("topic")||"";
 }
 
 /* Use the configured LLM to turn the user's natural-language text
@@ -548,10 +547,10 @@ export async function rewriteQueryForSearch(rawText){
    unless we just refreshed within the last 30s. */
 export function shouldRefreshSearch(){
   if(!webSearchOn)return false;
-  var last=getState().searchContextAt||0;
+  var last=window.stateStore.read("searchContextAt")||0;
   if(Date.now()-last<30000)return false;
-  if(!getState().searchContextQuery)return false;
-  return (getState().totalQ%SEARCH_REFRESH_EVERY)===0;
+  if(!window.stateStore.read("searchContextQuery"))return false;
+  return (window.stateStore.read("totalQ")%SEARCH_REFRESH_EVERY)===0;
 }
 
 /* Update the small pill in the chat header. `count=0` for loading/err. */
