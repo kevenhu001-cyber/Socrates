@@ -81,7 +81,7 @@ export function mountRegistryList(): MountSpec[] {
       setPillRoot(hydrateRoot(host, <StrictMode><NewReplyPill /></StrictMode>));
     } },
     { hostId: 'sendBtnContent', label: 'send-button', mount: (host) => {
-      hydrateRoot(host, <StrictMode><SendButton /></StrictMode>);
+      createRoot(host).render(<StrictMode><SendButton /></StrictMode>);
     } },
     { hostId: 'startBtnContent', label: 'start-button', mount: (host) => {
       createRoot(host).render(<StrictMode><StartButton /></StrictMode>);

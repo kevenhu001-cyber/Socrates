@@ -197,6 +197,7 @@ async function refreshApiConfig() {
     try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}
     try { window.syncModelPills(); } catch (_) {}
     try { window.renderProviderList(); } catch (_) {}
+    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (_) {}
     return apiConfig;
   }
   try {
@@ -258,6 +259,7 @@ async function refreshApiConfig() {
     try { window.syncModelPills(); } catch (_) {}
     try { window.renderProviderList(); } catch (_) {}
     try { window.syncChatModel(); } catch (_) {}
+    try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (_) {}
     return apiConfig;
   } catch {
     apiConfig.activeId = null;

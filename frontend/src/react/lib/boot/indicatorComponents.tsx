@@ -18,6 +18,12 @@ function VoiceIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWid
 function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
 function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
 
+function usesSeparateMobileVoiceControl(): boolean {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 768px)').matches;
+}
+
 function useButtonActive(buttonId: string): boolean {
   const [active, setActive] = useState(false);
   useEffect(() => {
@@ -41,7 +47,7 @@ export function NewReplyPill() {
 }
 
 export function StartButton() {
-  return useButtonActive('startBtn') ? <SendArrowIcon /> : <VoiceIcon />;
+  return useButtonActive('startBtn') || usesSeparateMobileVoiceControl() ? <SendArrowIcon /> : <VoiceIcon />;
 }
 
 export function SendButton() {
@@ -49,5 +55,5 @@ export function SendButton() {
   const isActive = useButtonActive('sendBtn');
   return streamStatus === 'streaming'
     ? <StopSquareIcon />
-    : isActive ? <SendArrowIcon /> : <VoiceIcon />;
+    : isActive || usesSeparateMobileVoiceControl() ? <SendArrowIcon /> : <VoiceIcon />;
 }

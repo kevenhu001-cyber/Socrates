@@ -1046,7 +1046,7 @@ var I18N={
     "sidebar.plugins.enabled":"已启用",
     "sidebar.plugins.disabled":"已禁用",
     "topbar.modeChat":"聊天",
-    "topbar.modeTutor":"辅导",
+    "topbar.modeTutor":"工作",
     "voice.input":"语音输入",
     "voice.soon":"语音输入",
     "voice.toast":"语音输入暂不可用",
@@ -1954,15 +1954,19 @@ function applyI18n(){
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
   if(sb){
-    var startLabel=sb.classList.contains("active")?t("chat.send"):t("voice.input");
+    var separateMobileVoice=typeof window.matchMedia==="function"&&window.matchMedia("(max-width:768px)").matches;
+    var startLabel=sb.classList.contains("active")||separateMobileVoice?t("chat.send"):t("voice.input");
     sb.setAttribute("aria-label",startLabel);
     sb.setAttribute("title",startLabel);
+    sb.setAttribute("aria-disabled",!sb.classList.contains("active")&&separateMobileVoice?"true":"false");
   }
   var sendBtn=document.getElementById("sendBtn");
   if(sendBtn&&!sendBtn.classList.contains("chat-stop")&&!sendBtn.classList.contains("agent-stop")){
-    var sendLabel=sendBtn.classList.contains("active")?t("chat.send"):t("voice.input");
+    var separateMobileVoice=typeof window.matchMedia==="function"&&window.matchMedia("(max-width:768px)").matches;
+    var sendLabel=sendBtn.classList.contains("active")||separateMobileVoice?t("chat.send"):t("voice.input");
     sendBtn.setAttribute("aria-label",sendLabel);
     sendBtn.setAttribute("title",sendLabel);
+    sendBtn.setAttribute("aria-disabled",!sendBtn.classList.contains("active")&&separateMobileVoice?"true":"false");
   }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");

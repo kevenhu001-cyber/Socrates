@@ -13,6 +13,12 @@ import { getComposerMarkdown } from '../react/composer-input/controller.ts';
 // in index.html, so they are also exposed on `window` via
 // src/windowExports.js (see C-2.3 mirror block).
 
+function hasSeparateMobileVoiceControl(){
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(max-width: 768px)').matches;
+}
+
 /* autoResize — the chat composer is capped at 120px (≈6 lines),
    the topic setup textarea at 160px (≈8 lines). Reset height to
    "auto" first so shrinking text reflows correctly. */
@@ -36,11 +42,13 @@ export function updateStartBtn(){
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var label = canSend
+  var separateMobileVoice = hasSeparateMobileVoiceControl();
+  var label = canSend || separateMobileVoice
     ? (typeof window.t === "function" ? window.t("chat.send") : "Send")
     : (typeof window.t === "function" ? window.t("voice.input") : "Voice input");
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
+  b.setAttribute("aria-disabled", !canSend && separateMobileVoice ? "true" : "false");
   var wrap = document.getElementById("topicInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }
@@ -57,11 +65,13 @@ export function updateSendBtn(){
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var label = canSend
+  var separateMobileVoice = hasSeparateMobileVoiceControl();
+  var label = canSend || separateMobileVoice
     ? (typeof window.t === "function" ? window.t("chat.send") : "Send")
     : (typeof window.t === "function" ? window.t("voice.input") : "Voice input");
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
+  b.setAttribute("aria-disabled", !canSend && separateMobileVoice ? "true" : "false");
   var wrap = document.getElementById("chatInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

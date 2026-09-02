@@ -480,8 +480,8 @@
          landing #modeSegmented control automatically. Absolute-centered
          so it stays visually centered regardless of side-content width. -->
     <div class="top-mode-tabs" id="modeSegmentedTop" role="tablist" aria-label="Session mode">
-      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="tutor.modeChat">聊天</button>
-      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="tutor.modeTutor">辅导</button>
+      <button type="button" class="app-mode-toggle" data-mode="chat" role="tab" data-i18n-key="topbar.modeChat">聊天</button>
+      <button type="button" class="app-mode-toggle" data-mode="tutor" role="tab" data-i18n-key="topbar.modeTutor">工作</button>
     </div>
     <!-- P_mobile-topbar — compatibility mode switcher kept mounted for
          narrow layouts and accessibility. The final compact shell uses the
@@ -610,6 +610,9 @@
                 <button type="button" class="effort-item" data-effort="low" role="option"><span data-i18n-key="effort.low">Low</span></button>
               </div>
             </div>
+            <button class="mobile-mic-btn" id="topicMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
+            </button>
             <button class="start-btn" id="startBtn" aria-label="Voice input" title="Voice input">
               <span id="startBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
             </button>
@@ -772,6 +775,9 @@
                     </div>
                   </div>
                 </div>
+                <button class="mobile-mic-btn" id="chatMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
+                </button>
                 <button class="send-btn" id="sendBtn" aria-label="Voice input" title="Voice input">
                   <span id="sendBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
                 </button>

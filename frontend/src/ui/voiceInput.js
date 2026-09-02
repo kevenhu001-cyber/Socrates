@@ -20,11 +20,21 @@ function wrapForSurface(surface) {
   return document.getElementById(surface === 'topic' ? 'topicInputWrap' : 'chatInputWrap');
 }
 
+function mobileMicForSurface(surface) {
+  return document.getElementById(surface === 'topic' ? 'topicMobileMicBtn' : 'chatMobileMicBtn');
+}
+
 function setListening(surface, listening) {
   const primary = document.getElementById(surface === 'topic' ? 'startBtn' : 'sendBtn');
   if (primary) {
     primary.classList.toggle('is-listening', !!listening);
     primary.setAttribute('aria-pressed', listening ? 'true' : 'false');
+  }
+
+  const mobileMic = mobileMicForSurface(surface);
+  if (mobileMic) {
+    mobileMic.classList.toggle('is-listening', !!listening);
+    mobileMic.setAttribute('aria-pressed', listening ? 'true' : 'false');
   }
 
   const wrap = wrapForSurface(surface);

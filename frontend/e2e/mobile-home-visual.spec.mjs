@@ -43,6 +43,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       right: rect('#mobileIncognitoBtn'),
       modeTabs: rect('#modeSegmentedTop'),
       composer: rect('#topicInputWrap'),
+      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
       ideas: rect('.home-ideas'),
       /* .main is a transparent layout box; the painted surface is
          .main-content (the shell's page colour). The dark workbench uses
@@ -58,7 +59,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(168);
   expect(geometry.modeTabs?.height).toBeGreaterThanOrEqual(40);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(geometry.composer?.height).toBeLessThanOrEqual(132);
+  expect(geometry.composer?.height).toBe(64);
+  expect(geometry.topicFontSize).toBe(18);
   expect(geometry.ideas?.bottom).toBeLessThanOrEqual(geometry.composer?.y ?? 0);
   expect(geometry.ideas?.bottom).toBeLessThanOrEqual(820);
   expect(geometry.composer?.y).toBeGreaterThan(600);
@@ -131,7 +133,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
     .toBeGreaterThan(beforeFocus + 24);
   await expect(composer.locator('.effort-picker')).toBeVisible();
-  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(0);
+  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(1);
   await expect(composer.locator('.start-btn')).toBeVisible();
   await expect(composer.locator('.start-btn')).toHaveAttribute('aria-label', 'Send');
 

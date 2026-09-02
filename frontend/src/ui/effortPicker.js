@@ -9,8 +9,9 @@
  *     opens Settings.
  *   - 思维强度 (Reasoning effort): 高 / 中 / 低.
  *
- * The trigger label stays compact (just the effort word) to avoid the
- * text-clipping seen when it grew too wide.
+ * The trigger stays compact on desktop. On a focused phone composer it also
+ * surfaces the active model name next to the effort word, matching the
+ * two-line mobile composer in the reference UI.
  *
  * Menu positioning uses position:fixed computed from the trigger's
  * bounding rect on open. The composer wrap has overflow:hidden +
@@ -62,6 +63,23 @@ function _labelFor(v) {
   if (v === "high") return _t("effort.high", "High");
   if (v === "low") return _t("effort.low", "Low");
   return _t("effort.medium", "Medium");
+}
+
+function _activeModelLabel() {
+  var cfg = window.apiConfig || {};
+  var providers = Array.isArray(cfg.providers) ? cfg.providers : [];
+  var active = providers.find(function (p) { return p && p.id === cfg.activeId; });
+  if (!active) return "";
+  var label = String(active.label || "").trim();
+  var model = String(active.model || "").trim();
+  if (label && label !== "Default") return label;
+  return model;
+}
+
+function _triggerLabel(v) {
+  var effort = _labelFor(v);
+  var model = _activeModelLabel();
+  return model ? model + " " + effort : effort;
 }
 
 function _esc(s) {
@@ -224,8 +242,15 @@ export function syncEffortUI() {
        trigger's bar indicator can fill in the right number of segments
        without each picker having to listen for changes. */
     picker.setAttribute("data-effort", v);
+    var displayLabel = _triggerLabel(v);
+    var modelLabel = _activeModelLabel();
     var label = picker.querySelector(".effort-label");
-    if (label) label.textContent = _labelFor(v);
+    if (label) label.textContent = displayLabel;
+    var trigger = picker.querySelector(".effort-trigger");
+    if (trigger) {
+      trigger.setAttribute("aria-label", displayLabel);
+      trigger.setAttribute("data-model-label", modelLabel);
+    }
     var menu = picker.querySelector(".effort-menu");
     if (menu) menu.innerHTML = _modelSectionHTML() + _effortSectionHTML(v);
   });
