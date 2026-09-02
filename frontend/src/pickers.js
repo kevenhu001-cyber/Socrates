@@ -20,6 +20,136 @@ function getActiveProvider(){
   return (window.apiConfig.providers||[]).find(function(p){return p.id===window.apiConfig.activeId})||null;
 }
 
+/* ─── Model glyph — visual fingerprint per provider ─────────────────
+   The chat-header model picker previously showed the model label as a
+   plain string. Long names (e.g. user-defined providers with a full
+   model id) would ellipsis-truncate, which looks incomplete and
+   unreadable. This function returns a compact, unique SVG glyph per
+   provider so the trigger button can show a recognisable visual
+   marker instead of (or alongside) the text.
+
+   Identification strategy:
+     1. Built-in Beagle gets a dedicated "compass" mark.
+     2. Known upstream providers (openai / anthropic / google / meta /
+        mistral / deepseek / qwen / zhipu / moonshot / ollama) get a
+        distinctive shape + provider accent colour, mapped from the
+        configured base URL or model name.
+     3. Anything else falls back to a deterministic hash of the model
+        id + URL, picking one of the remaining glyphs so two
+        differently-configured providers never collide.
+
+   The returned object is plain data (kind + tint) so the SVG can be
+   rendered into both the trigger button and the dropdown rows with
+   matching visuals. */
+var GLYPH_KINDS = ["compass", "hexagon", "diamond", "triangle", "tilt-square", "wave", "mountain", "leaf"];
+
+function _hashString(s){
+  /* djb2 — fast, deterministic, good enough for picking a stable
+     visual variant for arbitrary user-defined providers. */
+  var h = 5381;
+  for (var i = 0; i < s.length; i++) {
+    h = ((h << 5) + h) + s.charCodeAt(i);
+    h = h & 0xffffffff;
+  }
+  return Math.abs(h);
+}
+
+function _glyphFromProvider(p){
+  if (!p) return { kind: "compass", tint: "var(--accent-000)" };
+  if (p.isBuiltIn) return { kind: "compass", tint: "var(--accent-000)" };
+  var url = (p.url || "").toLowerCase();
+  var model = (p.model || "").toLowerCase();
+  var label = (p.label || "").toLowerCase();
+  var id = (p.id || "").toLowerCase();
+  var hay = url + " " + model + " " + label + " " + id;
+
+  /* Provider fingerprint table — keyed by substring match. Order
+     matters: more specific markers come first. */
+  var markers = [
+    { match: /openai|gpt-|o1-|o3-|chatgpt|api\.openai/,        kind: "hexagon",     tint: "#10a37f" },
+    { match: /anthropic|claude/,                              kind: "diamond",     tint: "#cc785c" },
+    { match: /google|gemini|gemma|generativelanguage/,        kind: "triangle",    tint: "#4a8af4" },
+    { match: /meta\.com|llama|meta-llama/,                    kind: "tilt-square", tint: "#0866ff" },
+    { match: /mistral|codestral|mixtral/,                     kind: "leaf",        tint: "#ff7000" },
+    { match: /deepseek/,                                      kind: "wave",        tint: "#5b6cf2" },
+    { match: /qwen|alibaba|dashscope|tongyi|aliyun/,          kind: "mountain",    tint: "#a855f7" },
+    { match: /zhipu|glm|bigmodel|chatglm/,                    kind: "hexagon",     tint: "#3273ff" },
+    { match: /moonshot|kimi/,                                 kind: "diamond",     tint: "#ffb800" },
+    { match: /ollama|localhost|127\.0\.0\.1|0\.0\.0\.0/,      kind: "compass",     tint: "#7e8aa4" },
+    { match: /cohere|command-r|command-/,                     kind: "wave",        tint: "#e879f9" },
+    { match: /perplexity|pplx/,                               kind: "triangle",    tint: "#22b8cd" },
+    { match: /xai|grok/,                                      kind: "tilt-square", tint: "#9aa3b2" },
+    { match: /minimax|hailuo|abab/,                            kind: "leaf",        tint: "#f43f5e" },
+  ];
+  for (var i = 0; i < markers.length; i++) {
+    if (markers[i].match.test(hay)) return markers[i];
+  }
+  /* Unknown provider — pick a stable glyph/tint pair by hashing the
+     configuration so the same provider always renders the same mark. */
+  var seed = (p.id || "") + "|" + (p.url || "") + "|" + (p.model || "");
+  var h = _hashString(seed);
+  var fallbackTints = ["#6366f1", "#0ea5e9", "#14b8a6", "#f59e0b", "#ef4444", "#a855f7", "#22c55e", "#ec4899"];
+  return { kind: GLYPH_KINDS[h % GLYPH_KINDS.length], tint: fallbackTints[h % fallbackTints.length] };
+}
+
+/* Render a model glyph as an inline SVG string. viewBox is 16x16 so
+   it sits crisply at 14-18px. Every shape uses `currentColor` for
+   its stroke and fill so the glyph inherits the parent colour
+   (hover/active/menu-open).  Fill regions are dimmed with
+   `opacity` instead of a different colour, which keeps the glyph
+   readable on both light and dark surfaces and lets the trigger's
+   accent colour show through on the active model. */
+function modelGlyphSVG(g, opts){
+  opts = opts || {};
+  var size = opts.size || 16;
+  var sw = 1.5;
+  var k = g.kind;
+  var body = "";
+  if (k === "compass") {
+    /* Outer circle + inner dot + tick marks — reads as a compass face. */
+    body = '<circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="' + sw + '"/>' +
+           '<circle cx="8" cy="8" r="1.6" fill="currentColor" fill-opacity="0.85" stroke="none"/>' +
+           '<path d="M8 2.2v2.4M8 11.4v2.4M2.2 8h2.4M11.4 8h2.4" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" opacity="0.5"/>';
+  } else if (k === "hexagon") {
+    /* Pointy-top hex outline + softer inner hex. */
+    body = '<path d="M8 1.6 13.7 4.8v6.4L8 14.4 2.3 11.2V4.8z" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linejoin="round"/>' +
+           '<path d="M8 5.4 11 7.2v3.6L8 12.6 5 10.8V7.2z" fill="currentColor" fill-opacity="0.22" stroke="none"/>';
+  } else if (k === "diamond") {
+    /* Rounded diamond + horizontal seam. */
+    body = '<path d="M8 1.8 14.2 8 8 14.2 1.8 8z" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linejoin="round"/>' +
+           '<path d="M3.8 8h8.4" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" opacity="0.7"/>';
+  } else if (k === "triangle") {
+    /* Equilateral triangle + centre dot. */
+    body = '<path d="M8 2 14.4 13.2H1.6z" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linejoin="round"/>' +
+           '<circle cx="8" cy="9.2" r="1.4" fill="currentColor" fill-opacity="0.85" stroke="none"/>';
+  } else if (k === "tilt-square") {
+    /* Tilted square + corner accent. */
+    body = '<rect x="2.6" y="2.6" width="10.8" height="10.8" rx="1.6" transform="rotate(20 8 8)" fill="none" stroke="currentColor" stroke-width="' + sw + '"/>' +
+           '<circle cx="11.6" cy="4.4" r="1.2" fill="currentColor" fill-opacity="0.85" stroke="none"/>';
+  } else if (k === "wave") {
+    /* Twin sine arcs + a small dot at the trough. */
+    body = '<path d="M1.6 9.6c1.6-3.2 3.2-3.2 4.8 0s3.2 3.2 4.8 0 3.2-3.2 4.8 0" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round"/>' +
+           '<circle cx="6.4" cy="9.6" r="1.1" fill="currentColor" fill-opacity="0.85" stroke="none"/>';
+  } else if (k === "mountain") {
+    /* Twin peaks with a third short peak between. */
+    body = '<path d="M1.6 13.2 5.4 6.6 7.6 9.4 9.6 6.8 11.8 9.8 14.4 13.2z" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linejoin="round"/>' +
+           '<circle cx="11.8" cy="9.8" r="0.9" fill="currentColor" fill-opacity="0.85" stroke="none"/>';
+  } else if (k === "leaf") {
+    /* Two overlapping leaf curves meeting at a point. */
+    body = '<path d="M3 13c0-5.5 4.5-10 10-10 0 5.5-4.5 10-10 10z" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linejoin="round"/>' +
+           '<path d="M5.2 10.8C7 9 9 7.2 11.2 5.6" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" opacity="0.65"/>';
+  } else {
+    body = '<circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="' + sw + '"/>';
+  }
+  return '<svg class="model-glyph" viewBox="0 0 16 16" width="' + size + '" height="' + size + '" fill="none" aria-hidden="true">' + body + '</svg>';
+}
+
+/* Public helpers — used by the trigger renderer and the dropdown
+   rows. `getModelGlyph` returns the {kind,tint} object; the SVG
+   string is built on demand so callers can size it independently. */
+function getModelGlyph(p){ return _glyphFromProvider(p); }
+function renderModelGlyph(p, opts){ return modelGlyphSVG(_glyphFromProvider(p), opts); }
+
 /* ─── Shared: render provider items HTML ───
    Used by syncModelPills() and toggleChatModelMenu() to avoid
    duplicating the same item rendering code. */
@@ -43,8 +173,12 @@ function renderProviderItemsHTML(providers, activeId){
     var sub = p.isBuiltIn ? "" : esc(p.model || "");
     var url = esc(p.url || "");
     var subLine = sub && sub !== name ? sub : (p.isBuiltIn ? "" : url);
+    /* Per-provider glyph — keeps the dropdown visually consistent with
+       the trigger button so users can pair the two at a glance. */
+    var glyph = modelGlyphSVG(_glyphFromProvider(p), { size: 18 });
     html += '<button type="button" class="model-picker-item' + (isActive ? " active" : "") +
             '" data-id="' + esc(p.id || "") + '" role="option" aria-selected="' + isActive + '">';
+    html += '<span class="model-picker-item-glyph">' + glyph + '</span>';
     html += '<span class="model-picker-item-main"><span class="model-picker-item-name">' + name + '</span>';
     if (subLine) html += '<span class="model-picker-item-sub">' + subLine + '</span>';
     html += '</span>';
@@ -176,17 +310,37 @@ document.addEventListener("click", function(e){
 /* ============================================================
    CHAT MODEL — display active model in chat header, switch mid-conversation
    ============================================================ */
-/* Internal version used by syncModelPills to avoid redundant calls */
+/* Internal version used by syncModelPills to avoid redundant calls.
+   The visible trigger is just a glyph now (see index.html) — the model
+   label is preserved on a sr-only <span> so screen readers still hear
+   the provider name. The glyph itself swaps on every model change. */
 function _syncChatModelInternal(){
   var label=document.getElementById("chatModelLabel");
-  if(!label)return;
   var trigger=document.getElementById("chatModel");
+  var glyphEl=trigger && trigger.querySelector(".chat-model-glyph");
+  if(!label && !glyphEl)return;
   var p=getActiveProvider();
-  label.textContent=p?((p.label&&p.label!=="Default")?p.label:(p.model||p.label||"Model")):"Model";
-  label.title=p&&!p.isBuiltIn?(p.model||""):"";
+  var displayName=p?((p.label&&p.label!=="Default")?p.label:(p.model||p.label||"Model")):"Model";
+  if(label){
+    label.textContent=displayName;
+    label.title=p&&!p.isBuiltIn?(p.model||""):"";
+  }
   if(trigger){
-    if(p)trigger.classList.add("has-model");
-    else trigger.classList.remove("has-model");
+    if(p){
+      trigger.classList.add("has-model");
+      trigger.setAttribute("data-glyph", (_glyphFromProvider(p)).kind);
+    } else {
+      trigger.classList.remove("has-model");
+      trigger.removeAttribute("data-glyph");
+    }
+    /* Update the accessible label to match the visible glyph so AT
+       users hear the same provider name everyone else sees. */
+    if(p) trigger.setAttribute("aria-label", "Model: " + displayName + ". Click to switch.");
+    else trigger.setAttribute("aria-label", "Pick or configure the model for this conversation");
+  }
+  if(glyphEl){
+    var g = p ? _glyphFromProvider(p) : { kind: "compass", tint: "var(--accent-000)" };
+    glyphEl.innerHTML = modelGlyphSVG(g, { size: 14 });
   }
 }
 function syncChatModel(){

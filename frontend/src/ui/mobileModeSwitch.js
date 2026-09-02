@@ -75,7 +75,18 @@ export function selectAppMode(mode) {
    state.phase==="chat", or any child inside #msgList. State changes
    that don't touch msgList (e.g. setting a topic) are caught when
    callers invoke this via syncAppModeUI() / resetApp() — the
-   MutationObserver on msgList covers the message-driven path. */
+   MutationObserver on msgList covers the message-driven path.
+
+   P_hide-mode-switch-monotonic — once a conversation has started
+   (syncConversationActive flips the body attribute to true), the
+   attribute stays true for the rest of the page lifetime. The user
+   picks Chat or Tutor once, on the landing surface; after that the
+   top-bar pill disappears and never reappears (not on resetApp, not
+   on a new chat). To switch modes again the user has to refresh the
+   page, which mirrors the "only show before the conversation starts"
+   contract: the toggle is a pre-flight choice, not an in-flight one. */
+var _everStartedConversation = false;
+
 function _isConversationActive() {
   if (stateStore.read('topic')) return true;
   var kbNodes = stateStore.read('kbNodes');
@@ -92,10 +103,27 @@ function _isConversationActive() {
 }
 
 export function syncConversationActive() {
-  var active = _isConversationActive();
+  if (_isConversationActive()) _everStartedConversation = true;
+  var active = _everStartedConversation;
   try {
     document.body.setAttribute("data-conversation-active", active ? "true" : "false");
   } catch (_) {}
+  /* P_hide-mode-switch-in-conversation — inline-style fallback. CSS
+     specificity wars with the cowork theme make a pure-CSS rule
+     fragile (the cowork mobile block re-asserts display:flex with
+     !important on the same selectors). Setting the inline style
+     directly here is the final authority: no cowork rule can beat
+     an inline display:none !important. */
+  _applyModeSwitchVisibility(active);
+}
+
+function _applyModeSwitchVisibility(hidden) {
+  var els = document.querySelectorAll("#modeSegmentedTop, #mobileMode");
+  for (var i = 0; i < els.length; i++) {
+    try {
+      els[i].style.setProperty("display", hidden ? "none" : "", "important");
+    } catch (_) {}
+  }
 }
 
 /* P_hide-mode-switch-in-conversation — wire a MutationObserver on
