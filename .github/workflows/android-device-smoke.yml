@@ -94,7 +94,12 @@ jobs:
       - name: Reclaim runner disk for Android emulator
         run: |
           sudo rm -rf -- "$ANDROID_SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
-          df -h "$ANDROID_SDK_ROOT" "$RUNNER_TEMP"
+          # The Detox build fills the Gradle cache; the AVD userdata
+          # partition needs ~7.4 GB free at /home/runner/.android, so drop
+          # build-only caches before the emulator boots.
+          rm -rf ~/.gradle/caches ~/.gradle/wrapper
+          rm -rf ~/.npm/_cacache
+          df -h "$ANDROID_SDK_ROOT" "$RUNNER_TEMP" /home/runner/.android
 
       - name: Enable KVM group permissions
         run: |
