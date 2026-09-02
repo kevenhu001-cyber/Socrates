@@ -272,7 +272,7 @@ export const filesApi = {
   async upload(asset: MobileFileAsset, sessionId?: string) {
     if (asset.size && asset.size > 25 * 1024 * 1024) throw new ApiError(413, 'Files must be smaller than 25 MB', { code: 'PAYLOAD_TOO_LARGE' });
     const form = new FormData();
-    form.append('file', { uri: asset.uri, name: asset.name, type: asset.mimeType || 'application/octet-stream' } as never);
+    form.append('file', { uri: asset.uri, name: asset.name, type: asset.mimeType || 'application/octet-stream' } as unknown as Blob);
     if (sessionId) form.append('sessionId', sessionId);
     return apiRequest<{ id: string; name: string; mimeType: string; size: number; kind: string }>('/files', { method: 'POST', body: form });
   },

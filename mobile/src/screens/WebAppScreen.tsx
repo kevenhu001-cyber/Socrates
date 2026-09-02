@@ -135,11 +135,13 @@ export function WebAppScreen() {
 
   const shouldStartLoad = useCallback((request: { url: string }) => {
     if (!isExternalScheme(request.url)) return true;
-    void Linking.openURL(request.url).catch(() => undefined);
+    void Linking.openURL(request.url).catch((err) => {
+      console.warn('[WebApp] Failed to open external URL:', request.url, err);
+    });
     return false;
   }, []);
 
-  const surface = themeMode === 'light' ? '#E6DEC8' : '#000000';
+  const surface = themeMode === 'light' ? '#E6DEC8' : '#101318';
   const text = themeMode === 'light' ? '#221A0E' : '#F7F7F7';
   const muted = themeMode === 'light' ? '#5B513F' : '#A3A3A3';
 

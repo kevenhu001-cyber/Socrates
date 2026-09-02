@@ -12,6 +12,8 @@ import { unregisterPushNotifications } from '../native/push';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
 
+export type ReasoningEffort = 'low' | 'medium' | 'high';
+
 export interface AppState {
   authStatus: AuthStatus;
   user: User | null;
@@ -19,6 +21,10 @@ export interface AppState {
   activeSession: Session | null;
   draft: string;
   pendingAttachments: Attachment[];
+  selectedModel: string;
+  reasoningEffort: ReasoningEffort;
+  webSearchEnabled: boolean;
+  isIncognito: boolean;
   isLoading: boolean;
   isStreaming: boolean;
   isOnline: boolean;
@@ -32,6 +38,10 @@ const initialState: AppState = {
   activeSession: null,
   draft: '',
   pendingAttachments: [],
+  selectedModel: 'beagle-built-in',
+  reasoningEffort: 'medium',
+  webSearchEnabled: true,
+  isIncognito: false,
   isLoading: false,
   isStreaming: false,
   isOnline: true,
@@ -74,26 +84,41 @@ class AppStore {
     this.listeners.forEach((listener) => listener());
   }
 
+  setAuthStatusSignedOut() {
+    this.setState({ authStatus: 'signedOut', isLoading: false });
+  }
+
   async bootstrap() {
-    const cachedUser = await readCachedUser();
     try {
-      const user = await authApi.me();
-      this.setState({ authStatus: 'signedIn', user, error: null });
-    } catch (error) {
-      const credentialFailure = error instanceof ApiError && (error.status === 401 || error.status === 403);
-      if (!cachedUser || credentialFailure) {
-        this.setState({ authStatus: 'signedOut', user: null, isLoading: false });
-        return;
+      let cachedUser: User | null = null;
+      try {
+        cachedUser = await readCachedUser();
+      } catch (cacheError) {
+        console.warn('[AppStore] Failed to read cached user during bootstrap:', cacheError);
       }
-      this.setState({
-        authStatus: 'signedIn',
-        user: cachedUser,
-        isOnline: false,
-        isLoading: false,
-        error: tSync('chat.offlineBanner'),
-      });
+
+      try {
+        const user = await authApi.me();
+        this.setState({ authStatus: 'signedIn', user, error: null });
+      } catch (error) {
+        const credentialFailure = error instanceof ApiError && (error.status === 401 || error.status === 403);
+        if (!cachedUser || credentialFailure) {
+          this.setState({ authStatus: 'signedOut', user: null, isLoading: false });
+          return;
+        }
+        this.setState({
+          authStatus: 'signedIn',
+          user: cachedUser,
+          isOnline: false,
+          isLoading: false,
+          error: tSync('chat.offlineBanner'),
+        });
+      }
+      await Promise.allSettled([this.refreshSessions(), this.syncOutbox()]);
+    } catch (criticalError) {
+      console.error('[AppStore] Fatal bootstrap failure, unlocking loading screen:', criticalError);
+      this.setState({ authStatus: 'signedOut', user: null, isLoading: false });
     }
-    await Promise.allSettled([this.refreshSessions(), this.syncOutbox()]);
   }
 
   async login(email: string, password: string) {
@@ -273,8 +298,25 @@ class AppStore {
 
   removeAttachment(attachmentId: string) {
     this.setState({
-      pendingAttachments: this.state.pendingAttachments.filter((attachment) => attachment.id !== attachmentId),
+      pendingAttachments: this.state.pendingAttachments.filter((item) => item.id !== attachmentId),
+      error: null,
     });
+  }
+
+  setSelectedModel(selectedModel: string) {
+    this.setState({ selectedModel });
+  }
+
+  setReasoningEffort(reasoningEffort: ReasoningEffort) {
+    this.setState({ reasoningEffort });
+  }
+
+  setWebSearchEnabled(webSearchEnabled: boolean) {
+    this.setState({ webSearchEnabled });
+  }
+
+  toggleIncognito() {
+    this.setState({ isIncognito: !this.state.isIncognito });
   }
 
   stopGenerating() {
@@ -351,6 +393,7 @@ class AppStore {
       const stop = await startChatStream(session.id, {
         messages: buildChatHistory(nextMessages),
         mode: session.mode,
+        reasoning_effort: this.state.reasoningEffort,
       }, {
         onDelta: (delta) => this.appendAssistant(delta, generation),
         onReasoning: (reasoning) => this.appendReasoning(reasoning, generation),

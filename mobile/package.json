@@ -25,6 +25,7 @@
     "@expo/metro-runtime": "~57.0.15",
     "@socrates/core": "file:../packages/core",
     "@socrates/contracts": "file:../packages/contracts",
+    "@socrates/theme": "file:../packages/theme",
     "expo": "~57.0.19",
     "expo-clipboard": "~57.0.1",
     "expo-document-picker": "~57.0.1",

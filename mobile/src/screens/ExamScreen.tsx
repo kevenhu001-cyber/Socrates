@@ -7,6 +7,7 @@ import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { native } from '../native/native';
+import type { JsonObject, JsonValue } from '@socrates/contracts';
 import { generateExam, gradeExam, type ExamQuestion } from '../data/exam/examGenerator';
 import { sessionsApi } from '../data/api/client';
 
@@ -59,7 +60,24 @@ export function ExamScreen({ navigation }: { navigation: any }) {
   const submit = async () => {
     const result = gradeExam(questions, answers);
     setGrade(result); setMode('results');
-    if (sessionId.current) await sessionsApi.patch(sessionId.current, { examData: { topic, difficulty, count, types: ['multiple-choice', 'fill-blank', 'short-answer'], questions: questions as never, answers: answers as never, submitted: true, results: result as never } }).catch(() => undefined);
+    if (sessionId.current) {
+      try {
+        await sessionsApi.patch(sessionId.current, {
+          examData: {
+            topic,
+            difficulty,
+            count,
+            types: ['multiple-choice', 'fill-blank', 'short-answer'],
+            questions: questions as unknown as JsonValue[],
+            answers: answers as unknown as JsonObject,
+            submitted: true,
+            results: result as unknown as JsonValue,
+          },
+        });
+      } catch (patchErr) {
+        console.warn('[Exam] Failed to save exam results:', patchErr);
+      }
+    }
   };
 
   if (mode === 'generating') return (

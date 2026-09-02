@@ -5,5 +5,6 @@ module.exports = {
   moduleNameMapper: {
     '^@socrates/contracts$': '<rootDir>/../packages/contracts/src/index.ts',
     '^@socrates/core$': '<rootDir>/../packages/core/src/index.ts',
+    '^@socrates/theme$': '<rootDir>/../packages/theme/src/index.ts',
   },
 };

@@ -44,8 +44,8 @@ export function TutorScreen({ navigation }: Props) {
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg }]}>
         <Text style={[styles.cardTitle, { color: colors.text }]}>{t('tutor.boundary')}</Text>
         <Text style={[styles.body, { color: colors.textMuted }]}>{t('tutor.boundaryBody')}</Text>
-        <AnimatedPressable onPress={openTutorChat} style={[styles.button, { backgroundColor: colors.text, borderRadius: radius.md }]}>
-          <Text style={{ color: colors.background, fontWeight: '700' }}>{t('tutor.beginDiagnosis')}</Text>
+        <AnimatedPressable onPress={openTutorChat} style={[styles.button, { backgroundColor: colors.accent, borderRadius: radius.md }]}>
+          <Text style={{ color: colors.textInverse, fontWeight: '700' }}>{t('tutor.beginDiagnosis')}</Text>
         </AnimatedPressable>
       </View>
     </Screen>

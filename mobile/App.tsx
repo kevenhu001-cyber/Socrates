@@ -2,14 +2,21 @@ import 'react-native-gesture-handler';
 import React, { useCallback, useEffect } from 'react';
 import { ActivityIndicator, AppState, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, createNavigationContainerRef, DarkTheme } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  createNavigationContainerRef,
+  DarkTheme,
+  DefaultTheme,
+  type NavigationContainerRefWithCurrent,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { EmbeddedTarget } from '@socrates/contracts';
-import { AppDrawer, AppDrawerProvider, useAppDrawer } from './src/components/AppDrawer';
+import { AppDrawer, AppDrawerProvider, useAppDrawer, type NativeDestination } from './src/components/AppDrawer';
 import { I18nProvider, useT } from './src/i18n';
 import { appStore, useAppStore } from './src/stores/appStore';
 import { getNetworkStatus, subscribeToNetworkStatus } from './src/native/network';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ArtifactPreviewScreen } from './src/screens/ArtifactPreviewScreen';
 import { ChatScreen } from './src/screens/ChatScreen';
@@ -31,23 +38,67 @@ import { WorkspaceScreen } from './src/screens/WorkspaceScreen';
 import type { RootStackParamList } from './src/navigation/types';
 import { hideAppSplash, prepareAppRuntime, setAppBackgroundColor } from './src/native/appRuntime';
 
-void prepareAppRuntime();
-void setAppBackgroundColor('#000000');
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
-const navigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#000000',
-    card: '#141414',
-    border: '#2A2A2A',
-    text: '#F7F7F7',
-    primary: '#E9BE53',
-  },
-};
+/**
+ * Type-safe dispatcher that exhaustively routes to zero-parameter destinations
+ * without type assertions like `as never` or `any`.
+ */
+function navigateToDestination(
+  ref: NavigationContainerRefWithCurrent<RootStackParamList>,
+  route: NativeDestination,
+) {
+  if (!ref.isReady()) return;
+  switch (route) {
+    case 'Home':
+      ref.navigate('Home');
+      break;
+    case 'Chat':
+      ref.navigate('Chat');
+      break;
+    case 'Tutor':
+      ref.navigate('Tutor');
+      break;
+    case 'Library':
+      ref.navigate('Library');
+      break;
+    case 'ExamSession':
+      ref.navigate('ExamSession');
+      break;
+    case 'Settings':
+      ref.navigate('Settings');
+      break;
+    case 'Search':
+      ref.navigate('Search');
+      break;
+    case 'More':
+      ref.navigate('More');
+      break;
+    case 'Projects':
+      ref.navigate('Projects');
+      break;
+    case 'Scheduled':
+      ref.navigate('Scheduled');
+      break;
+    case 'Plugins':
+      ref.navigate('Plugins');
+      break;
+    case 'Knowledge':
+      ref.navigate('Knowledge');
+      break;
+    case 'Mistakes':
+      ref.navigate('Mistakes');
+      break;
+    case 'Workspace':
+      ref.navigate('Workspace');
+      break;
+    default: {
+      const _exhaustiveCheck: never = route;
+      console.warn(`[Navigation] Unhandled destination route: ${_exhaustiveCheck}`);
+    }
+  }
+}
 
 function LoadingScreen() {
   const { colors, typography } = useTheme();
@@ -56,7 +107,7 @@ function LoadingScreen() {
     <View style={[styles.loading, { backgroundColor: colors.background }]}>
       <ActivityIndicator color={colors.accent} />
       <Text style={[styles.loadingText, { color: colors.textMuted, fontFamily: typography.body }]}>
-        {t('app.loading')}
+        {t('app.loading') || 'Loading...'}
       </Text>
     </View>
   );
@@ -64,8 +115,23 @@ function LoadingScreen() {
 
 function NativeStack() {
   const state = useAppStore();
+  const { colors } = useTheme();
   if (state.authStatus === 'booting') return <LoadingScreen />;
   if (state.authStatus === 'signedOut') return <AuthScreen />;
+
+  const baseNavTheme = colors.statusBarStyle === 'light' ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...baseNavTheme,
+    colors: {
+      ...baseNavTheme.colors,
+      primary: colors.accent,
+      background: colors.background,
+      card: colors.surface,
+      border: colors.border,
+      text: colors.text,
+      notification: colors.accent,
+    },
+  };
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
@@ -95,28 +161,60 @@ function NativeStack() {
 function NativeApp() {
   const state = useAppStore();
   const { open: drawerOpen, closeDrawer } = useAppDrawer();
+  const { colors } = useTheme();
+
+  // Keep system UI background dynamically in sync with the active theme color
+  useEffect(() => {
+    void setAppBackgroundColor(colors.background).catch((err) => {
+      console.warn('[App] Failed to update system background color:', err);
+    });
+  }, [colors.background]);
 
   useEffect(() => {
     let active = true;
-    void appStore.bootstrap();
-    void getNetworkStatus().then((online) => {
-      if (active) appStore.setOnline(online);
-    }).catch(() => undefined);
+
+    // 1. Defensively bootstrap authentication and session state
+    (async () => {
+      try {
+        await appStore.bootstrap();
+      } catch (error) {
+        console.error('[App] Bootstrap crashed in root effect:', error);
+        // Force state unlock so the user is not left stuck on LoadingScreen
+        if (active && appStore.getSnapshot().authStatus === 'booting') {
+          appStore.setAuthStatusSignedOut();
+        }
+      }
+    })();
+
+    // 2. Safely read network status without swallowing errors
+    getNetworkStatus()
+      .then((online) => {
+        if (active) appStore.setOnline(online);
+      })
+      .catch((error) => {
+        console.warn('[App] Initial network status retrieval failed, assuming online:', error);
+        if (active) appStore.setOnline(true);
+      });
+
+    // 3. Subscribe to network status changes
     const unsubscribeNetwork = subscribeToNetworkStatus((online) => {
       if (active) appStore.setOnline(online);
     });
+
+    // 4. Handle app resume from background
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active' && active && appStore.getSnapshot().authStatus === 'signedIn') {
-        void appStore.resumeForeground();
+        appStore.resumeForeground().catch((err) => {
+          console.warn('[App] Failed to resume foreground state:', err);
+        });
       }
     });
+
     return () => {
       active = false;
       unsubscribeNetwork();
       appStateSubscription.remove();
     };
-    // Bootstrap and native subscriptions belong to the process lifetime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -135,16 +233,18 @@ function NativeApp() {
     return () => subscription.remove();
   }, [closeDrawer, drawerOpen]);
 
-  const navigate = useCallback((route: 'Home' | 'Library' | 'Search' | 'ExamSession' | 'Settings' | 'More' | 'Workspace' | 'Projects' | 'Scheduled' | 'Plugins' | 'Knowledge' | 'Mistakes') => {
-    if (navigationRef.isReady()) navigationRef.navigate(route);
+  const navigate = useCallback((route: NativeDestination) => {
+    navigateToDestination(navigationRef, route);
   }, []);
 
   const openEmbedded = useCallback((target: EmbeddedTarget, title: string) => {
-    if (navigationRef.isReady()) navigationRef.navigate('Embedded', { target, title });
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('Embedded', { target, title });
+    }
   }, []);
 
   return (
-    <View style={[styles.root, styles.appFrame]}>
+    <View style={[styles.root, styles.appFrame, { backgroundColor: colors.background }]}>
       {state.authStatus === 'signedIn' ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} /> : null}
       <View style={styles.mainPane}><NativeStack /></View>
     </View>
@@ -152,20 +252,31 @@ function NativeApp() {
 }
 
 export default function App() {
+  // Defensively initialize native runtime on mount rather than at module load
+  useEffect(() => {
+    void prepareAppRuntime().catch((err) => {
+      console.warn('[App] Failed to prepare native app runtime:', err);
+    });
+  }, []);
+
   const revealApp = useCallback(() => {
-    void hideAppSplash();
+    void hideAppSplash().catch((err) => {
+      console.warn('[App] Failed to hide app splash screen:', err);
+    });
   }, []);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <View onLayout={revealApp} style={styles.root} testID="app-root">
-        <ThemeProvider>
-          <I18nProvider>
-            <AppDrawerProvider>
-              <NativeApp />
-            </AppDrawerProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <I18nProvider>
+              <AppDrawerProvider>
+                <NativeApp />
+              </AppDrawerProvider>
+            </I18nProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </View>
     </SafeAreaProvider>
   );
@@ -174,7 +285,7 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#101318',
   },
   appFrame: {
     flexDirection: 'row',

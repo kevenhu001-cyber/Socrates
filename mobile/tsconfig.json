@@ -3,8 +3,9 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
+    "forceConsistentCasingInFileNames": true,
     "moduleResolution": "Bundler",
-    "module": "preserve",
+    "module": "ESNext",
     "ignoreDeprecations": "6.0",
     "customConditions": [
       "react-native"
@@ -22,6 +23,9 @@
       ],
       "@socrates/core": [
         "../packages/core/src/index.ts"
+      ],
+      "@socrates/theme": [
+        "../packages/theme/src/index.ts"
       ]
     }
   },
