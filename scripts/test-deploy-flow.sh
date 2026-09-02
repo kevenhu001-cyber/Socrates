@@ -16,6 +16,9 @@ make_fixture() {
   printf 'old asset\n' > "$base/app-root/assets/old.js"
   printf '<html>status</html>\n' > "$base/server/src/status.html"
   printf 'try_files /status.1.html =404;\n' > "$base/etc/status.conf"
+  # App nginx config with the managed SPA fallback that deploy.sh
+  # set_app_index_target() rewrites to the freshly deployed entry.
+  printf 'try_files $uri $uri/ /__APP_INDEX__;\n' > "$base/etc/app.conf"
 
   tr -d '\r' < "$ROOT/deploy.sh" > "$base/deploy.sh"
   chmod +x "$base/deploy.sh"
@@ -66,12 +69,32 @@ SH
 
   cat > "$base/bin/curl" <<'SH'
 #!/usr/bin/env bash
+# Mimic `curl -o <file>`: the deploy's public-bundle gate downloads the
+# live entry and compares its md5 with the freshly deployed index.<TS>.html,
+# which the npm build mock below writes as '<html>new frontend</html>\n'.
+output_file=""
+prev_arg=""
+for arg in "$@"; do
+  if [[ "$prev_arg" == "-o" ]]; then
+    output_file="$arg"
+    break
+  fi
+  prev_arg="$arg"
+done
+if [[ -n "$output_file" ]]; then
+  printf '<html>new frontend</html>\n' > "$output_file"
+fi
 if [[ "${MOCK_GATE_FAIL:-0}" == "1" && "$*" == *"https://app.topodrive.top/"* ]]; then
   printf '503'
   exit 0
 fi
 if [[ "$*" == *"-w"* ]]; then
   printf '200'
+elif [[ "$*" == *"mobile/bootstrap"* ]]; then
+  # The deploy's mobile-bootstrap contract gate validates the exact
+  # public /api/v2 payload shape, so the mock must mirror a live
+  # backend response.
+  printf '%s' '{"ok":true,"contractVersion":1,"webBaseUrl":"https://app.topodrive.top","apiBaseUrl":"https://app.topodrive.top/api/v2","canonicalApiBaseUrl":"https://app.topodrive.top/api","healthPath":"/api/v2/health"}'
 else
   printf '{"ok":true}'
 fi
@@ -131,10 +154,13 @@ run_deploy() {
     SITE_DIR="$base/no-site" \
     STATUS_DIR="$base/status-root" \
     NGINX_SITE_CONF="$base/etc/status.conf" \
+    NGINX_APP_CONF="$base/etc/app.conf" \
     DEPLOY_LOCK_FILE="$base/deploy.lock" \
     STATE_FILE="$base/deploy-state.json" \
     DEPLOY_USER="tester" \
     DEPLOY_GROUP="tester" \
+    CODEX_ENABLED="0" \
+    CODEX_DROPIN="$base/etc/codex.conf" \
     "$@" \
     "$base/deploy.sh"
 }
@@ -143,7 +169,12 @@ success_base=$(make_fixture success)
 run_deploy "$success_base" >"$success_base/output.log"
 grep -q 'new backend' "$success_base/server/dist/index.runtime.js"
 grep -q 'old backend' "$success_base/server/dist.previous/index.runtime.js"
-grep -q 'new frontend' "$success_base/app-root/index.html"
+# The app entry is deployed as a versioned index.<TS>.html (CDN cache-bust);
+# there is no stable index.html any more.
+if ! grep -rlq 'new frontend' "$success_base/app-root"/index.*.html; then
+  echo "new frontend entry missing from versioned index.*.html" >&2
+  exit 1
+fi
 grep -q '"lastSuccessfulDeploy"' "$success_base/deploy-state.json"
 grep -q 'mobile.bootstrap contract v1 aligned' "$success_base/output.log"
 grep -q '"mobileBootstrapAligned": true' "$success_base/deploy-state.json"

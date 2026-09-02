@@ -54,7 +54,7 @@ CODEX_ENABLED="${CODEX_ENABLED:-1}"
 CODEX_VERSION="${CODEX_VERSION:-0.149.1}"
 CODEX_INSTALL_DIR="${CODEX_INSTALL_DIR:-/opt/socrates-codex}"
 CODEX_HOME="${CODEX_HOME:-/var/lib/socrates-codex}"
-CODEX_DROPIN="/etc/systemd/system/socrates-api.service.d/codex.conf"
+CODEX_DROPIN="${CODEX_DROPIN:-/etc/systemd/system/socrates-api.service.d/codex.conf}"
 
 if ! command -v flock >/dev/null 2>&1; then
   echo "ERROR: flock is required to serialize deployments" >&2
