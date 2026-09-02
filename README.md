@@ -184,15 +184,13 @@ builds and copies the bundle into the nginx web root.
 - **Team workspaces** (multi-user under one billing entity).
 - **Voice transcription** endpoint for audio messages.
 
-### Android / desktop
+### Android client
 
 - **React Native + Expo** client in [`mobile/`](mobile/), sharing the same
   backend and platform-neutral TypeScript core.
 - Android's primary flows use native RN navigation and components. Complex
   editors and HTML artifacts are isolated WebView islands while they are
   being rewritten.
-- Expo Web can export the same RN application; Windows and macOS desktop
-  adapters are tracked in [`docs/rn-migration.md`](docs/rn-migration.md).
 
 ### Marketing & docs
 
@@ -207,13 +205,13 @@ builds and copies the bundle into the nginx web root.
 
 The repository keeps the existing single-page web app as the regression
 baseline while a React Native application talks to the same Node API and
-shares protocol/session logic across Android, Web, and future desktop targets.
+shares protocol/session logic across Android and Web.
 
 ```mermaid
 flowchart LR
   subgraph Client["Client"]
     SPA["Web SPA<br/>(React/TS + legacy JS)"]
-    APK["Android / Web / Desktop<br/>(React Native + Expo)"]
+    APK["Android / Web<br/>(React Native + Expo)"]
   end
 
   subgraph Edge["nginx (topodrive.top)"]
@@ -433,12 +431,11 @@ npm test -- --watch=false
 ```
 
 The CI workflow at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
-checks RN, Web, and server compatibility, then builds a debug Android APK and
-Expo Web desktop bundle. Native Android builds are intentionally run on GitHub
+checks RN, Web, and server compatibility, then builds a debug Android APK.
 Actions rather than on a developer workstation. Trigger a debug build with
 `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`; use
 [`release-clients.yml`](.github/workflows/release-clients.yml) for a signed APK/AAB
-and versioned desktop/Windows release.
+and versioned Windows release.
 See [`docs/rn-migration.md`](docs/rn-migration.md) for the phase plan and
 acceptance checklist.
 
@@ -586,11 +583,10 @@ The backend runs as a systemd unit (`Restart=always`). The
 server is stateless beyond PostgreSQL, so horizontal scaling is
 just a matter of running more processes behind the same nginx.
 
-The Android client and Expo Web desktop bundle are built by
-[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml). Native Windows
-packages use the same reusable workflow on a Windows runner. Use
+The Android client is built by
+[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml).
 [`.github/workflows/release-clients.yml`](.github/workflows/release-clients.yml) for
-versioned releases: it verifies, signs, checksums, and attaches desktop/Android/Windows
+versioned releases: it verifies, signs, checksums, and attaches Android/Windows
 artifacts to a GitHub Release. Google Play publishing is opt-in and requires a service
 account secret. See [`docs/client-release.md`](docs/client-release.md) for the complete
 workflow and secret contract.

@@ -120,11 +120,10 @@
 - **团队工作区** — 多用户同一计费实体
 - **语音转录** — 音频消息处理
 
-### Android / 桌面端
+### Android 客户端
 
 - **React Native + Expo** 原生客户端，共享同一后端和 TypeScript 核心
 - Android 主流程使用 RN 原生导航和组件；复杂编辑器/HTML 作品暂时隔离在局部 WebView
-- Expo Web 已可导出同一套 RN 应用，Windows/macOS 桌面适配按迁移路线逐步接入
 
 ### 市场与文档
 
@@ -140,7 +139,7 @@
 flowchart LR
   subgraph Client["客户端"]
     SPA["Web SPA<br/>(React/TS + 遗留 JS)"]
-    APK["Android / Web / Desktop<br/>(React Native + Expo)"]
+    APK["Android / Web<br/>(React Native + Expo)"]
   end
 
   subgraph Edge["nginx (topodrive.top)"]
@@ -357,10 +356,10 @@ npm test -- --watch=false
 ```
 
 CI 工作流在每次推送到 `main` 分支时检查 RN、Web、Server，并自动构建 Android
-debug APK 与 Expo Web 桌面端产物。原生 Android 构建统一在 GitHub Actions 执行，
+debug APK。原生 Android 构建统一在 GitHub Actions 执行，
 不要求开发机安装 Android SDK/NDK。需要验收时可执行
 `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`；正式签名
-APK/AAB、Windows 包和版本化桌面端发布使用
+APK/AAB 使用
 [`release-clients.yml`](.github/workflows/release-clients.yml)。
 完整迁移阶段和验收项见 [`docs/rn-migration.md`](docs/rn-migration.md)。
 
@@ -446,8 +445,8 @@ data: [DONE]
 
 后端以 systemd unit 运行（`Restart=always`）。后端除 PostgreSQL 外无状态，水平扩展只需在 nginx 后增加进程。
 
-Android 客户端和 RN Web 桌面端由 GitHub Actions 自动构建，产物可在 Actions 页下载。
-Windows 原生桌面包使用 Windows runner 生成。正式版本统一使用
+Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下载。
+正式版本统一使用
 [`release-clients.yml`](.github/workflows/release-clients.yml)：它会先完成验证和签名，
 再创建 GitHub Release；Google Play 上传需要显式开启并配置服务账号。完整的 Secrets、tag
 和回滚说明见 [`docs/client-release.md`](docs/client-release.md)。

@@ -29,8 +29,6 @@ mobile/android/
 mobile/ios/
 mobile/.eas/
 mobile/dist/
-desktop/dist/
-desktop/windows-dist/
 
 # ── OS files ──
 .DS_Store
@@ -76,7 +74,7 @@ server.log.bak.*
 # ── Deploy state (written by deploy.sh on successful deploys) ──
 .deploy-state.json
 
-# ── Local runtime state (SQLite DB for desktop/mobile, project id) ──
+# ── Local runtime state (SQLite DB for mobile, project id) ──
 .freebuff/
 
 # ── Temp / debug / scratch files ──

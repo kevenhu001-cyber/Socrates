@@ -3,8 +3,7 @@
 ## 目标
 
 将 `mobile/` 建设为 Socrates 的 React Native 主应用：Android 使用真正的
-原生 RN 组件和导航，Web 逐步迁移到同一套 RN 组件，桌面端复用业务层并按
-平台选择 React Native Windows 或 React Native macOS。现有 `frontend/` 在迁移
+原生 RN 组件和导航，Web 逐步迁移到同一套 RN 组件。现有 `frontend/` 在迁移
 期间继续作为 Web 行为和视觉回归基准，不在没有验收的情况下删除。
 
 ## 当前架构
@@ -62,19 +61,12 @@ Workspace 和 HTML artifact 仍通过明确隔离的 WebView 路由承载，属�
 - 把仍依赖 DOM 的编辑器或图形库封装成平台适配器；适配器不可污染共享核心。
 - 每替换一个模块，删除对应的 WebView 入口，并保留回归用例。
 
-### 5. Web 与桌面
+### 5. Web
 
 - 用 Expo Web/RN Web 验证同一 RN 屏幕在浏览器的可用性，再按 Web 信息密度做
   响应式布局，而不是把 Android 尺寸直接放大到桌面。
-- Windows 优先采用独立的 React Native Windows lockstep 工程；macOS 单独评估 React Native macOS。
-- 桌面适配的环境要求和 Windows/macOS 验收项见 [`desktop/README.md`](../desktop/README.md)；
-  当前 Linux 工作区只验证共享代码，不能宣称已经生成 WinAppSDK/Xcode 安装包。
-- 桌面端共享 `packages/contracts`、`packages/core`、API 层和组件语义，允许
-  使用键盘快捷键、多栏布局、窗口尺寸和文件系统等平台增强。
-- 当前稳定可交付的桌面产物是 Expo Web/RN Web bundle；它不是把移动页面套进一个完整
-  SPA WebView。原生 Windows 壳已经放在 `desktop/windows/`，固定 RN 0.84.1 + RNW
-  0.84.0，并由 `.github/workflows/build-windows.yml` 在 Windows runner 上生成；
-  仍需等待 Windows 构建和交互验收通过，不能把“已接入工作流”当成最终发布完成。
+- 当前稳定可交付的 Web 产物是 Expo Web/RN Web bundle；它不是把移动页面套进一个完整
+  SPA WebView。
 
 ## 功能验收清单
 
@@ -103,9 +95,8 @@ Emulator + Detox 验收由 `.github/workflows/android-device-smoke.yml` 提供�
 - [x] `WEB-BASE-01` `npm run lint`、`npm run test:unit`、`npm run build` 通过。
 - [ ] `WEB-BASE-02` 关键 Playwright smoke 覆盖登录、聊天、会话、搜索、分享和响应式布局（本次未改动既有 Web UI，需 CI/真实 API 环境继续跑）。
 - [x] `WEB-CORE-01` Web 流式分帧与 RN 使用同一个 `packages/core` 实现。
-- [x] `RN-WEB-01` Expo Web 桌面 bundle 在 GitHub Actions 中导出，并用 Chromium 桌面/移动视口
+- [x] `RN-WEB-01` Expo Web bundle 在 GitHub Actions 中导出，并用 Chromium 桌面/移动视口
   做启动、登录入口和响应式 smoke；浏览器插件不可用时使用 Playwright fallback。
-- [ ] `WIN-01` 独立 RNW Windows shell 在 Windows runner 生成、打包并完成安装/启动验收。
 
 ### 跨端协议与发布
 
@@ -116,7 +107,7 @@ Emulator + Detox 验收由 `.github/workflows/android-device-smoke.yml` 提供�
 
 ## GitHub Actions 构建（推荐）
 
-Android 原生构建和 Expo Web 桌面产物统一在 `.github/workflows/build-apk.yml` 中完成，
+Android 原生构建和 Expo Web 产物统一在 `.github/workflows/build-apk.yml` 中完成，
 不依赖开发机的 Android SDK、NDK、JDK 或 Gradle 缓存。工作流固定 Java 17、Android
 API 35、Build Tools 35.0.0 和 NDK 27.1.12297006。
 
@@ -146,9 +137,8 @@ gh workflow run build-apk.yml \
 gh run watch
 ```
 
-成功后在 workflow run 的 Artifacts 中取得 Android APK/AAB、SHA-256 文件和 Expo Web
-桌面 bundle。Pull Request 只执行校验，不生成发布包；普通 `main` 构建生成 debug
-验收包。正式 Android/Windows/桌面版本使用
+成功后在 workflow run 的 Artifacts 中取得 Android APK/AAB 和 SHA-256 文件。Pull Request 只执行校验，不生成发布包；普通 `main` 构建生成 debug
+验收包。正式 Android 版本使用
 `.github/workflows/release-clients.yml` 的版本 tag 或手动发布入口。
 
 ## 本地静态检查
