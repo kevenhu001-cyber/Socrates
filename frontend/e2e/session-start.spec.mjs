@@ -96,19 +96,19 @@ for (const [name, viewport] of [
     await waitForAppShell(page);
 
     const topicEditor = page.locator('#topicComposerRoot .rich-composer-editor');
-    await topicEditor.fill('Keep this exact composer UI');
+    await topicEditor.fill('Keep this UI');
     const before = await composerSignature(page, '#topicInputWrap');
     await topicEditor.press('Enter');
     await expect(page.locator('#chatView')).toBeVisible();
     await expect(page.locator('#msgList .msg.assistant .msg-body').first()).toBeVisible();
     const after = await composerSignature(page, '#chatInputWrap');
 
-    /* Focus is geometry-neutral on both surfaces: a one-line landing draft
-       and the empty in-conversation composer keep the same shell height. */
+    /* The landing prompt is intentionally larger for emphasis; the in-session
+       composer keeps its compact chat geometry after the first message. */
     const skinOf = ({ background, border, radius }) => ({ background, border, radius });
     expect(skinOf(after)).toEqual(skinOf(before));
-    expect(after.height).toBe(before.height);
-    if (name === 'mobile') expect(after.height).toBe(56);
+    expect(before.height).toBe(name === 'mobile' ? 64 : 110);
+    expect(after.height).toBe(name === 'mobile' ? 56 : 98);
     const widths = await page.evaluate(() => {
       const wrap = document.querySelector('#chatInputWrap');
       const body = document.querySelector('#msgList .msg.assistant .msg-body');

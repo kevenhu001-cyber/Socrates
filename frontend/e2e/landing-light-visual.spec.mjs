@@ -29,6 +29,7 @@ test('light conversation home has a neutral readable palette and balanced compos
     return {
       title: rect('#topicTitle'),
       composer: rect('#topicInputWrap'),
+      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
       ideas: rect('.home-ideas'),
       pageBackground: rgb('.main-content'),
       sidebarBackground: rgb('#sidebar'),
@@ -52,6 +53,8 @@ test('light conversation home has a neutral readable palette and balanced compos
 
   expect(geometry.title).not.toBeNull();
   expect(geometry.composer).not.toBeNull();
+  expect(geometry.composer?.height).toBe(110);
+  expect(geometry.topicFontSize).toBe(18);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(18);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(24);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);

@@ -136,11 +136,12 @@ test('the empty landing primary action starts voice input and becomes send after
   const wrap = page.locator('#topicInputWrap');
   const primary = page.locator('#startBtn');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
-  await expect(wrap.locator('.mobile-mic-btn')).toHaveCount(0);
-  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
+  const mic = wrap.locator('.mobile-mic-btn');
+  await expect(mic).toHaveCount(1);
+  await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-voice')).toHaveCount(1);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
 
   await editor.click();
   const emptyCaret = await editor.evaluate((node) => {
@@ -172,10 +173,10 @@ test('the empty landing primary action starts voice input and becomes send after
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
   await expect(primary).not.toHaveClass(/active/);
-  await expect(primary.locator('.icon-voice')).toHaveCount(1);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
 
-  await primary.click();
+  await mic.click();
   const bar = wrap.locator('.voice-recording-bar');
   await expect(wrap).toHaveClass(/voice-recording-active/);
   await expect(bar).toBeVisible();
@@ -219,13 +220,14 @@ test('the empty chat primary action uses the same recording bar', async ({ page 
   const primary = page.locator('#sendBtn');
   const editor = page.locator('#chatComposerRoot .rich-composer-editor');
   await expect(wrap).toBeVisible();
-  await expect(wrap.locator('.mobile-mic-btn')).toHaveCount(0);
-  await expect(primary).toHaveAttribute('aria-label', 'Voice input');
+  const mic = wrap.locator('.mobile-mic-btn');
+  await expect(mic).toHaveCount(1);
+  await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
-  await expect(primary.locator('.icon-voice')).toHaveCount(1);
-  await expect(primary.locator('.icon-arrow')).toHaveCount(0);
+  await expect(primary.locator('.icon-voice')).toHaveCount(0);
+  await expect(primary.locator('.icon-arrow')).toHaveCount(1);
 
-  await primary.click();
+  await mic.click();
   const bar = wrap.locator('.voice-recording-bar');
   await expect(bar).toBeVisible();
   await expect(wrap).toHaveClass(/voice-recording-active/);

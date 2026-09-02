@@ -28,6 +28,10 @@ export function mountLegacyShellListeners(actions) {
        that behavior now that the button is bound directly. */
     const button = byId('startBtn');
     if (button && !button.classList.contains('active')
+        && window.matchMedia?.('(max-width: 768px)').matches) {
+      return;
+    }
+    if (button && !button.classList.contains('active')
         && typeof window.toggleSpeechInput === 'function') {
       window.toggleSpeechInput('topic');
       return;
@@ -39,6 +43,10 @@ export function mountLegacyShellListeners(actions) {
        the legacy data-action="handleSendClick" behavior. */
     const button = byId('sendBtn');
     if (button && !button.classList.contains('active')
+        && window.matchMedia?.('(max-width: 768px)').matches) {
+      return;
+    }
+    if (button && !button.classList.contains('active')
         && !button.classList.contains('chat-stop')
         && !button.classList.contains('agent-stop')
         && typeof window.toggleSpeechInput === 'function') {
@@ -46,6 +54,12 @@ export function mountLegacyShellListeners(actions) {
       return;
     }
     actions.sendMessage();
+  });
+  click('topicMobileMicBtn', () => {
+    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('topic');
+  });
+  click('chatMobileMicBtn', () => {
+    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('chat');
   });
   click('mobileModeTrigger', actions.toggleMobileMode);
 

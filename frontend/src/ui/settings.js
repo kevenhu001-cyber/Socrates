@@ -324,6 +324,7 @@ function _removeProviderLocal(id) {
   renderProviderList();
   window.syncModelPills();
   window.syncChatModel();
+  if (typeof window.syncEffortUI === "function") window.syncEffortUI();
 }
 
 function setActiveProvider(id) {
@@ -350,6 +351,7 @@ function setActiveProvider(id) {
       renderProviderList();
       window.syncModelPills();
       window.syncChatModel();
+      if (typeof window.syncEffortUI === "function") window.syncEffortUI();
       window.showToast("Failed to activate provider on server. Changes reverted.");
     });
   }

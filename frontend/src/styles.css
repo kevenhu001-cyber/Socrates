@@ -74,6 +74,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
   --tool-card-danger-soft-strong:hsla(0,60%,62%,.22);
   --tool-card-focus:hsla(0,0%,100%,.35)
 }
+
 [data-theme=socrates][data-mode=light]{
   --tool-card-bg:hsla(40,10%,16%,.05);
   --tool-card-bg-hover:hsla(40,10%,16%,.08);
@@ -11336,4 +11337,558 @@ html[data-theme=socrates][data-mode=light]{
 [data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle.active{
   background:hsl(0 0% 100%) !important;
   color:hsl(0 0% 10%) !important;
+}
+
+/* ==========================================================================
+   P_mobile-reference-composer — phone browser fidelity
+   --------------------------------------------------------------------------
+   The mobile composer follows the supplied reference: a quiet one-row pill
+   at rest, a real microphone beside the send arrow, and a two-row card when
+   the keyboard is open. The model/reasoning picker is intentionally surfaced
+   in that lower control row instead of being reduced to an unlabeled glyph.
+   ========================================================================== */
+
+@media (max-width:768px){
+  /* Keep the Chat / Work switch available after the first message too. The
+     desktop conversation policy may hide it, but the compact phone header in
+     the reference keeps the mode context visible. */
+  #appShell .top-bar{
+    min-height:64px!important;
+    padding:10px 14px!important;
+  }
+  #appShell #modeSegmentedTop,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #modeSegmentedTop{
+    display:flex!important;
+    width:auto;
+    min-width:172px;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+  }
+  #appShell #mobileMode,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #mobileMode{
+    display:none!important;
+  }
+  #appShell #modeSegmentedTop .app-mode-toggle{
+    min-width:84px;
+    min-height:40px;
+    padding:7px 16px;
+    font-size:16px;
+  }
+
+  /* Four touch-safe columns at rest: plus, editor, microphone, arrow. */
+  #appShell #topicInputWrap:not(.voice-recording-active){
+    grid-template-columns:44px minmax(0,1fr) 36px 36px!important;
+    grid-template-rows:52px!important;
+    height:56px!important;
+    min-height:56px!important;
+    padding:0 6px 0 4px!important;
+    border-radius:28px!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .composer-editor-root{
+    grid-column:2!important;
+    grid-row:1!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer,
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .footer-left-group,
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer,
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .footer-left-group{
+    display:contents!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn,
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .attach-btn{
+    grid-column:1!important;
+    grid-row:1!important;
+    width:44px!important;
+    min-width:44px!important;
+    height:44px!important;
+    min-height:44px!important;
+    margin:0!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker{
+    display:none!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn{
+    display:inline-flex!important;
+    grid-column:3!important;
+    grid-row:1!important;
+    width:36px!important;
+    min-width:36px!important;
+    height:36px!important;
+    min-height:36px!important;
+    margin:0!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .send-btn{
+    grid-column:4!important;
+    grid-row:1!important;
+    width:36px!important;
+    min-width:36px!important;
+    height:36px!important;
+    min-height:36px!important;
+    margin:0!important;
+    border-radius:50%!important;
+  }
+
+  #appShell #chatInputWrap:not(.voice-recording-active){
+    display:block!important;
+    height:56px!important;
+    min-height:56px!important;
+    padding:0 6px 0 4px!important;
+    border-radius:28px!important;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body{
+    display:grid!important;
+    grid-template-columns:44px minmax(0,1fr) 36px 36px!important;
+    grid-template-rows:52px!important;
+    width:100%!important;
+    padding:0!important;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root{
+    grid-column:2!important;
+    grid-row:1!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap{
+    height:52px!important;
+    min-height:52px!important;
+    max-height:52px!important;
+    padding:14px 0!important;
+    font-size:16px!important;
+    line-height:24px!important;
+  }
+
+  /* A focused field restores the selector without changing the compact
+     outer height in desktop-emulated/mobile test browsers. */
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active){
+    height:56px!important;
+    min-height:56px!important;
+    padding:0 6px 0 4px!important;
+  }
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-composer-body{
+    grid-template-columns:44px minmax(0,1fr) 64px 36px 36px!important;
+    grid-template-rows:52px!important;
+  }
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .composer-editor-root{
+    grid-column:2!important;
+    grid-row:1!important;
+  }
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer .attach-btn{
+    grid-column:1!important;
+    grid-row:1!important;
+  }
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .footer-left-group .effort-picker{
+    display:inline-flex!important;
+    grid-column:3!important;
+    grid-row:1!important;
+    position:static!important;
+    min-width:0!important;
+    width:64px!important;
+    max-width:64px!important;
+    margin:0!important;
+  }
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .mobile-mic-btn{
+    grid-column:4!important;
+    grid-row:1!important;
+  }
+  #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer .send-btn{
+    grid-column:5!important;
+    grid-row:1!important;
+  }
+
+  /* Long drafts and the real virtual-keyboard state use the reference's
+     second row: editor above, plus/model/mic/send below. */
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active),
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active),
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active){
+    height:auto!important;
+    min-height:110px!important;
+    padding:0 6px 4px 4px!important;
+    border-radius:24px!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active){
+    grid-template-rows:60px 44px!important;
+  }
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active),
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active){
+    grid-template-rows:60px 44px!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .composer-editor-root,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .composer-editor-root{
+    grid-column:1 / -1!important;
+    grid-row:1!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .rich-composer-editor,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap{
+    height:auto!important;
+    min-height:60px!important;
+    max-height:min(var(--composer-editor-max-mobile),calc(100dvh * .32))!important;
+    padding:12px 8px 8px!important;
+    overflow-y:auto!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicComposerToolsBtn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .attach-btn,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) #topicComposerToolsBtn,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer .attach-btn{
+    grid-column:1!important;
+    grid-row:2!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .topic-footer .effort-picker,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .footer-left-group .effort-picker{
+    display:inline-flex!important;
+    grid-column:3!important;
+    grid-row:2!important;
+    position:static!important;
+    min-width:0!important;
+    width:100%!important;
+    max-width:148px!important;
+    margin:0!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .mobile-mic-btn{
+    grid-column:4!important;
+    grid-row:2!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .send-btn,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) #startBtn,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer .send-btn{
+    grid-column:5!important;
+    grid-row:2!important;
+  }
+
+  /* Surface the actual model/effort text on the selector. The bars and caret
+     are retained inside the popup, but the closed mobile control reads like
+     “5.6 Luna 中” in the reference. */
+  #appShell #topicInputWrap.composer-focused .effort-picker .effort-label,
+  #appShell #topicInputWrap.composer-multiline .effort-picker .effort-label,
+  #appShell #chatInputWrap.composer-focused .effort-picker .effort-label,
+  #appShell #chatInputWrap.composer-multiline .effort-picker .effort-label{
+    display:inline!important;
+    max-width:140px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  #appShell #topicInputWrap.composer-focused .effort-trigger,
+  #appShell #topicInputWrap.composer-multiline .effort-trigger,
+  #appShell #chatInputWrap.composer-focused .effort-trigger,
+  #appShell #chatInputWrap.composer-multiline .effort-trigger{
+    width:100%!important;
+    min-width:0!important;
+    max-width:148px;
+    min-height:36px!important;
+    padding:4px 6px!important;
+    border:0!important;
+    border-radius:18px!important;
+    background:transparent!important;
+    color:hsl(var(--cowork-text))!important;
+    font-size:14px!important;
+    font-weight:500;
+    white-space:nowrap;
+  }
+  #appShell #topicInputWrap.composer-focused .effort-trigger .effort-glyph,
+  #appShell #topicInputWrap.composer-focused .effort-trigger .effort-caret,
+  #appShell #topicInputWrap.composer-multiline .effort-trigger .effort-glyph,
+  #appShell #topicInputWrap.composer-multiline .effort-trigger .effort-caret,
+  #appShell #chatInputWrap.composer-focused .effort-trigger .effort-glyph,
+  #appShell #chatInputWrap.composer-focused .effort-trigger .effort-caret,
+  #appShell #chatInputWrap.composer-multiline .effort-trigger .effort-glyph,
+  #appShell #chatInputWrap.composer-multiline .effort-trigger .effort-caret{
+    display:none!important;
+  }
+
+  /* The microphone is a separate, visible, touch-safe action on phones. */
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn{
+    display:inline-flex!important;
+    align-items:center;
+    justify-content:center;
+    padding:0!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:transparent!important;
+    color:hsl(var(--cowork-text))!important;
+    cursor:pointer;
+  }
+  #appShell .mobile-mic-btn svg{width:20px!important;height:20px!important}
+  #appShell .mobile-mic-btn:hover,
+  #appShell .mobile-mic-btn:focus-visible{background:hsl(var(--cowork-surface-active))!important}
+  #appShell .mobile-mic-btn.is-listening{
+    background:hsl(var(--cowork-text))!important;
+    color:hsl(var(--cowork-page))!important;
+  }
+
+  /* An empty mobile send affordance is a disabled upward arrow; voice lives
+     in the adjacent mic. Text/attachments keep the regular active treatment. */
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
+  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active){
+    background:hsl(0 0% 23%)!important;
+    color:hsl(0 0% 56%)!important;
+    opacity:.78;
+    box-shadow:none!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn[aria-disabled="true"],
+  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn[aria-disabled="true"]{
+    cursor:default;
+    pointer-events:none;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
+  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active{
+    background:hsl(var(--cowork-text))!important;
+    color:hsl(var(--cowork-page))!important;
+    opacity:1;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn svg,
+  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn svg{width:18px!important;height:18px!important}
+
+  /* Short transcripts sit on the composer like the supplied status card;
+     once the transcript is taller than the viewport the flex spacer shrinks
+     to zero, preserving normal scrolling. */
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList::before{
+    content:"";
+    display:block;
+    flex:1 1 auto;
+    min-height:0;
+    order:-1;
+  }
+}
+
+@media (max-width:768px){
+  /* The chat body, unlike the landing wrapper, is the grid containing the
+     editor and footer controls. Re-assert its five-column two-row contract
+     for both long drafts and the real keyboard-open focus state. */
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body,
+  :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-composer-body{
+    grid-template-columns:44px minmax(0,1fr) minmax(104px,148px) 36px 36px!important;
+    grid-template-rows:60px 44px!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active){
+    grid-template-columns:44px minmax(0,1fr) auto 36px 36px!important;
+    grid-template-rows:60px 44px!important;
+  }
+}
+
+/* The landing composer shares the in-session contract, including the
+   keyboard-expanded model/effort row. Keep these selectors unqualified so
+   they remain effective if the landing surface is mounted outside the shell
+   wrapper by a future host. */
+@media (max-width:768px){
+  #topicInputWrap:not(.voice-recording-active){
+    display:grid!important;
+    grid-template-columns:44px minmax(0,1fr) 36px 36px!important;
+    grid-template-rows:52px!important;
+    width:100%!important;
+    max-width:none!important;
+    height:56px!important;
+    min-height:56px!important;
+    margin-top:0!important;
+    padding:0 6px 0 4px!important;
+    border-radius:28px!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) .composer-editor-root{
+    grid-column:2!important;
+    grid-row:1!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) .topic-footer,
+  #topicInputWrap:not(.voice-recording-active) .topic-footer .footer-left-group{
+    display:contents!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn{
+    grid-column:1!important;
+    grid-row:1!important;
+    width:44px!important;
+    min-width:44px!important;
+    height:44px!important;
+    min-height:44px!important;
+    margin:0!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) > .effort-picker,
+  #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker{
+    display:none!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) .mobile-mic-btn{
+    display:inline-flex!important;
+    align-items:center;
+    justify-content:center;
+    grid-column:3!important;
+    grid-row:1!important;
+    width:36px!important;
+    min-width:36px!important;
+    height:36px!important;
+    min-height:36px!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:transparent!important;
+    color:hsl(var(--cowork-text))!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) #startBtn{
+    grid-column:4!important;
+    grid-row:1!important;
+    width:36px!important;
+    min-width:36px!important;
+    height:36px!important;
+    min-height:36px!important;
+    margin:0!important;
+    padding:0!important;
+    border-radius:50%!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) .rich-composer-editor{
+    height:52px!important;
+    min-height:52px!important;
+    max-height:52px!important;
+    padding:14px 0!important;
+    font-size:16px!important;
+    line-height:24px!important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active){
+    grid-template-columns:44px minmax(0,1fr) minmax(104px,120px) 36px 36px!important;
+    grid-template-rows:60px 44px!important;
+    height:auto!important;
+    min-height:110px!important;
+    padding:0 6px 4px 4px!important;
+    border-radius:24px!important;
+  }
+  #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+  :root[data-keyboard-open="true"] #topicInputWrap.composer-focused:not(.voice-recording-active) .composer-editor-root{
+    grid-column:1 / -1!important;
+    grid-row:1!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .rich-composer-editor{
+    height:auto!important;
+    min-height:60px!important;
+    max-height:min(var(--composer-editor-max-mobile),calc(100dvh * .32))!important;
+    padding:12px 8px 8px!important;
+    overflow-y:auto!important;
+  }
+  #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicComposerToolsBtn,
+  :root[data-keyboard-open="true"] #topicInputWrap.composer-focused:not(.voice-recording-active) #topicComposerToolsBtn{
+    grid-column:1!important;
+    grid-row:2!important;
+  }
+  #topicInputWrap.composer-multiline:not(.voice-recording-active) > .effort-picker,
+  #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker,
+  :root[data-keyboard-open="true"] #topicInputWrap.composer-focused:not(.voice-recording-active) > .effort-picker,
+  :root[data-keyboard-open="true"] #topicInputWrap.composer-focused:not(.voice-recording-active) .topic-footer .effort-picker{
+    display:inline-flex!important;
+    grid-column:3!important;
+    grid-row:2!important;
+    position:static!important;
+    width:100%!important;
+    max-width:120px!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+  #topicInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn,
+  :root[data-keyboard-open="true"] #topicInputWrap.composer-focused:not(.voice-recording-active) .mobile-mic-btn{
+    grid-column:4!important;
+    grid-row:2!important;
+  }
+  #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
+  :root[data-keyboard-open="true"] #topicInputWrap.composer-focused:not(.voice-recording-active) #startBtn{
+    grid-column:5!important;
+    grid-row:2!important;
+  }
+  #topicInputWrap.composer-focused .effort-trigger,
+  #topicInputWrap.composer-multiline .effort-trigger{
+    width:100%!important;
+    max-width:120px!important;
+  }
+  #topicInputWrap.composer-focused .effort-label,
+  #topicInputWrap.composer-multiline .effort-label{
+    display:inline!important;
+    max-width:108px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active){
+    background:hsl(0 0% 23%)!important;
+    color:hsl(0 0% 56%)!important;
+    opacity:.78;
+    box-shadow:none!important;
+  }
+  #topicInputWrap:not(.voice-recording-active) #startBtn.active{
+    background:hsl(var(--cowork-text))!important;
+    color:hsl(var(--cowork-page))!important;
+    opacity:1;
+  }
+  #topicInputWrap:not(.voice-recording-active) #startBtn[aria-disabled="true"]{
+    cursor:default;
+    pointer-events:none;
+  }
+}
+
+/* P_topic-input-scale — give the landing prompt a stronger visual anchor
+   without changing the in-session composer contract. The larger type keeps
+   the topic field easy to read on phones and more deliberate on desktop. */
+#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor{
+  font-size:18px!important;
+  line-height:28px!important;
+}
+
+@media (min-width:769px){
+  #appShell #topicInputWrap:not(.voice-recording-active){
+    grid-template-rows:60px 44px!important;
+    height:110px!important;
+    min-height:110px!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor{
+    height:60px!important;
+    min-height:60px!important;
+    max-height:60px!important;
+    padding:16px 4px!important;
+  }
+}
+
+@media (max-width:768px){
+  #appShell #topicInputWrap:not(.voice-recording-active){
+    grid-template-rows:60px!important;
+    height:64px!important;
+    min-height:64px!important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor{
+    height:60px!important;
+    min-height:60px!important;
+    max-height:60px!important;
+    padding:16px 0!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active){
+    grid-template-rows:68px 48px!important;
+    min-height:120px!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .composer-editor-root{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor,
+  :root[data-keyboard-open="true"] #appShell #topicInputWrap.composer-focused:not(.voice-recording-active) .rich-composer-editor{
+    height:68px!important;
+    min-height:68px!important;
+    max-height:68px!important;
+    padding:20px 8px!important;
+    overflow-y:auto!important;
+  }
 }
