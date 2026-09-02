@@ -23,7 +23,6 @@ TARGETS=(
   "capacitor/node_modules"
   ".opencode/node_modules"
   ".kilo/node_modules"
-  "desktop/windows-dist"
 )
 
 removed=0
