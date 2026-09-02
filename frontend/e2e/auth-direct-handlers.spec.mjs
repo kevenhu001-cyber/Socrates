@@ -6,6 +6,10 @@ test('auth gate interactions are owned by the auth module', async ({ page }) => 
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
 
+  /* authBoot() hydrates asynchronously and finishes with hideGate(); wait
+     for it to settle so its hideGate can never race our showGate below. */
+  await expect(page.locator('#authGate')).toBeHidden();
+
   await page.evaluate(() => {
     window.showGate();
     window.showAuthSignin();
