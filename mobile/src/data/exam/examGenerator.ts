@@ -1,4 +1,4 @@
-import type { Message, Session } from '@socrates/contracts';
+import type { JsonValue, Message, Session } from '@socrates/contracts';
 import { sessionsApi } from '../api/client';
 import { startChatStream } from '../sse/sseClient';
 
@@ -83,7 +83,7 @@ export async function generateExam(options: {
 
   const userMessage: Message = { clientId: `exam-${Date.now()}`, role: 'user', rawText: `Generate an exam about ${options.topic}`, content: `Generate an exam about ${options.topic}`, type: 'user' };
   const assistantMessage: Message = { clientId: `exam-result-${Date.now()}`, role: 'assistant', rawText: JSON.stringify(questions), content: JSON.stringify(questions), type: 'assistant' };
-  await sessionsApi.upsert({ ...baseSession, messages: [userMessage, assistantMessage], examData: { topic: options.topic, difficulty: options.difficulty, count: options.count, lang: language, types: options.types, questions: questions as never, answers: {} } });
+  await sessionsApi.upsert({ ...baseSession, messages: [userMessage, assistantMessage], examData: { topic: options.topic, difficulty: options.difficulty, count: options.count, lang: language, types: options.types, questions: questions as unknown as JsonValue[], answers: {} } });
   return { sessionId, questions };
 }
 

@@ -5,20 +5,28 @@ import type { Memory } from '@socrates/contracts';
 import { Screen } from '../components/Screen';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { AppHeader } from '../components/AppHeader';
-import { useTheme } from '../theme/ThemeProvider';
+import { useTheme, useThemeController, type ThemePreference } from '../theme/ThemeProvider';
 import { useI18n, useT, type Language } from '../i18n';
 import { getPreferences, loadPreferences, setPreference, subscribeToPreferences } from '../data/preferences';
 import { registerPushNotifications, unregisterPushNotifications } from '../native/push';
 import { appStore, useAppStore } from '../stores/appStore';
 import { memoryApi, usersApi } from '../data/api/client';
+import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
 
 const LANGUAGE_OPTIONS: Array<[Language, string]> = [
   ['en', 'common.languageEn'],
   ['zh', 'common.languageZh'],
 ];
 
+const THEME_OPTIONS: Array<[ThemePreference, string]> = [
+  ['dark', 'display.themeDark'],
+  ['light', 'display.themeLight'],
+  ['system', 'display.themeSystem'],
+];
+
 export function SettingsScreen({ navigation }: { navigation: any }) {
   const { colors, radius, spacing } = useTheme();
+  const { preference, setPreference: setThemePreference } = useThemeController();
   const { language, setLanguage } = useI18n();
   const t = useT();
   const state = useAppStore();
@@ -29,6 +37,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
   const [profileSaved, setProfileSaved] = useState(false);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoryBusy, setMemoryBusy] = useState(false);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
 
   useEffect(() => { void loadPreferences(); }, []);
   useEffect(() => {
@@ -40,16 +49,19 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
     setMemoryBusy(true);
     void memoryApi.list()
       .then((result) => { if (mounted) setMemories(result.memories); })
-      .catch(() => undefined)
+      .catch((err) => { console.warn('[Settings] Failed to fetch memories:', err); })
       .finally(() => { if (mounted) setMemoryBusy(false); });
     return () => { mounted = false; };
   }, []);
 
   const toggleNotifications = async (value: boolean) => {
     await setPreference('notifications', value);
-    // Actually act on the switch instead of only remembering it.
-    if (value) await registerPushNotifications().catch(() => undefined);
-    else await unregisterPushNotifications().catch(() => undefined);
+    try {
+      if (value) await registerPushNotifications();
+      else await unregisterPushNotifications();
+    } catch (err) {
+      console.warn('[Settings] Failed to toggle push notifications:', err);
+    }
   };
 
   const saveProfile = async () => {
@@ -149,12 +161,31 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md }]}> 
         <Text style={[styles.sectionLabel, { color: colors.textSubtle }]}>{t('settings.appearance')}</Text>
         <Text style={[styles.title, { color: colors.text }]}>{t('display.theme')}</Text>
-        <View style={[styles.lockedTheme, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}> 
-          <Ionicons name="moon" size={18} color={colors.accent} />
-          <Text style={{ color: colors.text, fontWeight: '600' }}>{t('settings.darkLocked')}</Text>
-        </View>
+        {segment(THEME_OPTIONS, preference, (value) => { void setThemePreference(value); })}
         <Text style={[styles.title, { color: colors.text, marginTop: 22 }]}>{t('common.language')}</Text>
         {segment(LANGUAGE_OPTIONS, language, (value) => { void setLanguage(value); })}
+      </View>
+
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, marginTop: 16 }]}>
+        <Text style={[styles.sectionLabel, { color: colors.textSubtle }]}>{t('settings.model') || 'AI Model'}</Text>
+        <View style={styles.modelHeaderRow}>
+          <View style={{ flex: 1, paddingRight: 10 }}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.name || 'Socrates Default'}
+            </Text>
+            <Text style={[styles.body, { color: colors.textMuted }]}>
+              {AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.description || ''}
+            </Text>
+          </View>
+          <AnimatedPressable
+            onPress={() => setModelPickerOpen(true)}
+            style={[styles.switchModelBtn, { backgroundColor: colors.accentSoft, borderColor: colors.accent, borderRadius: radius.md }]}
+          >
+            <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 13 }}>
+              {t('common.change') || 'Switch'}
+            </Text>
+          </AnimatedPressable>
+        </View>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, marginTop: 16 }]}>
@@ -201,6 +232,12 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
         )) : <Text style={[styles.body, { color: colors.textSubtle }]}>{t('settings.noMemories')}</Text>}
       </View>
       </ScrollView>
+      <ModelPickerModal
+        visible={modelPickerOpen}
+        selectedId={state.selectedModel}
+        onSelect={(id) => appStore.setSelectedModel(id)}
+        onClose={() => setModelPickerOpen(false)}
+      />
     </Screen>
   );
 }
@@ -212,7 +249,8 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 11, letterSpacing: 1.4, fontWeight: '700', marginBottom: 14 },
   segment: { flexDirection: 'row', gap: 6, marginTop: 10 },
   segmentButton: { flex: 1, minHeight: 44, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  lockedTheme: { minHeight: 46, borderWidth: 1, paddingHorizontal: 13, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  modelHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  switchModelBtn: { paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1 },
   row: { minHeight: 76, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   rowDivided: { borderTopWidth: StyleSheet.hairlineWidth },
   rowCopy: { flex: 1 },

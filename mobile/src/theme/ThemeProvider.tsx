@@ -1,6 +1,7 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import { buildTheme, type Theme, type ThemeMode } from './theme';
-import { setItem } from '../platform/secureStorage';
+import { getItem, setItem } from '../platform/secureStorage';
 import { setAppStatusBarStyle } from '../native/statusBar';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -30,36 +31,56 @@ async function writeStoredPreference(value: ThemePreference) {
   try {
     await setItem(STORAGE_KEY, value);
   } catch {
-    // best effort; the in-memory value still applies
+    // best effort
   }
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // The web mobile breakpoint intentionally uses a true-black composition
-  // regardless of the OS appearance. Keep native startup deterministic too:
-  // restoring a historical light/system preference must never flash beige.
-  const mode: ThemeMode = 'dark';
-  const preference: ThemePreference = 'dark';
-  const theme = useMemo(() => buildTheme('dark'), []);
+  const systemColorScheme = useColorScheme();
+  const [preference, setPreferenceState] = useState<ThemePreference>('dark');
+  const [ready, setReady] = React.useState(false);
 
   useEffect(() => {
-    // Never let a status-bar tweak take down the app again.
+    let active = true;
+    void getItem(STORAGE_KEY).then((stored) => {
+      if (active && stored && (stored === 'light' || stored === 'dark' || stored === 'system')) {
+        setPreferenceState(stored as ThemePreference);
+      }
+      if (active) setReady(true);
+    }).catch(() => {
+      if (active) setReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const mode: ThemeMode = preference === 'system'
+    ? (systemColorScheme === 'light' ? 'light' : 'dark')
+    : preference;
+
+  const theme = useMemo(() => buildTheme(mode), [mode]);
+
+  useEffect(() => {
     try {
       setAppStatusBarStyle(theme.colors.statusBarStyle, true);
     } catch {
-      // cosmetic only — the app must keep rendering
+      // cosmetic only
     }
   }, [theme.colors.statusBarStyle]);
 
-  const setPreference = useCallback(async (_next: ThemePreference) => {
-    await writeStoredPreference('dark');
+  const setPreference = useCallback(async (next: ThemePreference) => {
+    setPreferenceState(next);
+    await writeStoredPreference(next);
   }, []);
 
-  const toggle = useCallback(async () => writeStoredPreference('dark'), []);
+  const toggle = useCallback(async () => {
+    const next: ThemePreference = mode === 'dark' ? 'light' : 'dark';
+    setPreferenceState(next);
+    await writeStoredPreference(next);
+  }, [mode]);
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ theme, mode, preference, setPreference, toggle, ready: true }),
-    [theme, setPreference, toggle],
+    () => ({ theme, mode, preference, setPreference, toggle, ready }),
+    [theme, mode, preference, setPreference, toggle, ready],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

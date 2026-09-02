@@ -73,8 +73,12 @@ export function AuthScreen() {
   const show = (next: AuthView) => { setError(''); setView(next); };
 
   const rememberGuest = async () => {
-    if (guest) await setItem('socrates.auth.guest-mode', 'true').catch(() => undefined);
-    else await deleteItem('socrates.auth.guest-mode').catch(() => undefined);
+    try {
+      if (guest) await setItem('socrates.auth.guest-mode', 'true');
+      else await deleteItem('socrates.auth.guest-mode');
+    } catch (err) {
+      console.warn('[Auth] Failed to persist guest mode preference:', err);
+    }
   };
 
   const verify = useCallback(async (token: string) => {

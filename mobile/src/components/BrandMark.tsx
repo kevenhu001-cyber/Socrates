@@ -12,5 +12,5 @@ export function BrandMark({ size = 28, style }: { size?: number; style?: ViewSty
 }
 
 const styles = StyleSheet.create({
-  wrap: { overflow: 'hidden', backgroundColor: '#000000' },
+  wrap: { overflow: 'hidden', backgroundColor: 'transparent' },
 });

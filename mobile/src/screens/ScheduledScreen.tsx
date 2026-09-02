@@ -85,7 +85,9 @@ export function ScheduledScreen({ navigation }: Props) {
     try {
       const updated = await scheduledApi.run(task.id);
       setTasks((current) => current.map((item) => item.id === updated.id ? updated : item));
-      await appStore.refreshSessions().catch(() => undefined);
+      await appStore.refreshSessions().catch((err) => {
+        console.warn('[Scheduled] Failed to refresh sessions after running task:', err);
+      });
     } catch (caught) { setError(caught instanceof Error ? caught.message : t('scheduled.loadFailed')); }
     finally { setBusy(false); }
   };

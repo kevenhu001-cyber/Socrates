@@ -44,7 +44,7 @@ describe('ThemeProvider', () => {
     expect(seen[0]).toMatch(/^#/);
   });
 
-  it('keeps the launch theme locked to the web dark mode', async () => {
+  it('supports setting theme preference between light, dark, and system', async () => {
     let controller: ReturnType<typeof useThemeController> | null = null;
     function Probe() {
       controller = useThemeController();
@@ -60,10 +60,12 @@ describe('ThemeProvider', () => {
     await act(async () => {
       await controller!.setPreference('light');
     });
-    expect(controller!.mode).toBe('dark');
+    expect(controller!.mode).toBe('light');
+    expect(controller!.preference).toBe('light');
     await act(async () => {
       await controller!.setPreference('dark');
     });
     expect(controller!.mode).toBe('dark');
+    expect(controller!.preference).toBe('dark');
   });
 });

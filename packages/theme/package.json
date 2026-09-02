@@ -1,0 +1,12 @@
+{
+  "name": "@socrates/theme",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "description": "Shared design tokens — single source of truth for color, spacing, typography, radii, motion, and breakpoints. Phase 0 of the reverse-align plan: ported from frontend/src/ui/tokens.ts so mobile consumes the same vocabulary instead of inventing its own.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -45,6 +45,10 @@ export function subscribeToNotificationNavigation(onSession: (sessionId: string)
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     handle(response);
   });
-  void Notifications.getLastNotificationResponseAsync().then(handle).catch(() => undefined);
+  void Notifications.getLastNotificationResponseAsync()
+    .then(handle)
+    .catch((err) => {
+      console.warn('[Push] Failed to inspect initial notification response:', err);
+    });
   return () => subscription.remove();
 }
