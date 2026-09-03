@@ -29,7 +29,7 @@
     "@socrates/core": "file:../packages/core",
     "@socrates/theme": "file:../packages/theme",
     "expo": "~57.0.19",
-    "expo-blur": "^13.0.3",
+    "expo-blur": "~57.0.2",
     "expo-clipboard": "~57.0.1",
     "expo-document-picker": "~57.0.1",
     "expo-file-system": "~57.0.6",
@@ -53,7 +53,7 @@
     "react-native-gesture-handler": "~2.32.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "^15.15.5",
+    "react-native-svg": "^15.15.4",
     "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1"
   },
