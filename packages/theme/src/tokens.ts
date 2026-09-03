@@ -150,35 +150,44 @@ export const easing = {
  *  with a single, consistent opacity. */
 export const borderAlpha = 0.25;
 
+/**
+ * Values are mirrored from the blocks in `frontend/src/styles.css` that
+ * actually paint — `[data-theme=socrates][data-mode=dark|light]` — NOT from
+ * `frontend/src/styles/themes.css`. See the role map in `./rn.ts`.
+ */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
+  /* --accent-000 / --accent-900 */
   accent: {
     strong: '43 77% 62%',
     soft: '43 40% 20%',
     surface: '43 40% 20%',
   },
+  /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
   bg: {
-    page: '#101318',
-    raised: '0 0% 13%',
-    overlay: '0 0% 16%',
+    page: '0 0% 13%',
+    raised: '0 0% 16%',
+    overlay: '0 0% 5%',
     hover: '0 0% 21%',
-    sunken: '0 0% 5%',
+    sunken: '0 0% 2%',
   },
+  /* --text-100 / --text-200 / --text-400 / --text-500 */
   text: {
     primary: '0 0% 100%',
     secondary: '0 0% 80%',
     tertiary: '0 0% 65%',
     muted: '0 0% 55%',
-    disabled: '0 0% 45%',
+    disabled: '0 0% 55%',
   },
+  /* --border-100 / --border-300 / --border-400 */
   border: {
     subtle: '0 0% 22%',
     default: '0 0% 22%',
-    strong: '0 0% 32%',
+    strong: '0 0% 22%',
   },
-  danger: '0 60% 55%',
-  success: '142 60% 50%',
-  muted: '0 0% 50%',
+  danger: '0 65% 62%',
+  success: '145 50% 50%',
+  muted: '0 0% 55%',
   onAccent: '0 0% 100%',
 };
 
@@ -190,17 +199,17 @@ export const lightPalette: ThemePalette = {
     surface: '43 40% 90%',
   },
   bg: {
-    page: '#e6dec8',
-    raised: '40 25% 96%',
-    overlay: '38 20% 92%',
+    page: '40 25% 96%',
+    raised: '38 20% 92%',
+    overlay: '42 33% 98%',
     hover: '36 15% 87%',
-    sunken: '42 33% 98%',
+    sunken: '0 0% 100%',
   },
   text: {
-    primary: '36 12% 10%',
+    primary: '34 10% 16%',
     secondary: '34 8% 28%',
-    tertiary: '34 7% 35%',
-    muted: '34 6% 43%',
+    tertiary: '34 6% 43%',
+    muted: '34 5% 50%',
     disabled: '34 5% 50%',
   },
   border: {
@@ -209,7 +218,7 @@ export const lightPalette: ThemePalette = {
     strong: '36 9% 72%',
   },
   danger: '0 60% 45%',
-  success: '142 50% 35%',
+  success: '152 50% 35%',
   muted: '34 5% 50%',
   onAccent: '0 0% 100%',
 };
@@ -227,5 +236,8 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
  *  loads. Values must stay in sync with `darkPalette.bg.page` /
  *  `lightPalette.bg.page`. */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? lightPalette.bg.page : darkPalette.bg.page;
+  /* Hex literals, not the HSL triplets above — this value is painted
+   * before any stylesheet parses, so it must be a self-contained color.
+   * Keep in sync with `bg.page` in both palettes. */
+  return mode === 'light' ? '#f7f6f2' : '#212121';
 }

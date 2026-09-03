@@ -1,4 +1,4 @@
-import { hasMath, inlineToHtml, inlineToText, parseInline, parseMarkdown, safeHref, type Block } from './markdown';
+import { hasMath, hideUnclosedWidgetTail, inlineToHtml, inlineToText, parseInline, parseMarkdown, safeHref, stripCitationMarkers, type Block } from './markdown';
 
 function types(blocks: Block[]): string[] {
   return blocks.map((block) => block.type);
@@ -171,5 +171,69 @@ describe('helpers', () => {
     expect(safeHref('javascript:alert(1)')).toBe('');
     expect(safeHref('data:text/html,<script>')).toBe('');
     expect(inlineToHtml(parseInline('[click](javascript:alert(1))'))).toBe('click');
+  });
+});
+
+describe('stripCitationMarkers 1:1 with frontend helpers.ts', () => {
+  it('strips bracket runs but keeps links and code', () => {
+    expect(stripCitationMarkers('Paris is great [1].')).toBe('Paris is great.');
+    expect(stripCitationMarkers('A [1][2][3] test')).toBe('A test');
+    expect(stripCitationMarkers('See [1](https://example.com) here')).toBe('See [1](https://example.com) here');
+    expect(stripCitationMarkers('`code [1]` and text [2]')).toBe('`code [1]` and text');
+  });
+
+  it('is idempotent', () => {
+    const once = stripCitationMarkers('Text [1] here');
+    expect(stripCitationMarkers(once)).toBe(once);
+  });
+});
+
+describe('tutor widgets 1:1 with frontend widgetParsers.ts', () => {
+  const quiz = '<quiz>\n<q>What is 2 + 2?</q>\n<o letter="A">3</o>\n<o letter="B">4</o>\n<correct>B</correct>\n</quiz>';
+
+  it('parses a quiz block with options and answer', () => {
+    const blocks = parseMarkdown(`Intro\n\n${quiz}\n\nOutro`);
+    expect(blocks.map((b) => b.type)).toEqual(['paragraph', 'widget', 'paragraph']);
+    const widget = blocks[1];
+    if (widget.type !== 'widget') throw new Error('expected widget');
+    expect(widget.kind).toBe('quiz');
+    expect(widget.q).toBe('What is 2 + 2?');
+    expect(widget.options).toEqual([
+      { letter: 'A', text: '3' },
+      { letter: 'B', text: '4' },
+    ]);
+    expect(widget.correct).toBe('B');
+  });
+
+  it('rejects quizzes with fewer than two options', () => {
+    const blocks = parseMarkdown('<quiz>\n<q>Q?</q>\n<o letter="A">only</o>\n</quiz>');
+    expect(blocks.every((b) => b.type !== 'widget')).toBe(true);
+  });
+
+  it('parses flashcards, definitions and key points', () => {
+    const source = [
+      '<flashcard>\n<front>Front</front>\n<back>Back</back>\n</flashcard>',
+      '<definition>\n<term>Group</term>\n<body>A set with an operation.</body>\n</definition>',
+      '<key-point>\nKeep it simple.\n</key-point>',
+    ].join('\n\n');
+    const widgets = parseMarkdown(source).filter((b) => b.type === 'widget');
+    expect(widgets.map((b) => (b.type === 'widget' ? b.kind : ''))).toEqual([
+      'flashcard',
+      'definition',
+      'key-point',
+    ]);
+  });
+
+  it('hoists an inline proof out of a theorem', () => {
+    const blocks = parseMarkdown('<theorem>\n<title>Pythagoras</title>\n<statement>a^2 + b^2 = c^2</statement>\n<proof>By rearrangement.</proof>\n</theorem>');
+    const widget = blocks[0];
+    if (widget.type !== 'widget') throw new Error('expected widget');
+    expect(widget.statement).toBe('a^2 + b^2 = c^2');
+    expect(widget.proof).toBe('By rearrangement.');
+  });
+
+  it('holds back an unclosed trailing tag while streaming', () => {
+    expect(hideUnclosedWidgetTail('Hello\n\n<quiz>\n<q>Half')).toBe('Hello');
+    expect(hideUnclosedWidgetTail(`Done\n\n${quiz}\n\nTail`)).toContain('Tail');
   });
 });

@@ -298,6 +298,12 @@ export const searchApi = {
   }),
 };
 
+export const usageApi = {
+  daily: (days: number) =>
+    apiRequest<{ days?: Array<{ date: string; tokens: number; requests: number }>; total?: number }>(`/usage/daily?days=${days}`),
+  limits: () => apiRequest<Record<string, unknown>>('/usage/limits'),
+};
+
 export const notificationsApi = {
   register: (token: string, deviceId?: string) => apiRequest('/notifications/register', {
     method: 'POST', body: JSON.stringify({ token, platform: 'android', deviceId, channels: ['long_tasks', 'replies', 'mentions'] }),

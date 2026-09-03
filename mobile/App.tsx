@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect } from 'react';
-import { ActivityIndicator, AppState, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Keyboard, Platform, StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   NavigationContainer,
@@ -16,7 +16,19 @@ import { I18nProvider, useT } from './src/i18n';
 import { appStore, useAppStore } from './src/stores/appStore';
 import { getNetworkStatus, subscribeToNetworkStatus } from './src/native/network';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
+import { useResponsive } from './src/theme/responsive';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import { Newsreader_500Medium } from '@expo-google-fonts/newsreader';
+import { NotoSansSC_400Regular } from '@expo-google-fonts/noto-sans-sc';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { ShareModal } from './src/components/ShareModal';
+import { ToastHost } from './src/components/Toast';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ArtifactPreviewScreen } from './src/screens/ArtifactPreviewScreen';
 import { ChatScreen } from './src/screens/ChatScreen';
@@ -32,7 +44,6 @@ import { RecentsScreen } from './src/screens/RecentsScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { ScheduledScreen } from './src/screens/ScheduledScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { ShareScreen } from './src/screens/ShareScreen';
 import { TutorScreen } from './src/screens/TutorScreen';
 import { WorkspaceScreen } from './src/screens/WorkspaceScreen';
 import type { RootStackParamList } from './src/navigation/types';
@@ -151,7 +162,6 @@ function NativeStack() {
         <Stack.Screen name="Mistakes" component={MistakesScreen} />
         <Stack.Screen name="Workspace" component={WorkspaceScreen} />
         <Stack.Screen name="Embedded" component={EmbeddedWebScreen} />
-        <Stack.Screen name="Share" component={ShareScreen} />
         <Stack.Screen name="ArtifactPreview" component={ArtifactPreviewScreen} />
       </Stack.Navigator>
     </NavigationContainer>
@@ -220,6 +230,10 @@ function NativeApp() {
   useEffect(() => {
     if (Platform.OS !== 'android') return undefined;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (Keyboard.isVisible()) {
+        Keyboard.dismiss();
+        return true;
+      }
       if (drawerOpen) {
         closeDrawer();
         return true;
@@ -243,15 +257,37 @@ function NativeApp() {
     }
   }, []);
 
+  const { sidebarWidth } = useResponsive();
+
   return (
     <View style={[styles.root, styles.appFrame, { backgroundColor: colors.background }]}>
       {state.authStatus === 'signedIn' ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} /> : null}
-      <View style={styles.mainPane}><NativeStack /></View>
+      <View
+        style={[
+          styles.mainPane,
+          sidebarWidth ? { marginLeft: sidebarWidth } : null,
+        ]}
+      >
+        <NativeStack />
+      </View>
+      {/* P0 1:1: frontend-style `.share-modal` + `.alert-container`.
+       *  Mounted at the root so they overlay any screen or drawer route. */}
+      <ShareModal />
+      <ToastHost />
     </View>
   );
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Newsreader_500Medium,
+    NotoSansSC_400Regular,
+  });
+
   // Defensively initialize native runtime on mount rather than at module load
   useEffect(() => {
     void prepareAppRuntime().catch((err) => {
@@ -260,10 +296,12 @@ export default function App() {
   }, []);
 
   const revealApp = useCallback(() => {
-    void hideAppSplash().catch((err) => {
-      console.warn('[App] Failed to hide app splash screen:', err);
-    });
-  }, []);
+    if (fontsLoaded) {
+      void hideAppSplash().catch((err) => {
+        console.warn('[App] Failed to hide app splash screen:', err);
+      });
+    }
+  }, [fontsLoaded]);
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
@@ -285,7 +323,7 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#101318',
+    backgroundColor: '#000000',
   },
   appFrame: {
     flexDirection: 'row',

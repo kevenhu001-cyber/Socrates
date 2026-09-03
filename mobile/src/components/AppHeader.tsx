@@ -23,6 +23,29 @@ type Props = {
   onMore?: () => void;
 };
 
+function HamburgerLines({ color }: { color: string }) {
+  return (
+    <View style={headerStyles.hamburger} pointerEvents="none">
+      <View style={[headerStyles.line, { width: 14, backgroundColor: color }]} />
+      <View style={[headerStyles.line, { width: 9, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+const headerStyles = StyleSheet.create({
+  hamburger: {
+    gap: 4,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    width: 14,
+    height: 10,
+  },
+  line: {
+    height: 2,
+    borderRadius: 1,
+  },
+});
+
 export function AppHeader({
   title,
   mode = 'chat',
@@ -39,24 +62,42 @@ export function AppHeader({
   onMore,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const { openDrawer } = useAppDrawer();
 
+  /* P1-2 alignment: every value below is sourced from the canonical
+   * `@socrates/theme` palette so the AppHeader matches `frontend`'s
+   * `.sidebar-header` / topbar tokens. The previous dark-only literals
+   * (`#262626`, `#1a1a1a`, `#d9d9d9`, `rgba(255,255,255,0.06)`) were
+   * legacy pre-align values; the residual `'#000'` shadowColor further
+   * down is RN's required literal for the active-tab elevation and is
+   * not a color token. */
+  const circleBg = colors.surface;
+  const activeTabBg = colors.surfaceHover;
+
   return (
-    <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 6, backgroundColor: colors.background }]}>
-      {/* Left Action: Navigation Drawer */}
+    <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 4, backgroundColor: colors.background }]}>
+      {/* Left Action: Navigation Drawer (Two-line hamburger matching cur-mobile-home.png) */}
       <AnimatedPressable
         accessibilityLabel={t('common.openNavigation') || 'Open navigation'}
         onPress={openDrawer}
-        style={[styles.circleBtn, { borderColor: colors.border, backgroundColor: colors.surfaceRaised }]}
+        style={[styles.circleBtn, { borderColor: colors.border, backgroundColor: circleBg }]}
       >
-        <Ionicons name="menu-outline" size={24} color={colors.text} />
+        <HamburgerLines color={colors.text} />
       </AnimatedPressable>
 
       {/* Center: Mode segmented switch or Title */}
       {showModeSwitch ? (
-        <View style={[styles.modeSegment, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.pill }]}>
+        <View
+          style={[
+            styles.modeSegment,
+            {
+              backgroundColor: circleBg,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           {(['chat', 'tutor'] as const).map((value) => {
             const selected = value === mode;
             return (
@@ -67,16 +108,22 @@ export function AppHeader({
                 onPress={() => onModeChange?.(value)}
                 style={[
                   styles.modeButton,
-                  { borderRadius: radius.pill },
-                  selected && [styles.modeButtonActive, { backgroundColor: colors.surfacePressed, borderColor: colors.borderStrong }],
+                  selected && [
+                    styles.modeButtonActive,
+                    {
+                      backgroundColor: activeTabBg,
+                      borderColor: colors.border,
+                    },
+                  ],
                 ]}
               >
                 <Text
                   style={[
                     styles.modeText,
                     {
-                      color: selected ? colors.accent : colors.textMuted,
-                      fontFamily: selected ? typography.semibold : typography.medium,
+                      color: selected ? colors.text : colors.textMuted,
+                      fontFamily: selected ? typography.bold : typography.medium,
+                      fontWeight: selected ? '700' : '500',
                     },
                   ]}
                 >
@@ -91,20 +138,46 @@ export function AppHeader({
           <Text numberOfLines={1} style={[styles.titleText, { color: colors.text, fontFamily: typography.semibold }]}>
             {title}
           </Text>
+          {/* P1 1:1 — model picker chip mirrors frontend `.model-picker-trigger`
+           * (`frontend/src/styles.css:1104`). Previously `activeModelName` /
+           * `onOpenModelPicker` were accepted as props but never rendered. */}
+          {onOpenModelPicker ? (
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
+              onPress={onOpenModelPicker}
+              style={[styles.modelChip, { borderColor: colors.border }]}
+            >
+              <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+                {activeModelName || t('settings.model') || 'Model'}
+              </Text>
+              <Ionicons name="chevron-down" size={12} color={colors.textMuted} />
+            </AnimatedPressable>
+          ) : null}
         </View>
-      ) : <View style={styles.spacer} />}
+      ) : (
+        <View style={styles.spacer} />
+      )}
 
       {/* Right Actions */}
       <View style={styles.rightGroup}>
         {conversationActive ? (
-          <View style={[styles.actionPill, { borderColor: colors.border, backgroundColor: colors.surfaceRaised, borderRadius: radius.pill }]}>
+          <View
+            style={[
+              styles.actionPill,
+              {
+                borderColor: colors.border,
+                backgroundColor: circleBg,
+              },
+            ]}
+          >
             {onSearchInSession ? (
               <AnimatedPressable
                 accessibilityLabel="Find in conversation"
                 onPress={onSearchInSession}
                 style={styles.pillBtn}
               >
-                <Ionicons name="search-outline" size={19} color={colors.text} />
+                <Ionicons name="search-outline" size={18} color={colors.text} />
               </AnimatedPressable>
             ) : null}
             {onShare ? (
@@ -113,7 +186,7 @@ export function AppHeader({
                 onPress={onShare}
                 style={styles.pillBtn}
               >
-                <Ionicons name="share-outline" size={19} color={colors.text} />
+                <Ionicons name="share-outline" size={18} color={colors.text} />
               </AnimatedPressable>
             ) : null}
             <AnimatedPressable
@@ -121,61 +194,44 @@ export function AppHeader({
               onPress={onMore || openDrawer}
               style={styles.pillBtn}
             >
-              <Ionicons name="ellipsis-horizontal" size={19} color={colors.text} />
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.text} />
             </AnimatedPressable>
           </View>
         ) : (
           <View style={styles.landingActions}>
+            {/* P1 1:1 — landing model trigger (frontend shows the model
+             * picker next to the landing composer). Visible when the
+             * parent wires `onOpenModelPicker`, e.g. NewChatScreen. */}
             {onOpenModelPicker ? (
               <AnimatedPressable
-                accessibilityLabel="Select Model"
+                accessibilityRole="button"
+                accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
                 onPress={onOpenModelPicker}
-                style={[
-                  styles.modelChip,
-                  {
-                    backgroundColor: colors.surfaceRaised,
-                    borderColor: colors.border,
-                    borderRadius: radius.pill,
-                  },
-                ]}
+                style={[styles.modelChipInline, { borderColor: colors.border, backgroundColor: circleBg }]}
               >
-                <Ionicons name="sparkles" size={13} color={colors.accent} />
-                <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.text, fontFamily: typography.medium }]}>
-                  {activeModelName || 'Model'}
+                <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+                  {activeModelName || t('settings.model') || 'Model'}
                 </Text>
                 <Ionicons name="chevron-down" size={12} color={colors.textMuted} />
               </AnimatedPressable>
             ) : null}
-
-            {onToggleIncognito ? (
-              <AnimatedPressable
-                accessibilityLabel="Incognito mode"
-                onPress={onToggleIncognito}
-                style={[
-                  styles.circleBtn,
-                  {
-                    borderColor: isIncognito ? colors.accent : colors.border,
-                    backgroundColor: isIncognito ? colors.accentSoft : colors.surfaceRaised,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={isIncognito ? 'glasses' : 'glasses-outline'}
-                  size={20}
-                  color={isIncognito ? colors.accent : colors.textMuted}
-                />
-              </AnimatedPressable>
-            ) : null}
-
-            {onNewChat ? (
-              <AnimatedPressable
-                accessibilityLabel={t('sidebar.nav.new') || 'New chat'}
-                onPress={onNewChat}
-                style={[styles.circleBtn, { borderColor: colors.border, backgroundColor: colors.surfaceRaised }]}
-              >
-                <Ionicons name="create-outline" size={21} color={colors.text} />
-              </AnimatedPressable>
-            ) : null}
+            <AnimatedPressable
+              accessibilityLabel={isIncognito ? 'Incognito active' : (t('sidebar.nav.new') || 'Conversation')}
+              onPress={onToggleIncognito || onNewChat}
+              style={[
+                styles.circleBtn,
+                {
+                  borderColor: isIncognito ? colors.accent : colors.border,
+                  backgroundColor: isIncognito ? colors.accentSoft : circleBg,
+                },
+              ]}
+            >
+              {isIncognito ? (
+                <Ionicons name="glasses" size={19} color={colors.accent} />
+              ) : (
+                <Ionicons name="chatbubble-outline" size={18} color={colors.text} />
+              )}
+            </AnimatedPressable>
           </View>
         )}
       </View>
@@ -184,44 +240,57 @@ export function AppHeader({
 }
 
 const styles = StyleSheet.create({
+  /* frontend `.top-bar { padding: 8px 14px; min-height: 44px; gap: 12px }` */
   header: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
+    minHeight: 44,
+    gap: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     zIndex: 10,
   },
+  /* P2-1 alignment: outer pill/circle buttons drop from 38 → 32 to
+   * match `frontend`'s `.icon-btn` (32 × 32). The 38 value was a
+   * pre-align touch-target overshoot. The inner `pillBtn` was already
+   * 32 so its size is unchanged. */
+  /* frontend `.icon-btn`: 32x32 with an 8px radius (rounded square,
+   * not a pill). */
   circleBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modeSegment: {
     flexDirection: 'row',
+    height: 40,
+    width: 172,
+    borderRadius: 20,
     padding: 3,
     borderWidth: 1,
     alignItems: 'center',
   },
   modeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    flex: 1,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modeButtonActive: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
     elevation: 2,
   },
   modeText: {
-    fontSize: 14,
+    fontSize: 14.5,
   },
   titleContainer: {
     flex: 1,
@@ -231,6 +300,25 @@ const styles = StyleSheet.create({
   titleText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  /* frontend `.model-picker-trigger`: inline-flex, gap 6px, padding
+   * 5px 10px, radius 6px, 13px text. Rendered under the title so the
+   * conversation header stays one row on narrow phones. */
+  modelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginTop: 4,
+    maxWidth: 220,
+  },
+  modelChipText: {
+    fontSize: 13,
+    lineHeight: 16,
+    flexShrink: 1,
   },
   spacer: {
     flex: 1,
@@ -244,30 +332,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  modelChip: {
+  modelChipInline: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    height: 40,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     borderWidth: 1,
     maxWidth: 160,
-  },
-  modelChipText: {
-    fontSize: 13,
-    flexShrink: 1,
+    minHeight: 32,
   },
   actionPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 42,
-    paddingHorizontal: 4,
+    height: 32,
+    borderRadius: 16,
+    paddingHorizontal: 3,
     borderWidth: 1,
   },
   pillBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },

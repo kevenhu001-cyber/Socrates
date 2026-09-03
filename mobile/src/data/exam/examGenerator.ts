@@ -91,8 +91,26 @@ export function gradeExam(questions: ExamQuestion[], answers: Record<number, str
   let correct = 0;
   const results = questions.map((question, index) => {
     const actual = String(answers[index] || '').trim().toLowerCase();
-    const expected = question.type === 'multiple-choice' ? [question.answer || ''] : question.answers || [question.answer || ''];
-    const isCorrect = expected.some((value) => actual === value.trim().toLowerCase() || (question.type === 'short-answer' && actual.includes(value.trim().toLowerCase())));
+    /* P3 1:1 — mirrors `frontend/src/exam.js:986-996`:
+     * MC = letter match, FB = case-insensitive exact, SA = keyword
+     * overlap (expected split on [,\\s]+, keep len>3, correct when
+     * empty or any keyword appears in the answer). */
+    if (question.type === 'multiple-choice') {
+      const expected = [question.answer || ''];
+      const isCorrect = expected.some((value) => actual === value.trim().toLowerCase());
+      if (isCorrect) correct += 1;
+      return { index, correct: isCorrect, answer: answers[index] || '', expected };
+    }
+    if (question.type === 'fill-blank') {
+      const expected = question.answers || [question.answer || ''];
+      const isCorrect = expected.some((value) => actual === value.trim().toLowerCase());
+      if (isCorrect) correct += 1;
+      return { index, correct: isCorrect, answer: answers[index] || '', expected };
+    }
+    const expectedText = String(question.answer || question.answers?.join(' ') || '').trim().toLowerCase();
+    const keywords = expectedText.split(/[,\s]+/).filter((k) => k.length > 3);
+    const expected = question.answers || [question.answer || ''];
+    const isCorrect = keywords.length === 0 || keywords.some((k) => actual.includes(k));
     if (isCorrect) correct += 1;
     return { index, correct: isCorrect, answer: answers[index] || '', expected };
   });

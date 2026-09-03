@@ -1,7 +1,9 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  BackHandler,
   FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,16 +13,21 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Message } from '@socrates/contracts';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { useAppDrawer } from '../components/AppDrawer';
+import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
 import { MessageBubble } from '../components/MessageBubble';
 import { Composer } from '../components/Composer';
+import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
+import { shareModal } from '../components/ShareModal';
 import { useTheme } from '../theme/ThemeProvider';
-import { useI18n, useT } from '../i18n';
+import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { native } from '../native/native';
 import { sharesApi } from '../data/api/client';
@@ -29,23 +36,10 @@ import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 const EMPTY_MESSAGES: Message[] = [];
-const BOTTOM_TOLERANCE = 96;
-
-const DEFAULT_FOLLOW_UPS_ZH = [
-  '能否给出一个具体的示例或应用场景？',
-  '这背后有哪些潜在局限或反例？',
-  '如果我要进一步深入，下一步该如何实践？',
-];
-
-const DEFAULT_FOLLOW_UPS_EN = [
-  'Could you provide a concrete example?',
-  'What are the potential limitations or counterexamples?',
-  'How should we proceed with practical implementation?',
-];
+const BOTTOM_TOLERANCE = 64;
 
 export function ChatScreen({ navigation }: Props) {
   const { colors, radius, spacing, typography } = useTheme();
-  const { language } = useI18n();
   const t = useT();
   const state = useAppStore();
   const listRef = useRef<FlatList<Message>>(null);
@@ -53,6 +47,14 @@ export function ChatScreen({ navigation }: Props) {
   const pendingScroll = useRef(false);
   const { openDrawer } = useAppDrawer();
   const [showScrollBottom, setShowScrollBottom] = useState(false);
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  /* frontend `.new-reply-pill`: `bottom: calc(96px + safe-area + 12px)`
+   * above the composer. 96 covers the composer + wrap; add the device
+   * safe-area so the pill never sits under the home indicator. */
+  const scrollBottomOffset = 96 + Math.max(insets.bottom, 0) + 12;
+  const currentModelName = AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.name || 'Model';
 
   // In-session search state
   const [searchActive, setSearchActive] = useState(false);
@@ -108,7 +110,7 @@ export function ChatScreen({ navigation }: Props) {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const isAtBottom = contentSize.height - layoutMeasurement.height - contentOffset.y <= BOTTOM_TOLERANCE;
     stickToBottom.current = isAtBottom;
-    setShowScrollBottom(!isAtBottom && contentSize.height > layoutMeasurement.height + 200);
+    setShowScrollBottom(!isAtBottom);
   }, []);
 
   const jumpToBottom = () => {
@@ -137,27 +139,22 @@ export function ChatScreen({ navigation }: Props) {
   }, [state.activeSession?.id, t]);
 
   const onAttach = useCallback(() => {
-    Alert.alert(t('chat.attach') || 'Add attachment', undefined, [
-      { text: t('chat.attachFile') || 'Choose a file', onPress: () => { void attach('file'); } },
-      { text: t('chat.attachImage') || 'Photo library', onPress: () => { void attach('image'); } },
-      { text: t('chat.capturePhoto') || 'Take a photo', onPress: () => { void attach('camera'); } },
-      { text: t('common.cancel') || 'Cancel', style: 'cancel' },
-    ]);
-  }, [attach, t]);
+    setToolsMenuOpen(true);
+  }, []);
 
   const onShare = useCallback(async () => {
     const session = state.activeSession;
     if (!session) return;
     try {
       const share = await sharesApi.create(session.id);
-      navigation.navigate('Share', {
+      shareModal.open({
         url: sharesApi.absoluteUrl(share.url),
         title: session.title || (t('chat.newConversation') || 'Conversation'),
       });
     } catch (error) {
       appStore.setError(error instanceof Error ? error.message : (t('share.failed') || 'Share failed'));
     }
-  }, [navigation, state.activeSession, t]);
+  }, [state.activeSession, t]);
 
   const lastAssistantIndex = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -166,34 +163,62 @@ export function ChatScreen({ navigation }: Props) {
     return -1;
   }, [messages]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (searchActive) {
+          setSearchActive(false);
+          setSearchQuery('');
+          setSearchMatchIndex(0);
+          return true;
+        }
+        return false;
+      });
+      return () => subscription.remove();
+    }, [searchActive]),
+  );
+
   const renderMessage = useCallback(
     ({ item, index }: { item: Message; index: number }) => (
       <MessageBubble
         message={item}
         isLastAssistant={index === lastAssistantIndex}
         onRetry={() => { void appStore.retryLastResponse(); }}
+        highlight={searchActive ? searchQuery : undefined}
       />
     ),
-    [lastAssistantIndex]
+    [lastAssistantIndex, searchActive, searchQuery]
   );
 
   const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
-
-  const followUpSuggestions = language === 'zh' ? DEFAULT_FOLLOW_UPS_ZH : DEFAULT_FOLLOW_UPS_EN;
-  const showSuggestions = !state.isStreaming && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant';
 
   return (
     <Screen keyboard style={styles.screen}>
       <AppHeader
         conversationActive
         title={state.activeSession?.title || (state.activeSession?.mode === 'tutor' ? 'Tutor' : 'Chat')}
+        activeModelName={currentModelName}
+        onOpenModelPicker={() => setModelPickerOpen(true)}
         onShare={() => { void onShare(); }}
         onMore={openDrawer}
         onSearchInSession={() => {
-          setSearchActive(!searchActive);
+          setSearchActive(true);
           setSearchQuery('');
+          setSearchMatchIndex(0);
         }}
       />
+
+      {/* P0-2: Cmd+F / Ctrl+F (web) toggles the in-session find bar. */}
+      {Platform.OS === 'web' ? (
+        <WebFindHandler
+          active={searchActive}
+          onToggle={() => {
+            setSearchActive((prev) => !prev);
+            setSearchQuery('');
+            setSearchMatchIndex(0);
+          }}
+        />
+      ) : null}
 
       {/* In-session Search Bar */}
       {searchActive ? (
@@ -269,11 +294,11 @@ export function ChatScreen({ navigation }: Props) {
       {showScrollBottom ? (
         <AnimatedPressable
           onPress={jumpToBottom}
-          style={[styles.scrollBottomBtn, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }]}
+          style={[styles.scrollBottomBtn, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, bottom: scrollBottomOffset }]}
         >
-          <Ionicons name="arrow-down" size={16} color={colors.accent} />
+          <Ionicons name="arrow-down" size={14} color={colors.accent} />
           <Text style={[styles.scrollBottomText, { color: colors.text, fontFamily: typography.medium }]}>
-            {t('chat.jumpBottom') || 'Latest'}
+            {t('chat.newReply') || '↓ New reply'}
           </Text>
         </AnimatedPressable>
       ) : null}
@@ -298,37 +323,10 @@ export function ChatScreen({ navigation }: Props) {
         </View>
       ) : null}
 
-      {/* Follow-up suggestions chips */}
-      {showSuggestions ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.suggestionsStrip}
-          keyboardShouldPersistTaps="handled"
-        >
-          {followUpSuggestions.map((suggestion, i) => (
-            <AnimatedPressable
-              key={i}
-              onPress={() => void onSend(suggestion)}
-              style={[
-                styles.suggestionChip,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: radius.pill,
-                },
-              ]}
-            >
-              <Ionicons name="sparkles-outline" size={13} color={colors.accent} />
-              <Text numberOfLines={1} style={[styles.suggestionChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
-                {suggestion}
-              </Text>
-            </AnimatedPressable>
-          ))}
-        </ScrollView>
-      ) : null}
-
-      {/* Composer Container */}
+      {/* Composer Container (no in-conversation follow-up chips:
+       * `suggestions.js:316-333` retires the chip row once the user has
+       * sent the first turn; the previous hardcoded 3-chip strip caused
+       * the "flicker during chat" the web client explicitly removed). */}
       <View style={[styles.composerWrap, { backgroundColor: colors.background }]}>
         {state.pendingAttachments.length ? (
           <ScrollView
@@ -346,7 +344,7 @@ export function ChatScreen({ navigation }: Props) {
                   {
                     backgroundColor: colors.surfaceRaised,
                     borderColor: colors.border,
-                    borderRadius: radius.sm,
+                    borderRadius: 18,
                   },
                 ]}
               >
@@ -374,6 +372,27 @@ export function ChatScreen({ navigation }: Props) {
           onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
         />
       </View>
+
+      {/* Tools Menu Modal */}
+      <ComposerToolsMenu
+        visible={toolsMenuOpen}
+        onClose={() => setToolsMenuOpen(false)}
+        onPickCamera={() => void attach('camera')}
+        onPickPhotos={() => void attach('image')}
+        onPickFiles={() => void attach('file')}
+        onPickPlugins={() => navigation.navigate('Plugins')}
+        onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
+        isThinkDeeperActive={state.reasoningEffort === 'high'}
+      />
+
+      {/* Model Picker Modal — mirrors frontend `.model-picker` menu */}
+      <ModelPickerModal
+        visible={modelPickerOpen}
+        selectedId={state.selectedModel}
+        onSelect={(modelId) => appStore.setSelectedModel(modelId)}
+        onClose={() => setModelPickerOpen(false)}
+        onManageSettings={() => navigation.navigate('Settings')}
+      />
     </Screen>
   );
 }
@@ -423,28 +442,35 @@ const styles = StyleSheet.create({
   },
   offlineDot: { width: 6, height: 6, borderRadius: 3 },
   offlineText: { fontSize: 12, fontWeight: '600' },
-  messages: { flexGrow: 1, paddingTop: 14, paddingBottom: 12 },
+  /* frontend `#msgList { padding-top: 12px; padding-bottom: 0 }`. */
+  messages: { flexGrow: 1, paddingTop: 12, paddingBottom: 0 },
   empty: { flex: 1 },
+  /* frontend `.new-reply-pill` (phone breakpoint):
+   *   right: 10px; bottom: calc(96px + safe-area + keyboard + 12px);
+   *   font-size: 11px; padding: 4px 10px;
+   * It is anchored to the right edge above the composer, not centered.
+   * `bottom` is injected at render time from `useSafeAreaInsets`. */
   scrollBottomBtn: {
     position: 'absolute',
-    right: 20,
-    bottom: 120,
+    alignSelf: 'flex-end',
+    right: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    elevation: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    minHeight: 26,
+    borderRadius: 13,
+    borderWidth: 0,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    zIndex: 15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 7,
+    zIndex: 20,
   },
   scrollBottomText: {
-    fontSize: 12,
+    fontSize: 11,
   },
   errorRow: {
     flexDirection: 'row',
@@ -464,21 +490,25 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     gap: 8,
   },
+  /* frontend `.suggestion-chip`: min-height 32px, padding 5px 10px,
+   * border 0, border-radius 8px, font 400 13px, gap 12px. */
   suggestionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 1,
+    gap: 12,
+    minHeight: 32,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 0,
     maxWidth: 280,
   },
   suggestionChipText: {
-    fontSize: 12,
+    fontSize: 13,
     flexShrink: 1,
   },
+  /* frontend centers the composer inside a 16px-gutter column. */
   composerWrap: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 4,
   },
@@ -494,3 +524,22 @@ const styles = StyleSheet.create({
   },
   attachmentName: { flexShrink: 1, fontSize: 12 },
 });
+
+/* P0-2: Web-only Ctrl/Cmd+F handler. Mounts a window keydown listener
+ * that toggles the in-session find bar so the Web build matches the
+ * desktop / web `frontend` shortcut. Native mobile users reach the
+ * same surface through the `AppHeader` action button. */
+function WebFindHandler({ onToggle }: { active: boolean; onToggle: () => void }) {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return undefined;
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && (event.key === 'f' || event.key === 'F')) {
+        event.preventDefault();
+        onToggle();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onToggle]);
+  return null;
+}

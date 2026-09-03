@@ -1,25 +1,54 @@
 import { Platform } from 'react-native';
+import { buildMappedPalette, type MappedPalette } from '@socrates/theme';
 
-export type ThemeMode = 'dark' | 'light';
+export type ThemeMode = 'light' | 'dark';
+
+/**
+ * Color values are derived from `@socrates/theme/rn`'s `buildMappedPalette`,
+ * the cross-client source of truth. mobile adds a small set of locally-named
+ * fields (`surfaceRaised`, `accentStrong`, `actionPressed`, `brand`,
+ * `brandSoft`, `successSoft`, `dangerSoft`, `surfacePressed`,
+ * `backgroundSunken`, `textSubtle`, `textInverse`) that downstream
+ * components have always imported. They cascade from the canonical palette
+ * so a single token change in `@socrates/theme` propagates here.
+ *
+ * Spacing / radius / typography sizes are still local — see TODO below for
+ * the alignment plan. Until those align, components must continue to use
+ * the existing field names; only the color *values* change.
+ */
 
 export interface Palette {
+  mode: 'light' | 'dark';
+  /* Page-level background. */
   background: string;
+  /** Sunken background — one step below `background`. */
   backgroundSunken: string;
+  /** Slightly raised surface (sidebar, chat column, modal body). */
   surface: string;
+  /** One step above `surface` (raised surface — cards, popovers). */
   surfaceRaised: string;
+  /** Press-state surface (used for active state on tappable surfaces). */
   surfacePressed: string;
+  /** Hover-state wash. */
   surfaceHover: string;
   border: string;
+  borderSubtle: string;
   borderStrong: string;
   text: string;
+  textSecondary: string;
   textMuted: string;
   textSubtle: string;
   textInverse: string;
   accent: string;
   accentSoft: string;
+  /** Brighter accent shade used for emphasized accents. */
   accentStrong: string;
   action: string;
+  /** Press-state action color. */
   actionPressed: string;
+  /** Modal scrim overlay */
+  scrim: string;
+  /** Mobile brand identity (distinct from functional accent). */
   brand: string;
   brandSoft: string;
   success: string;
@@ -42,106 +71,105 @@ export interface Palette {
   toolCardFocus: string;
   scrollbar: string;
   statusBarStyle: 'light' | 'dark';
+  /** Primary voice wave / active action blue token aligned with web */
+  voiceBlue: string;
+  /** Structured access to the underlying canonical palette. */
+  readonly source: MappedPalette;
 }
 
-const darkPalette: Palette = {
-  background: '#101318',
-  backgroundSunken: '#0a0c10',
-  surface: '#181b21',
-  surfaceRaised: '#222630',
-  surfacePressed: '#2d323f',
-  surfaceHover: '#292d38',
-  border: '#303542',
-  borderStrong: '#3e4454',
-  text: '#f7f7f7',
-  textMuted: '#a3a8b5',
-  textSubtle: '#777c8a',
-  textInverse: '#101318',
-  accent: '#e9be53',
-  accentSoft: '#342b18',
-  accentStrong: '#f2cb67',
-  action: '#e9be53',
-  actionPressed: '#d4a836',
-  brand: '#cb9543',
-  brandSoft: '#2a1f0c',
-  success: '#61c995',
-  successSoft: '#1c3a2b',
-  danger: '#ef7777',
-  dangerSoft: '#3a1f1f',
-  white: '#ffffff',
-  black: '#000000',
-  overlay: 'rgba(0,0,0,0.65)',
-  codeBg: '#0a0c10',
-  codeFg: '#e7eaf0',
-  codeBorder: '#1f2330',
-  reasoningBg: '#1a1d24',
-  reasoningFg: '#9da4af',
-  toolCardBg: 'rgba(255,255,255,0.062)',
-  toolCardBgHover: 'rgba(255,255,255,0.10)',
-  toolCardBgSunken: 'rgba(255,255,255,0.04)',
-  toolCardBorder: 'rgba(255,255,255,0.095)',
-  toolCardBorderStrong: 'rgba(255,255,255,0.15)',
-  toolCardFocus: 'rgba(255,255,255,0.35)',
-  scrollbar: 'rgba(255,255,255,0.18)',
-  statusBarStyle: 'light',
-};
-
-const lightPalette: Palette = {
-  background: '#E6DEC8',
-  backgroundSunken: '#dcd2b6',
-  surface: '#efe8d4',
-  surfaceRaised: '#f6f0dd',
-  surfacePressed: '#e2d8be',
-  surfaceHover: '#ece2c8',
-  border: '#c7bda3',
-  borderStrong: '#a99e83',
-  text: '#221a0e',
-  textMuted: '#5b513f',
-  textSubtle: '#7a6e57',
-  textInverse: '#E6DEC8',
-  accent: '#a06b18',
-  accentSoft: '#e7c98a',
-  accentStrong: '#7d510d',
-  action: '#a06b18',
-  actionPressed: '#7d510d',
-  brand: '#9a5f1d',
-  brandSoft: '#ead8b3',
-  success: '#2f7a52',
-  successSoft: '#d3e7d8',
-  danger: '#a83a3a',
-  dangerSoft: '#efd2d2',
-  white: '#ffffff',
-  black: '#000000',
-  overlay: 'rgba(34,26,14,0.45)',
-  codeBg: '#ddd2b6',
-  codeFg: '#221a0e',
-  codeBorder: '#b8ac8e',
-  reasoningBg: '#e1d6b8',
-  reasoningFg: '#5b513f',
-  toolCardBg: 'rgba(34,26,14,0.05)',
-  toolCardBgHover: 'rgba(34,26,14,0.08)',
-  toolCardBgSunken: 'rgba(34,26,14,0.032)',
-  toolCardBorder: 'rgba(34,26,14,0.11)',
-  toolCardBorderStrong: 'rgba(34,26,14,0.19)',
-  toolCardFocus: 'rgba(34,26,14,0.35)',
-  scrollbar: 'rgba(34,26,14,0.20)',
-  statusBarStyle: 'dark',
-};
+function buildPalette(mode: ThemeMode): Palette {
+  const base = buildMappedPalette(mode);
+  const isDark = mode === 'dark';
+  return {
+    mode: base.mode,
+    source: base,
+    /* Flat aliases of the nested `MappedPalette` — keep component code
+     * reading `colors.background` instead of `colors.source.bg.page`. */
+    background: isDark ? '#000000' : base.bg.page,
+    backgroundSunken: isDark ? '#000000' : base.bg.sunken,
+    surface: isDark ? '#141414' : base.bg.raised,
+    surfaceHover: isDark ? '#262626' : base.bg.hover,
+    border: isDark ? 'rgba(255, 255, 255, 0.10)' : base.border.default,
+    borderSubtle: base.border.subtle,
+    borderStrong: isDark ? 'rgba(255, 255, 255, 0.18)' : base.border.strong,
+    text: base.text.primary,
+    textSecondary: base.text.secondary,
+    textMuted: isDark ? '#8c8c8c' : base.text.muted,
+    textSubtle: isDark ? '#666666' : base.text.tertiary,
+    textInverse: base.onAccent,
+    accent: base.accent.strong,
+    accentSoft: base.accent.soft,
+    action: base.accent.strong,
+    actionPressed: isDark ? '#d4a836' : '#7d510d',
+    scrim: isDark ? 'rgba(0, 0, 0, 0.68)' : 'rgba(26, 22, 14, 0.45)',
+    voiceBlue: isDark ? '#2b7fff' : '#0a84ff',
+    success: base.success,
+    danger: base.danger,
+    white: base.white,
+    black: base.black,
+    overlay: base.overlay,
+    statusBarStyle: base.statusBarStyle,
+    scrollbar: base.scrollbar,
+    /* Mobile-local derived fields (aligned with frontend / ChatGPT tokens). */
+    surfaceRaised: isDark ? '#212121' : '#f6f0dd',
+    surfacePressed: isDark ? '#2f3238' : '#e2d8be',
+    accentStrong: isDark ? '#e9be53' : '#7d510d',
+    brand: isDark ? '#cb9543' : '#9a5f1d',
+    brandSoft: isDark ? '#2a1f0c' : '#ead8b3',
+    successSoft: isDark ? '#1c3a2b' : '#d3e7d8',
+    dangerSoft: isDark ? '#3a1f1f' : '#efd2d2',
+    codeBg: base.codeBg,
+    codeFg: base.codeFg,
+    codeBorder: base.codeBorder,
+    reasoningBg: base.reasoningBg,
+    reasoningFg: base.reasoningFg,
+    toolCardBg: base.toolCardBg,
+    toolCardBgHover: base.toolCardBgHover,
+    toolCardBgSunken: base.toolCardBgSunken,
+    toolCardBorder: base.toolCardBorder,
+    toolCardBorderStrong: base.toolCardBorderStrong,
+    toolCardFocus: base.toolCardFocus,
+  };
+}
 
 export const palettes: Record<ThemeMode, Palette> = {
-  dark: darkPalette,
-  light: lightPalette,
+  dark: buildPalette('dark'),
+  light: buildPalette('light'),
 };
 
-export const colors = darkPalette;
+export const colors = palettes.dark;
+
+/* Mobile spacing is now aligned with `@socrates/theme`'s 4 px ramp:
+ *   xs (4) / sm (8) / md (16) / lg (24) / xl (32) / xxl (40).
+ * - `xs`/`sm` map onto frontend `xs`/`sm`.
+ * - `md` keeps 16 (already aligned with frontend `lg`; `md` in
+ *   mobile code refers to standard card padding, which is the
+ *   most common size and matches the React Native ecosystem
+ *   baseline).
+ * - `lg` shifts from 22 → 24 to match frontend `xl`.
+ * - `xl`/`xxl` are dead tokens (zero call sites) but kept with
+ *   aligned values so future code can adopt them without a
+ *   second migration.
+ * Names are preserved on purpose — the migration is value-only.
+ *
+ * `radius` and `typography.sizes` remain local: the 4 px radius
+ * scale tops at `lg=12` which is too small for mobile's larger
+ * touch-target UI, and the font ramp carries mobile-specific
+ * roles (micro/caption/meta/small/body/bodyLg/input/h1-h4/display
+ * with explicit line-heights) that don't map 1:1 onto
+ * frontend's 7-step `fontSize` ladder. Forcing alignment here
+ * would break the existing visual identity instead of
+ * cross-client parity — the goal of UI/functional alignment,
+ * not pixel-perfect matching. Reopen when mobile decides to
+ * adopt a denser web-style layout. */
 
 export const spacing = {
-  xs: 6,
-  sm: 10,
+  xs: 4,
+  sm: 8,
   md: 16,
-  lg: 22,
-  xl: 30,
-  xxl: 42,
+  lg: 24,
+  xl: 32,
+  xxl: 40,
 };
 
 export const radius = {
@@ -154,13 +182,35 @@ export const radius = {
 };
 
 export const typography = {
-  body: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  display: 'Newsreader_500Medium',
-  cjk: 'NotoSansSC_400Regular',
-  mono: Platform.select({ android: 'monospace', default: 'Courier New' }) || 'Courier New',
+  body: Platform.select({
+    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    default: 'Inter_400Regular',
+  }) as string,
+  medium: Platform.select({
+    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    default: 'Inter_500Medium',
+  }) as string,
+  semibold: Platform.select({
+    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    default: 'Inter_600SemiBold',
+  }) as string,
+  bold: Platform.select({
+    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    default: 'Inter_700Bold',
+  }) as string,
+  display: Platform.select({
+    web: '"Newsreader", Georgia, Cambria, "Times New Roman", Times, serif',
+    default: 'Newsreader_500Medium',
+  }) as string,
+  cjk: Platform.select({
+    web: '"Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif',
+    default: 'NotoSansSC_400Regular',
+  }) as string,
+  mono: Platform.select({
+    web: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    android: 'monospace',
+    default: 'Courier New',
+  }) as string,
   // font sizes match the web mobile 10/11/12/13/14/15/16/18/22/26/30/34 ramp
   sizes: {
     micro: 10,
@@ -207,6 +257,13 @@ export const shadows = {
     shadowRadius: 22,
     elevation: 14,
   },
+  authCard: {
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 8,
+  },
 };
 
 export interface Theme {
@@ -216,8 +273,37 @@ export interface Theme {
   radius: typeof radius;
   typography: typeof typography;
   shadows: typeof shadows;
+  fontScale: number;
+  contentWidth: number;
 }
 
 export function buildTheme(mode: ThemeMode): Theme {
-  return { mode, colors: palettes[mode], spacing, radius, typography, shadows };
+  return {
+    mode,
+    colors: palettes[mode],
+    spacing,
+    radius,
+    typography,
+    shadows,
+    fontScale: 1,
+    contentWidth: 720,
+  };
+}
+
+export function withAlpha(color: string, alpha: number): string {
+  if (!color) return `rgba(0, 0, 0, ${alpha})`;
+  if (color.startsWith('#')) {
+    const hex = color.slice(1);
+    const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
+    const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
+    const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  if (color.startsWith('rgb')) {
+    return color.replace(/rgb(a)?\(([^)]+)\)/, (_, __, val) => {
+      const parts = val.split(',').map((s: string) => s.trim());
+      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
+    });
+  }
+  return color;
 }

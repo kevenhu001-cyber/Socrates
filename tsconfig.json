@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "ignoreDeprecations": "6.0",
+    "typeRoots": ["./mobile/node_modules/@types"],
+    "types": ["jest"],
+    "baseUrl": ".",
+    "paths": {
+      "@socrates/contracts": ["packages/contracts/src/index.ts"],
+      "@socrates/core": ["packages/core/src/index.ts"],
+      "@socrates/theme": ["packages/theme/src/index.ts"],
+      "@/*": ["mobile/src/*"]
+    }
+  },
+  "include": [
+    "packages/contracts/src/**/*",
+    "packages/core/src/**/*",
+    "packages/theme/src/**/*"
+  ]
+}

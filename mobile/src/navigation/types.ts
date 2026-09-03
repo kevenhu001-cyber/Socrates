@@ -14,7 +14,6 @@ export type RootStackParamList = {
   Knowledge: undefined;
   Mistakes: undefined;
   Embedded: { target: EmbeddedTarget; title: string };
-  Share: { url: string; title?: string };
   ArtifactPreview: { artifactId: string; html: string };
 
   // Workspace remains a native route so the drawer can expose the full
