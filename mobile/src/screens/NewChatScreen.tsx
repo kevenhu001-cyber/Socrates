@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { Composer } from '../components/Composer';
+import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
 import { useTheme } from '../theme/ThemeProvider';
@@ -24,53 +25,63 @@ interface SuggestionCard {
   promptEn: string;
 }
 
-const CHAT_IDEAS: SuggestionCard[] = [
-  {
-    id: 'daily-briefing',
-    icon: 'newspaper-outline',
-    title: '晨间简报',
-    promptZh: '给我一份晨间简报 — 列出今天最该关注的三件事。',
-    promptEn: 'Give me a morning briefing — top three things I should know today.',
-  },
-  {
-    id: 'code-review',
-    icon: 'code-slash-outline',
-    title: '代码与架构审查',
-    promptZh: '请帮我审查一段代码或架构设计的性能、安全隐患与重构建议。',
-    promptEn: 'Review my architecture or code for performance, security, and refactoring.',
-  },
-  {
-    id: 'inbox-triage',
-    icon: 'mail-outline',
-    title: '任务拆解与行动清单',
-    promptZh: '我有一堆任务和邮件需要处理，帮我梳理优先级并制定清晰行动清单。',
-    promptEn: 'Help me prioritize tasks and draft a clear, actionable plan.',
-  },
-  {
-    id: 'creative-writing',
-    icon: 'bulb-outline',
-    title: '头脑风暴与创意构思',
-    promptZh: '帮我头脑风暴几个新颖的创意构思，并从多个角度剖析优劣。',
-    promptEn: 'Brainstorm creative angles and analyze pros and cons from multiple perspectives.',
-  },
+/* P4 1:1 — prompt library ported from
+ * `frontend/src/ui/suggestions.js:37-136` (same 14 ids, same zh/en
+ * copy). The web row renders two chips at a session-stable offset
+ * (`pickFromLibrary`: firstIdx = offset % n, second = +3); mobile
+ * derives the offset from the session id hash so the pair is stable
+ * within a session and rotates across sessions. Icons map the web
+ * glyph set onto Ionicons. */
+const PROMPT_LIBRARY: SuggestionCard[] = [
+  { id: 'daily-briefing', icon: 'briefcase-outline', title: 'briefing', promptZh: '给我一份晨间简报 — 列出今天最该知道的三件事', promptEn: 'Give me a morning briefing — top three things I should know today' },
+  { id: 'inbox-triage', icon: 'mail-outline', title: 'inbox', promptZh: '帮我分一下收件箱：有一堆未读邮件需要一份处理计划', promptEn: 'Help me triage my inbox: I have a stack of unread emails and need a plan' },
+  { id: 'meeting-notes', icon: 'document-text-outline', title: 'notes', promptZh: '把会议笔记整理成一份干净的纪要，附上待办事项', promptEn: 'Turn my meeting notes into a clean recap with action items' },
+  { id: 'code-review', icon: 'code-slash-outline', title: 'code', promptZh: '审查这段代码，找 bug 并给出可执行的改进建议', promptEn: 'Review this code for bugs and suggest concrete improvements' },
+  { id: 'sql-explainer', icon: 'server-outline', title: 'database', promptZh: '逐行解释这条 SQL 在做什么', promptEn: 'Explain what this SQL query does, step by step' },
+  { id: 'regex-builder', icon: 'text-outline', title: 'regex', promptZh: '帮我写一条匹配 …… 的正则表达式', promptEn: 'Help me write a regex that matches …' },
+  { id: 'concept-teach', icon: 'school-outline', title: 'teach', promptZh: '像给好奇的青少年讲 [topic] 一样教我 — 先讲直觉', promptEn: 'Teach me [topic] like I am a curious teenager — start with the intuition' },
+  { id: 'quiz-me', icon: 'help-circle-outline', title: 'quiz', promptZh: '考考我 [topic] — 给我五道题，并批改我的回答', promptEn: 'Quiz me on [topic] — give me five questions and grade my answers' },
+  { id: 'compare', icon: 'git-compare-outline', title: 'compare', promptZh: '对比 [A] 与 [B] — 各自优缺点，以及什么时候该选哪个', promptEn: 'Compare [A] vs [B] — pros, cons, and when to pick each' },
+  { id: 'summarize', icon: 'list-outline', title: 'summarize', promptZh: '把附件文档压缩成五条要点', promptEn: 'Summarize the attached document into five bullet points' },
+  { id: 'brainstorm', icon: 'bulb-outline', title: 'spark', promptZh: '围绕 …… 给我十个短篇故事的切入角度', promptEn: 'Brainstorm ten angles for a short story about …' },
+  { id: 'rewrite', icon: 'pencil-outline', title: 'pen', promptZh: '把这段话改写得更自信、更精炼', promptEn: 'Rewrite this paragraph to sound more confident and concise' },
+  { id: 'translate-tone', icon: 'globe-outline', title: 'globe', promptZh: '把这段文字翻译成自然、地道的中文', promptEn: 'Translate this passage into natural, idiomatic English' },
+  { id: 'decision-frame', icon: 'scale-outline', title: 'scale', promptZh: '我在两个选项之间犹豫 — 帮我搭一个简单的决策框架', promptEn: 'I am weighing two options — help me build a simple decision frame' },
 ];
 
-const TUTOR_IDEAS: SuggestionCard[] = [
-  {
-    id: 'feynman-technique',
-    icon: 'school-outline',
-    title: '费曼学习法',
-    promptZh: '用费曼学习法带我通俗理解量子计算的基本原理，并随时提问检验我的理解。',
-    promptEn: 'Explain quantum computing using the Feynman technique, asking questions to check my understanding.',
-  },
-  {
-    id: 'socratic-math',
-    icon: 'calculator-outline',
-    title: '苏格拉底式启发',
-    promptZh: '不要直接告诉我答案，请一步步通过启发式提问，引导我推导欧拉公式。',
-    promptEn: 'Without giving me the answer, guide me step by step through questions to derive Euler formula.',
-  },
-];
+function hashString(value: string): number {
+  let h = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    h = (h * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+/* Landing entrance: frontend staggers greeting → subtitle → composer
+ * with `emptyStateIn .4s var(--ease-out)` at 0/70/140ms
+ * (`styles.css:1074-1086`). Same curve, same stagger, RN Animated. */
+function Enter({ delay = 0, children }: { delay?: number; children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translate = useRef(new Animated.Value(8)).current;
+  useEffect(() => {
+    const animation = Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 400, delay, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
+      Animated.timing(translate, { toValue: 0, duration: 400, delay, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
+    ]);
+    animation.start();
+    return () => {
+      animation.stop();
+    };
+  }, [delay, opacity, translate]);
+  return <Animated.View style={{ opacity, transform: [{ translateY: translate }] }}>{children}</Animated.View>;
+}
+
+function pickLibraryPair(sessionKey: string): SuggestionCard[] {
+  const n = PROMPT_LIBRARY.length;
+  const firstIdx = hashString(sessionKey || 'landing') % n;
+  const secondIdx = (firstIdx + 3) % n;
+  return [PROMPT_LIBRARY[firstIdx], PROMPT_LIBRARY[secondIdx === firstIdx ? (firstIdx + 1) % n : secondIdx]];
+}
 
 export function NewChatScreen({ navigation, route }: Props) {
   const { colors, radius, typography } = useTheme();
@@ -79,6 +90,7 @@ export function NewChatScreen({ navigation, route }: Props) {
   const state = useAppStore();
   const mode = state.activeSession?.mode || 'chat';
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
 
   useEffect(() => {
     const projectId = route.params?.projectId || null;
@@ -107,13 +119,7 @@ export function NewChatScreen({ navigation, route }: Props) {
     }
   };
 
-  const onAttach = () =>
-    Alert.alert(t('chat.attach') || 'Add to message', undefined, [
-      { text: t('chat.attachFile') || 'Choose a file', onPress: () => { void attach('file'); } },
-      { text: t('chat.attachImage') || 'Photo library', onPress: () => { void attach('image'); } },
-      { text: t('chat.capturePhoto') || 'Take a photo', onPress: () => { void attach('camera'); } },
-      { text: t('common.cancel') || 'Cancel', style: 'cancel' },
-    ]);
+  const onAttach = () => setToolsMenuOpen(true);
 
   const send = async () => {
     if (!state.draft.trim() && !state.pendingAttachments.length) return;
@@ -127,27 +133,30 @@ export function NewChatScreen({ navigation, route }: Props) {
     appStore.setDraft(text);
   };
 
-  // Time-aware greeting
-  const getGreeting = () => {
-    const name = state.user?.displayName || state.user?.email?.split('@')[0] || (t('greeting.guest') || 'Guest');
-    const hour = new Date().getHours();
-    if (mode === 'tutor') {
-      return language === 'zh' ? `让我们开始探索，${name}。` : `Let's explore, ${name}.`;
-    }
-    if (hour >= 5 && hour < 12) {
-      return language === 'zh' ? `早上好，${name}。` : `Good morning, ${name}.`;
-    }
-    if (hour >= 12 && hour < 17) {
-      return language === 'zh' ? `下午好，${name}。` : `Good afternoon, ${name}.`;
-    }
-    if (hour >= 17 && hour < 22) {
-      return language === 'zh' ? `晚上好，${name}。` : `Good evening, ${name}.`;
-    }
-    return language === 'zh' ? `夜深了，${name}。` : `Working late, ${name}.`;
-  };
-
   const currentModelName = AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.name || 'Model';
-  const ideas = mode === 'tutor' ? TUTOR_IDEAS : CHAT_IDEAS;
+  const ideas = pickLibraryPair(state.activeSession?.id || 'landing');
+
+  /* P1 1:1 — time-aware personalized greeting mirrors
+   * `frontend/src/ui/greeting.js:renderGreeting` writing into
+   * `#topicTitle`. First token of displayName/email, else guest. */
+  const greeting = (() => {
+    const raw = state.user?.displayName || state.user?.email || t('greeting.guest');
+    const name = String(raw || t('greeting.guest')).trim().split(/\s+/)[0] || t('greeting.guest');
+    let key = 'greeting.chat';
+    if (mode === 'tutor') {
+      key = 'greeting.tutor';
+    } else {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) key = 'greeting.chat.morning';
+      else if (hour >= 12 && hour < 17) key = 'greeting.chat.afternoon';
+      else if (hour >= 17 && hour < 22) key = 'greeting.chat.evening';
+      else key = 'greeting.chat.late';
+    }
+    const tmpl = t(key) === key
+      ? (mode === 'tutor' ? "Let's explore, {name}." : 'Welcome back, {name}!')
+      : t(key);
+    return tmpl.replace('{name}', name);
+  })();
 
   return (
     <Screen keyboard style={styles.screen}>
@@ -175,23 +184,61 @@ export function NewChatScreen({ navigation, route }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Landing Greeting & Subtitle */}
-        <View style={styles.heroSection}>
-          <Text style={[styles.greetingTitle, { color: colors.text, fontFamily: typography.display }]}>
-            {getGreeting()}
-          </Text>
-          <Text style={[styles.greetingSub, { color: colors.textMuted, fontFamily: typography.body }]}>
-            {mode === 'tutor'
-              ? (language === 'zh'
-                ? '提出一个概念、问题或学习目标，苏格拉底将引导你逐步掌握。'
-                : 'Name a concept, problem or learning goal, and Socrates will guide you step by step.')
-              : (language === 'zh'
-                ? '从提问开始，探索思维的深度与边界。'
-                : 'What would you like to think through today?')}
-          </Text>
-        </View>
+        {/* Spacious empty area 1:1 matching cur-mobile-home.png */}
+        <View style={styles.spacer} />
 
-        {/* Central Composer Card */}
+        {/* Greeting — mirrors `#topicTitle.topic-title.greeting`
+         * (`frontend/index.html:568`, `styles.css:1074`). */}
+        <Enter delay={0}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.greeting, { color: colors.textMuted, fontFamily: typography.display }]}
+          >
+            {greeting}
+          </Text>
+        </Enter>
+
+        {/* Starter ideas — two chips at a session-stable offset from
+         * the shared library, with the `home.ideasLabel` heading
+         * (`frontend/index.html:635-636`, `suggestions.js:274-287`). */}
+        <Enter delay={70}>
+          <Text style={[styles.ideasLabel, { color: colors.textMuted, fontFamily: typography.semibold }]}>
+            {t('home.ideasLabel') || (language === 'zh' ? '灵感' : 'Ideas for you')}
+          </Text>
+        </Enter>
+        <Enter delay={70}>
+          <View style={styles.ideasSection}>
+          {ideas.slice(0, 2).map((idea) => (
+            <AnimatedPressable
+              key={idea.id}
+              onPress={() => selectIdea(idea)}
+              style={[
+                styles.ideaPill,
+                {
+                  backgroundColor: 'transparent',
+                  borderColor: colors.borderSubtle,
+                },
+              ]}
+            >
+              <View style={styles.ideaIcon}>
+                <Ionicons name={idea.icon} size={15} color={colors.accent} />
+              </View>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.ideaPillText,
+                  { color: colors.textSecondary, fontFamily: typography.body },
+                ]}
+              >
+                {language === 'zh' ? idea.promptZh : idea.promptEn}
+              </Text>
+            </AnimatedPressable>
+          ))}
+          </View>
+        </Enter>
+
+        {/* Central Composer Capsule */}
+        <Enter delay={140}>
         <View style={styles.composerCardWrap}>
           {state.pendingAttachments.length ? (
             <ScrollView
@@ -209,7 +256,7 @@ export function NewChatScreen({ navigation, route }: Props) {
                     {
                       backgroundColor: colors.surfaceRaised,
                       borderColor: colors.borderStrong,
-                      borderRadius: radius.sm,
+                      borderRadius: 18,
                     },
                   ]}
                 >
@@ -237,49 +284,20 @@ export function NewChatScreen({ navigation, route }: Props) {
             onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
           />
         </View>
-
-        {/* Ideas for you (Suggestion Chips) */}
-        <View style={styles.ideasSection}>
-          <Text style={[styles.ideasLabel, { color: colors.textSubtle, fontFamily: typography.semibold }]}>
-            {language === 'zh' ? '为您推荐的灵感' : 'Ideas for you'}
-          </Text>
-          <View style={styles.ideasList}>
-            {ideas.map((idea) => (
-              <AnimatedPressable
-                key={idea.id}
-                onPress={() => selectIdea(idea)}
-                style={[
-                  styles.ideaCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    borderRadius: radius.lg,
-                  },
-                ]}
-              >
-                <View style={[styles.ideaIconWrap, { backgroundColor: colors.accentSoft }]}>
-                  <Ionicons name={idea.icon} size={18} color={colors.accent} />
-                </View>
-                <View style={styles.ideaTextWrap}>
-                  <Text style={[styles.ideaTitle, { color: colors.text, fontFamily: typography.semibold }]}>
-                    {idea.title}
-                  </Text>
-                  <Text numberOfLines={2} style={[styles.ideaDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
-                    {language === 'zh' ? idea.promptZh : idea.promptEn}
-                  </Text>
-                </View>
-              </AnimatedPressable>
-            ))}
-          </View>
-        </View>
-
-        {/* Footnote disclaimer */}
-        <Text style={[styles.disclaimer, { color: colors.textSubtle, fontFamily: typography.body }]}>
-          {language === 'zh'
-            ? '苏格拉底通过提问启发思考，不对答案作评判。'
-            : 'Socrates asks questions to help you think. It does not judge your answers.'}
-        </Text>
+        </Enter>
       </ScrollView>
+
+      {/* Tools Menu Modal 1:1 matching cur-mobile-menu.png */}
+      <ComposerToolsMenu
+        visible={toolsMenuOpen}
+        onClose={() => setToolsMenuOpen(false)}
+        onPickCamera={() => void attach('camera')}
+        onPickPhotos={() => void attach('image')}
+        onPickFiles={() => void attach('file')}
+        onPickPlugins={() => navigation.navigate('Plugins')}
+        onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
+        isThinkDeeperActive={state.reasoningEffort === 'high'}
+      />
 
       {/* Model Picker Modal */}
       <ModelPickerModal
@@ -294,14 +312,17 @@ export function NewChatScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingTop: 0 },
+  screen: {
+    paddingTop: 0,
+  },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 28,
+    paddingHorizontal: 14,
+    paddingTop: 4,
+    paddingBottom: 16,
+    flexGrow: 1,
   },
   offline: {
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginBottom: 8,
     minHeight: 36,
     paddingHorizontal: 14,
@@ -311,25 +332,55 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   offlineText: { fontSize: 12 },
-  heroSection: {
+  spacer: {
+    flex: 1,
+    minHeight: 120,
+  },
+  /* frontend `.topic-title`: display serif, clamp(1.8rem–2.5rem),
+   * centered, `text-200` muted-ink. 32px lands mid-clamp. */
+  greeting: {
+    fontSize: 32,
+    lineHeight: 38,
+    textAlign: 'center',
+    marginBottom: 18,
+    paddingHorizontal: 12,
+    maxWidth: 576,
+    alignSelf: 'center',
+  },
+  ideasSection: {
+    marginBottom: 20,
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  ideasLabel: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  ideaPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 8,
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 0.5,
   },
-  greetingTitle: {
-    fontSize: 26,
-    lineHeight: 34,
-    textAlign: 'center',
-    marginBottom: 8,
+  ideaIcon: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  greetingSub: {
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
-    maxWidth: 320,
+  ideaPillText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flexShrink: 1,
   },
   composerCardWrap: {
-    marginBottom: 24,
+    marginBottom: 6,
   },
   attachments: {
     gap: 8,
@@ -348,50 +399,5 @@ const styles = StyleSheet.create({
   attachmentName: {
     flexShrink: 1,
     fontSize: 12,
-  },
-  ideasSection: {
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  ideasLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
-  ideasList: {
-    gap: 10,
-  },
-  ideaCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    gap: 12,
-  },
-  ideaIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ideaTextWrap: {
-    flex: 1,
-  },
-  ideaTitle: {
-    fontSize: 14,
-    marginBottom: 2,
-  },
-  ideaDesc: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  disclaimer: {
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 16,
   },
 });

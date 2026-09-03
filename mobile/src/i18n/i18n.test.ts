@@ -15,13 +15,15 @@ describe('translate', () => {
   });
 
   it('interpolates named placeholders', () => {
-    expect(translate('en', 'greeting.chat', { name: 'Ada' })).toBe('Hello, Ada.');
-    expect(translate('zh', 'greeting.chat', { name: 'Ada' })).toBe('你好，Ada。');
+    /* 1:1 with `frontend/src/i18n.js:46-52,963-969`. */
+    expect(translate('en', 'greeting.chat', { name: 'Ada' })).toBe('Welcome back, Ada!');
+    expect(translate('zh', 'greeting.chat', { name: 'Ada' })).toBe('欢迎回来，Ada！');
+    expect(translate('en', 'greeting.chat.morning', { name: 'Ada' })).toBe('Good morning, Ada!');
     expect(translate('en', 'exam.questionN', { n: 3 })).toBe('Question 3');
   });
 
   it('leaves unknown placeholders intact rather than printing undefined', () => {
-    expect(translate('en', 'greeting.chat', { other: 'x' })).toBe('Hello, {name}.');
+    expect(translate('en', 'greeting.chat', { other: 'x' })).toBe('Welcome back, {name}!');
   });
 
   it('never renders "undefined" for an unknown key', () => {

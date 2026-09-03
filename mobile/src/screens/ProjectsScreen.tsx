@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Project } from '@socrates/contracts';
 import { projectsApi } from '../data/api/client';
 import { AnimatedPressable } from '../components/AnimatedPressable';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AppHeader } from '../components/AppHeader';
 import { Screen } from '../components/Screen';
 import { useTheme } from '../theme/ThemeProvider';
+import { colors as themeColors } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore } from '../stores/appStore';
 import type { RootStackParamList } from '../navigation/types';
@@ -14,7 +16,7 @@ import type { RootStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<RootStackParamList, 'Projects'>;
 type Draft = { name: string; description: string; systemPrompt: string; color: string };
 
-const EMPTY_DRAFT: Draft = { name: '', description: '', systemPrompt: '', color: '#c69a2d' };
+const EMPTY_DRAFT: Draft = { name: '', description: '', systemPrompt: '', color: themeColors.accent };
 
 export function ProjectsScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
@@ -26,6 +28,7 @@ export function ProjectsScreen({ navigation }: Props) {
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -44,7 +47,7 @@ export function ProjectsScreen({ navigation }: Props) {
       name: project?.name || '',
       description: project?.description || '',
       systemPrompt: project?.systemPrompt || '',
-      color: project?.color || '#c69a2d',
+      color: project?.color || themeColors.accent,
     });
   };
 
@@ -61,13 +64,13 @@ export function ProjectsScreen({ navigation }: Props) {
     finally { setBusy(false); }
   };
 
-  const remove = (project: Project) => {
-    Alert.alert(t('projects.delete'), t('projects.deleteConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('projects.delete'), style: 'destructive', onPress: () => {
-        void projectsApi.remove(project.id).then(() => setProjects((current) => current.filter((item) => item.id !== project.id))).catch((caught) => setError(caught instanceof Error ? caught.message : t('projects.loadFailed')));
-      } },
-    ]);
+  const remove = (project: Project) => setPendingDelete(project);
+
+  const confirmRemove = () => {
+    const project = pendingDelete;
+    if (!project) return;
+    setPendingDelete(null);
+    void projectsApi.remove(project.id).then(() => setProjects((current) => current.filter((item) => item.id !== project.id))).catch((caught) => setError(caught instanceof Error ? caught.message : t('projects.loadFailed')));
   };
 
   const startProjectChat = (project: Project) => {
@@ -110,7 +113,7 @@ export function ProjectsScreen({ navigation }: Props) {
       )}
       {projects.length ? <AnimatedPressable onPress={() => openEditor(null)} style={[styles.floating, { backgroundColor: colors.accent, borderRadius: radius.pill }]}><Text style={{ color: colors.background, fontSize: 24 }}>+</Text></AnimatedPressable> : null}
       <Modal visible={editorOpen} transparent animationType="slide" onRequestClose={() => { setEditorOpen(false); setEditing(null); }}>
-        <View style={styles.modalBackdrop}>
+        <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}>
           <View style={[styles.modal, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
             <ScrollView keyboardShouldPersistTaps="handled">
               <Text style={[styles.modalTitle, { color: colors.text, fontFamily: typography.display }]}>{editing ? t('projects.edit') : t('projects.create')}</Text>
@@ -126,6 +129,16 @@ export function ProjectsScreen({ navigation }: Props) {
           </View>
         </View>
       </Modal>
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        title={t('projects.delete')}
+        message={pendingDelete ? t('projects.deleteConfirm') : undefined}
+        confirmLabel={t('projects.delete')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmRemove}
+      />
     </Screen>
   );
 }
@@ -134,4 +147,4 @@ function Field({ label, value, placeholder, onChangeText, colors, radius, multil
   return <View style={styles.field}><Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.textSubtle} multiline={multiline} style={[styles.input, multiline && styles.multiline, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, borderRadius: radius.md }]} /></View>;
 }
 
-const styles = StyleSheet.create({ screen: { paddingTop: 0 }, list: { paddingHorizontal: 18, paddingBottom: 100, flexGrow: 1 }, row: { minHeight: 84, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 10 }, main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 }, swatch: { width: 12, height: 12 }, copy: { flex: 1, minWidth: 0 }, title: { fontSize: 16 }, description: { fontSize: 12, lineHeight: 18, marginTop: 5 }, action: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }, empty: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 120 }, emptyTitle: { fontSize: 24, textAlign: 'center' }, emptyBody: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 10 }, primary: { minHeight: 48, minWidth: 150, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 24 }, primarySmall: { minHeight: 44, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' }, secondary: { minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }, deleteAction: { minHeight: 44, justifyContent: 'center', flex: 1 }, floating: { position: 'absolute', right: 20, bottom: 24, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', elevation: 5 }, error: { marginHorizontal: 18, marginTop: 8, fontSize: 12 }, state: { textAlign: 'center', marginTop: 48 }, modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.68)', justifyContent: 'flex-end' }, modal: { maxHeight: '88%', borderWidth: 1, padding: 20 }, modalTitle: { fontSize: 24, marginBottom: 12 }, field: { marginTop: 12 }, label: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 7 }, input: { minHeight: 46, borderWidth: 1, paddingHorizontal: 12, fontSize: 14 }, multiline: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 }, modalActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 }, });
+const styles = StyleSheet.create({ screen: { paddingTop: 0 }, list: { paddingHorizontal: 18, paddingBottom: 100, flexGrow: 1 }, row: { minHeight: 84, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 10 }, main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 }, swatch: { width: 10, height: 10, borderRadius: 5 }, copy: { flex: 1, minWidth: 0 }, title: { fontSize: 16 }, description: { fontSize: 12, lineHeight: 18, marginTop: 5 }, action: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }, empty: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 120 }, emptyTitle: { fontSize: 24, textAlign: 'center' }, emptyBody: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 10 }, primary: { minHeight: 48, minWidth: 150, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 24 }, primarySmall: { minHeight: 44, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' }, secondary: { minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }, deleteAction: { minHeight: 44, justifyContent: 'center', flex: 1 }, floating: { position: 'absolute', right: 20, bottom: 24, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', elevation: 5 }, error: { marginHorizontal: 18, marginTop: 8, fontSize: 12 }, state: { textAlign: 'center', marginTop: 48 }, modalBackdrop: { flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end' }, modal: { maxHeight: '88%', borderWidth: 1, padding: 20 }, modalTitle: { fontSize: 24, marginBottom: 12 }, field: { marginTop: 12 }, label: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 7 }, input: { minHeight: 46, borderWidth: 1, paddingHorizontal: 12, fontSize: 14 }, multiline: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 }, modalActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 }, });

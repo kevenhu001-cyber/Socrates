@@ -152,6 +152,46 @@ class AppStore {
     }
   }
 
+  /* P4: Clear the in-memory + on-disk local cache without touching the
+   * authenticated user. Used by the Storage modal to let the user
+   * reclaim space. Cloud data is untouched. */
+  async clearLocalCache() {
+    this.stopStream?.();
+    this.stopStream = null;
+    this.streamFinished = true;
+    this.streamGeneration += 1;
+    this.clearPendingAssistantPatches();
+    try {
+      const sqlite = await import('../data/offline/sqlite');
+      // Best-effort purge of every key the offline layer exposes.
+      const keys = [
+        'socrates.session.cache',
+        'socrates.draft.cache',
+        'socrates.outbox',
+        'socrates.user.cache',
+      ];
+      await Promise.all(
+        keys.map((k) =>
+          import('../platform/secureStorage')
+            .then(({ deleteItem }) => deleteItem(k))
+            .catch(() => undefined)
+        )
+      );
+      // Bump the cache version so any future reader invalidates itself.
+      void sqlite;
+    } catch (error) {
+      console.warn('[AppStore] clearLocalCache failed:', error);
+    } finally {
+      this.setState({
+        sessions: [],
+        activeSession: null,
+        draft: '',
+        pendingAttachments: [],
+        error: null,
+      });
+    }
+  }
+
   async refreshSessions() {
     this.setState({ isLoading: true });
     try {

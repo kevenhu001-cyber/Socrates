@@ -11,7 +11,7 @@ import { appStore } from '../stores/appStore';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Workspace'>;
-type Destination = Exclude<keyof RootStackParamList, 'Home' | 'Chat' | 'Tutor' | 'Embedded' | 'Share' | 'ArtifactPreview' | 'Workspace' | 'More'>;
+type Destination = Exclude<keyof RootStackParamList, 'Home' | 'Chat' | 'Tutor' | 'Embedded' | 'ArtifactPreview' | 'Workspace' | 'More'>;
 
 const ITEMS: Array<[Destination, string, React.ComponentProps<typeof Ionicons>['name']]> = [
   ['Projects', 'workspace.openProjects', 'folder-open-outline'],

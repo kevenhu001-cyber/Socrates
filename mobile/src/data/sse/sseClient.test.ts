@@ -109,4 +109,70 @@ describe('SSE adapter', () => {
     expect(FakeXhr.instances).toHaveLength(2);
     stop();
   });
+
+  it('surfaces "Session expired" when a 401 cannot refresh the access token', async () => {
+    (refreshAccessToken as jest.Mock).mockResolvedValue(false);
+    const errors: string[] = [];
+    const stop = await startChatStream('session-1', { messages: [] }, {
+      onError: (value) => errors.push(value),
+    });
+    FakeXhr.instances[0].complete(401);
+    await flushPromises();
+    expect(errors).toEqual(['Session expired']);
+    stop();
+  });
+
+  it('surfaces "Session expired" when the refresh promise rejects', async () => {
+    (refreshAccessToken as jest.Mock).mockRejectedValue(new Error('refresh failed'));
+    const errors: string[] = [];
+    const stop = await startChatStream('session-1', { messages: [] }, {
+      onError: (value) => errors.push(value),
+    });
+    FakeXhr.instances[0].complete(401);
+    await flushPromises();
+    expect(errors).toEqual(['Session expired']);
+    stop();
+  });
+
+  it('surfaces generic 4xx/5xx as "Stream failed (<status>)" without attempting refresh', async () => {
+    (refreshAccessToken as jest.Mock).mockClear();
+    const errors: string[] = [];
+    const stop = await startChatStream('session-1', { messages: [] }, {
+      onError: (value) => errors.push(value),
+    });
+    FakeXhr.instances[0].complete(500);
+    expect(errors).toEqual(['Stream failed (500)']);
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('surfaces "Stream failed (401)" when 401 arrives after partial stream', async () => {
+    (refreshAccessToken as jest.Mock).mockClear();
+    const errors: string[] = [];
+    const stop = await startChatStream('session-1', { messages: [] }, {
+      onError: (value) => errors.push(value),
+    });
+    const xhr = FakeXhr.instances[0];
+    xhr.responseText = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\n';
+    xhr.onprogress?.();
+    xhr.complete(401);
+    await flushPromises();
+    expect(errors).toEqual(['Stream failed (401)']);
+    expect(refreshAccessToken).not.toHaveBeenCalled();
+    stop();
+  });
+
+  it('abort() stops the active stream and prevents further handler calls', async () => {
+    const errors: string[] = [];
+    let deltaCount = 0;
+    const stop = await startChatStream('session-1', { messages: [] }, {
+      onDelta: () => { deltaCount += 1; },
+      onError: (value) => errors.push(value),
+    });
+    stop();
+    const xhr = FakeXhr.instances[0];
+    xhr.complete(500);
+    expect(errors).toEqual([]);
+    expect(deltaCount).toBe(0);
+  });
 });

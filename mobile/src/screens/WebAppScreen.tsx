@@ -15,6 +15,8 @@ import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react
 import { BrandMark } from '../components/BrandMark';
 import { API_BASE_URL, WEB_BASE_URL } from '../data/api/config';
 import { isExternalScheme, parseMobileBootstrap, parseNativeWebMessage, type WebThemeMode } from './webAppPolicy';
+import { getThemePalette } from '@socrates/theme';
+import { colors as themeColors } from '../theme/theme';
 
 const INITIAL_LOAD_TIMEOUT_MS = 20_000;
 const BOOTSTRAP_TIMEOUT_MS = 10_000;
@@ -141,9 +143,10 @@ export function WebAppScreen() {
     return false;
   }, []);
 
-  const surface = themeMode === 'light' ? '#E6DEC8' : '#101318';
-  const text = themeMode === 'light' ? '#221A0E' : '#F7F7F7';
-  const muted = themeMode === 'light' ? '#5B513F' : '#A3A3A3';
+  const palette = getThemePalette(themeMode);
+  const surface = palette.bg.page;
+  const text = palette.text.primary;
+  const muted = palette.text.muted;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: surface }]} edges={['top', 'bottom']}>
@@ -198,7 +201,7 @@ export function WebAppScreen() {
           <BrandMark size={72} />
           {loadState === 'loading' ? (
             <>
-              <ActivityIndicator style={styles.spinner} color="#E9BE53" />
+              <ActivityIndicator style={styles.spinner} color={themeColors.accent} />
               <Text style={[styles.loadingText, { color: muted }]}>正在加载 Socrates…</Text>
             </>
           ) : (
@@ -210,7 +213,7 @@ export function WebAppScreen() {
                 onPress={retry}
                 style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
               >
-                <Text style={styles.retryText}>重新加载</Text>
+                <Text style={[styles.retryText, { color: text }]}>重新加载</Text>
               </Pressable>
             </>
           )}
@@ -244,9 +247,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 23,
-    backgroundColor: '#E9BE53',
+    backgroundColor: themeColors.accent,
     paddingHorizontal: 24,
   },
   retryButtonPressed: { opacity: 0.82 },
-  retryText: { color: '#171717', fontSize: 15, fontWeight: '600' },
+  retryText: { fontSize: 15, fontWeight: '600' },
 });

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ScheduledTask } from '@socrates/contracts';
 import { scheduledApi } from '../data/api/client';
 import { AnimatedPressable } from '../components/AnimatedPressable';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AppHeader } from '../components/AppHeader';
 import { Screen } from '../components/Screen';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore } from '../stores/appStore';
 import type { RootStackParamList } from '../navigation/types';
@@ -32,6 +34,7 @@ export function ScheduledScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<ScheduledTask | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -67,10 +70,14 @@ export function ScheduledScreen({ navigation }: Props) {
     finally { setBusy(false); }
   };
 
-  const remove = (task: ScheduledTask) => Alert.alert(t('scheduled.delete'), t('common.delete'), [
-    { text: t('common.cancel'), style: 'cancel' },
-    { text: t('scheduled.delete'), style: 'destructive', onPress: () => void scheduledApi.remove(task.id).then(() => setTasks((current) => current.filter((item) => item.id !== task.id))).catch((caught) => setError(caught instanceof Error ? caught.message : t('scheduled.loadFailed'))) },
-  ]);
+  const remove = (task: ScheduledTask) => setPendingDelete(task);
+
+  const confirmRemove = () => {
+    const task = pendingDelete;
+    if (!task) return;
+    setPendingDelete(null);
+    void scheduledApi.remove(task.id).then(() => setTasks((current) => current.filter((item) => item.id !== task.id))).catch((caught) => setError(caught instanceof Error ? caught.message : t('scheduled.loadFailed')));
+  };
 
   const toggle = async (task: ScheduledTask) => {
     const active = task.status !== 'paused' && task.status !== 'completed' && task.status !== 'failed';
@@ -109,8 +116,12 @@ export function ScheduledScreen({ navigation }: Props) {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
             const active = item.status !== 'paused' && item.status !== 'completed' && item.status !== 'failed';
+            const statusColor = item.status === 'failed' ? colors.danger : active ? colors.success : '#f59e0b';
             return <View style={[styles.row, { borderBottomColor: colors.border }]}>
-              <View style={[styles.icon, { backgroundColor: active ? colors.accentSoft : colors.surfaceRaised, borderRadius: radius.sm }]}><Text style={{ color: active ? colors.accent : colors.textSubtle }}>✓</Text></View>
+              {/* 1:1 Parity with frontend `.task-status` (styles.css:621-624) */}
+              <View style={[styles.statusDotWrapper, { backgroundColor: withAlpha(statusColor, 0.15) }]}>
+                <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              </View>
               <AnimatedPressable onPress={() => openEditor(item)} style={styles.main}>
                 <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{item.title}</Text>
                 <Text numberOfLines={2} style={[styles.meta, { color: colors.textMuted, fontFamily: typography.body }]}>{statusLabel(item, active, t)}</Text>
@@ -125,7 +136,7 @@ export function ScheduledScreen({ navigation }: Props) {
       )}
       {tasks.length ? <AnimatedPressable onPress={() => openEditor(null)} style={[styles.floating, { backgroundColor: colors.accent, borderRadius: radius.pill }]}><Text style={{ color: colors.background, fontSize: 24 }}>+</Text></AnimatedPressable> : null}
       <Modal visible={editorOpen} transparent animationType="slide" onRequestClose={() => { setEditorOpen(false); setEditing(null); }}>
-        <View style={styles.modalBackdrop}><View style={[styles.modal, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
+        <View style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}><View style={[styles.modal, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={[styles.modalTitle, { color: colors.text, fontFamily: typography.display }]}>{editing ? t('scheduled.edit') : t('scheduled.create')}</Text>
             <Field label={t('scheduled.title')} value={draft.title} placeholder={t('scheduled.title')} onChangeText={(value) => setDraft({ ...draft, title: value })} colors={colors} radius={radius} />
@@ -141,6 +152,16 @@ export function ScheduledScreen({ navigation }: Props) {
           </ScrollView>
         </View></View>
       </Modal>
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        title={t('scheduled.delete')}
+        message={pendingDelete?.title}
+        confirmLabel={t('scheduled.delete')}
+        cancelLabel={t('common.cancel')}
+        danger
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmRemove}
+      />
     </Screen>
   );
 }
@@ -156,4 +177,4 @@ function Field({ label, value, placeholder, onChangeText, colors, radius, multil
   return <View style={styles.field}><Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text><TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={colors.textSubtle} multiline={multiline} style={[styles.input, multiline && styles.multiline, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background, borderRadius: radius.md }]} /></View>;
 }
 
-const styles = StyleSheet.create({ screen: { paddingTop: 0 }, list: { paddingHorizontal: 18, paddingBottom: 100 }, row: { minHeight: 86, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 10 }, icon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' }, main: { flex: 1, minWidth: 0, justifyContent: 'center' }, title: { fontSize: 15 }, meta: { fontSize: 11, lineHeight: 17, marginTop: 5 }, actions: { alignItems: 'flex-end' }, action: { minHeight: 32, justifyContent: 'center', paddingHorizontal: 3 }, empty: { flex: 1, alignItems: 'center', paddingHorizontal: 28, paddingTop: 120 }, emptyTitle: { fontSize: 24, textAlign: 'center' }, emptyBody: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 10 }, primary: { minHeight: 48, minWidth: 150, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 24 }, floating: { position: 'absolute', right: 20, bottom: 24, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', elevation: 5 }, error: { marginHorizontal: 18, marginTop: 8, fontSize: 12 }, state: { textAlign: 'center', marginTop: 48 }, modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.68)', justifyContent: 'flex-end' }, modal: { maxHeight: '88%', borderWidth: 1, padding: 20 }, modalTitle: { fontSize: 24, marginBottom: 12 }, field: { marginTop: 12 }, label: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 7 }, input: { minHeight: 46, borderWidth: 1, paddingHorizontal: 12, fontSize: 14 }, multiline: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 }, frequencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, frequency: { minHeight: 40, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 }, modalActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 }, primarySmall: { minHeight: 44, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' }, secondary: { minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }, deleteAction: { minHeight: 44, justifyContent: 'center', flex: 1 }, });
+const styles = StyleSheet.create({ screen: { paddingTop: 0 }, list: { paddingHorizontal: 18, paddingBottom: 100 }, row: { minHeight: 86, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 10 }, statusDotWrapper: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, statusDot: { width: 7, height: 7, borderRadius: 3.5 }, main: { flex: 1, minWidth: 0, justifyContent: 'center' }, title: { fontSize: 15 }, meta: { fontSize: 11, lineHeight: 17, marginTop: 5 }, actions: { alignItems: 'flex-end' }, action: { minHeight: 32, justifyContent: 'center', paddingHorizontal: 3 }, empty: { flex: 1, alignItems: 'center', paddingHorizontal: 28, paddingTop: 120 }, emptyTitle: { fontSize: 24, textAlign: 'center' }, emptyBody: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 10 }, primary: { minHeight: 48, minWidth: 150, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 24 }, floating: { position: 'absolute', right: 20, bottom: 24, width: 56, height: 56, alignItems: 'center', justifyContent: 'center', elevation: 5 }, error: { marginHorizontal: 18, marginTop: 8, fontSize: 12 }, state: { textAlign: 'center', marginTop: 48 }, modalBackdrop: { flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end' }, modal: { maxHeight: '88%', borderWidth: 1, padding: 20 }, modalTitle: { fontSize: 24, marginBottom: 12 }, field: { marginTop: 12 }, label: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 7 }, input: { minHeight: 46, borderWidth: 1, paddingHorizontal: 12, fontSize: 14 }, multiline: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 }, frequencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 }, frequency: { minHeight: 40, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 }, modalActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 }, primarySmall: { minHeight: 44, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' }, secondary: { minHeight: 44, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center' }, deleteAction: { minHeight: 44, justifyContent: 'center', flex: 1 }, });

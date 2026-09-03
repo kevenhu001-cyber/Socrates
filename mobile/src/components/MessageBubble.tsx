@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { Markdown } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
@@ -15,14 +16,71 @@ interface MessageBubbleProps {
   message: Message;
   isLastAssistant?: boolean;
   onRetry?: () => void;
+  /** In-session find query — highlights matches like frontend findInSession. */
+  highlight?: string;
+}
+
+function HighlightedPlainText({ text, highlightKey, style }: { text: string; highlightKey?: string; style?: object }) {
+  const { colors } = useTheme();
+  const q = (highlightKey || '').trim().toLowerCase();
+  if (!q) return <Text selectable style={style}>{text}</Text>;
+  const lower = text.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let pos = 0;
+  let k = 0;
+  while (pos < text.length) {
+    const found = lower.indexOf(q, pos);
+    if (found === -1) {
+      parts.push(<Text key={k++}>{text.slice(pos)}</Text>);
+      break;
+    }
+    if (found > pos) parts.push(<Text key={k++}>{text.slice(pos, found)}</Text>);
+    parts.push(
+      <Text key={k++} style={{ backgroundColor: colors.accentSoft }}>{text.slice(found, found + q.length)}</Text>,
+    );
+    pos = found + q.length;
+  }
+  return <Text selectable style={style}>{parts}</Text>;
+}
+
+/* Streaming indicator: frontend `.thinking-spinner` is a 12–14px ring
+ * rotating `ringSpin .9s` (`styles.css:3346-3359`). RN has no keyframes;
+ * the same glyph spins via an Animated loop on the same timing. */
+function StreamingIcon({ color }: { color: string }) {
+  const spin = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
+    );
+    animation.start();
+    return () => {
+      animation.stop();
+    };
+  }, [spin]);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return (
+    <Animated.View style={{ transform: [{ rotate }], width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          borderWidth: 1.5,
+          borderColor: withAlpha(color, 0.18),
+          borderTopColor: color,
+        }}
+      />
+    </Animated.View>
+  );
 }
 
 export const MessageBubble = React.memo(function MessageBubble({
   message,
   isLastAssistant = false,
   onRetry,
+  highlight,
 }: MessageBubbleProps) {
-  const { colors, radius, spacing, typography } = useTheme();
+  const { colors, radius, typography } = useTheme();
   const t = useT();
   const isUser = message.role === 'user';
   const text = message.rawText || message.content || '';
@@ -81,13 +139,18 @@ export const MessageBubble = React.memo(function MessageBubble({
         style={[
           styles.bubble,
           {
+            /* frontend `.msg.user .msg-body`:
+             *   background: hsl(var(--bg-000)); border: none;
+             *   border-radius: 24px (`styles.css:1881`);
+             *   padding: 9px 18px; max-width: 90%;
+             * The hairline border mobile drew has no web equivalent. */
             backgroundColor: isUser ? colors.surfaceRaised : 'transparent',
-            borderColor: isUser ? colors.border : 'transparent',
-            borderWidth: isUser ? 1 : 0,
-            borderRadius: isUser ? radius.lg : 0,
-            paddingHorizontal: isUser ? 16 : 2,
-            paddingVertical: isUser ? 12 : spacing.xs,
-            maxWidth: isUser ? '85%' : '100%',
+            borderColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: isUser ? 24 : 0,
+            paddingHorizontal: isUser ? 18 : 0,
+            paddingVertical: isUser ? 9 : 0,
+            maxWidth: isUser ? '90%' : '100%',
           },
         ]}
       >
@@ -99,12 +162,16 @@ export const MessageBubble = React.memo(function MessageBubble({
               style={styles.reasoningHeader}
             >
               <View style={styles.reasoningTitleWrap}>
-                <Ionicons
-                  name={streaming ? 'sync-outline' : 'bulb-outline'}
-                  size={14}
-                  color={colors.accent}
-                />
-                <Text style={[styles.reasoningLabel, { color: colors.accent, fontFamily: typography.medium }]}>
+                {streaming ? (
+                  <StreamingIcon color={colors.accent} />
+                ) : (
+                  <Ionicons
+                    name="bulb-outline"
+                    size={14}
+                    color={colors.textMuted}
+                  />
+                )}
+                <Text style={[styles.reasoningLabel, { color: colors.textSecondary, fontFamily: typography.medium }]}>
                   {streaming ? (t('think.thinking') || 'Thinking…') : (t('think.title') || 'Thinking process')}
                 </Text>
               </View>
@@ -150,12 +217,14 @@ export const MessageBubble = React.memo(function MessageBubble({
         {/* Message Content: Plain selectable text for user, Markdown for assistant */}
         {isUser ? (
           text ? (
-            <Text selectable style={[styles.text, { color: colors.text, fontFamily: typography.body }]}>
-              {text}
-            </Text>
+            <HighlightedPlainText
+              text={text}
+              highlightKey={highlight}
+              style={[styles.text, { color: colors.text, fontFamily: typography.body }]}
+            />
           ) : null
         ) : (
-          <Markdown text={text} streaming={streaming} />
+          <Markdown text={text} streaming={streaming} highlight={highlight} />
         )}
 
         {/* Action Toolbar */}
@@ -211,9 +280,13 @@ export const MessageBubble = React.memo(function MessageBubble({
 });
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', marginVertical: 4 },
+  /* frontend `.msg-list { gap: var(--chat-msg-gap) }` with
+   * `--chat-msg-gap: 20px`; RN emulates the flex gap with symmetric
+   * vertical margin on each row. */
+  row: { flexDirection: 'row', marginVertical: 10 },
   bubble: {},
-  text: { fontSize: 16, lineHeight: 24 },
+  /* frontend `.msg-body`: font-size 15px, line-height 1.625 (~24). */
+  text: { fontSize: 15, lineHeight: 24 },
   reasoningCard: {
     borderWidth: 1,
     marginBottom: 8,
@@ -235,10 +308,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   reasoningContentWrap: {
-    borderLeftWidth: 2,
     marginHorizontal: 12,
     marginBottom: 10,
-    paddingLeft: 8,
     paddingVertical: 2,
   },
   reasoningText: {
@@ -250,11 +321,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 14,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 3,
     marginBottom: 8,
-    maxWidth: 240,
+    maxWidth: 200,
   },
   imageAttachment: {
     borderWidth: 1,
@@ -263,27 +334,30 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     maxWidth: 260,
   },
-  image: { width: 248, height: 170, borderRadius: 6, marginBottom: 4 },
+  image: { width: 248, height: 170, borderRadius: 10, marginBottom: 4 },
   attachmentText: { fontSize: 12, fontWeight: '500' },
+  /* frontend `.msg-toolbar`: height 28px, gap 2px, margin-top 2px,
+   * margin-left 2px (assistant) / justify-content flex-end (user). */
   toolbar: {
-    minHeight: 32,
+    minHeight: 28,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-    marginLeft: -4,
+    gap: 2,
+    marginTop: 2,
+    marginLeft: 2,
   },
   toolbarUser: {
     justifyContent: 'flex-end',
     marginLeft: 0,
-    marginRight: -4,
+    marginRight: 0,
     marginTop: 2,
   },
+  /* frontend `.msg-toolbar-btn`: 28x28, border-radius 8px. */
   toolbarButton: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: 8,
   },
 });

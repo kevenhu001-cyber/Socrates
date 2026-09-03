@@ -6,6 +6,7 @@ import { filesApi } from '../data/api/client';
 import { native } from '../native/native';
 import { chartBody, mermaidBody, RichBlock, type RichLib } from '../render/RichBlock';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha, type Palette } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 import type { MobileToolCall, ToolStatus } from '../data/tools/toolState';
@@ -87,7 +88,7 @@ function sectionEntries(value: unknown): string[] {
 }
 
 function StructuredCard({ value, kind }: { value: JsonValue; kind: 'plan' | 'spec' }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const record = asRecord(value);
   if (!record) return null;
@@ -106,7 +107,7 @@ function StructuredCard({ value, kind }: { value: JsonValue; kind: 'plan' | 'spe
     .filter((section) => section.entries.length);
 
   return (
-    <View style={[styles.structured, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder, borderRadius: radius.xs }]}>
+    <View style={[styles.structured, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder }]}>
       <Text style={[styles.structuredTitle, { color: colors.text, fontFamily: typography.medium }]}>{title}</Text>
       {intro ? <Text style={[styles.structuredIntro, { color: colors.textMuted }]}>{intro}</Text> : null}
       {visibleSections.map((section) => (
@@ -142,7 +143,7 @@ function visualizationRecord(value: JsonValue): {
   };
 }
 
-function chartOption(visual: NonNullable<ReturnType<typeof visualizationRecord>>) {
+function chartOption(visual: NonNullable<ReturnType<typeof visualizationRecord>>, palette: Pick<Palette, 'textMuted'>) {
   if (!['line', 'area', 'bar', 'scatter', 'pie', 'histogram'].includes(visual.template)) return null;
   const categories = Array.isArray(visual.payload.categories)
     ? visual.payload.categories.slice(0, 300).map((item) => String(item))
@@ -164,7 +165,7 @@ function chartOption(visual: NonNullable<ReturnType<typeof visualizationRecord>>
           name: categories[pointIndex] || String(pointIndex + 1),
           value: point,
         }),
-        label: { color: '#a3a3a3' },
+        label: { color: palette.textMuted },
         labelLayout: { hideOverlap: true },
       });
       return;
@@ -186,7 +187,7 @@ function chartOption(visual: NonNullable<ReturnType<typeof visualizationRecord>>
       backgroundColor: 'transparent',
       aria: { enabled: true, description: { summary: visual.summary || visual.title } },
       tooltip: { trigger: 'item' },
-      legend: { bottom: 0, type: 'scroll', textStyle: { color: '#a3a3a3' } },
+      legend: { bottom: 0, type: 'scroll', textStyle: { color: palette.textMuted } },
       series,
     };
   }
@@ -194,7 +195,7 @@ function chartOption(visual: NonNullable<ReturnType<typeof visualizationRecord>>
     backgroundColor: 'transparent',
     aria: { enabled: true, description: { summary: visual.summary || visual.title } },
     tooltip: { trigger: visual.template === 'scatter' ? 'item' : 'axis', confine: true },
-    legend: series.length > 1 ? { top: 0, type: 'scroll', textStyle: { color: '#a3a3a3' } } : undefined,
+    legend: series.length > 1 ? { top: 0, type: 'scroll', textStyle: { color: palette.textMuted } } : undefined,
     grid: { left: 46, right: 18, top: series.length > 1 ? 42 : 16, bottom: categories.length > 8 ? 60 : 38 },
     xAxis: visual.template === 'scatter'
       ? { type: 'value', name: text(visual.payload.xLabel) || '' }
@@ -231,10 +232,10 @@ function mermaidFor(visual: NonNullable<ReturnType<typeof visualizationRecord>>)
 }
 
 function VisualizationCard({ value }: { value: JsonValue }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const visual = useMemo(() => visualizationRecord(value), [value]);
-  const chart = useMemo(() => visual ? chartOption(visual) : null, [visual]);
+  const chart = useMemo(() => visual ? chartOption(visual, colors) : null, [visual, colors]);
   const diagram = useMemo(() => visual ? mermaidFor(visual) : null, [visual]);
   if (!visual) return null;
   const semanticItems = sectionEntries(visual.payload.items || visual.payload.nodes);
@@ -242,12 +243,14 @@ function VisualizationCard({ value }: { value: JsonValue }) {
     <View
       accessible
       accessibilityLabel={visual.summary || visual.title}
-      style={[styles.visual, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder, borderRadius: radius.xs }]}
+      style={[styles.visual, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder }]}
     >
-      <Text style={[styles.visualKicker, { color: colors.accent }]}>{t('tool.visualization')}</Text>
+      <Text style={[styles.visualKicker, { color: colors.textSubtle }]}>{t('tool.visualization')}</Text>
       <Text style={[styles.visualTitle, { color: colors.text, fontFamily: typography.medium }]}>{visual.title}</Text>
-      {chart ? <RichBlock body={chartBody(JSON.stringify(chart))} libs={ECHARTS_LIBS} fallbackText={visual.summary || visual.title} initialHeight={250} /> : null}
-      {!chart && diagram ? <RichBlock body={mermaidBody(diagram)} libs={MERMAID_LIBS} fallbackText={visual.summary || visual.title} initialHeight={220} /> : null}
+      {/* Stage heights mirror `frontend/src/styles.css:509-513,527`:
+       * chart 292 (phone stage), mermaid min-height 300. */}
+      {chart ? <RichBlock body={chartBody(JSON.stringify(chart))} libs={ECHARTS_LIBS} fallbackText={visual.summary || visual.title} initialHeight={292} /> : null}
+      {!chart && diagram ? <RichBlock body={mermaidBody(diagram)} libs={MERMAID_LIBS} fallbackText={visual.summary || visual.title} initialHeight={300} /> : null}
       {!chart && !diagram && visual.summary ? <Text style={[styles.visualSummary, { color: colors.textMuted }]}>{visual.summary}</Text> : null}
       {!chart && !diagram ? semanticItems.map((item, index) => <Text key={index} style={[styles.structuredItem, { color: colors.textMuted }]}>{`• ${item}`}</Text>) : null}
       {visual.caption ? <Text style={[styles.visualCaption, { color: colors.textSubtle }]}>{visual.caption}</Text> : null}
@@ -256,7 +259,7 @@ function VisualizationCard({ value }: { value: JsonValue }) {
 }
 
 function SourceResults({ results }: { results: NonNullable<ToolCall['results']> }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   if (!results.length) return null;
   return (
@@ -275,17 +278,17 @@ function SourceResults({ results }: { results: NonNullable<ToolCall['results']> 
           </>
         );
         return url ? (
-          <AnimatedPressable key={`${url}-${index}`} accessibilityRole="link" accessibilityLabel={title} onPress={() => { void native.openBrowser(url); }} style={[styles.source, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder, borderRadius: radius.xs }]}>
+          <AnimatedPressable key={`${url}-${index}`} accessibilityRole="link" accessibilityLabel={title} onPress={() => { void native.openBrowser(url); }} style={[styles.source, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder }]}>
             {content}
           </AnimatedPressable>
-        ) : <View key={`${title}-${index}`} style={[styles.source, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder, borderRadius: radius.xs }]}>{content}</View>;
+        ) : <View key={`${title}-${index}`} style={[styles.source, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.toolCardBorder }]}>{content}</View>;
       })}
     </View>
   );
 }
 
 function Artifacts({ artifacts }: { artifacts: ResultArtifact[] }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const [downloading, setDownloading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -312,7 +315,7 @@ function Artifacts({ artifacts }: { artifacts: ResultArtifact[] }) {
           accessibilityLabel={`${t('tool.download')} ${artifact.name || artifact.id}`}
           disabled={downloading === artifact.id}
           onPress={() => { void download(artifact); }}
-          style={[styles.artifact, { borderColor: colors.toolCardBorder, borderRadius: radius.xs }]}
+          style={[styles.artifact, { borderColor: colors.toolCardBorder }]}
         >
           <Ionicons name="document-attach-outline" size={17} color={colors.accent} />
           <View style={styles.artifactText}>
@@ -327,14 +330,25 @@ function Artifacts({ artifacts }: { artifacts: ResultArtifact[] }) {
   );
 }
 
+function getToolIcon(name: string): keyof typeof Ionicons.glyphMap {
+  const lower = name.toLowerCase();
+  if (lower.includes('bash') || lower.includes('terminal') || lower.includes('command')) return 'terminal-outline';
+  if (lower.includes('read') || lower.includes('fetch') || lower.includes('cat')) return 'document-text-outline';
+  if (lower.includes('write') || lower.includes('edit') || lower.includes('patch')) return 'create-outline';
+  if (lower.includes('search') || lower.includes('find') || lower.includes('glob') || lower.includes('grep')) return 'search-outline';
+  if (lower.includes('code') || lower.includes('python')) return 'code-slash-outline';
+  return 'construct-outline';
+}
+
 /**
  * One card per tool call. The reducer retains every terminal payload, so this
  * component can render results, artifacts, plans/specs and visualisation data
  * alongside streamed execution output instead of losing them after the event.
  */
 export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | MobileToolCall }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
+  const [open, setOpen] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
   const mobile = call as MobileToolCall;
@@ -359,62 +373,125 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
   const duration = displayDuration(mobile.durationMs);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.toolCardBg, borderColor: colors.toolCardBorder, borderRadius: radius.sm }]}>
-      <View style={styles.head}>
-        <View style={[styles.dot, { backgroundColor: accent }]} />
-        <Text numberOfLines={1} style={[styles.name, { color: colors.text, fontFamily: typography.mono }]}>{call.name}</Text>
-        {status === 'running' ? <ActivityIndicator size="small" color={colors.textSubtle} /> : null}
-        <Text style={[styles.status, { color: accent }]}>{statusLabel}</Text>
-      </View>
+    /* frontend `.agent-tool-card { border: 0; border-radius: 14px; background: transparent; }` (styles.css:3471-3558) */
+    <View style={styles.card}>
+      {/* 1:1 Parity with frontend `.agent-tool-head` */}
+      <AnimatedPressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((v) => !v)}
+        style={styles.head}
+      >
+        {/* .agent-tool-icon: 20x20, radius 5 */}
+        <View style={[styles.toolIconBox, { backgroundColor: colors.surfaceRaised }]}>
+          <Ionicons name={getToolIcon(call.name)} size={12} color={colors.textMuted} />
+        </View>
 
-      {args ? <Text numberOfLines={2} style={[styles.args, { color: colors.textSubtle, fontFamily: typography.mono }]}>{args}</Text> : null}
-      {mobile.progressPhase || duration ? <Text style={[styles.meta, { color: colors.textSubtle }]}>{[mobile.progressPhase, duration].filter(Boolean).join(' · ')}</Text> : null}
-      {details ? <Text selectable style={[styles.detail, { color: colors.danger }]}>{details}</Text> : null}
+        {/* .agent-tool-name: 12px 600 */}
+        <Text numberOfLines={1} style={[styles.toolName, { color: colors.text, fontFamily: typography.semibold }]}>
+          {call.name}
+          {call.name.toLowerCase().includes('python') || call.name.toLowerCase().includes('code') ? (
+            <Text style={[styles.pyTag, { color: colors.textSubtle }]}> · py</Text>
+          ) : null}
+        </Text>
 
-      {body ? <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken, borderRadius: radius.xs }]}><Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>{shown}</Text></View> : null}
-      {call.plan ? <StructuredCard value={call.plan} kind="plan" /> : null}
-      {call.spec ? <StructuredCard value={call.spec} kind="spec" /> : null}
-      {call.visualization ? <VisualizationCard value={call.visualization} /> : null}
-      {call.results?.length ? <SourceResults results={call.results} /> : null}
-      {call.artifacts?.length ? <Artifacts artifacts={call.artifacts} /> : null}
+        {/* .agent-tool-input: 11px mono text-muted */}
+        {args ? (
+          <Text numberOfLines={1} style={[styles.toolInput, { color: colors.textSubtle, fontFamily: typography.mono }]}>
+            {args}
+          </Text>
+        ) : null}
 
-      {!body && status !== 'running' && !details && !call.plan && !call.spec && !call.visualization && !call.results?.length && !call.artifacts?.length ? <Text style={[styles.args, { color: colors.textSubtle }]}>{t('tool.noOutput')}</Text> : null}
-      {clipped ? <AnimatedPressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded((value) => !value)} style={styles.toggle}><Text style={[styles.toggleText, { color: colors.accent }]}>{expanded ? t('tool.collapseOutput') : t('tool.showFullOutput')}</Text></AnimatedPressable> : null}
+        {status === 'running' ? (
+          <ActivityIndicator size="small" color={colors.textSubtle} style={styles.runningSpinner} />
+        ) : null}
+
+        {/* .agent-tool-chev: 14px */}
+        <Ionicons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={14}
+          color={colors.textSubtle}
+          style={styles.chev}
+        />
+      </AnimatedPressable>
+
+      {open ? (
+        /* 1:1 Parity with frontend `.agent-tool-body` (styles.css:3535-3558) with 2px accent rail */
+        <View style={[styles.bodyContainer, { borderLeftColor: withAlpha(colors.border, 0.5) }]}>
+          {mobile.progressPhase || duration ? (
+            <Text style={[styles.meta, { color: colors.textSubtle }]}>
+              {[mobile.progressPhase, duration].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+          {details ? <Text selectable style={[styles.detail, { color: colors.danger }]}>{details}</Text> : null}
+
+          {body ? (
+            /* .agent-tool-out: 11px mono, line-height: 1.5, max-height: 280 */
+            <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
+              <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>
+                {shown}
+              </Text>
+            </View>
+          ) : null}
+
+          {call.plan ? <StructuredCard value={call.plan} kind="plan" /> : null}
+          {call.spec ? <StructuredCard value={call.spec} kind="spec" /> : null}
+          {call.visualization ? <VisualizationCard value={call.visualization} /> : null}
+          {call.results?.length ? <SourceResults results={call.results} /> : null}
+          {call.artifacts?.length ? <Artifacts artifacts={call.artifacts} /> : null}
+
+          {!body && status !== 'running' && !details && !call.plan && !call.spec && !call.visualization && !call.results?.length && !call.artifacts?.length ? (
+            <Text style={[styles.noOutputText, { color: colors.textSubtle }]}>{t('tool.noOutput')}</Text>
+          ) : null}
+          {clipped ? (
+            <AnimatedPressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded((value) => !value)} style={styles.toggle}>
+              <Text style={[styles.toggleText, { color: colors.accent }]}>
+                {expanded ? t('tool.collapseOutput') : t('tool.showFullOutput')}
+              </Text>
+            </AnimatedPressable>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, padding: 10, marginBottom: 8 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  name: { flex: 1, fontSize: 12, fontWeight: '700' },
-  status: { fontSize: 10, letterSpacing: 0.6, fontWeight: '700', textTransform: 'uppercase' },
-  args: { fontSize: 11, lineHeight: 16, marginTop: 6 },
-  meta: { fontSize: 10, lineHeight: 15, marginTop: 4, textTransform: 'capitalize' },
+  card: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8, paddingVertical: 6, minHeight: 32 },
+  toolIconBox: { width: 20, height: 20, borderRadius: 5, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  toolName: { fontSize: 12, flexShrink: 0, letterSpacing: -0.1 },
+  pyTag: { fontSize: 10, fontWeight: '500' },
+  toolInput: { flex: 1, fontSize: 11, opacity: 0.8 },
+  runningSpinner: { marginHorizontal: 4 },
+  chev: { marginLeft: 'auto', opacity: 0.6 },
+  bodyContainer: { position: 'relative', borderLeftWidth: 2, marginLeft: 8, paddingLeft: 10, marginTop: 2, marginBottom: 6 },
+  args: { fontSize: 12, lineHeight: 17, marginTop: 6 },
+  meta: { fontSize: 11, lineHeight: 15, marginTop: 4, textTransform: 'capitalize' },
   detail: { fontSize: 12, lineHeight: 17, marginTop: 6 },
-  output: { marginTop: 8, paddingHorizontal: 8, paddingVertical: 7 },
-  outputText: { fontSize: 11, lineHeight: 16 },
+  output: { marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, maxHeight: 280 },
+  outputText: { fontSize: 11, lineHeight: 16.5 },
+  noOutputText: { fontSize: 11, marginTop: 4 },
   toggle: { alignSelf: 'flex-start', paddingVertical: 6 },
   toggleText: { fontSize: 11, fontWeight: '700' },
-  structured: { borderWidth: 1, marginTop: 8, padding: 9 },
+  structured: { borderWidth: 1, marginTop: 8, padding: 9, borderRadius: 14 },
   structuredTitle: { fontSize: 12, lineHeight: 17 },
   structuredIntro: { fontSize: 12, lineHeight: 17, marginTop: 3 },
   structuredSection: { marginTop: 5 },
   structuredLabel: { fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 1 },
   structuredItem: { fontSize: 11, lineHeight: 16, marginTop: 1 },
-  visual: { borderWidth: 1, marginTop: 8, padding: 9, overflow: 'hidden' },
+  visual: { borderWidth: 1, marginTop: 8, padding: 9, overflow: 'hidden', borderRadius: 14 },
   visualKicker: { fontSize: 10, letterSpacing: 0.7, fontWeight: '700', textTransform: 'uppercase' },
   visualTitle: { fontSize: 13, lineHeight: 18, marginTop: 2, marginBottom: 7 },
   visualSummary: { fontSize: 12, lineHeight: 17 },
   visualCaption: { fontSize: 11, lineHeight: 16, marginTop: 6 },
   sources: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 9, paddingTop: 8, gap: 6 },
   sectionTitle: { fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' },
-  source: { borderWidth: 1, paddingHorizontal: 8, paddingVertical: 7 },
+  source: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 },
   sourceTitle: { fontSize: 11, lineHeight: 16 },
   sourceSnippet: { fontSize: 11, lineHeight: 16, marginTop: 2 },
   sourceMeta: { fontSize: 10, lineHeight: 14, marginTop: 3 },
-  artifact: { minHeight: 45, borderWidth: 1, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  artifact: { minHeight: 45, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8 },
   artifactText: { flex: 1, minWidth: 0 },
   artifactError: { fontSize: 11, lineHeight: 16 },
 });

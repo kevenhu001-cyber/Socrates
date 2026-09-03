@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from '../components/AnimatedPressable';
@@ -24,7 +25,7 @@ function AuthField({ label, ...props }: TextInputProps & { label: string }) {
         {...props}
         accessibilityLabel={label}
         placeholderTextColor={colors.textSubtle}
-        style={[styles.input, { color: colors.text, backgroundColor: '#202020', borderColor: colors.border, borderRadius: radius.sm, fontFamily: typography.body }, props.style]}
+        style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.sm, fontFamily: typography.body }, props.style]}
       />
     </View>
   );
@@ -57,7 +58,7 @@ function StateIcon({ name, success = false, warning = false }: { name: React.Com
 }
 
 export function AuthScreen() {
-  const { colors, radius, typography } = useTheme();
+  const { colors, radius, typography, shadows } = useTheme();
   const t = useT();
   const [view, setView] = useState<AuthView>('signin');
   const [email, setEmail] = useState('');
@@ -259,8 +260,11 @@ export function AuthScreen() {
   return (
     <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safe, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        {/* Auth grid background — mirrors `frontend/src/styles.css`
+         * `.auth-gate { background-image: linear-gradient(... 32px grid)` */}
+        <AuthGridBackground lineColor={colors.source.border.default} />
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
+          <View style={[styles.card, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 18 }, shadows.authCard]}>
             <View style={styles.brand}><BrandMark size={25} /><Text style={[styles.brandText, { color: colors.text, fontFamily: typography.semibold }]}>Socrates</Text></View>
             {content}
           </View>
@@ -274,22 +278,24 @@ export function AuthScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 24 },
-  card: { width: '100%', maxWidth: 420, alignSelf: 'center', borderWidth: 1, paddingHorizontal: 16, paddingTop: 27, paddingBottom: 24 },
-  brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 22 },
+  /* frontend `.auth-card { padding: 32px 28px; border-radius: 18px }`. */
+  card: { width: '100%', maxWidth: 420, alignSelf: 'center', borderWidth: 1, paddingHorizontal: 28, paddingTop: 32, paddingBottom: 32 },
+  brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 24 },
   brandText: { fontSize: 18 },
   tabs: { height: 52, flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, marginBottom: 22 },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tabText: { fontSize: 14 },
   activeLine: { position: 'absolute', left: 0, right: 0, bottom: -1, height: 2 },
   field: { marginTop: 7 },
-  label: { fontSize: 11, letterSpacing: 0.7, textTransform: 'uppercase', marginBottom: 8 },
-  input: { minHeight: 42, borderWidth: 1, paddingHorizontal: 12, fontSize: 14 },
+  /* frontend `.auth-label { letter-spacing: .05em; margin: 6px 0 2px }` */
+  label: { fontSize: 11, letterSpacing: 0.55, textTransform: 'uppercase', marginBottom: 2 },
+  input: { minHeight: 42, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, fontSize: 14 },
   inlineRight: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center' },
   inlineLink: { fontSize: 12 },
   guestRow: { alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkbox: { width: 17, height: 17, borderRadius: 3, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   guestText: { fontSize: 13 },
-  button: { minHeight: 42, marginTop: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
+  button: { minHeight: 42, marginTop: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   buttonCopy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { fontSize: 14 },
   separator: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -308,3 +314,53 @@ const styles = StyleSheet.create({
   codeInput: { fontSize: 22, letterSpacing: 8, textAlign: 'center' },
   codeMessage: { textAlign: 'center', fontSize: 12, lineHeight: 18, marginTop: 8 },
 });
+
+/* 32px grid background that mirrors `frontend`'s `.auth-gate` linear-gradient
+ * pattern. Renders a single absolute-positioned SVG so it scales with the
+ * viewport without re-tiling work on resize. */
+function AuthGridBackground({ lineColor }: { lineColor: string }) {
+  const size = 32;
+  return (
+    <View
+      pointerEvents="none"
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+    >
+      <Svg width="100%" height="100%">
+        <Defs>
+          <Pattern id="authGrid" width={size} height={size} patternUnits="userSpaceOnUse">
+            <Rect width={size} height={size} fill="transparent" />
+            <Rect x={0} y={0} width={size} height={1} fill={lineColor} />
+            <Rect x={0} y={0} width={1} height={size} fill={lineColor} />
+          </Pattern>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#authGrid)" />
+      </Svg>
+      {/* Subtle vignette so the card floats above the grid; matches
+       * the radial gradient the web app layers behind the auth card. */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'transparent',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: '20%',
+          left: '20%',
+          right: '20%',
+          bottom: '20%',
+          backgroundColor: 'transparent',
+          borderRadius: 200,
+        }}
+      />
+      <Svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0 }}>
+        <Circle cx="50%" cy="50%" r="40%" fill="transparent" />
+      </Svg>
+    </View>
+  );
+}

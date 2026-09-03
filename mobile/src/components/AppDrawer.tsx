@@ -1,13 +1,20 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Animated, Easing, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { EmbeddedTarget, Session } from '@socrates/contracts';
 import { useTheme, useThemeController } from '../theme/ThemeProvider';
+import { useResponsive } from '../theme/responsive';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { BrandMark } from './BrandMark';
 import { AnimatedPressable } from './AnimatedPressable';
+import { ConfirmDialog } from './ConfirmDialog';
+import { ProfileOverlay } from './ProfileOverlay';
+import { UsageOverlay } from './UsageOverlay';
+import { StorageOverlay } from './StorageOverlay';
+import { usageOverlay, storageOverlay } from '../cmdK/overlayStores';
 
 type DrawerContextValue = {
   open: boolean;
@@ -56,6 +63,28 @@ type Props = {
   onOpenEmbedded: (target: EmbeddedTarget, title: string) => void;
 };
 
+/* Lightweight module-scoped signal so DrawerSurface can ask the
+ * surrounding AppDrawer to mount the ProfileOverlay (the overlay needs
+ * to live above the drawer modal, not inside it). */
+let profileOpenListeners: Array<(open: boolean) => void> = [];
+function emitProfile(open: boolean) {
+  for (const l of profileOpenListeners) l(open);
+}
+export const profileOverlay = {
+  open() {
+    emitProfile(true);
+  },
+  close() {
+    emitProfile(false);
+  },
+  subscribe(l: (open: boolean) => void) {
+    profileOpenListeners.push(l);
+    return () => {
+      profileOpenListeners = profileOpenListeners.filter((x) => x !== l);
+    };
+  },
+};
+
 type DrawerItem = {
   route?: NativeDestination;
   target?: EmbeddedTarget;
@@ -78,6 +107,9 @@ const DRAWER_LABELS = {
   settings: 'more.settings',
 } as const;
 
+/* P2 1:1 — mirrors frontend `#sidebarNav` order
+ * (new|projects|library|scheduled|plugins|exam|skills). Skills opens
+ * the embedded skills surface, matching `index.html` skills iframe. */
 const PRIMARY_ITEMS: DrawerItem[] = [
   { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'add-circle-outline' },
   { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
@@ -85,19 +117,68 @@ const PRIMARY_ITEMS: DrawerItem[] = [
   { route: 'Scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
   { route: 'Plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
   { route: 'ExamSession', label: DRAWER_LABELS.exam, icon: 'document-text-outline' },
+  { target: 'skills', label: DRAWER_LABELS.skills, icon: 'sparkles-outline' },
 ];
 
 export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   const { open, closeDrawer } = useAppDrawer();
-  const { width } = useWindowDimensions();
-  const permanent = Platform.OS === 'windows' || (Platform.OS === 'web' && width >= 1080);
-  if (permanent) return <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />;
+  const state = useAppStore();
+  const { sidebarWidth } = useResponsive();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
+  const [storageOpen, setStorageOpen] = useState(false);
+  useEffect(() => profileOverlay.subscribe(setProfileOpen), []);
+  useEffect(() => usageOverlay.subscribe(setUsageOpen), []);
+  useEffect(() => storageOverlay.subscribe(setStorageOpen), []);
+  const permanent = sidebarWidth !== null;
+  if (permanent) {
+    return (
+      <>
+        <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />
+        <ProfileOverlay
+          visible={profileOpen}
+          onClose={() => profileOverlay.close()}
+          user={state.user}
+        />
+        <UsageOverlay visible={usageOpen} onClose={() => usageOverlay.close()} />
+        <StorageOverlay visible={storageOpen} onClose={() => storageOverlay.close()} />
+      </>
+    );
+  }
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (open) {
+      Animated.timing(slideAnim, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.bezier(0.4, 0, 0.2, 1),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      slideAnim.setValue(0);
+    }
+  }, [open, slideAnim]);
+
+  const slideX = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [-288, 0] });
+  const backdropOpacity = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+
   return (
-    <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
+    <Modal visible={open} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
       <View style={styles.overlay}>
-        <Pressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.backdrop} />
-        <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} />
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+          <Pressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={StyleSheet.absoluteFill} />
+        </Animated.View>
+        <Animated.View style={{ transform: [{ translateX: slideX }], height: '100%' }}>
+          <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} />
+        </Animated.View>
       </View>
+      <ProfileOverlay
+        visible={profileOpen}
+        onClose={() => profileOverlay.close()}
+        user={state.user}
+      />
+      <UsageOverlay visible={usageOpen} onClose={() => usageOverlay.close()} />
+      <StorageOverlay visible={storageOpen} onClose={() => storageOverlay.close()} />
     </Modal>
   );
 }
@@ -105,10 +186,15 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
 function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props & { permanent?: boolean }) {
   const { closeDrawer } = useAppDrawer();
   const { colors, radius, typography } = useTheme();
+  const { sidebarWidth } = useResponsive();
   const { mode: themeMode, toggle: toggleTheme } = useThemeController();
   const state = useAppStore();
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Session | null>(null);
 
   const activate = (item: DrawerItem) => {
     closeDrawer();
@@ -128,17 +214,57 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
     onNavigate('Chat');
   };
 
+  /* P6 1:1 — session context menu mirrors frontend
+   * `session-context-menu` and `RecentsScreen.openSessionActions`:
+   * Rename / Pin-Unpin / Archive / Delete(confirm) / Cancel.
+   * Previously Delete-only. */
   const handleSessionAction = (session: Session) => {
-    Alert.alert(session.title || t('chat.newConversation') || 'Conversation', undefined, [
+    const title = session.title || session.topic || t('chat.newConversation') || 'Conversation';
+    const pinned = (session as { pinned?: boolean }).pinned === true;
+    Alert.alert(title, undefined, [
       {
-        text: t('common.delete') || 'Delete',
+        text: t('library.rename') || 'Rename',
+        onPress: () => {
+          setRenameId(session.id);
+          setRenameValue(title);
+        },
+      },
+      {
+        text: t(pinned ? 'library.unpin' : 'library.pin') || (pinned ? 'Unpin' : 'Pin'),
+        onPress: () => {
+          void appStore.togglePinnedSession(session as unknown as Pick<Session, 'id' | 'pinned'>).catch(() => undefined);
+        },
+      },
+      {
+        text: t('library.archive') || 'Archive',
+        onPress: () => {
+          void appStore.archiveSession(session.id).catch(() => undefined);
+        },
+      },
+      {
+        text: t('library.deleteChat') || t('common.delete') || 'Delete',
         style: 'destructive',
         onPress: () => {
-          void appStore.deleteSession(session.id);
+          /* Destructive step uses the themed ConfirmDialog (same copy
+           * as the old nested Alert), not a second Alert sheet. */
+          setPendingDelete(session);
         },
       },
       { text: t('common.cancel') || 'Cancel', style: 'cancel' },
     ]);
+  };
+
+  const saveRename = async () => {
+    if (!renameId || !renameValue.trim()) return;
+    setRenameBusy(true);
+    try {
+      await appStore.renameSession(renameId, renameValue.trim());
+      setRenameId(null);
+    } catch {
+      /* keep the dialog open so the user can retry */
+    } finally {
+      setRenameBusy(false);
+    }
   };
 
   const filteredSessions = useMemo(() => {
@@ -157,15 +283,15 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       accessibilityRole="button"
       accessibilityLabel={t(item.label)}
       onPress={() => activate(item)}
-      style={[styles.item, { borderRadius: radius.md }]}
+      style={[styles.item, { borderRadius: 8 }]}
     >
-      <Ionicons name={item.icon} size={20} color={item.route === 'Home' ? colors.accent : colors.textMuted} />
+      <Ionicons name={item.icon} size={20} color={colors.textMuted} />
       <Text
         style={[
           styles.itemText,
           {
-            color: item.route === 'Home' ? colors.accent : colors.text,
-            fontFamily: item.route === 'Home' ? typography.semibold : typography.medium,
+            color: colors.text,
+            fontFamily: typography.medium,
           },
         ]}
       >
@@ -177,15 +303,18 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
   const name = state.user?.displayName || state.user?.email || t('more.learner') || 'Learner';
   const plan = state.user?.plan || state.user?.tier || 'Free plan';
 
+  const isDark = colors.mode === 'dark';
   return (
-    <SafeAreaView
-      edges={['top', 'bottom', 'left']}
+    <BlurView
+      tint={isDark ? 'dark' : 'light'}
+      intensity={Platform.OS === 'web' ? 0 : 18}
       style={[
         styles.panel,
-        permanent && styles.permanentPanel,
-        { backgroundColor: colors.surface, borderRightColor: colors.border },
+        permanent ? { width: sidebarWidth ?? 288, maxWidth: sidebarWidth ?? 288, flex: 1 } : null,
+        { backgroundColor: isDark ? PANEL_FROSTED_DARK : PANEL_FROSTED_LIGHT, borderRightColor: colors.border },
       ]}
     >
+      <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.panelSafe}>
       {/* Brand Header */}
       <View style={[styles.brandRow, { borderBottomColor: colors.border }]}>
         <BrandMark size={28} />
@@ -198,7 +327,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       </View>
 
       {/* Instant Search Bar */}
-      <View style={[styles.searchWrap, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}>
+      <View style={[styles.searchWrap, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 8 }]}>
         <Ionicons name="search-outline" size={16} color={colors.textMuted} />
         <TextInput
           value={searchQuery}
@@ -247,23 +376,27 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
                   style={[
                     styles.sessionItem,
                     {
-                      backgroundColor: isCurrent ? colors.surfacePressed : 'transparent',
+                      /* P2-3 alignment: active session background matches
+                       * `frontend`'s `.recent-item.active { background: hsl(var(--bg-300)) }`
+                       * (= `colors.surfaceHover`). The previous strong
+                       * border + accent-on-accent styling over-emphasized
+                       * the current row vs. the web app. */
+                      backgroundColor: isCurrent ? colors.surfaceHover : 'transparent',
                       borderRadius: radius.md,
-                      borderColor: isCurrent ? colors.borderStrong : 'transparent',
                     },
                   ]}
                 >
                   <Ionicons
                     name={session.mode === 'tutor' ? 'school-outline' : 'chatbubble-outline'}
                     size={16}
-                    color={isCurrent ? colors.accent : colors.textMuted}
+                    color={isCurrent ? colors.text : colors.textMuted}
                   />
                   <Text
                     numberOfLines={1}
                     style={[
                       styles.sessionTitle,
                       {
-                        color: isCurrent ? colors.accent : colors.text,
+                        color: colors.text,
                         fontFamily: isCurrent ? typography.semibold : typography.body,
                       },
                     ]}
@@ -279,19 +412,25 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
 
       {/* Footer Profile & Preferences */}
       <View style={[styles.profile, { borderTopColor: colors.border, backgroundColor: colors.surfaceRaised }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-          <Text style={[styles.avatarText, { color: colors.textInverse, fontFamily: typography.bold }]}>
-            {name.slice(0, 1).toUpperCase()}
-          </Text>
-        </View>
-        <View style={styles.profileCopy}>
-          <Text numberOfLines={1} style={[styles.profileName, { color: colors.text, fontFamily: typography.semibold }]}>
-            {name}
-          </Text>
-          <Text numberOfLines={1} style={[styles.profilePlan, { color: colors.textMuted, fontFamily: typography.body }]}>
-            {plan}
-          </Text>
-        </View>
+        <AnimatedPressable
+          accessibilityLabel={t('profile.heading') || 'Account'}
+          onPress={() => profileOverlay.open()}
+          style={styles.profileTap}
+        >
+          <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
+            <Text style={[styles.avatarText, { color: colors.textInverse, fontFamily: typography.bold }]}>
+              {name.slice(0, 1).toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.profileCopy}>
+            <Text numberOfLines={1} style={[styles.profileName, { color: colors.text, fontFamily: typography.semibold }]}>
+              {name}
+            </Text>
+            <Text numberOfLines={1} style={[styles.profilePlan, { color: colors.textMuted, fontFamily: typography.body }]}>
+              {plan}
+            </Text>
+          </View>
+        </AnimatedPressable>
 
         {/* Theme switcher toggle */}
         <AnimatedPressable
@@ -330,15 +469,75 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           <Ionicons name="log-out-outline" size={20} color={colors.danger} />
         </AnimatedPressable>
       </View>
-    </SafeAreaView>
+      {/* Rename dialog — same card as `RecentsScreen` rename modal. */}
+      <Modal visible={renameId !== null} transparent animationType="fade" onRequestClose={() => setRenameId(null)}>
+        <View style={[styles.renameBackdrop, { backgroundColor: colors.scrim }]}>
+          <View style={[styles.renameCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+            <Text style={[styles.renameTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('library.rename')}</Text>
+            <TextInput
+              autoFocus
+              value={renameValue}
+              onChangeText={setRenameValue}
+              onSubmitEditing={() => { void saveRename(); }}
+              placeholder={t('library.renamePlaceholder')}
+              placeholderTextColor={colors.textSubtle}
+              style={[styles.renameInput, { color: colors.text, borderColor: colors.borderStrong, backgroundColor: colors.background, borderRadius: radius.sm, fontFamily: typography.body }]}
+              returnKeyType="done"
+            />
+            <View style={styles.renameActions}>
+              <AnimatedPressable onPress={() => setRenameId(null)} style={styles.renameButton}>
+                <Text style={[styles.renameButtonText, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('common.cancel')}</Text>
+              </AnimatedPressable>
+              <AnimatedPressable
+                disabled={renameBusy || !renameValue.trim()}
+                onPress={() => { void saveRename(); }}
+                style={[styles.renameButton, { backgroundColor: colors.accent, borderRadius: radius.sm }]}
+              >
+                <Text style={[styles.renameButtonText, { color: colors.white, fontFamily: typography.medium }]}>{t('library.saveName')}</Text>
+              </AnimatedPressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Delete confirmation — themed ConfirmDialog mirroring
+       * frontend `react/confirm/ConfirmDialog.tsx` (danger variant). */}
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        title={t('library.deleteChat') || t('common.delete') || 'Delete'}
+        message={t('library.deleteChatConfirm')}
+        confirmLabel={t('common.delete') || 'Delete'}
+        cancelLabel={t('common.cancel') || 'Cancel'}
+        danger
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          const target = pendingDelete;
+          setPendingDelete(null);
+          if (target) void appStore.deleteSession(target.id).catch(() => undefined);
+        }}
+      />
+      </SafeAreaView>
+    </BlurView>
   );
 }
+
+/* P1-3 → P2 follow-up: replaced the previous alpha-layering
+ * approximation with a real `<BlurView tint=… intensity=18>` from
+ * `expo-blur` (now installed). The legacy `PANEL_FROSTED_*` constants
+ * are kept as a CSS fallback for platforms where the blur runtime is
+ * unavailable (e.g. legacy Android without the BlurView native
+ * implementation) — DrawerSurface still references them as a final
+ * background tint, so the frosted look survives an exception. */
+/* frontend `.sidebar { background: hsl(var(--bg-000)/0.72); backdrop-filter: blur(12px) }`
+ * — the frosted tint is the overlay token at 72% alpha in BOTH modes. */
+const PANEL_FROSTED_DARK = 'rgba(13, 13, 13, 0.72)';
+const PANEL_FROSTED_LIGHT = 'rgba(252, 251, 248, 0.72)';
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row' },
   backdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.64)' },
-  panel: { width: '86%', maxWidth: 340, borderRightWidth: 1 },
-  permanentPanel: { width: 320, maxWidth: 320, flex: 1 },
+  /* frontend `.sidebar { width: var(--app-sidebar-width, 18rem) }` = 288px. */
+  panel: { width: '86%', maxWidth: 288, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  panelSafe: { flex: 1 },
   brandRow: {
     height: 64,
     paddingHorizontal: 16,
@@ -356,9 +555,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 4,
     paddingHorizontal: 10,
-    height: 38,
+    height: 32,
     borderWidth: 1,
     gap: 8,
+    borderRadius: 8,
   },
   searchInput: {
     flex: 1,
@@ -404,16 +604,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontStyle: 'italic',
   },
+  /* frontend `.recent-item { border-radius: 8px; padding: 8px 12px }` — no border. */
   sessionItem: {
     minHeight: 38,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0,
   },
   sessionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     flex: 1,
   },
   profile: {
@@ -424,10 +625,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  /* P0-4: row wrapper that receives the open-profile press. The
+   * `flex: 1` lets the avatar + copy fill the available width while
+   * the theme / sign-out icon buttons stay pinned to the right. */
+  profileTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 14 },
   profileCopy: { flex: 1, minWidth: 0 },
   profileName: { fontSize: 13 },
   profilePlan: { fontSize: 11, marginTop: 1 },
   footerIconBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  /* Rename dialog — same card as `RecentsScreen` rename modal. */
+  renameBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+  renameCard: { width: '100%', maxWidth: 340, borderWidth: 1, paddingHorizontal: 18, paddingVertical: 16 },
+  renameTitle: { fontSize: 16 },
+  renameInput: { minHeight: 44, borderWidth: 1, paddingHorizontal: 12, fontSize: 14, marginTop: 12 },
+  renameActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 14 },
+  renameButton: { minHeight: 40, minWidth: 76, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  renameButtonText: { fontSize: 13 },
 });

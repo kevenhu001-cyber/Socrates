@@ -8,8 +8,28 @@
  * stable: do not introduce per-mode drift between tokens.ts and the
  * hex table; if either changes, regenerate both.
  *
- * Source: `frontend/src/styles/tokens.css` (HSL triplet column),
- * resolved against the corresponding `themes.css` hex for `bg.page`.
+ * Source: `frontend/src/styles.css` — the `[data-theme=socrates][data-mode=…]`
+ * blocks, which are what the web app actually paints. `styles/themes.css`
+ * (the `--ui-*` namespace) is an M1 forward-port that does NOT match the
+ * rendered result and must not be used as the reference.
+ *
+ * Role mapping — the web app aliases its raw ramps at `:root`:
+ *   --surface-page:    var(--bg-100)   -> bg.page
+ *   --surface-raised:  var(--bg-200)   -> bg.raised
+ *   --surface-overlay: var(--bg-000)   -> bg.overlay   (cards, modals, composer, user bubble)
+ *   --surface-hover:   var(--bg-300)   -> bg.hover
+ *   --surface-input:   var(--bg-000)   -> bg.overlay
+ *   --text-primary:    var(--text-100) -> text.primary
+ *   --text-secondary:  var(--text-400) -> text.tertiary
+ *   --text-tertiary:   var(--text-500) -> text.muted
+ *   --border-default:  var(--border-300) -> border.default
+ *   --accent:          var(--accent-000) -> accent.strong
+ *   --accent-bg:       var(--accent-900) -> accent.soft
+ *
+ * Consequence worth remembering: in dark mode `bg.overlay` (#0d0d0d) is
+ * DARKER than `bg.page` (#212121). Cards sit below the page on the
+ * lightness ramp; in light mode the relationship flips (#fcfbf8 over
+ * #f7f6f2). Getting this backwards inverts the entire UI.
  */
 
 import {
@@ -51,65 +71,71 @@ export interface ThemePaletteHex extends Omit<ThemePalette, 'accent' | 'bg' | 't
 
 const darkHex: ThemePaletteHex = {
   mode: 'dark',
+  /* --accent-000 / --accent-900 */
   accent: {
     strong: '#e9be53',
-    soft: '#5a4720',
-    surface: '#5a4720',
+    soft: '#473c1f',
+    surface: '#473c1f',
   },
+  /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
   bg: {
-    page: '#101318',
-    raised: '#212121',
-    overlay: '#292929',
+    page: '#212121',
+    raised: '#292929',
+    overlay: '#0d0d0d',
     hover: '#363636',
-    sunken: '#0d0d0d',
+    sunken: '#050505',
   },
+  /* --text-100 / --text-200 / --text-400 / --text-500 */
   text: {
     primary: '#ffffff',
     secondary: '#cccccc',
     tertiary: '#a6a6a6',
     muted: '#8c8c8c',
-    disabled: '#737373',
+    disabled: '#8c8c8c',
   },
+  /* --border-100 / --border-300 / --border-400 */
   border: {
     subtle: '#383838',
     default: '#383838',
-    strong: '#525252',
+    strong: '#383838',
   },
-  danger: '#d96868',
-  success: '#3dd27d',
-  muted: '#808080',
+  /* hsl(0 65% 62%) / hsl(145 50% 50%) */
+  danger: '#dd5f5f',
+  success: '#40bf75',
+  muted: '#8c8c8c',
+  /* --oncolor-100 — the glyph color on `.send-btn.active` */
   onAccent: '#ffffff',
 };
 
 const lightHex: ThemePaletteHex = {
   mode: 'light',
   accent: {
-    strong: '#a06b18',
-    soft: '#e7c98a',
-    surface: '#e7c98a',
+    strong: '#b18925',
+    soft: '#f0eadb',
+    surface: '#f0eadb',
   },
   bg: {
-    page: '#e6dec8',
-    raised: '#f5f1e7',
-    overlay: '#ebe4d3',
-    hover: '#ded8c3',
-    sunken: '#fbf8ef',
+    page: '#f7f6f2',
+    raised: '#efece7',
+    overlay: '#fcfbf8',
+    hover: '#e3dfd9',
+    sunken: '#ffffff',
   },
   text: {
-    primary: '#1a160e',
-    secondary: '#4d443a',
-    tertiary: '#605744',
-    muted: '#756b56',
-    disabled: '#8a806b',
+    primary: '#2d2925',
+    secondary: '#4d4842',
+    tertiary: '#746f67',
+    muted: '#868079',
+    disabled: '#868079',
   },
   border: {
-    subtle: '#dcd3bd',
-    default: '#c8bfa6',
-    strong: '#b8ad8e',
+    subtle: '#e0dcd7',
+    default: '#cdc8c1',
+    strong: '#beb9b1',
   },
-  danger: '#a83a3a',
-  success: '#2f7a52',
-  muted: '#807561',
+  danger: '#b82e2e',
+  success: '#2d865c',
+  muted: '#868079',
   onAccent: '#ffffff',
 };
 

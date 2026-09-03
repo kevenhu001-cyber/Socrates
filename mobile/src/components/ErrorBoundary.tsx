@@ -2,6 +2,13 @@ import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressable } from './AnimatedPressable';
+import { colors } from '../theme/theme';
+
+/* Error fallback is intentionally dark-themed regardless of the app's
+ * current mode — error screens read as "console output", and a global
+ * token flip during a render crash would compound the confusion. The
+ * values still come from the canonical palette so a token edit in
+ * `@socrates/theme` propagates here. */
 
 interface Props {
   children: ReactNode;
@@ -43,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <View style={styles.container}>
           <View style={styles.card}>
             <View style={styles.iconCircle}>
-              <Ionicons name="alert-circle-outline" size={36} color="#e9be53" />
+              <Ionicons name="alert-circle-outline" size={36} color={colors.accent} />
             </View>
             <Text style={styles.title}>Something went wrong</Text>
             <Text style={styles.subtitle}>
@@ -73,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101318',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -81,8 +88,8 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#181b21',
-    borderColor: '#303542',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 16,
     padding: 24,
@@ -92,20 +99,20 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#342b18',
+    backgroundColor: colors.brandSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
-    color: '#f7f7f7',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
-    color: '#a3a8b5',
+    color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
@@ -113,15 +120,15 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     width: '100%',
-    backgroundColor: '#0a0c10',
-    borderColor: '#1f2330',
+    backgroundColor: colors.backgroundSunken,
+    borderColor: colors.borderStrong,
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
   },
   errorText: {
-    color: '#ef7777',
+    color: colors.danger,
     fontSize: 12,
     fontFamily: 'monospace',
     lineHeight: 16,
@@ -129,13 +136,13 @@ const styles = StyleSheet.create({
   retryButton: {
     width: '100%',
     height: 46,
-    backgroundColor: '#e9be53',
+    backgroundColor: colors.accent,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   retryText: {
-    color: '#101318',
+    color: colors.background,
     fontSize: 14,
     fontWeight: '700',
   },

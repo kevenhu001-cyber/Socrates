@@ -95,7 +95,7 @@ export function ModelPickerModal({ visible, selectedId, onSelect, onClose, onMan
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderRadius: radius.xl }]}>
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'transparent',
   },
   backdrop: {
     position: 'absolute',
