@@ -1,3 +1,4 @@
+import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate } from '../chat/promptTemplates.js';
 /* ui/promptTemplates.js — Wave 1d of main-js-split plan.
  * Prompt-templates modal: lists built-in and user templates, with edit and
  * delete actions. Extracted from main.js (post-Wave-1b): L9890-L10010.
@@ -40,7 +41,7 @@ function closePromptTemplatesModal() {
 }
 
 function renderPromptTemplatesModal() {
-  var all = window.loadPromptTemplates();
+  var all = loadPromptTemplates();
   var customs = all.filter(function (t) { return !t.isBuiltin; });
   var builtins = all.filter(function (t) { return t.isBuiltin; });
   _ptBodyHTML =
@@ -79,7 +80,7 @@ function renderPromptRow(t, editable) {
 function onPromptRowDelete(id) {
   window.showConfirm(window.t("confirm.deleteTemplate.title"), window.t("confirm.deleteTemplate.msg"), true).then(function (yes) {
     if (!yes) return;
-    window.deleteCustomTemplate(id);
+    deleteCustomTemplate(id);
     renderPromptTemplatesModal();
   });
 }
@@ -87,7 +88,7 @@ function onPromptRowDelete(id) {
 function openPromptTemplateEditor(id) {
   var existing = null;
   if (id) {
-    existing = window.loadPromptTemplates().filter(function (t) { return t.id === id; })[0] || null;
+    existing = loadPromptTemplates().filter(function (t) { return t.id === id; })[0] || null;
   }
   var t = existing || { id: "tpl-" + Date.now().toString(36), title: "", description: "", body: "", systemPrompt: "", icon: "pg", category: "writing", shortcut: "/my-template" };
   _ptBodyHTML =
@@ -138,9 +139,9 @@ function onPromptTemplateEditorSave(id) {
   var systemPrompt = ((document.getElementById("ptSystemPrompt") || {}).value || "");
   if (!title) { window.showToast("Title is required"); return; }
   if (!/^\/[a-z0-9-]+$/.test(shortcut)) { window.showToast("Shortcut must look like /my-template"); return; }
-  var existing = window.findTemplateByShortcut(shortcut);
+  var existing = findTemplateByShortcut(shortcut);
   if (existing && existing.id !== id) { window.showToast("That shortcut is already in use"); return; }
-  window.upsertCustomTemplate({ id: id, title: title, description: description, icon: icon || "pg", category: category, shortcut: shortcut, body: body, systemPrompt: systemPrompt, isBuiltin: false });
+  upsertCustomTemplate({ id: id, title: title, description: description, icon: icon || "pg", category: category, shortcut: shortcut, body: body, systemPrompt: systemPrompt, isBuiltin: false });
   renderPromptTemplatesModal();
   window.showToast("Skill saved");
 }

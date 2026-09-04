@@ -143,17 +143,8 @@ function renderTonePresets() {
   };
 }
 
-/* Export for window bridge. */
-if (typeof window !== "undefined") {
-  window.TONE_PRESETS = TONE_PRESETS;
-  window.loadTonePreset = loadTonePreset;
-  window.setTonePreset = setTonePreset;
-  window.getTonePreset = getTonePreset;
-  window.getToneVoice = getToneVoice;
-  window.getAvailablePresets = getAvailablePresets;
-  window.renderTonePresets = renderTonePresets;
-  window.syncTonePresetUI = syncTonePresetUI;
-}
+/* Consumers import these directly (no window bridge since the
+   window-dead-bridge batch 2). */
 
 export {
   TONE_PRESETS,

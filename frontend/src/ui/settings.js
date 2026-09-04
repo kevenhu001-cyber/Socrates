@@ -1,3 +1,8 @@
+import { confirmClearSettings } from './dangerConfirms.js';
+import { saveLastActiveId } from '../config/providers.js';
+
+import { renderTonePresets } from '../config/tonePresets.js';
+
 /* ui/settings.js — Wave 2c of main-js-split plan.
  * Settings modal: API provider list + CRUD.
  * Extracted from main.js L11743-L12058.
@@ -46,7 +51,7 @@ function openSettings() {
   document.getElementById("settingsOverlay").classList.remove("hidden");
   syncToggleUI();
   renderProviderList();
-  if (typeof window.renderTonePresets === "function") window.renderTonePresets();
+  if (typeof renderTonePresets === "function") renderTonePresets();
   _publishSettingsState();
 }
 
@@ -332,7 +337,7 @@ function setActiveProvider(id) {
   var prevActiveId = apiConfig.activeId;
   /* Optimistic update */
   apiConfig.activeId = id;
-  window.saveLastActiveId(id);
+  saveLastActiveId(id);
   renderProviderList();
   window.syncModelPills();
   window.syncChatModel();
@@ -347,7 +352,7 @@ function setActiveProvider(id) {
     window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "PATCH", body: { isActive: true } }).catch(function () {
       /* Rollback on failure */
       apiConfig.activeId = prevActiveId;
-      window.saveLastActiveId(prevActiveId);
+      saveLastActiveId(prevActiveId);
       renderProviderList();
       window.syncModelPills();
       window.syncChatModel();
@@ -459,9 +464,9 @@ function saveSettings() {
     renderProviderList();
     if (results.lastValidId) {
       apiConfig.activeId = results.lastValidId;
-      window.saveLastActiveId(results.lastValidId);
+      saveLastActiveId(results.lastValidId);
     } else {
-      window.saveLastActiveId(null);
+      saveLastActiveId(null);
     }
     window.syncModelPills();
     window.syncChatModel();
@@ -486,7 +491,7 @@ function _setSaveButtonState(disabled) {
 /* ─── Clear all (delegates to confirmClearSettings) ─── */
 function clearSettings() {
   /* Use the existing confirm dialog from dangerConfirms.js */
-  window.confirmClearSettings();
+  confirmClearSettings();
 }
 
 export {

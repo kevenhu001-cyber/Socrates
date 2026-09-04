@@ -1,3 +1,4 @@
+import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
 /* Compact, ChatGPT-style action menu for both composers.  Keeping the menu
  * in a body portal prevents the rounded input surface from clipping it. */
 
@@ -131,7 +132,7 @@ if (typeof document !== "undefined") {
           window.openAttachmentPicker(mode === "topic" ? "topicAttachInput" : "attachInput");
         }
       } else if (kind === "skills") {
-        if (typeof window.openPromptTemplatesModal === "function") window.openPromptTemplatesModal();
+        if (typeof openPromptTemplatesModal === "function") openPromptTemplatesModal();
       } else if (typeof window.__socratesExtensionDispatch === "function") {
         window.__socratesExtensionDispatch(kind);
       }

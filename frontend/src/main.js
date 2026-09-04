@@ -27,9 +27,9 @@ import { initCookieConsent } from './cookieConsent.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
 import { mountLegacyShellListeners } from './ui/legacyShellListeners.js';
 import { toggleComposerTools } from './ui/composerTools.js';
-import { toggleEffortPicker } from './ui/effortPicker.js';
+import { getReasoningEffort, toggleEffortPicker } from './ui/effortPicker.js';
 import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.js';
-import { openFindInSession } from './ui/findInSession.js';
+import { isFindOpen, openFindInSession } from './ui/findInSession.js';
 import { initChatComposerReserve, scrollContainer, smoothScrollToBottom, isPinnedToBottom, shouldAutoScroll } from './ui/scroll.js';
 import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
@@ -47,7 +47,7 @@ import {
   subscribeComposer,
 } from './react/composer-input/controller.ts';
 import { wrapForCanvas } from './render/canvasWrap.ts';
-import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal } from './ui/share.js';
+import { closeShareModal, copyShareLink, loadSharedSession, openShareModal, resetShareToken, selectShareVis, toggleChatTopBarEls, toggleShareBtn } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
 import { renderAttachmentChips, openAttachmentPicker } from './attachments/render.js';
 import {
@@ -72,7 +72,7 @@ import {
 } from './session/store.js';
 import { esc, decodeEntities, stripTags, safeHljsLang, stripCitationMarkers } from './render/helpers.js';
 import { parseQuizInner, parseExampleInner, parsePracticeInner, parseDefinitionInner, parseFlashcardInner, parseTheoremInner, parseProofInner, parseDerivationInner, parseKeyPointInner } from './render/widgetParsers.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from './render/viz.js';
+import { openVizModalRaw as __vizOpenModalRaw, processPendingMermaid, processPendingViz, processPendingVizActions } from './render/viz.js';
 import { callAPI } from './chat/api.js';
 import { callAPIStream } from './chat/stream.js';
 import { looksLikeUserMentionedSite, extractHttpUrls, fetchPagesForContext } from './chat/webLinks.js';
@@ -92,7 +92,7 @@ import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from './chat
 import { BASELINE_LEVEL, stageInstruction, fromBasicsDirective, tutorTurnDirective } from './chat/socraticDirectives.js';
 import { extractHistory, buildUserContentParts } from './chat/history.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT, HIGH_EFFORT_OUTPUT_GUIDANCE } from './chat/systemPrompts.js';
-import { renderToolTextOutput } from './ui/toolCards.js';
+import { appendFileChangeSummaryCards, appendInlineArtifact, appendToolModule, renderToolTextOutput } from './ui/toolCards.js';
 import { initArtifactPreview } from './ui/artifactPreview.js';
 import { initLinkFavicons } from './ui/linkFavicons.js';
 import { appendThinking } from './ui/thinkingPill.js';
@@ -125,14 +125,8 @@ import { renderRecentsFilterChips as renderRecentsFilterChipsUI } from './ui/rec
 import { getKnownTagsFromSessions,
   filterRecentsByChip,
 } from './ui/recentsHelpers.js';
-import { loadDisplayPrefs,
-  setAccentColor, setAccentCustom, toggleTheme,
-  initTheme, mountDisplayPrefsListeners
-} from './displayPrefs.js';
-import {
-  getActiveProvider, syncModelPills,
-  syncChatModel, syncExtensionsUI, syncWebSearchUI,
-} from './pickers.js';
+import { initTheme, loadDisplayPrefs, mountDisplayPrefsListeners, setAccentColor, setAccentCustom, toggleDisplayPrefs, toggleTheme } from './displayPrefs.js';
+import { getActiveProvider, syncChatModel, syncExtensionsUI, syncModelPills, syncWebSearchUI, toggleExtensionByKey, toggleWebSearch } from './pickers.js';
 
 /* React migration bridge. The bridge only exists when `?react=1` loaded the
    dynamic compatibility runtime; default mode pays no React bundle cost.
@@ -260,7 +254,6 @@ function rerenderMathAfterKatex(){
     if(changed)publishReactChatRuntime({type:"state-synced",reason:"katex-ready"});
   }catch(_){}
 }
-window.__socratesRerenderMath = rerenderMathAfterKatex;
 try{onKatexReady(rerenderMathAfterKatex)}catch(_){}
 
 /* React owns #msgList's message nodes (marked data-react-owned). Wiping the
@@ -272,8 +265,8 @@ try{onKatexReady(rerenderMathAfterKatex)}catch(_){}
 function clearLegacyMsgListChildren(){
   var list=document.getElementById("msgList");
   if(!list)return;
-  if(typeof window.disposeVisualizations==="function"){
-    try{window.disposeVisualizations(list)}catch(_){}
+  if(typeof disposeVisualizations==="function"){
+    try{disposeVisualizations(list)}catch(_){}
   }
   var kids=Array.prototype.slice.call(list.children);
   for(var ki=0;ki<kids.length;ki++){
@@ -303,10 +296,13 @@ function clearLegacyMsgListChildren(){
    the surrounding URL, which is exactly what the prompt-exfil
    threat model tries to surface in logs.
    ─────────────────────────────────────────────────────────────────── */
+/* Re-install guard (module-local): installGlobalErrorGuard must only
+   wire its window.onerror handler once even if the IIFE is re-entered. */
+var __socratesGlobalErrorHandlerInstalled = false;
 (function installGlobalErrorGuard(){
   if (typeof window === 'undefined') return;
-  if (window.__socratesGlobalErrorHandlerInstalled) return;
-  window.__socratesGlobalErrorHandlerInstalled = true;
+  if (__socratesGlobalErrorHandlerInstalled) return;
+  __socratesGlobalErrorHandlerInstalled = true;
 
   // Re-entrancy flag — if our own banner code throws, we MUST NOT
   // dispatch the handler again (would loop and lock the page).
@@ -610,7 +606,7 @@ document.addEventListener("keydown",function(e){
      examOverlay, usageOverlay, promptTemplatesOverlay, and
      tagEditorPopover (the last two are dynamically created). */
   if(k==="Escape"){
-    if(typeof window.isFindOpen==="function"&&window.isFindOpen()){
+    if(typeof isFindOpen==="function"&&isFindOpen()){
       e.preventDefault();window.closeFindInSession();return;
     }
     if(!document.getElementById("cmdKOverlay").classList.contains("hidden")){
@@ -770,7 +766,7 @@ document.addEventListener("keydown",function(e){
 
 
 /* E 区段(openCheatsheet / buildCheatsheetSection / closeCheatsheet)已抽到
-   src/ui/cheatsheet.js,顶部 import。 window.closeCheatsheet = closeCheatsheet
+   src/ui/cheatsheet.js,顶部 import。 closeCheatsheet = closeCheatsheet
    仍由 main.js 末尾的 window.* 导出块承担,Phase B 会集中到 windowExports.js。 */
 /* Mobile only: tap anywhere outside the sidebar (and outside the toggle
    button) to close it. On desktop the user controls the sidebar with the
@@ -909,8 +905,6 @@ function toggleSidebarView(view){
   var isActive=el&&el.classList.contains("active");
   switchTab(isActive?"recents":view);
 }
-window.switchTab=switchTab;
-window.setRecentsSearch=setRecentsSearch;
 window.toggleSidebarView=toggleSidebarView;
 
 /* ============================================================
@@ -1158,7 +1152,7 @@ function saveCurrentSession(){
      persisted. Entering incognito first saves any prior real session
      (toggleIncognito calls resetApp before flipping this flag), so
      bailing here only blocks the temporary conversation itself. */
-  if(window.incognitoOn)return null;
+  if(incognitoOn)return null;
   if(!stateStore.read("topic"))return null;
   if(!CURRENT_USER)return null; /* not signed in; do nothing */
   /* P_context-race — discard saves during session loading. The
@@ -1463,8 +1457,8 @@ function doSave(){
  * openExamPanel() calls renderExamForm() which would wipe the saved
  * questions before we paint them. */
 async function loadExamSession(s){
-  if(typeof window.prepareExamView==="function"){
-    try{window.prepareExamView()}catch(_){}
+  if(typeof prepareExamView==="function"){
+    try{prepareExamView()}catch(_){}
   }else{
     var ev=document.getElementById("examView");
     var others=["topicSetup","diagnosticView","chatView"];
@@ -1573,8 +1567,8 @@ function resetSessionTransients(){
   }});
   try{clearComposer("chat")}catch(_){}
   try{updateSendBtn();}catch(_){}
-  try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null;}catch(_){}
-  try{if(window._pendingAttachments!==undefined)window._pendingAttachments=null;}catch(_){}
+  try{if(_pendingChatContent!==undefined)_pendingChatContent=null;}catch(_){}
+  try{if(_pendingAttachments!==undefined)_pendingAttachments=null;}catch(_){}
   /* F2a-ext — clear the active template so a slash-command template
      (/quiz, /summarize, etc.) from the previous session doesn't
      inject its systemPrompt into the new session's LLM call via
@@ -1624,8 +1618,8 @@ async function loadSession(id){
   /* Abort any active chat stream so its onDelta/finish callbacks
      don't write to stateStore.read("messages") after we replace them. */
   if(window._activeChatAbort){try{window._activeChatAbort("session-switch")}catch(_){}}
-  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-  window._activeChatCtl=null;
+  if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
+  _activeChatCtl=null;
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
@@ -2263,7 +2257,7 @@ async function actuallyDeleteSession(id,ev){
   
   var wasActive=stateStore.read("currentSessionId")===id||stateStore.read("currentSessionId")===id;
   if(wasActive){
-    if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+    if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
     if(window._activeChatAbort){try{window._activeChatAbort("session-deleted")}catch(_){}}
     bounceOutOfArchivedSession();
   }
@@ -2375,7 +2369,7 @@ function confirmPurgeSession(id){
          graph until the user manually navigates away. */
       var wasActive=stateStore.read("currentSessionId")===id||stateStore.read("currentSessionId")===id;
       if(wasActive){
-        if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+        if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
         if(window._activeChatAbort){try{window._activeChatAbort("session-purged")}catch(_){}}
         bounceOutOfArchivedSession();
       }
@@ -2412,17 +2406,17 @@ function sweepExpiredArchives(){
    being archived; the chat view collapses back to the topic
    screen. */
 function bounceOutOfArchivedSession(){
-  window._shareToken=null;
+  resetShareToken();
   /* Abort any active chat stream so callbacks don't write to
      state after resetState() has cleared it. */
   if(window._activeChatAbort){try{window._activeChatAbort("archived-session")}catch(_){}}
-  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-  window._activeChatCtl=null;
+  if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
+  _activeChatCtl=null;
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
-  try{window._pendingChatContent=null}catch(_){}
-  try{window._pendingAttachments=null}catch(_){}
+  try{_pendingChatContent=null}catch(_){}
+  try{_pendingAttachments=null}catch(_){}
   resetState();
   toggleShareBtn();
   setChatIdInURL(null);
@@ -2482,9 +2476,6 @@ function onProjectDrop(event, projectId){
   moveSessionToProject(sessionId, projectId);
 }
 /* Expose drag functions globally so inline ondragstart/ondragend work. */
-window.onSessionDragStart = onSessionDragStart;
-window.onSessionDragEnd = onSessionDragEnd;
-window.onProjectDrop = onProjectDrop;
 
 /* Move a session to a project. */
 function moveSessionToProject(sessionId, projectId){
@@ -2643,6 +2634,10 @@ function doRenderRecents(){
   renderRecentsFilterChips();
 }
 
+/* One-shot projects fetch guard (module-local): an empty project list or a
+   failed /api/projects call marks the cache as populated so renderRecents
+   never re-fetches on every render. */
+var __projectsFetchFailed = false;
 function renderRecentsFilterChips(){
   /* Fetch projects for the filter chips if not cached. P_projects-once —
      a successful response (including an empty project list) marks the
@@ -2652,7 +2647,7 @@ function renderRecentsFilterChips(){
      called renderRecentsFilterChips() → fetched again → looped
      indefinitely, flooding /api/projects. */
   var projects = window.__projectsCache;
-  var fetched = Array.isArray(projects) || window.__projectsFetchFailed;
+  var fetched = Array.isArray(projects) || __projectsFetchFailed;
   if (!fetched && typeof apiFetch === "function") {
     apiFetch("/api/projects").then(function(r){
       window.__projectsCache = (r && r.projects) || [];
@@ -2660,7 +2655,7 @@ function renderRecentsFilterChips(){
     }).catch(function(){
       /* Mark failure so we don't retry on every renderRecents call.
          The user can refresh the page to retry. */
-      window.__projectsFetchFailed = true;
+      __projectsFetchFailed = true;
     });
   }
   renderRecentsFilterChipsUI({
@@ -2798,8 +2793,8 @@ async function startSession(){
          a previous session so its late onDelta/finish callbacks can't
          write into the freshly-cleared stateStore.read("messages"). */
       if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
-      if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-      window._activeChatCtl=null;
+      if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
+      _activeChatCtl=null;
       window._activeChatAbort=null;
       _chatStreaming=false;
       _chatStopMode=false;
@@ -2827,8 +2822,8 @@ async function startSession(){
       var startChatContent = startBuilt.parts || stateStore.read("topic");
       var startPersistText = startBuilt.rawText || stateStore.read("topic");
       var startAttList = Array.isArray(startBuilt.attachmentList) ? startBuilt.attachmentList : [];
-      window._pendingChatContent = startChatContent;
-      window._pendingAttachments = startAttList;
+      _pendingChatContent = startChatContent;
+      _pendingAttachments = startAttList;
       /* Patch the user bubble in place if attachments arrived late
          (image attachments need /api/vision/describe). React's message
          list reads from the state snapshot, so a state-synced publish
@@ -3313,13 +3308,13 @@ async function askChatTurn(userText,pendingOverride){
      old streamCtl stays in "正在思考…" until its own 45 s timer fires,
      which makes the UI feel frozen when the user fires a follow-up
      while the previous reply is still in flight. */
-  if(window._activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
+  if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
   if(window._activeChatAbort){try{_activeChatAbort("superseded")}catch(_){}}
   /* Capture this turn before any guard or await. New submit paths pass an
      immutable override; legacy edit/regenerate paths can still use the
      consume-once window bridge. */
-  var pendingContent = arguments.length>1 ? pendingOverride : window._pendingChatContent;
-  try{window._pendingChatContent=null;}catch(_){}
+  var pendingContent = arguments.length>1 ? pendingOverride : _pendingChatContent;
+  try{_pendingChatContent=null;}catch(_){}
   /* No API configured: provide a minimal local echo so the chat panel
      is not dead. Tells the user how to enable a real model. */
   if(!hasUsableActive()){
@@ -3351,7 +3346,7 @@ async function askChatTurn(userText,pendingOverride){
   var userMsg=userText||("Let's talk about "+stateStore.read("topic")+".");
   /* P_attachments — submitChatMessage stores the assembled LLM
    * content (text string OR multimodal parts array) on
-   * window._pendingChatContent. Prefer it when present so images
+   * _pendingChatContent. Prefer it when present so images
    * flow through to vision-capable upstreams. */
   /* AUDIT-R4 — consume-once. Leaving the pending content on window
      after this read meant a later askChatTurn call that didn't set
@@ -3419,7 +3414,7 @@ async function askChatTurn(userText,pendingOverride){
    * Medium/Low select the concise one. We derive it here (and keep
    * window.extensiveThinkingOn in sync) so the choice always matches the
    * picker regardless of load order. */
-  var _effortHigh = (typeof window.getReasoningEffort === "function" && window.getReasoningEffort() === "high");
+  var _effortHigh = (typeof getReasoningEffort === "function" && getReasoningEffort() === "high");
   try{ window.extensiveThinkingOn = _effortHigh; }catch(_){}
   var chatPrompt = _effortHigh ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT;
   var thinkSuffix = _effortHigh ? thinkingSuffix() : "";
@@ -3594,7 +3589,7 @@ var _activeTemplate=null;
    globals. Keeping the side-effects inside setActiveTemplate/clearActiveTemplate
    means every "×" on the chip and every menu click stay in sync. */
 var EXTENSION_SIDE_EFFECTS={
-  webSearch:function(on){ if(on!==!!window.webSearchOn && typeof window.toggleWebSearch==="function") window.toggleWebSearch(); },
+  webSearch:function(on){ if(on!==!!window.webSearchOn && typeof toggleWebSearch==="function") toggleWebSearch(); },
   deepResearch:function(on){ window.deepResearchOn=!!on; if(typeof window.syncQuickChips==="function") window.syncQuickChips(); },
   extensiveThinking:function(on){
     window.extensiveThinkingOn=!!on;
@@ -4114,8 +4109,8 @@ async function submitChatMessage(textOverride,opts){
   }
   var chatContent=built.parts;
   var attList=built.attachmentList||immediateAttList;
-  window._pendingChatContent=chatContent;
-  window._pendingAttachments=attList;
+  _pendingChatContent=chatContent;
+  _pendingAttachments=attList;
 
   /* AI processes the answer */
   /* Background web-search refresh for tutor follow-ups. Same 5-turn
@@ -4509,14 +4504,14 @@ function editUserMessage(messageId){
     });
     /* P0.1 BUG-P01-03 — if the edited message carried image / PDF /
        text attachments, rebuild the multimodal content parts and stash
-       them on window._pendingChatContent so the resend still includes
+       them on _pendingChatContent so the resend still includes
        the attachments. After the previous send this global is null
        (cleared post-send), so without this the edited turn would
        degrade to text-only even though extractHistory can rebuild the
        parts — askChatTurn slices the trailing user history entry and
        sends _pendingChatContent (or the plain text fallback) instead.
        A text-only edit yields null → askChatTurn falls back to text. */
-    try{ window._pendingChatContent=buildUserContentParts(editedText,entry.attachments); }catch(_){ window._pendingChatContent=null; }
+    try{ _pendingChatContent=buildUserContentParts(editedText,entry.attachments); }catch(_){ _pendingChatContent=null; }
     /* Replay from the edited turn. askChatTurn writes a fresh
        streaming assistant bubble into the now-empty tail of the
        conversation. P0.1 NOTE-P01-06 — start the new turn only AFTER
@@ -4531,7 +4526,7 @@ function editUserMessage(messageId){
       /* If a stream is already in flight (e.g. user clicked edit
          while the previous reply was still arriving), abort it
          first so the new turn isn't racing the old one. */
-      if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+      if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
       if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
       patchPromise.then(function(){
         try{ quietTurn(window.askChatTurn(editedText)); }catch {/* msg-edit replay failed */}
@@ -4637,11 +4632,11 @@ function regenerateAssistantMessage(messageId){
   /* P0.1 BUG-P01-03 (regenerate parity) — carry the original turn's
      attachments so a regenerate of a message that had an image / PDF /
      text doesn't degrade to text-only. Null for text-only turns. */
-  try{ window._pendingChatContent=buildUserContentParts(userText,userEntry.attachments); }catch(_){ window._pendingChatContent=null; }
+  try{ _pendingChatContent=buildUserContentParts(userText,userEntry.attachments); }catch(_){ _pendingChatContent=null; }
   if(typeof window.askChatTurn==="function"){
     /* Abort any in-flight stream so the regenerated turn isn't racing
        a previous reply that's still arriving. */
-    if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
+    if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
     if(window._activeChatAbort){try{window._activeChatAbort("msg-regen")}catch(_){}}
     /* P0.1 NOTE-P01-06 — re-ask only AFTER the server discardFollowing
        settles, so the delete (assistant rows createdAt >= user turn)
@@ -4687,7 +4682,7 @@ function branchFromMessage(messageId, opts){
      messages. We set a flag so the new session starts with the
      branch context instead of a blank topic. */
   var _branchContext={messages:branchMessages,topic:branchTopic,title:branchTitle,branchedFrom:branchedFrom};
-  window._pendingBranchContext=_branchContext;
+  _pendingBranchContext=_branchContext;
   /* Navigate to a new session. resetApp clears state, then we
      re-hydrate from the branch context. */
   resetApp().then(function(resetProceeded){
@@ -4695,13 +4690,13 @@ function branchFromMessage(messageId, opts){
        that case. Do NOT continue the branch (push messages / fire a turn)
        against the user's explicit choice. */
     if(resetProceeded===false){
-      window._pendingBranchContext=null;
+      _pendingBranchContext=null;
       return;
     }
     /* After resetApp completes, restore the branch context. */
-    if(window._pendingBranchContext){
-      var ctx=window._pendingBranchContext;
-      window._pendingBranchContext=null;
+    if(_pendingBranchContext){
+      var ctx=_pendingBranchContext;
+      _pendingBranchContext=null;
       stateStore.dispatch({type:"session/replace-messages",payload:ctx.messages});
       stateStore.dispatch({type:"state/batch",patch:{
         topic:ctx.topic,
@@ -4805,26 +4800,26 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
         host.setAttribute("data-tool-anchor",String(tc.id||""));
         inlineRow.insertAdjacentElement("afterend",host);
       }
-      if(vizSpec&&typeof window.mountVisualization==="function"){
+      if(vizSpec&&typeof mountVisualization==="function"){
         try{
-          window.mountVisualization(vizSpec,host,{
+          mountVisualization(vizSpec,host,{
             toolCallId:tc.id||((idPrefix||"history")+"-viz-"+tci)
           });
         }catch(_){}
       }
-      if(Array.isArray(tc.artifacts)&&typeof window.appendInlineArtifact==="function"){
+      if(Array.isArray(tc.artifacts)&&typeof appendInlineArtifact==="function"){
         for(var aj=0;aj<tc.artifacts.length;aj++){
           var artJ=tc.artifacts[aj];
           if(!artJ||!artJ.id)continue;
-          try{window.appendInlineArtifact(artJ.id,artJ.mimeType,host,artJ.name)}catch(_){}
+          try{appendInlineArtifact(artJ.id,artJ.mimeType,host,artJ.name)}catch(_){}
         }
       }
       continue;
     }
     var cardOut=null;
-    if(typeof window.appendToolModule==="function"){
+    if(typeof appendToolModule==="function"){
       try{
-        cardOut=window.appendToolModule(tc.name,tc.input||{},body,{
+        cardOut=appendToolModule(tc.name,tc.input||{},body,{
           restored:true,
           isError:tc.isError===true
         });
@@ -4836,24 +4831,24 @@ function restorePersistedMessageExtras(body,entry,idPrefix){
         }
       }catch(_){}
     }
-    if(vizSpec&&typeof window.mountVisualization==="function"){
+    if(vizSpec&&typeof mountVisualization==="function"){
       try{
-        window.mountVisualization(vizSpec,body,{
+        mountVisualization(vizSpec,body,{
           toolCallId:tc.id||((idPrefix||"history")+"-viz-"+tci)
         });
       }catch(_){}
     }
-    if(cardOut&&Array.isArray(tc.artifacts)&&typeof window.appendInlineArtifact==="function"){
+    if(cardOut&&Array.isArray(tc.artifacts)&&typeof appendInlineArtifact==="function"){
       for(var ai=0;ai<tc.artifacts.length;ai++){
         var art=tc.artifacts[ai];
         if(!art||!art.id)continue;
         var previewable=art.mimeType&&(art.mimeType.indexOf("image/")===0||art.mimeType.indexOf("text/html")===0);
-        try{window.appendInlineArtifact(art.id,art.mimeType||"application/octet-stream",previewable?body:cardOut,art.name)}catch(_){}
+        try{appendInlineArtifact(art.id,art.mimeType||"application/octet-stream",previewable?body:cardOut,art.name)}catch(_){}
       }
     }
   }
-  if(typeof window.appendFileChangeSummaryCards==="function"){
-    try{window.appendFileChangeSummaryCards(body)}catch(_){}
+  if(typeof appendFileChangeSummaryCards==="function"){
+    try{appendFileChangeSummaryCards(body)}catch(_){}
   }
   if(body.dataset)body.dataset.persistedExtrasFor=messageKey;
 }
@@ -4997,6 +4992,14 @@ function addMessage(role,text,type,actions,attachmentsArg){
 
 var _chatStopMode=false;
 var _chatStreaming=false;
+/* Active-chat controller + pending-turn payloads (module-local). These were
+   mirrored on window for legacy cross-module access that no longer exists —
+   every reader/writer is in this file. Keeping them module-local prevents
+   the window copy from drifting from the module var. */
+var _activeChatCtl=null;
+var _pendingAttachments=null;
+var _pendingBranchContext=null;
+var _pendingChatContent=null;
 /* Task 4.1 — non-persisted TurnUiState. Drives Stop-vs-Resend visibility:
    Stop is shown while a turn is in progress (setChatStopState mirrors this),
    Resend is offered on the stopped/finished assistant bubble. lastUserMessageId
@@ -5437,8 +5440,8 @@ function wireCodeBlockHeaders(body){
       ev.stopPropagation();
       var rawCode=code.textContent||"";
       var codeHtml='<pre style="margin:0;border:0;background:transparent;padding:18px 20px;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word;max-height:calc(100vh - 120px);overflow:auto"><code>'+esc(rawCode)+'</code></pre>';
-      if(typeof window.__vizOpenModalRaw==="function"){
-        window.__vizOpenModalRaw(codeHtml,(lang||"code")+" source");
+      if(typeof __vizOpenModalRaw==="function"){
+        __vizOpenModalRaw(codeHtml,(lang||"code")+" source");
       }
     });
     header.appendChild(expandBtn);
@@ -5460,9 +5463,9 @@ function wireMsgBodyImages(body){
       ev.preventDefault();
       var src=this.getAttribute("src")||"";
       if(!src)return;
-      if(typeof window.__vizOpenModalRaw!=="function")return;
+      if(typeof __vizOpenModalRaw!=="function")return;
       var html='<div class="img-lightbox"><img src="'+esc(src)+'" alt="" style="max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px"/></div>';
-      window.__vizOpenModalRaw(html,"Image");
+      __vizOpenModalRaw(html,"Image");
     });
   }
 }
@@ -5491,8 +5494,8 @@ window.setChatStopState=setChatStopState;
 window.handleSendClick=function(){
   var btn=document.getElementById("sendBtn");
   if(btn&&btn.dataset.stop==="1"){
-    if(window._activeChatCtl){
-      window._activeChatCtl.abort();
+    if(_activeChatCtl){
+      _activeChatCtl.abort();
     }
     if(window._activeChatAbort){
       try{window._activeChatAbort("user-stop")}catch(_){ }
@@ -5507,8 +5510,8 @@ window.handleSendClick=function(){
 };
 
 function stopChatResponse(){
-  if(window._activeChatCtl && typeof window._activeChatCtl.abort === "function"){
-    window._activeChatCtl.abort();
+  if(_activeChatCtl && typeof _activeChatCtl.abort === "function"){
+    _activeChatCtl.abort();
   }
   if(window._activeChatAbort){
     try{window._activeChatAbort("user-stop")}catch(_){ }
@@ -5601,8 +5604,11 @@ function decideLiveApproval(messageId,toolCallId,decision){
    Registered once: a per-stream listener would fire N times per click. */
 var _liveSearchRetry=null;
 function claimLiveSearchRetry(handler){_liveSearchRetry=typeof handler==="function"?handler:null}
-if(typeof document!=="undefined"&&!window.__socratesToolRetryWired){
-  window.__socratesToolRetryWired=true;
+/* One-shot wiring guard (module-local): the document-level tool-retry
+   listener must only be registered once. */
+var __socratesToolRetryWired = false;
+if(typeof document!=="undefined"&&!__socratesToolRetryWired){
+  __socratesToolRetryWired=true;
   document.addEventListener("tool-retry",function(ev){
     var detail=(ev&&ev.detail)||{};
     /* share.js / history replay install their own handler for the same event. */
@@ -7260,13 +7266,13 @@ function doRender(){
          * back to true; the old controller's teardown must not
          * clobber that, or the next "Stop" click would think no
          * stream is running. */
-        if(window._activeChatCtl===ret){
+        if(_activeChatCtl===ret){
           _chatStreaming=false;
           try{setChatStopState(false)}catch(_){}
           try{markTurnEnded()}catch(_){}
           /* P1.4 — clearing the global abort handle on natural finish
              keeps the closure (and DOM refs) eligible for GC. */
-          window._activeChatCtl=null;
+          _activeChatCtl=null;
         }
         /* The final pass changes the answer's height (a running row folds
            into its group, the status line retires, KaTeX resolves), and
@@ -7538,7 +7544,7 @@ function doRender(){
        * already taken over (the new wrapper cancels the OLD
        * controller when the user sends a follow-up, and the new
        * addStreamingMessage has already raised _chatStreaming). */
-      if(window._activeChatCtl===ret){
+      if(_activeChatCtl===ret){
         _chatStreaming=false;
         try{setChatStopState(false)}catch(_){}
         try{markTurnEnded()}catch(_){}
@@ -7761,7 +7767,7 @@ function doRender(){
        /* Restore the send button — even error paths end the stream.
         * Guarded on the active controller so a new stream that
         * supersedes this one is not clobbered. */
-       if(window._activeChatCtl===ret){
+       if(_activeChatCtl===ret){
          _chatStreaming=false;
          try{setChatStopState(false)}catch(_){}
          try{markTurnEnded()}catch(_){}
@@ -7800,7 +7806,7 @@ function doRender(){
      bubble immediately instead of leaving it pinned until its 45 s
      first-delta timer fires. The next addStreamingMessage() call will
      overwrite _activeChatCtl with its own controller. */
-  window._activeChatCtl=ret;
+  _activeChatCtl=ret;
   return ret;
 }
 
@@ -8843,20 +8849,20 @@ async function resetApp(){
   /* Abort any in-flight chat stream so its callbacks don't write to
      stateStore.read("messages") after we reset them. */
   if(window._activeChatAbort){try{window._activeChatAbort("session-reset")}catch(_){}}
-  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-  window._activeChatCtl=null;
+  if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
+  _activeChatCtl=null;
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
-  window._shareToken=null;
+  resetShareToken();
   /* AUDIT-fix — drop any assembled-but-unsent multimodal payload from
      the previous session. askChatTurn() prefers _pendingChatContent
      over its own text argument, so a stale value here (e.g. an image
      parts array from the last send) would be replayed as the first
      turn of the new session — the re-explain branch path
      (branchFromMessage → resetApp → askChatTurn) hit exactly this. */
-  try{window._pendingChatContent=null}catch(_){}
-  try{window._pendingAttachments=null}catch(_){}
+  try{_pendingChatContent=null}catch(_){}
+  try{_pendingAttachments=null}catch(_){}
   resetState();
   /* Preserve a project selected immediately before a fresh chat. */
   if(window._nextProjectId){
@@ -8955,7 +8961,7 @@ async function resetApp(){
    current view (via resetApp, which also saves any prior real session)
    so the user starts on a clean, unsaved conversation. */
 function syncIncognitoBtn(){
-  var on=!!window.incognitoOn;
+  var on=!!incognitoOn;
   try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(_){}
   var btn=document.getElementById("mobileIncognitoBtn");
   if(btn){
@@ -8966,12 +8972,12 @@ function syncIncognitoBtn(){
   }
 }
 async function toggleIncognito(){
-  if(window.incognitoOn){
+  if(incognitoOn){
     /* Leaving incognito — reset the view while the flag is STILL on so
        saveCurrentSession() bails and the temporary chat is discarded,
        then turn incognito off for future (saved) sessions. */
     await resetApp();
-    window.incognitoOn=false;
+    incognitoOn=false;
     syncIncognitoBtn();
     if(typeof showToast==="function")showToast(t("incognito.off"));
     return;
@@ -8980,12 +8986,10 @@ async function toggleIncognito(){
      wipes the view, THEN we flip the flag so the fresh conversation is
      never persisted. */
   await resetApp();
-  window.incognitoOn=true;
+  incognitoOn=true;
   syncIncognitoBtn();
   if(typeof showToast==="function")showToast(t("incognito.on"));
 }
-window.toggleIncognito=toggleIncognito;
-window.syncIncognitoBtn=syncIncognitoBtn;
 
 /* ============================================================
    AUTH GATE — client-side
@@ -9047,7 +9051,7 @@ function handleAuthExpired(cause){
        _pendingChatContent could replay a draft image after the
        user signs back in. */
     try{_userMemories=[]}catch(_){}
-    try{window._pendingChatContent=null}catch(_){}
+    try{_pendingChatContent=null}catch(_){}
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing SERVER_SESSIONS /
        apiConfig / _cmdKIndex, the sign-in gate's flash of
@@ -9070,7 +9074,7 @@ function handleAuthExpired(cause){
         complete after the user has been sent to the auth gate and
         trigger further state mutations. */
     try{
-      if(window._activeChatCtl){_activeChatCtl.abort();window._activeChatCtl=null}
+      if(_activeChatCtl){_activeChatCtl.abort();_activeChatCtl=null}
       if(window._activeChatAbort){_activeChatAbort("session-expired");window._activeChatAbort=null}
     }catch(_){}
     if(window._onAuthExpiredListeners){
@@ -9097,7 +9101,6 @@ function handleAuthExpired(cause){
     },0);
   }catch {/* handleAuthExpired failed */}
 }
-window.handleAuthExpired=handleAuthExpired;
 
 /* Wire the api module's 401 hook to our local handleAuthExpired +
  * grace window. Done after both functions are defined so the closure
@@ -9105,14 +9108,11 @@ window.handleAuthExpired=handleAuthExpired;
 installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });
 
 
-import { renderUserFooter, openProfile, closeProfile } from './ui/profile.js';
+import { closeProfile, onCustomInstructionsChange, openProfile, renderUserFooter, saveProfileName, toggleProfileWebSearch } from './ui/profile.js';
 
 /* ─── Exam view (standalone page) ─── */
 /* P_main-split — Wave 3b: exam generation form extracted to exam.js. */
-import { paintQuestionCard,
-  renderExamNav,
-  syncExamNav, renderExamResults, mountExamListeners,
-} from './exam.js';
+import { mountExamListeners, paintQuestionCard, prepareExamView, renderExamNav, renderExamResults, syncExamNav } from './exam.js';
 
 /* Usage modal — token heatmap & monthly breakdown. */
 /* Usage modal — openUsageModal / closeUsageModal / loadUsageData / loadUsageMonth / renderUsageHeatmap / showUsageTip / hideUsageTip — extracted to src/ui/usage.js (Phase C-3.5). */
@@ -9121,13 +9121,12 @@ import { paintQuestionCard,
    days-remaining countdown, plus a Restore / Delete-forever
    pair per row. The modal is a single instance that gets
    rebuilt every time it opens, so the count is always live. */
-import { closeStorageModal } from './ui/storage.js';
+import { closeStorageModal, openStorageModal } from './ui/storage.js';
 
 /* P5.8 — Prompt templates manager modal. Lists built-ins
    (read-only) and user customs (editable). The 'New
    template' button opens a lightweight editor inline. */
-import { closePromptTemplatesModal,
-} from './ui/promptTemplates.js';
+import { closePromptTemplatesModal, openPromptTemplatesModal } from './ui/promptTemplates.js';
 
 import { renderArchivedList } from './ui/storage.js';
 
@@ -9140,7 +9139,7 @@ import { renderArchivedList } from './ui/storage.js';
    PATCH /api/users/me.customInstructions so the same value
    flows to the Android client on the next sign-in. */
 var _customInstructionsSaveTimer=null;
-import { getCustomInstructionsString, toggleProfileWebSearch } from './ui/profile.js';
+import { getCustomInstructionsString } from './ui/profile.js';
 
 /* P_main-split — Wave 1a: showConfirm + closeConfirm extracted to ui/confirm.js. */
 import { showConfirm } from './ui/confirm.js';
@@ -9181,7 +9180,7 @@ function clearPerUserClientState(){
   try{resetCrossSessionKBCache()}catch(_){}
   try{_examAnswerSaveTimer=null;_examSaveInFlight=null}catch(_){}
   try{_userMemories=[]}catch(_){}
-  try{if(window._pendingChatContent!==undefined)window._pendingChatContent=null}catch(_){}
+  try{if(_pendingChatContent!==undefined)_pendingChatContent=null}catch(_){}
   /* P_locale-ghost — `state.locale` was never a real field (the real
      language selector is window._currentLang, managed by i18n.js).
      The previous `window.state.locale=null` here only triggered the
@@ -9266,14 +9265,14 @@ async function signOut(){
      signOut (to avoid its "Start a new session?" confirm dialog), so
      we inline the essential stream teardown here. */
   if(window._activeChatAbort){try{window._activeChatAbort("signout")}catch(_){}}
-  if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
-  window._activeChatCtl=null;
+  if(_activeChatCtl){try{_activeChatCtl.abort()}catch(_){}}
+  _activeChatCtl=null;
   window._activeChatAbort=null;
   _chatStreaming=false;
   _chatStopMode=false;
-  window._shareToken=null;
-  try{window._pendingChatContent=null}catch(_){}
-  try{window._pendingAttachments=null}catch(_){}
+  resetShareToken();
+  try{_pendingChatContent=null}catch(_){}
+  try{_pendingAttachments=null}catch(_){}
   showGate();
   renderUserFooter();
 }
@@ -9376,9 +9375,7 @@ function updateModeBadge(){
 window.updateModeBadge = updateModeBadge;
 
 /* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
-import { closeSettings,
-  renderProviderList,
-} from './ui/settings.js';
+import { clearSettings, closeSettings, renderProviderList, saveSettings, syncSettingsUI, toggleAPI } from './ui/settings.js';
 
 /* ============================================================
    API CALL (replaces mock when enabled)
@@ -9446,8 +9443,8 @@ function memoriesSuffix(){
     s+="\n\n## User's saved memories (long-term context)\n"+_userMemories.map(function(t){return"- "+t}).join("\n");
   }
   /* Also include the client-side memory store. */
-  if(typeof window.injectMemoryContext==="function"){
-    var local=window.injectMemoryContext();
+  if(typeof injectMemoryContext==="function"){
+    var local=injectMemoryContext();
     if(local)s+=local;
   }
   return s;
@@ -9507,11 +9504,11 @@ function appendClientContextMessages(messages,includeSearchContext){
    can never override server-owned safety, tool, language, or formatting
    rules, so this label is deliberately NOT "override". */
 function toneVoiceSuffix(){
-  if(typeof window.getTonePreset!=="function")return"";
-  var tone=window.getTonePreset();
+  if(typeof getTonePreset!=="function")return"";
+  var tone=getTonePreset();
   if(tone==="default"||!tone)return"";
-  if(typeof window.getToneVoice!=="function")return"";
-  var voice=window.getToneVoice();
+  if(typeof getToneVoice!=="function")return"";
+  var voice=getToneVoice();
   if(!voice)return"";
   return"\n\n## VOICE (tone and register)\n"+voice+"\n";
 }
@@ -9538,7 +9535,7 @@ function beagleSuffix(){
    prose / chain-of-thought" phrasing the model tends to echo. The
    appendThinking() front-end filter is a second line of defense. */
 function thinkingSuffix(){
-  var highTutorGuidance = (appMode === "tutor" && typeof window.getReasoningEffort === "function" && window.getReasoningEffort() === "high")
+  var highTutorGuidance = (appMode === "tutor" && typeof getReasoningEffort === "function" && getReasoningEffort() === "high")
     ? "\n\n" + HIGH_EFFORT_OUTPUT_GUIDANCE
     : "";
   return highTutorGuidance + "\n\nKeep the user-facing reply focused on the answer. Do not emit <think> blocks or reasoning_content in the user-facing message.";
@@ -9572,7 +9569,7 @@ window.MAX_TOKENS_CHAT=MAX_TOKENS_CHAT;
    top-bar button flips it on. Initializing here keeps saveCurrentSession()
    and syncIncognitoBtn() reading a deterministic false instead of
    relying on `undefined` coercing to falsy. */
-window.incognitoOn=false;
+var incognitoOn=false;
 /* ============================================================
    API OVERRIDES — try API first (streaming when possible), fall back to mock.
    Each generator has TWO variants:
@@ -9836,7 +9833,7 @@ window.clearActiveTemplate = clearActiveTemplate;
 /* P_reasoning_budget — paired with the stream.js call at line 47.
    Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
    the default 60 s heartbeat mid-think and the stream aborts. */
-/* P_share-load-bridge — auth/boot.js:44 calls `window.loadSharedSession`
+/* P_share-load-bridge — auth/boot.js:44 calls `loadSharedSession`
    when a visitor opens `?share=TOKEN`, before any auth flow. Without
    this binding, that call throws TypeError, the surrounding try/catch
    silently swallows it, and the shared view never renders — the page
@@ -9854,17 +9851,11 @@ window.clearActiveTemplate = clearActiveTemplate;
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
 window.askChatTurn = askChatTurn;
-window.isExpectedTurnAbort = isExpectedTurnAbort;
 window.syncSidebarBtns = syncSidebarBtns;
-window.actuallyDeleteSession = actuallyDeleteSession;
-window.confirmPurgeSession = confirmPurgeSession;
 /* Agent mode placeholder (paired with the comment above on lines
    13112-13114). */
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
 window.loadSession = loadSession;
-window.openCmdKResult = openCmdKResult;
-window.openTagEditor = openTagEditor;
-window.restoreSession = restoreSession;
 window.toggleKBDetail = toggleKBDetail;
 window.refreshServerSessions = refreshServerSessions;
 window.refreshApiConfig = refreshApiConfig;
@@ -9891,7 +9882,6 @@ window.pushExamIdToURL = pushExamIdToURL;
    throw TypeError at runtime. */
 window.addMessage = addMessage;
 window.askNextQuestion = askNextQuestion;
-window.getExplanation = getExplanation;
 window.saveCurrentSession = saveCurrentSession;
 window.fetchWebContext = fetchWebContext;
 
@@ -9915,9 +9905,6 @@ window.sendFeedback = sendFeedback;
    here. Wiring them on window lets the React side re-trigger the
    same idempotent bookkeeping the legacy DOM pipeline runs on every
    bubble mount. */
-window.processPendingMermaid = processPendingMermaid;
-window.wireCodeBlockHeaders = wireCodeBlockHeaders;
-window.wireMsgBodyImages = wireMsgBodyImages;
 window.restorePersistedMessageExtras = restorePersistedMessageExtras;
 window.renderAssistantHTML = renderAssistantHTML;
 /* Bridge missing window.* assignments that React reads but were never
@@ -9925,15 +9912,11 @@ window.renderAssistantHTML = renderAssistantHTML;
    __socratesLegacy assembly below captures them. */
 window.showToast = showToast;
 window.resetApp = resetApp;
-window.signOut = signOut;
-window.processPendingViz = processPendingViz;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
-window.handleChatKey = handleChatKey;
 /* updateSlashSelected is referenced by inline onmouseenter handler
    in the slash command palette HTML (main.js:3666) but was never
    assigned to window — would throw ReferenceError on hover. */
-window.updateSlashSelected = updateSlashSelected;
 /* C4 — typed legacy gateway for React.  Assembles the structured
    window.__socratesLegacy object from the existing window.* bindings.
    React code reads this via getLegacyActions() from react/legacy/gateway.ts.
@@ -9946,7 +9929,7 @@ window.__socratesLegacy = {
     deleteUserMessage: window.deleteUserMessage,
     branchFromMessage: window.branchFromMessage,
     sendFeedback: window.sendFeedback,
-    toggleReadAloud: window.toggleReadAloud,
+    toggleReadAloud: toggleReadAloud,
     openShareModal: window.openShareModal,
     showToast: window.showToast,
   },
@@ -9960,23 +9943,23 @@ window.__socratesLegacy = {
     closeProfile: window.closeProfile,
     openUsageModal: window.openUsageModal,
     closeUsageModal: window.closeUsageModal,
-    openStorageModal: window.openStorageModal,
-    closeStorageModal: window.closeStorageModal,
-    openPromptTemplatesModal: window.openPromptTemplatesModal,
-    closePromptTemplatesModal: window.closePromptTemplatesModal,
+    openStorageModal: openStorageModal,
+    closeStorageModal: closeStorageModal,
+    openPromptTemplatesModal: openPromptTemplatesModal,
+    closePromptTemplatesModal: closePromptTemplatesModal,
     openCheatsheet: window.openCheatsheet,
-    closeCheatsheet: window.closeCheatsheet,
+    closeCheatsheet: closeCheatsheet,
     closeMorePopover: window.closeMorePopover,
-    toggleDisplayPrefs: window.toggleDisplayPrefs,
-    signOut: window.signOut,
+    toggleDisplayPrefs: toggleDisplayPrefs,
+    signOut: signOut,
   },
   settings: {
-    toggleAPI: window.toggleAPI,
+    toggleAPI: toggleAPI,
     addProvider: window.addProvider,
-    clearSettings: window.clearSettings,
-    saveSettings: window.saveSettings,
-    renderProviderList: window.renderProviderList,
-    syncSettingsUI: window.syncSettingsUI,
+    clearSettings: clearSettings,
+    saveSettings: saveSettings,
+    renderProviderList: renderProviderList,
+    syncSettingsUI: syncSettingsUI,
   },
   confirm: {
     showConfirm: window.showConfirm,
@@ -9990,12 +9973,12 @@ window.__socratesLegacy = {
     retryRecentsFetch: retryRecentsFetch,
     clearRecentsFilter: clearRecentsFilter,
     onRecentsFilterChipClick: window.onRecentsFilterChipClick,
-    openTagEditor: window.openTagEditor,
-    deleteSession: window.actuallyDeleteSession,
-    onSessionDragStart: window.onSessionDragStart,
-    onSessionDragEnd: window.onSessionDragEnd,
-    restoreSession: window.restoreSession,
-    confirmPurgeSession: window.confirmPurgeSession,
+    openTagEditor: openTagEditor,
+    deleteSession: actuallyDeleteSession,
+    onSessionDragStart: onSessionDragStart,
+    onSessionDragEnd: onSessionDragEnd,
+    restoreSession: restoreSession,
+    confirmPurgeSession: confirmPurgeSession,
   },
   composer: {
     openAttachmentPicker: window.openAttachmentPicker,
@@ -10003,7 +9986,7 @@ window.__socratesLegacy = {
     researchAction: window.researchAction,
     deepResearchAction: window.deepResearchAction,
     analyzeAction: window.analyzeAction,
-    toggleExtensionByKey: window.toggleExtensionByKey,
+    toggleExtensionByKey: toggleExtensionByKey,
     removeAttachment: window.removeAttachment,
     renderAttachmentChips: window.renderAttachmentChips,
     startSession: startSession,
@@ -10015,22 +9998,22 @@ window.__socratesLegacy = {
     closeCmdK: window.closeCmdK,
     onCmdKInput: window.onCmdKInput,
     onCmdKKey: window.onCmdKKey,
-    openCmdKResult: window.openCmdKResult,
+    openCmdKResult: openCmdKResult,
   },
   share: {
-    selectShareVis: window.selectShareVis,
+    selectShareVis: selectShareVis,
     createShareLink: window.createShareLink,
-    copyShareLink: window.copyShareLink,
+    copyShareLink: copyShareLink,
     revokeShareLink: window.revokeShareLink,
     closeShareModal: window.closeShareModal,
   },
   profile: {
-    saveProfileName: window.saveProfileName,
-    onCustomInstructionsChange: window.onCustomInstructionsChange,
-    toggleProfileWebSearch: window.toggleProfileWebSearch,
-    confirmClearCache: window.confirmClearCache,
-    confirmClearSettings: window.confirmClearSettings,
-    confirmDeleteAccount: window.confirmDeleteAccount,
+    saveProfileName: saveProfileName,
+    onCustomInstructionsChange: onCustomInstructionsChange,
+    toggleProfileWebSearch: toggleProfileWebSearch,
+    confirmClearCache: confirmClearCache,
+    confirmClearSettings: confirmClearSettings,
+    confirmDeleteAccount: confirmDeleteAccount,
     setLang: window.setLang,
   },
   workspace: {
@@ -10064,23 +10047,23 @@ window.__socratesLegacy = {
     deleteScheduledTask: window.deleteScheduledTask,
   },
   postRender: {
-    processPendingMermaid: window.processPendingMermaid,
-    processPendingViz: window.processPendingViz,
+    processPendingMermaid: processPendingMermaid,
+    processPendingViz: processPendingViz,
     processPendingVizActions: window.processPendingVizActions,
-    wireCodeBlockHeaders: window.wireCodeBlockHeaders,
-    wireMsgBodyImages: window.wireMsgBodyImages,
+    wireCodeBlockHeaders: wireCodeBlockHeaders,
+    wireMsgBodyImages: wireMsgBodyImages,
     restorePersistedMessageExtras: window.restorePersistedMessageExtras,
     /* P_declarative-tool-run — react/tool-run renders a tool row's non-text
        output (chart spec, saved files) from toolCalls[] instead of having
        restorePersistedMessageExtras insert a sibling node after the row. Both
        mounters dedup by id, so the two paths sharing one host is harmless. */
     mountVisualization: function (spec, host, options) {
-      return typeof window.mountVisualization === 'function'
-        ? window.mountVisualization(spec, host, options) : null;
+      return typeof mountVisualization === 'function'
+        ? mountVisualization(spec, host, options) : null;
     },
     appendInlineArtifact: function (fileId, mimeType, outEl, displayName) {
-      if (typeof window.appendInlineArtifact === 'function') {
-        window.appendInlineArtifact(fileId, mimeType, outEl, displayName);
+      if (typeof appendInlineArtifact === 'function') {
+        appendInlineArtifact(fileId, mimeType, outEl, displayName);
       }
     },
   },
@@ -10131,12 +10114,22 @@ syncExtensionsUI();
 syncAppModeUI();
 syncSidebarForMode();
 /* Init tone presets and memory store. */
-if (typeof window.loadTonePreset === "function") window.loadTonePreset();
-if (typeof window.loadMemories === "function") window.loadMemories();
+if (typeof loadTonePreset === "function") loadTonePreset();
+if (typeof loadMemories === "function") loadMemories();
 /* M4 step 4.3a — the auth gate owns its own tab/link/form listeners;
    keep it out of the document-wide data-action dispatcher. */
 mountAuthListeners();
 import { installModalA11y } from './ui/modalA11y.js';
+import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
+
+import { toggleReadAloud } from './ui/readAloud.js';
+
+import { injectMemoryContext, loadMemories } from './storage/memoryStore.js';
+
+import { loadTonePreset, getTonePreset, getToneVoice } from './config/tonePresets.js';
+
+import { mountVisualization, disposeVisualizations } from './render/visualization.js';
+
 installModalA11y({ overlayId: 'cmdKOverlay', closeFn: function () { if (typeof window.closeCmdK === 'function') window.closeCmdK(); } });
 installModalA11y({ overlayId: 'shareOverlay', closeFn: function () { if (typeof window.closeShareModal === 'function') window.closeShareModal(); } });
 installModalA11y({ overlayId: 'usageOverlay', closeFn: function () { if (typeof window.closeUsageModal === 'function') window.closeUsageModal(); } });
@@ -10180,7 +10173,6 @@ mountUsageListeners();
    stream instead of flashing raw $$…$$ until the 270 KB script arrives
    mid-turn (the onKatexReady re-render remains as the slow-network
    fallback). */
-window.__socratesEnsureHighlight = ensureHighlight;
 window.__socratesEnsureFuse = ensureFuse;
 function _loadIdleVendors(){
   try{ensureHighlight().catch(function(){})}catch(_){}

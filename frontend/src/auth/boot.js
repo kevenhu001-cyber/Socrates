@@ -10,6 +10,12 @@
 import { apiFetch } from '../util/api.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
+import { loadSharedSession } from '../ui/share.js';
+
+import { showAuthView, submitAuthVerify, afterAuthEnter } from './index.js';
+
+import { renderUserFooter } from '../ui/profile.js';
+
 /* Hoisted flag — `var` so it's available to refreshApiConfig()
    even if the boot IIFE completes before that function is defined. */
 export var SERVER_HAS_BEAGLE_KEY=false;
@@ -33,7 +39,7 @@ export async function authBoot(){
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(devUser);
     else window.CURRENT_USER=devUser;
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
-    if(typeof window.afterAuthEnter==="function")try{await window.afterAuthEnter()}catch(_){}
+    if(typeof afterAuthEnter==="function")try{await afterAuthEnter()}catch(_){}
     window.hideGate&&window.hideGate();
     return;
   }
@@ -59,7 +65,7 @@ export async function authBoot(){
     /* Shared session view — load immediately, no auth needed for public. */
     history.replaceState(null,"",location.pathname);
     try{
-      var sharePromise = window.loadSharedSession(shareToken);
+      var sharePromise = loadSharedSession(shareToken);
       if (sharePromise && typeof sharePromise.then === "function") {
         await sharePromise;
       }
@@ -73,7 +79,7 @@ export async function authBoot(){
   if(token){
     history.replaceState(null,"",location.pathname+(params.get("redirect")?"?redirect="+encodeURIComponent(params.get("redirect")):""));
     window.showGate&&window.showGate();
-    if(typeof window.submitAuthVerify==="function")await window.submitAuthVerify(token);
+    if(typeof submitAuthVerify==="function")await submitAuthVerify(token);
     return;
   }
   /* Password reset link — show the reset form immediately. */
@@ -81,7 +87,7 @@ export async function authBoot(){
     history.replaceState(null,"",location.pathname);
     window.showGate&&window.showGate();
     window.__resetToken=resetToken;
-    window.showAuthView&&window.showAuthView("authResetPasswordView");
+    showAuthView&&showAuthView("authResetPasswordView");
     document.querySelectorAll(".auth-tab").forEach(function(t){
       t.classList.remove("active");
       t.setAttribute("aria-selected","false");
@@ -173,7 +179,7 @@ export async function authBoot(){
     /* Grace window for the Set-Cookie to settle (see notes in
      * markAuthSuccess). */
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
-    if(typeof window.afterAuthEnter==="function")await window.afterAuthEnter();
+    if(typeof afterAuthEnter==="function")await afterAuthEnter();
     window.hideGate&&window.hideGate();
     /* The one-time mobile web-session consume route leaves an allow-listed
        target in the query. Open it only after normal authenticated hydration
@@ -187,7 +193,7 @@ export async function authBoot(){
   window.showGate&&window.showGate();
   window.showAuthSignin&&window.showAuthSignin();
   try{window.showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
-  if(typeof window.renderUserFooter==="function")window.renderUserFooter();
+  if(typeof renderUserFooter==="function")renderUserFooter();
 }
 
 /* Run the boot. Wrapped in a .catch to keep the page responsive

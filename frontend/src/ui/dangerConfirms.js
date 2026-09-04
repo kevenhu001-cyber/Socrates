@@ -14,6 +14,12 @@
 
 import { stateStore } from '../state/store.js';
 
+import { LAST_ACTIVE_ID_KEY } from '../config/providers.js';
+
+import { syncSettingsUI, renderProviderList } from './settings.js';
+
+import { renderUserFooter } from './profile.js';
+
 function confirmClearCache() {
   window.showConfirm(window.t("confirm.clearConversations.title"), window.t("confirm.clearConversations.msg"), false).then(function (yes) {
     if (yes !== true) { return; }
@@ -44,10 +50,10 @@ function confirmClearSettings() {
       apiConfig.activeId = null;
       apiConfig.providers = [Object.assign({}, window.BEAGLE_BUILT_IN)];
       try { localStorage.removeItem("socrates-provider-keys"); } catch { /* ignore */ }
-      try { localStorage.removeItem(window.LAST_ACTIVE_ID_KEY); } catch { /* ignore */ }
-      window.renderProviderList();
+      try { localStorage.removeItem(LAST_ACTIVE_ID_KEY); } catch { /* ignore */ }
+      renderProviderList();
       window.syncModelPills();
-      window.syncSettingsUI();
+      syncSettingsUI();
       window.closeProfile();
     }).catch(function(){});
   }).catch(function(){});
@@ -67,7 +73,7 @@ function confirmDeleteAccount() {
         window.resetState();
         window.resetApp();
         window.showGate();
-        window.renderUserFooter();
+        renderUserFooter();
         window.closeProfile();
         window.showAuthSignin();
       } catch (e) {

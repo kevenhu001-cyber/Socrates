@@ -18,6 +18,8 @@ import {
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
 
+import { pickStreamBudgets } from '../config/providers.js';
+
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
 }
@@ -75,8 +77,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* P_reasoning_budget — pick the silence/total budget per provider.
      Reasoning models stream 30-90s of sparse thinking tokens; a 60s
      heartbeat on them would falsely trip "stalled" and waste a retry. */
-  var _budget=(typeof window.pickStreamBudgets==="function"
-    ? window.pickStreamBudgets()
+  var _budget=(typeof pickStreamBudgets==="function"
+    ? pickStreamBudgets()
     : { timeoutMs: window.STREAM_TIMEOUT_MS||240000, heartbeatMs: window.STREAM_HEARTBEAT_MS||45000 });
   var STREAM_TIMEOUT_MS=_budget.timeoutMs;
   var STREAM_HEARTBEAT_MS=_budget.heartbeatMs;
