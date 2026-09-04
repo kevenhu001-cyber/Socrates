@@ -17,6 +17,7 @@ import sessionRouter from './routes/sessions.js';
 import suggestionsRouter from './routes/suggestions.js';
 import chatRouter from './routes/chat.js';
 import ttsRouter from './routes/tts.js';
+import ragRouter from './routes/rag.js';
 import apiKeyRouter from './routes/apiKeys.js';
 import shareRouter from './routes/share.js';
 import publicShareRouter from './routes/publicShares.js';
@@ -492,6 +493,11 @@ app.use('/api/sessions', sessionRouter);
 // /api/suggestions/* paths are not claimed by the chat router.
 app.use('/api/suggestions', suggestionsRouter);
 app.use('/api/tts', ttsRouter);
+// P_session-chunks — session-scoped BM25 retrieval over a session's
+// own history. Used by the chat surface to surface related past
+// messages; the search is in-memory over session_chunks and is
+// owned-checked before any retrieval.
+app.use('/api/rag', ragRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);

@@ -211,6 +211,33 @@ export const ttsResults = pgTable('tts_results', {
 ]);
 
 /* ──────────────────────────────────────────────
+   Session chunks (M3 deferred; LobeHub-alignment M3)
+   ────────────────────────────────────────────── */
+export const sessionChunks = pgTable('session_chunks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  messageId: uuid('message_id').notNull()
+    .references(() => messages.id, { onDelete: 'cascade' }),
+  /* session_id is denormalized off messages for one fast path: a
+     session-scoped retrieval can scan the index on session_id alone
+     and skip the join. Kept in sync via the chunkIndex service. */
+  sessionId: uuid('session_id').notNull()
+    .references(() => sessions.id, { onDelete: 'cascade' }),
+  ordinal: integer('ordinal').notNull(),     // chunk index within the message
+  text: text('text').notNull(),
+  startOffset: integer('start_offset').notNull(),
+  endOffset: integer('end_offset').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  /* A message's chunks are an ordered list; the (message, ordinal)
+     pair is the natural key. A re-index of the same message
+     upserts under this key, so chunking is idempotent. */
+  uniqueIndex('session_chunks_message_ordinal_idx')
+    .on(table.messageId, table.ordinal),
+  /* Drives the session-scoped BM25 retrieval in chunkIndex.searchSessionChunks. */
+  index('session_chunks_session_id_idx').on(table.sessionId),
+]);
+
+/* ──────────────────────────────────────────────
    Feedback
    ────────────────────────────────────────────── */
 export const feedback = pgTable('feedback', {
