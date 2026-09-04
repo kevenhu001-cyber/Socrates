@@ -19,6 +19,7 @@ import chatRouter from './routes/chat.js';
 import ttsRouter from './routes/tts.js';
 import ragRouter from './routes/rag.js';
 import embeddingConfigRouter from './routes/embeddingConfig.js';
+import systemModelsRouter from './routes/systemModels.js';
 import apiKeyRouter from './routes/apiKeys.js';
 import shareRouter from './routes/share.js';
 import publicShareRouter from './routes/publicShares.js';
@@ -502,6 +503,9 @@ app.use('/api/rag', ragRouter);
 // Admin-managed embedding provider config. Gates the vector layer of
 // the /api/rag hybrid search; requires role='admin'.
 app.use('/api/embedding-config', embeddingConfigRouter);
+// Admin-managed built-in (Beagle) system model. The admin picks which
+// OpenAI-compatible provider backs the anonymous/default path.
+app.use('/api/system-models', systemModelsRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);

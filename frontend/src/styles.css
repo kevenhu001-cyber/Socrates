@@ -2208,6 +2208,32 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .settings-overlay.hidden{display:none}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .settings-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
+
+/* Admin modal — system model + embedding provider config. Shares the
+   modal-overlay / modal-card / modal-head conventions above; adds the
+   two-section form layout and the admin gate error styling. */
+.admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.admin-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
+.admin-body{padding:0 18px 18px;display:flex;flex-direction:column;gap:20px}
+.admin-section{display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
+.admin-section:first-child{border-top:0;padding-top:14px}
+.admin-section h3{font-size:13px;font-weight:600;color:hsl(var(--text-100));margin:0}
+.admin-hint{font-size:11.5px;color:hsl(var(--text-400));margin:0;line-height:1.5}
+.admin-empty{font-size:12px;color:hsl(var(--text-400));margin:0}
+.admin-loading{padding:20px 18px;font-size:13px;color:hsl(var(--text-400))}
+.admin-gate-error,.admin-error{margin:14px 18px;padding:10px 12px;border-radius:8px;background:hsl(0 60% 30%/0.18);border:0.5px solid hsl(0 60% 40%/0.4);color:hsl(0 70% 78%);font-size:12px}
+.admin-section label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:hsl(var(--text-300))}
+.admin-section input[type="text"],.admin-section input[type="url"],.admin-section input[type="password"],.admin-section input[type="number"]{padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:13px;font-family:inherit}
+.admin-section input:focus{outline:none;border-color:hsl(var(--accent-000))}
+.admin-checkbox{flex-direction:row!important;align-items:center;gap:8px!important}
+.admin-key-present{font-size:11px;color:hsl(var(--text-500));font-weight:400}
+.admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-save{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0;background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.admin-save:hover{filter:brightness(1.1)}
+.admin-save:disabled{opacity:0.5;cursor:not-allowed}
+.admin-remove{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid hsl(0 60% 30%/0.5);background:transparent;color:hsl(0 60% 70%)}
+.admin-remove:hover{background:hsl(0 60% 30%/0.4)}
+.admin-remove:disabled{opacity:0.5;cursor:not-allowed}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .settings-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
 .settings-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
