@@ -557,6 +557,44 @@ no-injection; the chat turn never fails because RAG failed. The
 SPA builder (`chat/api.js#buildChatRequestBody`) sets
 `ragSessionId` from the active session id.
 
+Admin console v3 — public-exposure hardening (2026-09-05): the
+independent-password gate was reviewed against a public-internet
+threat model and four gaps closed. (1) Slow hash: ADMIN_PASSWORD
+is now bcrypt-hashed once (cost 12, the same BCRYPT_ROUNDS as
+user passwords) and memoized — every verification is a
+bcrypt.compare, so an online guess costs ~100ms+ of CPU instead
+of a microsecond HMAC digest; the memo is keyed to the source
+string so a rotation via env reload re-hashes on the next
+attempt without a restart, and a bcrypt failure fails closed.
+(2) Key separation: admin session tokens are signed under a key
+derived from SESSION_SECRET with a domain-separation label
+(`socrates:admin-session:v1`), never the raw user-session
+secret, and the token payload now begins with a purpose segment
+(`admin-session:v1.<random>.<expiry>.<hmac>`) that is itself
+covered by the signature — a user-session token cannot be
+replayed as an admin token. (3) IP allowlist:
+`ADMIN_IP_ALLOWLIST` (comma-separated exact IPs and/or IPv4
+CIDRs; IPv6 exact-string only, `::ffff:`-mapped v4 normalised)
+gates the login route, the /verify check, AND every
+requireAdminSession config request — a token exfiltrated from an
+allowlisted machine is worthless when replayed from outside the
+allowlist, and a blocked client gets an identical 403 before any
+credential work so the endpoint never reveals whether
+ADMIN_PASSWORD is set. Unset = allow all (documented; setting it
+is recommended for public exposure). (4) Login-failure lockout:
+the DB-backed `login_failures` table (services/loginLockout.ts)
+is reused under the `admin-ip:<ip>` key namespace so the lockout
+is process-global across cluster workers; the lockout helpers
+now take an optional threshold (default 5 for user logins,
+3 for admin) and the check runs BEFORE the bcrypt compare so a
+locked-out attacker never gets another slow-hash attempt. The
+login route also mounts a dedicated 5-attempts/15min/IP
+`adminLoginLimiter` (separate budget from the shared
+authLimiter), and `GET /status` now returns `ipAllowed` so a
+legitimate admin behind a new office IP gets an actionable
+message instead of a silent failure. Test pass: adminAuth
+22/22 (was 10).
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean

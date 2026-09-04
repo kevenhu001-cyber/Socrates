@@ -24,10 +24,17 @@ import { Forbidden } from '../lib/errors.js';
 import {
   verifyAdminSessionToken,
   extractAdminToken,
+  isAdminIpAllowed,
 } from '../services/adminAuth.js';
 
 export async function requireAdminSession(req: Request, _res: Response, next: NextFunction) {
   try {
+    /* IP allowlist is enforced on every admin request, not just the
+       login: a session token exfiltrated from an allowlisted machine
+       is worthless when replayed from outside the allowlist. */
+    if (!isAdminIpAllowed(req.ip)) {
+      throw new Forbidden('This client IP is not permitted to reach the admin console.');
+    }
     const token = extractAdminToken(req);
     if (!token || !verifyAdminSessionToken(token)) {
       throw new Forbidden('Admin session required — sign in at /admin.');

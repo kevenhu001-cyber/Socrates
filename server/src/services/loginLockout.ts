@@ -30,7 +30,15 @@ import { loginFailures } from '../db/schema.js';
 
 const WINDOW_MS = 15 * 60 * 1000;       // 15 minutes
 const LOCKOUT_MS = 15 * 60 * 1000;      // 15 minutes
-const THRESHOLD = 5;                    // failed attempts to trigger lockout
+const THRESHOLD = 5;                    // failed attempts to trigger lockout (user-login default)
+
+/* Admin console threshold — a stricter budget than the user-login
+   default (3 instead of 5). The admin password is the only thing
+   standing between the internet and the provider configs, so the
+   cost of a legitimate typo (3 tries, then wait 15 minutes) is
+   acceptable for the extra resistance. Applied via the optional
+   `threshold` argument on checkLockout / recordFailure below. */
+const ADMIN_THRESHOLD = 3;
 
 /**
  * Best-effort prune of expired rows. Cheap because login_failures
@@ -52,11 +60,16 @@ async function pruneExpired() {
 }
 
 /**
- * Throw TooManyRequests if this email is currently locked out.
+ * Throw TooManyRequests if this key is currently locked out.
  * Call this BEFORE attempting the password comparison so the
  * failure doesn't even reach bcrypt.
+ *
+ * The optional `threshold` only governs the lockout *message* here
+ * (the check itself is threshold-agnostic — a row is either locked or
+ * not); the matching threshold must be passed to recordFailure so the
+ * counting and the messaging stay in sync.
  */
-export async function checkLockout(email: string) {
+export async function checkLockout(email: string, _threshold: number = THRESHOLD) {
   if (!email) return;
   // Lazy prune — runs once per call but is cheap.
   pruneExpired();
@@ -93,7 +106,7 @@ export async function checkLockout(email: string) {
  *   - If a lock is already in force, leave the row untouched so
  *     concurrent failures don't reset the lockout clock.
  */
-export async function recordFailure(email: string) {
+export async function recordFailure(email: string, threshold: number = THRESHOLD) {
   if (!email) return;
   const db = getDb();
   const key = email.toLowerCase();
@@ -122,7 +135,7 @@ export async function recordFailure(email: string) {
         END`,
         lockedUntil: sql`CASE
           WHEN ${loginFailures.lockedUntil} IS NOT NULL AND ${loginFailures.lockedUntil} > NOW() THEN ${loginFailures.lockedUntil}
-          WHEN ${loginFailures.count} + 1 >= ${THRESHOLD} THEN ${lockedUntil}
+          WHEN ${loginFailures.count} + 1 >= ${threshold} THEN ${lockedUntil}
           WHEN ${loginFailures.firstAt} < ${new Date(now.getTime() - WINDOW_MS)} THEN NULL
           ELSE ${loginFailures.lockedUntil}
         END`,
