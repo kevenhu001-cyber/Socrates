@@ -380,6 +380,31 @@ the entries the React tree actually consumes. Two audit scripts
 `scripts/audit-legacy-bag.mjs` for the typed legacy bag) are checked
 in so future batches can re-run the same reference analysis.
 
+M4 follow-up (2026-09-05): per-message TTS persistence. The
+ephemeral `TtsCache` LRU in `server/src/services/ttsCache.ts` was
+promoted to a two-tier cache with a durable
+`server/src/services/ttsStore.ts` backing it. A new
+`tts_results` table (`server/drizzle/0029_tts_results.sql`,
+FK `messages.id` ON DELETE CASCADE) stores the synthesized audio
+bytes keyed by `(message_id, voice, format, lang, text_hash)`. The
+`text_hash` is sha256 of the trimmed text, so an edit to the
+message content drops the stale row in `PATCH /api/messages`
+(only rows whose `text_hash` no longer matches are deleted — same-
+shape attachment-only edits keep their cached audio). A forged
+`messageId` cannot read or persist another user's audio because
+`ttsStore.verifyOwnership` re-joins `messages` × `sessions` on
+`user_id` on every lookup and every save. The wire contract for
+`POST /api/tts` is `text, lang, voice?, format?, messageId?` — the
+`messageId` is optional so legacy callers keep working. The SPA
+toolbar's read-aloud handler now forwards the assistant message's
+id (`useMessageActions.ts` → `legacy.messages.toggleReadAloud`,
+signature widened in `react/legacy/types.ts` to
+`(element, text, messageId?)`). The two new backend test files
+(`server/test/ttsStore.test.js`, `server/test/ttsRoute.test.js`)
+cover the pure helpers, the ownership gate, the round-trip of a
+saved row, the stale-hash miss, and the body-shape guard. Test
+pass: server 49/49 suites (was 47), frontend 323/323 unit tests.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean

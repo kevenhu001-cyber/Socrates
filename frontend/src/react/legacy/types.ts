@@ -14,7 +14,10 @@ export interface LegacyMessages {
   deleteUserMessage(messageId: string): Promise<void> | void;
   branchFromMessage(messageId: string, options?: { reExplain?: boolean }): Promise<void> | void;
   sendFeedback(messageId: string, value: 'up' | 'down'): void;
-  toggleReadAloud(element: HTMLElement, text: string): void;
+  /* P_tts-persist — optional messageId is forwarded to /api/tts so
+     the synthesized audio can be persisted in tts_results and
+     replayed for free on subsequent reads of the same message. */
+  toggleReadAloud(element: HTMLElement, text: string, messageId?: string): void;
   openShareModal(): void;
   showToast?(message: string): void;
 }

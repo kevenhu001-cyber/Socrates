@@ -1,7 +1,15 @@
 import { sql } from 'drizzle-orm';
 import {
-  pgTable, uuid, text, timestamp, boolean, integer, jsonb, varchar, uniqueIndex, index,
+  pgTable, uuid, text, timestamp, boolean, integer, jsonb, varchar, uniqueIndex, index, customType,
 } from 'drizzle-orm/pg-core';
+
+/* bytea — Postgres binary type. Used by tts_results.audio to persist
+   synthesized speech bytes without base64 inflation. The custom type
+   maps to the Buffer JS shape that routes/tts.ts already works with,
+   so no extra encode/decode hops in the request path. */
+const bytea = customType<{ data: Buffer; notNull: false; default: false }>({
+  dataType: () => 'bytea',
+});
 
 /* ──────────────────────────────────────────────
    Auth sessions (sid cookie → user mapping)
@@ -174,6 +182,32 @@ export const messages = pgTable('messages', {
      in unique indexes, so multiple NULL-clientId messages coexist. */
   uniqueIndex('messages_session_client_id_idx').on(table.sessionId, table.clientId),
   index('messages_agent_run_id_idx').on(table.agentRunId),
+]);
+
+/* ──────────────────────────────────────────────
+   TTS results (M4 follow-up: per-message voice persistence)
+   ────────────────────────────────────────────── */
+export const ttsResults = pgTable('tts_results', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  messageId: uuid('message_id').notNull()
+    .references(() => messages.id, { onDelete: 'cascade' }),
+  voice: text('voice').notNull(),
+  format: text('format').notNull(),         // 'mp3' | 'opus' | 'wav'
+  lang: text('lang').notNull(),             // 2-letter; 'en' | 'zh' | …
+  textHash: text('text_hash').notNull(),    // sha256 of trimmed text — change = stale
+  audio: bytea('audio').notNull(),
+  contentType: text('content_type').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  /* The same (message, voice, format, lang) is a single cell: the next
+     read of the same message in the same shape must return the same
+     bytes. A voice/lang/format change naturally produces a new row;
+     the previous one stays correct. */
+  uniqueIndex('tts_results_message_voice_format_lang_idx')
+    .on(table.messageId, table.voice, table.format, table.lang),
+  /* Drives stale-on-edit detection in PATCH /api/messages. */
+  index('tts_results_message_id_idx').on(table.messageId),
 ]);
 
 /* ──────────────────────────────────────────────

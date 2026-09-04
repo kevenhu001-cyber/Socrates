@@ -13,6 +13,7 @@ import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
+import { invalidateForMessage, ttsTextHash } from '../services/ttsStore.js';
 
 /* P_attachments-shape — mirrors the per-message `attachments` shape
  * defined in routes/sessions.js (SessionPayloadSchema → messages[].attachments).
@@ -129,6 +130,19 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
      * another browser will then render. */
     const safeContent = sanitizeStoredHtml(content);
     const safeRaw = sanitizePlainText(content);
+    /* P_tts-persist — the cached read-aloud audio is keyed by the
+       sha256 of the trimmed text the read-aloud path feeds to
+       /api/tts. After the sanitized plain text is known, drop every
+       tts_results row whose hash no longer matches — same-shape edits
+       (attachment-only, metadata-only) keep their cached audio. The
+       helper swallows ownership / DB errors so a stale row at worst
+       triggers one re-synthesize on the next read-aloud, never an
+       HTTP error here. */
+    try {
+      await invalidateForMessage(msg.id, ttsTextHash(safeRaw));
+    } catch (err) {
+      console.warn('[messages] tts invalidation failed:', (err as Error).message);
+    }
     /* P_attachments — when the client explicitly sends `attachments`,
      * overwrite the stored array; otherwise keep the existing one so
      * a plain text-edit doesn't drop the thumbnails. We cap to 20 and
