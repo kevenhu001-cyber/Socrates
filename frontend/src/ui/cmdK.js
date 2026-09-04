@@ -1,4 +1,5 @@
 import { stateStore } from '../state/store.js';
+import { showToast } from './toast.js';
 
 /* ui/cmdK.js — Wave 1b of main-js-split plan.
  * Cmd-K global search palette: indexer (fuse.js), open/close, render,
@@ -236,10 +237,10 @@ function onCmdKKey(ev) {
             renderCmdKResultsHits(q, _cmdKResults);
             _publishCmdKState();
           } else {
-            window.showToast("No matches");
+            showToast("No matches");
           }
         }).catch(function () {
-          window.showToast("Search failed");
+          showToast("Search failed");
         });
       }
     }

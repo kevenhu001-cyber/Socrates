@@ -1,4 +1,5 @@
 import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upsertCustomTemplate } from '../chat/promptTemplates.js';
+import { showToast } from './toast.js';
 /* ui/promptTemplates.js — Wave 1d of main-js-split plan.
  * Prompt-templates modal: lists built-in and user templates, with edit and
  * delete actions. Extracted from main.js (post-Wave-1b): L9890-L10010.
@@ -137,13 +138,13 @@ function onPromptTemplateEditorSave(id) {
   var category = ((document.getElementById("ptCategory") || {}).value || "other");
   var body = ((document.getElementById("ptBody") || {}).value || "");
   var systemPrompt = ((document.getElementById("ptSystemPrompt") || {}).value || "");
-  if (!title) { window.showToast("Title is required"); return; }
-  if (!/^\/[a-z0-9-]+$/.test(shortcut)) { window.showToast("Shortcut must look like /my-template"); return; }
+  if (!title) { showToast("Title is required"); return; }
+  if (!/^\/[a-z0-9-]+$/.test(shortcut)) { showToast("Shortcut must look like /my-template"); return; }
   var existing = findTemplateByShortcut(shortcut);
-  if (existing && existing.id !== id) { window.showToast("That shortcut is already in use"); return; }
+  if (existing && existing.id !== id) { showToast("That shortcut is already in use"); return; }
   upsertCustomTemplate({ id: id, title: title, description: description, icon: icon || "pg", category: category, shortcut: shortcut, body: body, systemPrompt: systemPrompt, isBuiltin: false });
   renderPromptTemplatesModal();
-  window.showToast("Skill saved");
+  showToast("Skill saved");
 }
 
 export {

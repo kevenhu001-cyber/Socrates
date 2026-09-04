@@ -10,6 +10,7 @@
 // All inline handler references (window.renderAttachmentChips /
 // window.setupAttachmentInput) are re-bound in src/windowExports.js.
 import { attachments, addFiles } from '../attachments.js';
+import { showToast } from '../ui/toast.js';
 
 // i18n translator is bound on `window.t` by i18n.js. Resolve it lazily so
 // module evaluation order cannot freeze an English fallback before the
@@ -40,14 +41,6 @@ function _publishAttachments(){
   }catch(_){ /* swallow — bridge is best-effort */ }
 }
 
-/* showToast is still defined in main.js — we read it lazily so this
-   module doesn't take a hard dependency on main.js's internal state. */
-function toast(msg, ms){
-  if(typeof window !== "undefined" && typeof window.showToast === "function"){
-    window.showToast(msg, ms);
-  }
-}
-
 /* P_attachments-multimodal — surface the rejection via toast
    preferring the i18n-aware multimodal-gate message when every
    rejection is from the gate. */
@@ -58,10 +51,10 @@ function surfaceRejectionToast(res){
     return r.indexOf("active provider is not multimodal") !== -1;
   });
   if(hasMmRejection){
-    toast(translate("attach.notMultimodal")
+    showToast(translate("attach.notMultimodal")
       || "The active model can't view images. Add a multimodal provider or remove image attachments.");
   } else {
-    toast(res.rejected[0]);
+    showToast(res.rejected[0]);
   }
 }
 
@@ -102,7 +95,7 @@ export async function addComposerFiles(files, source){
   const res = await addFiles(list, renderAndRefresh, updateProgressOnly);
   refreshAllSendBtns();
   if(source === "paste" && res.added > 0){
-    toast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
+    showToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
   }
   surfaceRejectionToast(res);
   return res;
@@ -262,7 +255,7 @@ e.preventDefault();
     e.stopPropagation();
     const res = await addFiles(files, renderAndRefresh, updateProgressOnly);
     if(res.added > 0){
-        toast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
+        showToast(res.added + " file" + (res.added > 1 ? "s" : "") + " pasted");
       }
       surfaceRejectionToast(res);
     });

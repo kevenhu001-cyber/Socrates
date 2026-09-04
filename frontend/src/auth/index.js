@@ -15,6 +15,7 @@ import { apiFetch } from '../util/api.js';
 import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { stateStore } from '../state/store.js';
+import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.js';
 
 import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
 
@@ -300,17 +301,17 @@ export async function afterAuthEnter(){
      (?exam=<uuid>) so a pasted chat link can't accidentally open an exam
      and vice versa. Both keys share the /api/sessions/<id> endpoint, so
      loadSession() handles either via its existing kind==='exam' branch. */
-  var chatId=window.getChatIdFromURL&&window.getChatIdFromURL();
-  var examId=window.getExamIdFromURL&&window.getExamIdFromURL();
+  var chatId=getChatIdFromURL();
+  var examId=getExamIdFromURL();
   if(chatId){
     try{await window.loadSession(chatId)}catch {/* failed to load session */
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
-      window.setChatIdInURL&&window.setChatIdInURL(null);
+      setChatIdInURL(null);
     }
   }else if(examId){
     try{await window.loadSession(examId)}catch {/* failed to load session */
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
-      window.setExamIdInURL&&window.setExamIdInURL(null);
+      setExamIdInURL(null);
     }
   }
   /* Trigger initial data load. */

@@ -1,4 +1,5 @@
 import { getComposerMarkdown, insertComposerText } from '../react/composer-input/controller.ts';
+import { showToast } from './toast.js';
 
 let activeSession = null;
 
@@ -46,7 +47,7 @@ function setListening(surface, listening) {
 }
 
 function notify(message) {
-  if (typeof window.showToast === 'function') window.showToast(message);
+  showToast(message);
 }
 
 function stopTracks(stream) {

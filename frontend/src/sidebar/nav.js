@@ -1,5 +1,6 @@
 import { toggleMorePopover } from "./morePopover.js";
 import { stateStore } from "../state/store.js";
+import { showToast } from "../ui/toast.js";
 
 /* React migration bridge — publishes scheduled task state so the React
    compatibility root can render the page. Installed by
@@ -91,7 +92,7 @@ function t(key, fallback) {
 }
 function esc(value) { return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 function api(path, options) { return window.apiFetch(path, options); }
-function toast(message) { if (typeof window.showToast === "function") window.showToast(message); }
+function toast(message) { showToast(message); }
 function confirmAction(title, message) { return typeof window.showConfirm === "function" ? window.showConfirm(title, message, true) : Promise.resolve(window.confirm(message)); }
 function normaliseProviderId(provider) {
   return String(provider || "").toLowerCase().replace(/[_-]/g, "");

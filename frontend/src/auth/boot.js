@@ -8,6 +8,7 @@
    apiFetch, etc.). */
 
 import { apiFetch } from '../util/api.js';
+import { showToast } from '../ui/toast.js';
 import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.js';
 
 import { loadSharedSession } from '../ui/share.js';
@@ -49,7 +50,7 @@ export async function authBoot(){
     window.showGate&&window.showGate();
     window.showAuthSignin&&window.showAuthSignin();
     var msg="GitHub login failed: "+decodeURIComponent(oauthError)+".";
-    setTimeout(function(){try{window.showToast(msg,5000)}catch(_){}},500);
+    setTimeout(function(){try{showToast(msg,5000)}catch(_){}},500);
     return;
   }
   /* Also handle plain ?error= for backward compatibility. */
@@ -192,7 +193,7 @@ export async function authBoot(){
    * rather than yanking them to the sign-in form. */
   window.showGate&&window.showGate();
   window.showAuthSignin&&window.showAuthSignin();
-  try{window.showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
+  try{showToast("Couldn't reach the server. Check your connection and retry.",5000)}catch(_){}
   if(typeof renderUserFooter==="function")renderUserFooter();
 }
 

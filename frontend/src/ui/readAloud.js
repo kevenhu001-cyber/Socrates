@@ -39,8 +39,10 @@ function _supported() {
     && typeof window.SpeechSynthesisUtterance === "function";
 }
 
+import { showToast } from './toast.js';
+
 function _notify(msg) {
-  if (typeof window.showToast === "function") window.showToast(msg);
+  showToast(msg);
 }
 
 /* Pick a voice roughly matching the current UI language so zh replies

@@ -11,6 +11,8 @@
 // in-memory implementations so the ~8 "Tracking Prevention blocked
 // access to storage" warnings per tutor-mode turn go away.
 
+import { showToast } from './ui/toast.js';
+
 var _batchStoragePending = null;
 var _storageBlockedNotified = false;
 var _storageBlocked = false;
@@ -27,9 +29,7 @@ function _notifyStorageBlockedOnce() {
   if (_storageBlockedNotified) return;
   _storageBlockedNotified = true;
   try {
-    if (typeof window.showToast === "function") {
-      window.showToast("Browser tracking prevention blocked session storage — your chat won't persist across reloads. Open this site in a regular tab to save sessions.", 12000);
-    }
+    showToast("Browser tracking prevention blocked session storage — your chat won't persist across reloads. Open this site in a regular tab to save sessions.", 12000);
   } catch (_) {}
 }
 

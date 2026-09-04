@@ -7,6 +7,7 @@
 import { esc } from './render/helpers.js';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
 import { stateStore } from './state/store.js';
+import { showToast } from './ui/toast.js';
 
 /* P_init-sync — providers가 서버에서 로드되었는지 추적.
    syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
@@ -478,9 +479,7 @@ var EXTENSIONS=[
          window.launchDeepResearch();
        }else{
          focusComposer(surface);
-         if(typeof window.showToast === "function"){
-           window.showToast((typeof window.t === "function" && window.t("composer.deepResearch.hint")) || "Enter a research topic, then press send.");
-         }
+         showToast((typeof window.t === "function" && window.t("composer.deepResearch.hint")) || "Enter a research topic, then press send.");
        }
      }
      if(typeof window.syncQuickChips === "function") window.syncQuickChips();
