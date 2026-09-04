@@ -66,6 +66,28 @@ export function isUserAbort(error: unknown, signal?: AbortSignal): boolean {
     || reason === 'user stop'
     || reason === 'cancelled'
     || reason === 'canceled') return true;
+  /* P_session-abort — lifecycle aborts issued by the SPA itself
+     (auth expiry, session switch/delete/reset, turn superseded,
+     message edit/regen) are intentional control flow, not errors.
+     They must unwind the in-flight stream as a quiet cancel:
+     no retry, no error bubble, no global-error banner. Without
+     this, handleAuthExpired's `_activeChatAbort("session-expired")`
+     surfaced as `AbortError: session-expired` in an
+     unhandledrejection with a red banner. */
+  if (reason === 'session-expired'
+    || reason === 'session-switch'
+    || reason === 'session-switching'
+    || reason === 'session-deleted'
+    || reason === 'session-purged'
+    || reason === 'session-reset'
+    || reason === 'archived-session'
+    || reason === 'new-session'
+    || reason === 'superseded'
+    || reason === 'msg-edit'
+    || reason === 'msg-regen'
+    || reason === 'signout'
+    || reason === 'sign-out'
+    || reason === 'first-delta-timeout') return true;
   /* AbortController.abort() without an explicit reason is how the Codex
      Stop button cancels its turn. Timeout/heartbeat callers provide named
      reasons, so an unnamed DOM abort is safe to classify as user intent. */

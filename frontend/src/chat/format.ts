@@ -100,14 +100,25 @@ function handleChatApiResult(result: { cancelled?: boolean; text?: string } | nu
   } else {
     const lastCallError = stateStore.read('lastCallError') as string | null;
     const reason: string = lastCallError || 'empty response (no error detail)';
-    const isCancel = /cancel|user-stop|superseded|new-session|session-switch|session-deleted|session-purged|session-reset|msg-edit/i.test(reason);
+    const isCancel = /cancel|user-stop|superseded|new-session|session-switch|session-expired|session-deleted|session-purged|session-reset|archived-session|msg-edit|msg-regen|signout/i.test(reason);
     if (isCancel) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'cancelled' });
       ctl.abort();
     } else if (lastCallError) {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
       ctl.replaceWithError(lastCallError, function () {
-        if ((window as any).askChatTurn) (window as any).askChatTurn(userText);
+        /* P_turn-abort-quiet — the retried turn can itself abort
+           (session-expired races the retry click); guard the promise so
+           it never becomes an unhandledrejection + red banner. */
+        try {
+          const p = (window as any).askChatTurn(userText) as Promise<unknown> | undefined;
+          if (p && typeof p.catch === 'function') {
+            p.catch((e: unknown) => {
+              const quiet = (window as any).isExpectedTurnAbort;
+              if (typeof quiet === 'function' ? !quiet(e) : true) console.error('[chat] retry turn failed:', e);
+            });
+          }
+        } catch { /* retry dispatch failed — bubble already shows the error */ }
       });
     } else {
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
