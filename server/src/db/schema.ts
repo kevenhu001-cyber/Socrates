@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
-  pgTable, uuid, text, timestamp, boolean, integer, jsonb, varchar, uniqueIndex, index, customType,
+  pgTable, uuid, text, timestamp, boolean, integer, jsonb, varchar, uniqueIndex, index, customType, vector,
 } from 'drizzle-orm/pg-core';
 
 /* bytea — Postgres binary type. Used by tts_results.audio to persist
@@ -226,6 +226,12 @@ export const sessionChunks = pgTable('session_chunks', {
   text: text('text').notNull(),
   startOffset: integer('start_offset').notNull(),
   endOffset: integer('end_offset').notNull(),
+  /* P_session-chunks-embedding — optional pgvector re-ranking column.
+     Null when the chunk has not been embedded yet (provider not
+     configured, upstream failure, or BM25-only mode). The HNSW index
+     over cosine distance makes the re-ranking cheap; the null is
+     safe — a chunk without an embedding is still a valid BM25 hit. */
+  embedding: vector('embedding', { dimensions: 1536 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   /* A message's chunks are an ordered list; the (message, ordinal)
@@ -235,6 +241,27 @@ export const sessionChunks = pgTable('session_chunks', {
     .on(table.messageId, table.ordinal),
   /* Drives the session-scoped BM25 retrieval in chunkIndex.searchSessionChunks. */
   index('session_chunks_session_id_idx').on(table.sessionId),
+]);
+
+/* ──────────────────────────────────────────────
+   Embedding configuration (admin-managed)
+   ────────────────────────────────────────────── */
+export const embeddingConfig = pgTable('embedding_config', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /* The admin-managed embedding provider. Singleton-ish: the lookup
+     helper takes the most recently-updated row so an operator can
+     swap the config by re-inserting. */
+  label: text('label').notNull(),
+  url: text('url').notNull(),                 // OpenAI-compatible base, e.g. https://api.openai.com/v1
+  model: text('model').notNull(),             // e.g. text-embedding-3-small
+  keyCiphertext: text('key_ciphertext'),      // AES-256-GCM encrypted, same as api_keys
+  keyHint: text('key_hint'),
+  dimensions: integer('dimensions').notNull().default(1536),
+  isActive: boolean('is_active').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('embedding_config_active_idx').on(table.isActive),
 ]);
 
 /* ──────────────────────────────────────────────
