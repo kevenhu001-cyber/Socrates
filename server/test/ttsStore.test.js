@@ -26,6 +26,7 @@ import {
   saveTtsResult,
   invalidateForMessage,
 } from '../src/services/ttsStore.js';
+import { runExpiredCleanup } from '../src/services/cleanupDb.js';
 
 /* ── Pure part: ttsTextHash ────────────────────────────────────── */
 
@@ -231,5 +232,46 @@ describe('ttsStore.invalidateForMessage — stale-on-edit eviction', () => {
       .where(eq(ttsResults.messageId, TEST_MESSAGE_ID));
     assert.equal(rows.length, 1, 'only the matching-text row survives');
     assert.equal(rows[0].lang, 'zh', 'the non-matching row was dropped');
+  });
+});
+
+/* ── Cleanup sweep (M4 follow-up: 30-day retention) ─────────────── */
+
+describe('cleanupDb.runExpiredCleanup — tts_results retention sweep', () => {
+  test('drops tts_results rows older than TTS_RETENTION_DAYS, keeps recent ones', async (t) => {
+    if (!dbAvailable) return t.skip();
+    const db = getDb();
+
+    /* Backdate one row so the sweep sees it as expired. The
+       default retention is 30 days, so 60 days back is well past
+       the cutoff. We bypass saveTtsResult for the seeded row
+       because the helper stamps createdAt = now(). */
+    const audio = Buffer.from('ancient-audio');
+    const [{ id: ancientId }] = await db.insert(ttsResults).values({
+      messageId: TEST_MESSAGE_ID,
+      voice: 'alloy',
+      format: 'mp3',
+      lang: 'en',
+      textHash: ttsTextHash('ancient'),
+      audio,
+      contentType: 'audio/mpeg',
+      byteSize: audio.length,
+      createdAt: new Date(Date.now() - 60 * 86400000),
+    }).returning({ id: ttsResults.id });
+    /* And one fresh row that must survive. */
+    const fresh = Buffer.from('fresh-audio');
+    await saveTtsResult(
+      TEST_MESSAGE_ID, TEST_USER_ID, 'alloy', 'mp3', 'en',
+      ttsTextHash('fresh'), fresh, 'audio/mpeg',
+    );
+
+    await runExpiredCleanup();
+
+    const remaining = await db.select().from(ttsResults)
+      .where(eq(ttsResults.messageId, TEST_MESSAGE_ID));
+    const ids = remaining.map((r) => r.id);
+    assert.ok(!ids.includes(ancientId), 'ancient row was reaped');
+    const freshRow = remaining.find((r) => r.textHash === ttsTextHash('fresh'));
+    assert.ok(freshRow, 'fresh row survived the sweep');
   });
 });

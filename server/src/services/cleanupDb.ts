@@ -14,6 +14,7 @@ import {
   authSessions, pendingRegistrations, verificationTokens,
   usageEvents, auditEvents, executions, files,
   statusMonitorEvents, statusSubscribers,
+  ttsResults,
 } from '../db/schema.js';
 import { codeInterpreter } from './codeInterpreter.js';
 
@@ -35,6 +36,13 @@ const EXEC_RETENTION_DAYS = Math.max(1, parseInt(process.env.EXEC_RETENTION_DAYS
  *    stale and reaped after a short grace period. */
 const STATUS_EVENTS_RETENTION_DAYS = Math.max(90, parseInt(process.env.STATUS_EVENTS_RETENTION_DAYS || '120', 10));
 const STATUS_UNCONFIRMED_RETENTION_DAYS = Math.max(1, parseInt(process.env.STATUS_UNCONFIRMED_RETENTION_DAYS || '7', 10));
+
+/* TTS results (M4 follow-up) — a row holds up to ~2 MB of MP3. After
+   TTS_RETENTION_DAYS we drop the row; the next read-aloud of the
+   message re-synthesizes. Capped at the in-process TtsCache's
+   30-minute TTL on the lower end so a "set 0 to disable" override
+   is still observable. */
+const TTS_RETENTION_DAYS = Math.max(1, parseInt(process.env.TTS_RETENTION_DAYS || '30', 10));
 
 /**
  * Delete every expired row from authSessions, pendingRegistrations,
@@ -93,6 +101,17 @@ export async function runExpiredCleanup() {
       .where(and(lt(statusSubscribers.createdAt, unconfirmedCutoff), sql`${statusSubscribers.confirmedAt} IS NULL`))
       .returning({ id: statusSubscribers.id });
 
+    /* TTS audio rows older than TTS_RETENTION_DAYS. The audio bytes are
+       the largest line item — a 2 MB MP3 row × every assistant message
+       × every voice/language combination × every user adds up. Cascade
+       on messages.id already handles message deletion; this sweep
+       handles the "message is still alive but nobody's read it aloud
+       for a month" case. */
+    const ttsCutoff = new Date(now.getTime() - TTS_RETENTION_DAYS * 86400000);
+    const expiredTts = await db.delete(ttsResults)
+      .where(lt(ttsResults.createdAt, ttsCutoff))
+      .returning({ id: ttsResults.id, byteSize: ttsResults.byteSize });
+
     /* Best-effort scratch-dir reap. The code interpreter owns the
        owner-namespaced directory layout, so cleanup must call its public
        helper rather than reconstruct a path from an execution ID. Session
@@ -110,14 +129,16 @@ export async function runExpiredCleanup() {
 
     const total = expiredAuth.length + expiredPending.length + expiredTokens.length
       + expiredUsage.length + expiredAudit.length + expiredExec.length
-      + expiredStatusEvents.length + expiredSubs.length;
+      + expiredStatusEvents.length + expiredSubs.length + expiredTts.length;
     if (total > 0) {
+      const ttsBytes = expiredTts.reduce((s, r) => s + (r.byteSize || 0), 0);
       console.log(
         `[cleanup] Removed ${expiredAuth.length} session(s), ${expiredPending.length} pending, ` +
         `${expiredTokens.length} token(s), ${expiredUsage.length} usage event(s), ` +
         `${expiredAudit.length} audit event(s), ${expiredExec.length} execution(s) ` +
         `(${reapedScratch} scratch dir(s)), ${expiredStatusEvents.length} status event(s), ` +
-        `${expiredSubs.length} unconfirmed subscriber(s)`
+        `${expiredSubs.length} unconfirmed subscriber(s), ` +
+        `${expiredTts.length} tts row(s) (${(ttsBytes / 1024 / 1024).toFixed(2)} MB)`
       );
     }
   } catch (err) {
@@ -140,7 +161,8 @@ export function startExpiredCleanup(intervalMs = 60 * 60 * 1000) {
   console.log(
     `[cleanup] Started — running every ${Math.round(intervalMs / 60000)} min ` +
     `(usage ${USAGE_RETENTION_DAYS}d, audit ${AUDIT_RETENTION_DAYS}d, exec ${EXEC_RETENTION_DAYS}d, ` +
-    `status-events ${STATUS_EVENTS_RETENTION_DAYS}d, unconfirmed-subs ${STATUS_UNCONFIRMED_RETENTION_DAYS}d)`
+    `status-events ${STATUS_EVENTS_RETENTION_DAYS}d, unconfirmed-subs ${STATUS_UNCONFIRMED_RETENTION_DAYS}d, ` +
+    `tts ${TTS_RETENTION_DAYS}d)`
   );
 }
 
