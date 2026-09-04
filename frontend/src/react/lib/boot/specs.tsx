@@ -20,7 +20,7 @@ import { hydrateProfileModal } from '../../profileModal';
 import { hydrateShareModal } from '../../shareModal';
 import { hydrateUsageModal } from '../../usageModal';
 import { mountScheduledPage } from '../../pages/scheduled';
-import { mountAdminModal } from '../../adminModal';
+import { mountAdminModal, mountAdminPage } from '../../adminModal';
 import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
 import { mountWorkspacePage } from '../../pages/workspace';
 import { mountStorageModal } from '../../storageModal';
@@ -122,6 +122,11 @@ export function mountRegistryList(): MountSpec[] {
     } },
     { hostId: 'libraryPanel', label: 'workspace-page', mount: () => {
       window.__socratesMountWorkspace = (page: string) => mountWorkspacePage(page);
+    } },
+    /* /admin operator console — the React page mounts into the
+       static #adminPanelBody when the sidebar routes to it. */
+    { hostId: 'adminPanel', label: 'admin-page', mount: () => {
+      window.__socratesMountAdmin = () => mountAdminPage();
     } },
     { hostId: 'spacesPanel', label: 'workspace-page', mount: () => undefined },
     { hostId: 'pluginsPanel', label: 'workspace-page', mount: () => undefined },

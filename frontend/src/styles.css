@@ -2234,6 +2234,22 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .admin-remove{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid hsl(0 60% 30%/0.5);background:transparent;color:hsl(0 60% 70%)}
 .admin-remove:hover{background:hsl(0 60% 30%/0.4)}
 .admin-remove:disabled{opacity:0.5;cursor:not-allowed}
+
+/* Admin console page (/admin) — a main-content page like the other
+   workspace panels, styled with the same form controls as the modal
+   variant so the two surfaces stay visually consistent. */
+.admin-panel{padding:24px;overflow-y:auto}
+.admin-panel-body{max-width:640px;margin:0 auto}
+.admin-console{display:flex;flex-direction:column;gap:20px}
+.admin-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.admin-console-head h2{font-size:17px;font-weight:600;color:hsl(var(--text-100));margin:0}
+.admin-login{max-width:360px;margin:48px auto;display:flex;flex-direction:column;gap:10px}
+.admin-login h2{font-size:17px;font-weight:600;color:hsl(var(--text-100));margin:0}
+.admin-login label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:hsl(var(--text-300))}
+.admin-login input[type="password"]{padding:8px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:13px}
+.admin-login input:focus{outline:none;border-color:hsl(var(--accent-000))}
+.admin-login form{display:flex;flex-direction:column;gap:10px}
+.admin-login .admin-save{align-self:flex-start}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .settings-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
 .settings-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}

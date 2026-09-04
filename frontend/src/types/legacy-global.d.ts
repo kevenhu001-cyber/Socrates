@@ -68,6 +68,7 @@ declare global {
 
     __socratesMountScheduled?: () => void;
     __socratesMountWorkspace?: (page: string) => void;
+    __socratesMountAdmin?: () => void;
 
     /** Set by the read-only share view before it renders #msgList itself. */
     __socratesShareMsgListTakeover?: boolean;

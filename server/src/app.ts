@@ -20,6 +20,7 @@ import ttsRouter from './routes/tts.js';
 import ragRouter from './routes/rag.js';
 import embeddingConfigRouter from './routes/embeddingConfig.js';
 import systemModelsRouter from './routes/systemModels.js';
+import adminAuthRouter from './routes/adminAuth.js';
 import apiKeyRouter from './routes/apiKeys.js';
 import shareRouter from './routes/share.js';
 import publicShareRouter from './routes/publicShares.js';
@@ -506,6 +507,10 @@ app.use('/api/embedding-config', embeddingConfigRouter);
 // Admin-managed built-in (Beagle) system model. The admin picks which
 // OpenAI-compatible provider backs the anonymous/default path.
 app.use('/api/system-models', systemModelsRouter);
+// Independent password login for the /admin operator console. Mounted
+// before requireAuth-gated routers so the operator does not need a
+// user account to reach the config forms.
+app.use('/api/admin-auth', adminAuthRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);

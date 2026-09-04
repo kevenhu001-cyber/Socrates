@@ -37,13 +37,12 @@
  *     null and the chat surface shows 'no provider configured').
  */
 import { Router } from 'express';
-import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { eq, and, ne } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { apiKeys } from '../db/schema.js';
-import { requireAuth } from '../middleware/auth.js';
-import { NotFound, BadRequest, Forbidden } from '../lib/errors.js';
+import { requireAdminSession } from '../middleware/adminAuth.js';
+import { NotFound, BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { isAllowedProviderUrl } from './apiKeys.js';
 
@@ -70,35 +69,9 @@ const configSchema = z.object({
   isMultimodal: z.boolean().optional(),
 });
 
-/* Admin gate — identical shape to routes/embeddingConfig.ts so the
-   two admin surfaces stay consistent. */
-function adminEmails(): Set<string> {
-  const raw = process.env.ADMIN_EMAILS || '';
-  return new Set(
-    raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
-  );
-}
-
-async function requireAdmin(req: Request, _res: Response, next: NextFunction) {
-  try {
-    const allowlist = adminEmails();
-    if (allowlist.size === 0) {
-      throw new Forbidden('ADMIN_EMAILS is not configured — admin endpoints are closed');
-    }
-    const db = getDb();
-    const { users } = await import('../db/schema.js');
-    const [user] = await db.select({ email: users.email })
-      .from(users)
-      .where(eq(users.id, String(req.userId)))
-      .limit(1);
-    if (!user || !allowlist.has(user.email.toLowerCase())) {
-      throw new Forbidden('Admin access required');
-    }
-    return next();
-  } catch (err) { next(err); }
-}
-
-router.use(requireAuth, requireAdmin);
+/* Operator console gate — the independent ADMIN_PASSWORD session
+   (services/adminAuth.ts + middleware/adminAuth.ts). */
+router.use(requireAdminSession);
 
 /* GET / — the built-in system model row (ciphertext never leaves). */
 router.get('/', async (req, res, next) => {

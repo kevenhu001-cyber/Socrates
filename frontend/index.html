@@ -697,6 +697,12 @@
         <div class="plugins-empty" data-i18n-key="sidebar.plugins.empty">No plugins installed. Browse the marketplace to find extensions.</div>
       </div>
     </div>
+    <!-- Admin operator console (/admin). The React AdminPage mounts
+         into #adminPanelBody when the route is active; the login form
+         and the two config sections are rendered by React. -->
+    <div class="admin-panel main-page hidden" id="adminPanel">
+      <div class="admin-panel-body" id="adminPanelBody"></div>
+    </div>
 
     <p class="disclaimer" id="topicDisclaimer">Socrates asks questions to help you think. It does not judge your answers.</p>
 

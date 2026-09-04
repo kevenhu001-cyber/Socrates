@@ -77,9 +77,9 @@ const CONNECTOR_OFFLINE_SVG = {
   microsoft: lobehubIcon(microsoftRaw),
 };
 
-var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "more"];
+var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null };
-var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam" };
+var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam", admin: "/admin" };
 
 function byId(id) { return document.getElementById(id); }
 /* window.t returns the KEY itself when a translation is missing — pass
@@ -188,7 +188,7 @@ export function closeAllPanels() {
 
 /* Hide all main-content pages (library, projects, scheduled, plugins, exam). */
 function hideMainPages() {
-  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
+  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "adminPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
   document.body.classList.remove("workspace-active");
   /* Leaving exam via sidebar nav must also drop the exam-active body
      class, otherwise CSS keeps hiding the mode switcher and other
@@ -221,7 +221,7 @@ function pushWorkspaceRoute(name) {
   if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
 }
 export function openNav(name, options) {
-  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, more: openMoreNav };
+  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, admin: openAdmin, more: openMoreNav };
   if (!openers[name]) return;
   if (name !== "more" && !(options && options.fromRoute)) pushWorkspaceRoute(name);
   setActiveNav(name);
@@ -432,6 +432,13 @@ export function openPlugins() {
     window.__socratesMountWorkspace("plugins");
   }
   renderPlugins();
+}
+export function openAdmin() {
+  hideChatAndTopic();
+  showMainPage("adminPanel");
+  if (typeof window.__socratesMountAdmin === "function") {
+    window.__socratesMountAdmin();
+  }
 }
 async function renderPlugins() {
   /* #pluginsList is React-owned (WorkspacePage) — never write its DOM

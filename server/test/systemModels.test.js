@@ -14,19 +14,19 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-describe('systemModels — fail-closed admin gate + route surface', () => {
-  test('module imports cleanly with ADMIN_EMAILS unset', async () => {
+describe('systemModels — operator console gate + route surface', () => {
+  test('module imports cleanly without ADMIN_PASSWORD set', async () => {
     const mod = await import('../src/routes/systemModels.js');
     assert.ok(mod.default, 'expected the default router export');
     assert.equal(typeof mod.default.stack?.length, 'number',
       'expected an Express router with a middleware stack');
   });
 
-  test('the router carries the requireAuth + requireAdmin middleware', async () => {
+  test('the router carries the requireAdminSession middleware', async () => {
     const mod = await import('../src/routes/systemModels.js');
     const middlewareEntries = mod.default.stack.filter((l) => !l.route);
-    assert.ok(middlewareEntries.length >= 2,
-      'expected at least two middleware layers (requireAuth, requireAdmin)');
+    assert.ok(middlewareEntries.length >= 1,
+      'expected the requireAdminSession middleware layer');
   });
 
   test('the router exposes GET / and PUT /', async () => {
