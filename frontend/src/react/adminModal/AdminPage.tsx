@@ -54,6 +54,14 @@ function LoginPage({ onReady }: { onReady: () => void }) {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 403 && payload.error === 'admin_ip_not_allowed') {
+          setError('This client IP is not on the admin allowlist (ADMIN_IP_ALLOWLIST). Contact the operator to add it.');
+          return;
+        }
+        if (res.status === 429) {
+          setError('Too many failed attempts — the console is locked for 15 minutes.');
+          return;
+        }
         setError(payload.message || 'Incorrect admin password.');
         return;
       }
@@ -111,6 +119,16 @@ function AdminPage() {
             systemModel: null, embedding: null,
             isAdmin: false,
             adminGateError: 'ADMIN_PASSWORD is not set on the server — the admin console is disabled.',
+          });
+          setAuthed(false);
+          return;
+        }
+        if (status.ipAllowed === false) {
+          publishAdminSnapshot({
+            open: true, loading: false, error: null,
+            systemModel: null, embedding: null,
+            isAdmin: false,
+            adminGateError: 'This client IP is not on the admin allowlist (ADMIN_IP_ALLOWLIST). Contact the operator to add it.',
           });
           setAuthed(false);
           return;
