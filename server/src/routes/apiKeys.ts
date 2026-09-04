@@ -39,7 +39,11 @@ const SAFE_PROJECTION = {
  * AWS metadata at 169.254.169.254, or to call internal admin services).
  *
  * Allowed: https only, public IPv4 / IPv6, no localhost-equivalent names. */
-function isAllowedProviderUrl(raw: unknown) {
+/* Exported so the admin-facing system-model route
+   (routes/systemModels.ts) can share the same SSRF posture without
+   re-deriving it. The user-facing apiKeys route below keeps using
+   the local name. */
+export function isAllowedProviderUrl(raw: unknown) {
   if (typeof raw !== 'string' || raw.length > 2048) return false;
   let u;
   try { u = new URL(raw); } catch (_) { return false; }

@@ -20,6 +20,7 @@ import { hydrateProfileModal } from '../../profileModal';
 import { hydrateShareModal } from '../../shareModal';
 import { hydrateUsageModal } from '../../usageModal';
 import { mountScheduledPage } from '../../pages/scheduled';
+import { mountAdminModal } from '../../adminModal';
 import { hydrateRecentsFilterChips, hydrateSidebarNav } from '../../sidebar';
 import { mountWorkspacePage } from '../../pages/workspace';
 import { mountStorageModal } from '../../storageModal';
@@ -146,6 +147,12 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
       ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
       mount: () => mountConfirmDialog() },
+    /* Admin modal — system model + embedding provider config. Lazy
+       body-level root like the other modals; main.js calls
+       openAdminModal() to publish the open state. */
+    { hostId: 'adminModalReactRoot', label: 'admin-modal',
+      ensureHost: (doc) => ensureBodyChild(doc, 'adminModalReactRoot'),
+      mount: () => mountAdminModal() },
     /* 5. Lazy portal roots. The session list mounts into the existing
        `#recentsList` host (mountSessionList targets that id directly);
        the hostId must match it or the registry skips the spec and the

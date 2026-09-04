@@ -458,6 +458,51 @@ a throwing subscriber (must not break the producer), and the
 null-event → empty-detail contract. Test pass: frontend 328/328
 unit tests (was 323, +5 for reactBridge).
 
+Vector layer (2026-09-05): pgvector embedding enrichment + hybrid
+BM25+vector retrieval. Completes the vector half of the
+session_chunks retrieval. A nullable `vector(1536)` column on
+`session_chunks` (`server/drizzle/0031_session_chunks_embedding.sql`,
+guarded `CREATE EXTENSION` so an operator without the pgvector .so
+is not surprised by a hard migration failure) plus an HNSW cosine
+index. `services/embedding.ts` is the OpenAI-compatible
+`/embeddings` client: it reads the active row from a new
+admin-managed `embedding_config` table, decrypts the AES-GCM key
+(same crypto as `api_keys`), validates the response shape
+defensively (exact vector count × exact dimension match, else
+null → skip enrichment), and mirrors the apiKeys SSRF posture
+(https-only, no private/loopback/link-local). Writing the fix
+surfaced an IPv6 bracket bug in the shared guard: WHATWG URL
+keeps `[::1]` in `.hostname`, so the `startsWith('fe8')` link-
+local check never fired; the same fix is applied to
+`routes/apiKeys.ts#isAllowedProviderUrl`. `indexMessageChunks`
+now embeds the first 64 chunks of each message after the BM25
+rows are written (best-effort, logged-and-swallowed, skipped
+entirely when no provider is active). `searchSessionChunksHybrid`
+fuses the BM25 and cosine lists with Reciprocal Rank Fusion
+(k=60) so the two score scales never need calibration; the
+`/api/rag/search` endpoint transparently degrades to BM25-only
+when no provider is configured.
+
+Admin backend (2026-09-05): two admin-managed config surfaces +
+the modal UI. `POST /api/embedding-config` (GET list / PUT upsert /
+DELETE) and `POST /api/system-models` (GET / PUT) let an operator
+configure (a) the embedding provider — URL, model ID, dimensions,
+key — and (b) the built-in "Beagle" system model — URL, model ID,
+label, key, multimodal flag — from a UI without touching env
+vars or restarting. Both routes share a fail-closed admin gate
+via `ADMIN_EMAILS` (comma-separated, case-insensitive; the users
+table has no role column, so the operator list is deployment
+config, and a missing ADMIN_EMAILS closes the endpoints
+entirely). `keyCiphertext` never leaves the server
+(`SAFE_PROJECTION` with `hasKey` as a derived boolean). The SPA
+side is `frontend/src/react/adminModal/` (`types.ts` +
+`admin.bridge.ts` + `AdminModal.tsx` + `legacyApi.ts`), mounted
+lazily via the boot registry (`#adminModalReactRoot`) and opened
+via `window.openAdminModal()` from main.js. The two new backend
+test files pin the route surface and the middleware ordering;
+`server/test/embedding.test.js` pins the 8-case SSRF guard.
+Test pass: server 53/53 suites, frontend 328/328 unit tests.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean

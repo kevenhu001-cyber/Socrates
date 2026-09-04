@@ -9881,6 +9881,12 @@ window.showToast = showToast;
 window.resetApp = resetApp;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
+/* Admin modal — system model + embedding provider config. The React
+   AdminModal mounts lazily via the boot registry; these two bindings
+   are the legacy entry points (e.g. a sidebar button dispatches
+   data-action="open-admin" and the modal opens). */
+window.openAdminModal = openAdminModal;
+window.closeAdminModal = closeAdminModal;
 /* updateSlashSelected is referenced by inline onmouseenter handler
    in the slash command palette HTML (main.js:3666) but was never
    assigned to window — would throw ReferenceError on hover. */
@@ -10088,6 +10094,7 @@ import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from '.
 
 import { toggleReadAloud } from './ui/readAloud.js';
 import { publishReactChatRuntime } from './ui/reactBridge.js';
+import { openAdminModal, closeAdminModal } from './react/adminModal/legacyApi.js';
 
 import { injectMemoryContext, loadMemories } from './storage/memoryStore.js';
 
