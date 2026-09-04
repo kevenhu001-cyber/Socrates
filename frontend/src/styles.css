@@ -11714,7 +11714,10 @@ html[data-theme=socrates][data-mode=light]{
    (#mobileMode) once body[data-conversation-active] has flipped to true,
    regardless of viewport width. */
 @media (max-width:768px){
-  #appShell #modeSegmentedTop,
+  /* Scope the hide to the active conversation only — the landing surface
+     keeps the pill visible (compact reference: tabs above the composer).
+     The plain selector previously hid it on the landing too, breaking the
+     "only show before the conversation starts" contract it documented. */
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #modeSegmentedTop{
     display:none!important;
   }

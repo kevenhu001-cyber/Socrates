@@ -16,6 +16,7 @@ import sessionRouter from './routes/sessions.js';
    /api/suggestions/* paths are not claimed by the chat router. */
 import suggestionsRouter from './routes/suggestions.js';
 import chatRouter from './routes/chat.js';
+import ttsRouter from './routes/tts.js';
 import apiKeyRouter from './routes/apiKeys.js';
 import shareRouter from './routes/share.js';
 import publicShareRouter from './routes/publicShares.js';
@@ -490,6 +491,7 @@ app.use('/api/sessions', sessionRouter);
 // user's recent sessions via the LLM. Mounted before /api/chat so its
 // /api/suggestions/* paths are not claimed by the chat router.
 app.use('/api/suggestions', suggestionsRouter);
+app.use('/api/tts', ttsRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);

@@ -11,7 +11,13 @@
     "strict": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@socrates/contracts": ["../packages/contracts/src/index.ts"],
+      "@socrates/core": ["../packages/core/src/index.ts"],
+      "@socrates/core/*": ["../packages/core/src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../packages/core/src/**/*.ts", "../packages/contracts/src/**/*.ts"],
+  "exclude": ["../packages/core/src/**/*.test.ts", "../packages/contracts/src/**/*.test.ts"]
 }

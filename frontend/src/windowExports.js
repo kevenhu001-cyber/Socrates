@@ -48,18 +48,9 @@ import {
   setAccentCustom, resetAccentColor,
   setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
 } from './displayPrefs.js';
-window.toggleGrid = toggleGrid;
-window.setAccentColor = setAccentColor;
 window.toggleDisplayPrefs = toggleDisplayPrefs;
 window.toggleTheme = toggleTheme;
-window.setThemePreference = setThemePreference;
 window.syncThemeUI = syncThemeUI;
-window.setAccentCustom = setAccentCustom;
-window.resetAccentColor = resetAccentColor;
-window.setBackgroundDark = setBackgroundDark;
-window.setBackgroundLight = setBackgroundLight;
-window.resetBackgroundDark = resetBackgroundDark;
-window.resetBackgroundLight = resetBackgroundLight;
 
 /* ─── util/api.js ─── */
 import { apiFetch, getCsrfToken } from './util/api.js';
@@ -103,26 +94,13 @@ window.hideGate = hideGate;
 window.showGate = showGate;
 window.showAuthView = showAuthView;
 window.showAuthSignin = showAuthSignin;
-window.switchAuthTab = switchAuthTab;
-window.focusAuthTab = focusAuthTab;
-window.showAuthForgotPassword = showAuthForgotPassword;
-window.showAuthCodeLogin = showAuthCodeLogin;
-window.submitAuthSignin = submitAuthSignin;
-window.submitAuthRegister = submitAuthRegister;
 window.submitAuthVerify = submitAuthVerify;
-window.submitAuthForgotPassword = submitAuthForgotPassword;
-window.submitAuthResetPassword = submitAuthResetPassword;
-window.submitAuthSendCode = submitAuthSendCode;
-window.submitAuthLoginWithCode = submitAuthLoginWithCode;
-window.resendVerification = resendVerification;
-window.resendAuthCode = resendAuthCode;
 window.afterAuthEnter = afterAuthEnter;
 
 /* ─── sidebar/index.js ─── */
 import { toggleSidebar, setRecentsFilter, getRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
 window.toggleSidebar = toggleSidebar;
 window.setRecentsFilter = setRecentsFilter;
-window.clearRecentsFilter = clearRecentsFilter;
 window.getRecentsFilter = getRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
@@ -140,12 +118,9 @@ window.getActiveProvider = getActiveProvider;
 window.pickActiveProviderById = pickActiveProviderById;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
-window.closeModelPicker = closeModelPicker;
-window.closeChatModelMenu = closeChatModelMenu;
 window.toggleExtensionByKey = toggleExtensionByKey;
 window.syncExtensionsUI = syncExtensionsUI;
 window.toggleWebSearch = toggleWebSearch;
-window.syncWebSearchUI = syncWebSearchUI;
 window.markProvidersFetched = markProvidersFetched;
 
 // Note: setActiveProvider / renderProviderList / isReasoningProvider are
@@ -197,8 +172,6 @@ window.openCmdK = openCmdK;
 import { openFindInSession, closeFindInSession, onFindInput, onFindKey, findNext, findPrev, isFindOpen } from './ui/findInSession.js';
 window.openFindInSession = openFindInSession;
 window.closeFindInSession = closeFindInSession;
-window.onFindInput = onFindInput;
-window.onFindKey = onFindKey;
 window.findNext = findNext;
 window.findPrev = findPrev;
 window.isFindOpen = isFindOpen;
@@ -217,10 +190,6 @@ window.openPromptTemplatesModal = openPromptTemplatesModal;
 window.closePromptTemplatesModal = closePromptTemplatesModal;
 /* Inline onclick handlers inside the bridge-published modal HTML
    resolve these from window. */
-window.renderPromptTemplatesModal = renderPromptTemplatesModal;
-window.openPromptTemplateEditor = openPromptTemplateEditor;
-window.onPromptRowDelete = onPromptRowDelete;
-window.onPromptTemplateEditorSave = onPromptTemplateEditorSave;
 
 /* ─── ui/composerTools.js ─── */
 import { toggleComposerTools } from './ui/composerTools.js';
@@ -230,7 +199,6 @@ window.toggleComposerTools = toggleComposerTools;
 /* ─── ui/voiceInput.js ─── */
 import { stopSpeechInput, toggleSpeechInput } from './ui/voiceInput.js';
 window.toggleSpeechInput = toggleSpeechInput;
-window.stopSpeechInput = stopSpeechInput;
 /* ─── ui/settings.js ─── */
 import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider, toggleAPI, addProvider, clearSettings, saveSettings } from './ui/settings.js';
 window.openSettings = openSettings;
@@ -279,9 +247,6 @@ window.saveProfileName = saveProfileName;
 
 /* ─── ui/topicSetup.js ─── */
 import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
-window.autoResize = autoResize;
-window.updateStartBtn = updateStartBtn;
-window.updateSendBtn = updateSendBtn;
 
 /* ─── storage/localMemory.js ─── */
 
@@ -345,9 +310,7 @@ import {
 window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
 window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
 window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
-window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
 window.offlineGuard = offlineGuard;
-window.sleepBackoff = sleepBackoff;
 window.makeAIWatchdog = makeAIWatchdog;
 
 /* ─── ui/usage.js ─── */
@@ -355,11 +318,7 @@ import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, showUsa
 window.openUsageModal = openUsageModal;
 window.closeUsageModal = closeUsageModal;
 /* Period tab inline onclick handlers (usage.js:138-139). */
-window.loadUsageData = loadUsageData;
-window.loadUsageMonth = loadUsageMonth;
 /* Heatmap cell inline onmouseenter/onmouseleave handlers (usage.js:168). */
-window.showUsageTip = showUsageTip;
-window.hideUsageTip = hideUsageTip;
 
 /* ─── render/helpers.js (esc alias) ─── */
 import { esc } from './render/helpers.js';
@@ -381,23 +340,9 @@ import {
   renderExamForm,
   refreshExamI18n,
 } from './exam.js';
-window.renderExamForm = renderExamForm;
-window.setExamAnswer = setExamAnswer;
 window.openExamPanel = openExamPanel;
 window.prepareExamView = prepareExamView;
 window.openExamModal = openExamModal;
-window.closeExamView = closeExamView;
-window.toggleExamType = toggleExamType;
-window.toggleExamModelMenu = toggleExamModelMenu;
-window.selectExamModel = selectExamModel;
-window.selectExamDifficulty = selectExamDifficulty;
-window.adjustExamCount = adjustExamCount;
-window.startExamGeneration = startExamGeneration;
-window.cancelExamGeneration = cancelExamGeneration;
-window.selectExamOpt = selectExamOpt;
-window.examNavJump = examNavJump;
-window.examNavStep = examNavStep;
-window.submitExam = submitExam;
 window.refreshExamI18n = refreshExamI18n;
 
 /* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
@@ -457,8 +402,6 @@ if (typeof document !== "undefined") {
    chat/stream.js and the picker toggles used by inline handlers. ─── */
 import { getReasoningEffort, setReasoningEffort, toggleEffortPicker, syncEffortUI } from './ui/effortPicker.js';
 window.getReasoningEffort = getReasoningEffort;
-window.setReasoningEffort = setReasoningEffort;
-window.toggleEffortPicker = toggleEffortPicker;
 window.syncEffortUI = syncEffortUI;
 
 /* ─── ui/readAloud.js — browser TTS read-aloud for assistant messages
@@ -478,7 +421,6 @@ import {
   upsertCustomTemplate, deleteCustomTemplate,
 } from './chat/promptTemplates.js';
 window.loadPromptTemplates = loadPromptTemplates;
-window.savePromptTemplates = savePromptTemplates;
 window.findTemplateByShortcut = findTemplateByShortcut;
 window.upsertCustomTemplate = upsertCustomTemplate;
 window.deleteCustomTemplate = deleteCustomTemplate;
