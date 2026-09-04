@@ -12,6 +12,7 @@
  */
 
 import { stateStore } from '../state/store.js';
+import { showToast } from '../ui/toast.js';
 
 /* Start a deep research session. Returns a Promise that resolves
    when the research is complete and the report has been posted. */
@@ -393,7 +394,7 @@ function launchDeepResearch() {
   var surface = getVisibleComposerSurface();
   var query = getComposerMarkdown(surface).trim();
   if (!query) {
-    if (typeof window.showToast === "function") window.showToast("Enter a research topic first.");
+    showToast("Enter a research topic first.");
     return;
   }
   /* P_deep-research-view — from the landing screen, hand off to

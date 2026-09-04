@@ -7,6 +7,7 @@ import { esc } from './render/helpers.js';
 import { formatMsg } from './render/markdown.js';
 import { callAPIStream } from './chat/stream.js';
 import { stateStore } from './state/store.js';
+import { pushChatIdToURL, pushExamIdToURL, setExamIdInURL } from './session/store.js';
 
 import { toggleShareBtn } from './ui/share.js';
 
@@ -157,11 +158,11 @@ export function closeExamView() {
   if (window.stateStore.read("currentSessionId")) {
     document.getElementById("chatView").classList.remove("hidden");
     window.toggleChatTopBarEls(true);
-    try { window.pushChatIdToURL(window.stateStore.read("currentSessionId")) } catch (_) { }
+    try { pushChatIdToURL(window.stateStore.read("currentSessionId")) } catch (_) { }
   } else {
     document.getElementById("topicSetup").classList.remove("hidden");
     window.toggleChatTopBarEls(false);
-    try { window.setExamIdInURL(null) } catch (_) { }
+    try { setExamIdInURL(null) } catch (_) { }
   }
 }
 
@@ -953,7 +954,7 @@ function doSaveExamSession() {
     .then(function (r) {
       if (r && r.id) {
         stateStore.dispatch({type:'state/set',key:'currentSessionId',value:r.id});
-        try { window.pushExamIdToURL(r.id) } catch (_) { }
+        try { pushExamIdToURL(r.id) } catch (_) { }
       }
       return window.refreshServerSessions().then(function () {
         try { window.renderRecents() } catch (_) { }

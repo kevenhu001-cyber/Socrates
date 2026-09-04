@@ -16,6 +16,7 @@
 import { esc } from '../render/helpers.js';
 import { apiFetch } from '../util/api.js';
 import { stateStore } from '../state/store.js';
+import { showToast } from './toast.js';
 
 import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.js';
 
@@ -393,9 +394,7 @@ async function loadSharedSession(token) {
     }
     var gate = document.getElementById("authGate");
     if (gate) gate.classList.add("hidden");
-    if (typeof window.showToast === "function") {
-      window.showToast("Shared session not found or has expired.");
-    }
+    showToast("Shared session not found or has expired.");
   }
 }
 

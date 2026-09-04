@@ -25,6 +25,7 @@ import { stateStore, resetState } from './state/store.js';
 import './i18n.js';
 import { initCookieConsent } from './cookieConsent.js';
 import { openCheatsheet, closeCheatsheet } from './ui/cheatsheet.js';
+import { showToast } from './ui/toast.js';
 import { mountLegacyShellListeners } from './ui/legacyShellListeners.js';
 import { toggleComposerTools } from './ui/composerTools.js';
 import { getReasoningEffort, toggleEffortPicker } from './ui/effortPicker.js';
@@ -1485,7 +1486,7 @@ async function loadExamSession(s){
     examAnswers:(s.examData&&s.examData.answers)||{},
     examSubmitted:!!(s.examData&&s.examData.submitted)
   }});
-  try { window.pushExamIdToURL(s.id); } catch (_) { }
+  try { pushExamIdToURL(s.id); } catch (_) { }
   document.getElementById("examViewTitle").textContent=stateStore.read("examSubmitted")?("Exam Results: "+stateStore.read("examTopic")):(stateStore.read("examTopic"));
   var titleBar=document.getElementById("examTitleBar");
   if(titleBar)titleBar.textContent=stateStore.read("examTopic")||"Generate Exam";
@@ -4873,21 +4874,8 @@ function findMessageIndex(messageId){
     return m.clientId===messageId||m.id===messageId;
   });
 }
-function showToast(msg){
-  /* P1.1 — minimal toast for action confirmations. Distinct
-     from the chatStatus pill and the share link toast. */
-  try{
-    var el=document.createElement("div");
-    el.className="msg-toast";
-    el.textContent=msg;
-    document.body.appendChild(el);
-    requestAnimationFrame(function(){el.classList.add("visible")});
-    setTimeout(function(){
-      el.classList.remove("visible");
-      setTimeout(function(){if(el&&el.parentNode)el.parentNode.removeChild(el)},300);
-    },1800);
-  }catch(_){}
-}
+/* P1.1 — toast moved to src/ui/toast.js; imported below and still
+   mirrored on window for the React legacy gateway and e2e mocks. */
 
 function addMessage(role,text,type,actions,attachmentsArg){
   /* User sending a message = explicitly wants to follow the conversation. */
@@ -9862,18 +9850,9 @@ window.refreshApiConfig = refreshApiConfig;
 window.renderRecents = renderRecents;
 window.renderMistakes = renderMistakes;
 window.updateMistakesBadge = updateMistakesBadge;
-window.getChatIdFromURL = getChatIdFromURL;
-window.setChatIdInURL = setChatIdInURL;
-window.getExamIdFromURL = getExamIdFromURL;
-window.setExamIdInURL = setExamIdInURL;
-/* P_url-pushstate-bridge — pushChatIdToURL / pushExamIdToURL were
-   missing from the C1 window-bridge cleanup. exam.js and main.js#1371
-   call window.push*ToURL expecting a pushState (history entry) rather
-   than the set*InURL replaceState. Without these, the URL stays at
-   the landing page after starting a session — refresh loses the
-   session and the back button can't restore prior session. */
-window.pushChatIdToURL = pushChatIdToURL;
-window.pushExamIdToURL = pushExamIdToURL;
+/* P_url-pushstate-bridge retired — the URL-id helpers are exported by
+   src/session/store.js and consumed via direct imports (main.js,
+   exam.js, auth/index.js); no window surface is needed. */
 /* P_bulk-restore-2026-07-14 — Phase C module bridges.
    These are main.js-local functions referenced by extracted modules
    (chat/quickActions.js, chat/api.js, chat/format.js, pickers.js,

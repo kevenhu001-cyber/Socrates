@@ -340,6 +340,25 @@ full-reference audit (no `window.X` reads in src/e2e/index.html and no
 inline `="X("` attribute uses); `windowExports.js` is down to 142 unique
 bindings. Imports were kept so module evaluation order is unchanged.
 
+M5 progress (2026-09-05, batch 2): six more URL-history bridges
+(`window.getChatIdFromURL / setChatIdInURL / pushChatIdToURL /
+getExamIdFromURL / setExamIdInURL / pushExamIdToURL`) deleted from
+`main.js`; the helpers are exported by `src/session/store.js` and now
+consumed via direct import from `main.js`, `auth/index.js`, and
+`exam.js`. `showToast` extracted to `src/ui/toast.js` so 14 consumer
+modules (`auth/boot.js`, `batchStorage.js`, `pickers.js`,
+`sidebar/nav.js`, `ui/cmdK.js`, `ui/promptTemplates.js`,
+`ui/readAloud.js`, `ui/settings.js`, `ui/share.js`, `ui/voiceInput.js`,
+`agent/researchAgent.js`, `attachments/render.js`, plus `main.js`
+itself) take a real ES import instead of the `window.showToast`
+indirection. The misleading `function toast(msg, ms)` wrapper in
+`attachments/render.js` (which never propagated `ms` even in the
+`window.showToast` era) is gone; inlined into the new module.
+`window.showToast` stays as a backward-compat alias for the React
+legacy gateway and e2e mocks. Two stray debug files from the previous
+batch (`frontend/console-check.tmp.mjs`,
+`frontend/e2e/_debug-slow.spec.mjs`) deleted.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean

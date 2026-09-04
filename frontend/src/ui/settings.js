@@ -1,5 +1,6 @@
 import { confirmClearSettings } from './dangerConfirms.js';
 import { saveLastActiveId } from '../config/providers.js';
+import { showToast } from './toast.js';
 
 import { renderTonePresets } from '../config/tonePresets.js';
 
@@ -290,7 +291,7 @@ function addProvider() {
   var limit = limitMap[tier] || 2;
   var current = (apiConfig.providers || []).filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; }).length;
   if (current >= limit) {
-    window.showToast("API provider limit reached (" + limit + ") for your plan.");
+    showToast("API provider limit reached (" + limit + ") for your plan.");
     return;
   }
   var id = "new-" + Date.now().toString(36);
@@ -315,7 +316,7 @@ function removeProvider(id) {
   window.apiFetch("/api/api-key/" + encodeURIComponent(id), { method: "DELETE" }).then(function () {
     _removeProviderLocal(id);
   }).catch(function (err) {
-    window.showToast("Failed to remove provider: " + (err.message || "server error") + ". Try again.");
+    showToast("Failed to remove provider: " + (err.message || "server error") + ". Try again.");
   });
 }
 
@@ -357,7 +358,7 @@ function setActiveProvider(id) {
       window.syncModelPills();
       window.syncChatModel();
       if (typeof window.syncEffortUI === "function") window.syncEffortUI();
-      window.showToast("Failed to activate provider on server. Changes reverted.");
+      showToast("Failed to activate provider on server. Changes reverted.");
     });
   }
 }
@@ -411,8 +412,8 @@ function saveSettings() {
   var providers = apiConfig.providers || [];
   var newRows = providers.filter(function (p) { return !p.isBuiltIn && p.id !== "beagle-built-in"; });
   var hasBuiltIn = providers.some(function (p) { return p.isBuiltIn || p.id === "beagle-built-in"; });
-  if (!newRows.length && !hasBuiltIn) { window.showToast("Add at least one provider"); return; }
-  if (!newRows.length && hasBuiltIn) { window.showToast("Built-in AI is already active."); return; }
+  if (!newRows.length && !hasBuiltIn) { showToast("Add at least one provider"); return; }
+  if (!newRows.length && hasBuiltIn) { showToast("Built-in AI is already active."); return; }
 
   /* Validate all providers first */
   var allErrors = [];
@@ -424,7 +425,7 @@ function saveSettings() {
     }
   });
   if (allErrors.length) {
-    window.showToast("Please fix the highlighted errors before saving.");
+    showToast("Please fix the highlighted errors before saving.");
     return;
   }
 
@@ -471,11 +472,11 @@ function saveSettings() {
     window.syncModelPills();
     window.syncChatModel();
     if (results.failed > 0 && results.saved > 0) {
-      window.showToast("Saved " + results.saved + " provider(s), but " + results.failed + " failed: " + ((results.lastError && results.lastError.message) || "unknown error") + ". Try saving again.");
+      showToast("Saved " + results.saved + " provider(s), but " + results.failed + " failed: " + ((results.lastError && results.lastError.message) || "unknown error") + ". Try saving again.");
     } else if (results.failed > 0) {
-      window.showToast("Save failed: " + ((results.lastError && results.lastError.message) || "unknown error"));
+      showToast("Save failed: " + ((results.lastError && results.lastError.message) || "unknown error"));
     } else if (apiConfig.activeId) {
-      window.showToast("Saved — " + window.t("api.saved"));
+      showToast("Saved — " + window.t("api.saved"));
     }
   });
 }
