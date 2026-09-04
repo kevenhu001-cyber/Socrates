@@ -67,8 +67,9 @@ function isAllowedProviderUrl(raw: unknown) {
   }
   // IPv6 literal: block loopback, link-local, ULA, IPv4-mapped RFC1918.
   if (host.includes(':')) {
-    // Strip zone id.
-    const h = host.split('%')[0];
+    // WHATWG URL keeps the IPv6 literal's brackets in .hostname
+    // (e.g. "[::1]"), so strip them before comparing.
+    const h = host.replace(/^\[/, '').replace(/\]$/, '').split('%')[0];
     if (h === '::1' || h === '::') return false;
     if (h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb')) return false; // fe80::/10 link-local
     if (h.startsWith('fc') || h.startsWith('fd')) return false; // fc00::/7 ULA

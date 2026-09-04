@@ -18,6 +18,7 @@ import suggestionsRouter from './routes/suggestions.js';
 import chatRouter from './routes/chat.js';
 import ttsRouter from './routes/tts.js';
 import ragRouter from './routes/rag.js';
+import embeddingConfigRouter from './routes/embeddingConfig.js';
 import apiKeyRouter from './routes/apiKeys.js';
 import shareRouter from './routes/share.js';
 import publicShareRouter from './routes/publicShares.js';
@@ -498,6 +499,9 @@ app.use('/api/tts', ttsRouter);
 // messages; the search is in-memory over session_chunks and is
 // owned-checked before any retrieval.
 app.use('/api/rag', ragRouter);
+// Admin-managed embedding provider config. Gates the vector layer of
+// the /api/rag hybrid search; requires role='admin'.
+app.use('/api/embedding-config', embeddingConfigRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);

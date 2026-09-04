@@ -27,7 +27,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  searchSessionChunks,
+  searchSessionChunksHybrid,
   sessionOwnedBy,
 } from '../services/chunkIndex.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
@@ -42,6 +42,11 @@ const searchSchema = z.object({
   minScore: z.number().min(0).max(20).optional(),
 });
 
+/* P_session-chunks-embedding — the hybrid BM25 + vector re-rank is
+   now the default. When the admin has not configured an active
+   embedding provider, searchSessionChunksHybrid degrades to plain
+   BM25 (same contract as the pre-vector endpoint), so the caller
+   does not need to know which tier is active. */
 router.post('/search', requireAuth, async (req, res, next) => {
   try {
     const parsed = searchSchema.safeParse(req.body);
@@ -52,7 +57,7 @@ router.post('/search', requireAuth, async (req, res, next) => {
     if (!(await sessionOwnedBy(sessionId, req.userId!))) {
       throw new NotFound('Session not found');
     }
-    const hits = await searchSessionChunks(sessionId, query, { limit, minScore });
+    const hits = await searchSessionChunksHybrid(sessionId, query, { limit, minScore });
     return res.json({
       hits: hits.map((h) => ({
         messageId: h.messageId,
