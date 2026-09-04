@@ -80,10 +80,41 @@ pipeline 化、协议与共享层、体验能力（云 TTS/模型选择/性能�
    恢复落地页可见）。
 3. **性能**：vendor 分包（见 M1-3）+ 既有 code splitting。
 
-### 延后
+## M5 — LobeHub 差距落地（2026-09-04，第二轮）
 
-- 云 TTS 的 provider 能力探测（当前假定内置 provider 暴露 OpenAI
-  兼容 speech 端点；MiniMax 原生 TTS 需单独适配）。
+对照 LobeHub v2 monorepo 的逐项差距（见会话对比记录）按性价比落地：
+
+1. **store 选择器浅比较**（LobeHub `createWithEqualityFn` + `shallow`
+   模式）：`frontend/src/store/index.ts` 的域 hooks 改用
+   `useStoreWithEqualityFn(..., shallow)`，选择器可返回新对象/数组投影
+   而不触发重渲染。
+2. **工具执行器自注册模块**（LobeHub 每工具一包的结构，适配为每工具一
+   模块）：`routes/chat/pipeline/executors/` 新增
+   `types.ts`（执行器契约）/ `registry.ts`（名字→执行器注册表，支持
+   连接器工具族匹配）/ 8 个执行器模块（workspaceAgent、codeInterpreter、
+   renderVisualization、webSearch、webFetch、planSpec、personal/project
+   connectors）。`toolExecutors.ts` 变薄调度器：rejection 路径 + 注册表
+   查找 + 执行守卫 + 通用记账 + 反馈组装；新增工具不再改调度器。
+   行为逐字保留（arxiv_search 仍走 unknown_tool 反馈的原始接线缺口）。
+3. **TTS 结果缓存**（LobeHub 每消息落库的等价物，落点在计费边界）：
+   `server/src/services/ttsCache.ts` — SHA-256(userId+text+voice+format)
+   键、32 MB 字节预算 LRU + 30 分钟 TTL、进程级单例；
+   `POST /api/tts` 命中缓存直接回放（`X-TTS-Cache: hit`），重复朗读
+   同文本不再上游计费。`test/ttsCache.test.js` 3 个单测。
+4. **window 死桥削减（第一批）**：引用分析（src/e2e/index.html 全量
+   `window.X` + inline 属性扫描）发现 59 个无任何消费者的死绑定
+   （exam 17 / auth 14 / displayPrefs 12 / usage 4 / promptTemplates
+   4 / 其余 8），全部从 `windowExports.js` 删除（保留 import 以维持
+   模块求值顺序）；绑定数 200 → 142。lint/单测/构建/Playwright 全绿
+   证实为真死桥。
+
+### 剩余（按优先级）
+
+- window 桥继续削减：`main.js` 直接导入改造 + 逐岛迁移（一岛一测）。
+- TTS 每消息元数据落库（需 messages 表迁移 + legacy adapter 穿层）；
+  MiniMax 原生 TTS 协议适配（当前假定 OpenAI 兼容 speech 端点）。
+- pgvector + context-engine 注入管线（需带 DB 验证的迁移）。
+- 流事件 Redis 持久化、otel 生成追踪（远期）。
 
 ## 测试门
 

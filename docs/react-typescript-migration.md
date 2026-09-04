@@ -335,6 +335,11 @@ M1 is done when the counters below reach zero.
 | Files using `window.__socrates*` bridges (`src/react/**`) | 37 |
 | Distinct `__socrates*` bridge names | 98 |
 
+M5 progress (2026-09-04): 59 dead bridge statements removed after a
+full-reference audit (no `window.X` reads in src/e2e/index.html and no
+inline `="X("` attribute uses); `windowExports.js` is down to 142 unique
+bindings. Imports were kept so module evaluation order is unchanged.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean
