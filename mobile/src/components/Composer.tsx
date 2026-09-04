@@ -20,6 +20,7 @@ export interface ComposerProps {
   onAttach: () => void;
   onChangeReasoningEffort?: (effort: ReasoningEffort) => void;
   onToggleWebSearch?: () => void;
+  onVoiceInput?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
 }
@@ -98,6 +99,7 @@ export function Composer({
   onAttach,
   onChangeReasoningEffort,
   onToggleWebSearch,
+  onVoiceInput,
   placeholder,
   autoFocus = false,
 }: ComposerProps) {
@@ -115,7 +117,13 @@ export function Composer({
     onChangeReasoningEffort(reasoningEffort === 'high' ? 'medium' : 'high');
   };
 
-  const defaultPlaceholder = t('composer.placeholder') || t('chat.placeholder') || 'Ask Socrates';
+  const inputPlaceholder = t('chat.inputPlaceholder');
+  const chatPlaceholder = t('chat.placeholder');
+  const defaultPlaceholder = inputPlaceholder !== 'chat.inputPlaceholder'
+    ? inputPlaceholder
+    : chatPlaceholder !== 'chat.placeholder'
+      ? chatPlaceholder
+      : 'Ask Socrates';
   /* P1-2 alignment: iconColor now sourced from the canonical text
    * token (was `#e0e0e0` for dark, a legacy pre-align value). */
   const iconColor = colors.text;
@@ -193,6 +201,13 @@ export function Composer({
           {/* Send / Stop — idle mirrors `.send-btn` neutral
            * (`bg-300` fill, `text-400` glyph), active flips to accent. */}
           <View style={styles.singleRightActions}>
+            <AnimatedPressable
+              accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
+              onPress={onVoiceInput}
+              style={styles.micBtn}
+            >
+              <Ionicons name="mic-outline" size={20} color={iconColor} />
+            </AnimatedPressable>
             {/* frontend `.send-btn.chat-stop`: neutral fill + dark glyph. */}
             {disabled ? (
               <AnimatedPressable
@@ -295,6 +310,14 @@ export function Composer({
                 </AnimatedPressable>
               ) : null}
 
+              <AnimatedPressable
+                accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
+                onPress={onVoiceInput}
+                style={styles.circleBtn}
+              >
+                <Ionicons name="mic-outline" size={20} color={iconColor} />
+              </AnimatedPressable>
+
               {/* Send / Stop */}
               {disabled ? (
                 <AnimatedPressable
@@ -344,10 +367,11 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 620,
     alignSelf: 'center',
-    minHeight: 52,
+    minHeight: 64,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
+    paddingLeft: 4,
+    paddingRight: 6,
+    paddingVertical: 0,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -379,16 +403,16 @@ const styles = StyleSheet.create({
    * the resting capsule taller than the web composer. */
   singleInput: {
     flex: 1,
-    height: 38,
-    fontSize: 14,
-    lineHeight: 20,
-    paddingHorizontal: 8,
+    height: 52,
+    fontSize: 16,
+    lineHeight: 24,
+    paddingHorizontal: 0,
     paddingVertical: 0,
   },
   singleRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 0,
   },
   expandedContent: {
     flex: 1,
@@ -417,25 +441,25 @@ const styles = StyleSheet.create({
   /* Attach / think-deeper icon buttons — frontend sizes these at 38px
    * with a 20px glyph. */
   circleBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /* Mic sits one step smaller on the web (30px button, 16px glyph). */
   micBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /* frontend `.send-btn`: 28px circle, 50% radius, 16px glyph. */
   actionBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },

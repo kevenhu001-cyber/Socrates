@@ -8,6 +8,7 @@ import { useT } from '../i18n';
 import { Markdown } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
 import { AnimatedPressable } from './AnimatedPressable';
+import { CanvasBlock } from './CanvasBlock';
 import { messagesApi } from '../data/api/client';
 import { setClipboardText } from '../native/clipboard';
 import * as Speech from '../native/speech';
@@ -18,7 +19,15 @@ interface MessageBubbleProps {
   onRetry?: () => void;
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
+  onIterate?: (text: string) => void;
 }
+
+type CanvasMessage = Message & {
+  outputMode?: string | null;
+  canvasId?: string | null;
+  editedText?: string | null;
+  _extensionLabel?: string | null;
+};
 
 function HighlightedPlainText({ text, highlightKey, style }: { text: string; highlightKey?: string; style?: object }) {
   const { colors } = useTheme();
@@ -79,11 +88,14 @@ export const MessageBubble = React.memo(function MessageBubble({
   isLastAssistant = false,
   onRetry,
   highlight,
+  onIterate,
 }: MessageBubbleProps) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
   const isUser = message.role === 'user';
   const text = message.rawText || message.content || '';
+  const canvasMessage = message as CanvasMessage;
+  const isCanvas = !isUser && canvasMessage.outputMode === 'canvas' && Boolean(canvasMessage.canvasId);
   const streaming = message.type === 'streaming';
   const [rating, setRating] = useState<'up' | 'down' | 'none'>('none');
   const [speaking, setSpeaking] = useState(false);
@@ -223,12 +235,19 @@ export const MessageBubble = React.memo(function MessageBubble({
               style={[styles.text, { color: colors.text, fontFamily: typography.body }]}
             />
           ) : null
+        ) : isCanvas ? (
+          <CanvasBlock
+            originalText={text}
+            initialEditedText={canvasMessage.editedText}
+            label={canvasMessage._extensionLabel || undefined}
+            onIterate={onIterate}
+          />
         ) : (
           <Markdown text={text} streaming={streaming} highlight={highlight} />
         )}
 
         {/* Action Toolbar */}
-        {!streaming && text ? (
+        {!streaming && text && !isCanvas ? (
           <View style={[styles.toolbar, isUser && styles.toolbarUser]}>
             <AnimatedPressable accessibilityLabel="Copy message" onPress={copyText} style={styles.toolbarButton}>
               <Ionicons

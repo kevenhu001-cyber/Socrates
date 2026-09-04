@@ -14,6 +14,8 @@ import { appStore, useAppStore } from '../stores/appStore';
 import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import { native } from '../native/native';
 import type { RootStackParamList } from '../navigation/types';
+import { useResponsive } from '../theme/responsive';
+import { toast } from '../components/Toast';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -88,6 +90,7 @@ export function NewChatScreen({ navigation, route }: Props) {
   const { language } = useI18n();
   const t = useT();
   const state = useAppStore();
+  const { isCompact } = useResponsive();
   const mode = state.activeSession?.mode || 'chat';
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
@@ -171,16 +174,8 @@ export function NewChatScreen({ navigation, route }: Props) {
         onToggleIncognito={() => appStore.toggleIncognito()}
       />
 
-      {!state.isOnline ? (
-        <View style={[styles.offline, { backgroundColor: colors.surfaceRaised, borderColor: colors.borderStrong }]}>
-          <Text style={[styles.offlineText, { color: colors.textMuted, fontFamily: typography.medium }]}>
-            {t('chat.offlineBanner') || 'Offline mode: messages will sync when reconnected'}
-          </Text>
-        </View>
-      ) : null}
-
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, isCompact ? styles.scrollContentCompact : null]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -189,44 +184,46 @@ export function NewChatScreen({ navigation, route }: Props) {
 
         {/* Greeting — mirrors `#topicTitle.topic-title.greeting`
          * (`frontend/index.html:568`, `styles.css:1074`). */}
-        <Enter delay={0}>
+        {!isCompact ? <Enter delay={0}>
           <Text
             accessibilityRole="header"
             style={[styles.greeting, { color: colors.textMuted, fontFamily: typography.display }]}
           >
             {greeting}
           </Text>
-        </Enter>
+        </Enter> : null}
 
         {/* Starter ideas — two chips at a session-stable offset from
          * the shared library, with the `home.ideasLabel` heading
          * (`frontend/index.html:635-636`, `suggestions.js:274-287`). */}
-        <Enter delay={70}>
+        {!isCompact ? <Enter delay={70}>
           <Text style={[styles.ideasLabel, { color: colors.textMuted, fontFamily: typography.semibold }]}>
             {t('home.ideasLabel') || (language === 'zh' ? '灵感' : 'Ideas for you')}
           </Text>
-        </Enter>
+        </Enter> : null}
         <Enter delay={70}>
-          <View style={styles.ideasSection}>
+          <View style={[styles.ideasSection, isCompact ? styles.ideasSectionCompact : null]}>
           {ideas.slice(0, 2).map((idea) => (
             <AnimatedPressable
               key={idea.id}
               onPress={() => selectIdea(idea)}
               style={[
                 styles.ideaPill,
+                isCompact ? styles.ideaPillCompact : null,
                 {
                   backgroundColor: 'transparent',
                   borderColor: colors.borderSubtle,
                 },
               ]}
             >
-              <View style={styles.ideaIcon}>
-                <Ionicons name={idea.icon} size={15} color={colors.accent} />
+              <View style={[styles.ideaIcon, isCompact ? styles.ideaIconCompact : null]}>
+                <Ionicons name={idea.icon} size={isCompact ? 20 : 15} color={isCompact ? colors.text : colors.accent} />
               </View>
               <Text
                 numberOfLines={1}
                 style={[
                   styles.ideaPillText,
+                  isCompact ? styles.ideaPillTextCompact : null,
                   { color: colors.textSecondary, fontFamily: typography.body },
                 ]}
               >
@@ -282,6 +279,8 @@ export function NewChatScreen({ navigation, route }: Props) {
             onAttach={onAttach}
             onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
             onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
+            onVoiceInput={() => toast.show(t('chat.voiceUnavailable') || 'Voice input is not available on this device yet.', 'info')}
+            placeholder={t('chat.inputPlaceholder')}
           />
         </View>
         </Enter>
@@ -321,6 +320,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     flexGrow: 1,
   },
+  scrollContentCompact: {
+    paddingHorizontal: 32,
+    paddingTop: 0,
+    paddingBottom: 24,
+  },
   offline: {
     marginHorizontal: 14,
     marginBottom: 8,
@@ -352,6 +356,12 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 2,
   },
+  ideasSectionCompact: {
+    marginBottom: 16,
+    marginHorizontal: -6,
+    gap: 8,
+    paddingHorizontal: 12,
+  },
   ideasLabel: {
     fontSize: 12,
     textTransform: 'uppercase',
@@ -368,19 +378,35 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 0.5,
   },
+  ideaPillCompact: {
+    minHeight: 44,
+    paddingVertical: 7,
+    paddingHorizontal: 0,
+    gap: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   ideaIcon: {
     width: 16,
     height: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ideaIconCompact: {
+    width: 24,
+    height: 24,
+  },
   ideaPillText: {
     fontSize: 13,
     lineHeight: 18,
     flexShrink: 1,
   },
+  ideaPillTextCompact: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
   composerCardWrap: {
-    marginBottom: 6,
+    marginBottom: 0,
   },
   attachments: {
     gap: 8,

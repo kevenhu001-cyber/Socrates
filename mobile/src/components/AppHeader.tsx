@@ -6,6 +6,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { AnimatedPressable } from './AnimatedPressable';
 import { useAppDrawer } from './AppDrawer';
 import { useT } from '../i18n';
+import { useResponsive } from '../theme/responsive';
 
 type Props = {
   title?: string;
@@ -65,6 +66,9 @@ export function AppHeader({
   const { colors, typography } = useTheme();
   const t = useT();
   const { openDrawer } = useAppDrawer();
+  const { isCompact } = useResponsive();
+  const renderModeSwitch = showModeSwitch && !isCompact;
+  const renderTitle = Boolean(title) && !(isCompact && conversationActive);
 
   /* P1-2 alignment: every value below is sourced from the canonical
    * `@socrates/theme` palette so the AppHeader matches `frontend`'s
@@ -77,18 +81,33 @@ export function AppHeader({
   const activeTabBg = colors.surfaceHover;
 
   return (
-    <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) + 4, backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.header,
+        isCompact ? styles.headerCompact : null,
+        {
+          paddingTop: isCompact ? Math.max(insets.top, 10) : Math.max(insets.top, 10) + 4,
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
       {/* Left Action: Navigation Drawer (Two-line hamburger matching cur-mobile-home.png) */}
       <AnimatedPressable
         accessibilityLabel={t('common.openNavigation') || 'Open navigation'}
         onPress={openDrawer}
-        style={[styles.circleBtn, { borderColor: colors.border, backgroundColor: circleBg }]}
+        scale={isCompact ? 0.94 : 0.92}
+        style={[
+          styles.circleBtn,
+          isCompact ? styles.circleBtnCompact : null,
+          { borderColor: colors.border, backgroundColor: circleBg },
+        ]}
       >
         <HamburgerLines color={colors.text} />
+        {isCompact ? <View style={[styles.statusDot, { backgroundColor: colors.voiceBlue, borderColor: colors.background }]} /> : null}
       </AnimatedPressable>
 
       {/* Center: Mode segmented switch or Title */}
-      {showModeSwitch ? (
+      {renderModeSwitch ? (
         <View
           style={[
             styles.modeSegment,
@@ -133,7 +152,7 @@ export function AppHeader({
             );
           })}
         </View>
-      ) : title ? (
+      ) : renderTitle ? (
         <View style={styles.titleContainer}>
           <Text numberOfLines={1} style={[styles.titleText, { color: colors.text, fontFamily: typography.semibold }]}>
             {title}
@@ -141,7 +160,7 @@ export function AppHeader({
           {/* P1 1:1 — model picker chip mirrors frontend `.model-picker-trigger`
            * (`frontend/src/styles.css:1104`). Previously `activeModelName` /
            * `onOpenModelPicker` were accepted as props but never rendered. */}
-          {onOpenModelPicker ? (
+          {onOpenModelPicker && !isCompact ? (
             <AnimatedPressable
               accessibilityRole="button"
               accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
@@ -202,7 +221,7 @@ export function AppHeader({
             {/* P1 1:1 — landing model trigger (frontend shows the model
              * picker next to the landing composer). Visible when the
              * parent wires `onOpenModelPicker`, e.g. NewChatScreen. */}
-            {onOpenModelPicker ? (
+            {onOpenModelPicker && !isCompact ? (
               <AnimatedPressable
                 accessibilityRole="button"
                 accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
@@ -218,19 +237,17 @@ export function AppHeader({
             <AnimatedPressable
               accessibilityLabel={isIncognito ? 'Incognito active' : (t('sidebar.nav.new') || 'Conversation')}
               onPress={onToggleIncognito || onNewChat}
+              scale={isCompact ? 0.94 : 0.92}
               style={[
                 styles.circleBtn,
+                isCompact ? styles.circleBtnCompact : null,
                 {
                   borderColor: isIncognito ? colors.accent : colors.border,
                   backgroundColor: isIncognito ? colors.accentSoft : circleBg,
                 },
               ]}
             >
-              {isIncognito ? (
-                <Ionicons name="glasses" size={19} color={colors.accent} />
-              ) : (
-                <Ionicons name="chatbubble-outline" size={18} color={colors.text} />
-              )}
+              <Ionicons name="glasses-outline" size={isCompact ? 24 : 19} color={isIncognito ? colors.accent : colors.textMuted} />
             </AnimatedPressable>
           </View>
         )}
@@ -251,6 +268,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 10,
   },
+  headerCompact: {
+    minHeight: 64,
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+  },
   /* P2-1 alignment: outer pill/circle buttons drop from 38 → 32 to
    * match `frontend`'s `.icon-btn` (32 × 32). The 38 value was a
    * pre-align touch-target overshoot. The inner `pillBtn` was already
@@ -264,6 +286,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  circleBtnCompact: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  statusDot: {
+    position: 'absolute',
+    top: 6,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderWidth: 1.5,
+    borderRadius: 4,
   },
   modeSegment: {
     flexDirection: 'row',

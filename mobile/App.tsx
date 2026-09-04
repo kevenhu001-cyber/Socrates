@@ -152,7 +152,11 @@ function NativeStack() {
         <Stack.Screen name="Tutor" component={TutorScreen} />
         <Stack.Screen name="Library" component={RecentsScreen} />
         <Stack.Screen name="ExamSession" component={ExamScreen} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
+        />
         <Stack.Screen name="Search" component={SearchScreen} />
         <Stack.Screen name="More" component={MoreScreen} />
         <Stack.Screen name="Projects" component={ProjectsScreen} />

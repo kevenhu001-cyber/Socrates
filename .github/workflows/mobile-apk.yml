@@ -1,0 +1,129 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: Run mobile typecheck and tests before building
+        required: true
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'packages/contracts/**'
+      - 'packages/core/**'
+      - 'packages/theme/**'
+      - 'assets/buildResources/**'
+      - '.github/workflows/mobile-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  ANDROID_PLATFORM: 'android-35'
+  ANDROID_BUILD_TOOLS: '35.0.0'
+  ANDROID_NDK_VERSION: '27.1.12297006'
+  RN_ARCHITECTURES: 'arm64-v8a,armeabi-v7a,x86,x86_64'
+
+jobs:
+  build-apk:
+    name: Build installable debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install pinned Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platform-tools" \
+            "platforms;${ANDROID_PLATFORM}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "ndk;${ANDROID_NDK_VERSION}"
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Verify mobile client
+        if: github.event_name == 'push' || inputs.run_tests
+        working-directory: mobile
+        run: |
+          npm run typecheck
+          npm test
+          npx expo-doctor
+
+      - name: Generate Android project
+        working-directory: mobile
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Assemble APK
+        working-directory: mobile/android
+        env:
+          NODE_ENV: production
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --console=plain \
+            -PreactNativeArchitectures="$RN_ARCHITECTURES"
+
+      - name: Verify and package APK
+        env:
+          APK_SOURCE: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+        run: |
+          set -euo pipefail
+          APP_VERSION=$(node -p "require('./mobile/app.json').expo.version")
+          APK_NAME="socrates-android-${APP_VERSION}-${GITHUB_SHA::7}-debug.apk"
+          mkdir -p mobile/dist
+          cp "$APK_SOURCE" "mobile/dist/$APK_NAME"
+
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose --print-certs "mobile/dist/$APK_NAME"
+          (cd mobile && npm run verify:apk -- "dist/$APK_NAME")
+
+          echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
+          {
+            echo "### Android APK"
+            echo
+            echo "Built \`$APK_NAME\` from \`${GITHUB_SHA}\`."
+            echo "Download it from this run's **Artifacts** section."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socrates-android-apk-${{ github.sha }}
+          path: |
+            mobile/dist/${{ env.APK_NAME }}
+            mobile/dist/${{ env.APK_NAME }}.sha256
+          if-no-files-found: error
+          retention-days: 30
