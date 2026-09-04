@@ -186,7 +186,7 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
 function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props & { permanent?: boolean }) {
   const { closeDrawer } = useAppDrawer();
   const { colors, radius, typography } = useTheme();
-  const { sidebarWidth } = useResponsive();
+  const { sidebarWidth, isCompact } = useResponsive();
   const { mode: themeMode, toggle: toggleTheme } = useThemeController();
   const state = useAppStore();
   const t = useT();
@@ -283,9 +283,13 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       accessibilityRole="button"
       accessibilityLabel={t(item.label)}
       onPress={() => activate(item)}
-      style={[styles.item, { borderRadius: 8 }]}
+      style={[
+        styles.item,
+        item.route === 'Home' ? { backgroundColor: colors.surfaceHover } : null,
+        { borderRadius: 8 },
+      ]}
     >
-      <Ionicons name={item.icon} size={20} color={colors.textMuted} />
+      <Ionicons name={item.icon} size={16} color={colors.textMuted} />
       <Text
         style={[
           styles.itemText,
@@ -300,7 +304,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
     </AnimatedPressable>
   );
 
-  const name = state.user?.displayName || state.user?.email || t('more.learner') || 'Learner';
+  const name = state.user?.displayName || state.user?.email?.split('@')[0] || t('more.learner') || 'Learner';
   const plan = state.user?.plan || state.user?.tier || 'Free plan';
 
   const isDark = colors.mode === 'dark';
@@ -311,37 +315,29 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       style={[
         styles.panel,
         permanent ? { width: sidebarWidth ?? 288, maxWidth: sidebarWidth ?? 288, flex: 1 } : null,
+        !permanent && isCompact ? styles.panelCompact : null,
         { backgroundColor: isDark ? PANEL_FROSTED_DARK : PANEL_FROSTED_LIGHT, borderRightColor: colors.border },
       ]}
     >
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? PANEL_FROSTED_DARK : PANEL_FROSTED_LIGHT }]} />
       <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.panelSafe}>
       {/* Brand Header */}
       <View style={[styles.brandRow, { borderBottomColor: colors.border }]}>
-        <BrandMark size={28} />
-        <Text style={[styles.brand, { color: colors.text, fontFamily: typography.display }]}>Socrates</Text>
+        <BrandMark size={18} />
+        <Text style={[styles.brand, { color: colors.text, fontFamily: typography.semibold }]}>Socrates</Text>
         {!permanent ? (
-          <AnimatedPressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.closeButton}>
-            <Ionicons name="close" size={22} color={colors.textMuted} />
-          </AnimatedPressable>
-        ) : null}
-      </View>
-
-      {/* Instant Search Bar */}
-      <View style={[styles.searchWrap, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 8 }]}>
-        <Ionicons name="search-outline" size={16} color={colors.textMuted} />
-        <TextInput
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder={t('sidebar.searchPlaceholder') || 'Search chats...'}
-          placeholderTextColor={colors.textMuted}
-          style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        {searchQuery ? (
-          <Pressable onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={16} color={colors.textSubtle} />
-          </Pressable>
+          <View style={styles.brandActions}>
+            <AnimatedPressable
+              accessibilityLabel={t('sidebar.nav.new') || 'New chat'}
+              onPress={() => activate(PRIMARY_ITEMS[0])}
+              style={styles.headerAction}
+            >
+              <Ionicons name="create-outline" size={20} color={colors.textMuted} />
+            </AnimatedPressable>
+            <AnimatedPressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.headerAction}>
+              <Ionicons name="albums-outline" size={20} color={colors.textMuted} />
+            </AnimatedPressable>
+          </View>
         ) : null}
       </View>
 
@@ -349,6 +345,25 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Navigation list */}
         <View style={styles.group}>{PRIMARY_ITEMS.map(renderItem)}</View>
+
+        {/* Frontend places search after the primary destinations. */}
+        <View style={[styles.searchWrap, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 16 }]}>
+          <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t('sidebar.searchPlaceholder') || 'Search chats...'}
+            placeholderTextColor={colors.textMuted}
+            style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery ? (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={16} color={colors.textSubtle} />
+            </Pressable>
+          ) : null}
+        </View>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -411,7 +426,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       </ScrollView>
 
       {/* Footer Profile & Preferences */}
-      <View style={[styles.profile, { borderTopColor: colors.border, backgroundColor: colors.surfaceRaised }]}>
+      <View style={[styles.profile, { borderTopColor: colors.border, backgroundColor: isDark ? '#121212' : colors.surface }]}>
         <AnimatedPressable
           accessibilityLabel={t('profile.heading') || 'Account'}
           onPress={() => profileOverlay.open()}
@@ -445,6 +460,17 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           />
         </AnimatedPressable>
 
+        <AnimatedPressable
+          accessibilityLabel={t('sidebar.more.display') || 'Display & theme'}
+          onPress={() => {
+            closeDrawer();
+            onNavigate('Settings');
+          }}
+          style={[styles.footerIconBtn, { borderRadius: radius.md }]}
+        >
+          <Ionicons name="options-outline" size={19} color={colors.textMuted} />
+        </AnimatedPressable>
+
         {/* Settings button */}
         <AnimatedPressable
           accessibilityLabel={t('more.settings') || 'Settings'}
@@ -457,17 +483,6 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           <Ionicons name="settings-outline" size={20} color={colors.textMuted} />
         </AnimatedPressable>
 
-        {/* Sign out */}
-        <AnimatedPressable
-          accessibilityLabel={t('common.signOut') || 'Sign out'}
-          onPress={() => {
-            closeDrawer();
-            void appStore.logout();
-          }}
-          style={[styles.footerIconBtn, { borderRadius: radius.md }]}
-        >
-          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-        </AnimatedPressable>
       </View>
       {/* Rename dialog — same card as `RecentsScreen` rename modal. */}
       <Modal visible={renameId !== null} transparent animationType="fade" onRequestClose={() => setRenameId(null)}>
@@ -529,50 +544,52 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
  * background tint, so the frosted look survives an exception. */
 /* frontend `.sidebar { background: hsl(var(--bg-000)/0.72); backdrop-filter: blur(12px) }`
  * — the frosted tint is the overlay token at 72% alpha in BOTH modes. */
-const PANEL_FROSTED_DARK = 'rgba(13, 13, 13, 0.72)';
-const PANEL_FROSTED_LIGHT = 'rgba(252, 251, 248, 0.72)';
+const PANEL_FROSTED_DARK = '#121212';
+const PANEL_FROSTED_LIGHT = '#fafafa';
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row' },
   backdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.64)' },
   /* frontend `.sidebar { width: var(--app-sidebar-width, 18rem) }` = 288px. */
-  panel: { width: '86%', maxWidth: 288, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  panel: { width: '86%', maxWidth: 288, height: '100%', flex: 1, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  panelCompact: { width: 260, maxWidth: 260 },
   panelSafe: { flex: 1 },
   brandRow: {
-    height: 64,
-    paddingHorizontal: 16,
+    height: 48,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 0,
   },
-  brand: { fontSize: 20, flex: 1 },
-  closeButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  brand: { fontSize: 16, flex: 1 },
+  brandActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  headerAction: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 12,
-    marginTop: 10,
-    marginBottom: 4,
+    marginHorizontal: 0,
+    marginTop: 12,
+    marginBottom: 8,
     paddingHorizontal: 10,
-    height: 32,
+    height: 34,
     borderWidth: 1,
     gap: 8,
-    borderRadius: 8,
+    borderRadius: 16,
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
     paddingVertical: 0,
   },
-  scroll: { paddingHorizontal: 10, paddingBottom: 18 },
-  group: { gap: 2, paddingTop: 4 },
+  scroll: { paddingHorizontal: 8, paddingBottom: 18 },
+  group: { gap: 0, paddingTop: 4 },
   item: {
-    minHeight: 42,
-    paddingHorizontal: 12,
+    minHeight: 36,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   itemText: { fontSize: 14 },
   divider: {
@@ -618,8 +635,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profile: {
-    minHeight: 70,
-    paddingHorizontal: 14,
+    minHeight: 64,
+    paddingHorizontal: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     alignItems: 'center',
