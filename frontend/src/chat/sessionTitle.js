@@ -45,8 +45,12 @@ export function generateSessionTitle(){
   var sysMsg={role:"system",content:sysContent};
   var userMsg={role:"user",content:prompt};
   var msgs2=[sysMsg,userMsg];
-  /* Always go through the server proxy — Beagle is registered server-side. */
-  apiFetch("/api/chat",{method:"POST",body:{messages:msgs2,temperature:0.3,max_tokens:30,mode:"chat"}}).then(function(r){
+  /* Background-only call: never trigger the global 401 → auth-gate flow.
+     A title request that races a real session expiry (or a rate limit)
+     must fail silently — the main chat turn already owns the user-visible
+     429 toast / sign-in gate, and a duplicate handleAuthExpired from here
+     would re-enter the gate + abort the stream a second time. */
+  apiFetch("/api/chat",{method:"POST",_authEndpoint:true,body:{messages:msgs2,temperature:0.3,max_tokens:30,mode:"chat"}}).then(function(r){
     _titleGenQueued=false;
     var raw=(r&&typeof r.content==="string")?r.content:
       (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
@@ -80,8 +84,16 @@ export function generateSessionTitle(){
       _titleGenRetryAfter=0;
       if (typeof window.saveCurrentSession === "function") window.saveCurrentSession();
     }
-  }).catch(function(){
+  }).catch(function(e){
     _titleGenQueued=false;
+    /* P_title-quiet — 401 (session gone; the main turn already showed the
+       gate) and 429 (rate-limited; the main turn already owns the retry
+       toast) are expected background failures: stay silent and, for 429,
+       back off longer so the next save doesn't re-hit the same bucket.
+       Only log unexpected failures to keep the console useful. */
+    var st=e&&e.status;
+    if(st===429){_titleGenRetryAfter=Date.now()+5*60*1000;return;}
+    if(st===401)return;
     console.log("[title gen] failed");
   });
 }

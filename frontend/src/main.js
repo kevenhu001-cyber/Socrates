@@ -394,6 +394,24 @@ function clearLegacyMsgListChildren(){
 
   function handle(label, payload) {
     if (inHandler) return;
+    /* P_turn-abort-quiet — lifecycle aborts (session-expired, user-stop,
+       superseded, …) are intentional control flow. A late rejection that
+       escaped a guarded turn path must not raise the red banner or file
+       a client-error report; a one-line console note keeps it greppable. */
+    if (label === 'unhandledrejection') {
+      var sig = '';
+      try { sig = String((payload && payload.reason != null ? payload.reason : '') + ' ' + ((payload && payload.message) || payload)).toLowerCase(); } catch (_) {}
+      if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
+        try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) {}
+        return;
+      }
+      var nm = '';
+      try { nm = String(payload && payload.name || ''); } catch (_) {}
+      if (nm === 'AbortError' && /abort/i.test(sig)) {
+        try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) {}
+        return;
+      }
+    }
     inHandler = true;
     try {
       const correl = shortCorrel();
@@ -1883,7 +1901,7 @@ async function loadSession(id){
           }
         }
         if(lastUserMsg&&typeof window.askChatTurn==="function"){
-          window.askChatTurn(lastUserMsg);
+          quietTurn(window.askChatTurn(lastUserMsg));
         }else{
           showToast(t("toast.noRetryTarget"));
         }
@@ -2838,7 +2856,13 @@ async function startSession(){
         await window.startDeepResearch(stateStore.read("topic"));
         return;
       }
-      await askChatTurn(stateStore.read("topic"));
+      try{
+        await askChatTurn(stateStore.read("topic"));
+      }catch(startErr){
+        /* P_turn-abort-quiet — see submitChatMessage: expected lifecycle
+           aborts unwind silently; real failures log without banner. */
+        if(!isExpectedTurnAbort(startErr)){try{console.error("[chat] start turn failed:",startErr)}catch(_){}}
+      }
     }, 0);
     return;
   }
@@ -3259,6 +3283,30 @@ async function askNextQuestion(){
    Reuses callAPIStream + addStreamingMessage (single-render path
    that runs formatMsg exactly once — no renderAssistantHTML).
    ============================================================ */
+/* P_turn-abort-quiet — lifecycle aborts (auth expiry, session switch,
+   turn superseded, …) are intentional control flow, not errors. An
+   async turn entry point that lets one escape produces
+   `unhandledrejection AbortError: session-expired` + the red
+   global-error banner. Every fire-and-forget turn entry in this file
+   swallows exactly these and lets real bugs surface. */
+function isExpectedTurnAbort(e){
+  if(!e)return true;
+  var s="";
+  try{s=String((e.reason!=null?e.reason:"")+" "+(e.message||e)).toLowerCase();}catch(_){return false}
+  if(/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(s))return true;
+  var nm="";try{nm=String(e.name||"")}catch(_){}
+  if(nm==="AbortError"&&/abort/i.test(s))return true;
+  return false;
+}
+/* P_turn-abort-quiet — rejection guard for fire-and-forget turn promises.
+   Expected lifecycle aborts vanish; real failures log to console (the
+   stream controller already surfaced them in-bubble, so no banner). */
+function quietTurn(p){
+  if(p&&typeof p.catch==="function"){
+    p.catch(function(e){if(!isExpectedTurnAbort(e)){try{console.error("[chat] turn failed:",e)}catch(_){}}});
+  }
+  return p;
+}
 async function askChatTurn(userText,pendingOverride){
   publishThinkingTurnStart();
   /* Abort the previous in-flight chat stream, if any. Without this the
@@ -3285,7 +3333,7 @@ async function askChatTurn(userText,pendingOverride){
      of waiting 120s for the stream to fail. */
   if(offlineGuard()){
     var retryThisTurn=function(){
-      askChatTurn(userText,pendingContent);
+      quietTurn(askChatTurn(userText,pendingContent));
     };
     var ctlOff=addStreamingMessage({onRetry:retryThisTurn});
     ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",retryThisTurn);
@@ -3423,7 +3471,7 @@ async function askChatTurn(userText,pendingOverride){
   var ctl=addStreamingMessage({onRetry:function(){
     /* Carry this turn's immutable content directly so retrying an older
        multimodal turn can never pick up a newer draft's attachments. */
-    askChatTurn(userText,pendingContent);
+    quietTurn(askChatTurn(userText,pendingContent));
   }});
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
@@ -4093,7 +4141,15 @@ async function submitChatMessage(textOverride,opts){
     /* Chat mode: plain conversation, no Socratic / KB / mistake book.
        Just stream a reply and save. */
     if(appMode==="chat"){
-      await askChatTurn(text,chatContent);
+      try{
+        await askChatTurn(text,chatContent);
+      }catch(turnErr){
+        /* P_turn-abort-quiet — session-expired / superseded aborts are
+           expected (the gate / new turn already owns the UX). Anything
+           else is a real bug: log it without the red banner, since the
+           stream controller already surfaced the failure in-bubble. */
+        if(!isExpectedTurnAbort(turnErr)){try{console.error("[chat] turn failed:",turnErr)}catch(_){}}
+      }
       return;
     }
 
@@ -4251,7 +4307,11 @@ async function submitChatMessage(textOverride,opts){
          avoids a downstream "Cannot read properties of undefined
          (reading 'status')" in buildFollowUpMessages. */
       if(!node){
-        await askChatTurn(text,chatContent);
+        try{
+          await askChatTurn(text,chatContent);
+        }catch(turnErr){
+          if(!isExpectedTurnAbort(turnErr)){try{console.error("[chat] turn failed:",turnErr)}catch(_){}}
+        }
         stateStore.dispatch({type:"state/set",key:"totalQ",value:stateStore.read("totalQ")+1});
         updateChatStats();
         return;
@@ -4474,7 +4534,7 @@ function editUserMessage(messageId){
       if(window._activeChatCtl){try{window._activeChatCtl.abort()}catch(_){}}
       if(window._activeChatAbort){try{window._activeChatAbort("msg-edit")}catch(_){}}
       patchPromise.then(function(){
-        try{ window.askChatTurn(editedText); }catch {/* msg-edit replay failed */}
+        try{ quietTurn(window.askChatTurn(editedText)); }catch {/* msg-edit replay failed */}
       });
     }
     /* Avoid leaving the patch promise dangling — reference it so
@@ -4587,9 +4647,9 @@ function regenerateAssistantMessage(messageId){
        settles, so the delete (assistant rows createdAt >= user turn)
        can't land after the fresh reply is saved and wipe it. Mirrors
        editUserMessage. patchPromise resolves even on failure (.catch). */
-    patchPromise.then(function(){
-      try{ window.askChatTurn(userText); }catch {/* regen failed */}
-    });
+     patchPromise.then(function(){
+       try{ quietTurn(window.askChatTurn(userText)); }catch {/* regen failed */}
+     });
   }
 }
 /* Branch from a message — fork the conversation at this point.
@@ -4678,7 +4738,7 @@ function branchFromMessage(messageId, opts){
         publishReactChatRuntime({type:"state-synced",reason:"re-explain-prompt"});
         /* Fire the re-explain question immediately. */
         if(typeof window.askChatTurn === "function"){
-          setTimeout(function(){ window.askChatTurn(reExplainMsg); }, 100);
+          setTimeout(function(){ try{quietTurn(window.askChatTurn(reExplainMsg))}catch(_){} }, 100);
         }
       }
       saveCurrentSession();
@@ -4969,7 +5029,7 @@ function resendLastUserMessage(){
     }
   }
   if(text&&typeof window.askChatTurn==="function"){
-    window.askChatTurn(text);
+    quietTurn(window.askChatTurn(text));
     return true;
   }
   try{showToast(t("toast.noRetryTarget"))}catch(_){}
@@ -6470,7 +6530,7 @@ function doRender(){
       window.addMessage('user',retryText);
     }
     if(typeof window.askChatTurn==='function'){
-      window.askChatTurn(retryText);
+      quietTurn(window.askChatTurn(retryText));
     }
   };
 
@@ -9712,6 +9772,7 @@ window.clearActiveTemplate = clearActiveTemplate;
 // window.openAgentView  = openAgentView;  // unimplemented
 // window.deleteAgentRun = deleteAgentRun; // unimplemented
 window.askChatTurn = askChatTurn;
+window.isExpectedTurnAbort = isExpectedTurnAbort;
 window.syncSidebarBtns = syncSidebarBtns;
 window.actuallyDeleteSession = actuallyDeleteSession;
 window.confirmPurgeSession = confirmPurgeSession;

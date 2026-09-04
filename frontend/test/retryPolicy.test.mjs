@@ -6,6 +6,7 @@ import {
   AI_MAX_RETRIES,
   AI_RETRY_DELAY_MS,
   isRetryableAIError,
+  isUserAbort,
   waitForAIRetry,
 } from '../src/chat/retryPolicy.ts';
 
@@ -51,4 +52,13 @@ test('aborting the retry delay rejects immediately and does not start another at
   });
 
   await assert.rejects(retrying, (error) => error.name === 'AbortError');
+});
+
+test('lifecycle aborts unwind quietly without retry (P_turn-abort-quiet)', () => {
+  for (const reason of ['session-expired', 'session-switch', 'superseded', 'new-session', 'msg-edit', 'user-stop']) {
+    const controller = new AbortController();
+    controller.abort(reason);
+    assert.equal(isUserAbort(null, controller.signal), true, reason);
+  }
+  assert.equal(isRetryableAIError({ status: 429, reason: 'session-expired' }), false);
 });
