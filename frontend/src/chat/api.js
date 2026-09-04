@@ -98,6 +98,11 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
     var activeProjectId = stateStore.read('currentProjectId') || null;
     if (activeSessionId) body.sessionId = activeSessionId;
     if (activeProjectId) body.projectId = activeProjectId;
+    /* P_rag-context — opt the turn into session-scoped RAG recall.
+       The server owner-checks the session, retrieves against the
+       chunk index, and injects the hits as an untrusted context
+       block. An empty session index degrades to no injection. */
+    if (activeSessionId) body.ragSessionId = activeSessionId;
   } catch (_) { /* keep request compatible with isolated test harnesses */ }
 
   var customInst = (typeof window.getCustomInstructionsString === "function") ? window.getCustomInstructionsString() : "";

@@ -503,6 +503,60 @@ test files pin the route surface and the middleware ordering;
 `server/test/embedding.test.js` pins the 8-case SSRF guard.
 Test pass: server 53/53 suites, frontend 328/328 unit tests.
 
+Admin console v2 (2026-09-05): dedicated /admin page with its own
+password credential. The previous ADMIN_EMAILS allowlist gate is
+replaced by an independent operator password: the console is no
+longer coupled to a user account. `services/adminAuth.ts` issues
+an HMAC-signed, stateless 8-hour session token keyed under
+SESSION_SECRET (constant-time signature check; the password
+check HMACs both sides before timingSafeEqual so a direct string
+compare cannot leak prefix-match timing). `routes/adminAuth.ts`
+exposes POST /login (authLimiter-backed, sets an httpOnly
+cookie), POST /logout, GET /status (public — tells the login
+form whether ADMIN_PASSWORD is provisioned), and GET /verify.
+`middleware/adminAuth.ts#requireAdminSession` replaces the old
+requireAuth + ADMIN_EMAILS pair on both config routes; the user
+session cookie is deliberately NOT accepted — the /admin page
+must be reachable without a user login, and an authenticated
+user session must never silently grant admin powers.
+
+/admin page (frontend): a main-content page
+(`#adminPanel` in index.html, `AdminPage.tsx` mounted into
+`#adminPanelBody` via the boot registry's
+`window.__socratesMountAdmin` hook). The sidebar gains an Admin
+nav button (`/admin` route added to WORKSPACE_ROUTES,
+`SidebarNavKey` widened, `openAdmin()` in sidebar/nav.js). The
+page verifies the stored token on mount (sessionStorage, plus
+the httpOnly cookie as the XHR fallback), renders the login
+form when unauthenticated, and renders the system-model and
+embedding-provider sections after sign-in. The previous
+modal-based entry (`AdminModal.tsx` + `window.openAdminModal`)
+stays for backward compatibility but the page is the primary
+surface.
+
+Multi-embedding-provider: `PUT /api/embedding-config` now
+accepts an optional `id` — present means update the existing
+row, absent means create a new row. Multiple providers can be
+stored for audit / quick switch; exactly one is active (the PUT
+clears every other row's flag), and the embedding service reads
+the active row.
+
+RAG context injection: the chat pipeline now opts into
+session-scoped recall. `ChatPayloadSchema` gains an optional
+`ragSessionId`; `appendRagContext` (routes/chat/helpers.ts)
+retrieves against the session's chunk index using the last user
+message as the query (owner-checked, hybrid BM25+vector, max 6
+hits × 1200 chars, 8000-char total budget) and appends the hits
+to the first system message as an untrusted
+`[Server context: session-recall]` block — explicitly marked as
+background recall, not instructions, before the
+final-output-constraints step so the no-dash rule still closes
+the prompt. Every failure mode (missing id, unowned session,
+empty index, retrieval error, empty query) degrades to
+no-injection; the chat turn never fails because RAG failed. The
+SPA builder (`chat/api.js#buildChatRequestBody`) sets
+`ragSessionId` from the active session id.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean

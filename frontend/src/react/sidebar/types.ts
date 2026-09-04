@@ -13,6 +13,7 @@ export type SidebarNavKey =
   | 'scheduled'
   | 'plugins'
   | 'exam'
+  | 'admin'
   | 'more'
   | null;
 
