@@ -9937,11 +9937,8 @@ window.__socratesLegacy = {
     addProvider: window.addProvider,
     clearSettings: clearSettings,
     saveSettings: saveSettings,
-    renderProviderList: renderProviderList,
-    syncSettingsUI: syncSettingsUI,
   },
   confirm: {
-    showConfirm: window.showConfirm,
     closeConfirm: window.closeConfirm,
   },
   sessions: {

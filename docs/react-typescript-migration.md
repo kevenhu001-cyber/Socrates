@@ -359,6 +359,27 @@ legacy gateway and e2e mocks. Two stray debug files from the previous
 batch (`frontend/console-check.tmp.mjs`,
 `frontend/e2e/_debug-slow.spec.mjs`) deleted.
 
+M5 progress (2026-09-05, batch 3): three dead `__socratesLegacy` bag
+entries retired after a full-reference audit. A regex-based audit
+(`scripts/audit-legacy-bag.mjs`) crawled every React reader of
+`getLegacyActions().ns.field`, including the
+`const X = getLegacyActions().ns; X.field(...)` and
+`const { field } = getLegacyActions().ns` patterns, and confirmed
+that 111 of 114 assembly fields are still read. The three that are
+not — `settings.renderProviderList`, `settings.syncSettingsUI`,
+`confirm.showConfirm` — were removed from the `main.js` assembly and
+from the `react/legacy/types.ts` declarations. Underlying functions
+and window bindings stay: `renderProviderList` and `syncSettingsUI`
+are still imported directly by `ui/dangerConfirms.js` and called
+within `ui/settings.js`; `window.showConfirm` is still called by
+`ui/dangerConfirms.js`, `ui/promptTemplates.js`, `sidebar/nav.js`,
+and `ui/confirm.js`; `window.renderProviderList` is still called by
+`config/providers.js`. The gateway now types-correctly reports only
+the entries the React tree actually consumes. Two audit scripts
+(`scripts/audit-window-bridges.mjs` for the `window.X =` surface and
+`scripts/audit-legacy-bag.mjs` for the typed legacy bag) are checked
+in so future batches can re-run the same reference analysis.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean
