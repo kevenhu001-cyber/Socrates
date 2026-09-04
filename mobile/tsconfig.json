@@ -6,6 +6,7 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "Bundler",
     "module": "ESNext",
+    "allowImportingTsExtensions": true,
     "ignoreDeprecations": "6.0",
     "customConditions": [
       "react-native"
