@@ -6,13 +6,13 @@ export {
   createToolRunApi,
   pureToolRunApi,
   TOOL_RUN_PHASES,
-} from './toolRun.ts';
+} from './toolRun';
 export type {
   ToolRun,
   ToolRunApi,
   ToolRunSummary,
   ToolRunWasmBinding,
-} from './toolRun.ts';
+} from './toolRun';
 
 /**
  * Parse one complete SSE frame. This is deliberately free of XMLHttpRequest,
