@@ -16,6 +16,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
+import { indexMessageChunks } from '../services/chunkIndex.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
@@ -254,8 +255,8 @@ router.post('/', writeLimiter, async (req, res, next) => {
      * so the DELETE's locking delete transaction (which awaits the
      * same row lock) serialises after our check. */
     const sessionId = await db.transaction(async (tx) => {
-      let sid;
-
+      let sid: string;
+      let indexedRows: Array<{ id: string; rawText: string | null; role: string }> = [];
       if (isUuid(id)) {
         const [owner] = await tx.select({ userId: sessions.userId })
           .from(sessions)
@@ -478,25 +479,53 @@ router.post('/', writeLimiter, async (req, res, next) => {
             dedupedRows[prev] = r;
           }
         }
-        await tx.insert(messages).values(dedupedRows).onConflictDoUpdate({
-          target: [messages.sessionId, messages.clientId],
-          set: {
-            role: sql`EXCLUDED.role`,
-            content: sql`EXCLUDED.content`,
-            rawText: sql`EXCLUDED.raw_text`,
-            html: sql`EXCLUDED.html`,
-            type: sql`EXCLUDED.type`,
-            sources: sql`EXCLUDED.sources`,
-            reasoningContent: sql`EXCLUDED.reasoning_content`,
-            attachments: sql`EXCLUDED.attachments`,
-            toolCalls: sql`EXCLUDED.tool_calls`,
-            createdAt: sql`EXCLUDED.created_at`,
-          },
-        });
+        /* P_session-chunks — RETURNING covers both new inserts and
+           conflict updates, so a re-save of an existing session
+           re-indexes in place. The sessionChunks index is written
+           outside the session transaction (see the .then() below). */
+        const upserted = await tx
+          .insert(messages)
+          .values(dedupedRows)
+          .onConflictDoUpdate({
+            target: [messages.sessionId, messages.clientId],
+            set: {
+              role: sql`EXCLUDED.role`,
+              content: sql`EXCLUDED.content`,
+              rawText: sql`EXCLUDED.raw_text`,
+              html: sql`EXCLUDED.html`,
+              type: sql`EXCLUDED.type`,
+              sources: sql`EXCLUDED.sources`,
+              reasoningContent: sql`EXCLUDED.reasoning_content`,
+              attachments: sql`EXCLUDED.attachments`,
+              toolCalls: sql`EXCLUDED.tool_calls`,
+              createdAt: sql`EXCLUDED.created_at`,
+            },
+          })
+          .returning({
+            id: messages.id,
+            rawText: messages.rawText,
+            role: messages.role,
+          });
+        indexedRows = upserted.filter((r) => r.role === 'assistant' && r.rawText);
       }
 
       const [session] = await tx.select().from(sessions).where(eq(sessions.id, sid)).limit(1);
-      return { session, wasNew: !existingSession };
+      return { session, wasNew: !existingSession, indexedRows, sid };
+    }).then(async (txResult) => {
+      /* The sessionChunks index is intentionally written outside the
+         session transaction. Chunking is O(N) in text length; holding
+         the sessions row lock during it would inflate the contention
+         window for the chat surface's session-save hot path. A
+         chunking failure is logged and swallowed — the next re-save
+         of the same session will re-index. */
+      for (const row of txResult.indexedRows) {
+        try {
+          await indexMessageChunks(row.id, txResult.sid, row.rawText || '');
+        } catch (idxErr) {
+          console.warn(`[sessions] chunk index failed for ${row.id}: ${(idxErr as Error).message}`);
+        }
+      }
+      return txResult;
     });
 
     /* Workspace creation is intentionally after the session transaction: a

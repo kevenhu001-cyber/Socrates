@@ -14,6 +14,7 @@ import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion } from '../services/llm.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { invalidateForMessage, ttsTextHash } from '../services/ttsStore.js';
+import { indexMessageChunks } from '../services/chunkIndex.js';
 
 /* P_attachments-shape — mirrors the per-message `attachments` shape
  * defined in routes/sessions.js (SessionPayloadSchema → messages[].attachments).
@@ -273,6 +274,17 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
             content: safeContent,
             rawText: safeRaw,
           }).returning();
+          /* P_session-chunks — re-index the freshly-stored assistant
+             message so the next BM25 search across the session finds
+             it. The same text was just sanitized for the messages
+             row, so chunking is O(N) of the same string. A chunking
+             failure is logged and swallowed; the index is not on the
+             critical path of the SSE response. */
+          try {
+            await indexMessageChunks(inserted.id, msg.sessionId, safeRaw);
+          } catch (idxErr) {
+            console.warn(`[messages] chunk index failed for ${inserted.id}: ${(idxErr as Error).message}`);
+          }
           try {
             res.write(`data: ${JSON.stringify({ done: true, messageId: inserted.id })}\n\n`);
             res.write('data: [DONE]\n\n');

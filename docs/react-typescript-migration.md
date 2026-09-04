@@ -405,6 +405,45 @@ cover the pure helpers, the ownership gate, the round-trip of a
 saved row, the stale-hash miss, and the body-shape guard. Test
 pass: server 49/49 suites (was 47), frontend 323/323 unit tests.
 
+M4 follow-up (2026-09-05): 30-day TTS retention sweep. The
+per-message TTS persistence hook above is wired into the
+existing `cleanupDb` interval. `TTS_RETENTION_DAYS` (env-tunable,
+default 30) bounds how long the durable audio rows live. A
+scheduled sweep is the right cost control: a 2 MB MP3 × every
+assistant message × every voice/language × every user adds up.
+Sweep runs every hour (existing schedule) and is unref'd so it
+never keeps the process alive on its own.
+
+M3 deferred (2026-09-05): session-scoped RAG persistence. The
+existing pure `server/src/services/rag.ts` (chunkText + BM25 +
+searchRagIndex, all covered by `rag.test.js`) was waiting on a
+durable chunk index. A new `session_chunks` table
+(`server/drizzle/0030_session_chunks.sql`, FKs `messages.id` and
+`sessions.id` both ON DELETE CASCADE) holds one row per chunk
+keyed by `(message_id, ordinal)` (unique). The unique key makes
+re-indexing idempotent. `server/src/services/chunkIndex.ts`
+exposes `indexMessageChunks`, `removeMessageChunks`,
+`searchSessionChunks`, and the pure owner-check helper
+`sessionOwnedBy`. Two write paths auto-index: the session-save
+route (`POST /api/sessions`) hooks the index call to the
+multi-row upsert's RETURNING so a re-save of an existing session
+re-indexes in place, and the PATCH-regenerate path (`PATCH
+/api/messages?regenerate=true`) indexes the freshly-stored
+assistant row. The index write is intentionally outside the
+session transaction (chunking is O(N) in text length and would
+inflate the lock window for the chat hot path). A new endpoint
+`POST /api/rag/search` accepts `{ sessionId, query, limit?,
+minScore? }`, owner-checks the session via
+`sessionOwnedBy`, runs BM25 in-memory over the session's chunks,
+and returns ranked hits. Search is O(chunks_in_session); a
+future work item can promote it to a persisted index or
+pgvector + embedding re-ranking without changing the wire
+contract. New test file `server/test/chunkIndex.test.js` covers
+ownership, idempotent re-index, stale-text replacement,
+whitespace clearing, cross-session isolation, and BM25 ranking.
+Test pass: server 50/50 suites (was 49), frontend 323/323 unit
+tests.
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean
