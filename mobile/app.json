@@ -33,7 +33,8 @@
           "imageWidth": 168,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "apiBaseUrl": "https://app.topodrive.top/api/v2"
