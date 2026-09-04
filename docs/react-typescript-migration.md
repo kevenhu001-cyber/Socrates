@@ -444,6 +444,20 @@ whitespace clearing, cross-session isolation, and BM25 ranking.
 Test pass: server 50/50 suites (was 49), frontend 323/323 unit
 tests.
 
+C5 island 1 (2026-09-05): `publishReactChatRuntime` extracted from
+`frontend/src/main.js` (10,162-line closure-bound legacy file) into
+`frontend/src/ui/reactBridge.js`. This is the cross-tree
+notification channel between the legacy JS pipeline and the
+React tree, with 18+ callsites in main.js and zero closure
+dependencies on the rest of the file — the smallest meaningful
+unit that can move. main.js now imports the function from the
+new module, the local definition is gone, and the callsites are
+unchanged. New `frontend/test/reactBridge.test.mjs` covers the
+bridge path, the CustomEvent path, the missing-bridge fallback,
+a throwing subscriber (must not break the producer), and the
+null-event → empty-detail contract. Test pass: frontend 328/328
+unit tests (was 323, +5 for reactBridge).
+
 Baseline verification (all green at record time):
 
 - `npm run lint` (tsc --noEmit): clean

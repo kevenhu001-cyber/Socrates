@@ -138,18 +138,6 @@ import { getActiveProvider, syncChatModel, syncExtensionsUI, syncModelPills, syn
    their UI from the latest message snapshot. The dispatch is synchronous
    and wrapped in try/catch so a noisy listener can never block the React
    bridge from publishing its event. */
-function publishReactChatRuntime(event){
-  try{
-    var bridge=window.__socratesReactChatBridge;
-    if(bridge&&typeof bridge.publish==="function")bridge.publish(event);
-  }catch(_){}
-  try{
-    if(typeof window!=="undefined"){
-      window.dispatchEvent(new CustomEvent("socrates:chat-runtime-changed",{detail:event||{}}));
-    }
-  }catch(_){}
-}
-
 /* The one live status line of a turn, as data. `status` is a LiveTurnStatus
    (phase waiting|thinking|retrying|error) or null to retire the line; see
    react/tool-run/TurnStatus for what each phase draws. Written onto the
@@ -10099,6 +10087,7 @@ import { installModalA11y } from './ui/modalA11y.js';
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
 
 import { toggleReadAloud } from './ui/readAloud.js';
+import { publishReactChatRuntime } from './ui/reactBridge.js';
 
 import { injectMemoryContext, loadMemories } from './storage/memoryStore.js';
 
