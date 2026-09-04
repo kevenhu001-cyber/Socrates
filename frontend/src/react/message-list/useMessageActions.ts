@@ -69,7 +69,14 @@ function doReadAloud(message: LegacyChatMessage, ev: React.MouseEvent<HTMLButton
   const text = plainTextOf(message);
   const legacy = getLegacyActions();
   if (typeof legacy.messages.toggleReadAloud !== 'function') return;
-  legacy.messages.toggleReadAloud(ev.currentTarget, text);
+  /* P_tts-persist — forward the message id so /api/tts can persist
+     the synthesized audio in tts_results. The toolbar onReadAloud
+     callback is only attached to assistant messages that have an id
+     (see useMessageToolbarCallbacks), so messageIdOf(message) is
+     guaranteed to be defined here. */
+  const id = messageIdOf(message);
+  if (id) legacy.messages.toggleReadAloud(ev.currentTarget, text, id);
+  else legacy.messages.toggleReadAloud(ev.currentTarget, text);
 }
 
 /**

@@ -83,17 +83,23 @@ export function stopSpeaking() {
 
 /* ── Cloud voice ──────────────────────────────────────────────────── */
 
-function _speakCloud(clean, lang) {
+function _speakCloud(clean, lang, messageId) {
   if (!_cloudEnabled() || _cloudFailures >= _CLOUD_FAILURE_LIMIT || typeof window.fetch !== "function" || typeof window.Audio !== "function") {
     return Promise.resolve(false);
   }
   var controller = typeof AbortController === "function" ? new AbortController() : null;
   _cloudAbort = controller;
+  var body = { text: clean.slice(0, 20000), lang: (lang || "").slice(0, 2) };
+  /* P_tts-persist — forward the messageId so /api/tts can persist the
+     synthesized audio in tts_results. The server still does the
+     ownership check, so a forged id cannot read or write another
+     user's audio. */
+  if (messageId) body.messageId = String(messageId);
   return window.fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "same-origin",
-    body: JSON.stringify({ text: clean.slice(0, 20000), lang: (lang || "").slice(0, 2) }),
+    body: JSON.stringify(body),
     signal: controller ? controller.signal : undefined,
   }).then(function (resp) {
     if (!resp.ok) throw new Error("tts_http_" + resp.status);
@@ -149,9 +155,13 @@ function _speakPlatform(clean, lang) {
 }
 
 /* Toggle read-aloud for a message. `btn` is the toolbar button that
-   was clicked; `text` is the plain-text content to speak. Clicking the
-   active button again (or any button while speaking) stops playback. */
-export function toggleReadAloud(btn, text) {
+   was clicked; `text` is the plain-text content to speak; `messageId`
+   is the database id of the message (optional). Clicking the active
+   button again (or any button while speaking) stops playback. The
+   optional messageId is forwarded to /api/tts so the server can
+   persist the synthesized audio in tts_results and replay it for
+   free on subsequent reads of the same message. */
+export function toggleReadAloud(btn, text, messageId) {
   var clean = String(text || "").trim();
   if (!clean) { _notify("Nothing to read."); return; }
 
@@ -172,7 +182,7 @@ export function toggleReadAloud(btn, text) {
   /* Cloud first (matches the chat provider voice), platform fallback.
      The platform path also covers the "no fetch / unsupported" case, so
      a browser without Web Audio still gets a voice. */
-  _speakCloud(clean, lang)
+  _speakCloud(clean, lang, messageId)
     .then(function (played) { return played ? played : _speakPlatform(clean, lang); })
     .then(function (played) {
       if (!played) {
