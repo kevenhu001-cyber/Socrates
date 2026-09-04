@@ -970,7 +970,7 @@ function _bindAction(el) {
       var c = cardId && document.getElementById(cardId);
       if (!c) return;
       var f = c.querySelector('iframe');
-      window.__vizOpenModal && window.__vizOpenModal(
+      openVizModal(
         (f && f.dataset.srcdoc) || '',
         c.dataset.title || 'Canvas'
       );

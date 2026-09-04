@@ -68,8 +68,5 @@ export function renderGreeting() {
   el.classList.add("greeting");
 }
 
-// Re-export on window so inline handlers (e.g. profile updates triggered
-// from main.js) can refresh the greeting without an import dance.
-if (typeof window !== "undefined") {
-  window.renderGreeting = renderGreeting;
-}
+// Consumers import renderGreeting directly (window bridge removed in
+// the window-dead-bridge batch 2).

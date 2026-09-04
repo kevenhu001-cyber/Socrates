@@ -17,6 +17,10 @@ import { esc } from '../render/helpers.js';
 import { apiFetch } from '../util/api.js';
 import { stateStore } from '../state/store.js';
 
+import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './toolCards.js';
+
+import { mountVisualization, disposeVisualizations } from '../render/visualization.js';
+
 var _shareVisibility = "public";
 var _shareToken = null;
 var _shareUrl = "";
@@ -164,6 +168,15 @@ function copyShareLink() {
   });
 }
 
+/* Session-teardown hook: main.js's reset paths (bounceOutOfArchivedSession,
+   resetState, sign-out) call this so a stale share token can't be reused
+   after the active session changes. The legacy paths only nulled the
+   window copy, which share.js never read — the module var kept the stale
+   token alive. */
+function resetShareToken() {
+  _shareToken = null;
+}
+
 async function revokeShareLink() {
   var sessionId = window.stateStore.read("currentSessionId");
   if (!_shareToken || !sessionId) return;
@@ -209,8 +222,8 @@ function _renderSharedMessageList(messages) {
      call in main.js#enterChat (line 1496) so the shared-session
      path doesn't leak ECharts instances, ResizeObservers, or
      window `message` listeners across navigations. */
-  if (typeof window.disposeVisualizations === "function") {
-    try { window.disposeVisualizations(msgList); } catch (_) {}
+  if (typeof disposeVisualizations === "function") {
+    try { disposeVisualizations(msgList); } catch (_) {}
   }
   msgList.innerHTML = "";
   var mountTurn = typeof window.__socratesMountAssistantTurn === "function"
@@ -283,21 +296,21 @@ function _renderSharedMessageList(messages) {
         var tc = m.toolCalls[tci];
         if (!tc || !tc.name) continue;
         var cardOut = null;
-        if (typeof window.appendToolModule === "function") {
-          cardOut = window.appendToolModule(tc.name, tc.input || {}, body, {
+        if (typeof appendToolModule === "function") {
+          cardOut = appendToolModule(tc.name, tc.input || {}, body, {
             restored: true,
             isError: !!tc.isError,
           });
         }
-        if (tc.name === "render_visualization" && tc.input && tc.input.version === 1 && typeof window.mountVisualization === "function") {
-          window.mountVisualization(tc.input, body, { toolCallId: tc.id || ("share-viz-" + tci) });
+        if (tc.name === "render_visualization" && tc.input && tc.input.version === 1 && typeof mountVisualization === "function") {
+          mountVisualization(tc.input, body, { toolCallId: tc.id || ("share-viz-" + tci) });
         }
-        if (cardOut && Array.isArray(tc.artifacts) && tc.artifacts.length > 0 && typeof window.appendInlineArtifact === "function") {
+        if (cardOut && Array.isArray(tc.artifacts) && tc.artifacts.length > 0 && typeof appendInlineArtifact === "function") {
           for (var ai = 0; ai < tc.artifacts.length; ai++) {
             var art = tc.artifacts[ai];
             if (art && art.id) {
               var previewable = art.mimeType && (art.mimeType.indexOf("image/") === 0 || art.mimeType.indexOf("text/html") === 0);
-              window.appendInlineArtifact(art.id, art.mimeType || "application/octet-stream", previewable ? body : cardOut, art.name);
+              appendInlineArtifact(art.id, art.mimeType || "application/octet-stream", previewable ? body : cardOut, art.name);
             }
           }
         }
@@ -306,8 +319,8 @@ function _renderSharedMessageList(messages) {
     /* The summary card is built by inserting a node after the last legacy
        .agent-tool-card, so it only applies to the fallback markup — a
        declarative turn renders its own file chip and React owns that body. */
-    if (!declarative && m.role === "assistant" && typeof window.appendFileChangeSummaryCards === "function") {
-      try { window.appendFileChangeSummaryCards(body); } catch (_) {}
+    if (!declarative && m.role === "assistant" && typeof appendFileChangeSummaryCards === "function") {
+      try { appendFileChangeSummaryCards(body); } catch (_) {}
     }
     msgList.appendChild(div);
   });
@@ -469,7 +482,7 @@ function renderSharedQuestionCard(idx, q) {
 export {
   toggleShareBtn, toggleChatTopBarEls,
   openShareModal, closeShareModal, selectShareVis, renderShareModal,
-  createShareLink, copyShareLink, revokeShareLink,
+  createShareLink, copyShareLink, revokeShareLink, resetShareToken,
   loadSharedSession, loadSharedExamSession, renderSharedQuestionCard,
   _shareVisibility, _shareToken, _shareUrl,
 };

@@ -1,3 +1,4 @@
+import { pickActiveProviderById } from '../pickers.js';
 /* ui/effortPicker.js — combined Model + Reasoning-effort selector.
  *
  * P_chatgpt-landing (v2). Originally a 高/中/低 effort dropdown; the model
@@ -5,7 +6,7 @@
  * selection is now merged into this one control. Clicking the trigger
  * opens a single menu with two sections:
  *   - 模型 (Models): the provider list from window.apiConfig; clicking one
- *     calls window.pickActiveProviderById(id). A trailing "管理模型…" row
+ *     calls pickActiveProviderById(id). A trailing "管理模型…" row
  *     opens Settings.
  *   - 思维强度 (Reasoning effort): 高 / 中 / 低.
  *
@@ -272,8 +273,8 @@ if (typeof document !== "undefined") {
       var modelBtn = e.target.closest(".model-picker-item");
       if (modelBtn) {
         var id = modelBtn.getAttribute("data-id");
-        if (id && typeof window.pickActiveProviderById === "function") {
-          window.pickActiveProviderById(id);
+        if (id && typeof pickActiveProviderById === "function") {
+          pickActiveProviderById(id);
         }
         _closeAll();
         syncEffortUI();

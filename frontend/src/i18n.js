@@ -1,3 +1,6 @@
+import { renderGreeting } from './ui/greeting.js';
+import { syncThemeUI } from './displayPrefs.js';
+
 var I18N={
   en:{
     "chat.placeholder":"Type your thinking...",
@@ -1918,8 +1921,8 @@ function applyI18n(){
   }
   /* The selected theme label is generated from the active preference, so
      refresh it after a language switch alongside the static selector copy. */
-  if(typeof window.syncThemeUI === "function"){
-    try{window.syncThemeUI()}catch(_){/* theme UI may not be mounted yet */}
+  if(typeof syncThemeUI === "function"){
+    try{syncThemeUI()}catch(_){/* theme UI may not be mounted yet */}
   }
   /* Placeholder / value updates — done selectively for now. */
   var ci=document.getElementById("chatComposerRoot");
@@ -1945,7 +1948,7 @@ function applyI18n(){
      greeting renderer is wired up, defer to it so the name survives
      language toggles. Otherwise fall back to the legacy static copy. */
   if(tt){
-    if(typeof window.renderGreeting==="function")window.renderGreeting();
+    if(typeof renderGreeting==="function")renderGreeting();
     else tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
   }
   var ts=document.getElementById("topicSub");

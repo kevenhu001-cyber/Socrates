@@ -193,7 +193,7 @@ function renderProviderItemsHTML(providers, activeId){
    ============================================================ */
 function pickActiveProviderById(id){
   if(!id)return;
-  window.setActiveProvider(id);
+  setActiveProvider(id);
   closeModelPicker();
   syncChatModel();
 }
@@ -655,3 +655,5 @@ import {
   getComposerMarkdown,
   getVisibleComposerSurface,
 } from './react/composer-input/controller.ts';
+
+import { setActiveProvider } from './ui/settings.js';

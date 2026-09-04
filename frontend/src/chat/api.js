@@ -15,6 +15,8 @@ import {
   waitForAIRetry,
 } from './retryPolicy.ts';
 
+import { isMiniMaxProvider } from '../config/providers.js';
+
 function setLastCallError(value) {
   stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: value });
 }
@@ -114,7 +116,7 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
        extra_body to emit reasoning_content in SSE deltas. Without
        this its thinking is hidden even though adaptive thinking is on
        by default. */
-    if (typeof window.isMiniMaxProvider === "function" && window.isMiniMaxProvider()) {
+    if (typeof isMiniMaxProvider === "function" && isMiniMaxProvider()) {
       body.extra_body = { reasoning_split: true };
     }
   }

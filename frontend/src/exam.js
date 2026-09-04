@@ -8,6 +8,8 @@ import { formatMsg } from './render/markdown.js';
 import { callAPIStream } from './chat/stream.js';
 import { stateStore } from './state/store.js';
 
+import { toggleShareBtn } from './ui/share.js';
+
 /* ── module-level state ── */
 var _examSelectedTypes = { mc: true, fb: true, sa: false };
 var _examDifficulty = "intermediate";
@@ -955,7 +957,7 @@ function doSaveExamSession() {
       }
       return window.refreshServerSessions().then(function () {
         try { window.renderRecents() } catch (_) { }
-        try { window.toggleShareBtn() } catch (_) { }
+        try { toggleShareBtn() } catch (_) { }
       });
     })
     .catch(function (e) {

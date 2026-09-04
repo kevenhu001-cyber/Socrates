@@ -1,3 +1,4 @@
+import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
 /*
  * Narrow bridge used only by the React Native embedded-workspace flow.
  *
@@ -51,8 +52,8 @@ export function openMobileTargetFromUrl() {
       window.toggleSidebarView(target);
       opened = true;
     } else if (target === 'skills') {
-      if (typeof window.openPromptTemplatesModal !== 'function') return false;
-      window.openPromptTemplatesModal();
+      if (typeof openPromptTemplatesModal !== 'function') return false;
+      openPromptTemplatesModal();
       opened = true;
     } else if (target === 'api-settings') {
       if (typeof window.openSettings !== 'function') return false;

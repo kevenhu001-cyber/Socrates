@@ -26,31 +26,22 @@ import { SERVER_HAS_BEAGLE_KEY } from './auth/boot.js';
 window.SERVER_HAS_BEAGLE_KEY = SERVER_HAS_BEAGLE_KEY;
 
 /* ─── config/providers.js — MUST come first (apiConfig consumed by every other module) ─── */
-import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, isMiniMaxProvider, pickStreamBudgets, syncAppModeUI, syncSidebarForMode, setAppMode, LAST_ACTIVE_ID_KEY, saveLastActiveId, thinkingOn } from './config/providers.js';
+import { apiConfig, appMode, webSearchOn, extensiveThinkingOn, BEAGLE_BUILT_IN, isReasoningProvider, syncAppModeUI, setAppMode, thinkingOn } from './config/providers.js';
 window.apiConfig = apiConfig;
 window.appMode = appMode;
 window.webSearchOn = webSearchOn;
 window.extensiveThinkingOn = extensiveThinkingOn;
 window.BEAGLE_BUILT_IN = BEAGLE_BUILT_IN;
 window.isReasoningProvider = isReasoningProvider;
-window.isMiniMaxProvider = isMiniMaxProvider;
-window.pickStreamBudgets = pickStreamBudgets;
 window.syncAppModeUI = syncAppModeUI;
-window.syncSidebarForMode = syncSidebarForMode;
 window.setAppMode = setAppMode;
-window.LAST_ACTIVE_ID_KEY = LAST_ACTIVE_ID_KEY;
-window.saveLastActiveId = saveLastActiveId;
 window.thinkingOn = thinkingOn;
 
 /* ─── displayPrefs.js ─── */
-import {
-  toggleGrid, setAccentColor, toggleDisplayPrefs, toggleTheme, setThemePreference, syncThemeUI,
-  setAccentCustom, resetAccentColor,
-  setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
-} from './displayPrefs.js';
-window.toggleDisplayPrefs = toggleDisplayPrefs;
+/* Only toggleTheme stays on window (inline onclick in the prefs modal);
+   every other displayPrefs consumer imports the module directly. */
+import { toggleTheme } from './displayPrefs.js';
 window.toggleTheme = toggleTheme;
-window.syncThemeUI = syncThemeUI;
 
 /* ─── util/api.js ─── */
 import { apiFetch, getCsrfToken } from './util/api.js';
@@ -58,12 +49,10 @@ window.apiFetch = apiFetch;
 window.getCsrfToken = getCsrfToken;
 
 /* ─── render/viz.js ─── */
-import { openVizModal, openVizModalRaw, processPendingVizActions, getLiveVizCardIds } from './render/viz.js';
-import { mountVisualization, disposeVisualizations } from './render/visualization.js';
-window.__vizOpenModal = openVizModal;
-window.__vizOpenModalRaw = openVizModalRaw;
-window.mountVisualization = mountVisualization;
-window.disposeVisualizations = disposeVisualizations;
+import { processPendingVizActions, getLiveVizCardIds } from './render/viz.js';
+/* mountVisualization / disposeVisualizations are imported directly by
+   their consumers (main.js, share.js); no window surface is needed. */
+import './render/visualization.js';
 window.processPendingVizActions = processPendingVizActions;
 /* E2E test surface: viz-canvas.spec.mjs asserts the iframe registry
    releases the entry after `viz-ready` fires. Expose a snapshot
@@ -81,21 +70,13 @@ import { formatMsg } from './render/markdown.js';
 window.formatMsg = formatMsg;
 
 /* ─── auth/index.js ─── */
-import {
-  hideGate, showGate, showAuthView, showAuthSignin,
-  switchAuthTab, focusAuthTab,
-  showAuthForgotPassword, showAuthCodeLogin,
-  submitAuthSignin, submitAuthRegister, submitAuthVerify,
-  submitAuthForgotPassword, submitAuthResetPassword,
-  submitAuthSendCode, submitAuthLoginWithCode,
-  resendVerification, resendAuthCode, afterAuthEnter,
-} from './auth/index.js';
+/* Only the gate entry points stay on window (index.html inline
+   onclick). Every auth view/submit handler is invoked through
+   auth/index.js's own module-local wiring. */
+import { hideGate, showGate, showAuthSignin } from './auth/index.js';
 window.hideGate = hideGate;
 window.showGate = showGate;
-window.showAuthView = showAuthView;
 window.showAuthSignin = showAuthSignin;
-window.submitAuthVerify = submitAuthVerify;
-window.afterAuthEnter = afterAuthEnter;
 
 /* ─── sidebar/index.js ─── */
 import { toggleSidebar, setRecentsFilter, getRecentsFilter, clearRecentsFilter, onRecentsFilterChipClick } from './sidebar/index.js';
@@ -105,48 +86,43 @@ window.getRecentsFilter = getRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
 /* ─── pickers.js ─── */
+/* Extension toggles / picker menus are wired module-locally; only the
+   four model-pill entry points below stay on window (inline onclick in
+   index.html + the composer pills). */
 import {
-  getActiveProvider, pickActiveProviderById,
+  getActiveProvider,
   syncModelPills,
   syncChatModel,
-  closeModelPicker, closeChatModelMenu,
-  toggleExtensionByKey, syncExtensionsUI,
-  toggleWebSearch, syncWebSearchUI,
   markProvidersFetched,
 } from './pickers.js';
 window.getActiveProvider = getActiveProvider;
-window.pickActiveProviderById = pickActiveProviderById;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
-window.toggleExtensionByKey = toggleExtensionByKey;
-window.syncExtensionsUI = syncExtensionsUI;
-window.toggleWebSearch = toggleWebSearch;
 window.markProvidersFetched = markProvidersFetched;
 
-// Note: setActiveProvider / renderProviderList / isReasoningProvider are
-// still defined inside main.js. They will be migrated to their own
-// module (or to pickers.js) in a later Phase C sub-step. For now
-// main.js keeps them on window itself.
+// Note: renderProviderList stays on window for config/providers.js, which
+// cannot import ui/settings.js (providers.js must stay a zero-dependency
+// leaf that loads first — the reverse edge already exists).
 
 /* ─── ui/cheatsheet.js ─── */
 import { closeCheatsheet, openCheatsheet } from './ui/cheatsheet.js';
-window.closeCheatsheet = closeCheatsheet;
 /* PR-A — openCheatsheet is referenced inline by the More popover
    (More → Keyboard shortcuts) and was previously only reachable
    through the main.js keydown handler. Re-bridge it here so
    inline-handlers.spec.mjs sees a window.openCheatsheet binding. */
 window.openCheatsheet = openCheatsheet;
+/* The cheatsheet modal markup carries inline onclick="closeCheatsheet()"
+   — inline handlers resolve from window, so this binding must stay. */
+window.closeCheatsheet = closeCheatsheet;
 
 /* ─── sidebar/nav.js (PR-A of the sidebar overhaul) ─── */
-import { openNav, setActiveNav, syncWorkspaceRoute } from './sidebar/nav.js';
+import { openNav, setActiveNav } from './sidebar/nav.js';
 /* `openNav` is the dispatcher wired to the .sidebar-nav-btn onclick
    in index.html. `setActiveNav` is exposed for the morePopover
    module to clear the More button's active state on close (avoids
-   a nav.js ↔ morePopover.js import cycle). `syncWorkspaceRoute` is
-   public for tests and any future cross-panel navigators. */
+   a nav.js ↔ morePopover.js import cycle). */
 window.openNav = openNav;
 window.setActiveNav = setActiveNav;
-window.syncWorkspaceRoute = syncWorkspaceRoute;
 /* PR-B/C/D/E — panel inline handlers. nav.js defines these on
    window.* directly, but we re-affirm the bridge here so the
    export audit trail is complete. */
@@ -169,27 +145,22 @@ window.onCmdKKey = onCmdKKey;
 window.openCmdK = openCmdK;
 
 /* ─── ui/findInSession.js — P0.2 in-session find (Ctrl-F) ─── */
-import { openFindInSession, closeFindInSession, onFindInput, onFindKey, findNext, findPrev, isFindOpen } from './ui/findInSession.js';
+import { openFindInSession, closeFindInSession, findNext, findPrev } from './ui/findInSession.js';
 window.openFindInSession = openFindInSession;
 window.closeFindInSession = closeFindInSession;
 window.findNext = findNext;
 window.findPrev = findPrev;
-window.isFindOpen = isFindOpen;
 
 /* ─── ui/storage.js ─── */
-import { openStorageModal, closeStorageModal } from './ui/storage.js';
-window.openStorageModal = openStorageModal;
-window.closeStorageModal = closeStorageModal;
+/* Consumers (settings.js, React panels) import the storage modal
+   directly; the bare import only keeps evaluation order. */
+import './ui/storage.js';
 
 /* ─── ui/promptTemplates.js ─── */
-import {
-  openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal,
-  openPromptTemplateEditor, onPromptRowDelete, onPromptTemplateEditorSave,
-} from './ui/promptTemplates.js';
-window.openPromptTemplatesModal = openPromptTemplatesModal;
-window.closePromptTemplatesModal = closePromptTemplatesModal;
-/* Inline onclick handlers inside the bridge-published modal HTML
-   resolve these from window. */
+/* The modal's inline onclick handlers are wired inside
+   ui/promptTemplates.js itself; main.js imports the module directly.
+   Bare import keeps evaluation order. */
+import './ui/promptTemplates.js';
 
 /* ─── ui/composerTools.js ─── */
 import { toggleComposerTools } from './ui/composerTools.js';
@@ -200,68 +171,57 @@ window.toggleComposerTools = toggleComposerTools;
 import { stopSpeechInput, toggleSpeechInput } from './ui/voiceInput.js';
 window.toggleSpeechInput = toggleSpeechInput;
 /* ─── ui/settings.js ─── */
-import { openSettings, closeSettings, syncSettingsUI, renderProviderList, setActiveProvider, toggleAPI, addProvider, clearSettings, saveSettings } from './ui/settings.js';
+/* React's SettingsModal calls these via __socratesLegacy.settings
+   (assembled from main.js's direct imports); only the four inline-handler
+   entry points below stay on window. */
+import { openSettings, closeSettings, renderProviderList, addProvider } from './ui/settings.js';
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
-window.syncSettingsUI = syncSettingsUI;
 window.renderProviderList = renderProviderList;
-window.setActiveProvider = setActiveProvider;
-/* M4 step 4.5b — React's SettingsModal buttons call these via
-   __socratesLegacy.settings; the window.* aliases keep legacy JS + e2e
-   probes working. */
-window.toggleAPI = toggleAPI;
 window.addProvider = addProvider;
-window.clearSettings = clearSettings;
-window.saveSettings = saveSettings;
 
 /* ─── ui/share.js ─── */
-import { toggleShareBtn, toggleChatTopBarEls, openShareModal, closeShareModal, selectShareVis, createShareLink, copyShareLink, revokeShareLink, loadSharedSession, _shareToken } from './ui/share.js';
-window.toggleShareBtn = toggleShareBtn;
+/* Copy/load handlers are wired module-locally inside ui/share.js and by
+   main.js's direct imports; only the topbar/entry points below stay on
+   window. */
+import { toggleChatTopBarEls, openShareModal, closeShareModal, revokeShareLink, createShareLink } from './ui/share.js';
 window.toggleChatTopBarEls = toggleChatTopBarEls;
 window.openShareModal = openShareModal;
 window.closeShareModal = closeShareModal;
-window.selectShareVis = selectShareVis;
-window.copyShareLink = copyShareLink;
 window.revokeShareLink = revokeShareLink;
 window.createShareLink = createShareLink;
-window.loadSharedSession = loadSharedSession;
-window._shareToken = _shareToken;
 
 /* ─── ui/dangerConfirms.js ─── */
-import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from './ui/dangerConfirms.js';
-window.confirmClearCache = confirmClearCache;
-window.confirmClearSettings = confirmClearSettings;
-window.confirmDeleteAccount = confirmDeleteAccount;
+/* Confirm buttons resolve through ui/confirm.js's window surface;
+   main.js imports the confirm actions directly. Bare import keeps
+   evaluation order. */
+import './ui/dangerConfirms.js';
 
 /* ─── ui/profile.js ─── */
-import { closeProfile, onCustomInstructionsChange, toggleProfileWebSearch, renderUserFooter, openProfile, loadUserMemories, saveProfileName } from './ui/profile.js';
-window.loadUserMemories = loadUserMemories;
+/* Profile handlers are wired module-locally; only the two inline-handler
+   entry points below stay on window. */
+import { closeProfile, openProfile } from './ui/profile.js';
 window.closeProfile = closeProfile;
-window.onCustomInstructionsChange = onCustomInstructionsChange;
-window.toggleProfileWebSearch = toggleProfileWebSearch;
-window.renderUserFooter = renderUserFooter;
 window.openProfile = openProfile;
-window.saveProfileName = saveProfileName;
 
 /* ─── ui/scroll.js ─── */
 
 /* ─── ui/topicSetup.js ─── */
-import { autoResize, updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
+/* Composer auto-resize is consumed via main.js's direct imports; bare
+   import keeps evaluation order. */
+import './ui/topicSetup.js';
 
 /* ─── storage/localMemory.js ─── */
 
 /* ─── storage/memoryStore.js — cross-session memory ─── */
-import { injectMemoryContext, loadMemories } from './storage/memoryStore.js';
-window.injectMemoryContext = injectMemoryContext;
-window.loadMemories = loadMemories;
+/* Consumers (main.js, profile panel) import the memory layer directly;
+   bare import keeps evaluation order. */
+import './storage/memoryStore.js';
 
 /* ─── config/tonePresets.js — AI tone/voice presets ─── */
-import { loadTonePreset, setTonePreset, getTonePreset, getToneVoice, renderTonePresets } from './config/tonePresets.js';
-window.loadTonePreset = loadTonePreset;
-window.setTonePreset = setTonePreset;
-window.getTonePreset = getTonePreset;
-window.getToneVoice = getToneVoice;
-window.renderTonePresets = renderTonePresets;
+/* Tone presets render inside ui/settings.js's own wiring; main.js
+   imports the module directly. Bare import keeps evaluation order. */
+import './config/tonePresets.js';
 
 /* ─── agent/researchAgent.js — Deep Research / Agent Mode ─── */
 import { startDeepResearch, launchDeepResearch } from './agent/researchAgent.js';
@@ -329,45 +289,26 @@ window.esc = esc;
    callAPI). It renders inline onclick="..." handlers that reference
    functions on window.* — all of them must be bridged here. */
 import {
-  openExamPanel, prepareExamView, openExamModal, closeExamView,
-  toggleExamType, toggleExamModelMenu, selectExamModel,
-  selectExamDifficulty, adjustExamCount,
-  startExamGeneration, cancelExamGeneration,
-  selectExamOpt,
-  examNavJump, examNavStep,
-  submitExam,
-  setExamAnswer,
-  renderExamForm,
+  openExamPanel, openExamModal,
   refreshExamI18n,
 } from './exam.js';
 window.openExamPanel = openExamPanel;
-window.prepareExamView = prepareExamView;
+/* openExamModal stays on window: pickers.js (in the light chat/api.js
+   import chain) must not import exam.js, which drags ui/share.js →
+   ui/toolCards.js (top-level document listener) into pure-Node unit tests. */
 window.openExamModal = openExamModal;
 window.refreshExamI18n = refreshExamI18n;
 
 /* ─── ui/toolCards.js — needed by share.js to restore tool cards ─── */
-import { appendToolModule, appendInlineArtifact, appendFileChangeSummaryCards } from './ui/toolCards.js';
+import { appendToolModule } from './ui/toolCards.js';
+/* appendToolModule must stay on window: e2e/tool-card-lifecycle.spec.mjs
+   mounts cards through it and polls for its presence. */
 window.appendToolModule = appendToolModule;
-window.appendInlineArtifact = appendInlineArtifact;
-window.appendFileChangeSummaryCards = appendFileChangeSummaryCards;
 
 /* ─── ui/greeting.js — ChatGPT-style personalized greeting (P_chatgpt-landing) ─── */
-import { renderGreeting } from './ui/greeting.js';
-window.renderGreeting = renderGreeting;
-
-/* ─── Sidebar-nav "Library" alias (P_chatgpt-landing) — opens the
-   existing knowledge panel. toggleSidebarView('knowledge') is in main.js
-   and not yet bridged here, so we mirror the call inline. ─── */
-window.openKnowledge = function () {
-  try {
-    if (typeof window.toggleSidebarView === "function") {
-      window.toggleSidebarView("knowledge");
-      return;
-    }
-    var btn = document.getElementById("tabKnowledge");
-    if (btn) btn.click();
-  } catch (_) { /* swallow — no-op fallback */ }
-};
+/* main.js imports renderGreeting directly; bare import keeps evaluation
+   order. */
+import './ui/greeting.js';
 
 /* ─── P_chatgpt-landing — composer quick-action chips (撰写或编辑 /
    查找资料). Both reuse existing capabilities so no new backend is
@@ -400,27 +341,20 @@ if (typeof document !== "undefined") {
 /* ─── ui/effortPicker.js — reasoning-effort (高/中/低) selector
    (P_chatgpt-landing). Exposes getReasoningEffort() consumed by
    chat/stream.js and the picker toggles used by inline handlers. ─── */
-import { getReasoningEffort, setReasoningEffort, toggleEffortPicker, syncEffortUI } from './ui/effortPicker.js';
+import { getReasoningEffort, syncEffortUI } from './ui/effortPicker.js';
+/* getReasoningEffort stays on window: chat/api.js (light import chain used
+   by pure-Node unit tests) must not import ui/effortPicker.js → pickers.js
+   (top-level document wiring). */
 window.getReasoningEffort = getReasoningEffort;
 window.syncEffortUI = syncEffortUI;
 
 /* ─── ui/readAloud.js — browser TTS read-aloud for assistant messages
    (P_chatgpt-landing). No backend; uses window.speechSynthesis. ─── */
-import { toggleReadAloud } from './ui/readAloud.js';
-window.toggleReadAloud = toggleReadAloud;
+/* main.js imports toggleReadAloud directly; bare import keeps evaluation
+   order. */
+import './ui/readAloud.js';
 
 /* ─── chat/promptTemplates.js — Skills & shortcuts data layer.
-   The Phase C1 bridge cleanup (commit 4ae9b5c) dropped these five
-   bindings, but ui/promptTemplates.js still calls them as window.X;
-   restoring them fixes a regression where openPromptTemplatesModal()
-   throws "window.loadPromptTemplates is not a function" and the modal
-   body (with its title/shortcut/description/body/systemPrompt inputs)
-   never renders. ─── */
-import {
-  loadPromptTemplates, savePromptTemplates, findTemplateByShortcut,
-  upsertCustomTemplate, deleteCustomTemplate,
-} from './chat/promptTemplates.js';
-window.loadPromptTemplates = loadPromptTemplates;
-window.findTemplateByShortcut = findTemplateByShortcut;
-window.upsertCustomTemplate = upsertCustomTemplate;
-window.deleteCustomTemplate = deleteCustomTemplate;
+   Consumers (ui/promptTemplates.js, main.js) import these directly;
+   bare import keeps evaluation order. ─── */
+import './chat/promptTemplates.js';

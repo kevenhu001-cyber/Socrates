@@ -16,6 +16,20 @@ import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.js';
 import { syncCookieConsentPlacement } from '../cookieConsent.js';
 import { stateStore } from '../state/store.js';
 
+import { loadUserMemories, renderUserFooter } from '../ui/profile.js';
+
+import { syncExtensionsUI } from '../pickers.js';
+
+import { syncSidebarForMode } from '../config/providers.js';
+
+import { syncWorkspaceRoute } from '../sidebar/nav.js';
+
+import { toggleShareBtn } from '../ui/share.js';
+
+import { renderProviderList } from '../ui/settings.js';
+
+import { renderGreeting } from '../ui/greeting.js';
+
 function isEmbeddedNativeWebView(){
   try{
     var bridge=window.ReactNativeWebView;
@@ -191,7 +205,7 @@ export function mountAuthListeners(){
    the user's projects, sessions, providers, memories, etc. Reads
    main.js globals via window. */
 export async function afterAuthEnter(){
-  window.toggleShareBtn&&window.toggleShareBtn();
+  toggleShareBtn&&toggleShareBtn();
   /* P_bleed-v2 — wipe the previous user's module-level caches
      BEFORE we start fetching the new user's data. Without this,
      the brief window between hideGate() and the completion of
@@ -264,22 +278,22 @@ export async function afterAuthEnter(){
      be visible during the fire-and-forget window). loadUserMemories
      also clears _userMemories before fetching, so awaiting is safe
      even if the request fails. */
-  try{await window.loadUserMemories()}catch(_){/* handled inside */}
+  try{await loadUserMemories()}catch(_){/* handled inside */}
   /* Update sidebar footer with user info. */
-  window.renderUserFooter&&window.renderUserFooter();
+  renderUserFooter&&renderUserFooter();
   /* Once the user object is available, paint the personalized greeting. */
   try {
-    if (typeof window.renderGreeting === "function") window.renderGreeting();
+    if (typeof renderGreeting === "function") renderGreeting();
   } catch (_) { /* first-paint helpers — never block sign-in */ }
   /* Re-render sidebar lists now that the cache is fresh. */
   window.renderRecents&&window.renderRecents();
   window.renderMistakes&&window.renderMistakes();
   window.updateMistakesBadge&&window.updateMistakesBadge();
-  window.renderProviderList&&window.renderProviderList();
+  renderProviderList&&renderProviderList();
   window.syncModelPills&&window.syncModelPills();
-  window.syncExtensionsUI&&window.syncExtensionsUI();
+  syncExtensionsUI&&syncExtensionsUI();
   window.syncAppModeUI&&window.syncAppModeUI();
-  window.syncSidebarForMode&&window.syncSidebarForMode();
+  syncSidebarForMode&&syncSidebarForMode();
   /* If the URL carries a chat session ID, load it. Otherwise, stay on the
      main page (topic setup) — no session exists until the user clicks Begin.
      P_exam-route — exam sessions live under a different query key
@@ -306,7 +320,7 @@ export async function afterAuthEnter(){
     if(typeof window.renderRecents==="function")window.renderRecents();
     if(typeof window.renderMistakes==="function"){window.renderMistakes();window.updateMistakesBadge&&window.updateMistakesBadge()}
   }
-  window.syncWorkspaceRoute&&window.syncWorkspaceRoute();
+  syncWorkspaceRoute&&syncWorkspaceRoute();
 }
 
 /* ── Submit handlers ── */
