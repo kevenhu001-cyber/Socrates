@@ -18,10 +18,10 @@
  */
 
 import {
-  createImmutableBridge,
-  type ImmutableBridge,
-  type RevisionedSnapshot,
-} from '../lib/bridge/createImmutableBridge.ts';
+  createDomainStore,
+  type DomainBridge,
+} from '../store/createDomainStore.ts';
+import type { RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts';
 import {
   createInitialKbState,
   type KbState,
@@ -65,7 +65,7 @@ export type SessionAction =
   | { type: 'session/remove-message-at'; index: number; clientId?: string }
   | { type: 'session/truncate-messages-after'; index: number };
 
-type SessionSnapshot = SessionState & RevisionedSnapshot;
+export type SessionSnapshot = SessionState & RevisionedSnapshot;
 
 function sessionReducer(
   state: SessionSnapshot,
@@ -117,14 +117,16 @@ function sessionReducer(
   }
 }
 
-export const sessionBridge: ImmutableBridge<SessionSnapshot, SessionAction> =
-  createImmutableBridge<SessionSnapshot, SessionAction>({
-    initial: {
-      ...createInitialSessionState(),
-      revision: 0,
-    },
-    reducer: sessionReducer,
-  });
+export const sessionDomain = createDomainStore<SessionSnapshot, SessionAction>({
+  initial: {
+    ...createInitialSessionState(),
+    revision: 0,
+  },
+  reducer: sessionReducer,
+});
+
+export const sessionBridge: DomainBridge<SessionSnapshot, SessionAction> = sessionDomain.bridge;
+export const sessionStore = sessionDomain.store;
 
 /* ────────────────────────── KB ─────────────────────────────── */
 
@@ -133,7 +135,7 @@ export type KbAction =
   | { type: 'kb/patch'; patch: Partial<KbState> }
   | { type: 'kb/reset' };
 
-type KbSnapshot = KbState & RevisionedSnapshot;
+export type KbSnapshot = KbState & RevisionedSnapshot;
 
 function kbReducer(state: KbSnapshot, action: KbAction): KbSnapshot {
   switch (action.type) {
@@ -148,14 +150,16 @@ function kbReducer(state: KbSnapshot, action: KbAction): KbSnapshot {
   }
 }
 
-export const kbBridge: ImmutableBridge<KbSnapshot, KbAction> =
-  createImmutableBridge<KbSnapshot, KbAction>({
-    initial: {
-      ...createInitialKbState(),
-      revision: 0,
-    },
-    reducer: kbReducer,
-  });
+export const kbDomain = createDomainStore<KbSnapshot, KbAction>({
+  initial: {
+    ...createInitialKbState(),
+    revision: 0,
+  },
+  reducer: kbReducer,
+});
+
+export const kbBridge: DomainBridge<KbSnapshot, KbAction> = kbDomain.bridge;
+export const kbStore = kbDomain.store;
 
 /* ────────────────────────── Search ─────────────────────────── */
 
@@ -164,7 +168,7 @@ export type SearchAction =
   | { type: 'search/patch'; patch: Partial<SearchState> }
   | { type: 'search/reset' };
 
-type SearchSnapshot = SearchState & RevisionedSnapshot;
+export type SearchSnapshot = SearchState & RevisionedSnapshot;
 
 function searchReducer(
   state: SearchSnapshot,
@@ -182,14 +186,16 @@ function searchReducer(
   }
 }
 
-export const searchBridge: ImmutableBridge<SearchSnapshot, SearchAction> =
-  createImmutableBridge<SearchSnapshot, SearchAction>({
-    initial: {
-      ...createInitialSearchState(),
-      revision: 0,
-    },
-    reducer: searchReducer,
-  });
+export const searchDomain = createDomainStore<SearchSnapshot, SearchAction>({
+  initial: {
+    ...createInitialSearchState(),
+    revision: 0,
+  },
+  reducer: searchReducer,
+});
+
+export const searchBridge: DomainBridge<SearchSnapshot, SearchAction> = searchDomain.bridge;
+export const searchStore = searchDomain.store;
 
 /* ────────────────────────── Call ───────────────────────────── */
 
@@ -198,7 +204,7 @@ export type CallAction =
   | { type: 'call/patch'; patch: Partial<CallState> }
   | { type: 'call/reset' };
 
-type CallSnapshot = CallState & RevisionedSnapshot;
+export type CallSnapshot = CallState & RevisionedSnapshot;
 
 function callReducer(state: CallSnapshot, action: CallAction): CallSnapshot {
   switch (action.type) {
@@ -213,14 +219,16 @@ function callReducer(state: CallSnapshot, action: CallAction): CallSnapshot {
   }
 }
 
-export const callBridge: ImmutableBridge<CallSnapshot, CallAction> =
-  createImmutableBridge<CallSnapshot, CallAction>({
-    initial: {
-      ...createInitialCallState(),
-      revision: 0,
-    },
-    reducer: callReducer,
-  });
+export const callDomain = createDomainStore<CallSnapshot, CallAction>({
+  initial: {
+    ...createInitialCallState(),
+    revision: 0,
+  },
+  reducer: callReducer,
+});
+
+export const callBridge: DomainBridge<CallSnapshot, CallAction> = callDomain.bridge;
+export const callStore = callDomain.store;
 
 /* ────────────────────────── UI ─────────────────────────────── */
 
@@ -229,7 +237,7 @@ export type UiAction =
   | { type: 'ui/patch'; patch: Partial<UiState> }
   | { type: 'ui/reset' };
 
-type UiSnapshot = UiState & RevisionedSnapshot;
+export type UiSnapshot = UiState & RevisionedSnapshot;
 
 function uiReducer(state: UiSnapshot, action: UiAction): UiSnapshot {
   switch (action.type) {
@@ -244,14 +252,16 @@ function uiReducer(state: UiSnapshot, action: UiAction): UiSnapshot {
   }
 }
 
-export const uiBridge: ImmutableBridge<UiSnapshot, UiAction> =
-  createImmutableBridge<UiSnapshot, UiAction>({
-    initial: {
-      ...createInitialUiState(),
-      revision: 0,
-    },
-    reducer: uiReducer,
-  });
+export const uiDomain = createDomainStore<UiSnapshot, UiAction>({
+  initial: {
+    ...createInitialUiState(),
+    revision: 0,
+  },
+  reducer: uiReducer,
+});
+
+export const uiBridge: DomainBridge<UiSnapshot, UiAction> = uiDomain.bridge;
+export const uiStore = uiDomain.store;
 
 /* ────────────────────────── Exam ───────────────────────────── */
 
@@ -260,7 +270,7 @@ export type ExamAction =
   | { type: 'exam/patch'; patch: Partial<ExamState> }
   | { type: 'exam/reset' };
 
-type ExamSnapshot = ExamState & RevisionedSnapshot;
+export type ExamSnapshot = ExamState & RevisionedSnapshot;
 
 function examReducer(state: ExamSnapshot, action: ExamAction): ExamSnapshot {
   switch (action.type) {
@@ -275,14 +285,16 @@ function examReducer(state: ExamSnapshot, action: ExamAction): ExamSnapshot {
   }
 }
 
-export const examBridge: ImmutableBridge<ExamSnapshot, ExamAction> =
-  createImmutableBridge<ExamSnapshot, ExamAction>({
-    initial: {
-      ...createInitialExamState(),
-      revision: 0,
-    },
-    reducer: examReducer,
-  });
+export const examDomain = createDomainStore<ExamSnapshot, ExamAction>({
+  initial: {
+    ...createInitialExamState(),
+    revision: 0,
+  },
+  reducer: examReducer,
+});
+
+export const examBridge: DomainBridge<ExamSnapshot, ExamAction> = examDomain.bridge;
+export const examStore = examDomain.store;
 
 /* ────────────────────────── Aggregate ──────────────────────── */
 

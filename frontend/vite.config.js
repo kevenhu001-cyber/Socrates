@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 // Vite config for the Socrates app. The build output is an HTML +
 // a set of hashed ES-module chunks that get deployed to
@@ -6,6 +7,15 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  resolve: {
+    alias: {
+      // LobeHub-alignment M3 — the shared client contracts live in
+      // packages/ (consumed from source so a workspace build step is
+      // unnecessary; Vite compiles them like app code).
+      '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
+      '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
+    },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -35,8 +45,17 @@ export default defineConfig({
         // splitting) and skip the risky half.
         manualChunks(id) {
           const f = id.split('\\').join('/');
+          // LobeHub-alignment M1 — split third-party libraries out of the
+          // entry chunk. They change far less often than app code, so the
+          // browser keeps the vendor chunks in cache across app deploys.
+          if (f.includes('/node_modules/')) {
+            if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/')) return 'vendor-react';
+            if (f.includes('/node_modules/zustand/')) return 'vendor-react';
+            return 'vendor';
+          }
           if (!f.includes('/src/')) return;          // entries + top-level src → entry chunk
           if (f.includes('/src/i18n.js')) return 'i18n';   // ~47KB dictionary
+          if (f.includes('/src/store/')) return 'store';   // Zustand domain stores
           if (f.includes('/src/render/')) return 'render';
           if (f.includes('/src/chat/')) return 'chat';
           if (f.includes('/src/ui/')) return 'ui';

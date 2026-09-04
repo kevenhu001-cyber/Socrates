@@ -2,6 +2,18 @@ import type { Attachment, ChatSseHandlers, JsonValue, Message, Session } from '@
 
 export type { ChatSseHandlers, Message, Session } from '@socrates/contracts';
 
+export {
+  createToolRunApi,
+  pureToolRunApi,
+  TOOL_RUN_PHASES,
+} from './toolRun.ts';
+export type {
+  ToolRun,
+  ToolRunApi,
+  ToolRunSummary,
+  ToolRunWasmBinding,
+} from './toolRun.ts';
+
 /**
  * Parse one complete SSE frame. This is deliberately free of XMLHttpRequest,
  * fetch, React, and platform storage so Web, Android, and desktop clients can

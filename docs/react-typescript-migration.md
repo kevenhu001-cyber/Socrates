@@ -320,3 +320,30 @@ npm run test:strict
 
 Existing baseline failures must be recorded separately and must not be hidden
 by changing snapshots or weakening assertions.
+
+## LobeHub-alignment baseline (2026-09-04, M1 start)
+
+Recorded before the Zustand/window-bridge decommission (ADR 0001).
+M1 is done when the counters below reach zero.
+
+| Metric | Baseline |
+|---|---|
+| `src/main.js` lines | 9,902 |
+| Unique `window.X` bindings in `src/windowExports.js` | 200 |
+| `window.X =` self-definitions inside `main.js` | ~138 |
+| Unique `window.X` references across `frontend/src` | 1,070 |
+| Files using `window.__socrates*` bridges (`src/react/**`) | 37 |
+| Distinct `__socrates*` bridge names | 98 |
+
+Baseline verification (all green at record time):
+
+- `npm run lint` (tsc --noEmit): clean
+- `npm run test:unit`: 321/321 pass
+- `npm run build`: ok
+- `npx playwright test --config=playwright.config.mjs`: 171/171 pass
+  (after pre-existing-failure fixes: stale tutor-tab label
+  `工作`→`辅导` in `e2e/mode-switch.spec.mjs` +
+  `e2e/mobile-composer-reference.spec.mjs`; and
+  `P_hide-mode-switch-in-conversation` CSS over-hiding the mode pill on
+  the mobile landing — `src/styles.css` now scopes the hide to
+  conversation-active only, per the user contract the rule documents.)

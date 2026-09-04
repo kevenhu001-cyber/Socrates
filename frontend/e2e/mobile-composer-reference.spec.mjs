@@ -34,9 +34,10 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const editor = page.locator('#chatComposerRoot .rich-composer-editor');
   const effort = composer.locator('.effort-picker');
 
-  await expect(page.locator('#modeSegmentedTop')).toBeVisible();
-  await expect(page.locator('#modeSegmentedTop')).toContainText('聊天');
-  await expect(page.locator('#modeSegmentedTop')).toContainText('工作');
+  /* P_hide-mode-switch-in-conversation — the user contract is "only show
+     before the conversation starts"; the pill is hidden once the
+     conversation is active, on all viewports. */
+  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
   await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'true');
   await expect(composer.locator('#sendBtn .icon-arrow')).toHaveCount(1);

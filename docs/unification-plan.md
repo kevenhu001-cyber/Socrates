@@ -1,5 +1,9 @@
 # Socrates 前端统一计划
 
+> **⚠️ SUPERSEDED（2026-09-04）** — 本计划已被 `docs/adr/0001-spa-react-alignment.md`
+> 搁置：Web 端保留 Vite SPA 并完成 React/TS 化，不再迁入 Expo Web。
+> `mobile/` 继续作为原生客户端。本文档保留作为历史参考，勿按此执行。
+
 ## 目标
 将 `frontend/` (Vite SPA) 完全迁移到 `mobile/` (Expo + React Native)，实现单一代码库支持 Android + Web。
 
