@@ -48,15 +48,12 @@ export interface LegacySettings {
   addProvider(): void;
   clearSettings(): void;
   saveSettings(): void;
-  renderProviderList(): void;
-  syncSettingsUI(): void;
 }
 
 /* M4 step 4.5c — confirm-dialog actions, called from React's
    ConfirmDialog.tsx (which owns the overlay skeleton). Backed by
-   ui/confirm.js exports; showConfirm keeps the Promise semantics. */
+   ui/confirm.js exports. */
 export interface LegacyConfirm {
-  showConfirm(title: string, msg: string, isDanger?: boolean): Promise<boolean>;
   closeConfirm(resolveWith?: boolean): void;
 }
 
