@@ -6552,11 +6552,15 @@ function doRender(){
     if(msg)setReactLiveStatus(msg,status);
   }
   /* A status line never overwrites a failure or a retry notice, and the
-     waiting dot gives up as soon as the turn has real content. */
+     waiting dot gives up as soon as the turn has real content.
+     P_tool-order-defer — tool-running is busy too: while a tool row is
+     deferred behind an unfinished sentence, thinking/waiting stamps must
+     not overwrite its line (the row itself isn't mounted yet, so this
+     line is the only visible proof of work). */
   function statusIsBusy(){
     var msg=liveMessage();
     var prev=msg&&msg._liveStatus;
-    return !!(prev&&(prev.phase==="error"||prev.phase==="retrying"));
+    return !!(prev&&(prev.phase==="error"||prev.phase==="retrying"||prev.phase==="tool-running"));
   }
   function clearLiveStatus(){
     if(!statusIsBusy())setLiveStatus(null);
@@ -6623,8 +6627,8 @@ function doRender(){
        advances, which is what keeps two calls firing in the same instant from
        claiming the same offset (buildTurnLayout would drop the duplicate row).
        Nothing is spliced into the prose here any more; on the degraded surface
-       (React never mounted) the row joins the bottom of the bubble and the
-       answer streams above it. */
+       (React never mounted) the text host is split at the row so the
+       answer continues BELOW it, in chronological order. */
     onInlineTool:function(entry,row){
       var _roff=findInlineToolBoundary(full,segBase);
       if(_roff<segBase)_roff=segBase;
@@ -6632,12 +6636,34 @@ function doRender(){
          open, moving the split point would tear a partial <think> in half, so
          the raw end-of-text offset is the lesser evil. */
       if(!reactLive&&thinkState.startIdx!==-1)_roff=full.length;
+      var _prevSegBase=segBase;
       segBase=_roff;
       inlineToolRows.push({id:entry.id,name:entry.name,offset:_roff});
       if(reactLive){
         noteStreamGrowth();
       }else{
         try{placeholder.remove()}catch(_){}
+        /* P_tool-order-legacy — freeze the current text host to exactly
+           [prevSegBase, _roff) and drop the singleton, so the next
+           doRender opens a fresh host BELOW the row. Already-painted
+           prose never moves and post-tool text can no longer render
+           above the row (the old "rows sink to the bottom" behavior).
+           When _roff is the end of text there is nothing to trim, so
+           the host is left untouched. */
+        if(_roff<full.length&&segHost&&segHost.isConnected){
+          try{
+            var _frozenSlice=stripCitationMarkers(stripChatArtifacts(full.slice(_prevSegBase,_roff)))
+              .replace(/<think>[\s\S]*?<\/think>/gi,"")
+              .replace(/<think>[\s\S]*$/gi,"");
+            segHost.innerHTML="";
+            var _frozen=document.createElement("div");
+            _frozen.className="stream-content is-frozen";
+            _frozen.innerHTML=formatMsgProgressive(_frozenSlice);
+            segHost.appendChild(_frozen);
+          }catch(_){}
+        }
+        segHost=null;streamContent=null;settledContent=null;liveContent=null;cursor=null;
+        _stablePrefixText=null;_stablePrefixHtml="";_lastParsedLen=-1;
         if(row){try{body.appendChild(row)}catch(_){}}
         if(_roff<full.length){
           cancelScheduledRender();
@@ -6655,12 +6681,19 @@ function doRender(){
       return _roff;
     },
     onToolActivity:function(){
-      /* The tool row is the only live status while execution is active;
-         remove a reasoning pill immediately so the two indicators never
-         appear together. */
+      /* P_tool-order-defer — on the React path the row may be deferred
+         behind an unfinished sentence (it mounts once the sentence
+         completes). Until then this status line is the only visible
+         proof of work; AssistantTurn hides it again the moment the
+         real row mounts, so the two never appear together. */
       if(reactLive){
         noteStreamGrowth();
-        clearLiveStatus();
+        /* Never overwrite a failure or retry notice (clearLiveStatus
+           carried the same guard before this line replaced it). */
+        var _cur=liveMessage()&&liveMessage()._liveStatus;
+        if(!_cur||(_cur.phase!=="error"&&_cur.phase!=="retrying")){
+          setLiveStatus({phase:"tool-running",label:t("tool.running")});
+        }
       }
       hideThinkCtl();
       /* A tool call counts as first visible activity, so retire the
@@ -7073,18 +7106,67 @@ function doRender(){
              synchronously, with no fade. The progressive render is already
              near-identical to the final pass, so an in-place swap in a
              single frame is imperceptible; the old opacity fade read as a
-             spontaneous "refresh" after the answer completed. */
-          body.innerHTML=finalHtml;
-          if(savedPill)body.insertBefore(savedPill,body.firstChild);
-          /* Rows go back before the cards and before any anchored artifact is
-             re-seated: reseatSavedArtifact looks up [data-tcid] to place a
-             chart beside the call that produced it. */
-          for(var sri2=0;sri2<savedInlineRows.length;sri2++){
-            body.appendChild(savedInlineRows[sri2]);
-          }
-          for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
-            body.appendChild(savedToolCardArr[sci2]);
-          }
+             spontaneous "refresh" after the answer completed.
+             P_tool-order-legacy — rows/cards are interleaved at their
+             captured offsets (same rule as React buildTurnLayout) instead
+             of being parked at the bottom: prose is sliced at the row
+             boundaries and each slice is rendered with the same
+             renderAssistantHTML pass, so a tool row can never end up
+             below prose that arrived after it — and never in the middle
+             of a finished sentence (offsets are sentence-snapped at
+             capture time). Nodes without a known offset keep the old
+             tail behavior. */
+          (function(){
+            var idToOff={};
+            for(var ioi=0;ioi<inlineToolRows.length;ioi++){
+              idToOff[inlineToolRows[ioi].id]=inlineToolRows[ioi].offset;
+            }
+            function nodeOffset(node,attr){
+              var id=node&&(node.getAttribute?node.getAttribute(attr):(node.dataset&&node.dataset.tcid));
+              if(id!=null&&Object.prototype.hasOwnProperty.call(idToOff,id))return idToOff[id];
+              return Infinity;
+            }
+            var placed=[];
+            for(var sri2=0;sri2<savedInlineRows.length;sri2++){
+              placed.push({off:nodeOffset(savedInlineRows[sri2],"data-tcid"),node:savedInlineRows[sri2],seq:sri2});
+            }
+            for(var sci2=0;sci2<savedToolCardArr.length;sci2++){
+              placed.push({off:nodeOffset(savedToolCardArr[sci2],"data-tcid"),node:savedToolCardArr[sci2],seq:1000+sci2});
+            }
+            placed.sort(function(a,b){return (a.off-b.off)||(a.seq-b.seq);});
+            var bounds=[];
+            for(var pi=0;pi<placed.length;pi++){
+              if(placed[pi].off!==Infinity&&placed[pi].off>=0&&placed[pi].off<=full.length){
+                if(!bounds.length||bounds[bounds.length-1]!==placed[pi].off)bounds.push(placed[pi].off);
+              }
+            }
+            function renderProseSlice(a,b){
+              if(b<=a)return;
+              var slice=stripChatArtifacts(full.slice(a,b))
+                .replace(/<think>[\s\S]*?<\/think>/gi,"")
+                .replace(/<think>[\s\S]*$/gi,"");
+              if(!slice.trim())return;
+              var host=document.createElement("div");
+              host.className="stream-segment is-final";
+              try{host.innerHTML=renderAssistantHTML(slice);}
+              catch(_){host.innerHTML="<p>"+esc(slice)+"</p>";}
+              body.appendChild(host);
+            }
+            body.innerHTML="";
+            if(savedPill)body.appendChild(savedPill);
+            var prev=0,ni=0;
+            for(var bi=0;bi<bounds.length;bi++){
+              renderProseSlice(prev,bounds[bi]);
+              prev=bounds[bi];
+              while(ni<placed.length&&placed[ni].off===bounds[bi]){
+                body.appendChild(placed[ni].node);ni++;
+              }
+            }
+            renderProseSlice(prev,full.length);
+            while(ni<placed.length){
+              body.appendChild(placed[ni].node);ni++;
+            }
+          })();
           /* Re-mount saved artifacts AFTER the final HTML + tool cards.
              Anchored hosts go back beside their serialized inline row
              (data-tool-anchor → [data-tcid]) so charts stay embedded in

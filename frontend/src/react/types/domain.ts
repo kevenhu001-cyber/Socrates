@@ -185,9 +185,13 @@ export interface LegacyChatMessage {
  * `error` and `stopped` outlive the stream — main.js clears the field at
  * finish(), so anything still set on a finalized entry is a turn that ended
  * broken, and AssistantTurn keeps drawing it.
+ *
+ * `tool-running` = a tool call is executing but its row is deferred behind
+ * an unfinished sentence (P_tool-order-defer). AssistantTurn hides this
+ * line as soon as the real row mounts, so the two never appear together.
  */
 export interface LiveTurnStatus {
-  phase: 'waiting' | 'thinking' | 'retrying' | 'error' | 'stopped';
+  phase: 'waiting' | 'thinking' | 'retrying' | 'error' | 'stopped' | 'tool-running';
   /** Already-translated copy — the writer knows the app language. */
   label?: string;
   /** Pill state: '' keeps the shimmer, 'done' / 'error' stop it. */

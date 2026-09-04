@@ -127,13 +127,21 @@ test('keeps consecutive calls together after normalizing the sentence boundary',
   assert.equal(layout[1].members.length, 2);
 });
 
-test('keeps a live unfinished sentence ahead of its tool row', () => {
+test('defers a tool row behind a live unfinished sentence (P_tool-order-defer)', () => {
   const text = '我先查一下相关资料';
-  const layout = buildTurnLayout(text, [
+  const calls = [
     call({ id: 'search', textOffset: '我先查一下'.length, _run: { phase: 'running' } }),
-  ], { inlineThink: true, deferOpenSentence: true });
-  assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group']);
-  assert.equal(layout[0].text, text);
+  ];
+  /* Sentence unfinished: the row stays unmounted (the TurnStatus
+     tool-running line covers the activity) so it can never split
+     the sentence or jump when punctuation arrives. */
+  const deferred = buildTurnLayout(text, calls, { inlineThink: true, deferOpenSentence: true });
+  assert.deepEqual(deferred.map((segment) => segment.kind), ['text']);
+  assert.equal(deferred[0].text, text);
+  /* Sentence completed: the row mounts exactly once, behind the period. */
+  const done = buildTurnLayout(text + '。', calls, { inlineThink: true, deferOpenSentence: true });
+  assert.deepEqual(done.map((segment) => segment.kind), ['text', 'group']);
+  assert.equal(done[0].text, text + '。');
 });
 
 test('keeps a tool boundary after sentence punctuation and its closing quote', () => {

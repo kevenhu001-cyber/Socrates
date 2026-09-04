@@ -121,6 +121,16 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   });
   const { settled, tail } = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
+  /* P_tool-order-defer — the tool-running line is the stand-in for rows
+     still deferred behind an unfinished sentence. Once the real row
+     mounts, the line retires so the two never appear together. */
+  const hasMountedRow = segments.some(
+    (segment) => segment.kind === 'tool' || segment.kind === 'group',
+  );
+  const liveStatus = message._liveStatus;
+  const showStatus = !!liveStatus
+    && (isLive || liveStatus.phase === 'error' || liveStatus.phase === 'stopped')
+    && !(isLive && liveStatus.phase === 'tool-running' && hasMountedRow);
   /* Approvals and retries are filed against the message the row belongs to. */
   const messageId = String(message.clientId || message.id || '');
 
@@ -191,9 +201,8 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           place that draws it. A finalized turn keeps the field only when the
           turn ended broken (a timeout, or a Stop with nothing to save), and
           then the line IS part of the answer. */}
-      {message._liveStatus && (isLive || message._liveStatus.phase === 'error'
-        || message._liveStatus.phase === 'stopped') ? (
-        <TurnStatus status={message._liveStatus} messageId={messageId} />
+      {showStatus && liveStatus ? (
+        <TurnStatus status={liveStatus} messageId={messageId} />
       ) : null}
     </>
   );

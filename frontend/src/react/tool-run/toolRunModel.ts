@@ -13,6 +13,7 @@
  */
 
 import { toolCategory } from '../../render/toolCategory.js';
+import { snapToolOffsetOutOfBlock } from '../../render/streaming.js';
 import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.js';
 import { isTerminalToolPhase, summarizeToolRuns, type ToolRun } from '../../chat/toolRunState.js';
 import {
@@ -262,6 +263,31 @@ export function sortableToolCalls(
 }
 
 /**
+ * P_tool-order-strict — is the prose at `offset` a finished sentence?
+ * A tool row may only mount behind a REAL ending (CJK/Latin terminator
+ * or newline). Colons/semicolons do not count: "原因有三：" promises a
+ * continuation, and a row parked there reads as an interruption.
+ */
+export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
+  const raw = String(rawText || '');
+  const off = Math.max(0, Math.min(raw.length, Math.floor(Number(offset) || 0)));
+  if (off <= 0) return true;
+  if (off >= raw.length) {
+    const tail = raw.trimEnd();
+    if (!tail) return true;
+    const last = tail.charAt(tail.length - 1);
+    if (last === '\n' || last === '\r') return true;
+    /* Trailing '.' counts (mirrors the write path's (?=\s|$) lookahead);
+       a decimal like "3.14" never ends with '.', so this cannot misfire. */
+    return /[。！？!?.]/.test(last);
+  }
+  const before = raw.slice(0, off).trimEnd();
+  const next = raw[off] || '';
+  if (/\n|\r/u.test(next)) return true;
+  return /(?:[。！？!?]|\.)(?:["'”’」』）)\]}]*)$/u.test(before);
+}
+
+/**
  * Build the ordered segment list for one assistant turn.
  *
  * Grouping is a *run* rule, not a category rule: consecutive tool calls with
@@ -274,6 +300,13 @@ export function sortableToolCalls(
  * cutting them out. A live turn wants that: the streaming renderer turns an
  * open think tag into the same collapsible "思考中" block the legacy pipeline
  * painted, and only the finalized pass strips scratch work for good.
+ *
+ * P_tool-order-defer — with `deferOpenSentence` (live turns only), a tool
+ * whose sentence has not finished yet is LEFT OUT of the layout entirely:
+ * its data stays in toolCalls[] and the turn status line keeps showing
+ * "running", but no row mounts until the sentence completes. The row then
+ * mounts exactly once, at its final position — it never visibly jumps.
+ * Finalized turns pass no defer flag, so nothing can starve.
  */
 export function buildTurnLayout(
   rawText: string,
@@ -282,7 +315,19 @@ export function buildTurnLayout(
 ): TurnSegment[] {
   const raw = String(rawText || '');
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
-  const calls = sortableToolCalls(raw, toolCalls);
+  const defer = opts?.deferOpenSentence === true;
+  const calls = sortableToolCalls(raw, toolCalls).filter((call) => {
+    if (!defer) return true;
+    /* Approvals need a human decision: never hide them behind a sentence. */
+    if (call.approval && call.approval.approvalId) return true;
+    /* P_tool-order-defer — mount only behind a finished sentence. */
+    const persistedOffset = Math.min(call.textOffset as number, raw.length);
+    const visual = snapToolOffsetOutOfBlock(
+      raw,
+      sentenceSafeToolOffset(raw, persistedOffset, true),
+    );
+    return isSentenceCompleteAt(raw, visual);
+  });
   const segments: TurnSegment[] = [];
 
   const pushProse = (start: number, end: number): void => {
@@ -305,7 +350,10 @@ export function buildTurnLayout(
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const offset = Math.max(
       prev,
-      sentenceSafeToolOffset(raw, persistedOffset, opts?.deferOpenSentence === true),
+      snapToolOffsetOutOfBlock(
+        raw,
+        sentenceSafeToolOffset(raw, persistedOffset, opts?.deferOpenSentence === true),
+      ),
     );
     pushProse(prev, offset);
     segments.push({ kind: 'tool', call });
