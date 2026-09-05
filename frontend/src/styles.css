@@ -2215,41 +2215,44 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .admin-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
 .admin-body{padding:0 18px 18px;display:flex;flex-direction:column;gap:20px}
-.admin-section{display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
+.admin-section{display:flex;flex-direction:column;gap:12px;padding-top:20px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
 .admin-section:first-child{border-top:0;padding-top:14px}
-.admin-section h3{font-size:13px;font-weight:600;color:hsl(var(--text-100));margin:0}
-.admin-hint{font-size:11.5px;color:hsl(var(--text-400));margin:0;line-height:1.5}
-.admin-empty{font-size:12px;color:hsl(var(--text-400));margin:0}
-.admin-loading{padding:20px 18px;font-size:13px;color:hsl(var(--text-400))}
-.admin-gate-error,.admin-error{margin:14px 18px;padding:10px 12px;border-radius:8px;background:hsl(0 60% 30%/0.18);border:0.5px solid hsl(0 60% 40%/0.4);color:hsl(0 70% 78%);font-size:12px}
-.admin-section label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:hsl(var(--text-300))}
-.admin-section input[type="text"],.admin-section input[type="url"],.admin-section input[type="password"],.admin-section input[type="number"]{padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:13px;font-family:inherit}
+.admin-section h3{font-size:15px;font-weight:650;color:hsl(var(--text-100));margin:0}
+.admin-section form{display:flex;flex-direction:column;gap:12px;margin:4px 0 0}
+.admin-hint{font-size:12.5px;color:hsl(var(--text-400));margin:0;line-height:1.6}
+.admin-empty{font-size:13px;color:hsl(var(--text-400));margin:0;line-height:1.6}
+.admin-loading{padding:20px 18px;font-size:14px;color:hsl(var(--text-400))}
+.admin-gate-error,.admin-error{margin:14px 18px;padding:12px 14px;border-radius:8px;background:hsl(0 60% 30%/0.18);border:0.5px solid hsl(0 60% 40%/0.4);color:hsl(0 70% 78%);font-size:13px;line-height:1.5}
+.admin-section label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:hsl(var(--text-300))}
+.admin-section input[type="text"],.admin-section input[type="url"],.admin-section input[type="password"],.admin-section input[type="number"]{padding:10px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:14px;font-family:inherit}
 .admin-section input:focus{outline:none;border-color:hsl(var(--accent-000))}
 .admin-checkbox{flex-direction:row!important;align-items:center;gap:8px!important}
-.admin-key-present{font-size:11px;color:hsl(var(--text-500));font-weight:400}
-.admin-actions{display:flex;gap:8px;flex-wrap:wrap}
-.admin-save{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0;background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.admin-key-present{font-size:12px;color:hsl(var(--text-500));font-weight:400}
+.admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.admin-save{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:550;cursor:pointer;border:0;background:hsl(var(--accent-000));color:hsl(var(--always-white));transition:filter .15s}
 .admin-save:hover{filter:brightness(1.1)}
 .admin-save:disabled{opacity:0.5;cursor:not-allowed}
-.admin-remove{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid hsl(0 60% 30%/0.5);background:transparent;color:hsl(0 60% 70%)}
+.admin-remove{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:0.5px solid hsl(0 60% 30%/0.5);background:transparent;color:hsl(0 60% 70%);transition:background .15s}
 .admin-remove:hover{background:hsl(0 60% 30%/0.4)}
 .admin-remove:disabled{opacity:0.5;cursor:not-allowed}
 
 /* Admin console page (/admin) — a main-content page like the other
    workspace panels, styled with the same form controls as the modal
    variant so the two surfaces stay visually consistent. */
-.admin-panel{padding:24px;overflow-y:auto}
-.admin-panel-body{max-width:640px;margin:0 auto}
-.admin-console{display:flex;flex-direction:column;gap:20px}
-.admin-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.admin-console-head h2{font-size:17px;font-weight:600;color:hsl(var(--text-100));margin:0}
-.admin-login{max-width:360px;margin:48px auto;display:flex;flex-direction:column;gap:10px}
-.admin-login h2{font-size:17px;font-weight:600;color:hsl(var(--text-100));margin:0}
-.admin-login label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:hsl(var(--text-300))}
-.admin-login input[type="password"]{padding:8px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:13px}
+.admin-panel{padding:32px 24px 48px;overflow-y:auto}
+.admin-panel-body{max-width:680px;margin:0 auto}
+.admin-console{display:flex;flex-direction:column;gap:24px}
+.admin-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
+.admin-console-head h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
+.admin-login{max-width:400px;margin:64px auto;padding:28px;display:flex;flex-direction:column;gap:14px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.admin-login h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
+.admin-login .admin-hint{margin-bottom:4px}
+.admin-login label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:hsl(var(--text-300))}
+.admin-login input[type="password"]{padding:10px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:14px}
 .admin-login input:focus{outline:none;border-color:hsl(var(--accent-000))}
-.admin-login form{display:flex;flex-direction:column;gap:10px}
-.admin-login .admin-save{align-self:flex-start}
+.admin-login form{display:flex;flex-direction:column;gap:14px}
+.admin-login .admin-save{width:100%;padding:10px}
+@media (max-width:640px){.admin-panel{padding:20px 16px 40px}.admin-login{margin:32px auto;padding:22px}}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .settings-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
 .settings-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
