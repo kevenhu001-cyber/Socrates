@@ -254,6 +254,23 @@ if [[ "${SKIP_DB_MIGRATE:-0}" != "1" ]]; then
   fi
 fi
 
+# ─── 0.4b. Post-migration schema gate ───────────────────────────────
+# db:migrate skips already-applied migrations silently, which also hides
+# a migration that was never registered in drizzle/meta/_journal.json.
+# Verify the relations the current backend requires (tts_results,
+# session_chunks, embedding_config) BEFORE stopping the live service.
+# Skip with SKIP_SCHEMA_VERIFY=1 only when the operator has verified
+# the schema out-of-band.
+if [[ "${SKIP_SCHEMA_VERIFY:-0}" != "1" ]]; then
+  echo "Verifying deployed schema…"
+  if ! (cd "$SERVER_DIR" && npx tsx scripts/verify-deploy-schema.ts); then
+    echo "ERROR: schema verification failed; aborting deploy before swap" >&2
+    echo "  → register the missing migration in server/drizzle/meta/_journal.json and re-run," >&2
+    echo "    or set SKIP_SCHEMA_VERIFY=1 if the schema was verified out-of-band" >&2
+    exit 1
+  fi
+fi
+
 # ─── 0.5. Memory pressure mitigation ─────────────────────────────────
 # Stop the running backend before the heavy frontend build so both
 # don't contend for the same ~3.7 GB of RAM.  Vite + Rollup needs up
@@ -295,6 +312,15 @@ else
 
   if [[ ! -f "$DIST_DIR/index.html" ]]; then
     echo "ERROR: Vite build did not produce $DIST_DIR/index.html" >&2
+    exit 1
+  fi
+
+  # The /admin operator console ships inside the SPA bundle
+  # (#adminPanel in index.html + the AdminPage island). If the marker
+  # is missing, the build predates the admin console or the page was
+  # dropped — abort before the bundle reaches the web root.
+  if ! grep -q "adminPanel" "$DIST_DIR/index.html"; then
+    echo "ERROR: built bundle has no admin console entry (#adminPanel missing from dist/index.html)" >&2
     exit 1
   fi
 
@@ -793,6 +819,34 @@ else
   GATE_FAILED=1
 fi
 
+# 4.5e-2. Admin console surface — the operator status endpoint is
+# public (200 + { configured, ipAllowed }); the config routes must
+# fail closed for unauthenticated callers (403 from
+# requireAdminSession, never 200). An unconfigured console
+# (ADMIN_PASSWORD unset) is an expected operator state, not a gate
+# failure — it is recorded below and surfaced as an action item.
+ADMIN_CONSOLE_CONFIGURED=false
+ADMIN_STATUS_BODY=$(curl -sf --max-time 5 http://localhost:3037/api/admin-auth/status || true)
+if [[ -n "$ADMIN_STATUS_BODY" ]] && echo "$ADMIN_STATUS_BODY" | jq -e 'has("configured") and has("ipAllowed")' >/dev/null 2>&1; then
+  GATE_RESULTS+=("  admin.status ok ($(echo "$ADMIN_STATUS_BODY" | jq -c .))")
+  if echo "$ADMIN_STATUS_BODY" | jq -e '.configured == true' >/dev/null 2>&1; then
+    ADMIN_CONSOLE_CONFIGURED=true
+  fi
+else
+  echo "GATE FAIL: /api/admin-auth/status missing or malformed" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  admin.status INVALID  ← FAIL")
+fi
+
+ADMIN_GATE_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/embedding-config || echo 000)
+if [[ "$ADMIN_GATE_CODE" == "403" ]]; then
+  GATE_RESULTS+=("  admin.config fail-closed (403)")
+else
+  echo "GATE FAIL: /api/embedding-config returned $ADMIN_GATE_CODE unauthenticated (expected 403)" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  admin.config $ADMIN_GATE_CODE  ← FAIL")
+fi
+
 # 4.5f. Codex harness — pinned binary + CODEX_HOME ready, and the backend's
 # codex router is mounted (401 = route exists behind auth; 404 = missing).
 if [[ "$CODEX_ENABLED" != "0" ]]; then
@@ -855,6 +909,10 @@ if [[ $GATE_FAILED -eq 0 ]]; then
       "mobileApiDatabaseReachable": true,
       "apiConfigJsonValid": true,
       "backendDirectReachable": true,
+      "adminStatusReachable": true,
+      "adminConfigFailClosed": true,
+      "adminConsoleConfigured": ${ADMIN_CONSOLE_CONFIGURED:-false},
+      "schemaTablesVerified": $([ "${SKIP_SCHEMA_VERIFY:-0}" = "1" ] && echo false || echo true),
       "bundleMd5Integrity": true,
       "nginxReloaded": $([ "$NGINX_STATUS" = "reloaded" ] && echo true || echo false),
       "codexHarness": $([ "$CODEX_ENABLED" != "0" ] && echo true || echo false),
@@ -879,6 +937,11 @@ if [[ $GATE_FAILED -eq 0 ]]; then
   echo "─── gate ───"
   printf '%s\n' "${GATE_RESULTS[@]}"
   echo "────────────"
+  if [[ "${ADMIN_CONSOLE_CONFIGURED:-false}" != "true" ]]; then
+    echo "  operator action: ADMIN_PASSWORD is not set — the /admin console is disabled."
+    echo "    Set ADMIN_PASSWORD (8+ chars) and ADMIN_IP_ALLOWLIST in the service env,"
+    echo "    then restart socrates-api to enable the operator console."
+  fi
   # Rollback path for the versioned SPA entry. .previous/ holds the
   # prior index.<TS>.html filename + content, so the restore must also
   # repoint the nginx try_files sentinel to that filename and reload.
