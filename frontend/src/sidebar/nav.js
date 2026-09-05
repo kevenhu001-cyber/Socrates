@@ -186,10 +186,11 @@ export function closeAllPanels() {
   ["tabKnowledge", "tabRecents", "tabMistakes"].forEach(function (id) { var b = byId(id); if (b) b.classList.remove("active"); });
 }
 
-/* Hide all main-content pages (library, projects, scheduled, plugins, exam). */
+/* Hide all main-content pages (library, projects, scheduled, plugins, exam, admin). */
 function hideMainPages() {
   ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "adminPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
   document.body.classList.remove("workspace-active");
+  document.body.classList.remove("admin-active");
   /* Leaving exam via sidebar nav must also drop the exam-active body
      class, otherwise CSS keeps hiding the mode switcher and other
      chat top-bar elements (exam.js only removes it in closeExamView). */
@@ -436,6 +437,10 @@ export function openPlugins() {
 export function openAdmin() {
   hideChatAndTopic();
   showMainPage("adminPanel");
+  /* Standalone operator page: drop the chat top-bar chrome (mode
+     switch, model picker, find, share) via body.admin-active.
+     hideMainPages() removes it on every exit path. */
+  document.body.classList.add("admin-active");
   if (typeof window.__socratesMountAdmin === "function") {
     window.__socratesMountAdmin();
   }

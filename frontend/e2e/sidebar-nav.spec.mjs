@@ -59,3 +59,22 @@ test('Admin console is a standalone /admin page with no sidebar entry', async ({
   // renders instead of the console.
   await expect(page.locator('.admin-login')).toBeVisible();
 });
+
+test('Admin page hides the chat top-bar chrome', async ({ page }) => {
+  // Simulate an active session: the chat runtime unhides the share /
+  // find / model controls, which must all disappear on /admin.
+  await page.evaluate(() => {
+    for (const id of ['shareBtn', 'findBtn', 'chatModelWrap']) {
+      document.getElementById(id)?.classList.remove('hidden');
+    }
+  });
+  await page.evaluate(() => window.openNav('admin'));
+  await expect(page.locator('#adminPanel')).toBeVisible();
+  const displays = await page.locator('#shareBtn, #findBtn, #chatModelWrap, #modeSegmentedTop').evaluateAll((els) =>
+    els.map((el) => getComputedStyle(el).display),
+  );
+  expect(displays).toEqual(['none', 'none', 'none', 'none']);
+  // Leaving the console drops the admin body class and restores chrome.
+  await page.evaluate(() => window.openNav('library'));
+  await expect(page.locator('#shareBtn')).toBeVisible();
+});
