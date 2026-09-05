@@ -1730,6 +1730,19 @@ body.workspace-active #modeSegmentedTop,
 body.workspace-active #mobileMode,
 body.workspace-active #mobileIncognitoBtn,
 body.workspace-active #topicDisclaimer{display:none!important}
+/* Admin console is a standalone operator page — none of the chat
+   top-bar chrome applies (mode switch, model picker, find, share,
+   stats). !important because the chat runtime toggles .hidden off
+   these controls whenever a session is active. The sidebar toggle
+   stays visible for navigation. */
+body.admin-active #modeSegmentedTop,
+body.admin-active #mobileMode,
+body.admin-active #mobileIncognitoBtn,
+body.admin-active #chatModelWrap,
+body.admin-active #findBtn,
+body.admin-active #shareBtn,
+body.admin-active #chatStats,
+body.admin-active #topicDisclaimer{display:none!important}
 .main-content:has(#chatView:not(.hidden)) #topicDisclaimer{display:none}
 /* P_hide-mode-switch-in-conversation — see the canonical rule near
    the top of this file (line ~130). The pre-existing rule was kept
