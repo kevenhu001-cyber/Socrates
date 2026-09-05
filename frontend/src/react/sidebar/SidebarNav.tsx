@@ -57,12 +57,6 @@ const BUTTONS: NavButtonSpec[] = [
     i18nKey: 'sidebar.more.skills',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5 8.6 8.1 5 9.5l3.6 1.4L10 14.5l1.4-3.6L15 9.5l-3.6-1.4z"/><path d="M17.5 13.5l-.9 2.1-2.1.9 2.1.9.9 2.1.9-2.1 2.1-.9-2.1-.9z"/></svg>',
   },
-  {
-    key: 'admin',
-    label: 'Admin',
-    i18nKey: 'sidebar.nav.admin',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="M9.5 12.5l1.8 1.8 3.4-3.6"/></svg>',
-  },
 ];
 
 function i18n(key: string, fallback: string): string {
@@ -121,7 +115,10 @@ export interface SidebarNavHandle {
  * Hydrate the legacy `#sidebarNav` element with React. Idempotent — a
  * second call returns the existing handle. The nav element itself is
  * preserved (same id, same `aria-label`, same nav DOM siblings); React
- * owns only its direct children (the 8 buttons).
+ * owns only its direct children (the 7 buttons). The /admin operator
+ * console is intentionally NOT a sidebar destination: it is a
+ * standalone page reached by direct URL (legacy WORKSPACE_ROUTES +
+ * openAdmin), so the admin surface is not advertised in the nav.
  *
  * Callers claim the element through the module-private ownership registry.
  * The React buttons re-publish active state through the bridge, while legacy

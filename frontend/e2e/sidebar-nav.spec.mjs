@@ -21,7 +21,6 @@ test('sidebar exposes only the requested primary destinations', async ({ page })
     'navPlugins',
     'navExam',
     'navSkills',
-    'navAdmin',
   ]);
 
   for (const id of ['navMore']) {
@@ -47,4 +46,16 @@ test('Skills & shortcuts opens directly without a Customize popover', async ({ p
   await page.locator('#navSkills').click();
   await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
   await expect(page.locator('#moreNavPopover')).toHaveCount(0);
+});
+
+test('Admin console is a standalone /admin page with no sidebar entry', async ({ page }) => {
+  // The operator console is deliberately not advertised in the nav —
+  // it is reached only through the standalone route.
+  await expect(page.locator('#navAdmin')).toHaveCount(0);
+  await page.evaluate(() => window.openNav('admin'));
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.locator('#adminPanel')).toBeVisible();
+  // Unauthenticated (mock API has no admin session): the login form
+  // renders instead of the console.
+  await expect(page.locator('.admin-login')).toBeVisible();
 });
