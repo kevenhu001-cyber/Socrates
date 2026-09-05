@@ -134,6 +134,7 @@ export interface LegacyWorkspace {
   connectProjectConnector(id: string): void;
   refreshProjectConnector(id: string): void;
   openProjectConnectorForm(id: string): void;
+  exitPluginsView(): void;
   toggleCodexMcp(key: string, enabled: boolean): Promise<void> | void;
   checkCodexMcpHealth(key: string): Promise<void> | void;
   openArxivSearch(): void;
@@ -141,7 +142,7 @@ export interface LegacyWorkspace {
 }
 
 export interface LegacyScheduled {
-  openCreateScheduledTask(): void;
+  openCreateScheduledTask(initialPrompt?: string): void;
   openEditScheduledTask(id: string): void;
   toggleScheduledTask(id: string, pause: boolean): void;
   runScheduledTask(id: string): void;

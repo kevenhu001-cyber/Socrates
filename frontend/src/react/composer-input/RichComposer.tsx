@@ -19,6 +19,10 @@ import { useAutoHeight } from './useAutoHeight';
 import type { ComposerExtensionToken } from './types';
 import { addComposerFiles } from '../../attachments/render.js';
 import { i18n } from '../legacy/gateway';
+import {
+  removeComposerPlugin,
+  useComposerPluginSelectionSnapshot,
+} from '../composer/pluginSelection';
 
 interface RichComposerProps {
   surface: ComposerSurface;
@@ -107,6 +111,56 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
       <span className="rich-composer-divider" />
       <ToolbarButton label="Undo" disabled={!editor.can().undo()} onClick={run(() => editor.chain().focus().undo().run())}>↶</ToolbarButton>
       <ToolbarButton label="Redo" disabled={!editor.can().redo()} onClick={run(() => editor.chain().focus().redo().run())}>↷</ToolbarButton>
+    </div>
+  );
+}
+
+function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
+  const snapshot = useComposerPluginSelectionSnapshot();
+  const plugins = snapshot[surface];
+  if (!plugins.length) return null;
+
+  const visiblePlugins = plugins.slice(0, 4);
+  const hiddenCount = Math.max(0, plugins.length - visiblePlugins.length);
+  const openTools = () => {
+    const triggerId = surface === 'topic' ? 'topicComposerToolsBtn' : 'chatComposerToolsBtn';
+    const trigger = document.getElementById(triggerId);
+    if (trigger && typeof window.toggleComposerTools === 'function') {
+      window.toggleComposerTools(trigger, surface);
+    }
+  };
+
+  return (
+    <div className="composer-plugin-chips" aria-label="Selected plugins">
+      {visiblePlugins.map((plugin) => (
+        <span className="composer-plugin-chip" key={plugin.id} title={plugin.description || plugin.name}>
+          {plugin.iconMarkup ? (
+            <span className="composer-plugin-chip-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: plugin.iconMarkup }} />
+          ) : (
+            <span className="composer-plugin-chip-icon composer-plugin-chip-fallback" aria-hidden="true">{plugin.name.slice(0, 1).toUpperCase()}</span>
+          )}
+          <span className="composer-plugin-chip-label">{plugin.name}</span>
+          <button
+            type="button"
+            className="composer-plugin-chip-remove"
+            aria-label={`Remove ${plugin.name}`}
+            title={`Remove ${plugin.name}`}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              removeComposerPlugin(surface, plugin.id);
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
+          </button>
+        </span>
+      ))}
+      {hiddenCount > 0 ? (
+        <button type="button" className="composer-plugin-chip composer-plugin-chip-more" onClick={openTools}>
+          +{hiddenCount} more
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -651,6 +705,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       data-surface={surface}
       style={{ '--composer-placeholder': JSON.stringify(activePlaceholder) } as React.CSSProperties}
     >
+      <ComposerPluginChips surface={surface} />
       {showToolbar ? <FormattingToolbar editor={editor} /> : null}
       <EditorContent editor={editor} />
     </div>

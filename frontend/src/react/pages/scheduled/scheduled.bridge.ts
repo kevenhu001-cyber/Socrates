@@ -59,7 +59,7 @@ export function useScheduledSnapshot(): ScheduledSnapshot {
 export function useScheduledDispatch() {
   const s = getLegacyActions().scheduled;
   return {
-    create: () => s.openCreateScheduledTask(),
+    create: (initialPrompt?: string) => s.openCreateScheduledTask(initialPrompt),
     edit: (id: string) => s.openEditScheduledTask(id),
     toggle: (id: string, pause: boolean) => s.toggleScheduledTask(id, pause),
     run: (id: string) => s.runScheduledTask(id),

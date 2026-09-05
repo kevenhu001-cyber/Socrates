@@ -47,6 +47,12 @@ import {
   setComposerMarkdown,
   subscribeComposer,
 } from './react/composer-input/controller.ts';
+import {
+  clearComposerPlugins,
+  copyComposerPlugins,
+  selectedComposerPlugins,
+} from './react/composer/pluginSelection.ts';
+import { serializeSelectedPluginContext } from './react/composer/pluginCatalog.ts';
 import { wrapForCanvas } from './render/canvasWrap.ts';
 import { closeShareModal, copyShareLink, openShareModal, resetShareToken, selectShareVis, toggleChatTopBarEls, toggleShareBtn } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
@@ -2404,6 +2410,8 @@ function bounceOutOfArchivedSession(){
   clearLegacyMsgListChildren();
   publishReactChatRuntime({type:"state-synced",reason:"archived-session-reset"});
   clearComposer("topic");
+  clearComposerPlugins("topic");
+  clearComposerPlugins("chat");
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   /* Task 3.3 — clear the teaching-plan view on full reset so a
      previous session's plan doesn't linger in the sidebar. */
@@ -2663,6 +2671,12 @@ async function startSession(){
   if(isSlashCommandPaletteOpen()) return;
   var topic=getComposerMarkdown("topic").trim();
   if(!topic)return;
+  /* P_composer-plugins — selected connected apps are a presentation-layer
+     context selector. Keep the persisted topic/user bubble clean, while the
+     model receives the same natural-language connector hints used by the
+     existing slash-app path. */
+  var topicPlugins=selectedComposerPlugins("topic").slice();
+  var topicForModel=serializeSelectedPluginContext(topicPlugins,topic);
   /* P_attachments-multimodal — the model may have been switched after the
      image was attached on the landing composer. Re-check before consuming
      the pending store so the first turn cannot bypass the upload-time gate. */
@@ -2731,6 +2745,13 @@ async function startSession(){
   setCurrentSessionId(newSessId);
   pushChatIdToURL(stateStore.read("currentSessionId"));
 
+  /* Both chat and tutor sessions eventually land in the same chat composer.
+     Move the landing selection before branching into the optional diagnostic
+     flow so tutor mode does not lose the selected apps while that screen is
+     open. */
+  copyComposerPlugins("topic","chat");
+  clearComposerPlugins("topic");
+
   if(appMode==="chat" || _deepResearchOn){
 
     /* STEP 1 — flip to chat view + commit the user bubble SYNCHRONOUSLY.
@@ -2781,8 +2802,8 @@ async function startSession(){
          session save so neither blocks the other; both complete before
          askChatTurn fires. */
       var builtP = (typeof buildMessageContent === "function")
-        ? buildMessageContent(stateStore.read("topic"))
-        : Promise.resolve({ rawText: stateStore.read("topic"), parts: stateStore.read("topic"), attachmentList: [] });
+        ? buildMessageContent(topicForModel)
+        : Promise.resolve({ rawText: topicForModel, parts: topicForModel, attachmentList: [] });
       /* P_session-race — still awaits the save before askChatTurn so
          requireOwnedSession() sees the row. The save runs concurrently
          with buildMessageContent instead of blocking the view swap. */
@@ -2795,10 +2816,10 @@ async function startSession(){
            turn so the user can still chat; buildMessageContent failure
            on a topic without attachments is impossible, but defending
            here keeps the click robust to a server hiccup. */
-        startBuilt = { rawText: stateStore.read("topic"), parts: stateStore.read("topic"), attachmentList: [] };
+        startBuilt = { rawText: topicForModel, parts: topicForModel, attachmentList: [] };
       }
-      var startChatContent = startBuilt.parts || stateStore.read("topic");
-      var startPersistText = startBuilt.rawText || stateStore.read("topic");
+      var startChatContent = startBuilt.parts || topicForModel;
+      var startPersistText = stateStore.read("topic");
       var startAttList = Array.isArray(startBuilt.attachmentList) ? startBuilt.attachmentList : [];
       _pendingChatContent = startChatContent;
       _pendingAttachments = startAttList;
@@ -2826,11 +2847,11 @@ async function startSession(){
          above, so call startDeepResearch (not launchDeepResearch, which
          would re-read the now-empty composer and post a duplicate). */
       if(_deepResearchOn && typeof window.startDeepResearch==="function"){
-        await window.startDeepResearch(stateStore.read("topic"));
+        await window.startDeepResearch(topicForModel);
         return;
       }
       try{
-        await askChatTurn(stateStore.read("topic"));
+        await askChatTurn(stateStore.read("topic"), startChatContent);
       }catch(startErr){
         /* P_turn-abort-quiet — see submitChatMessage: expected lifecycle
            aborts unwind silently; real failures log without banner. */
@@ -2927,6 +2948,8 @@ async function startSession(){
     if(dv){dv.classList.add("hidden");dv.innerHTML="";}
     var ts=document.getElementById("topicSetup");
     if(ts)ts.classList.remove("hidden");
+    clearComposerPlugins("topic");
+    clearComposerPlugins("chat");
     focusComposer("topic");
   };
   document.getElementById("diagnosticView").innerHTML=diagLoadingHTML();
@@ -4026,6 +4049,8 @@ async function submitChatMessage(textOverride,opts){
    * the text is empty (e.g. just a single image with no caption). */
   var hasAtt = Array.isArray(window.attachments) && window.attachments.length>0;
   if(!text && !hasAtt)return;
+  var chatPlugins=selectedComposerPlugins("chat").slice();
+  var textForModel=serializeSelectedPluginContext(chatPlugins,text);
   /* Snapshot this turn before any focus or attachment state changes. The
      visible submit must commit synchronously: the user bubble, composer
      collapse, and cleared draft now happen in one interaction frame while
@@ -4082,10 +4107,10 @@ async function submitChatMessage(textOverride,opts){
   var built;
   try{
     built=(typeof buildMessageContent==="function")
-      ?await buildMessageContent(text,turnAttachments)
-      :{rawText:text,parts:text,attachmentList:immediateAttList};
+      ?await buildMessageContent(textForModel,turnAttachments)
+      :{rawText:textForModel,parts:textForModel,attachmentList:immediateAttList};
   }catch(_){
-    built={rawText:text,parts:text,attachmentList:immediateAttList};
+    built={rawText:textForModel,parts:textForModel,attachmentList:immediateAttList};
   }
   var chatContent=built.parts;
   var attList=built.attachmentList||immediateAttList;
@@ -8882,6 +8907,8 @@ async function resetApp(){
      sidebar sync had run — the duplicate was wasteful and the
      interim state was incomplete. */
   clearComposer("topic");
+  clearComposerPlugins("topic");
+  clearComposerPlugins("chat");
   document.getElementById("kbContent").innerHTML='<div class="kb-empty">'+(typeof t==="function"?t("tutor.kbTopicFirst"):"Set a topic to build your knowledge map.")+'</div>';
   document.getElementById("chatStats").textContent="";
   /* Task 3.3 — clear the teaching-plan view on full reset so a
@@ -9991,6 +10018,7 @@ window.__socratesLegacy = {
     connectProjectConnector: window.connectProjectConnector,
     refreshProjectConnector: window.refreshProjectConnector,
     openProjectConnectorForm: window.openProjectConnectorForm,
+    exitPluginsView: window.exitPluginsView,
     toggleCodexMcp: window.toggleCodexMcp,
     checkCodexMcpHealth: window.checkCodexMcpHealth,
     openArxivSearch: window.openArxivSearch,

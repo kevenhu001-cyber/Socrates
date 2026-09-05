@@ -80,8 +80,31 @@ function position(el, trigger) {
      covering the greeting. */
   var belowTop = r.bottom + 8;
   var aboveTop = r.top - height - 8;
-  var top = belowTop + height <= viewportBottom - 8 ? belowTop : aboveTop;
-  top = Math.max(viewportTop + 8, Math.min(viewportBottom - height - 8, top));
+  var belowSpace = viewportBottom - belowTop - 8;
+  var aboveSpace = r.top - viewportTop - 8;
+  var top;
+  if (belowSpace >= height) {
+    top = belowTop;
+  } else if (aboveSpace >= height) {
+    top = aboveTop;
+  } else if (viewportWidth <= 768) {
+    /* Mobile CSS pins the menu to the bottom edge. Leave the inline
+       coordinates harmless; the fixed sheet rule owns the final geometry. */
+    top = belowTop;
+  } else if (belowSpace >= 120 && belowSpace >= aboveSpace) {
+    /* A short desktop viewport may not have room for the full directory.
+       Prefer a scrollable menu below the composer so selected chips and the
+       trigger never become an accidental hit-test target underneath it. */
+    el.style.maxHeight = belowSpace + "px";
+    top = belowTop;
+  } else if (aboveSpace >= 120) {
+    el.style.maxHeight = aboveSpace + "px";
+    top = r.top - aboveSpace - 8;
+  } else {
+    el.style.maxHeight = Math.max(120, Math.max(belowSpace, aboveSpace)) + "px";
+    top = belowSpace >= aboveSpace ? belowTop : viewportTop + 8;
+  }
+  top = Math.max(viewportTop + 8, Math.min(viewportBottom - (el.offsetHeight || height) - 8, top));
   el.style.left = left + "px";
   el.style.top = top + "px";
 }
