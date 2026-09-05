@@ -523,10 +523,11 @@ user session must never silently grant admin powers.
 /admin page (frontend): a main-content page
 (`#adminPanel` in index.html, `AdminPage.tsx` mounted into
 `#adminPanelBody` via the boot registry's
-`window.__socratesMountAdmin` hook). The sidebar gains an Admin
-nav button (`/admin` route added to WORKSPACE_ROUTES,
-`SidebarNavKey` widened, `openAdmin()` in sidebar/nav.js). The
-page verifies the stored token on mount (sessionStorage, plus
+`window.__socratesMountAdmin` hook). The console is a standalone
+page reached by direct URL only — it is deliberately NOT a sidebar
+destination (no nav button; `SidebarNav` renders the 7 primary
+destinations, `/admin` stays reachable through the legacy
+`WORKSPACE_ROUTES` + `openAdmin` route handler). The page verifies the stored token on mount (sessionStorage, plus
 the httpOnly cookie as the XHR fallback), renders the login
 form when unauthenticated, and renders the system-model and
 embedding-provider sections after sign-in. The previous
