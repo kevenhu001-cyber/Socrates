@@ -24,7 +24,16 @@ DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_extension WHERE extname = 'vector'
   ) THEN
-    CREATE EXTENSION IF NOT EXISTS vector;
+    BEGIN
+      CREATE EXTENSION IF NOT EXISTS vector;
+    EXCEPTION WHEN OTHERS THEN
+      -- The pgvector .so is not installed on this host: leave the
+      -- extension absent so the blocks below skip the column + index.
+      -- The app degrades to BM25-only (the chunkIndex vector leg is
+      -- try/caught and the enrichment pass is best-effort), so a
+      -- missing extension must not fail the migration.
+      RAISE NOTICE 'pgvector extension unavailable, skipping vector column (%)', SQLERRM;
+    END;
   END IF;
 END $$;
 
