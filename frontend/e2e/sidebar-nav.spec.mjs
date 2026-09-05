@@ -33,7 +33,13 @@ test('Plugins is a direct sidebar destination', async ({ page }) => {
   await page.locator('#navPlugins').click();
   await expect(page.locator('#navPlugins')).toHaveClass(/active/);
   await expect(page.locator('#pluginsPanel')).toBeVisible();
-  await expect(page.locator('.connector-row')).toHaveCount(5);
+  /* The React directory opens on the "installed" scope (plugin-directory.spec
+     owns the detailed scope/filter matrix). The default smoke catalog has no
+     connected apps, so the landing view is the empty state until the user
+     browses all plugins. */
+  await expect(page.locator('.plugin-directory-empty')).toBeVisible();
+  await page.getByRole('tab', { name: 'All plugins' }).click();
+  await expect(page.locator('.plugin-directory-row')).toHaveCount(5);
 });
 
 test('Exam is a direct sidebar destination', async ({ page }) => {

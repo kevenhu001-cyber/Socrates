@@ -1,5 +1,6 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { createRoot, type Root } from 'react-dom/client';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { getLegacyActions, t as _t } from '../legacy/gateway';
 import { seedSidebarBridgesFromLegacy, useActiveNav, useSidebarNavCommands } from './sidebar.bridge';
@@ -86,8 +87,14 @@ function SidebarNav() {
             data-nav={button.key}
             id={navButtonId(button.key)}
             aria-current={isActive ? 'page' : undefined}
-            onClick={() => {
+            onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
               if (button.key === 'new') {
+                /* The ⌘K badge names the command palette shortcut, so a
+                   click there must open the palette instead of resetting. */
+                if (event.target instanceof Element && event.target.closest('.nav-kbd')) {
+                  window.openCmdK?.();
+                  return;
+                }
                 getLegacyActions().navigation.resetApp();
               } else if (button.key === 'skills') {
                 getLegacyActions().navigation.openPromptTemplatesModal();
@@ -98,6 +105,9 @@ function SidebarNav() {
           >
             <span dangerouslySetInnerHTML={{ __html: button.icon }} />
             <span data-i18n-key={button.i18nKey}>{label}</span>
+            {button.key === 'new' ? (
+              <span className="nav-kbd">{i18n('sidebar.nav.kbd', '⌘K')}</span>
+            ) : null}
           </button>
         );
       })}

@@ -1043,12 +1043,34 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   width: 100%;
 }
 
-/* Reference-style top bar: circular back button, centered title. */
-.plugin-directory-topbar {
+/* Kimi-style head: left-aligned title + one-line description, with the
+   circular back button quieted to a top-right corner affordance. */
+.plugin-directory-head {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.plugin-directory-heading {
+  min-width: 0;
+}
+
+.plugin-directory-head h2 {
+  margin: 0;
+  color: var(--cg-text);
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  line-height: 1.25;
+}
+
+.plugin-directory-desc {
+  margin: 8px 0 0;
+  color: var(--cg-text-muted);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .plugin-directory-back {
@@ -1056,42 +1078,31 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 1px solid var(--cg-border);
   border-radius: 50%;
-  color: var(--cg-text);
-  background: var(--cg-surface);
+  color: var(--cg-text-secondary);
+  background: transparent;
   cursor: pointer;
   transition: background-color .16s ease, border-color .16s ease;
+}
+
+.plugin-directory-back svg {
+  width: 18px;
+  height: 18px;
 }
 
 .plugin-directory-back:hover {
   border-color: var(--cg-border-strong);
   background: var(--cg-surface-hover);
+  color: var(--cg-text);
 }
 
 .plugin-directory-back:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
   outline-offset: 2px;
-}
-
-.plugin-directory-back svg {
-  width: 22px;
-  height: 22px;
-}
-
-.plugin-directory-topbar h2 {
-  flex: 1 1 auto;
-  min-width: 0;
-  /* Optical centering against the 44px back button. */
-  margin-right: 44px;
-  color: var(--cg-text);
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  text-align: center;
 }
 
 .scheduled-directory-head {
@@ -1192,11 +1203,19 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   outline-offset: 2px;
 }
 
+/* Kimi-style two-column card grid. Cards keep the legacy connector-row
+   hooks (`.connector-row.plugin-directory-row`) so the plugin form and
+   bridge logic stay untouched — only the box model changes here. */
 .plugin-directory-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 16px;
+}
+
+/* The empty state must span the full grid width. */
+.plugin-directory-empty {
+  grid-column: 1 / -1;
 }
 
 /* Beat the legacy `.plugins-list .connector-row` card rules (0,2,0):
@@ -1205,13 +1224,13 @@ body.workspace-active #appShell .plugin-directory-action:hover {
 .plugins-list .connector-row.plugin-directory-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   min-width: 0;
   min-height: 0;
   margin: 0;
   padding: 16px 18px;
   border: 1px solid var(--cg-border);
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--cg-surface);
   transition: background-color .16s ease, border-color .16s ease;
 }
@@ -1223,15 +1242,15 @@ body.workspace-active #appShell .plugin-directory-action:hover {
 
 .plugin-directory-row .workspace-row-icon {
   flex: 0 0 auto;
-  width: 54px;
-  height: 54px;
-  border-radius: 15px;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
   background: var(--cg-surface-raised);
 }
 
 .plugin-directory-row .workspace-row-icon svg {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
 }
 
 .plugin-directory-row .workspace-row-copy {
@@ -1246,7 +1265,7 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   display: block;
   overflow: hidden;
   color: var(--cg-text);
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 650;
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
@@ -1257,8 +1276,8 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   display: block;
   overflow: hidden;
   color: var(--cg-text-muted);
-  font-size: 13.5px;
-  line-height: 20px;
+  font-size: 12.5px;
+  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1269,9 +1288,10 @@ body.workspace-active #appShell .plugin-directory-action:hover {
 }
 
 .plugin-directory-action {
-  min-height: 44px;
-  padding: 10px 24px;
-  font-size: 15px;
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 550;
   white-space: nowrap;
   cursor: pointer;
@@ -1282,23 +1302,22 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   outline-offset: 2px;
 }
 
+/* Kimi-style quiet connected state: a bare accent checkmark instead of a
+   text pill. The accessible label lives on the span (aria-label). */
 .plugin-directory-connected {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding-right: 4px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   color: var(--cg-accent);
-  font-size: 14px;
-  font-weight: 600;
   white-space: nowrap;
 }
 
-.plugin-directory-connected::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
+.plugin-directory-connected svg {
+  width: 19px;
+  height: 19px;
 }
 
 .plugin-directory-muted,
@@ -1881,8 +1900,17 @@ body.workspace-active #appShell .workspace-row:hover {
     font-size: 14px;
   }
 
-  .plugin-directory-topbar {
+  .plugin-directory-head {
     margin-bottom: 14px;
+  }
+
+  .plugin-directory-head h2 {
+    font-size: 22px;
+  }
+
+  .plugin-directory-desc {
+    margin-top: 6px;
+    font-size: 13.5px;
   }
 
   .plugin-directory-search {
@@ -1909,6 +1937,17 @@ body.workspace-active #appShell .workspace-row:hover {
   .plugins-list .connector-row.plugin-directory-row {
     gap: 12px;
     padding: 14px;
+  }
+
+  .plugin-directory-row .workspace-row-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .plugin-directory-row .workspace-row-icon svg {
+    width: 22px;
+    height: 22px;
   }
 
   .plugin-directory-row-action .plugin-directory-action {
@@ -2155,4 +2194,141 @@ body.workspace-active #appShell .workspace-row:hover {
     background: rgb(0 0 0 / 38%);
     pointer-events: auto;
   }
+}
+
+/* ─── Kimi-style landing polish ──────────────────────────────────────────
+   Appended last so it beats the one-row idle-composer cascade guard above.
+   Three changes vs. the ChatGPT-style landing:
+   1. A bigger greeting with more visual weight (mirrors the reference
+      wordmark's presence without replacing the personalized greeting).
+   2. A two-zone idle composer — text area above, controls row below —
+      mirroring the multiline/plugin-chips rhythm already used in-session.
+   3. A centered row of quick capability chips under the composer
+      (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
+
+#appShell .topic-title.greeting {
+  font-size: clamp(34px, 3vw, 44px) !important;
+  font-weight: 600 !important;
+  letter-spacing: -.025em !important;
+}
+
+.topic-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: min(100%, 768px);
+  margin: 20px auto 0;
+  padding: 0 8px;
+}
+
+.topic-quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid var(--cg-border);
+  border-radius: 999px;
+  color: var(--cg-text-secondary);
+  background: var(--cg-surface);
+  font: 500 13.5px/1.2 var(--cg-font);
+  cursor: pointer;
+  transition: color .16s ease, border-color .16s ease, background-color .16s ease, transform .12s ease;
+}
+
+.topic-quick-chip:hover {
+  color: var(--cg-text);
+  border-color: var(--cg-border-strong);
+  background: var(--cg-surface-hover);
+}
+
+.topic-quick-chip:active {
+  transform: scale(.97);
+}
+
+.topic-quick-chip:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
+  outline-offset: 2px;
+}
+
+.topic-quick-chip svg {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+
+/* Two-zone idle composer (desktop). Same selector shape as the cascade
+   guard so the later declaration wins without specificity games. The
+   footer stays display:contents — each control is placed onto row 2. */
+@media (min-width: 769px) {
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: auto !important;
+    min-height: 128px !important;
+    padding: 4px 12px 6px 4px;
+    border-radius: 24px !important;
+    grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px !important;
+    grid-template-rows: minmax(72px, auto) 46px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: start;
+    padding-top: 14px;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
+    height: auto !important;
+    min-height: 56px !important;
+    max-height: 280px !important;
+    padding: 0 10px 6px !important;
+    overflow-y: auto;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .effort-picker {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .mobile-mic-btn {
+    grid-column: 4;
+    grid-row: 2;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn {
+    grid-column: 5;
+    grid-row: 2;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile pins the composer to the bottom and hides the greeting —
+     the chip row would float in dead space, so it follows them out. */
+  #appShell #topicQuickActions {
+    display: none !important;
+  }
+}
+
+/* Plugin directory: the card grid falls back to a single column once two
+   cards would each get less than ~300px. */
+@media (max-width: 640px) {
+  .plugin-directory-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The workspace-active button theme block above forces a 10px radius on
+   every action button; the directory's Connect/Refresh pills stay round. */
+body.workspace-active #appShell .plugin-directory-action {
+  border-radius: 999px;
 }
