@@ -89,6 +89,14 @@ describe('sanitizeExtraBody', () => {
     sanitizeExtraBody(input);
     assert.equal(JSON.stringify(input), snapshot);
   });
+
+  test('forwards reasoning_split (MiniMax built-in path needs it)', () => {
+    /* Regression: the minimax proxy sanitises with this same function,
+     * so dropping reasoning_split here hid built-in thinking. */
+    const out = sanitizeExtraBody({ reasoning_split: true, top_p: 0.7 });
+    assert.equal(out.reasoning_split, true);
+    assert.equal(out.top_p, 0.7);
+  });
 });
 
 /* ── normalizeVisibility ──────────────────────────────────────── */

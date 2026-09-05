@@ -409,6 +409,15 @@ describe('sanitizeExtraBody (chat route whitelist)', () => {
     sanitizeExtraBody(input);
     assert.equal(JSON.stringify(input), snapshot);
   });
+
+  test('is the canonical lib sanitiser (single whitelist for all LLM routes)', async () => {
+    /* The chat route used to keep a wider duplicate whitelist while the
+     * minimax proxy used the lib one — reasoning_split was silently
+     * dropped on the built-in path. Both names must resolve to the
+     * same function now. */
+    const lib = await import('../src/lib/sanitize.js');
+    assert.equal(sanitizeExtraBody, lib.sanitizeExtraBody);
+  });
 });
 
 /* ── transformContentForModel ─────────────────────────────────── */

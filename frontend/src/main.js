@@ -48,7 +48,7 @@ import {
   subscribeComposer,
 } from './react/composer-input/controller.ts';
 import { wrapForCanvas } from './render/canvasWrap.ts';
-import { closeShareModal, copyShareLink, loadSharedSession, openShareModal, resetShareToken, selectShareVis, toggleChatTopBarEls, toggleShareBtn } from './ui/share.js';
+import { closeShareModal, copyShareLink, openShareModal, resetShareToken, selectShareVis, toggleChatTopBarEls, toggleShareBtn } from './ui/share.js';
 import './ui/mobileModeSwitch.js';
 import { renderAttachmentChips, openAttachmentPicker } from './attachments/render.js';
 import {
@@ -66,11 +66,12 @@ import { findInlineToolBoundary, splitStreamingMarkdown } from './render/streami
 import { createStreamScheduler } from './render/streamScheduler.js';
 import { SOCRATIC_SYSTEM_PROMPT } from './prompts/socratic.js';
 import {
-  getChatIdFromURL, setChatIdInURL, pushChatIdToURL,
-  getExamIdFromURL, setExamIdInURL, pushExamIdToURL,
+  setChatIdInURL, pushChatIdToURL,
+  setExamIdInURL, pushExamIdToURL,
   capSessions, getVisibleSessions, getArchivedSessionsFrom,
   sweepExpiredArchivesFrom, createDeletedSessionGuard,
 } from './session/store.js';
+import { buildBeaconPayload } from './session/beacon.js';
 import { esc, decodeEntities, stripTags, safeHljsLang, stripCitationMarkers } from './render/helpers.js';
 import { parseQuizInner, parseExampleInner, parsePracticeInner, parseDefinitionInner, parseFlashcardInner, parseTheoremInner, parseProofInner, parseDerivationInner, parseKeyPointInner } from './render/widgetParsers.js';
 import { openVizModalRaw as __vizOpenModalRaw, processPendingMermaid, processPendingViz, processPendingVizActions } from './render/viz.js';
@@ -1380,33 +1381,19 @@ function doSave(){
   function _beaconSave(){
     /* Only fire if we have data worth saving and a save is pending. */
     if(!_saveInFlight||!stateStore.read("currentSessionId")||!CURRENT_USER)return;
-    /* Snapshot only the data we need — rawText and role are enough
-       for recovery; html is regenerated client-side on load. */
-    var snapshot=stateStore.read("messages")
-      .filter(function(m){return m.type!=="streaming"})
-      .map(function(m){return{
-        clientId:m.clientId||null,
-        role:m.role,
-        rawText:m.rawText||null,
-      /* P_reasoning-asymmetry — loadSession (L1649) reads
-         m.reasoningContent || m.reasoning_content to handle both
-         Drizzle camelCase and legacy snake_case payloads. doSave
-         must do the same so a round-trip (load → no-op edit → save)
-         doesn't silently drop the field for messages that arrived
-         with the snake_case key. */
-      reasoningContent:m.reasoningContent||m.reasoning_content||null,
-        attachments:Array.isArray(m.attachments)?m.attachments.slice(0,20):[],
-        toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
-      }});
-    if(!snapshot.length)return;
-    var payload={
-      id:stateStore.read("currentSessionId"),
-      topic:stateStore.read("topic")||stateStore.read("topic")||"",
-      title:stateStore.read("sessionTitle")||stateStore.read("topic")||"",
-      mode:appMode,
-      messages:snapshot,
-    };
+    /* F3: payload shape lives in session/beacon.js (unit-tested); the
+       keepalive wiring stays here because it runs during page teardown. */
+    var payload=buildBeaconPayload({
+      sessionId:stateStore.read("currentSessionId"),
+      topic:stateStore.read("topic"),
+      sessionTitle:stateStore.read("sessionTitle"),
+      appMode:appMode,
+      messages:stateStore.read("messages"),
+    });
+    if(!payload)return;
     var csrf=_beaconCsrf();
+    /* Beacon save must stay a raw fetch: apiFetch uses AbortController +
+       JSON parsing which is incompatible with keepalive during pagehide. */
     try{
       fetch("/api/v2/sessions",{
         method:"POST",
@@ -2456,8 +2443,10 @@ function onSessionDragEnd(event){
   event.target.classList.remove("dragging");
   _dragSessionId = null;
 }
-/* Drop handler for project rows. This is called from the spaces panel. */
-function onProjectDrop(event, projectId){
+/* Drop handler for project rows. Legacy spaces-panel entry point —
+   currently unreferenced (drag move goes through the React session list);
+   kept with _ prefix so the intent is explicit and lint stays green. */
+function _onProjectDrop(event, projectId){
   event.preventDefault();
   event.stopPropagation();
   var sessionId = _dragSessionId || event.dataTransfer.getData("text/plain");
@@ -3522,8 +3511,10 @@ import { _origGenerateSocraticQuestion, _origGenerateFollowUp, _origGetExplanati
 
 /* ============================================================
    CHAT INTERACTION
+   Legacy Enter-to-send handler — superseded by the React composer.
+   Kept with _ prefix for reference; not wired to any listener.
    ============================================================ */
-function handleChatKey(e){
+function _handleChatKey(e){
   if(e.key==="Enter"&&!e.shiftKey){
     e.preventDefault();
     if(isSlashCommandPaletteOpen())closeSlashCommandPalette();
@@ -9351,7 +9342,7 @@ function updateModeBadge(){
 window.updateModeBadge = updateModeBadge;
 
 /* P_main-split — Wave 2c: settings + provider management extracted to ui/settings.js. */
-import { clearSettings, closeSettings, renderProviderList, saveSettings, syncSettingsUI, toggleAPI } from './ui/settings.js';
+import { clearSettings, closeSettings, renderProviderList, saveSettings, toggleAPI } from './ui/settings.js';
 
 /* ============================================================
    API CALL (replaces mock when enabled)
@@ -9686,6 +9677,8 @@ async function getExplanation(status){
   } else { stateStore.dispatch({type:'state/set',key:'lastCallSource',value:"mock"}); }
   return _origGetExplanation(status);
 };
+/* Consumed via window.getExplanation by chat/quickActions.ts handleQuickAction('explain'). */
+window.getExplanation = getExplanation;
 
 function buildFollowUpMessages(answer,node,domain,history){
   /* Task 2.2 — use the explicit teaching-stage state machine
@@ -10088,7 +10081,6 @@ import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from '.
 
 import { toggleReadAloud } from './ui/readAloud.js';
 import { publishReactChatRuntime } from './ui/reactBridge.js';
-import { openAdminModal, closeAdminModal } from './react/adminModal/legacyApi.js';
 
 import { injectMemoryContext, loadMemories } from './storage/memoryStore.js';
 

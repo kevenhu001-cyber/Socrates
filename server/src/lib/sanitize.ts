@@ -40,6 +40,12 @@ const ALLOWED_EXTRA_BODY_KEYS = new Set([
   'logit_bias',
   'seed',
   'response_format',
+  /* MiniMax-M3: separate thinking into reasoning_content. This is the
+   * single canonical whitelist for every LLM route (/api/chat,
+   * /api/chat/stream, minimax proxy) — previously the chat route kept
+   * a wider duplicate list and the proxy silently dropped this key,
+   * hiding built-in thinking. See routes/chat/helpers.ts. */
+  'reasoning_split',
 ]);
 
 /**

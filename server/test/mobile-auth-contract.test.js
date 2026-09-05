@@ -8,6 +8,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import { readFileSync } from 'node:fs';
 
 import {
   buildMobileTokenPair,
@@ -56,6 +57,20 @@ describe('mobile auth token contract', () => {
     assert.ok(Date.parse(tokens.refreshExpiresAt) > Date.parse(tokens.expiresAt));
   });
 
+  test('openapi MobileBearerPair matches the real token shape (no expiresIn drift)', () => {
+    /* Regression: the spec documented {accessToken, refreshToken,
+     * expiresIn:int} while the server returns {…, expiresAt:ISO,
+     * refreshExpiresAt:ISO} — every client generated from the spec
+     * parsed the pair wrong. Fail here if they drift again. */
+    const spec = JSON.parse(readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'));
+    const schema = spec.components.schemas.MobileBearerPair;
+    assert.deepEqual([...schema.required].sort(), ['accessToken', 'expiresAt', 'refreshExpiresAt', 'refreshToken']);
+    const pair = buildMobileTokenPair();
+    for (const key of schema.required) {
+      assert.equal(typeof pair[key], 'string', `${key} must be present on the built pair`);
+    }
+  });
+
   test('does not accept refresh, capability, malformed, or browser values as bearer access tokens', () => {
     const tokens = buildMobileTokenPair();
     assert.equal(isMobileAccessToken(tokens.refreshToken), false);
@@ -73,8 +88,7 @@ describe('mobile auth token contract', () => {
     });
   });
 
-  test('does not fall back to a cookie when an Authorization header is malformed or a refresh token', () => {
-    const tokens = buildMobileTokenPair();
+  test('does not fall back to a cookie when an Authorization header is malformed or a refresh token', () => {    const tokens = buildMobileTokenPair();
     assert.equal(requestCredential(request({ authorization: `Bearer ${tokens.refreshToken}`, sid: 'a'.repeat(64) })), null);
     assert.equal(requestCredential(request({ authorization: 'Basic abc', sid: 'a'.repeat(64) })), null);
     assert.equal(requestCredential(request({ authorization: `Bearer ${tokens.accessToken} trailing`, sid: 'a'.repeat(64) })), null);

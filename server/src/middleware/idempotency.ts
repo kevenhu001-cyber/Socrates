@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { createHash } from 'node:crypto';
 
 /* In-memory replay cache for Idempotency-Key on API writes.
  *
@@ -27,6 +28,26 @@ function prune(now: number): void {
   }
 }
 
+/* This middleware is mounted globally (app.ts) BEFORE per-route auth,
+ * so req.userId is not yet populated here — scoping purely on it would
+ * collapse every caller behind one NAT egress to a single scope. Mix in
+ * a hash of the presented credential (Authorization header / sid cookie)
+ * so two different callers sharing an IP and an Idempotency-Key string
+ * never collide. Only the 32-hex-char digest enters the cache key, never
+ * the raw secret. */
+function credentialScope(req: Request): string {
+  if (req.userId) return `uid:${req.userId}`;
+  const auth = req.headers.authorization;
+  const sid = (req.cookies as Record<string, string> | undefined)?.sid;
+  if (typeof auth === 'string' && auth.length > 0) {
+    return `cred:${createHash('sha256').update(auth).digest('hex').slice(0, 32)}`;
+  }
+  if (typeof sid === 'string' && sid.length > 0) {
+    return `cred:${createHash('sha256').update(sid).digest('hex').slice(0, 32)}`;
+  }
+  return `ip:${req.ip || 'anonymous'}`;
+}
+
 export function idempotencyMiddleware(req: Request, res: Response, next: NextFunction): void {
   const method = req.method.toUpperCase();
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return next();
@@ -39,7 +60,7 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
     return next();
   }
 
-  const scope = req.userId || req.ip || 'anonymous';
+  const scope = credentialScope(req);
   const cacheKey = `${scope}|${method}|${req.baseUrl}${req.url}|${key}`;
   const now = Date.now();
 
@@ -54,7 +75,12 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
   const originalJson = res.json.bind(res);
   let captured = false;
   res.json = ((body: unknown) => {
-    if (!captured && typeof res.statusCode === 'number' && res.statusCode < 500) {
+    /* Only cache successful (2xx) responses. Caching 4xx replays
+     * authentication/validation/rate-limit failures for 24 h: a retry
+     * after login, after fixing the payload, or after the rate window
+     * resets would keep receiving the stale rejection without ever
+     * reaching the handler (and would extend a 429 penalty to a day). */
+    if (!captured && typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300) {
       captured = true;
       prune(now);
       store.set(cacheKey, {

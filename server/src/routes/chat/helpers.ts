@@ -645,56 +645,13 @@ type ChatPayload = z.infer<typeof ChatPayloadSchema>;
    client smuggle a `tools`, `response_format` schema referencing
    an internal URL, or — worse — duplicate `api_key` /
    `authorization` headers into the upstream call. We whitelist a
-   small set of safe keys here and drop anything else. Add to this
-   list when a legitimate provider needs a new knob.
-
-   NOTE: this is the *chat route's* whitelist — distinct from the
-   one in src/lib/sanitize.js (which is used elsewhere with a
-   smaller, more conservative allow-list). Do NOT replace this with
-   the lib version: the chat route intentionally allows a wider set
-   of provider-specific tuning fields. */
-const ALLOWED_EXTRA_BODY_KEYS = new Set([
-  'thinking',          // DeepSeek-style reasoning toggle
-  'top_p',             // sampling — provider-native
-  'top_k',             // sampling — provider-native
-  'stop',              // stop sequences
-  'frequency_penalty',
-  'presence_penalty',
-  'logit_bias',
-  'seed',
-  'response_format',   // { type: 'json_object' } etc — pass-through
-  'reasoning_split',   // MiniMax-M3: separate thinking into reasoning_content
-]);
-
-export function sanitizeExtraBody(raw: unknown): Record<string, unknown> | undefined {
-  if (!raw || typeof raw !== 'object') return undefined;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(raw)) {
-    if (ALLOWED_EXTRA_BODY_KEYS.has(k)) {
-      // Reject nested objects that try to smuggle request fields
-      // via string values; allow shallow values only.
-      if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-        out[k] = v;
-      } else if (Array.isArray(v) || (v && typeof v === 'object')) {
-        // For response_format and stop we allow the object form too,
-        // but only if the JSON is itself a plain object / array of
-        // primitives (no further nesting — prevents smuggling
-        // 'api_key' via something like response_format.api_key='…').
-        if (Array.isArray(v)) {
-          if (v.every((x) => typeof x === 'string' || typeof x === 'number')) {
-            out[k] = v;
-          }
-          continue;
-        }
-        const allPrim = Object.values(v).every((x) =>
-          typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean'
-        );
-        if (allPrim) out[k] = v;
-      }
-    }
-  }
-  return Object.keys(out).length > 0 ? out : undefined;
-}
+    small set of safe keys here and drop anything else. Add to the
+    canonical list in src/lib/sanitize.ts when a legitimate provider
+    needs a new knob — this module re-exports that sanitiser so every
+    LLM route (/api/chat, /api/chat/stream, minimax proxy) enforces
+    the same whitelist. */
+import { sanitizeExtraBody } from '../../lib/sanitize.js';
+export { sanitizeExtraBody };
 
 /* ─────────────────────────────────────────────────────────────────
    Multimodal content transforms

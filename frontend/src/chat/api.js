@@ -255,11 +255,11 @@ export async function callAPIChat(messages,maxTokens,timeoutMs,options){
    Both paths use the same retry/timeout pattern. */
 export async function callAPI(messages,maxTokens,timeoutMs,options){
   /* getActiveProvider, makeAIWatchdog, STREAM_TIMEOUT_MS,
-     STREAM_HEARTBEAT_MS, and getCsrfToken live in main.js — read them via
-     window so this module stays independent. */
+     STREAM_HEARTBEAT_MS live in main.js — read them via
+     window so this module stays independent. CSRF/credentials go
+     through apiFetchRaw, so no direct getCsrfToken read is needed. */
   var getActiveProvider=window.getActiveProvider;
   var makeAIWatchdog=window.makeAIWatchdog;
-  var getCsrfToken=window.getCsrfToken;
   var apiFetch=window.apiFetch;
   var STREAM_TIMEOUT_MS=window.STREAM_TIMEOUT_MS;
   var STREAM_HEARTBEAT_MS=window.STREAM_HEARTBEAT_MS;
@@ -298,18 +298,14 @@ export async function callAPI(messages,maxTokens,timeoutMs,options){
       var wdB=makeAIWatchdog(EFFECTIVE_TIMEOUT_MS,STREAM_HEARTBEAT_MS,function(){try{wdB&&wdB.stop("beagle-watchdog")}catch(_){}});
       unbindBeagle=bindAbortSignal(retryOptions.signal,wdB.ac);
       try{
-        /* Make sure a fresh csrf cookie exists before we read it.
-           The boot path calls /api/auth/csrf-token once, but if the
-           cookie has since expired (30-day max-age) or was cleared
-           by a server restart, document.cookie will be empty and
-           /api/minimax will reject the POST with 403
-           "CSRF token required for authenticated requests". */
-        try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
-        var csrfBeagle=getCsrfToken();
-        var resp=await fetch("/api/v2/minimax/v1/chat/completions",{
+        /* Route through apiFetchRaw so the call gets the shared
+           credentials/CSRF/401-hook/403-refresh behaviour instead of a
+           hand-rolled fetch that can send an empty X-CSRF-Token and
+           bypass the auth hooks. apiFetchRaw attaches X-CSRF-Token only
+           when the cookie exists and replays once after a CSRF refresh. */
+        var resp=await apiFetchRaw("/api/v2/minimax/v1/chat/completions",{
           method:"POST",
-          credentials:"include",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key,"X-CSRF-Token":csrfBeagle||""},
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+provider.key},
           body:JSON.stringify(beagleBody),
           signal:wdB.ac.signal
         });

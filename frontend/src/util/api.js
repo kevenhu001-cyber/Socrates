@@ -155,6 +155,7 @@ export async function apiFetch(path, opts = {}) {
    * now sets Cache-Control: no-cache but the old cached entry
    * persists in the CDN until purged. A unique query param makes
    * every URL a new cache key, bypassing the stale entry.
+   * The server ignores the `cb` param (no signing covers query).
    *
    * NOTE: Use `cb=` (not `_t=`) to avoid Chromium's Tracking
    * Prevention, which blocks requests with timestamp-like query
@@ -163,6 +164,9 @@ export async function apiFetch(path, opts = {}) {
   if (method === 'GET') {
     const sep = path.indexOf('?') >= 0 ? '&' : '?';
     path = path + sep + 'cb=' + Date.now();
+    opts.cache = 'no-store';
+    opts.headers['Cache-Control'] = 'no-store';
+    opts.headers['Pragma'] = 'no-cache';
   }
   const timeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 30000;
   const userSignal = opts.signal || null;

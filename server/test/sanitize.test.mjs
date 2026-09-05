@@ -66,13 +66,15 @@ describe('safe: sanitizeUrl', () => {
   });
 
   test('rejects unknown / dangerous protocols', () => {
-    // The whitelist regex allows any `[a-z][a-z0-9+.\-]*:` URL — file:
-    // intentionally passes through (we treat it as a same-origin file
-    // link rather than a script-execution surface). The truly
-    // dangerous vector is javascript: / vbscript: / data:text/html.
-    assert.equal(sanitizeUrl('file:///etc/passwd'), 'file:///etc/passwd');
-    // And the protocol regex requires a-z, so a digit-led scheme is
-    // rejected (but doesn't have any practical attack vector).
+    // F4 hardening: the allowlist is now explicit (http/https/mailto/
+    // tel/blob/relative + raster data: images). file:/filesystem: have
+    // no legitimate use in browser-rendered chat output and are blocked
+    // (previously file: passed through the catch-all scheme pattern).
+    assert.equal(sanitizeUrl('file:///etc/passwd'), '#');
+    assert.equal(sanitizeUrl('filesystem:https://x/y'), '#');
+    assert.equal(sanitizeUrl('data:image/svg+xml;base64,PHNjcmlwdA=='), '#');
+    // And the relative check requires no scheme at all, so a digit-led
+    // scheme is rejected (but doesn't have any practical attack vector).
     assert.equal(sanitizeUrl('1nvalid:foo'), '#');
   });
 });

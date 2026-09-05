@@ -9,6 +9,22 @@ const testFiles = readdirSync(testDir)
   .filter((name) => name.endsWith('.test.js') || name.endsWith('.test.mjs'))
   .sort();
 
+/* `--strict` (npm run test:strict) used to be accepted and silently
+ * ignored — the flag never reached any check, so strict CI was
+ * identical to the default run. Strict now means "no silent skips":
+ * DB-backed suites skip via t.skip() when DATABASE_URL is absent, so
+ * fail fast here instead of reporting green with OAuth/auth-middleware
+ * paths uncovered. Forward the flag so individual suites can branch. */
+const strict = process.argv.includes('--strict');
+const childEnv = { ...process.env };
+if (strict) {
+  childEnv.SOCRATES_TEST_STRICT = '1';
+  if (!childEnv.DATABASE_URL) {
+    console.error('[test] --strict requires DATABASE_URL (DB suites would silently skip without it)');
+    process.exit(1);
+  }
+}
+
 const failures = [];
 for (const testFile of testFiles) {
   console.log(`\n[test] ${testFile}`);
@@ -30,7 +46,7 @@ for (const testFile of testFiles) {
     nodeArgs,
     {
       cwd: serverDir,
-      env: process.env,
+      env: childEnv,
       stdio: 'inherit',
       // Worker-backed suites can pay a cold loader/antivirus cost on Windows.
       // Keep a hard bound, but do not turn transient process startup pressure

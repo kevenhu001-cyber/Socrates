@@ -14,6 +14,7 @@
  */
 
 import { esc } from '../render/helpers.js';
+import { apiFetch } from '../util/api.js';
 import { sanitizeUrl } from '../util/safe.js';
 import { formatToolOutput } from '../render/toolOutput.js';
 import { toolCardView } from './toolCardView.js';
@@ -971,10 +972,9 @@ function appendInlineImage(fileId, mimeType, url, out, artifactName) {
     meta.appendChild(name);
     meta.appendChild(size);
     wrap.appendChild(meta);
-    if (typeof fetch === "function") {
+    if (typeof apiFetch === "function") {
       try {
-        fetch("/api/v2/files/" + encodeURIComponent(fileId), { credentials: "same-origin" })
-          .then(function (r) { return r && r.ok ? r.json() : null; })
+        apiFetch("/api/files/" + encodeURIComponent(fileId))
           .then(function (metaRow) {
             if (metaRow && metaRow.name) name.textContent = metaRow.name;
             if (metaRow && typeof metaRow.size === "number") {
