@@ -1,6 +1,50 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 
+const LOCAL_AUTH_BYPASS = process.env.LOCAL_AUTH_BYPASS !== '0';
+
+function send(res, status, body) {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(body));
+}
+
+function createLocalApiStubPlugin() {
+  return {
+    name: 'local-api-stub',
+    enforce: 'pre',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const rawUrl = req.url || '';
+        const [pathOnly] = rawUrl.split('?');
+        if (!pathOnly.startsWith('/api/')) return next();
+        if (!LOCAL_AUTH_BYPASS) return next();
+
+        const LOCAL_USER = {
+          id: 'local-dev',
+          email: 'local@dev.local',
+          name: 'Local Dev',
+          tier: 'pro',
+          preferences: {},
+        };
+
+        if (pathOnly === '/api/auth/me') {
+          return send(res, 200, { user: LOCAL_USER });
+        }
+        if (pathOnly === '/api/auth/login'
+            || pathOnly === '/api/auth/register'
+            || pathOnly === '/api/auth/login-with-code') {
+          return send(res, 200, { user: LOCAL_USER });
+        }
+        if (pathOnly === '/api/auth/logout') {
+          return send(res, 200, { ok: true });
+        }
+        return next();
+      });
+    },
+  };
+}
+
 // Vite config for the Socrates app. The build output is an HTML +
 // a set of hashed ES-module chunks that get deployed to
 // /var/www/app.topodrive.top via deploy.sh (which copies dist/assets/*).
@@ -9,9 +53,6 @@ export default defineConfig({
   publicDir: 'public',
   resolve: {
     alias: {
-      // LobeHub-alignment M3 — the shared client contracts live in
-      // packages/ (consumed from source so a workspace build step is
-      // unnecessary; Vite compiles them like app code).
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
     },
@@ -19,43 +60,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // Keep a single CSS file — cssCodeSplit would emit one .css per
-    // async chunk and complicate the deploy step. The app's CSS is
-    // small enough to ship as one file.
     cssCodeSplit: false,
     rollupOptions: {
       output: {
-        // P-H1 — code splitting. IIFE cannot split; the default `es`
-        // format lets Rollup emit shared, individually-cacheable chunks
-        // so editing main.js no longer busts the render/chat/ui/i18n
-        // caches, and the browser downloads them in parallel.
-        //
-        // NOTE (deliberate deviation from the P-H1 plan): the plan also
-        // proposed dynamic-importing exam/share/usage/cmdK/mistakeBook/
-        // settings to shrink first load. That is NOT safe in this
-        // codebase — src/windowExports.js is a central eager bridge that
-        // statically imports those modules for the inline-onclick
-        // contract, and several are used on boot / hot paths
-        // (share.js toggleChatTopBarEls in render; cmdK rebuildCmdKIndex
-        // at boot; mistakeBook createMistakeBook singleton at boot;
-        // exam.js in the session-restore path). Lazy-loading them would
-        // require rewriting the bridge plus many internal call sites in a
-        // 7000-line file, risking the very inline-handler contract the
-        // plan is meant to preserve. We keep the safe half (chunk
-        // splitting) and skip the risky half.
         manualChunks(id) {
           const f = id.split('\\').join('/');
-          // LobeHub-alignment M1 — split third-party libraries out of the
-          // entry chunk. They change far less often than app code, so the
-          // browser keeps the vendor chunks in cache across app deploys.
           if (f.includes('/node_modules/')) {
             if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/')) return 'vendor-react';
             if (f.includes('/node_modules/zustand/')) return 'vendor-react';
             return 'vendor';
           }
-          if (!f.includes('/src/')) return;          // entries + top-level src → entry chunk
-          if (f.includes('/src/i18n.js')) return 'i18n';   // ~47KB dictionary
-          if (f.includes('/src/store/')) return 'store';   // Zustand domain stores
+          if (!f.includes('/src/')) return;
+          if (f.includes('/src/i18n.js')) return 'i18n';
+          if (f.includes('/src/store/')) return 'store';
           if (f.includes('/src/render/')) return 'render';
           if (f.includes('/src/chat/')) return 'chat';
           if (f.includes('/src/ui/')) return 'ui';
@@ -67,33 +84,24 @@ export default defineConfig({
     target: 'es2020',
     minify: 'esbuild',
     sourcemap: false,
-    // Inject <link rel="modulepreload"> for static-import chunks so the
-    // browser fetches them in parallel with the entry; polyfill covers
-    // Safari < 17 which lacks native modulepreload.
     modulePreload: { polyfill: true },
   },
+  plugins: [createLocalApiStubPlugin()],
   server: {
     port: 5173,
     strictPort: false,
-    proxy: {
-      // AUDIT-R2 — the API server defaults to PORT=8080
-      // (server/src/index.runtime.ts) while this proxy historically
-      // pointed at 3037 (the production nginx upstream port), so local
-      // dev silently 502'd unless you knew to set PORT=3037. Make the
-      // target configurable: `API_PORT=8080 npm run dev` matches a
-      // default server start; the 3037 fallback keeps existing local
-      // setups working. See frontend/README.md "Local development".
+    proxy: (LOCAL_AUTH_BYPASS ? {
+      '/api': {
+        target: `http://127.0.0.1:${process.env.API_PORT || 3037}`,
+        bypass(req) {
+          const [pathOnly] = (req.url || '').split('?');
+          if (pathOnly.startsWith('/api/auth/')) {
+            return pathOnly;
+          }
+        },
+      },
+    } : {
       '/api': `http://127.0.0.1:${process.env.API_PORT || 3037}`,
-    },
+    }),
   },
-  // No build-time HTML transform is needed anymore. The previous
-  // `remove-module-type` plugin stripped `type="module"` (required by the
-  // old IIFE bundle) and moved the bundle after the CDN <script> tags.
-  // With ES output the entry scripts stay `type="module"`, which the spec
-  // defers until after HTML parsing. The third-party CDN scripts are
-  // `defer` (see the P_stability-cdn-defer note in index.html), so they
-  // keep document-order execution relative to the module entry scripts
-  // (every CDN global is defined before a module first touches it) while
-  // a slow/hung CDN can no longer block app boot. All CDN globals are
-  // optional at runtime — render/viz/ui fall back when one is missing.
 });
