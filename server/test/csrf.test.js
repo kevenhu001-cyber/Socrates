@@ -35,6 +35,8 @@ function buildApp() {
   app.get('/read', (req, res) => res.json({ ok: true }));
   app.get('/api/auth/csrf-token', (req, res) => res.json({ ok: true }));
   app.post('/api/auth/mobile/refresh', (req, res) => res.json({ refreshToken: req.body.refreshToken }));
+  app.post('/api/admin-auth/login', (req, res) => res.json({ ok: true }));
+  app.post('/api/admin-auth/logout', (req, res) => res.json({ ok: true }));
   app.use(errorHandler);
   return app;
 }
@@ -155,6 +157,35 @@ describe('csrf: mobile credential exchanges', () => {
       method: 'POST',
       cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
       body: { refreshToken: `mr.${'a'.repeat(32)}.${'b'.repeat(64)}` },
+    });
+    assert.equal(r.status, 200);
+  });
+});
+
+describe('csrf: admin-auth login/logout use an explicit body credential', () => {
+  let server;
+  before(async () => { server = await listen(buildApp()); });
+  after(async () => { await server.close(); });
+
+  test('POST login passes with a stale browser csrf cookie and no header', async () => {
+    // Regression: an operator whose browser carries a `csrf` cookie
+    // from normal app use was 403d (CSRF_TOKEN_PARTIAL, cookie-only)
+    // on the admin login. The password in the body is the credential;
+    // no ambient cookie is read as authority, so the double-submit
+    // check is skipped here (config routes stay behind it).
+    const r = await httpRequest(server.url + '/api/admin-auth/login', {
+      method: 'POST',
+      cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
+      body: { password: 'x' },
+    });
+    assert.equal(r.status, 200);
+  });
+
+  test('POST logout passes with a stale browser csrf cookie and no header', async () => {
+    const r = await httpRequest(server.url + '/api/admin-auth/logout', {
+      method: 'POST',
+      cookies: { sid: 'session-token-abc', csrf: 'token-xyz' },
+      body: {},
     });
     assert.equal(r.status, 200);
   });
