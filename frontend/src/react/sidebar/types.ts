@@ -43,5 +43,7 @@ declare global {
   interface Window {
     __socratesSidebarNavBridge?: SidebarNavBridge;
     __socratesRecentsFilterBridge?: RecentsFilterBridge;
+    /* Installed by src/windowExports.js (cmdK module). */
+    openCmdK?: () => void;
   }
 }

@@ -36,6 +36,7 @@ import { initKeyboardViewport } from './ui/keyboardViewport.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
 import { initSidebarDrag } from './ui/sidebarResize.js';
 import './ui/suggestions.js';
+import './ui/quickChips.js';
 import { showNewReplyPill, hideNewReplyPill, wireScrollPill } from './ui/scrollPill.js';
 import { updateStartBtn, updateSendBtn } from './ui/topicSetup.js';
 import {

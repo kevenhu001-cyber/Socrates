@@ -295,10 +295,17 @@ function PluginDirectory({ plugins, configured, dispatch }: {
   }, [plugins, query, scope]);
 
   const searchLabel = i18n('plugins.search', 'Search plugins');
+  const connectedLabel = i18n('plugins.connected', 'Connected');
   const renderAction = (plugin: WorkspacePlugin) => {
     const status = plugin.connection?.status;
     if (status === 'connected') {
-      return <span className="plugin-directory-connected">{i18n('plugins.connected', 'Connected')}</span>;
+      /* Kimi-style quiet state: a checkmark instead of a text pill keeps
+         the grid calm; the label survives for screen readers + hover. */
+      return (
+        <span className="plugin-directory-connected" role="status" aria-label={connectedLabel} title={connectedLabel}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+        </span>
+      );
     }
     if (status === 'initiated') {
       return <button type="button" className="plugin-directory-action" onClick={() => dispatch.refreshPlugin(plugin.id)}>{i18n('plugins.refreshStatus', 'Refresh')}</button>;
@@ -316,11 +323,14 @@ function PluginDirectory({ plugins, configured, dispatch }: {
 
   return (
     <section className="plugin-directory" aria-labelledby="plugin-directory-title">
-      <div className="plugin-directory-topbar">
+      <div className="plugin-directory-head">
+        <div className="plugin-directory-heading">
+          <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
+          <p className="plugin-directory-desc">{i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}</p>
+        </div>
         <button type="button" className="plugin-directory-back" onClick={() => dispatch.exitPlugins()} aria-label={i18n('plugins.back', 'Back')} title={i18n('plugins.back', 'Back')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
         </button>
-        <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
       </div>
 
       <label className="plugin-directory-search">
