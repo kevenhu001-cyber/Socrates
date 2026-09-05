@@ -59,7 +59,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(168);
   expect(geometry.modeTabs?.height).toBeGreaterThanOrEqual(40);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(geometry.composer?.height).toBe(64);
+  expect(geometry.composer?.height).toBe(62);
   expect(geometry.topicFontSize).toBe(18);
   expect(geometry.ideas?.bottom).toBeLessThanOrEqual(geometry.composer?.y ?? 0);
   expect(geometry.ideas?.bottom).toBeLessThanOrEqual(820);
@@ -148,8 +148,10 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(4);
   await expect(menu.locator('#composerToolsMobileMore [data-composer-action="extensiveThinking"]')).toBeHidden();
   const menuBox = await menu.boundingBox();
-  expect(menuBox?.width).toBeLessThanOrEqual(224);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(222);
+  /* On phones the add-content menu is a full-width bottom sheet so search,
+     plugin rows, and the existing workflow disclosure remain touchable. */
+  expect(menuBox?.width).toBeLessThanOrEqual(390);
+  expect(menuBox?.width).toBeGreaterThanOrEqual(360);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

@@ -1,5 +1,5 @@
 import { createRoot, type Root } from 'react-dom/client';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { t as _t } from '../../legacy/gateway';
 import { installWorkspaceBridge, useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.bridge';
@@ -264,6 +264,111 @@ function ConnectorMark({ id, name }: { id: string; name: string }) {
   return fallbackMark(name);
 }
 
+type WorkspacePlugin = {
+  id: string;
+  name: string;
+  description?: string;
+  capabilities?: string[];
+  authType?: string;
+  connection?: { status?: string; displayName?: string } | null;
+};
+
+function PluginDirectory({ plugins, configured, dispatch }: {
+  plugins: ReadonlyArray<WorkspacePlugin>;
+  configured: boolean;
+  dispatch: ReturnType<typeof useWorkspaceDispatch>;
+}) {
+  const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<'installed' | 'all'>('installed');
+  const visiblePlugins = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return plugins.filter((plugin) => {
+      const isInstalled = plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated';
+      if (scope === 'installed' && !isInstalled) return false;
+      if (!needle) return true;
+      return [plugin.name, plugin.description, ...(plugin.capabilities || [])]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [plugins, query, scope]);
+
+  const searchLabel = i18n('plugins.search', 'Search plugins');
+  const renderAction = (plugin: WorkspacePlugin) => {
+    const status = plugin.connection?.status;
+    if (status === 'connected') {
+      return <span className="plugin-directory-connected">{i18n('plugins.connected', 'Connected')}</span>;
+    }
+    if (status === 'initiated') {
+      return <button type="button" className="plugin-directory-action" onClick={() => dispatch.refreshPlugin(plugin.id)}>{i18n('plugins.refreshStatus', 'Refresh')}</button>;
+    }
+    if (!configured) {
+      return <span className="plugin-directory-muted">{i18n('plugins.serverSetupNeeded', 'Unavailable')}</span>;
+    }
+    if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
+      return <button type="button" className="plugin-directory-action" onClick={() => dispatch.openPluginForm(plugin.id)}>{i18n('plugins.connect', 'Connect')}</button>;
+    }
+    return <button type="button" className="plugin-directory-action" onClick={() => dispatch.connectPlugin(plugin.id)}>{i18n('plugins.connect', 'Connect')}</button>;
+  };
+
+  const showInstalledEmpty = visiblePlugins.length === 0 && !query.trim() && scope === 'installed';
+
+  return (
+    <section className="plugin-directory" aria-labelledby="plugin-directory-title">
+      <div className="plugin-directory-topbar">
+        <button type="button" className="plugin-directory-back" onClick={() => dispatch.exitPlugins()} aria-label={i18n('plugins.back', 'Back')} title={i18n('plugins.back', 'Back')}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+        </button>
+        <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
+      </div>
+
+      <label className="plugin-directory-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
+        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
+      </label>
+
+      <div className="plugin-directory-tabs" role="tablist" aria-label={i18n('plugins.filter', 'Plugin filter')}>
+        <button type="button" role="tab" aria-selected={scope === 'installed'} className={scope === 'installed' ? 'active' : ''} onClick={() => setScope('installed')}>{i18n('plugins.installed', 'Installed')}</button>
+        <button type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>{i18n('plugins.allPlugins', 'All plugins')}</button>
+      </div>
+
+      <div className="plugin-directory-list">
+        {visiblePlugins.length === 0 ? (
+          <div className="plugin-directory-empty">
+            <strong>{showInstalledEmpty ? i18n('plugins.installedEmpty', 'No installed plugins yet') : i18n('plugins.noMatch', 'No matching plugins')}</strong>
+            <span>{showInstalledEmpty ? i18n('plugins.installedEmptyDesc', 'Apps you connect will appear here.') : i18n('plugins.tryDifferent', 'Try a different search.')}</span>
+            {showInstalledEmpty ? (
+              <button type="button" className="plugin-directory-action plugin-directory-browse" onClick={() => setScope('all')}>{i18n('plugins.browseAll', 'Browse all plugins')}</button>
+            ) : null}
+          </div>
+        ) : visiblePlugins.map((plugin) => {
+          const connection = plugin.connection || null;
+          const connectedState = connection?.status === 'connected';
+          const description = plugin.description || (plugin.capabilities || []).slice(0, 2).join(' · ');
+          return (
+            <div className={'connector-row plugin-directory-row' + (connectedState ? ' is-connected' : '')} key={plugin.id}>
+              <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
+                <ConnectorMark id={plugin.id} name={plugin.name} />
+              </span>
+              <div className="workspace-row-copy">
+                <strong>{plugin.name}</strong>
+                <span>{description || i18n('plugins.noDescription', 'Use this app in chat')}</span>
+              </div>
+              <div className="plugin-directory-row-action">{renderAction(plugin)}</div>
+            </div>
+          );
+        })}
+      </div>
+      {configured ? (
+        <p className="plugin-directory-note">{i18n('plugins.oauthNote', 'OAuth tokens stay in the secure connector gateway.')}</p>
+      ) : (
+        <div className="plugin-directory-warning"><strong>{i18n('plugins.setupTitle', 'Connector service needs setup')}</strong><span>{i18n('plugins.setupDesc', 'Add OOMOL_PROJECT_API_KEY to the server environment to enable authorization.')}</span></div>
+      )}
+    </section>
+  );
+}
+
 function CodexMcpView({ servers, configured, dispatch }: {
   servers: ReadonlyArray<{ key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: string; healthStatus?: string; lastError?: string | null }>;
   configured: boolean;
@@ -311,7 +416,7 @@ function CodexMcpView({ servers, configured, dispatch }: {
 }
 
 function PluginsView({ plugins, configured, mcp, mcpConfigured, dispatch }: {
-  plugins: ReadonlyArray<{ id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null }>;
+  plugins: ReadonlyArray<WorkspacePlugin>;
   configured: boolean;
   mcp: ReadonlyArray<{ key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: string; healthStatus?: string; lastError?: string | null }>;
   mcpConfigured: boolean;
@@ -320,48 +425,15 @@ function PluginsView({ plugins, configured, mcp, mcpConfigured, dispatch }: {
   if (plugins.length === 0) {
     return (
       <>
+        <PluginDirectory plugins={plugins} configured={configured} dispatch={dispatch} />
         <CodexMcpView servers={mcp} configured={mcpConfigured} dispatch={dispatch} />
-        <div className="workspace-empty">
-          <strong>{i18n('plugins.unavailable', 'Apps are unavailable')}</strong>
-          <span>{i18n('plugins.unavailableDesc', 'Refresh and try again.')}</span>
-        </div>
       </>
     );
   }
   return (
     <>
+      <PluginDirectory plugins={plugins} configured={configured} dispatch={dispatch} />
       <CodexMcpView servers={mcp} configured={mcpConfigured} dispatch={dispatch} />
-      {plugins.map((connector) => {
-        const connection = connector.connection || null;
-        const connected = connection && connection.status === 'connected';
-        const pending = connection && connection.status === 'initiated';
-        const meta = connected
-          ? i18n('plugins.connected', 'Connected') + (connection.displayName ? ' · ' + connection.displayName : '')
-          : pending ? i18n('plugins.waitingAuth', 'Waiting for authorization to finish') : connector.description || '';
-        let actionEl: React.ReactNode;
-        if (connected) actionEl = <span className="connector-coming-soon">{i18n('plugins.connected', 'Connected')}</span>;
-        else if (pending) actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.refreshPlugin(connector.id)}>{i18n('plugins.refreshStatus', 'Refresh status')}</button>;
-        else if (!configured) actionEl = <span className="connector-coming-soon">{i18n('plugins.serverSetupNeeded', 'Server setup needed')}</span>;
-        else if (connector.authType === 'api_key' || connector.authType === 'custom_credential') actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.openPluginForm(connector.id)}>{i18n('plugins.connect', 'Connect')}</button>;
-        else actionEl = <button className="workspace-secondary connector-connect" onClick={() => dispatch.connectPlugin(connector.id)}>{i18n('plugins.connect', 'Connect')}</button>;
-        return (
-          <div className={'workspace-row connector-row' + (connected ? ' is-connected' : '')} key={connector.id}>
-            <span className={'workspace-row-icon connector-icon connector-' + connector.id}>
-              <ConnectorMark id={connector.id} name={connector.name} />
-            </span>
-            <div className="workspace-row-copy">
-              <strong>{connector.name}</strong>
-              <span>{meta}</span>
-            </div>
-            {actionEl}
-          </div>
-        );
-      })}
-      {configured ? (
-        <div className="workspace-note">{i18n('plugins.oauthNote', 'OAuth tokens stay in the OOMOL gateway. Neither the browser nor the model receives a provider token.')}</div>
-      ) : (
-        <div className="workspace-empty"><strong>{i18n('plugins.setupTitle', 'Connector service needs setup')}</strong><span>{i18n('plugins.setupDesc', 'Add OOMOL_PROJECT_API_KEY to the server environment. Authorization remains disabled until then.')}</span></div>
-      )}
     </>
   );
 }

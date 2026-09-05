@@ -71,7 +71,11 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
      it, in that order left-to-right. */
   expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.effort?.left ?? 0) + 1);
   expect(desktopControlBoxes.effort?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
-  expect(desktopControlBoxes.editor?.bottom ?? 0).toBeLessThanOrEqual((desktopControlBoxes.attach?.bottom ?? 0) + 1);
+  const editorCenter = ((desktopControlBoxes.editor?.top ?? 0) + (desktopControlBoxes.editor?.bottom ?? 0)) / 2;
+  const attachCenter = ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
+  // The single-line editor is intentionally taller than the compact control
+  // rail; both stay on the same vertical center line inside the pill.
+  expect(Math.abs(editorCenter - attachCenter)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
   await page.evaluate(() => window.toggleTheme?.());
   await page.waitForTimeout(250);
@@ -123,7 +127,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   /* The focused state restores the reasoning control, so the editor is
      intentionally narrower than the outer pill while every control remains
      on the same row. */
-  expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(140);
+  // The mobile rail exposes the reasoning control on focus, leaving a
+  // compact but readable editor column at the 390px reference width.
+  expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(120);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
   expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(66);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });

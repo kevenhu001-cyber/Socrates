@@ -32,7 +32,7 @@ declare global {
     __socratesScheduledBridge?: ScheduledBridge;
     __socratesMountScheduled?: () => void;
     __socratesNavRenderScheduled?: () => void;
-    openCreateScheduledTask?: () => void;
+    openCreateScheduledTask?: (initialPrompt?: string) => void;
     openEditScheduledTask?: (id: string) => void;
     toggleScheduledTask?: (id: string, pause: boolean) => void;
     runScheduledTask?: (id: string) => void;

@@ -80,6 +80,8 @@ const CONNECTOR_OFFLINE_SVG = {
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null };
 var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam", admin: "/admin" };
+var CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
+var CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
 function byId(id) { return document.getElementById(id); }
 /* window.t returns the KEY itself when a translation is missing — pass
@@ -109,6 +111,10 @@ function connectorIcon(provider) {
   return '<span class="connector-logo-fallback" style="display:flex" aria-hidden="true">'
     + esc(String(provider || "?").slice(0, 2).toUpperCase()) + '</span>';
 }
+/* React composer/plugin surfaces reuse the same local brand marks as the
+   legacy connector panel. Keep the adapter on window so the React module
+   does not duplicate Vite's raw SVG imports or introduce a second icon map. */
+window.getConnectorIconMarkup = connectorIcon;
 
 /* Connected-app slash commands. Each connector that has a matching
    server-side function-calling tool (see server/src/services/
@@ -217,6 +223,140 @@ function workspaceForPath(pathname) {
   var clean = String(pathname || "/").replace(/\/+$/, "") || "/";
   return Object.keys(WORKSPACE_ROUTES).find(function (name) { return WORKSPACE_ROUTES[name] === clean; }) || null;
 }
+
+function safeConnectorReturnPath(value) {
+  var path = String(value || "");
+  if (!path || path.length > 512 || path.charAt(0) !== "/" || path.indexOf("//") === 0 || path.indexOf("\\") >= 0) return "/";
+  return path;
+}
+
+function composerReturnSnapshot() {
+  var bridge = window.__socratesComposerPluginSelectionBridge;
+  var snapshot = bridge && typeof bridge.getSnapshot === "function" ? bridge.getSnapshot() : { topic: [], chat: [] };
+  var controller = window.__socratesComposerController;
+  var draft = function (surface) {
+    try {
+      return controller && typeof controller.getMarkdown === "function" ? controller.getMarkdown(surface) : "";
+    } catch (_) { return ""; }
+  };
+  var serialisePlugins = function (plugins) {
+    return (Array.isArray(plugins) ? plugins : []).slice(0, 8).map(function (plugin) {
+      var id = String(plugin && plugin.id || "").trim();
+      if (!id) return null;
+      var icon = typeof window.getConnectorIconMarkup === "function" ? window.getConnectorIconMarkup(id) : "";
+      return {
+        id: id,
+        name: String(plugin.name || id).slice(0, 120),
+        description: String(plugin.description || "").slice(0, 240),
+        capabilities: Array.isArray(plugin.capabilities) ? plugin.capabilities.slice(0, 8).map(function (item) { return String(item).slice(0, 80); }) : [],
+        directiveTemplate: plugin.directiveTemplate ? String(plugin.directiveTemplate).slice(0, 300) : undefined,
+        iconMarkup: icon || "",
+      };
+    }).filter(Boolean);
+  };
+  var activeTrigger = document.querySelector(".composer-tools-trigger[aria-expanded='true']");
+  return {
+    topic: serialisePlugins(snapshot.topic),
+    chat: serialisePlugins(snapshot.chat),
+    drafts: { topic: draft("topic"), chat: draft("chat") },
+    surface: activeTrigger && activeTrigger.dataset ? activeTrigger.dataset.composerMode || null : null,
+  };
+}
+
+function rememberConnectorReturnContext(connectorId) {
+  try {
+    sessionStorage.setItem(CONNECTOR_RETURN_CONTEXT_KEY, JSON.stringify({
+      connectorId: String(connectorId || ""),
+      returnPath: location.pathname + location.search + location.hash,
+      createdAt: Date.now(),
+      composer: composerReturnSnapshot(),
+    }));
+  } catch (_) { /* storage can be unavailable in private/embedded contexts */ }
+}
+
+function readConnectorReturnContext() {
+  try {
+    var raw = sessionStorage.getItem(CONNECTOR_RETURN_CONTEXT_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(CONNECTOR_RETURN_CONTEXT_KEY);
+    var context = JSON.parse(raw);
+    if (!context || Date.now() - Number(context.createdAt || 0) > CONNECTOR_RETURN_CONTEXT_TTL) return null;
+    return context;
+  } catch (_) { return null; }
+}
+
+function restoreComposerReturnState(composer) {
+  if (!composer) return;
+  var controller = window.__socratesComposerController;
+  if (controller && typeof controller.setMarkdown === "function" && composer.drafts) {
+    ["topic", "chat"].forEach(function (surface) {
+      if (typeof composer.drafts[surface] === "string") {
+        try { controller.setMarkdown(surface, composer.drafts[surface]); } catch (_) {}
+      }
+    });
+  }
+  var bridge = window.__socratesComposerPluginSelectionBridge;
+  if (!bridge || typeof bridge.dispatch !== "function") return;
+  ["topic", "chat"].forEach(function (surface) {
+    var plugins = composer[surface];
+    if (!Array.isArray(plugins)) return;
+    try {
+      bridge.dispatch({ type: "replace", surface: surface, plugins: plugins.map(function (plugin) {
+        var id = String(plugin && plugin.id || "").trim();
+        return {
+          id: id,
+          name: String(plugin && plugin.name || id),
+          description: String(plugin && plugin.description || ""),
+          capabilities: Array.isArray(plugin && plugin.capabilities) ? plugin.capabilities.map(String) : [],
+          directiveTemplate: plugin && plugin.directiveTemplate ? String(plugin.directiveTemplate) : undefined,
+          iconMarkup: typeof window.getConnectorIconMarkup === "function" ? window.getConnectorIconMarkup(id) : "",
+        };
+      }).filter(function (plugin) { return plugin.id; }) });
+    } catch (_) {}
+  });
+}
+
+function restoreConnectorReturnContext() {
+  var params = new URLSearchParams(location.search);
+  if (!params.get("connector")) return false;
+  var context = readConnectorReturnContext();
+  if (!context) return false;
+  var returnPath = safeConnectorReturnPath(context.returnPath);
+  restoreComposerReturnState(context.composer);
+  history.replaceState(null, "", returnPath);
+
+  var workspace = workspaceForPath(new URL(returnPath, location.origin).pathname);
+  if (workspace && workspace !== "plugins") {
+    openNav(workspace, { fromRoute: true });
+    return true;
+  }
+  if (workspace === "plugins") return false;
+
+  hideMainPages();
+  var query = new URLSearchParams(new URL(returnPath, location.origin).search);
+  var chatId = query.get("chat");
+  var topic = byId("topicSetup");
+  var chat = byId("chatView");
+  var diagnostic = byId("diagnosticView");
+  if (chatId && typeof window.loadSession === "function") {
+    if (topic) topic.classList.add("hidden");
+    if (diagnostic) diagnostic.classList.add("hidden");
+    if (chat) chat.classList.remove("hidden");
+    if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(true);
+    Promise.resolve(window.loadSession(chatId)).catch(function () {});
+  } else {
+    if (topic) topic.classList.remove("hidden");
+    if (chat) chat.classList.add("hidden");
+    if (diagnostic) diagnostic.classList.add("hidden");
+    if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(false);
+  }
+  if (context.connectorId && typeof window.refreshProjectConnector === "function") {
+    setTimeout(function () { window.refreshProjectConnector(context.connectorId); }, 0);
+  }
+  return true;
+}
+
+window.rememberConnectorReturnContext = rememberConnectorReturnContext;
 function pushWorkspaceRoute(name) {
   var next = WORKSPACE_ROUTES[name];
   if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
@@ -426,14 +566,47 @@ async function renderScheduled() {
   }
 }
 
+/* The view (topic / chat / diagnostic) that was visible before the
+   plugin center took over the main pane. The in-page back button
+   restores exactly this view so "back" never drops the user on a
+   blank shell. Defaults to the topic setup on a direct /plugins load. */
+var PLUGINS_RETURN_VIEW = "topicSetup";
+function currentMainView() {
+  var chat = byId("chatView");
+  if (chat && !chat.classList.contains("hidden")) return "chatView";
+  var diagnostic = byId("diagnosticView");
+  if (diagnostic && !diagnostic.classList.contains("hidden")) return "diagnosticView";
+  return "topicSetup";
+}
 export function openPlugins() {
+  PLUGINS_RETURN_VIEW = currentMainView();
   hideChatAndTopic();
   showMainPage("pluginsPanel");
   if (typeof window.__socratesMountWorkspace === "function") {
     window.__socratesMountWorkspace("plugins");
   }
+  restoreConnectorReturnContext();
   renderPlugins();
 }
+/* In-page back button on the plugin center. History-back is unreliable
+   here: the previous entry may be a bare "/" which no workspace route
+   owns, leaving the panel stuck open. Exit explicitly instead. */
+window.exitPluginsView = function () {
+  hideMainPages();
+  setActiveNav(null);
+  var view = PLUGINS_RETURN_VIEW || "topicSetup";
+  var topic = byId("topicSetup");
+  var chat = byId("chatView");
+  var diagnostic = byId("diagnosticView");
+  if (topic) topic.classList.add("hidden");
+  if (chat) chat.classList.add("hidden");
+  if (diagnostic) diagnostic.classList.add("hidden");
+  var target = byId(view) || topic;
+  if (target) target.classList.remove("hidden");
+  if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(view === "chatView");
+  try { history.pushState({}, "", "/"); } catch (_) { /* non-critical */ }
+  PLUGINS_RETURN_VIEW = "topicSetup";
+};
 export function openAdmin() {
   hideChatAndTopic();
   showMainPage("adminPanel");
@@ -493,6 +666,7 @@ window.connectProjectConnector = async function (id) {
   try {
     var result = await api("/api/project-connectors/" + encodeURIComponent(id) + "/connect", { method: "POST" });
     if (!result || !result.authorizationUrl) throw new Error("No authorization URL was returned");
+    rememberConnectorReturnContext(id);
     window.location.assign(result.authorizationUrl);
   } catch (error) { toast((error && error.message) || "Could not start authorization"); }
 };
@@ -661,7 +835,7 @@ window.openProjectWorkspace = function (id) { var project = workspaceCache.proje
 window.startProjectChat = async function (id) { window._nextProjectId = id; window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; closeWorkspaceDialog(); if (typeof window.resetApp === "function") await window.resetApp(); };
 window.moveCurrentChatToProject = async function (id) { stateStore.dispatch({ type: "state/set", key: "currentProjectId", value: id }); window.__activeProject = workspaceCache.projects.filter(function (item) { return item.id === id; })[0] || null; var sessionId = stateStore.read("currentSessionId"); try { if (sessionId) await api("/api/sessions/" + encodeURIComponent(sessionId), { method: "PATCH", body: { projectId: id } }); closeWorkspaceDialog(); toast(t("toast.chatMoved", "Current chat moved to project")); if (typeof window.refreshServerSessions === "function") window.refreshServerSessions(); } catch (_) { toast(t("toast.chatMoveFailed", "Could not move the current chat")); } };
 
-window.openCreateScheduledTask = function () { openAgentTaskForm(null); };
+window.openCreateScheduledTask = function (initialPrompt) { openAgentTaskForm(null, initialPrompt || ""); };
 window.openEditScheduledTask = function (id) { openAgentTaskForm(workspaceCache.tasks.filter(function (task) { return task.id === id; })[0] || null); };
 /* datetime-local inputs expect wall-clock LOCAL time; toISOString()
    would render the stored timestamp shifted by the UTC offset. */
@@ -673,14 +847,19 @@ function toLocalDateTimeValue(value) {
 }
 /* Codex-aware scheduled task editor — the Scheduled page's first-class
    runtime form. */
-function openAgentTaskForm(task) {
+function openAgentTaskForm(task, initialPrompt) {
   var editing = !!task;
+  initialPrompt = String(initialPrompt || "");
   var next = task && task.nextRunAt ? toLocalDateTimeValue(task.nextRunAt) : "";
   var activeProjectId = (task && task.projectId) || window.stateStore.read("currentProjectId") || "";
   var projectOptions = '<option value="">' + esc(t("dialog.task.noProject", "No project")) + '</option>';
   (workspaceCache.projects || []).forEach(function (project) { projectOptions += '<option value="' + esc(project.id) + '">' + esc(project.name) + '</option>'; });
   showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.agent", "Agent") + '</span><select name="agentKind"><option value="native">' + t("dialog.task.nativeAgent", "Socrates · native tools") + '</option><option value="codex">' + t("dialog.task.codexAgent", "Codex · project workspace") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.project", "Project") + '</span><select name="projectId">' + projectOptions + '</select></label></div><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.codexNote", "Codex scheduled runs share the selected project workspace. Read-only work runs unattended; file changes, commands, and network side effects pause for approval.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : '') + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + '</button></div></form>');
   var form = byId("taskForm");
+  if (!editing && initialPrompt && form) {
+    form.elements.title.value = initialPrompt.slice(0, 120);
+    form.elements.prompt.value = initialPrompt;
+  }
   form.elements.frequency.value = (task && task.frequency) || "once";
   form.elements.agentKind.value = (task && task.agentKind) || "native";
   form.elements.projectId.value = activeProjectId;

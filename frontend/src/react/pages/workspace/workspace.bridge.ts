@@ -112,6 +112,7 @@ export function useWorkspaceDispatch() {
     connectPlugin: (id: string) => w.connectProjectConnector(id),
     refreshPlugin: (id: string) => w.refreshProjectConnector(id),
     openPluginForm: (id: string) => w.openProjectConnectorForm(id),
+    exitPlugins: () => w.exitPluginsView(),
     toggleCodexMcp: (key: string, enabled: boolean) => w.toggleCodexMcp(key, enabled),
     checkCodexMcpHealth: (key: string) => w.checkCodexMcpHealth(key),
     openArxiv: () => w.openArxivSearch(),
