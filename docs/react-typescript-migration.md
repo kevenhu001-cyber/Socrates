@@ -607,3 +607,43 @@ Baseline verification (all green at record time):
   `P_hide-mode-switch-in-conversation` CSS over-hiding the mode pill on
   the mobile landing — `src/styles.css` now scopes the hide to
   conversation-active only, per the user contract the rule documents.)
+
+M5 progress (2026-09-05, batch 4): two dead admin-modal window
+bridges retired. `window.openAdminModal / window.closeAdminModal`
+(main.js:9888-89, left over from the modal → /admin page migration)
+had zero external readers across src/, index.html, and e2e helpers
+(`scripts/audit-window-bridges.mjs` now reports 125/125 kept, 0
+dead, down from 127 bindings). The assignments and their stale
+comment are deleted; the `legacyApi.js` import stays so module
+evaluation order is unchanged (batch-1 precedent), and the
+underlying functions stay for AdminModal's internal use. Verified:
+frontend tsc clean, vite build ok.
+
+Deploy hardening for the admin release (2026-09-05): the release
+surfaced three gaps between the repo and production, all closed
+before deploy. (1) `server/drizzle/0029–0031` were never registered
+in `meta/_journal.json`, so `db:migrate` silently skipped them —
+all three are now registered, plus a new `0032_embedding_config`
+(the `embedding_config` table previously existed only in
+`db/schema.ts`, so the admin provider UI could never persist).
+The full chain was verified on a scratch database (33/33 apply,
+idempotent re-run, then dropped). (2) `0031`'s pgvector guard only
+handled already-exists, not extension-unavailable: without the
+`.so`, `CREATE EXTENSION` errored and would have failed the whole
+migration. Block 1 now catches the error with RAISE NOTICE and
+skips the column + index (the chunkIndex vector leg is try/caught,
+so retrieval degrades to BM25-only as documented). Production got
+`postgresql-16-pgvector` installed and `CREATE EXTENSION vector`
+pre-created, so the `embedding` column + HNSW index landed.
+(3) `deploy.sh` grew three release-matching gates: a post-migrate
+schema check (`server/scripts/verify-deploy-schema.ts`, fail-closed
+before the service stops), a build-time `#adminPanel` marker check
+on the SPA bundle, and two health-gate probes — public
+`/api/admin-auth/status` (200 + `{ configured, ipAllowed }`,
+records `adminConsoleConfigured`) and a fail-closed proof that
+unauthenticated `GET /api/embedding-config` returns 403. The
+fixture suite (`scripts/test-deploy-flow.sh`) mirrors the new
+bundle marker, the 403 expectation, and the new state keys.
+Deploy result: all gates green, state file updated; the script
+prints an operator action item when `ADMIN_PASSWORD` is unset
+(the /admin console stays disabled until it is set).
