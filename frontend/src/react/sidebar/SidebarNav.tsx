@@ -121,7 +121,7 @@ export interface SidebarNavHandle {
  * Hydrate the legacy `#sidebarNav` element with React. Idempotent — a
  * second call returns the existing handle. The nav element itself is
  * preserved (same id, same `aria-label`, same nav DOM siblings); React
- * owns only its direct children (the 7 buttons).
+ * owns only its direct children (the 8 buttons).
  *
  * Callers claim the element through the module-private ownership registry.
  * The React buttons re-publish active state through the bridge, while legacy

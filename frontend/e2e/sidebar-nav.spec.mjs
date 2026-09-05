@@ -21,6 +21,7 @@ test('sidebar exposes only the requested primary destinations', async ({ page })
     'navPlugins',
     'navExam',
     'navSkills',
+    'navAdmin',
   ]);
 
   for (const id of ['navMore']) {
