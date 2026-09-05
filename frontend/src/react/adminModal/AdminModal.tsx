@@ -18,6 +18,15 @@ import type { EmbeddingProviderConfig, SystemModelConfig } from './types';
 const ADMIN_API = '/api/system-models';
 const EMBEDDING_API = '/api/embedding-config';
 
+/* Double-submit CSRF half — see AdminPage.tsx#csrfHeaders. The modal
+   issues the same mutating admin requests and needs the same echo. */
+function csrfHeaders(): Record<string, string> {
+  try {
+    const m = document.cookie.match(/\bcsrf=([^;]+)/);
+    return m ? { 'X-CSRF-Token': m[1] } : {};
+  } catch (_) { return {}; }
+}
+
 function AdminModal() {
   const snap = useAdminSnapshot();
   const [systemForm, setSystemForm] = useState<SystemModelConfig | null>(null);
@@ -84,7 +93,7 @@ function AdminModal() {
       if (systemForm.keyHint) body.keyHint = systemForm.keyHint;
       const res = await fetch(ADMIN_API, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
@@ -123,7 +132,7 @@ function AdminModal() {
       if (embeddingForm.keyHint) body.keyHint = embeddingForm.keyHint;
       const res = await fetch(EMBEDDING_API, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
@@ -146,6 +155,7 @@ function AdminModal() {
     try {
       const res = await fetch(`${EMBEDDING_API}/${embeddingForm.id}`, {
         method: 'DELETE',
+        headers: csrfHeaders(),
         credentials: 'same-origin',
       });
       if (!res.ok) {

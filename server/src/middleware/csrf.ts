@@ -51,6 +51,21 @@ const OAUTH_TOKEN_PATHS = new Set([
   '/api/oauth/revoke/',
 ]);
 
+/* P_admin-auth — the operator login/logout endpoints authenticate with
+ * an explicit body credential (ADMIN_PASSWORD) and never read an
+ * ambient browser cookie as authority, so the double-submit check
+ * adds no protection here — it only 403s a legitimate operator whose
+ * browser happens to carry a stale `csrf` cookie from normal app use
+ * (cookie-only partial pair). The admin CONFIG routes
+ * (/api/system-models, /api/embedding-config) ride the admin httpOnly
+ * session cookie and intentionally stay behind the check. */
+const ADMIN_AUTH_PATHS = new Set([
+  '/api/admin-auth/login',
+  '/api/admin-auth/login/',
+  '/api/admin-auth/logout',
+  '/api/admin-auth/logout/',
+]);
+
 function timingSafeEqual(a: unknown, b: unknown): boolean {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
   const bufA = Buffer.from(a, 'utf8');
@@ -206,6 +221,8 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   if (MCP_PATHS.has(req.path)) return next();
 
   if (OAUTH_TOKEN_PATHS.has(req.path)) return next();
+
+  if (ADMIN_AUTH_PATHS.has(req.path)) return next();
 
   // A React Native request may coexist with an old WebView csrf cookie. Its
   // explicit access bearer remains safe without a double-submit header; do

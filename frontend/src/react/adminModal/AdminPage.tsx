@@ -36,6 +36,18 @@ function authHeaders(): Record<string, string> {
   return token ? { 'X-Admin-Token': token } : {};
 }
 
+/* Double-submit CSRF half for the admin mutating endpoints. The app
+   sets a readable `csrf` cookie on user login; state-changing admin
+   requests (which ride the admin httpOnly cookie after sign-in) must
+   echo it back as X-CSRF-Token or the server refuses the partial
+   pair as a likely forgery. Same parse as util/api.js#getCsrfToken. */
+function csrfHeaders(): Record<string, string> {
+  try {
+    const m = document.cookie.match(/\bcsrf=([^;]+)/);
+    return m ? { 'X-CSRF-Token': m[1] } : {};
+  } catch (_) { return {}; }
+}
+
 function LoginPage({ onReady }: { onReady: () => void }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,7 +60,7 @@ function LoginPage({ onReady }: { onReady: () => void }) {
     try {
       const res = await fetch(`${ADMIN_AUTH_API}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
         credentials: 'same-origin',
         body: JSON.stringify({ password }),
       });
@@ -205,7 +217,7 @@ function AdminPage() {
       if (systemKey) body.key = systemKey;
       const res = await fetch(ADMIN_API, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...csrfHeaders() },
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
@@ -242,7 +254,7 @@ function AdminPage() {
       if (embeddingKey) body.key = embeddingKey;
       const res = await fetch(EMBEDDING_API, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(), ...csrfHeaders() },
         credentials: 'same-origin',
         body: JSON.stringify(body),
       });
@@ -265,7 +277,7 @@ function AdminPage() {
     try {
       const res = await fetch(`${EMBEDDING_API}/${embeddingForm.id}`, {
         method: 'DELETE',
-        headers: authHeaders(),
+        headers: { ...authHeaders(), ...csrfHeaders() },
         credentials: 'same-origin',
       });
       if (!res.ok) {
@@ -281,7 +293,7 @@ function AdminPage() {
   };
 
   const signOut = async () => {
-    try { await fetch(`${ADMIN_AUTH_API}/logout`, { method: 'POST', credentials: 'same-origin' }); } catch (_) { /* ignore */ }
+    try { await fetch(`${ADMIN_AUTH_API}/logout`, { method: 'POST', headers: csrfHeaders(), credentials: 'same-origin' }); } catch (_) { /* ignore */ }
     clearToken();
     setAuthed(false);
   };
