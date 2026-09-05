@@ -41,11 +41,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: TypeScript check
-        run: npx tsc --noEmit
+      - name: ESLint
+        run: npm run lint:eslint
 
       - name: Build
-        run: npx vite build
+        run: npm run build
 
       - name: Unit tests
         run: npm run test:unit

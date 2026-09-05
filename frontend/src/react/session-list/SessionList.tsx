@@ -1,4 +1,4 @@
-import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
+import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import React, { useCallback, useEffect, useState, memo } from 'react';
 import { createRoot } from 'react-dom/client';
 

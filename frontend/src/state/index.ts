@@ -6,7 +6,6 @@ import {
   searchBridge,
   sessionBridge,
   uiBridge,
-  type NamespaceName,
 } from './bridges.ts';
 import type { ImmutableBridge, RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts';
 import { createInitialCallState } from './call.ts';

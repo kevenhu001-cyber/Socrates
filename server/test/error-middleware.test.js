@@ -139,6 +139,30 @@ describe('timeoutMiddleware', () => {
       else process.env.REQUEST_TIMEOUT_MS = prev;
     }
   });
+
+  test('res.locals.timeoutMs defers the 504 for long LLM calls', async () => {
+    /* Non-streaming LLM routes await up to 300 s before headers;
+     * they set res.locals.timeoutMs so the default budget re-arms
+     * instead of killing the request at 50 ms here. */
+    const prev = process.env.REQUEST_TIMEOUT_MS;
+    process.env.REQUEST_TIMEOUT_MS = '50';
+    try {
+      const req = fakeReq();
+      const res = fakeRes();
+      res.locals = { timeoutMs: 200 };
+      timeoutMiddleware(req, res, () => {
+        /* never respond — simulate a slow upstream. */
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      assert.equal(res._status, null);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      assert.equal(res._status, 504);
+      assert.equal(res._body.code, 'REQUEST_TIMEOUT');
+    } finally {
+      if (prev === undefined) delete process.env.REQUEST_TIMEOUT_MS;
+      else process.env.REQUEST_TIMEOUT_MS = prev;
+    }
+  });
 });
 
 /* ── errorHandler ─────────────────────────────────────────────── */

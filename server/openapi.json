@@ -1067,11 +1067,12 @@
       },
       "MobileBearerPair": {
         "type": "object",
-        "required": ["accessToken", "refreshToken", "expiresIn"],
+        "required": ["accessToken", "refreshToken", "expiresAt", "refreshExpiresAt"],
         "properties": {
           "accessToken": { "type": "string", "description": "ma.<pairId>.<64-hex>", "example": "ma.01JABC...XYZ" },
           "refreshToken": { "type": "string", "description": "mr.<pairId>.<64-hex>" },
-          "expiresIn": { "type": "integer", "description": "Access token TTL in seconds (typically 900)." }
+          "expiresAt": { "type": "string", "format": "date-time", "description": "Access token expiry (ISO 8601, typically 15 min after issue)." },
+          "refreshExpiresAt": { "type": "string", "format": "date-time", "description": "Refresh token expiry (ISO 8601, 30 days after issue)." }
         }
       },
       "OAuthClientRegistrationRequest": {

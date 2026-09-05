@@ -15,8 +15,15 @@ import { wwwAuthenticateChallenge, OAUTH_AUTHORIZATION_ENDPOINT } from '../lib/o
  * everything else (DB queries, file I/O, web fetches, etc.).
  */
 export function timeoutMiddleware(req: Request, res: Response, next: NextFunction) {
-  const TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
-  const timer = setTimeout(() => {
+  const DEFAULT_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
+  /* Cap route overrides so a misconfigured handler cannot pin a worker
+   * forever; only server code (never the client) can set res.locals. */
+  const MAX_TIMEOUT_MS = 600_000;
+  const startedAt = Date.now();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const fire = () => {
+    timer = null;
     if (res.headersSent) {
       /* P_sse_timeout_exempt — SSE responses (chat stream, execution
        * progress, status subscribe, …) are legitimately long-lived and
@@ -34,13 +41,29 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
       try { res.destroy(); } catch (err) { console.warn('[timeout] socket destroy failed:', (err as Error).message); }
       return;
     }
+    /* P_long-llm-override — non-streaming LLM routes (POST /api/chat,
+     * minimax proxy) await up to LLM_TOTAL_TIMEOUT_MS (300 s) before
+     * sending headers, so the 120 s default 504'd slow reasoning
+     * answers. A route opts out by setting res.locals.timeoutMs; when
+     * the default fires early we re-arm for the remainder instead of
+     * killing the request. */
+    const custom = Number((res.locals as Record<string, unknown>)?.timeoutMs);
+    if (Number.isFinite(custom) && custom > DEFAULT_TIMEOUT_MS) {
+      const allowed = Math.min(custom, MAX_TIMEOUT_MS);
+      const remaining = allowed - (Date.now() - startedAt);
+      if (remaining > 0) {
+        timer = setTimeout(fire, remaining);
+        return;
+      }
+    }
     res.status(504).json({
       code: 'REQUEST_TIMEOUT',
       message: 'Request timed out',
     });
-  }, TIMEOUT_MS);
-  res.on('finish', () => { clearTimeout(timer); });
-  res.on('close', () => { clearTimeout(timer); });
+  };
+  timer = setTimeout(fire, DEFAULT_TIMEOUT_MS);
+  res.on('finish', () => { if (timer) clearTimeout(timer); });
+  res.on('close', () => { if (timer) clearTimeout(timer); });
   next();
 }
 

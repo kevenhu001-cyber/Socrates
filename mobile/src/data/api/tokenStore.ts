@@ -4,16 +4,23 @@ import { deleteItem, getItem, setItem } from '../../platform/secureStorage';
 const ACCESS_KEY = 'socrates.mobile.access-token';
 const REFRESH_KEY = 'socrates.mobile.refresh-token';
 const EXPIRY_KEY = 'socrates.mobile.access-expiry';
+const REFRESH_EXPIRY_KEY = 'socrates.mobile.refresh-expiry';
 const USER_KEY = 'socrates.mobile.cached-user';
 const DEVICE_ID_KEY = 'socrates.mobile.device-id';
 
 export async function readTokens(): Promise<Partial<MobileTokenPair>> {
-  const [accessToken, refreshToken, expiresAt] = await Promise.all([
+  const [accessToken, refreshToken, expiresAt, refreshExpiresAt] = await Promise.all([
     getItem(ACCESS_KEY),
     getItem(REFRESH_KEY),
     getItem(EXPIRY_KEY),
+    getItem(REFRESH_EXPIRY_KEY),
   ]);
-  return { accessToken: accessToken || undefined, refreshToken: refreshToken || undefined, expiresAt: expiresAt || undefined };
+  return {
+    accessToken: accessToken || undefined,
+    refreshToken: refreshToken || undefined,
+    expiresAt: expiresAt || undefined,
+    refreshExpiresAt: refreshExpiresAt || undefined,
+  };
 }
 
 export async function writeTokens(tokens: MobileTokenPair) {
@@ -21,6 +28,7 @@ export async function writeTokens(tokens: MobileTokenPair) {
     setItem(ACCESS_KEY, tokens.accessToken),
     setItem(REFRESH_KEY, tokens.refreshToken),
     setItem(EXPIRY_KEY, tokens.expiresAt),
+    setItem(REFRESH_EXPIRY_KEY, tokens.refreshExpiresAt),
   ]);
 }
 
@@ -42,6 +50,7 @@ export async function clearTokens() {
     deleteItem(ACCESS_KEY),
     deleteItem(REFRESH_KEY),
     deleteItem(EXPIRY_KEY),
+    deleteItem(REFRESH_EXPIRY_KEY),
     deleteItem(USER_KEY),
   ]);
 }

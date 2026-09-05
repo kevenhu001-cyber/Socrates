@@ -83,6 +83,7 @@ import { toggleSidebar, setRecentsFilter, getRecentsFilter, clearRecentsFilter, 
 window.toggleSidebar = toggleSidebar;
 window.setRecentsFilter = setRecentsFilter;
 window.getRecentsFilter = getRecentsFilter;
+window.clearRecentsFilter = clearRecentsFilter;
 window.onRecentsFilterChipClick = onRecentsFilterChipClick;
 
 /* ─── pickers.js ─── */
@@ -170,6 +171,7 @@ window.toggleComposerTools = toggleComposerTools;
 /* ─── ui/voiceInput.js ─── */
 import { stopSpeechInput, toggleSpeechInput } from './ui/voiceInput.js';
 window.toggleSpeechInput = toggleSpeechInput;
+window.stopSpeechInput = stopSpeechInput;
 /* ─── ui/settings.js ─── */
 /* React's SettingsModal calls these via __socratesLegacy.settings
    (assembled from main.js's direct imports); only the four inline-handler
@@ -270,13 +272,19 @@ import {
 window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
 window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
 window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
+window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
 window.offlineGuard = offlineGuard;
+window.sleepBackoff = sleepBackoff;
 window.makeAIWatchdog = makeAIWatchdog;
 
 /* ─── ui/usage.js ─── */
 import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, showUsageTip, hideUsageTip } from './ui/usage.js';
 window.openUsageModal = openUsageModal;
 window.closeUsageModal = closeUsageModal;
+window.loadUsageData = loadUsageData;
+window.loadUsageMonth = loadUsageMonth;
+window.showUsageTip = showUsageTip;
+window.hideUsageTip = hideUsageTip;
 /* Period tab inline onclick handlers (usage.js:138-139). */
 /* Heatmap cell inline onmouseenter/onmouseleave handlers (usage.js:168). */
 

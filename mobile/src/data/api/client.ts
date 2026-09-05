@@ -56,7 +56,14 @@ export async function refreshAccessToken() {
     return false;
   }
   const tokens = await response.json() as MobileTokenPair;
-  await writeTokens({ ...tokens, refreshToken: tokens.refreshToken || current.refreshToken });
+  /* Keep the previous expiries if a server ever omits them, so a partial
+   * refresh response cannot wipe the stored rotation horizon. */
+  await writeTokens({
+    ...tokens,
+    refreshToken: tokens.refreshToken || current.refreshToken,
+    expiresAt: tokens.expiresAt || current.expiresAt,
+    refreshExpiresAt: tokens.refreshExpiresAt || current.refreshExpiresAt,
+  } as MobileTokenPair);
   return true;
   })().finally(() => { refreshInFlight = null; });
   return refreshInFlight;

@@ -62,7 +62,7 @@ type DomainSnapshot =
   | UiSnapshot
   | ExamSnapshot;
 
-function defineDomainHook<Snapshot extends DomainSnapshot & RevisionedSnapshot, Action>(
+function defineDomainHook<Snapshot extends DomainSnapshot & RevisionedSnapshot, _Action>(
   store: StoreApi<Snapshot>,
 ) {
   function useDomainStore<T>(selector: (snapshot: Snapshot) => T): T {

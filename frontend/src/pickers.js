@@ -148,8 +148,8 @@ function modelGlyphSVG(g, opts){
 /* Public helpers — used by the trigger renderer and the dropdown
    rows. `getModelGlyph` returns the {kind,tint} object; the SVG
    string is built on demand so callers can size it independently. */
-function getModelGlyph(p){ return _glyphFromProvider(p); }
-function renderModelGlyph(p, opts){ return modelGlyphSVG(_glyphFromProvider(p), opts); }
+export function getModelGlyph(p){ return _glyphFromProvider(p); }
+export function renderModelGlyph(p, opts){ return modelGlyphSVG(_glyphFromProvider(p), opts); }
 
 /* ─── Shared: render provider items HTML ───
    Used by syncModelPills() and toggleChatModelMenu() to avoid
