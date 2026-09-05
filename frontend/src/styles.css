@@ -1743,6 +1743,12 @@ body.admin-active #findBtn,
 body.admin-active #shareBtn,
 body.admin-active #chatStats,
 body.admin-active #topicDisclaimer{display:none!important}
+/* The <=768px mobile-reference block force-shows the pill with a
+   double-ID selector (#appShell #modeSegmentedTop{display:flex!
+   important}), which outranks the single-ID rule above. This triple
+   selector (2 IDs + 1 class) wins the !important tie-break on phones
+   so the standalone console stays chrome-free on every viewport. */
+body.admin-active #appShell #modeSegmentedTop{display:none!important}
 .main-content:has(#chatView:not(.hidden)) #topicDisclaimer{display:none}
 /* P_hide-mode-switch-in-conversation — see the canonical rule near
    the top of this file (line ~130). The pre-existing rule was kept

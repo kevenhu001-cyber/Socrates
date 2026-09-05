@@ -78,3 +78,13 @@ test('Admin page hides the chat top-bar chrome', async ({ page }) => {
   await page.evaluate(() => window.openNav('library'));
   await expect(page.locator('#shareBtn')).toBeVisible();
 });
+
+test('Admin page hides the mode pill on phone viewports too', async ({ page }) => {
+  // The <=768px mobile-reference stylesheet force-shows the pill with
+  // a double-ID selector; the admin override must outrank it.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.openNav('admin'));
+  await expect(page.locator('#adminPanel')).toBeVisible();
+  const display = await page.locator('#modeSegmentedTop').evaluate((el) => getComputedStyle(el).display);
+  expect(display).toBe('none');
+});
