@@ -198,26 +198,28 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
       bottomRadius: style.borderBottomLeftRadius,
     };
   });
-  // Mobile presents the menu as a compact anchored popover: solid surface,
-  // full outline, shadow, and rounded corners on all sides.
+  // Mobile presents the menu as a bottom sheet: solid surface, top
+  // outline only, an upward shadow, 20px top corners tapering to a flush
+  // bottom edge, with a grabber affordance.
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('16px');
-  expect(mobileMenuStyle.bottomRadius).toBe('16px');
+  expect(mobileMenuStyle.radius).toBe('20px');
+  expect(mobileMenuStyle.bottomRadius).toBe('0px');
   // Wait for the entrance animation to settle before measuring geometry.
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();
-  const plusBox = await plus.boundingBox();
   expect(sheetBox).not.toBeNull();
-  expect(plusBox).not.toBeNull();
-  expect(sheetBox.x).toBeGreaterThanOrEqual(8);
-  expect(sheetBox.x + sheetBox.width).toBeLessThanOrEqual(382);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(222);
-  expect(sheetBox.width).toBeLessThanOrEqual(224);
-  expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(plusBox.y);
-  // The open-state class still owns dismissal state, but the compact popover
-  // no longer paints the full-screen bottom-sheet scrim.
+  // Bottom-sheet geometry at the 390px reference width: full-bleed and
+  // docked to the viewport bottom, overlapping the composer instead of
+  // floating above the plus key.
+  expect(sheetBox.x).toBeLessThanOrEqual(1);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(388);
+  expect(sheetBox.width).toBeLessThanOrEqual(390);
+  expect(sheetBox.y + sheetBox.height).toBeGreaterThanOrEqual(843);
+  expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(844);
+  // The open-state class still owns dismissal state, but the bottom
+  // sheet paints no full-screen scrim behind itself.
   await expect(page.locator('body')).toHaveClass(/composer-tools-open/);
   expect(await page.locator('body').evaluate((element) => getComputedStyle(element, '::after').display)).toBe('none');
   await page.screenshot({

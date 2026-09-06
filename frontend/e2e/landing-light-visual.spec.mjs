@@ -53,9 +53,9 @@ test('light conversation home has a neutral readable palette and balanced compos
 
   expect(geometry.title).not.toBeNull();
   expect(geometry.composer).not.toBeNull();
-  /* The redesigned shell keeps the idle composer to a single 68px row;
-     attachments and measured multiline drafts are the only expanded states. */
-  expect(geometry.composer?.height).toBe(68);
+  /* The two-zone idle composer is a 128px shell (72px editor row plus
+     the 46px control row, +2px border): text area above, controls below. */
+  expect(geometry.composer?.height).toBe(130);
   expect(geometry.topicFontSize).toBe(18);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(18);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(24);

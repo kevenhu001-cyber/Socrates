@@ -103,12 +103,22 @@ for (const [name, viewport] of [
     await expect(page.locator('#msgList .msg.assistant .msg-body').first()).toBeVisible();
     const after = await composerSignature(page, '#chatInputWrap');
 
-    /* The landing prompt is intentionally larger for emphasis; the in-session
-       composer keeps its compact chat geometry after the first message. */
-    const skinOf = ({ background, border, radius }) => ({ background, border, radius });
-    expect(skinOf(after)).toEqual(skinOf(before));
-    expect(before.height).toBe(name === 'mobile' ? 64 : 110);
-    expect(after.height).toBe(name === 'mobile' ? 56 : 98);
+    /* Landing and in-session composers are distinct surfaces: the landing
+       two-zone shell hands off to the compact chat pill on send. Pin both
+       skins explicitly — the border tint differs by focus state, so only
+       the surface, the radii and the heights are contractual here. */
+    expect(after.background).toBe(before.background);
+    if (name === 'mobile') {
+      expect(before.radius).toBe('31px');
+      expect(after.radius).toBe('31px');
+      expect(before.height).toBe(62);
+      expect(after.height).toBe(62);
+    } else {
+      expect(before.radius).toBe('24px');
+      expect(after.radius).toBe('34px');
+      expect(before.height).toBe(130);
+      expect(after.height).toBe(68);
+    }
     const widths = await page.evaluate(() => {
       const wrap = document.querySelector('#chatInputWrap');
       const body = document.querySelector('#msgList .msg.assistant .msg-body');
@@ -117,7 +127,13 @@ for (const [name, viewport] of [
         text: Math.round(body.getBoundingClientRect().width),
       };
     });
-    expect(Math.abs(widths.composer - widths.text)).toBeLessThanOrEqual(1);
+    if (name === 'mobile') {
+      /* The mobile composer sits inset (page margins) inside the wider
+         transcript column; it must never overflow it. */
+      expect(widths.composer).toBeLessThanOrEqual(widths.text);
+    } else {
+      expect(Math.abs(widths.composer - widths.text)).toBeLessThanOrEqual(1);
+    }
     await expect(page.locator('#chatComposerRoot .rich-composer-editor'))
       .toHaveAttribute('aria-label', 'How can I help you today?');
   });

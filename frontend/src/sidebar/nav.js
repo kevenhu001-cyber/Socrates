@@ -1,6 +1,7 @@
 import { toggleMorePopover } from "./morePopover.js";
 import { stateStore } from "../state/store.js";
 import { showToast } from "../ui/toast.js";
+import { getConnectorIconMarkup as connectorIcon } from "../connector-icons.ts";
 
 /* React migration bridge — publishes scheduled task state so the React
    compatibility root can render the page. Installed by
@@ -44,39 +45,6 @@ function _publishWorkspaceState() {
   } catch (_) { /* swallow */ }
 }
 
-/* Connector brand marks prefer real brand-asset URLs (SimpleIcons CDN for
-   most services, each vendor's own brand URL for the rest) so the user
-   sees an actual brand mark, not a hand-drawn approximation. LobeHub
-   SVGs are kept as the offline fallback for the six connectors they
-   ship. `lobehubIcon` strips Lobehub's inline 1em sizing, inline style,
-   xmlns, and <title> so the offline fallback renders with the same
-   viewBox + currentColor contract. */
-import githubRaw from "@lobehub/icons-static-svg/icons/github.svg?raw";
-import notionRaw from "@lobehub/icons-static-svg/icons/notion.svg?raw";
-import giteeRaw from "@lobehub/icons-static-svg/icons/giteeai.svg?raw";
-import baiduCloudRaw from "@lobehub/icons-static-svg/icons/baiducloud.svg?raw";
-import tencentRaw from "@lobehub/icons-static-svg/icons/tencent-color.svg?raw";
-import microsoftRaw from "@lobehub/icons-static-svg/icons/microsoft-color.svg?raw";
-
-function lobehubIcon(raw) {
-  return String(raw || "")
-    .replace(/<title>[\s\S]*?<\/title>/i, "")
-    .replace(/\s(?:width|height)="1em"/gi, "")
-    .replace(/\sstyle="[^"]*"/i, "")
-    .replace(/\sxmlns="[^"]*"/i, "")
-    .replace(/<svg /i, '<svg aria-hidden="true" ');
-}
-
-const CONNECTOR_OFFLINE_SVG = {
-  github: lobehubIcon(githubRaw),
-  notion: lobehubIcon(notionRaw),
-  gitee: lobehubIcon(giteeRaw),
-  baiducloud: lobehubIcon(baiduCloudRaw),
-  'baidu-netdisk': lobehubIcon(baiduCloudRaw),
-  tencent: lobehubIcon(tencentRaw),
-  microsoft: lobehubIcon(microsoftRaw),
-};
-
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null };
 var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam", admin: "/admin" };
@@ -96,25 +64,24 @@ function esc(value) { return String(value == null ? "" : value).replace(/&/g, "&
 function api(path, options) { return window.apiFetch(path, options); }
 function toast(message) { showToast(message); }
 function confirmAction(title, message) { return typeof window.showConfirm === "function" ? window.showConfirm(title, message, true) : Promise.resolve(window.confirm(message)); }
-function normaliseProviderId(provider) {
-  return String(provider || "").toLowerCase().replace(/[_-]/g, "");
-}
 
-function connectorIcon(provider) {
-  var key = normaliseProviderId(provider);
-  /* P_perf-local-icons — connector brand marks used to load from
-     icon.horse / simpleicons / raw.githubusercontent.com, which can hang
-     on mobile networks (especially in CN) and stall page switches. All
-     connectors now render local SVG marks or a monogram fallback. */
-  var offline = CONNECTOR_OFFLINE_SVG[key] || CONNECTOR_OFFLINE_SVG[provider];
-  if (offline) return offline;
+/* P_perf-local-icons — connector brand marks used to load from
+   icon.horse / simpleicons / raw.githubusercontent.com, which can hang
+   on mobile networks (especially in CN) and stall page switches. All
+   connectors now render bundled local SVG marks (see
+   src/connector-icons.ts) or a monogram fallback. Unknown ids still
+   fall back to a two-letter monogram so new connectors degrade
+   gracefully. */
+function connectorIconWithFallback(provider) {
+  var markup = connectorIcon(provider);
+  if (markup) return markup;
   return '<span class="connector-logo-fallback" style="display:flex" aria-hidden="true">'
     + esc(String(provider || "?").slice(0, 2).toUpperCase()) + '</span>';
 }
 /* React composer/plugin surfaces reuse the same local brand marks as the
    legacy connector panel. Keep the adapter on window so the React module
    does not duplicate Vite's raw SVG imports or introduce a second icon map. */
-window.getConnectorIconMarkup = connectorIcon;
+window.getConnectorIconMarkup = connectorIconWithFallback;
 
 /* Connected-app slash commands. Each connector that has a matching
    server-side function-calling tool (see server/src/services/
@@ -154,7 +121,7 @@ window.getSlashApps = function () {
     return c.auth === "public" || !!c.connection;
   }).map(function (c) {
     var hint = APP_SLASH_HINTS[c.id];
-    return { id: c.id, title: c.name, shortcut: "/" + c.id, description: hint.description, icon: connectorIcon(c.id), insert: hint.insert };
+    return { id: c.id, title: c.name, shortcut: "/" + c.id, description: hint.description, icon: connectorIconWithFallback(c.id), insert: hint.insert };
   });
 };
 
@@ -966,7 +933,7 @@ window.connectConnector = function (id) {
 function arxivPaperMarkup(paper) {
   var meta = [paper.authors && paper.authors.join(", "), paper.publishedAt ? new Date(paper.publishedAt).getFullYear() : "", paper.categories && paper.categories.slice(0, 2).join(", ")].filter(Boolean).join(" · ");
   var links = (paper.abstractUrl ? '<a class="workspace-row-action" href="' + esc(paper.abstractUrl) + '" target="_blank" rel="noopener noreferrer">Abstract</a>' : "") + (paper.pdfUrl ? '<a class="workspace-row-action" href="' + esc(paper.pdfUrl) + '" target="_blank" rel="noopener noreferrer">PDF</a>' : "");
-  return '<div class="workspace-row arxiv-paper"><span class="workspace-row-icon connector-icon connector-arxiv">' + connectorIcon('arxiv') + '</span><div class="workspace-row-copy"><strong>' + esc(paper.title || "Untitled paper") + '</strong><span>' + esc(meta || "arXiv preprint") + '</span>' + (paper.summary ? '<p class="arxiv-summary">' + esc(paper.summary) + '</p>' : "") + '</div><span class="connector-actions">' + links + '</span></div>';
+  return '<div class="workspace-row arxiv-paper"><span class="workspace-row-icon connector-icon connector-arxiv">' + connectorIconWithFallback('arxiv') + '</span><div class="workspace-row-copy"><strong>' + esc(paper.title || "Untitled paper") + '</strong><span>' + esc(meta || "arXiv preprint") + '</span>' + (paper.summary ? '<p class="arxiv-summary">' + esc(paper.summary) + '</p>' : "") + '</div><span class="connector-actions">' + links + '</span></div>';
 }
 function paintArxivPapers(papers) {
   var list = byId("arxivPapers");
@@ -1001,7 +968,7 @@ function openZoteroConnectDialog() {
 }
 function zoteroItemMarkup(item) {
   var details = [item.itemType, item.creators && item.creators.join(", "), item.date].filter(Boolean).join(" · ");
-  return '<div class="workspace-row zotero-item"><span class="workspace-row-icon connector-icon connector-zotero">' + connectorIcon('zotero') + '</span><div class="workspace-row-copy"><strong>' + esc(item.title || "Untitled item") + '</strong><span>' + esc(details || "Zotero item") + '</span></div></div>';
+  return '<div class="workspace-row zotero-item"><span class="workspace-row-icon connector-icon connector-zotero">' + connectorIconWithFallback('zotero') + '</span><div class="workspace-row-copy"><strong>' + esc(item.title || "Untitled item") + '</strong><span>' + esc(details || "Zotero item") + '</span></div></div>';
 }
 function paintZoteroItems(items) {
   var list = byId("zoteroItems");

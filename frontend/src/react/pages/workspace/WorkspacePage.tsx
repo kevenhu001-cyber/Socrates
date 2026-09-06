@@ -3,15 +3,7 @@ import React, { useMemo, useState } from 'react';
 
 import { t as _t } from '../../legacy/gateway';
 import { installWorkspaceBridge, useWorkspaceSnapshot, useWorkspaceDispatch } from './workspace.bridge';
-
-/* ── LobeHub brand SVG icons (raw strings inlined by Vite) ── */
-import githubRaw from '@lobehub/icons-static-svg/icons/github.svg?raw';
-import notionRaw from '@lobehub/icons-static-svg/icons/notion.svg?raw';
-import giteeRaw from '@lobehub/icons-static-svg/icons/giteeai.svg?raw';
-import baiduCloudRaw from '@lobehub/icons-static-svg/icons/baiducloud.svg?raw';
-import tencentRaw from '@lobehub/icons-static-svg/icons/tencent-color.svg?raw';
-import microsoftRaw from '@lobehub/icons-static-svg/icons/microsoft-color.svg?raw';
-import googleRaw from '@lobehub/icons-static-svg/icons/google-color.svg?raw';
+import { getConnectorIconMarkup } from '../../../connector-icons';
 
 /* ------------------------------------------------------------------ */
 /*  Shared helpers                                                     */
@@ -167,101 +159,17 @@ function ProjectsView({ projects, dispatch }: {
 /*  Plugins sub-component                                              */
 /* ------------------------------------------------------------------ */
 
-/* Strip LobeHub's default 1em sizing / inline style / xmlns / <title>
-   so every connector mark uses our viewBox + currentColor contract. */
-function lobehubIcon(raw: string): string {
-  return String(raw || '')
-    .replace(/<title>[\s\S]*?<\/title>/i, '')
-    .replace(/\s(?:width|height)="1em"/gi, '')
-    .replace(/\sstyle="[^"]*"/i, '')
-    .replace(/\sxmlns="[^"]*"/i, '')
-    .replace(/<svg /i, '<svg aria-hidden="true" ');
-}
-
-/* Real brand-asset URLs for every connector.
-   icon.horse is a free CDN that returns the live favicon for any domain.
-   SimpleIcons covers the two cases where icon.horse returned a generic
-   site default instead of the brand mark. */
-const _IMAGE_URLS: Record<string, string> = {
-  github: 'https://icon.horse/icon/github.com',
-  notion: 'https://icon.horse/icon/notion.so',
-  gitee: 'https://icon.horse/icon/gitee.com',
-  baiducloud: 'https://icon.horse/icon/baidu.com',
-  gmail: 'https://icon.horse/icon/mail.google.com',
-  googledrive: 'https://icon.horse/icon/drive.google.com',
-  googlecalendar: 'https://cdn.simpleicons.org/googlecalendar',
-  todoist: 'https://icon.horse/icon/todoist.com',
-  ticktick: 'https://icon.horse/icon/ticktick.com',
-  discord: 'https://icon.horse/icon/discord.com',
-  gitlab: 'https://icon.horse/icon/gitlab.com',
-  arxiv: 'https://icon.horse/icon/arxiv.org',
-  zotero: 'https://icon.horse/icon/zotero.org',
-  onedrive: 'https://raw.githubusercontent.com/gilbarbara/logos/master/logos/microsoft-onedrive.svg',
-  outlook: 'https://icon.horse/icon/outlook.live.com',
-  feishu: 'https://icon.horse/icon/feishu.cn',
-  tencentdocs: 'https://icon.horse/icon/docs.qq.com',
-  qqmail: 'https://icon.horse/icon/mail.qq.com',
-};
-
-/* LobeHub brand SVGs as the offline fallback for the six connectors
-   whose assets they ship. */
-const _OFFLINE_SVG: Record<string, string> = {
-  github: lobehubIcon(githubRaw),
-  notion: lobehubIcon(notionRaw),
-  gitee: lobehubIcon(giteeRaw),
-  baiducloud: lobehubIcon(baiduCloudRaw),
-  tencent: lobehubIcon(tencentRaw),
-  microsoft: lobehubIcon(microsoftRaw),
-  /* LobeHub ships a single "google" mark; reuse it for the Google-suite
-     connectors so the offline test path always sees an <svg>, not a
-     two-letter <span> fallback. */
-  gmail: lobehubIcon(googleRaw),
-  googledrive: lobehubIcon(googleRaw),
-};
-
-function normalise(key: string): string {
-  return key.toLowerCase().replace(/[_-]/g, '');
-}
-
-function resolveLogo(id: string, name: string): string | null {
-  return _IMAGE_URLS[normalise(id)] || _IMAGE_URLS[normalise(name)] || null;
-}
-
-function fallbackMark(name: string): React.ReactNode {
-  return <span aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>;
-}
-
+/* Every connector renders a bundled real brand mark from
+   src/connector-icons.ts — no remote favicon/image CDNs. Unknown ids fall
+   back to a two-letter monogram. */
 function ConnectorMark({ id, name }: { id: string; name: string }) {
-  const offlineSvg = _OFFLINE_SVG[normalise(id)] || _OFFLINE_SVG[normalise(name)];
-  /* Prefer bundled brand assets whenever available. This keeps the icon
-     visible while an external favicon CDN is slow or unavailable, and makes
-     the connector catalog usable offline. */
-  if (offlineSvg) return <span dangerouslySetInnerHTML={{ __html: offlineSvg }} />;
-
-  const url = resolveLogo(id, name);
-  if (url) {
-    return (
-      <>
-        <img
-          className="connector-logo"
-          src={url}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={(e) => {
-            const img = e.currentTarget;
-            img.style.display = 'none';
-            const sib = img.nextElementSibling as HTMLElement | null;
-            if (sib) sib.style.display = 'flex';
-          }}
-        />
-        <span className="connector-logo-fallback" style={{ display: 'none' }} aria-hidden="true">
-          {name.slice(0, 2).toUpperCase()}
-        </span>
-      </>
-    );
-  }
-  return fallbackMark(name);
+  const markup = getConnectorIconMarkup(id) || getConnectorIconMarkup(name);
+  if (markup) return <span dangerouslySetInnerHTML={{ __html: markup }} />;
+  return (
+    <span className="connector-logo-fallback" aria-hidden="true">
+      {name.slice(0, 2).toUpperCase()}
+    </span>
+  );
 }
 
 type WorkspacePlugin = {
