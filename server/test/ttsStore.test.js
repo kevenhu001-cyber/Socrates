@@ -110,6 +110,15 @@ before(async () => {
 });
 
 after(async () => {
+  /* The cleanupDb → codeInterpreter → pubsub import chain opens a
+     long-lived PG LISTEN client at import time (see pubsub.ts). It
+     keeps the event loop alive, so the suite passes and then hangs
+     until the runner's timeout kills it unless we shut it down —
+     same teardown as test/codeInterpreter.test.js. */
+  try {
+    const { shutdownPubsub } = await import('../src/lib/pubsub.js');
+    await shutdownPubsub();
+  } catch (_) { /* best effort */ }
   if (!dbAvailable) return;
   try {
     const db = getDb();
@@ -226,12 +235,13 @@ describe('ttsStore.invalidateForMessage — stale-on-edit eviction', () => {
       ttsTextHash('diff'), Buffer.from('different-shape'), 'audio/mpeg',
     );
     /* After the message is edited, the tts helper will compute
-       ttsTextHash(newText). We pass 'same' so the first row stays. */
+       ttsTextHash(newText). We pass 'same' so the first (en) row stays
+       and the stale (zh) row is evicted. */
     await invalidateForMessage(TEST_MESSAGE_ID, ttsTextHash('same'));
     const rows = await db.select().from(ttsResults)
       .where(eq(ttsResults.messageId, TEST_MESSAGE_ID));
     assert.equal(rows.length, 1, 'only the matching-text row survives');
-    assert.equal(rows[0].lang, 'zh', 'the non-matching row was dropped');
+    assert.equal(rows[0].lang, 'en', 'the stale row was dropped, the matching row survives');
   });
 });
 
@@ -242,6 +252,13 @@ describe('cleanupDb.runExpiredCleanup — tts_results retention sweep', () => {
     if (!dbAvailable) return t.skip();
     const db = getDb();
 
+    /* Start from a clean slate: earlier suites leave (message, voice,
+       format, lang) rows behind, and the unique index on that tuple
+       would turn the backdated plain insert below into a conflict.
+       Use a distinct tuple for the ancient row so it coexists with
+       the fresh row until the sweep runs. */
+    await db.delete(ttsResults).where(eq(ttsResults.messageId, TEST_MESSAGE_ID));
+
     /* Backdate one row so the sweep sees it as expired. The
        default retention is 30 days, so 60 days back is well past
        the cutoff. We bypass saveTtsResult for the seeded row
@@ -249,9 +266,9 @@ describe('cleanupDb.runExpiredCleanup — tts_results retention sweep', () => {
     const audio = Buffer.from('ancient-audio');
     const [{ id: ancientId }] = await db.insert(ttsResults).values({
       messageId: TEST_MESSAGE_ID,
-      voice: 'alloy',
+      voice: 'echo',
       format: 'mp3',
-      lang: 'en',
+      lang: 'zh',
       textHash: ttsTextHash('ancient'),
       audio,
       contentType: 'audio/mpeg',

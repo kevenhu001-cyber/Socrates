@@ -11,13 +11,15 @@
  */
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomBytes, randomUUID } from 'node:crypto';
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import { eq } from 'drizzle-orm';
 
 import suggestionsRouter, { __test } from '../src/routes/suggestions.js';
 import { requireAuth } from '../src/middleware/auth.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { sessions as sessionsTable, users as usersTable } from '../src/db/schema.js';
+import { authSessions as authSessionsTable, sessions as sessionsTable, users as usersTable } from '../src/db/schema.js';
 import { listen, httpRequest } from './_http.js';
 
 const t = __test;
@@ -127,32 +129,43 @@ describe('suggestions fallback starters', () => {
 
 /* DB-backed integration suite: requires DATABASE_URL. Skipped otherwise
    to keep the suite hermetic. Verifies the route returns fallback for
-   no-history users and serves two suggestions for users with history
-   (the AI path is short-circuited in tests by mocking the LLM layer). */
+   no-history users and serves two suggestions for users with history.
+   The history test hits the live provider when one is configured, so
+   it accepts every documented source label — only the two-chip
+   contract and (via invalidate) a fresh recompute are asserted. */
 describe('suggestions route (DB-backed)', () => {
   let testUser = null;
+  let testSid = null;
   let server = null;
   let app = null;
 
   before(async () => {
     if (!process.env.DATABASE_URL) return;
-    await initDb();
+    await initDb(process.env.DATABASE_URL);
     const db = getDb();
-    const id = 'test-suggestions-' + Math.random().toString(36).slice(2, 10);
+    /* users.id is a uuid PK — a random string trips PG's uuid parser,
+       and the display-name column is `displayName` (display_name),
+       not `name` (silently dropped by drizzle). */
+    const id = randomUUID();
     const [u] = await db.insert(usersTable).values({
       id,
       email: id + '@socrates.test',
-      name: 'Suggestions Test',
+      displayName: 'Suggestions Test',
       tier: 'free',
       passwordHash: 'x',
     }).returning();
     testUser = u;
-    app = express();
-    app.use((req, _res, next) => {
-      req.userId = testUser.id;
-      req.user = testUser;
-      next();
+    /* The router applies the real requireAuth (sid cookie → session
+       lookup), so a stub req.userId middleware cannot authenticate:
+       mint a real session following the oauthFlow.test.js pattern. */
+    testSid = randomBytes(32).toString('hex');
+    await db.insert(authSessionsTable).values({
+      token: testSid,
+      userId: testUser.id,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
     });
+    app = express();
+    app.use(cookieParser());
     app.use('/api/suggestions', suggestionsRouter);
     server = await listen(app);
   });
@@ -163,6 +176,7 @@ describe('suggestions route (DB-backed)', () => {
       try {
         const db = getDb();
         await db.delete(sessionsTable).where(eq(sessionsTable.userId, testUser.id));
+        await db.delete(authSessionsTable).where(eq(authSessionsTable.userId, testUser.id));
         await db.delete(usersTable).where(eq(usersTable.id, testUser.id));
       } catch (_) { /* ignore */ }
     }
@@ -171,7 +185,7 @@ describe('suggestions route (DB-backed)', () => {
 
   test('returns fallback for user with no history', async () => {
     if (!process.env.DATABASE_URL || !server) return;
-    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: 'irrelevant' } });
+    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: testSid } });
     assert.equal(r.status, 200);
     assert.equal(r.body.suggestions.length, 2);
     assert.equal(r.body.source, 'fallback-empty');
@@ -190,14 +204,26 @@ describe('suggestions route (DB-backed)', () => {
         phase: 'chat',
       });
     }
-    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en');
+    /* The previous test cached this user's (empty-history) result for
+       30 minutes. Bust it through the test-only invalidate endpoint
+       so this request recomputes from the seeded history. */
+    const inv = await httpRequest(server.url + '/api/suggestions/starters/invalidate', {
+      method: 'POST',
+      cookies: { sid: testSid },
+    });
+    assert.equal(inv.status, 200);
+    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: testSid } });
     assert.equal(r.status, 200);
     assert.equal(r.body.suggestions.length, 2);
-    /* source is either 'ai' (when the provider call succeeds) or
-       'fallback-no-provider' (when no API key is configured in the
-       test environment). Both paths must return two suggestions. */
+    /* Any live-provider outcome is acceptable: 'ai' on good output,
+       'fallback-no-provider' when no key is configured, and the
+       'fallback-*' family when the call fails or the model returns
+       something unshapable (temperature 0.8 makes the latter
+       nondeterministic — the route still owes the UI two chips).
+       'cache' is rejected on purpose: the invalidate call above
+       guarantees this request recomputes from the seeded history. */
     assert.ok(
-      ['ai', 'fallback-no-provider', 'fallback-error'].includes(r.body.source),
+      ['ai', 'fallback-no-provider', 'fallback-error', 'fallback-bad-output', 'fallback-shape-empty'].includes(r.body.source),
       `unexpected source: ${r.body.source}`,
     );
   });

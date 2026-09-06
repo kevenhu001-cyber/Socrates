@@ -75,9 +75,10 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
       toolbarHeight: Math.round(toolbar?.getBoundingClientRect().height || 0),
     };
   });
-  /* The canonical reading column is 768px; CSS preserves the calc() token
-     so the user width scale can adjust it without another test rewrite. */
-  expect(messageLayout.contentMax).toContain('768px');
+  /* The workbench shell token is 1024px (the ChatGPT-like visual layer
+     widened --workbench-content-max); the conversation transcript keeps
+     its own 768px reading column, which rowWidth pins just below. */
+  expect(messageLayout.contentMax).toContain('1024px');
   expect(messageLayout.rowWidth).toBeLessThanOrEqual(822);
   expect(messageLayout.userWidth).toBeLessThan(messageLayout.rowWidth);
   expect(Math.abs(messageLayout.userRightGap)).toBeLessThanOrEqual(1);
@@ -130,11 +131,13 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* Conversation and landing now share the same compact desktop shell. */
-  expect(composed.wrapRadius).toBe(28);
+  /* A grown (multiline) composer uses the 24px two-tier radius; the 34px
+     pill applies only to the idle single-line shell. The control sizes
+     (36px send, 42px attach) are state-independent in the current layer. */
+  expect(composed.wrapRadius).toBe(24);
   expect(composed.wrapBorder).not.toBe('0px');
-  expect(composed.sendSize).toBe(30);
-  expect(composed.attachSize).toBe(44);
+  expect(composed.sendSize).toBe(36);
+  expect(composed.attachSize).toBe(42);
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
@@ -224,7 +227,12 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(shapeTransitions.filter((expanded) => expanded).length).toBe(1);
   expect(shapeTransitions.at(-1)).toBe(true);
 
-  await editor.fill('Send this single line');
+  /* The collapse check measures at the *collapsed* row width (the shape
+     controller deliberately does, to avoid an expand/collapse loop near
+     the wrap boundary), so the probe string must fit one collapsed line:
+     at the 390px reference width a ~21-char draft still wraps and the
+     shell correctly stays expanded. */
+  await editor.fill('Send one line');
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.waitForTimeout(360);
   await editor.press('Enter');

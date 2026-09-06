@@ -7,14 +7,23 @@
  */
 
 :root {
-  --cg-font: Inter, "Noto Sans SC", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+  /* Latin sans order follows the design system (src/styles.css):
+     Plus Jakarta Sans is the primary western face, Inter the fallback.
+     An Inter-first stack here silently demoted the bundled brand face
+     across every surface this layer owns (caught by
+     placeholder-localization.spec). */
+  --cg-font: "Plus Jakarta Sans", Inter, "Noto Sans SC", "PingFang SC", "Segoe UI", system-ui, sans-serif;
   --cg-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --cg-radius-sm: 8px;
   --cg-radius-md: 14px;
   --cg-radius-lg: 22px;
   --cg-radius-pill: 999px;
   --cg-sidebar-width: 240px;
-  --cg-content-width: 1024px;
+  /* The user-facing display-width preference (--app-width-scale, set by
+     src/displayPrefs.js) must flow into every content token. The legacy
+     layer scaled these widths; dropping the factor here silently froze
+     the "content width" setting (caught by home-customization.spec). */
+  --cg-content-width: calc(1024px * var(--app-width-scale, 1));
 }
 
 [data-mode="dark"] {
@@ -70,8 +79,8 @@ body,
 
 #appShell {
   --app-sidebar-width: var(--cg-sidebar-width);
-  --conversation-content-width: min(768px, calc(100vw - var(--cg-sidebar-width) - 48px));
-  --conversation-composer-width: min(768px, calc(100vw - var(--cg-sidebar-width) - 48px));
+  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--cg-sidebar-width) - 48px));
+  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--cg-sidebar-width) - 48px));
   --workbench-content-max: var(--cg-content-width);
 }
 
@@ -392,8 +401,11 @@ body,
 #appShell #topicInputWrap:not(.voice-recording-active),
 #appShell #chatInputWrap:not(.voice-recording-active) {
   box-sizing: border-box;
-  width: min(100%, 768px) !important;
-  max-width: 768px !important;
+  /* Width follows the scale-aware reading-column token (fixed 768px here
+     froze the display-width preference; see --conversation-composer-width
+     and home-customization.spec). */
+  width: min(100%, var(--conversation-composer-width)) !important;
+  max-width: var(--conversation-composer-width) !important;
   min-height: 68px;
   border: 1px solid var(--cg-border-strong) !important;
   border-radius: 34px !important;
@@ -2207,7 +2219,11 @@ body.workspace-active #appShell .workspace-row:hover {
       (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
 
 #appShell .topic-title.greeting {
-  font-size: clamp(34px, 3vw, 44px) !important;
+  /* The display-width/type scale still applies: the clamp sets the
+     reference size, --app-font-scale carries the user's text-size
+     preference (dropping it froze the greeting under display settings,
+     caught by home-customization.spec). */
+  font-size: calc(clamp(34px, 3vw, 44px) * var(--app-font-scale, 1)) !important;
   font-weight: 600 !important;
   letter-spacing: -.025em !important;
 }

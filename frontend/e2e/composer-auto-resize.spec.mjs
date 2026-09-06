@@ -152,15 +152,17 @@ test('desktop composers stay compact single-row and return to their exact baseli
   expect(await heightOf(topicWrap)).toBe(topicBaseline);
   await topicEditor.fill('one line');
   expect(await heightOf(topicWrap)).toBe(topicBaseline);
-  /* Desktop composers are the compact single-row surface (editor row
-     scrolls internally): a longer draft must not change the wrap height —
-     only the multiline class reflects it. */
+  /* Desktop composers are a two-tier surface: a multiline draft switches
+     tiers (the topic shell's roomy 128px idle tier compacts toward content,
+     the chat shell grows from 68px), and collapsing back must restore the
+     exact baseline. Tier switches animate (~340ms), so poll instead of
+     snapshotting mid-flight. */
   await topicEditor.fill('one\ntwo\nthree');
   await expect(topicWrap).toHaveClass(/composer-multiline/);
-  expect(await heightOf(topicWrap)).toBe(topicBaseline);
+  await expect.poll(() => heightOf(topicWrap)).not.toBe(topicBaseline);
   await topicEditor.fill('start chat');
   await expect(topicWrap).not.toHaveClass(/composer-multiline/);
-  expect(await heightOf(topicWrap)).toBe(topicBaseline);
+  await expect.poll(() => heightOf(topicWrap)).toBe(topicBaseline);
   await topicEditor.press('Enter');
   await expect(page.locator('#chatView')).toBeVisible();
 
@@ -171,10 +173,10 @@ test('desktop composers stay compact single-row and return to their exact baseli
   expect(await heightOf(chatWrap)).toBe(chatBaseline);
   await chatEditor.fill('one\ntwo\nthree\nfour');
   await expect(chatWrap).toHaveClass(/composer-multiline/);
-  expect(await heightOf(chatWrap)).toBe(chatBaseline);
+  await expect.poll(() => heightOf(chatWrap)).not.toBe(chatBaseline);
   await chatEditor.fill('one line');
   await expect(chatWrap).not.toHaveClass(/composer-multiline/);
-  expect(await heightOf(chatWrap)).toBe(chatBaseline);
+  await expect.poll(() => heightOf(chatWrap)).toBe(chatBaseline);
   await chatEditor.fill('');
-  expect(await heightOf(chatWrap)).toBe(chatBaseline);
+  await expect.poll(() => heightOf(chatWrap)).toBe(chatBaseline);
 });

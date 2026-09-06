@@ -112,12 +112,13 @@ test('chat-input-wrap transitions cover focus feedback without geometry animatio
   });
   console.log('[transition]', JSON.stringify(t));
   /* The composer is in the flex flow: focus never changes its geometry, so
-     only the edge/surface feedback (border-color, background-color) may
-     transition — a geometry transition would animate the reveal of the
-     hidden chat shell out of its legacy one-row state. */
+     only the edge/surface feedback (border-color, the box-shadow focus
+     ring, background-color) may transition — a geometry transition would
+     animate the reveal of the hidden chat shell out of its legacy one-row
+     state. box-shadow is paint-only (no layout), so the ring may fade. */
   for (const prop of ['border-color', 'background-color']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
-  expect(t.property, 'no geometry property may transition').not.toMatch(/min-height|padding|border-radius|box-shadow/);
-  expect(t.duration).toContain('0.15s');
+  expect(t.property, 'no geometry property may transition').not.toMatch(/min-height|padding|border-radius/);
+  expect(t.duration).toContain('0.18s');
 });
