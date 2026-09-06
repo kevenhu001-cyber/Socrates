@@ -15,7 +15,7 @@
 export const DARK_PAGE_BACKGROUND = '#101318';
 
 /** Light mode page background; matches lightPalette.bg.page in tokens.ts. */
-export const LIGHT_PAGE_BACKGROUND = '#e6dec8';
+export const LIGHT_PAGE_BACKGROUND = '#ffffff';
 
 /** Default fallback for the dark-mode user picker. */
 export const DEFAULT_DARK_PICKER = '#212121';

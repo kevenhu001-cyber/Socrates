@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="socrates" data-mode="dark">
 <head>
 <meta charset="UTF-8">
@@ -17,7 +17,7 @@
    palette during a reload. `data-mode` remains the effective mode;
    `data-theme-preference` records whether it is user-selected or
    inherited from the OS. The pre-paint color is sourced from the
-   shared design-token module so the legacy `#e6dec8` / `#101318`
+   shared design-token module so the `#ffffff` / `#101318`
    literals stay in one place. The bundle is an ES module and is not
    loaded yet at this point, so the values are inlined as a tiny
    function-style lookup that mirrors `resolveBackground()`. */
@@ -43,7 +43,7 @@
        frame is not white. The bundled CSS overrides this once it loads.
        The two values mirror `resolveBackground()` in src/ui/tokens.ts;
        the JS adapter in src/ui/tokens.js exports the same strings. */
-    document.documentElement.style.backgroundColor = initialMode === "light" ? '#e6dec8' : '#101318';
+    document.documentElement.style.backgroundColor = initialMode === "light" ? '#ffffff' : '#101318';
   }
 })();
 </script>
@@ -81,6 +81,7 @@
 </script>
 <link rel="stylesheet" href="/src/styles/index.css">
 <link rel="stylesheet" href="/src/styles/chatgpt-ui.css">
+<link rel="stylesheet" href="/src/styles/chatgpt-v2.css">
 </head>
 <body>
 
@@ -330,6 +331,10 @@
       <button type="button" class="sidebar-nav-btn" data-nav="skills" id="navSkills">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>
         <span data-i18n-key="sidebar.more.skills">Skills &amp; shortcuts</span>
+      </button>
+      <button type="button" class="sidebar-nav-btn" data-nav="more" id="navMore">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+        <span data-i18n-key="sidebar.nav.more">更多</span>
       </button>
     </nav>
     <!-- Unified sidebar search + view switch. The search box filters the
@@ -628,23 +633,6 @@
           </div>
         </div>
 
-        <!-- Kimi-style quick capability chips. Rendered at runtime by
-             src/ui/quickChips.js: each chip deep-links into an existing
-             surface (exam, scheduled, projects, plugins, library) via
-             sidebar/nav.js openers. Empty in markup so the row appears
-             only where the module is loaded. -->
-        <div class="topic-quick-actions" id="topicQuickActions" aria-label="Quick actions"></div>
-
-        <!-- P_cowork-landing — starter ideas. Two chips; each row carries
-             its own line glyph inside a hairline tile. The container is
-             empty in markup: src/ui/suggestions.js fills it at runtime,
-             picking prompts from a built-in library or deriving them from
-             the latest assistant turn. The label still drives the screen-
-             reader announcement via data-i18n-key. -->
-        <div class="home-ideas" aria-label="Ideas for you">
-          <div class="home-ideas-label" data-i18n-key="home.ideasLabel">Ideas for you</div>
-        </div>
-
       </div>
 
       <div class="diagnostic-view hidden tutor-only" id="diagnosticView"></div>
@@ -659,30 +647,41 @@
 
     <!-- Main-content pages for Library, Projects, Scheduled, Plugins -->
     <div class="library-panel main-page hidden" id="libraryPanel">
-      <div class="library-header">
-        <span class="library-title" data-i18n-key="sidebar.library.title">Library</span>
-        <div class="workspace-header-actions">
-          <span class="library-count" id="libraryCount"></span>
-          <button type="button" class="workspace-add-btn" title="Upload to Library" aria-label="Upload to Library">Upload</button>
+      <div class="library-panel-head">
+        <div>
+          <h1 data-i18n-key="sidebar.library.title">Library</h1>
+          <p>你添加或创建的文件与内容。</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="spaces-panel-new library-panel-upload" aria-label="Upload">上传</button>
         </div>
       </div>
-      <div class="library-tabs">
-        <button type="button" class="library-tab active" data-library-tab="files" data-i18n-key="sidebar.library.files">Uploaded</button>
-        <button type="button" class="library-tab" data-library-tab="artifacts" data-i18n-key="sidebar.library.artifacts">Created</button>
-      </div>
-      <div class="workspace-search"><input id="librarySearch" type="search" placeholder="Search your library" aria-label="Search your library"></div>
       <div class="library-list" id="libraryList">
-        <div class="library-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
+        <div class="spaces-empty" data-i18n-key="sidebar.library.empty">No files yet. Upload files in a chat to see them here.</div>
       </div>
       <input type="file" id="libraryUploadInput" multiple hidden>
     </div>
     <div class="spaces-panel main-page hidden" id="spacesPanel">
-      <div class="spaces-header">
-        <span class="spaces-title" data-i18n-key="sidebar.spaces.title">Projects</span>
-        <button type="button" class="workspace-add-btn" title="Create project" aria-label="Create project">New</button>
+      <div class="spaces-panel-head">
+        <div>
+          <h1 data-i18n-key="sidebar.spaces.title">项目</h1>
+          <p>将相关对话、文件和指令整理在一起。</p>
+        </div>
+        <div class="actions">
+          <input type="search" class="spaces-panel-search" placeholder="搜索项目" aria-label="搜索项目" />
+          <button type="button" class="spaces-panel-new" aria-label="新建项目">新建</button>
+        </div>
       </div>
-      <p class="workspace-intro">Keep chats, files, and instructions together.</p>
+      <div class="spaces-panel-filters" role="tablist" aria-label="项目过滤">
+        <button type="button" class="active" data-filter="all">全部</button>
+        <button type="button" data-filter="owned">由你创建</button>
+        <button type="button" data-filter="shared">与你共享</button>
+      </div>
       <div class="spaces-list" id="spacesList">
+        <div class="spaces-list-header">
+          <div>名称</div>
+          <div>修改时间</div>
+        </div>
         <div class="spaces-empty" data-i18n-key="sidebar.spaces.empty">No projects yet. Create a project to organize your sessions.</div>
       </div>
     </div>
@@ -697,14 +696,94 @@
       </div>
     </div>
     <div class="plugins-panel main-page hidden" id="pluginsPanel">
-      <div class="plugins-header">
-        <span class="plugins-title">Plugin Center</span>
-        <button type="button" class="workspace-add-btn">Refresh</button>
+      <div class="plugins-panel-tabs">
+        <div class="pill" role="tablist" aria-label="插件视图">
+          <button type="button" class="active" data-tab="plugins">插件</button>
+          <button type="button" data-tab="skills">技能</button>
+        </div>
       </div>
-      <p class="workspace-intro">Connect tools and data sources for use in chat.</p>
-      <div class="plugins-list" id="pluginsList">
-        <div class="plugins-empty" data-i18n-key="sidebar.plugins.empty">No plugins installed. Browse the marketplace to find extensions.</div>
+      <div class="plugins-panel-head">
+        <div>
+          <h1>插件</h1>
+          <p>在你常用的工具中与 Socrates 协作。</p>
+        </div>
+        <div class="actions">
+          <input type="search" class="plugins-panel-search" placeholder="搜索插件" aria-label="搜索插件" />
+          <button type="button" class="plugins-panel-add" aria-label="添加插件">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
       </div>
+      <section class="plugins-installed">
+        <div class="plugins-installed-label">已安装</div>
+        <div class="plugins-installed-icons">
+          <span class="installed-icon" style="background:#5f33c1">P</span>
+          <span class="installed-icon" style="background:#2a8eef">D</span>
+          <span class="installed-icon" style="background:#c0392b">G</span>
+          <span class="installed-icon" style="background:#f0c419">N</span>
+          <span class="installed-icon" style="background:#4f9d69">S</span>
+          <span class="installed-icon" style="background:#9b59b6">Z</span>
+          <span class="installed-icon" style="background:#0aa4ad">F</span>
+          <span class="installed-icon" style="background:#1d1d1d">⌘</span>
+          <span class="installed-icon add" aria-label="添加更多">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </span>
+        </div>
+      </section>
+      <div class="plugins-scope-tabs" role="tablist" aria-label="来源">
+        <button type="button" class="active" data-scope="public">公开</button>
+        <button type="button" data-scope="personal">个人</button>
+      </div>
+      <h2 class="plugins-section-title">热门</h2>
+      <div class="plugins-cards">
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:linear-gradient(135deg,#ea4335,#fbbc05,#34a853,#4285f4)">M</span>
+          <span class="copy"><strong>Gmail</strong><small>Read and manage Gmail</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:#1d1d1d">⌘</span>
+          <span class="copy"><strong>GitHub</strong><small>Triage PRs, issues, CI, and publish flows</small></span>
+          <span class="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></span>
+        </button>
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:linear-gradient(135deg,#34a853,#fbbc05,#4285f4)">▲</span>
+          <span class="copy"><strong>Google Drive</strong><small>Drive, Docs, Sheets or Slides</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:linear-gradient(135deg,#36c5f0,#e01e5b,#2eb67d,#ecb22e)">#</span>
+          <span class="copy"><strong>Slack</strong><small>Read and manage Slack</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:#0078d4">O</span>
+          <span class="copy"><strong>Outlook Email</strong><small>Triage Outlook inboxes</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:linear-gradient(135deg,#00c4cc,#7d2ae8)">C</span>
+          <span class="copy"><strong>Canva</strong><small>Create, review, edit designs</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+      </div>
+      <h2 class="plugins-section-title">新品推荐</h2>
+      <div class="plugins-cards">
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:linear-gradient(135deg,#1e88e5,#26c6da)">+</span>
+          <span class="copy"><strong>Healthcare Public Data</strong><small>Search official public healthcare sources</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+        <button type="button" class="plugins-card">
+          <span class="glyph" style="background:linear-gradient(135deg,#7c4dff,#7e57c2)">D</span>
+          <span class="copy"><strong>Datadog (Preview)</strong><small>Search and act on your data</small></span>
+          <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        </button>
+      </div>
+      <!-- Backwards-compatible hook for the legacy React mount: leave the
+           original id intact but visually hidden so the workspace bridge
+           can still target it without showing legacy chrome. -->
+      <div class="plugins-list visually-hidden" id="pluginsList"></div>
     </div>
     <!-- Admin operator console (/admin). The React AdminPage mounts
          into #adminPanelBody when the route is active; the login form
@@ -749,13 +828,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         </div>
-        <!-- P_chat-suggestions — Two follow-up suggestion chips above the
-             in-session composer. src/ui/suggestions.js fills this container
-             at runtime so the chips follow the conversation and the UI
-             language. Empty in markup so the first paint of the chat view
-             doesn't show a stale hardcoded suggestion before the engine
-             commits its first render. -->
-        <div class="chat-suggestions" aria-label="Follow-up suggestions"></div>
         <div class="chat-input-bar" id="chatInputBar">
           <!-- P_pill-anchor-composer — moved inside chat-input-bar so the
                pill anchors to the composer's top edge instead of
@@ -825,6 +897,7 @@
 
 <script type="module" src="/src/main.js"></script>
 <script type="module" src="/src/tutorSocratic.js"></script>
+<script type="module" src="/src/ui/workspace-reference-ui.js"></script>
 
 <!-- Settings Modal -->
 <!-- P1.2 — global search modal. Toggled by `Cmd/Ctrl+K` (and

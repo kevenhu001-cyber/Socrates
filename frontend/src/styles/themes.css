@@ -58,23 +58,23 @@
   --ui-accent-surface: 43 40% 90%;
   --ui-on-accent: 0 0% 100%;
 
-  --ui-bg-page: #e6dec8;
-  --ui-bg-raised: 40 25% 96%;
-  --ui-bg-overlay: 38 20% 92%;
-  --ui-bg-hover: 36 15% 87%;
-  --ui-bg-sunken: 42 33% 98%;
+  --ui-bg-page: #ffffff;
+  --ui-bg-raised: 0 0% 98%;
+  --ui-bg-overlay: 0 0% 95%;
+  --ui-bg-hover: 0 0% 91%;
+  --ui-bg-sunken: 0 0% 100%;
 
-  --ui-text-primary: 36 12% 10%;
-  --ui-text-secondary: 34 8% 28%;
-  --ui-text-tertiary: 34 7% 35%;
-  --ui-text-muted: 34 6% 43%;
-  --ui-text-disabled: 34 5% 50%;
+  --ui-text-primary: 0 0% 8%;
+  --ui-text-secondary: 0 0% 27%;
+  --ui-text-tertiary: 0 0% 36%;
+  --ui-text-muted: 0 0% 44%;
+  --ui-text-disabled: 0 0% 52%;
 
-  --ui-border-subtle: 38 12% 86%;
-  --ui-border-default: 36 10% 78%;
-  --ui-border-strong: 36 9% 72%;
+  --ui-border-subtle: 0 0% 90%;
+  --ui-border-default: 0 0% 84%;
+  --ui-border-strong: 0 0% 76%;
 
   --ui-danger: 0 60% 45%;
   --ui-success: 142 50% 35%;
-  --ui-muted: 34 5% 50%;
+  --ui-muted: 0 0% 50%;
 }

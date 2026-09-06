@@ -22,12 +22,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   const composer = page.locator('#topicInputWrap');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
 
-  /* The landing surface keeps two lightweight suggestions directly above
-     the bottom composer. Chat follow-ups live in a separate container and
-     must not be counted as landing ideas. */
+  /* The landing surface intentionally has no hardcoded prompt suggestions. */
   await expect(page.locator('.mobile-starter-prompt')).toHaveCount(0);
-  await expect(page.locator('.home-ideas .home-idea')).toHaveCount(2);
-  await expect(page.locator('.home-ideas .home-idea:visible')).toHaveCount(2);
+  await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   await expect(leftButton).toBeVisible();
   await expect(modeTabs).toBeVisible();
   await expect(modeSwitch).toBeHidden();
@@ -44,7 +41,6 @@ test('mobile conversation home matches the compact dark reference layout', async
       modeTabs: rect('#modeSegmentedTop'),
       composer: rect('#topicInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
-      ideas: rect('.home-ideas'),
       /* .main is a transparent layout box; the painted surface is
          .main-content (the shell's page colour). The dark workbench uses
          the same pure-black page treatment as the reference. */
@@ -61,8 +57,6 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   expect(geometry.composer?.height).toBe(62);
   expect(geometry.topicFontSize).toBe(18);
-  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(geometry.composer?.y ?? 0);
-  expect(geometry.ideas?.bottom).toBeLessThanOrEqual(820);
   expect(geometry.composer?.y).toBeGreaterThan(600);
   expect(geometry.composer?.y).toBeLessThan(820);
   expect(geometry.background).toBe('rgb(0, 0, 0)');
