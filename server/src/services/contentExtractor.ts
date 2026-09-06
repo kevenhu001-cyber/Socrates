@@ -87,25 +87,68 @@ class WorkerSlot {
     });
     this.worker = w;
     w.on('exit', (code) => {
-      this.worker = null;
-      this.busy = false;
-      if (this._inflightReject) {
+      /* Capture-site guard: only touch slot state if THIS worker is
+         still the active one. terminate() schedules the OLD worker's
+         exit asynchronously; if _reapDeadSlots() has already swapped
+         in a NEW worker (this.worker !== w), the OLD exit handler
+         must NOT clobber busy/_nextRelease/_inflightReject — those
+         belong to whatever runOne() is currently using the slot.
+
+         Without this guard the exit handler can:
+           1. set this.worker = null while a fresh worker is live →
+              the next tryClaim returns false (worker missing) and
+              the slot wedges forever.
+           2. set busy=false while a NEW runOne is mid-flight →
+              a third caller double-claims the slot and two runOnes
+              race on the same worker.
+           3. resolve _nextRelease / _inflightReject from a different
+              call's closure → the active call's promise resolves
+              with the wrong value and the next claimer wakes on a
+              stale chain.
+
+         Reproduces ~50% of the time on Node 20 (microtask timing
+         between terminate() and _reapDeadSlots() differs from Node
+         22), manifesting as fetchBatch.test.js ETIMEDOUT. */
+      const isCurrentWorker = this.worker === w;
+      if (isCurrentWorker) {
+        this.worker = null;
+        this.busy = false;
+        // An unexpected worker exit must be reaped and replaced. Otherwise
+        // the next queued caller can spin forever on a missing worker.
+        this.terminated = true;
+      }
+      if (isCurrentWorker && this._inflightReject) {
         const r = this._inflightReject;
         this._inflightReject = null;
         r(new Error('content_extractor_worker_exited: code=' + code));
       }
       if (code !== 0) this.failedBoots++;
-      if (this._nextRelease) {
+      if (isCurrentWorker && this._nextRelease) {
         const r = this._nextRelease;
         this._nextRelease = null;
         r();
       }
     });
     w.on('error', (err) => {
+      // The old worker may emit its error after terminate() has already
+      // installed a replacement in this slot. Never reject that new run.
+      if (this.worker !== w) return;
+      // Node emits `error` before `exit` for an uncaught worker failure.
+      // Clear the slot synchronously so a caller awakened by the rejection
+      // cannot re-spawn while the slot still looks busy and then get stuck
+      // behind the old worker's later exit event.
+      this.worker = null;
+      this.busy = false;
+      this.terminated = true;
       if (this._inflightReject) {
         const r = this._inflightReject;
         this._inflightReject = null;
         r(err);
+      }
+      if (this._nextRelease) {
+        const r = this._nextRelease;
+        this._nextRelease = null;
+        r();
       }
     });
   }
@@ -129,6 +172,8 @@ class WorkerSlot {
     }
   }
   release() {
+    // Make the slot observable as free before waking queued claimers.
+    this.busy = false;
     if (this._nextRelease) {
       const r = this._nextRelease;
       this._nextRelease = null;
@@ -140,7 +185,6 @@ class WorkerSlot {
     // returns false even though the chain is resolved — spinning
     // forever. (Found this on 2026-07-04: 3rd concurrent extraction
     // hung because slot 0's release() never reset busy=true.)
-    this.busy = false;
   }
   terminate(): Promise<number> | null {
     this.terminated = true;
@@ -231,6 +275,7 @@ async function runOne(html: string, url: string): Promise<ExtractedArticle | nul
       settled = true;
       clearTimeout(timeoutTimer);
       worker.off('message', onMessage);
+      if (slot._inflightReject) slot._inflightReject = null;
       slot.release();
       resolve(val);
     };
@@ -249,7 +294,6 @@ async function runOne(html: string, url: string): Promise<ExtractedArticle | nul
       clearTimeout(timeoutTimer);
       worker.off('message', onMessage);
       slot.terminated = true;
-      slot.failedBoots++;
       resolve(null);
     };
     const timeoutTimer = setTimeout(() => {
