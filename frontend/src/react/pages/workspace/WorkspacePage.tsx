@@ -14,14 +14,25 @@ function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
-function fileMeta(item: { size?: number; uploadedAt?: string; updatedAt?: string }): string {
+function fileSize(item: { size?: number }): string {
   const size = Number(item.size || 0);
-  const sizeLabel = size
+  return size
     ? size < 1024 * 1024
       ? Math.max(1, Math.round(size / 1024)) + ' KB'
       : (size / (1024 * 1024)).toFixed(1) + ' MB'
     : i18n('library.metaCreated', 'Created');
-  return sizeLabel + (item.uploadedAt || item.updatedAt ? ' · ' + (item.uploadedAt || item.updatedAt) : '');
+}
+
+function SearchIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>;
+}
+
+function PlusIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
+}
+
+function MoreIcon() {
+  return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -61,16 +72,18 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
       <label className="library-checkbox-label" onClick={(e) => e.stopPropagation()}>
         <input type="checkbox" className="library-checkbox" checked={isSelected} onChange={(e) => dispatch.toggleSelect(item.id, e.target.checked)} aria-label={'Select ' + name} />
       </label>
-      <span className="workspace-row-icon" onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
+      <span className={'workspace-row-icon library-file-icon' + (item.kind === 'image' ? ' is-image' : '')} onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <use href={'#icon-' + (item.kind === 'image' ? 'image' : 'file')} />
         </svg>
       </span>
       <div className="workspace-row-copy" onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         {nameEl}
-        <span>{fileMeta(item)}</span>
+        <span className="library-mobile-meta">{item.uploadedAt || item.updatedAt || '—'} · {fileSize(item)}</span>
       </div>
-      {actions}
+      <span className="library-updated">{item.uploadedAt || item.updatedAt || '—'}</span>
+      <span className="library-size">{fileSize(item)}</span>
+      <span className="library-row-actions">{actions}</span>
     </div>
   );
 }
@@ -88,7 +101,26 @@ function LibraryView({ data, dispatch }: {
   const allSelected = items.length > 0 && items.every((item: any) => !!data.selection[item.id]);
 
   return (
-    <>
+    <section className="workspace-surface library-directory" aria-labelledby="library-directory-title">
+      <div className="workspace-page-head">
+        <div>
+          <h1 id="library-directory-title">{i18n('sidebar.library.title', 'Library')}</h1>
+          <p>{i18n('library.directoryDesc', 'Files and items you have added or created.')}</p>
+        </div>
+        <div className="workspace-head-actions">
+          <label className="workspace-search-field">
+            <SearchIcon />
+            <input type="search" value={data.query} onChange={(event) => dispatch.filter(event.target.value)} placeholder={i18n('library.filterPlaceholder', 'Search library')} aria-label={i18n('library.filterPlaceholder', 'Search library')} />
+          </label>
+          <button type="button" className="workspace-create-button" onClick={() => document.getElementById('libraryUploadInput')?.click()}><PlusIcon /><span>{i18n('library.upload', 'Upload')}</span></button>
+        </div>
+      </div>
+      <div className="workspace-toolbar">
+        <div className="workspace-tabs" role="tablist" aria-label={i18n('sidebar.library.title', 'Library')}>
+          <button type="button" role="tab" aria-selected={key === 'files'} className={key === 'files' ? 'active' : ''} onClick={() => dispatch.switchTab('files')}>{i18n('sidebar.library.files', 'Files')}</button>
+          <button type="button" role="tab" aria-selected={key === 'artifacts'} className={key === 'artifacts' ? 'active' : ''} onClick={() => dispatch.switchTab('artifacts')}>{i18n('sidebar.library.artifacts', 'Created')}</button>
+        </div>
+      </div>
       {anySelected && (
         <div className="library-selection-bar visible">
           <label className="library-select-all">
@@ -109,11 +141,14 @@ function LibraryView({ data, dispatch }: {
           )}
         </div>
       ) : (
-        items.map((item: any) => (
-          <LibraryItemRow key={item.id} item={item} itemKey={key} tab={key} selection={data.selection} renameItem={data.renameItem} dispatch={dispatch} />
-        ))
+        <div className="workspace-table">
+          <div className="workspace-table-head"><span>{i18n('library.columnName', 'Name')}</span><span>{i18n('library.columnModified', 'Modified')}</span><span>{i18n('library.columnSize', 'Size')}</span><span /></div>
+          {items.map((item: any) => (
+            <LibraryItemRow key={item.id} item={item} itemKey={key} tab={key} selection={data.selection} renameItem={data.renameItem} dispatch={dispatch} />
+          ))}
+        </div>
       )}
-    </>
+    </section>
   );
 }
 
@@ -125,33 +160,57 @@ function ProjectsView({ projects, dispatch }: {
   projects: ReadonlyArray<{ id: string; name: string; description?: string; color?: string }>;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
+  const [query, setQuery] = useState('');
+  const visibleProjects = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return projects;
+    return projects.filter((project) => [project.name, project.description].filter(Boolean).join(' ').toLowerCase().includes(needle));
+  }, [projects, query]);
+
   if (projects.length === 0) {
     return (
-      <div className="workspace-empty">
-        <strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong>
-        <span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span>
-        <button className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</button>
-      </div>
+      <section className="workspace-surface projects-directory" aria-labelledby="projects-directory-title">
+        <WorkspacePageHeader title={i18n('sidebar.spaces.title', 'Projects')} description={i18n('projects.directoryDesc', 'Keep related chats, files, and instructions together.')} query={query} onQuery={setQuery} actionLabel={i18n('projects.create', 'Create project')} onAction={() => dispatch.createProject()} />
+        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><button className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</button></div>
+      </section>
     );
   }
   return (
-    <>
-      {projects.map((project) => {
+    <section className="workspace-surface projects-directory" aria-labelledby="projects-directory-title">
+      <WorkspacePageHeader title={i18n('sidebar.spaces.title', 'Projects')} description={i18n('projects.directoryDesc', 'Keep related chats, files, and instructions together.')} query={query} onQuery={setQuery} actionLabel={i18n('projects.create', 'Create project')} onAction={() => dispatch.createProject()} />
+      <div className="projects-list">
+      {visibleProjects.map((project) => {
         const color = /^#[0-9a-f]{3,8}$/i.test(project.color || '') ? project.color! : 'hsl(var(--accent-000))';
         return (
           <div className="workspace-row project-row" key={project.id}>
             <button className="project-main" onClick={() => dispatch.openProject(project.id)}>
-              <span className="project-swatch" style={{ background: color }} />
+              <span className="project-icon" style={{ color }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 7.5h6l2-2h9v13h-17z" /></svg></span>
               <span className="workspace-row-copy">
                 <strong>{project.name}</strong>
                 <span>{project.description || ''}</span>
               </span>
             </button>
-            <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}>{i18n('projects.edit', 'Edit')}</button>
+            <button className="workspace-row-action workspace-icon-action" aria-label={i18n('projects.edit', 'Edit')} title={i18n('projects.edit', 'Edit')} onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}><MoreIcon /></button>
           </div>
         );
       })}
-    </>
+      {visibleProjects.length === 0 ? <div className="workspace-empty"><strong>{i18n('projects.noMatch', 'No matching projects')}</strong><span>{i18n('projects.noMatchDesc', 'Try a different search.')}</span></div> : null}
+      </div>
+    </section>
+  );
+}
+
+function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, onAction }: {
+  title: string; description: string; query: string; onQuery: (value: string) => void; actionLabel: string; onAction: () => void;
+}) {
+  return (
+    <div className="workspace-page-head">
+      <div><h1 id="projects-directory-title">{title}</h1><p>{description}</p></div>
+      <div className="workspace-head-actions">
+        <label className="workspace-search-field"><SearchIcon /><input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={i18n('common.search', 'Search')} aria-label={i18n('common.search', 'Search')} /></label>
+        <button type="button" className="workspace-create-button" onClick={onAction}><PlusIcon /><span>{actionLabel}</span></button>
+      </div>
+    </div>
   );
 }
 
@@ -230,21 +289,21 @@ function PluginDirectory({ plugins, configured, dispatch }: {
   const showInstalledEmpty = visiblePlugins.length === 0 && !query.trim() && scope === 'installed';
 
   return (
-    <section className="plugin-directory" aria-labelledby="plugin-directory-title">
+    <section className="workspace-surface plugin-directory" aria-labelledby="plugin-directory-title">
       <div className="plugin-directory-head">
         <div className="plugin-directory-heading">
           <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
           <p className="plugin-directory-desc">{i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}</p>
         </div>
-        <button type="button" className="plugin-directory-back" onClick={() => dispatch.exitPlugins()} aria-label={i18n('plugins.back', 'Back')} title={i18n('plugins.back', 'Back')}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
-        </button>
+        <label className="plugin-directory-search"><SearchIcon /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
       </div>
 
-      <label className="plugin-directory-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-        <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
-      </label>
+      {plugins.some((plugin) => plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated') ? (
+        <div className="plugin-installed-strip" aria-label={i18n('plugins.installed', 'Installed')}>
+          <span className="plugin-installed-label">{i18n('plugins.installed', 'Installed')}</span>
+          <div className="plugin-installed-icons">{plugins.filter((plugin) => plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated').map((plugin) => <span className={'workspace-row-icon connector-icon connector-' + plugin.id} key={plugin.id} title={plugin.name}><ConnectorMark id={plugin.id} name={plugin.name} /></span>)}</div>
+        </div>
+      ) : null}
 
       <div className="plugin-directory-tabs" role="tablist" aria-label={i18n('plugins.filter', 'Plugin filter')}>
         <button type="button" role="tab" aria-selected={scope === 'installed'} className={scope === 'installed' ? 'active' : ''} onClick={() => setScope('installed')}>{i18n('plugins.installed', 'Installed')}</button>
@@ -293,14 +352,14 @@ function CodexMcpView({ servers, configured, dispatch }: {
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
   return (
-    <section className="codex-mcp-card" aria-labelledby="codex-mcp-title">
-      <div className="codex-mcp-heading">
+    <details className="codex-mcp-card">
+      <summary className="codex-mcp-heading">
         <div>
           <span className="workspace-eyebrow">{i18n('plugins.codexWorkspace', 'Codex workspace')}</span>
           <h2 id="codex-mcp-title">{i18n('plugins.codexProjectTools', 'Project tools')}</h2>
         </div>
         <span className="codex-mcp-badge">{configured ? i18n('plugins.codexServerManaged', 'Server managed') : i18n('plugins.codexNotConfigured', 'Not configured')}</span>
-      </div>
+      </summary>
       <p className="workspace-note">{i18n('plugins.codexMcpPolicy', 'Choose which approved MCP servers Codex may use in this project. URLs, credentials, sandbox, and approval rules stay under server control.')}</p>
       {!configured ? (
         <div className="codex-mcp-empty">{i18n('plugins.codexMcpEmpty', 'No MCP servers have been configured by the administrator.')}</div>
@@ -329,7 +388,7 @@ function CodexMcpView({ servers, configured, dispatch }: {
           })}
         </div>
       )}
-    </section>
+    </details>
   );
 }
 
@@ -387,6 +446,11 @@ export function mountWorkspacePage(page: string): void {
   const container = document.getElementById(containerId);
   if (!container) return;
 
+  container.classList.remove('visually-hidden');
+  const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
+  const panel = document.getElementById(panelId);
+  panel?.setAttribute('data-live-directory', 'true');
+
   installWorkspaceBridge();
 
   let root = roots.get(page);
@@ -395,8 +459,7 @@ export function mountWorkspacePage(page: string): void {
     roots.set(page, root);
   }
   root.render(<WorkspacePage page={page} />);
-  const panelId = page === 'library' ? 'libraryPanel' : page === 'projects' ? 'spacesPanel' : 'pluginsPanel';
-  document.getElementById(panelId)?.classList.remove('hidden');
+  panel?.classList.remove('hidden');
 }
 
 export function unmountWorkspacePage(page: string): void {

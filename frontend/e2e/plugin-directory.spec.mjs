@@ -92,8 +92,8 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await page.getByRole('tab', { name: 'All plugins' }).click();
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
 
-  // The in-page back button returns to the previous chat/topic view.
-  await page.locator('.plugin-directory-back').click();
+  // The directory is a direct sidebar destination; new-chat returns home.
+  await page.locator('#navNew').click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
 

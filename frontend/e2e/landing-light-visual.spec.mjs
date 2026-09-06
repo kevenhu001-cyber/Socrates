@@ -30,7 +30,6 @@ test('light conversation home has a neutral readable palette and balanced compos
       title: rect('#topicTitle'),
       composer: rect('#topicInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
-      ideas: rect('.home-ideas'),
       pageBackground: rgb('.main-content'),
       sidebarBackground: rgb('#sidebar'),
       composerBackground: rgb('#topicInputWrap'),
@@ -53,14 +52,13 @@ test('light conversation home has a neutral readable palette and balanced compos
 
   expect(geometry.title).not.toBeNull();
   expect(geometry.composer).not.toBeNull();
-  /* The two-zone idle composer is a 128px shell (72px editor row plus
-     the 46px control row, +2px border): text area above, controls below. */
-  expect(geometry.composer?.height).toBe(130);
-  expect(geometry.topicFontSize).toBe(18);
+  /* The reference uses a shallow, single-line composer with all controls aligned. */
+  expect(geometry.composer?.height).toBe(48);
+  expect(geometry.topicFontSize).toBe(14);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(18);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(24);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
-  expect(geometry.ideas?.top ?? 0).toBeGreaterThan(geometry.composer?.bottom ?? 0);
+  await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
@@ -90,13 +88,10 @@ test('light conversation home has a neutral readable palette and balanced compos
     if (setup) setup.scrollTop = 0;
   });
   await expect(page.locator('#topicInputWrap')).toBeVisible();
-  await expect(page.locator('.home-ideas')).toBeVisible();
+  await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   const mobileComposer = await page.locator('#topicInputWrap').boundingBox();
-  /* The compact empty state keeps the starter rows directly above the
-     bottom composer, with enough breathing room below the top bar. */
+  /* The compact empty state keeps the composer near the safe-area bottom. */
   expect(mobileComposer?.y ?? 844).toBeGreaterThan(600);
   expect(mobileComposer?.y ?? 844).toBeLessThan(820);
-  const mobileIdeas = await page.locator('.home-ideas').boundingBox();
-  expect(mobileIdeas?.bottom ?? 0).toBeLessThanOrEqual(mobileComposer?.y ?? 0);
   await page.screenshot({ path: '/tmp/socrates-landing-light-mobile.png', fullPage: true });
 });

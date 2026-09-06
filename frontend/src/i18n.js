@@ -68,23 +68,6 @@ var I18N={
     "composer.tools.files":"Files",
     "composer.tools.plugins":"Plugins",
     "composer.tools.thinkDeeper":"Think deeper",
-    /* P_cowork-landing — starter ideas under the landing composer. The
-       button labels are generated at runtime by src/ui/suggestions.js
-       from a built-in library (en/zh) or derived from the latest
-       assistant turn; the only localized label that remains is the
-       row heading itself, which the suggestion engine renders
-       through data-i18n-key. */
-    "home.ideasLabel":"Ideas for you",
-    "home.idea.label":"Suggestion",
-    "home.chatSuggestionsLabel":"Follow-ups",
-    /* Kimi-style quick capability chips under the landing composer
-       (src/ui/quickChips.js). Each chip deep-links into an existing
-       surface via sidebar/nav.js openers. */
-    "home.quickExam":"Generate exam",
-    "home.quickScheduled":"Scheduled tasks",
-    "home.quickProjects":"Projects",
-    "home.quickPlugins":"Plugins",
-    "home.quickLibrary":"Library",
     "home.chip.projects":"Choose project",
     "home.chip.plugins":"Plugins",
     "home.explore.label":"Explore ideas",
@@ -301,6 +284,11 @@ var I18N={
     "library.deleteSelected":"Delete selected",
     "library.noMatch":"No matching items",
     "library.noMatchDesc":"Try a different search.",
+    "library.directoryDesc":"Files and items you have added or created.",
+    "library.upload":"Upload",
+    "library.columnName":"Name",
+    "library.columnModified":"Modified",
+    "library.columnSize":"Size",
     "library.emptyFiles":"Your library is ready",
     "library.emptyFilesDesc":"Upload a file or attach one in a chat.",
     "library.emptyArtifacts":"No created items yet",
@@ -312,6 +300,9 @@ var I18N={
     "library.preview.artifactSource":"Created item source",
     "projects.empty":"Make space for ongoing work",
     "projects.emptyDesc":"Projects keep related chats, files, and instructions together.",
+    "projects.directoryDesc":"Keep related chats, files, and instructions together.",
+    "projects.noMatch":"No matching projects",
+    "projects.noMatchDesc":"Try a different search.",
     "projects.create":"Create project",
     "projects.edit":"Edit",
     "plugins.title":"Connectors",
@@ -1007,18 +998,6 @@ var I18N={
     "composer.tools.files":"文件",
     "composer.tools.plugins":"插件",
     "composer.tools.thinkDeeper":"更深入思考",
-    /* P_cowork-landing — starter ideas under the landing composer.
-       Chip prompts come from src/ui/suggestions.js (zh copy lives in
-       PROMPT_LIBRARY). The localized label below is the row heading
-       and the screen-reader hint. */
-    "home.ideasLabel":"为你推荐",
-    "home.idea.label":"建议",
-    "home.chatSuggestionsLabel":"后续建议",
-    "home.quickExam":"生成试卷",
-    "home.quickScheduled":"定时任务",
-    "home.quickProjects":"项目",
-    "home.quickPlugins":"插件中心",
-    "home.quickLibrary":"资料库",
     "home.chip.projects":"选择项目",
     "home.chip.plugins":"插件",
     "home.explore.label":"探索灵感",
@@ -1232,6 +1211,11 @@ var I18N={
     "library.deleteSelected":"删除所选",
     "library.noMatch":"没有匹配的条目",
     "library.noMatchDesc":"换个搜索词试试。",
+    "library.directoryDesc":"你添加或创建的文件与内容。",
+    "library.upload":"上传",
+    "library.columnName":"名称",
+    "library.columnModified":"修改时间",
+    "library.columnSize":"大小",
     "library.emptyFiles":"你的资料库已就绪",
     "library.emptyFilesDesc":"上传文件，或在对话中添加附件。",
     "library.emptyArtifacts":"暂无生成的内容",
@@ -1243,6 +1227,9 @@ var I18N={
     "library.preview.artifactSource":"已创建条目的源内容",
     "projects.empty":"为进行中的工作建立空间",
     "projects.emptyDesc":"项目将相关对话、文件和指令归拢到一起。",
+    "projects.directoryDesc":"将相关对话、文件和指令整理在一起。",
+    "projects.noMatch":"没有匹配的项目",
+    "projects.noMatchDesc":"换个搜索词试试。",
     "projects.create":"创建项目",
     "projects.edit":"编辑",
     "plugins.title":"连接器",
