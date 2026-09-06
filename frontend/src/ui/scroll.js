@@ -1,5 +1,6 @@
 import { planMotionForUser, easeOutQuint } from './motion.js';
 import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
+import { stateStore } from '../state/store.js';
 
 /* Re-export the pure auto-scroll decision predicates through scroll.js so
    the DOM-wiring callers (main.js) import the "where do I scroll" surface
@@ -567,5 +568,40 @@ export function scrollToBottomIfPinned(){
       var ratio=sc.scrollTop/Math.max(1,sc.scrollHeight-sc.clientHeight);
       sc2.scrollTop=Math.round(ratio*(sc2.scrollHeight-sc2.clientHeight));
     }
+  });
+}
+
+/* Scroll the main transcript to the bottom (send / keyboard-open path).
+   Moved from main.js so all scroll ownership lives in this module.
+   A forced scroll bypasses the pin check; otherwise the scroll only
+   happens when the reader is pinned and has not scrolled away. */
+export function scrollMainToBottom(opts){
+  opts=opts||{};
+  if(!opts.force&&stateStore.read("_userScrolledAway"))return;
+  var sc=scrollContainer();
+  if(!sc)return;
+  /* Centralise the pin decision behind the pure shouldAutoScroll predicate
+     (slack = SCROLL_SLACK = 64) so the "auto-scroll only when pinned and the
+     reader has not scrolled away" rule is defined once and unit-tested in
+     scrollDecision.ts. */
+  var distanceFromBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight;
+  if(opts.force||shouldAutoScroll(distanceFromBottom,stateStore.read("_userScrolledAway"))){
+    /* Delegate to smoothScrollToBottom() so the same browser-native
+       scrollTo({behavior}) pipeline handles send, keyboard-open, and
+       content-growth follow. */
+    smoothScrollToBottom(sc,{smooth:opts.smooth!==false});
+  }
+}
+
+/* Wait two animation frames so a freshly added message bubble has
+   been measured before asking for scrollHeight. A single rAF is too
+   early: the DOM write has not yet completed layout and scrollHeight
+   reflects the pre-bubble height, so the smooth scroll targets a stale
+   bottom. */
+export function scheduleScrollMainToBottom(opts){
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      scrollMainToBottom(opts);
+    });
   });
 }
