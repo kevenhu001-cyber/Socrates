@@ -22,12 +22,6 @@ import {
 import { mountVisualization } from '../render/visualization.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/viz.js';
 
-/** Global i18n lookup, resolved the same way main.js does. */
-function t(key: string): string {
-  const g = globalThis as unknown as { t: (key: string) => string };
-  return g.t(key);
-}
-
 /**
  * Build the API path for one message, scoping client ids to the current
  * session. Server routes accept the clientId only when it is scoped to

@@ -159,7 +159,7 @@ export function mountPracticeWidget(slot, parsed) {
 }
 
 export function mountQuizWidget(slot, parsed) {
-  const { formatMsg, t, handleQuizPick } = runtime;
+  const { formatMsg, handleQuizPick } = runtime;
   if (slot?.getAttribute && !parsed.slotId) parsed.slotId = slot.getAttribute('data-quiz-id');
   const card = document.createElement('div');
   card.className = 'inline-quiz';
