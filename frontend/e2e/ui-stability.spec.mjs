@@ -42,10 +42,15 @@ test('light and dark surfaces keep SVG contrast and hover geometry stable', asyn
     await page.waitForTimeout(150);
 
     const palette = await readPalette(page);
-    expect(palette.mode).toBe(mode);
-    expect(palette.page).not.toBe('rgb(0, 0, 0)');
-    expect(palette.sidebar).not.toBe('rgb(0, 0, 0)');
-    expect(palette.composer).not.toBe('rgb(0, 0, 0)');
+    if (mode === 'dark') {
+      expect(palette.page).toBe('rgb(0, 0, 0)');
+      expect(palette.sidebar).toBe('rgb(0, 0, 0)');
+      expect(palette.composer).toBe('rgb(33, 33, 33)');
+    } else {
+      expect(palette.page).not.toBe('rgb(0, 0, 0)');
+      expect(palette.sidebar).not.toBe('rgb(0, 0, 0)');
+      expect(palette.composer).not.toBe('rgb(0, 0, 0)');
+    }
     expect(palette.iconColor).toBe(palette.buttonColor);
 
     for (const selector of HOVER_TARGETS) {

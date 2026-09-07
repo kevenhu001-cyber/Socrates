@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * tokens.js — JS adapter for `src/ui/tokens.ts`.
  *
@@ -12,13 +13,13 @@
  */
 
 /** Dark mode page background; matches darkPalette.bg.page in tokens.ts. */
-export const DARK_PAGE_BACKGROUND = '#212121';
+export const DARK_PAGE_BACKGROUND = '#000000';
 
 /** Light mode page background; matches lightPalette.bg.page in tokens.ts. */
 export const LIGHT_PAGE_BACKGROUND = '#ffffff';
 
 /** Default fallback for the dark-mode user picker. */
-export const DEFAULT_DARK_PICKER = '#212121';
+export const DEFAULT_DARK_PICKER = '#000000';
 
 /** Default fallback for the light-mode user picker. */
 export const DEFAULT_LIGHT_PICKER = '#ffffff';

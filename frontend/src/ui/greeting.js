@@ -61,7 +61,7 @@ export function renderGreeting() {
   if (!el) return;
   var mode = (typeof window !== "undefined" && window.appMode) || "chat";
   var key = mode === "tutor" ? "greeting.tutor" : _chatGreetingKey();
-  var fallback = mode === "tutor" ? "Let's explore, {name}." : "Welcome back, {name}!";
+  var fallback = mode === "tutor" ? "Let's explore, {name}." : "What's on your mind today?";
   var tmpl = typeof window.t === "function" ? window.t(key) : fallback;
   if (!tmpl || tmpl === key) tmpl = fallback;
   el.textContent = tmpl.replace("{name}", _greetingFirstName());
