@@ -18,32 +18,33 @@
     letter-spacing: -0.025em !important;
   }
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    width: min(100%, 732px) !important;
-    max-width: 732px !important;
-    height: 48px !important;
-    min-height: 48px !important;
+    width: min(100%, 720px) !important;
+    max-width: 720px !important;
+    height: 56px !important;
+    min-height: 56px !important;
     margin-top: 20px;
-    padding: 0 7px 0 2px !important;
-    border-radius: 24px !important;
-    grid-template-columns: 42px minmax(0, 1fr) auto 30px 34px !important;
-    grid-template-rows: 46px !important;
+    padding: 0 8px 0 4px !important;
+    border-radius: 28px !important;
+    grid-template-columns: 42px minmax(0, 1fr) auto 30px 36px !important;
+    grid-template-rows: 48px !important;
+    transition: border-color 0.15s var(--cg-ease), box-shadow 0.15s var(--cg-ease);
   }
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
-    height: 46px !important;
-    min-height: 46px !important;
-    max-height: 46px !important;
-    padding: 12px 2px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 12px 4px !important;
     overflow: hidden !important;
-    font-size: 14px !important;
+    font-size: 15px !important;
   }
   #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn,
   #appShell #topicInputWrap:not(.voice-recording-active) .mobile-mic-btn,
   #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
-    width: 30px !important;
-    min-width: 30px !important;
-    height: 30px !important;
-    min-height: 30px !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
   }
   body.workspace-active #appShell #mainInner { width: 100%; max-width: none; }
   body.workspace-active #appShell .main-page {
@@ -72,12 +73,12 @@
 #appShell .sidebar-logo-img,
 #appShell .sidebar-logo .cg-sidebar-caret,
 #appShell .sidebar-nav-btn .nav-kbd { display: none !important; }
-#appShell .sidebar-header { min-height: 38px; padding: 3px 4px 5px; }
-#appShell .sidebar-logo { padding-left: 6px; font-size: 13px; font-weight: 500; }
-#appShell .sidebar-nav-btn { min-height: 30px; padding: 5px 8px; gap: 8px; font-size: 12px; }
-#appShell .sidebar-nav-btn svg { width: 15px; height: 15px; }
-#appShell .recent-item { min-height: 28px; padding: 5px 8px; font-size: 12px; }
-#appShell .recent-item-text { font-size: 12px !important; }
+#appShell .sidebar-header { min-height: 44px; padding: 6px 8px; }
+#appShell .sidebar-logo { padding-left: 6px; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+#appShell .sidebar-nav-btn { min-height: 32px; padding: 6px 10px; gap: 10px; font-size: 13px; }
+#appShell .sidebar-nav-btn svg { width: 16px; height: 16px; }
+#appShell .recent-item { min-height: 32px; padding: 6px 10px; font-size: 13px; }
+#appShell .recent-item-text { font-size: 13px !important; }
 
 #appShell .spaces-panel-head,
 #appShell .library-panel-head,
@@ -88,20 +89,20 @@
 #appShell .library-panel-head h1,
 #appShell .plugins-panel-head h1,
 .workspace-page-head h1,
-.plugin-directory-head h2 { font-size: 27px; font-weight: 500; }
+.plugin-directory-head h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; }
 #appShell .spaces-panel-head p,
 #appShell .library-panel-head p,
 #appShell .plugins-panel-head p,
 .workspace-page-head p,
-.plugin-directory-desc { margin-top: 4px; color: var(--cgv-text-2); font-size: 12px; }
+.plugin-directory-desc { margin-top: 6px; color: var(--cgv-text-2); font-size: 13px; }
 #appShell .spaces-panel-search,
 #appShell .plugins-panel-search,
 .workspace-search-field,
-.plugin-directory-search { width: 232px; height: 36px; padding-inline: 12px; font-size: 12px; }
+.plugin-directory-search { width: 240px; height: 36px; padding-inline: 12px; font-size: 13px; border-radius: 12px; }
 #appShell .spaces-panel-new,
 #appShell .plugins-panel-add,
-.workspace-create-button { height: 36px; min-height: 36px; }
-#appShell .plugins-panel-add { width: 36px; }
+.workspace-create-button { height: 36px; min-height: 36px; border-radius: 12px; padding: 0 14px; }
+#appShell .plugins-panel-add { width: 36px; padding: 0; }
 #appShell .plugins-installed { margin-top: 0; padding: 4px 2px 8px; }
 #appShell .plugins-installed-label { margin-bottom: 8px; font-size: 12px; }
 #appShell .plugins-installed-icons { gap: 8px; padding: 2px 0 8px; }
@@ -163,7 +164,7 @@
 }
 
 #appShell .sidebar {
-  --cg-sidebar-width: 246px;
+  --cg-sidebar-width: 260px;
   width: var(--cg-sidebar-width) !important;
   min-width: var(--cg-sidebar-width) !important;
   border-right: 1px solid var(--cgv-border) !important;
@@ -216,16 +217,17 @@
   align-items: center !important;
   justify-content: space-between !important;
   background: transparent !important;
-  padding: 8px 18px !important;
+  padding: 8px 16px !important;
+  min-height: 52px !important;
   position: relative !important;
 }
 
 #appShell .top-bar-left {
   display: flex !important;
   align-items: center !important;
-  flex: 0 0 44px !important;
-  width: 44px !important;
-  min-width: 44px !important;
+  flex: 0 0 56px !important;
+  width: 56px !important;
+  min-width: 56px !important;
   visibility: visible !important;
 }
 
@@ -233,9 +235,9 @@
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  flex: 0 0 44px !important;
-  width: 44px !important;
-  min-width: 44px !important;
+  flex: 0 0 56px !important;
+  width: 56px !important;
+  min-width: 56px !important;
   visibility: visible !important;
 }
 
@@ -255,7 +257,7 @@
 
 #appShell .top-bar-refresh-btn:hover {
   color: var(--cg-text);
-  background: var(--cg-surface);
+  background: var(--cg-surface-hover);
 }
 
 #appShell .top-mode-tabs {
@@ -290,7 +292,7 @@
 
 #appShell .top-mode-tabs .app-mode-toggle.active {
   color: var(--cgv-text) !important;
-  background: var(--cg-surface-hover) !important;
+  background: var(--cg-surface-active) !important;
 }
 
 #appShell #topicSetup > .topic-title,
@@ -317,11 +319,12 @@
 #appShell .topic-title.greeting {
   font-family: var(--cg-font) !important;
   color: var(--cgv-text) !important;
-  font-size: 28px !important;
+  font-size: clamp(28px, 3.2vw, 34px) !important;
   font-weight: 500 !important;
-  letter-spacing: -0.02em !important;
+  letter-spacing: -0.025em !important;
   text-align: center;
   margin-bottom: 22px;
+  line-height: 1.2 !important;
 }
 
 #appShell #topicInputWrap:not(.voice-recording-active),
@@ -359,6 +362,19 @@
   transform: scale(1.05) !important;
   background: #ffffff !important;
   color: #000000 !important;
+}
+
+/* Global focus ring for interactive controls. 2px outer + 4px 12% white
+   glow; the existing topic/composer rules override for the rich-text
+   editor. Keeps the visible focus cue consistent with ChatGPT. */
+#appShell :where(.icon-btn, .cg-quick-action-item, .lib-view-btn, .top-bar-refresh-btn, .plugins-panel-add, .plugins-card .add, .plugins-card .menu, .library-new-pill-btn, .workspace-create-button, .spaces-panel-new, button[role="button"]):focus-visible {
+  outline: 2px solid var(--cg-focus-ring, rgba(255, 255, 255, 0.32));
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+#appShell :where(.icon-btn, .cg-quick-action-item, .lib-view-btn):focus-visible {
+  background: var(--cg-surface-hover);
+  color: var(--cg-text);
 }
 
 #appShell #topicInputWrap #startBtn svg {
@@ -558,7 +574,7 @@
 #appShell .spaces-panel-filters button.active,
 #appShell .plugins-scope-tabs button.active {
   color: #ffffff !important;
-  background: var(--cg-surface) !important;
+  background: var(--cg-surface-hover) !important;
   font-weight: 500;
 }
 
@@ -592,7 +608,7 @@
 
 #appShell .lib-view-btn.active,
 #appShell .lib-view-btn:hover {
-  background: var(--cg-surface);
+  background: var(--cg-surface-hover);
   color: #ffffff;
 }
 
@@ -806,7 +822,7 @@
   gap: 14px;
   padding: 14px 16px;
   background: var(--cg-surface) !important;
-  border-radius: 14px !important;
+  border-radius: 16px !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -1099,16 +1115,19 @@
 
 [data-mode="dark"] {
   --cg-page: #000000;
-  --cg-rail: #000000;
+  --cg-rail: #171717;
+  --cg-elevated: #1f1f1f;
   --cg-surface: #212121;
   --cg-surface-raised: #262626;
-  --cg-surface-hover: #2f2f2f;
-  --cg-border: rgb(255 255 255 / 8%);
-  --cg-border-strong: rgb(255 255 255 / 15%);
-  --cg-text: #f4f4f4;
+  --cg-surface-hover: #2a2a2a;
+  --cg-surface-active: #303030;
+  --cg-border: rgb(255 255 255 / 10%);
+  --cg-border-strong: rgb(255 255 255 / 16%);
+  --cg-text: #ececec;
   --cg-text-secondary: #b4b4b4;
   --cg-text-muted: #8e8e8e;
   --cg-text-faint: #5e5e5e;
+  --cg-text-disabled: #5e5e5e;
   --cg-focus-ring: rgb(255 255 255 / 16%);
   --cg-composer-shadow: 0 10px 28px rgb(0 0 0 / 22%);
   --cg-composer-focus-shadow: 0 0 0 3px rgb(255 255 255 / 8%), 0 12px 30px rgb(0 0 0 / 24%);
