@@ -45,7 +45,7 @@ function _publishWorkspaceState() {
   } catch (_) { /* swallow */ }
 }
 
-var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
+var NAV_NAMES = ["new", "library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null };
 var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam", admin: "/admin" };
 var CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
@@ -328,10 +328,23 @@ function pushWorkspaceRoute(name) {
   var next = WORKSPACE_ROUTES[name];
   if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
 }
+function openNewChat() {
+  hideMainPages();
+  var topic = byId("topicSetup");
+  var chat = byId("chatView");
+  var diagnostic = byId("diagnosticView");
+  if (topic) topic.classList.remove("hidden");
+  if (chat) chat.classList.add("hidden");
+  if (diagnostic) diagnostic.classList.add("hidden");
+  if (typeof window.toggleChatTopBarEls === "function") window.toggleChatTopBarEls(false);
+  if (location.pathname !== "/") history.pushState({}, "", "/");
+  setActiveNav("new");
+}
+
 export function openNav(name, options) {
-  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, admin: openAdmin, more: openMoreNav };
+  var openers = { new: openNewChat, library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, admin: openAdmin, more: openMoreNav };
   if (!openers[name]) return;
-  if (name !== "more" && !(options && options.fromRoute)) pushWorkspaceRoute(name);
+  if (name !== "more" && name !== "new" && !(options && options.fromRoute)) pushWorkspaceRoute(name);
   setActiveNav(name);
   if (name !== "more") closeAllPanels();
   openers[name]();

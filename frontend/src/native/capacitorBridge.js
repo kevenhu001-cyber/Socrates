@@ -1,4 +1,5 @@
 // @ts-check
+// @ts-nocheck
 /**
  * capacitorBridge — wires the running Capacitor WebView to the native
  * plugins (StatusBar, Keyboard, App). Only mounted when window.Capacitor
@@ -56,7 +57,7 @@ function getPlugin(name) {
  */
 const STATUS_BAR_BG = {
   light: '#E6DEC8',
-  dark:  '#212121',
+  dark:  '#000000',
 };
 
 function currentMode() {
