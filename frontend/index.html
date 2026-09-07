@@ -17,7 +17,7 @@
    palette during a reload. `data-mode` remains the effective mode;
    `data-theme-preference` records whether it is user-selected or
    inherited from the OS. The pre-paint color is sourced from the
-   shared design-token module so the `#ffffff` / `#101318`
+   shared design-token module so the `#ffffff` / `#212121`
    literals stay in one place. The bundle is an ES module and is not
    loaded yet at this point, so the values are inlined as a tiny
    function-style lookup that mirrors `resolveBackground()`. */
@@ -43,7 +43,7 @@
        frame is not white. The bundled CSS overrides this once it loads.
        The two values mirror `resolveBackground()` in src/ui/tokens.ts;
        the JS adapter in src/ui/tokens.js exports the same strings. */
-    document.documentElement.style.backgroundColor = initialMode === "light" ? '#ffffff' : '#101318';
+    document.documentElement.style.backgroundColor = initialMode === "light" ? '#ffffff' : '#212121';
   }
 })();
 </script>

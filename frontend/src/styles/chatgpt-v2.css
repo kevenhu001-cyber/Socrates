@@ -143,23 +143,23 @@
 
 /* Core paint and component primitives that make the geometry above visible. */
 :root {
-  --cgv-border: rgb(255 255 255 / 8%);
-  --cgv-border-strong: rgb(255 255 255 / 14%);
-  --cgv-surface: #1f1f1f;
-  --cgv-surface-hover: #2a2a2a;
-  --cgv-text: #ececec;
-  --cgv-text-2: #b4b4b4;
-  --cgv-text-3: #8a8a8a;
+  --cgv-border: var(--cg-border);
+  --cgv-border-strong: var(--cg-border-strong);
+  --cgv-surface: var(--cg-surface);
+  --cgv-surface-hover: var(--cg-surface-hover);
+  --cgv-text: var(--cg-text);
+  --cgv-text-2: var(--cg-text-secondary);
+  --cgv-text-3: var(--cg-text-muted);
 }
 
 [data-mode="light"] {
-  --cgv-border: rgb(0 0 0 / 8%);
-  --cgv-border-strong: rgb(0 0 0 / 14%);
-  --cgv-surface: #fff;
-  --cgv-surface-hover: #ececea;
-  --cgv-text: #171717;
-  --cgv-text-2: #555;
-  --cgv-text-3: #888;
+  --cgv-border: var(--cg-border);
+  --cgv-border-strong: var(--cg-border-strong);
+  --cgv-surface: var(--cg-surface);
+  --cgv-surface-hover: var(--cg-surface-hover);
+  --cgv-text: var(--cg-text);
+  --cgv-text-2: var(--cg-text-secondary);
+  --cgv-text-3: var(--cg-text-muted);
 }
 
 #appShell .sidebar {
@@ -167,7 +167,7 @@
   width: var(--cg-sidebar-width) !important;
   min-width: var(--cg-sidebar-width) !important;
   border-right: 1px solid var(--cgv-border) !important;
-  background: #0e0e0e !important;
+  background: var(--cg-rail) !important;
 }
 
 #appShell .main {
@@ -229,7 +229,7 @@
   gap: 2px;
   border: 1px solid var(--cgv-border-strong) !important;
   border-radius: 999px;
-  background: #1b1b1b !important;
+  background: var(--cg-surface) !important;
   transform: translateX(10px);
 }
 
@@ -241,7 +241,7 @@
 
 #appShell .top-mode-tabs .app-mode-toggle.active {
   color: var(--cgv-text) !important;
-  background: #2d2d2d !important;
+  background: var(--cg-surface-hover) !important;
 }
 
 #appShell #topicSetup > .topic-title,
@@ -268,7 +268,7 @@
 #appShell #topicInputWrap:not(.voice-recording-active),
 #appShell #chatInputWrap:not(.voice-recording-active) {
   border: 1px solid var(--cgv-border-strong) !important;
-  background: #1a1a1a !important;
+  background: var(--cg-surface) !important;
   box-shadow: none !important;
 }
 
@@ -280,15 +280,15 @@
 
 #appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn {
-  color: #d8d8d8 !important;
-  background: #303030 !important;
+  color: var(--cg-text-secondary) !important;
+  background: var(--cg-surface-hover) !important;
   box-shadow: none !important;
 }
 
 #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
-  color: #111 !important;
-  background: #f0b84b !important;
+  color: var(--cg-accent-ink) !important;
+  background: var(--cg-accent) !important;
 }
 
 /* Static workspace shell used before the live directory data arrives. */
@@ -372,7 +372,7 @@
   gap: 2px;
   border: 1px solid var(--cgv-border-strong);
   border-radius: 999px;
-  background: #161616;
+  background: var(--cg-surface);
 }
 
 #appShell .plugins-panel-tabs .pill button,
@@ -386,7 +386,7 @@
 #appShell .plugins-panel-tabs .pill button.active,
 #appShell .plugins-scope-tabs button.active {
   color: var(--cgv-text);
-  background: #2a2a2a;
+  background: var(--cg-surface-hover);
 }
 
 #appShell .plugins-installed-label {
@@ -402,7 +402,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--cgv-text);
 }
 
 #appShell .plugins-installed-icons .installed-icon.add {
@@ -477,7 +477,7 @@
 
 #appShell .spaces-panel-filters button.active {
   color: var(--cgv-text);
-  background: #2a2a2a;
+  background: var(--cg-surface-hover);
 }
 
 #appShell .spaces-list {
@@ -612,19 +612,186 @@
 
 /* Theme-specific paint must follow the shared dark reference primitives. */
 [data-mode="light"] #appShell .sidebar {
-  background: #f7f7f5 !important;
+  background: var(--cg-rail) !important;
 }
 
 [data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active),
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active),
 [data-mode="light"] #appShell .spaces-panel-search,
 [data-mode="light"] #appShell .plugins-panel-search {
-  border-color: rgb(0 0 0 / 15%) !important;
-  background: #fff !important;
+  border-color: var(--cg-border-strong) !important;
+  background: var(--cg-surface) !important;
 }
 
 [data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
-  border-color: rgb(0 0 0 / 24%) !important;
-  box-shadow: 0 0 0 3px rgb(0 0 0 / 5%) !important;
+  border-color: color-mix(in srgb, var(--cg-text) 34%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-text) 7%, transparent) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Neutral theme + interaction stability
+
+   The shell above is intentionally compact, but its legacy cascade still
+   supplied pure-black canvas values and hover transforms to a few controls.
+   These final tokens make the whole app read as one quiet surface system:
+   light mode stays airy, dark mode has visible depth, and interaction feedback
+   is communicated by color rather than movement.
+   ------------------------------------------------------------------------- */
+
+[data-mode="dark"] {
+  --cg-page: #212121;
+  --cg-rail: #171717;
+  --cg-surface: #2f2f2f;
+  --cg-surface-raised: #383838;
+  --cg-surface-hover: #343434;
+  --cg-border: rgb(255 255 255 / 11%);
+  --cg-border-strong: rgb(255 255 255 / 18%);
+  --cg-text: #f4f4f4;
+  --cg-text-secondary: #c6c6c6;
+  --cg-text-muted: #9a9a9a;
+  --cg-text-faint: #707070;
+  --cg-focus-ring: rgb(255 255 255 / 16%);
+  --cg-composer-shadow: 0 10px 28px rgb(0 0 0 / 22%);
+  --cg-composer-focus-shadow: 0 0 0 3px rgb(255 255 255 / 8%), 0 12px 30px rgb(0 0 0 / 24%);
+}
+
+[data-mode="light"] {
+  --cg-page: #ffffff;
+  --cg-rail: #f7f7f5;
+  --cg-surface: #ffffff;
+  --cg-surface-raised: #f2f2f0;
+  --cg-surface-hover: #e9e9e7;
+  --cg-border: rgb(0 0 0 / 9%);
+  --cg-border-strong: rgb(0 0 0 / 16%);
+  --cg-text: #202020;
+  --cg-text-secondary: #5e5e5e;
+  --cg-text-muted: #777777;
+  --cg-text-faint: #9b9b9b;
+  --cg-focus-ring: rgb(0 0 0 / 13%);
+  --cg-composer-shadow: 0 10px 30px rgb(0 0 0 / 7%);
+  --cg-composer-focus-shadow: 0 0 0 3px rgb(0 0 0 / 5%), 0 12px 32px rgb(0 0 0 / 9%);
+}
+
+html[data-mode="dark"] #appShell {
+  --cowork-page: 0 0% 13%;
+  --cowork-sidebar: 0 0% 9%;
+  --cowork-surface: 0 0% 18%;
+  --cowork-surface-active: 0 0% 22%;
+  --cowork-line: 0 0% 28%;
+  --cowork-text: 0 0% 92%;
+  --cowork-muted: 0 0% 64%;
+}
+
+html[data-mode="light"] #appShell {
+  --cowork-page: 0 0% 100%;
+  --cowork-sidebar: 0 0% 97%;
+  --cowork-surface: 0 0% 100%;
+  --cowork-surface-active: 0 0% 93%;
+  --cowork-line: 0 0% 82%;
+  --cowork-text: 0 0% 13%;
+  --cowork-muted: 0 0% 44%;
+}
+
+#appShell .main,
+#appShell .main-content {
+  background-color: var(--cg-page) !important;
+  color: var(--cg-text);
+}
+
+#appShell .main-bg {
+  background-color: var(--cg-page) !important;
+}
+
+#appShell .sidebar {
+  background: var(--cg-rail) !important;
+  background-image: none !important;
+  border-right-color: var(--cg-border) !important;
+  box-shadow: none !important;
+}
+
+#appShell .top-bar {
+  background: var(--cg-page) !important;
+}
+
+#appShell .top-mode-tabs {
+  border-color: var(--cg-border-strong) !important;
+  background: var(--cg-surface) !important;
+}
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active),
+#appShell #chatInputWrap:not(.voice-recording-active),
+#appShell .spaces-panel-search,
+#appShell .plugins-panel-search {
+  border-color: var(--cg-border-strong) !important;
+  background: var(--cg-surface) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active),
+#appShell #chatInputWrap:not(.voice-recording-active) {
+  box-shadow: var(--cg-composer-shadow) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+#appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: var(--cg-focus-ring) !important;
+  box-shadow: var(--cg-composer-focus-shadow) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active) {
+  color: var(--cg-text-secondary) !important;
+  background: var(--cg-surface-hover) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
+  color: var(--cg-accent-ink) !important;
+  background: var(--cg-accent) !important;
+}
+
+#appShell .plugins-panel-tabs .pill,
+#appShell .plugins-scope-tabs button.active,
+#appShell .spaces-panel-filters button.active {
+  background: var(--cg-surface) !important;
+}
+
+#appShell .plugins-panel-tabs .pill button.active,
+#appShell .plugins-scope-tabs button.active,
+#appShell .spaces-panel-filters button.active {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
+
+#appShell .plugins-installed-icons .installed-icon,
+#appShell .plugins-card,
+#appShell .workspace-row-icon,
+#appShell .workspace-page-head,
+#appShell .plugin-directory-head {
+  color: var(--cg-text);
+}
+
+/* Inline UI icons already use currentColor; these rules make that contract
+   explicit without recoloring brand SVG assets loaded through <img>. */
+#appShell :where(button, a, [role="button"]) svg {
+  color: currentColor;
+}
+
+/* A hover state may tint a control, but it must not change its geometry.
+   Keep transforms available for layout containers and menu open states. */
+:where(button, a, [role="button"]):hover,
+:where(button, a, [role="button"]):active {
+  transform: none !important;
+}
+
+#appShell .recents-new-btn:hover svg,
+#appShell .color-swatch-custom:hover svg,
+#appShell .attach-btn:hover svg,
+#appShell .send-btn:hover svg {
+  transform: none !important;
 }

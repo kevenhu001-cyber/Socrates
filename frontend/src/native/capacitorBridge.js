@@ -56,7 +56,7 @@ function getPlugin(name) {
  */
 const STATUS_BAR_BG = {
   light: '#E6DEC8',
-  dark:  '#101318',
+  dark:  '#212121',
 };
 
 function currentMode() {
