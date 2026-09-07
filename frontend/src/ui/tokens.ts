@@ -175,11 +175,11 @@ export const darkPalette: ThemePalette = {
     surface: '43 40% 20%',
   },
   bg: {
-    page: '#101318',
+    page: '#212121',
     raised: '0 0% 13%',
     overlay: '0 0% 16%',
     hover: '0 0% 21%',
-    sunken: '0 0% 5%',
+    sunken: '0 0% 8%',
   },
   text: {
     primary: '0 0% 100%',

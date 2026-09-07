@@ -42,8 +42,8 @@ test('mobile conversation home matches the compact dark reference layout', async
       composer: rect('#topicInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
       /* .main is a transparent layout box; the painted surface is
-         .main-content (the shell's page colour). The dark workbench uses
-         the same pure-black page treatment as the reference. */
+         .main-content (the shell's page colour). Dark mode uses a layered
+         charcoal canvas so the shell has depth without pure black. */
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
       pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--cowork-page').trim(),
     };
@@ -59,8 +59,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.topicFontSize).toBe(18);
   expect(geometry.composer?.y).toBeGreaterThan(600);
   expect(geometry.composer?.y).toBeLessThan(820);
-  expect(geometry.background).toBe('rgb(0, 0, 0)');
-  expect(geometry.pageToken).toBe('0 0% 0%');
+  expect(geometry.background).toBe('rgb(33, 33, 33)');
+  expect(geometry.pageToken).toBe('0 0% 13%');
 
   /* The active-chat header uses the reference's one tactile navigation
      control plus two unframed utilities. Expose the session-only controls

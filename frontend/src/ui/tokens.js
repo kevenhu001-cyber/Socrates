@@ -12,7 +12,7 @@
  */
 
 /** Dark mode page background; matches darkPalette.bg.page in tokens.ts. */
-export const DARK_PAGE_BACKGROUND = '#101318';
+export const DARK_PAGE_BACKGROUND = '#212121';
 
 /** Light mode page background; matches lightPalette.bg.page in tokens.ts. */
 export const LIGHT_PAGE_BACKGROUND = '#ffffff';

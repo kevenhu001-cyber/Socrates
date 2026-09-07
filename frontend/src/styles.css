@@ -9583,8 +9583,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   --workbench-content-max:var(--conversation-content-width);
 }
 [data-mode=dark] #appShell{
-  --cowork-page:0 0% 0%;
-  --cowork-sidebar:0 0% 0%;
+  --cowork-page:0 0% 13%;
+  --cowork-sidebar:0 0% 9%;
   --cowork-surface:0 0% 12.3%;
   --cowork-surface-active:0 0% 20%;
   --cowork-line:0 0% 24%;
@@ -10364,7 +10364,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 @media(max-width:768px){
   [data-mode="dark"] #appShell{
-    --cowork-page:0 0% 0%;
+    --cowork-page:0 0% 13%;
     --cowork-sidebar:0 0% 7%;
     --cowork-surface:0 0% 14%;
     --cowork-surface-active:0 0% 25%;
@@ -10622,7 +10622,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 
 /* ── Surface palette override (dark mode only) ─────────────────────
-   Sidebar = solid dark gray; chat main = pure black. `!important` is
+   Sidebar = solid dark gray; chat main = layered charcoal. `!important` is
    intentional: cowork (#appShell) and workbench (body[data-conversation-
    active]) both ship sidebar / main-bg rules with higher specificity, so
    source order alone can't win. The override is scoped to dark mode and
@@ -10634,16 +10634,16 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   backdrop-filter:none !important;
 }
 [data-mode=dark] .main-bg{
-  background-color:hsl(0 0% 0%) !important;
+  background-color:hsl(0 0% 13%) !important;
   background-image:none !important;
   opacity:1 !important;
   clip-path:none !important;
 }
 /* .main-content sits on top of .main-bg as the visible chat surface;
-   without this it stays at cowork-page (rgb 19/19/19) and the black
+   without this it stays at cowork-page (rgb 33/33/33) and the charcoal
    layer below is masked. */
 [data-mode=dark] .main-content{
-  background:hsl(0 0% 0%) !important;
+  background:hsl(0 0% 13%) !important;
 }
 
 /* ── Unified monochrome composer contract ──────────────────────────
@@ -10678,7 +10678,7 @@ html[data-theme=socrates][data-mode=light]{
   --brand-100:0 0% 0%;
 }
 [data-mode=dark] #appShell{
-  --cowork-page:0 0% 0%;
+  --cowork-page:0 0% 13%;
   --cowork-sidebar:0 0% 7%;
   --cowork-surface:0 0% 13%;
   --cowork-surface-active:0 0% 22%;
@@ -10781,12 +10781,12 @@ html[data-theme=socrates][data-mode=light]{
 
 /* ==========================================================================
    P_chatgpt-mimic — ChatGPT (chatgpt.com) fidelity pass
-   Mirrors the screenshot and live site (dark #000 page, #212121 composer,
+   Mirrors the screenshot and live site (dark charcoal page, layered composer,
    28px pill, centered “今天有什么计划？” headline, muted suggestion line,
    minimal sidebar). See /tmp/chatgpt-dark.html + screenshot analysis.
    ========================================================================== */
 
-/* ---- Page & shell: pure black in dark, paper white in light ---- */
+/* ---- Page & shell: layered charcoal in dark, paper white in light ---- */
 [data-theme="socrates"][data-mode="dark"] body,
 [data-theme="socrates"][data-mode="dark"] .app,
 [data-theme="socrates"][data-mode="dark"] .main,
@@ -11370,7 +11370,7 @@ html[data-theme=socrates][data-mode=light]{
 /* P_sidebar-glass — Apple-style frosted rail. A single neutral charcoal
    base; the glass read comes from a white-alpha top sheen, a soft inner
    vignette, and a 1px luminous seam — all achromatic, no hue casts. The
-   page behind stays pure black, so the rail reads as translucent even
+   page behind stays charcoal, so the rail reads as translucent even
    though it is technically opaque. */
 #appShell .sidebar{
   background:hsl(0 0% 7%) !important;
