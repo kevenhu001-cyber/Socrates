@@ -1152,6 +1152,7 @@
   padding: 7px 12px 7px 8px;
   border: 1px solid var(--lobe-border-secondary);
   border-radius: var(--lobe-radius-pill);
+  background: var(--lobe-bg-container);
   background: color-mix(in srgb, var(--lobe-bg-container) 72%, transparent);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -1207,6 +1208,7 @@
   height: 6px;
   border-radius: 50%;
   background: var(--lobe-success);
+  box-shadow: 0 0 0 3px var(--lobe-success);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--lobe-success) 18%, transparent);
 }
 
@@ -1226,6 +1228,7 @@
   padding: 12px;
   border: 1px solid var(--lobe-border-secondary);
   border-radius: var(--lobe-radius-lg);
+  background: var(--lobe-bg-container);
   background: color-mix(in srgb, var(--lobe-bg-container) 78%, transparent);
   color: var(--lobe-text);
   text-align: left;
@@ -1385,6 +1388,7 @@
   padding: 14px;
   border: 1px solid var(--lobe-border-secondary);
   border-radius: var(--lobe-radius-lg);
+  background: var(--lobe-bg-container);
   background: color-mix(in srgb, var(--lobe-bg-container) 72%, transparent);
 }
 
@@ -1493,6 +1497,7 @@
 }
 
 [data-mode] .plugin-directory-status.connected {
+  background: var(--lobe-success);
   background: color-mix(in srgb, var(--lobe-success) 18%, transparent);
   color: var(--lobe-success);
 }

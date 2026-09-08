@@ -704,9 +704,9 @@
         </div>
       </div>
       <div class="spaces-panel-filters" role="tablist" aria-label="项目过滤">
-        <button type="button" class="active" data-filter="all">全部</button>
-        <button type="button" data-filter="owned">由你创建</button>
-        <button type="button" data-filter="shared">与你共享</button>
+        <button type="button" role="tab" aria-selected="true" class="active" data-filter="all">全部</button>
+        <button type="button" role="tab" aria-selected="false" data-filter="owned">由你创建</button>
+        <button type="button" role="tab" aria-selected="false" data-filter="shared">与你共享</button>
       </div>
       <div class="spaces-list" id="spacesList">
         <div class="spaces-list-header">
