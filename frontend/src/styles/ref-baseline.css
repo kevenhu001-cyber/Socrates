@@ -1545,4 +1545,13 @@ body.workspace-active #appShell .main-page {
   #appShell .home-quick-actions {
     display: none !important;
   }
+
+  /* P_mobile-black-canvas-fade — the legacy conversation layer fades
+     .chat-input-bar into hsl(var(--cowork-page)) (#212121 in dark),
+     which reads as a gray patch under the pill on the black canvas.
+     Keep the fade silhouette but land it on pure black so the safe-area
+     strip below the composer stays #000. */
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
+    background: linear-gradient(to bottom, transparent, #000 24px) !important;
+  }
 }

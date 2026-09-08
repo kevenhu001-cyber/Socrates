@@ -1319,36 +1319,9 @@
 
 /* ───────────────────────────────────────────────────────────
  * 14. CONVERSATION + SETTINGS REFINEMENTS
- *     Adds the small LobeHub-style message author row and turns
- *     the settings modal into a grouped application-config card.
+ *     Turns the settings modal into a grouped application-config
+ *     card.
  * ─────────────────────────────────────────────────────────── */
-
-[data-mode] .message-author {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  color: var(--lobe-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-}
-
-[data-mode] .message-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--lobe-accent-soft);
-  color: var(--lobe-accent);
-  font-size: 10px;
-  font-weight: 700;
-}
-
-[data-mode] .message-name {
-  line-height: 1;
-}
 
 [data-mode] .settings-modal {
   width: min(560px, calc(100vw - 32px));
