@@ -724,7 +724,9 @@
 
 [data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
 [data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: var(--cg-text) !important;
   border-color: color-mix(in srgb, var(--cg-text) 34%, transparent) !important;
+  box-shadow: 0 0 0 3px var(--cg-text) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-text) 7%, transparent) !important;
 }
 

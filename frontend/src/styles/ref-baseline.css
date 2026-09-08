@@ -149,6 +149,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      default wrapping, which is acceptable — the heading still wraps
      cleanly because the container width is fixed. */
   overflow-wrap: break-word;
+  text-wrap: normal;
   text-wrap: balance;
 }
 
