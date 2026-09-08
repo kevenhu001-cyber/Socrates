@@ -295,12 +295,19 @@
   background: var(--cg-surface-hover) !important;
 }
 
-#appShell #topicSetup > .topic-title,
-#appShell #topicSetup > .topic-sub,
-#appShell #topicSetup > .mobile-starter-prompts,
-#appShell #topicSetup > .cg-history,
-#appShell #topicSetup > #topicInputWrap {
-  left: 14px;
+/* P_mobile-composer-center — the 14px nudge below is a desktop-only
+   sidebar-alignment offset. Left unscoped it leaks onto phones, where
+   the 14px-gutter #topicSetup turns it into a 28px-left / 0-right pill.
+   Desktop keeps the offset (ref-baseline pins it to 0 via !important);
+   mobile falls back to the natural centered position. */
+@media (min-width: 769px) {
+  #appShell #topicSetup > .topic-title,
+  #appShell #topicSetup > .topic-sub,
+  #appShell #topicSetup > .mobile-starter-prompts,
+  #appShell #topicSetup > .cg-history,
+  #appShell #topicSetup > #topicInputWrap {
+    left: 14px;
+  }
 }
 
 #appShell #topicSetup > .topic-title {
