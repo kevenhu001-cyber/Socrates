@@ -1,0 +1,655 @@
+/* ==========================================================================
+   ref-baseline.css — ChatGPT reference baseline layer.
+
+   Replicates the saved-ChatGPT information architecture and surface rhythm
+   (sidebar / top segmented tabs / home greeting + composer + suggestions /
+   workspace page heads, tabs, tables and directory rows) on top of the
+   existing Socrates implementation.
+
+   - Loaded AFTER lobe-overrides.css so it wins shell-surface conflicts.
+   - Scoped to `#appShell` shell surfaces only; chat transcript, modals and
+     visualization layers are untouched.
+   - Theme-aware: every color resolves through the `--cg-*` tokens from
+     chatgpt-ui.css (dark defaults + `[data-mode="light"]` values), so the
+     baseline holds in both modes. Rules that only repair hardcoded dark
+     paint from earlier layers are grouped under section 4.
+   - DOM hooks (ids / data-nav / data-home-nav / React mount points) are
+     never renamed here; the OpenConnector directory keeps rendering through
+     #pluginsList and all of its connect/manage actions.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Sidebar — text-only primary nav with pill active state.
+   Reference: 新聊天 / 资料库 / 项目 / 定时任务 / 插件 / 更多, plain rows,
+   light-gray (dark: raised-surface) pill on the current section.
+   SVGs stay in the DOM (a11y / future use) and are hidden visually so the
+   change is presentation-only and instantly reversible.
+   -------------------------------------------------------------------------- */
+#appShell .sidebar-nav-btn svg,
+#appShell .sidebar-nav-btn .nav-kbd {
+  display: none;
+}
+
+#appShell .sidebar-nav {
+  padding: 6px 0 14px;
+  gap: 2px;
+}
+
+#appShell .sidebar-nav-btn {
+  min-height: 36px;
+  padding: 7px 12px;
+  gap: 0;
+  border-radius: 10px;
+  color: var(--cg-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+#appShell .sidebar-nav-btn:hover,
+#appShell .sidebar-nav-btn:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+#appShell .sidebar-nav-btn.active,
+#appShell .sidebar-nav-btn[aria-current="page"] {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+/* "New chat" keeps its primary-action pill on the home surface, matching the
+   reference where 新聊天 is highlighted while the composer is empty. Once a
+   conversation, workspace page or exam is active, only that section's pill
+   stays lit (React publishes .active / aria-current for those states). */
+#appShell #navNew.sidebar-nav-btn {
+  color: var(--cg-text);
+  background: transparent !important;
+}
+
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell
+  #navNew.sidebar-nav-btn {
+  background: var(--cg-surface-hover) !important;
+}
+
+/* Reference section order: 新聊天 / 资料库 / 项目 / 定时任务 / 插件 / ….
+   styles.css pins the legacy order through flex `order` on desktop; the DOM
+   (index.html + SidebarNav.tsx BUTTONS) already follows the reference order,
+   so re-pin it here. Later source order wins at equal specificity. */
+#appShell #navNew {
+  order: 1;
+}
+#appShell #navLibrary {
+  order: 2;
+}
+#appShell #navProjects {
+  order: 3;
+}
+#appShell #navScheduled {
+  order: 4;
+}
+#appShell #navPlugins {
+  order: 5;
+}
+#appShell #navExam {
+  order: 6;
+}
+#appShell #navSkills {
+  order: 7;
+}
+
+/* Recents section header + history rows follow the reference's quiet list. */
+#appShell .recents-title {
+  color: var(--cg-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#appShell .recent-item-text {
+  color: var(--cg-text-secondary);
+  font-size: 13px;
+  line-height: 21px;
+}
+
+/* --------------------------------------------------------------------------
+   2. Top bar — centered segmented 聊天 / 辅导 control.
+   Reference: light track with a raised active segment. Geometry already lands
+   from chatgpt-ui.css; this only guarantees the track/segment contrast reads
+   in both themes without touching chat/tutor switching behavior.
+   -------------------------------------------------------------------------- */
+#appShell .top-mode-tabs {
+  background: var(--cg-surface-raised);
+  border-color: transparent;
+}
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  background: var(--cg-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+/* --------------------------------------------------------------------------
+   3. Home surface — greeting, composer, suggestion rows.
+   Reference: centered "{greeting} {name}." headline, one wide pill composer,
+   plain full-width suggestion rows underneath. Dark-mode paint already lands
+   from lobe-overrides.css; the rules below only normalize metrics that the
+   reference pins down (row rhythm + composer breathing room).
+   -------------------------------------------------------------------------- */
+#appShell #topicSetup .topic-title.greeting {
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+#appShell .lobe-home-actions {
+  width: min(100%, 720px);
+  margin: 20px auto 0;
+}
+
+#appShell .lobe-home-action {
+  width: 100%;
+  text-align: left;
+}
+
+#appShell .lobe-home-action-copy strong {
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   4. Light-mode paint repairs.
+   Earlier layers hardcode dark hexes with !important for these surfaces
+   (lobe-overrides.css). The reference baseline is a light UI, so every one
+   of them is re-pointed at the theme tokens when [data-mode="light"].
+   -------------------------------------------------------------------------- */
+[data-mode="light"] #appShell .sidebar-nav-btn {
+  color: var(--cg-text-secondary) !important;
+}
+
+[data-mode="light"] #appShell .sidebar-nav-btn:hover,
+[data-mode="light"] #appShell .sidebar-nav-btn:focus-visible {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
+
+[data-mode="light"] #appShell .sidebar-nav-btn.active,
+[data-mode="light"] #appShell .sidebar-nav-btn[aria-current="page"] {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
+
+[data-mode="light"] #appShell #navNew.sidebar-nav-btn {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .recent-item-text {
+  color: var(--cg-text-secondary) !important;
+}
+
+[data-mode="light"] #appShell .recents-title {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell .sidebar-footer {
+  border-top-color: var(--cg-border) !important;
+}
+
+[data-mode="light"] #appShell .sidebar-footer .user-name {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .sidebar-footer .user-plan {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell #topicSetup .topic-title.greeting {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell #topicInputWrap {
+  border-color: var(--cg-border-strong) !important;
+  background: var(--cg-surface) !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%) !important;
+}
+
+[data-mode="light"] #appShell #topicInputWrap .attach-btn,
+[data-mode="light"] #appShell #topicInputWrap .mobile-mic-btn {
+  color: var(--cg-text-secondary) !important;
+}
+
+[data-mode="light"] #appShell #topicInputWrap .effort-trigger {
+  color: var(--cg-text-muted) !important;
+}
+
+/* Reference send button: solid dark circle in light mode. */
+[data-mode="light"] #appShell #topicInputWrap #startBtn {
+  color: #fff !important;
+  background: #111 !important;
+}
+
+[data-mode="light"] #appShell .lobe-home-action:hover,
+[data-mode="light"] #appShell .lobe-home-action:focus-visible {
+  background: var(--cg-surface-hover) !important;
+}
+
+[data-mode="light"] #appShell .lobe-home-action-icon {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell .lobe-home-action-copy strong {
+  color: var(--cg-text-secondary) !important;
+}
+
+/* Workspace pages: never force the near-black canvas in light mode. */
+[data-mode="light"] body.workspace-active #appShell .plugins-panel.main-page {
+  background: transparent !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Live directory light-mode repairs.
+   lobe-overrides.css paints the OpenConnector directory with hardcoded dark
+   hexes (!important). The reference baseline is a light UI, so each surface
+   is re-pointed at the theme tokens here. Dark mode is untouched.
+   -------------------------------------------------------------------------- */
+[data-mode="light"] #appShell .plugin-directory {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-heading h2 {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-desc {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-search {
+  border-color: var(--cg-border-strong) !important;
+  background: var(--cg-surface) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-search input {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-tabs button {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-tabs button.active {
+  color: var(--cg-text) !important;
+  background: var(--cg-surface-hover) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-section > h3 {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-row:hover {
+  background: var(--cg-surface-hover) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-row .workspace-row-copy strong {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-row .workspace-row-copy span {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-icon-action {
+  color: var(--cg-text-secondary) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-icon-action:hover {
+  background: var(--cg-surface-hover) !important;
+}
+
+[data-mode="light"] #appShell .plugin-installed-label {
+  color: var(--cg-text-secondary) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-note {
+  color: var(--cg-text-muted) !important;
+}
+
+[data-mode="light"] #appShell .workspace-page-head h1 {
+  color: var(--cg-text) !important;
+}
+
+[data-mode="light"] #appShell .workspace-page-head p {
+  color: var(--cg-text-muted) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Workspace page heads — reference rhythm shared by Library / Projects /
+   Scheduled / Plugins: large title, muted one-line description, search pill
+   + solid action button pinned right. Applies to both the static fallback
+   chrome and the live React directory heads.
+   -------------------------------------------------------------------------- */
+body.workspace-active #appShell .main-page {
+  width: min(100%, 1100px);
+  margin-inline: auto;
+}
+
+#appShell .workspace-page-head h1,
+#appShell .plugin-directory-heading h2,
+#appShell .plugins-panel-head h1 {
+  letter-spacing: -0.01em;
+}
+
+#appShell .workspace-page-head p,
+#appShell .plugin-directory-desc,
+#appShell .plugins-panel-head p {
+  color: var(--cg-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   7. Home suggestions (beneath composer, matching ChatGPT.html / chatgpt-home.png)
+   -------------------------------------------------------------------------- */
+#appShell .lobe-home-context {
+  display: none !important;
+}
+
+#appShell .home-suggestions-wrap {
+  width: min(100%, 732px);
+  margin: 16px auto 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#appShell .home-suggestions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+#appShell .home-suggestion-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+#appShell .home-suggestion-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  transition: background 0.15s ease;
+}
+
+#appShell .home-suggestion-btn:hover {
+  background: var(--cg-surface-hover);
+}
+
+[data-mode="light"] #appShell .home-suggestion-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+#appShell .home-suggestion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--cg-text-muted);
+}
+
+#appShell .home-suggestion-icon .suggestion-emoji {
+  font-size: 17px;
+  line-height: 1;
+}
+
+#appShell .home-suggestion-text {
+  font-size: 14px;
+  color: var(--cg-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  padding-right: 32px;
+}
+
+[data-mode="light"] #appShell .home-suggestion-text {
+  color: #374151;
+}
+
+#appShell .home-suggestion-dismiss {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  color: var(--cg-text-muted);
+}
+
+#appShell .home-suggestion-item:hover .home-suggestion-dismiss,
+#appShell .home-suggestion-item:focus-within .home-suggestion-dismiss {
+  opacity: 1;
+}
+
+#appShell .home-suggestion-dismiss:hover {
+  background: var(--cg-surface-raised);
+  color: var(--cg-text);
+}
+
+@media (max-width: 768px) {
+  #appShell .home-suggestions-wrap {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Unified Composer & Top Mode Pills Refinement
+   -------------------------------------------------------------------------- */
+#appShell .top-mode-tabs {
+  border-radius: 9999px !important;
+  padding: 3px !important;
+}
+
+[data-mode="light"] #appShell .top-mode-tabs {
+  background: #f3f4f6 !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle {
+  border-radius: 9999px !important;
+  padding: 5px 16px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+}
+
+[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle.active {
+  background: #ffffff !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. Live OpenConnector Plugins Grid Refinement (2-column layout matching reference)
+   -------------------------------------------------------------------------- */
+#appShell .plugin-directory-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+#appShell .plugin-directory-row {
+  display: flex !important;
+  align-items: center !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--cg-border) !important;
+  background: var(--cg-surface) !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-row {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-mode="light"] #appShell .plugin-directory-row:hover {
+  background: #f9f9f9 !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+#appShell .plugin-directory-row .connector-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+#appShell .plugin-directory-row .workspace-row-copy {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+#appShell .plugin-directory-row .workspace-row-copy strong {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#appShell .plugin-directory-row .workspace-row-copy span {
+  font-size: 13px !important;
+  color: var(--cg-text-muted) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#appShell .plugin-directory-row-action {
+  margin-left: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+#appShell .plugin-directory-icon-action {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--cg-border) !important;
+  background: var(--cg-surface-raised) !important;
+  cursor: pointer !important;
+  color: var(--cg-text-secondary) !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+#appShell .plugin-directory-icon-action:hover {
+  background: var(--cg-surface-hover) !important;
+  color: var(--cg-text) !important;
+}
+
+@media (max-width: 768px) {
+  #appShell .plugin-directory-list {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+#appShell .plugins-top-tabs {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 24px;
+}
+
+#appShell .plugins-top-tabs .pill {
+  display: inline-flex;
+  border-radius: 9999px;
+  background: var(--cg-surface-raised);
+  padding: 3px;
+  gap: 2px;
+}
+
+[data-mode="light"] #appShell .plugins-top-tabs .pill {
+  background: #f3f4f6;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+#appShell .plugins-top-tabs .pill button {
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--cg-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-mode="light"] #appShell .plugins-top-tabs .pill button.active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+#appShell .plugin-directory-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+#appShell .plugin-directory-add-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--cg-border);
+  background: var(--cg-surface-raised);
+  color: var(--cg-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+[data-mode="light"] #appShell .plugin-directory-add-btn {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+#appShell .plugin-directory-add-btn:hover {
+  background: var(--cg-surface-hover);
+}
+
+

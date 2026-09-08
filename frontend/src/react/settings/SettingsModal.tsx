@@ -83,39 +83,65 @@ function SettingsModal() {
           </button>
         </div>
         <div className="settings-body">
-          <div className="stg-toggle" id="stgToggle" onClick={() => legacy.settings.toggleAPI()}>
-            <span className="settings-label stg-toggle-label">{i18n('settings.useExternalApi', 'Use External API')}</span>
-            <div className={`stg-toggle-track${snap.externalApiOn ? ' on' : ''}`} id={TRACK_ID}>
-              <div className="stg-toggle-knob" />
+          <div className="settings-hero">
+            <div>
+              <h2 className="settings-hero-title">Application configuration</h2>
+              <p className="settings-hero-subtitle">Manage model routing, tone, and runtime behavior.</p>
             </div>
           </div>
-          <div className="settings-field">
-            <div className="settings-label-row">
-              <span className="settings-label">{i18n('settings.models', 'Models')}</span>
-              <button className="settings-btn-mini" id="addProviderBtn" onClick={() => legacy.settings.addProvider()}>
-                {i18n('settings.addProvider', '+ Add')}
-              </button>
+          <section className="settings-section">
+            <div className="settings-section-head">
+              <h3>Connection</h3>
+              <p>Choose whether Socrates may use your own API credentials.</p>
             </div>
-            <span className="settings-hint">
-              {i18n('settings.providerHint', 'Configure one or more providers. Click the circle to set one as active.')}
-            </span>
-            <div
-              className={`provider-list${snap.externalApiOn ? '' : ' collapsed'}`}
-              id={PROVIDER_LIST_ID}
-            />
-          </div>
+            <div className="settings-card settings-card--toggle">
+              <div className="stg-toggle" id="stgToggle" onClick={() => legacy.settings.toggleAPI()}>
+                <span className="settings-label stg-toggle-label">{i18n('settings.useExternalApi', 'Use External API')}</span>
+                <div className={`stg-toggle-track${snap.externalApiOn ? ' on' : ''}`} id={TRACK_ID}>
+                  <div className="stg-toggle-knob" />
+                </div>
+              </div>
+            </div>
+          </section>
+          <section className="settings-section">
+            <div className="settings-section-head">
+              <h3>Model providers</h3>
+              <p>Add a provider or choose the active model.</p>
+            </div>
+            <div className="settings-field">
+              <div className="settings-label-row">
+                <span className="settings-label">{i18n('settings.models', 'Models')}</span>
+                <button className="settings-btn-mini" id="addProviderBtn" onClick={() => legacy.settings.addProvider()}>
+                  {i18n('settings.addProvider', '+ Add')}
+                </button>
+              </div>
+              <span className="settings-hint">
+                {i18n('settings.providerHint', 'Configure one or more providers. Click the circle to set one as active.')}
+              </span>
+              <div
+                className={`provider-list${snap.externalApiOn ? '' : ' collapsed'}`}
+                id={PROVIDER_LIST_ID}
+              />
+            </div>
+          </section>
           <div id="stgStatus" />
 
           {/* Tone Presets */}
-          <div className="settings-field">
-            <div className="settings-label-row">
-              <span className="settings-label">{i18n('settings.tone', 'AI Tone')}</span>
+          <section className="settings-section">
+            <div className="settings-section-head">
+              <h3>Assistant tone</h3>
+              <p>Choose how Socrates speaks during a session.</p>
             </div>
-            <span className="settings-hint">
-              {i18n('settings.toneHint', 'Choose how the AI speaks to you. Works with the built-in AI and any provider you add.')}
-            </span>
-            <div className="tone-preset-options" id={TONE_OPTIONS_ID} />
-          </div>
+            <div className="settings-field">
+              <div className="settings-label-row">
+                <span className="settings-label">{i18n('settings.tone', 'AI Tone')}</span>
+              </div>
+              <span className="settings-hint">
+                {i18n('settings.toneHint', 'Choose how the AI speaks to you. Works with the built-in AI and any provider you add.')}
+              </span>
+              <div className="tone-preset-options" id={TONE_OPTIONS_ID} />
+            </div>
+          </section>
 
           <div className="settings-actions">
             <button className="settings-btn danger" id="clearSettingsBtn" onClick={() => legacy.settings.clearSettings()}>

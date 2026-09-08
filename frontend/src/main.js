@@ -23,6 +23,7 @@ import './app/errorGuard.js';
 import './render/katexRefresh.js';
 import './i18n.js';
 import { initCookieConsent } from './cookieConsent.js';
+import { installHomeSurface } from './ui/homeSurface.js';
 import { toggleComposerTools } from './ui/composerTools.js';
 import { toggleEffortPicker } from './ui/effortPicker.js';
 import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.js';
@@ -78,6 +79,7 @@ import {
    client-side cookie writes are gated by cookieConsent.js until the visitor
    accepts them. */
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
+installHomeSurface();
 initArtifactPreview();
 initLinkFavicons();
 import { toggleSidebar } from './sidebar/index.js';

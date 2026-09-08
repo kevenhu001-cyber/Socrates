@@ -56,6 +56,8 @@ function _chatGreetingKey() {
   return "greeting.chat.late";
 }
 
+import { mountHomeSuggestions } from './homeSuggestions.ts';
+
 export function renderGreeting() {
   var el = document.getElementById("topicTitle");
   if (!el) return;
@@ -66,6 +68,9 @@ export function renderGreeting() {
   if (!tmpl || tmpl === key) tmpl = fallback;
   el.textContent = tmpl.replace("{name}", _greetingFirstName());
   el.classList.add("greeting");
+  try {
+    mountHomeSuggestions();
+  } catch (_) {}
 }
 
 // Consumers import renderGreeting directly (window bridge removed in

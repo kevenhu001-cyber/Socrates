@@ -246,12 +246,13 @@ function PluginDirectory({ plugins, configured, dispatch }: {
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<'installed' | 'all'>('installed');
+  const [scope, setScope] = useState<'public' | 'personal'>('public');
+  const catalog = plugins;
   const visiblePlugins = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return plugins.filter((plugin) => {
+    return catalog.filter((plugin) => {
       const isInstalled = plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated';
-      if (scope === 'installed' && !isInstalled) return false;
+      if (scope === 'personal' && !isInstalled) return false;
       if (!needle) return true;
       return [plugin.name, plugin.description, ...(plugin.capabilities || [])]
         .filter(Boolean)
@@ -259,89 +260,69 @@ function PluginDirectory({ plugins, configured, dispatch }: {
         .toLowerCase()
         .includes(needle);
     });
-  }, [plugins, query, scope]);
+  }, [catalog, query, scope]);
+  const installedPlugins = useMemo(
+    () => catalog.filter((plugin) => plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated'),
+    [catalog],
+  );
 
   const searchLabel = i18n('plugins.search', 'Search plugins');
-  const connectedLabel = i18n('plugins.connected', 'Connected');
   const renderAction = (plugin: WorkspacePlugin) => {
     const status = plugin.connection?.status;
     if (status === 'connected') {
-      /* Kimi-style quiet state: a checkmark instead of a text pill keeps
-         the grid calm; the label survives for screen readers + hover. */
       return (
-        <span className="plugin-directory-connected" role="status" aria-label={connectedLabel} title={connectedLabel}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
-        </span>
+        <button type="button" className="plugin-directory-icon-action" aria-label={i18n('plugins.manage', 'Manage') + ' ' + plugin.name} title={i18n('plugins.manage', 'Manage')} onClick={() => dispatch.openPluginForm(plugin.id)}><MoreIcon /></button>
       );
     }
     if (status === 'initiated') {
-      return <button type="button" className="plugin-directory-action" onClick={() => dispatch.refreshPlugin(plugin.id)}>{i18n('plugins.refreshStatus', 'Refresh')}</button>;
-    }
-    if (!configured) {
-      return <span className="plugin-directory-muted">{i18n('plugins.serverSetupNeeded', 'Unavailable')}</span>;
+      return <button type="button" className="plugin-directory-icon-action" aria-label={i18n('plugins.refreshStatus', 'Refresh') + ' ' + plugin.name} title={i18n('plugins.refreshStatus', 'Refresh')} onClick={() => dispatch.refreshPlugin(plugin.id)}><PlusIcon /></button>;
     }
     if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
-      return <button type="button" className="plugin-directory-action" onClick={() => dispatch.openPluginForm(plugin.id)}>{i18n('plugins.connect', 'Connect')}</button>;
+      return <button type="button" className="plugin-directory-icon-action" disabled={!configured} aria-label={i18n('plugins.connect', 'Connect') + ' ' + plugin.name} title={configured ? i18n('plugins.connect', 'Connect') : i18n('plugins.serverSetupNeeded', 'Unavailable')} onClick={() => dispatch.openPluginForm(plugin.id)}><PlusIcon /></button>;
     }
-    return <button type="button" className="plugin-directory-action" onClick={() => dispatch.connectPlugin(plugin.id)}>{i18n('plugins.connect', 'Connect')}</button>;
+    return <button type="button" className="plugin-directory-icon-action" disabled={!configured} aria-label={i18n('plugins.connect', 'Connect') + ' ' + plugin.name} title={configured ? i18n('plugins.connect', 'Connect') : i18n('plugins.serverSetupNeeded', 'Unavailable')} onClick={() => dispatch.connectPlugin(plugin.id)}><PlusIcon /></button>;
   };
 
-  const showInstalledEmpty = visiblePlugins.length === 0 && !query.trim() && scope === 'installed';
+  const popularPlugins = visiblePlugins.slice(0, 6);
+  const newPlugins = visiblePlugins.slice(6);
 
   return (
     <section className="workspace-surface plugin-directory" aria-labelledby="plugin-directory-title">
+      <div className="plugins-top-tabs">
+        <div className="pill" role="tablist" aria-label={i18n('plugins.topTabs', 'Directory tabs')}>
+          <button type="button" className="active" role="tab" aria-selected="true">{i18n('sidebar.plugins.title', 'Plugins')}</button>
+          <button type="button" role="tab" aria-selected="false" onClick={() => (window as any).openPromptTemplatesModal?.()}>{i18n('plugins.skillsTab', 'Skills')}</button>
+        </div>
+      </div>
       <div className="plugin-directory-head">
         <div className="plugin-directory-heading">
           <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
           <p className="plugin-directory-desc">{i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}</p>
         </div>
-        <label className="plugin-directory-search"><SearchIcon /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
+        <div className="plugin-directory-tools">
+          <label className="plugin-directory-search"><SearchIcon /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
+          <button type="button" className="plugin-directory-add-btn" aria-label={i18n('plugins.add', 'Add plugin')} title={i18n('plugins.add', 'Add plugin')} onClick={() => (window as any).openPluginMarketplace?.()}><PlusIcon /></button>
+        </div>
       </div>
 
-      {plugins.some((plugin) => plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated') ? (
+      {installedPlugins.length > 0 ? (
         <div className="plugin-installed-strip" aria-label={i18n('plugins.installed', 'Installed')}>
-          <span className="plugin-installed-label">{i18n('plugins.installed', 'Installed')}</span>
-          <div className="plugin-installed-icons">{plugins.filter((plugin) => plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated').map((plugin) => <span className={'workspace-row-icon connector-icon connector-' + plugin.id} key={plugin.id} title={plugin.name}><ConnectorMark id={plugin.id} name={plugin.name} /></span>)}</div>
+          <button type="button" className="plugin-installed-label" onClick={() => setScope('personal')}>{i18n('plugins.installed', 'Installed')} <span aria-hidden="true">›</span></button>
+          <div className="plugin-installed-icons">{installedPlugins.map((plugin) => <span className={'workspace-row-icon connector-icon connector-' + plugin.id} key={plugin.id} title={plugin.name}><ConnectorMark id={plugin.id} name={plugin.name} /></span>)}</div>
         </div>
       ) : null}
 
       <div className="plugin-directory-tabs" role="tablist" aria-label={i18n('plugins.filter', 'Plugin filter')}>
-        <button type="button" role="tab" aria-selected={scope === 'installed'} className={scope === 'installed' ? 'active' : ''} onClick={() => setScope('installed')}>{i18n('plugins.installed', 'Installed')}</button>
-        <button type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>{i18n('plugins.allPlugins', 'All plugins')}</button>
+        <button type="button" role="tab" aria-selected={scope === 'public'} className={scope === 'public' ? 'active' : ''} onClick={() => setScope('public')}>{i18n('plugins.public', 'Public')}</button>
+        <button type="button" role="tab" aria-selected={scope === 'personal'} className={scope === 'personal' ? 'active' : ''} onClick={() => setScope('personal')}>{i18n('plugins.personal', 'Personal')}</button>
       </div>
 
-      <div className="plugin-directory-list">
-        {visiblePlugins.length === 0 ? (
-          <div className="plugin-directory-empty">
-            <strong>{showInstalledEmpty ? i18n('plugins.installedEmpty', 'No installed plugins yet') : i18n('plugins.noMatch', 'No matching plugins')}</strong>
-            <span>{showInstalledEmpty ? i18n('plugins.installedEmptyDesc', 'Apps you connect will appear here.') : i18n('plugins.tryDifferent', 'Try a different search.')}</span>
-            {showInstalledEmpty ? (
-              <button type="button" className="plugin-directory-action plugin-directory-browse" onClick={() => setScope('all')}>{i18n('plugins.browseAll', 'Browse all plugins')}</button>
-            ) : null}
-          </div>
-        ) : visiblePlugins.map((plugin) => {
-          const connection = plugin.connection || null;
-          const connectedState = connection?.status === 'connected';
-          const description = plugin.description || (plugin.capabilities || []).slice(0, 2).join(' · ');
-          return (
-            <div className={'connector-row plugin-directory-row' + (connectedState ? ' is-connected' : '')} key={plugin.id}>
-              <span className={'workspace-row-icon connector-icon connector-' + plugin.id}>
-                <ConnectorMark id={plugin.id} name={plugin.name} />
-              </span>
-              <div className="workspace-row-copy">
-                <strong>{plugin.name}</strong>
-                <span>{description || i18n('plugins.noDescription', 'Use this app in chat')}</span>
-              </div>
-              <div className="plugin-directory-row-action">{renderAction(plugin)}</div>
-            </div>
-          );
-        })}
+      <div className="plugin-directory-body">
+        {visiblePlugins.length === 0 ? <div className="plugin-directory-empty"><strong>{i18n('plugins.noMatch', 'No matching plugins')}</strong><span>{i18n('plugins.tryDifferent', 'Try a different search.')}</span></div> : null}
+        {popularPlugins.length > 0 ? <section className="plugin-directory-section"><h3>{i18n('plugins.popular', 'Popular')}</h3><div className="plugin-directory-list">{popularPlugins.map((plugin) => <div className="connector-row plugin-directory-row" key={plugin.id}><span className={'workspace-row-icon connector-icon connector-' + plugin.id}><ConnectorMark id={plugin.id} name={plugin.name} /></span><div className="workspace-row-copy"><strong>{plugin.name}</strong><span>{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</span></div><div className="plugin-directory-row-action">{renderAction(plugin)}</div></div>)}</div></section> : null}
+        {newPlugins.length > 0 ? <section className="plugin-directory-section"><h3>{i18n('plugins.new', 'New and notable')}</h3><div className="plugin-directory-list">{newPlugins.map((plugin) => <div className="connector-row plugin-directory-row" key={plugin.id}><span className={'workspace-row-icon connector-icon connector-' + plugin.id}><ConnectorMark id={plugin.id} name={plugin.name} /></span><div className="workspace-row-copy"><strong>{plugin.name}</strong><span>{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</span></div><div className="plugin-directory-row-action">{renderAction(plugin)}</div></div>)}</div></section> : null}
       </div>
-      {configured ? (
-        <p className="plugin-directory-note">{i18n('plugins.oauthNote', 'OAuth tokens stay in the secure connector gateway.')}</p>
-      ) : (
-        <div className="plugin-directory-warning"><strong>{i18n('plugins.setupTitle', 'Connector service needs setup')}</strong><span>{i18n('plugins.setupDesc', 'Add OOMOL_PROJECT_API_KEY to the server environment to enable authorization.')}</span></div>
-      )}
+      {!configured && plugins.length > 0 ? <p className="plugin-directory-note">{i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}</p> : null}
     </section>
   );
 }

@@ -80,17 +80,19 @@ test('plugin center filters public/personal apps and scheduled templates prefill
 
   await page.locator('#navPlugins').click();
   await expect(page.locator('.plugin-directory')).toBeVisible();
-  // The installed scope is the default, matching the reference design.
-  await expect(page.locator('.plugin-directory-row')).toHaveCount(2);
+  // The public scope is the default, matching the reference design.
+  await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
 
   const appSearch = page.locator('.plugin-directory-search input');
   await appSearch.fill('gmail');
+  await expect(page.locator('.plugin-directory-row')).toHaveCount(1);
+  await appSearch.fill('zzz-no-such-app');
   await expect(page.locator('.plugin-directory-row')).toHaveCount(0);
   await expect(page.locator('.plugin-directory-empty')).toBeVisible();
   await appSearch.fill('');
-  await expect(page.locator('.plugin-directory-row')).toHaveCount(2);
-  await page.getByRole('tab', { name: 'All plugins' }).click();
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
+  await page.getByRole('tab', { name: 'Personal' }).click();
+  await expect(page.locator('.plugin-directory-row')).toHaveCount(2);
 
   // The directory is a direct sidebar destination; new-chat returns home.
   await page.locator('#navNew').click();

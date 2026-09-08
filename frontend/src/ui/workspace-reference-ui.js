@@ -4,7 +4,10 @@
  * Interactivity for the reference-styled workspace pages:
  *  - Spaces panel: filter pills, search-input filter, hide React duplicate chrome
  *  - Plugins panel: top tabs (插件 / 技能), scope tabs (公开 / 个人),
- *                   add-button focus, demo card click affordance
+ *                   add-button forwards to the marketplace opener.
+ *                   (Static directory cards were removed: the live React
+ *                   directory owns all plugin content and OpenConnector
+ *                   actions, so the fallback shell keeps no dead buttons.)
  *  - Library panel: upload button forwards to #libraryUploadInput
  *
  * Also keeps the fallback reference shell from colliding with legacy page
@@ -76,16 +79,6 @@ function setupPluginsTabs() {
       } catch (_) { /* swallow */ }
     });
   }
-  var cards = document.querySelectorAll('#pluginsPanel .plugins-card');
-  cards.forEach(function (card) {
-    card.addEventListener('click', function () {
-      try {
-        document.dispatchEvent(new CustomEvent('workspace-reference:card-click', {
-          detail: { name: card.querySelector('strong')?.textContent || '' },
-        }));
-      } catch (_) { /* ignore */ }
-    });
-  });
 }
 
 function setupLibraryHeader() {

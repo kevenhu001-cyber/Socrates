@@ -1,0 +1,2153 @@
+/* =============================================================
+ * lobe-overrides.css
+ * -------------------------------------------------------------
+ * LobeHub-inspired visual layer for Socrates.
+ *
+ * Strategy: a single override stylesheet that lands AFTER the
+ * 691 KB `styles.css` cascade. Every selector here is more
+ * specific (or equal-but-loaded-later, which wins by source
+ * order) than the legacy rules, so the lobehub aesthetic
+ * "wins" without us having to refactor the legacy file.
+ *
+ * What it touches:
+ *   - Page-level chrome (background, font, scrollbar)
+ *   - Sidebar (geometry, glass surface, nav-button language)
+ *   - Top bar (mode segmented control)
+ *   - Main / chat area (centered layout, max-width)
+ *   - Chat composer (rounded glass surface, tool lane)
+ *   - Display-prefs popover (lobehub segmented controls)
+ *   - Modals / dropdowns (lobehub elevation)
+ *   - Connector / Plugin / Settings panels (cards)
+ *
+ * What it deliberately does NOT touch:
+ *   - Tutor / exam / mistakes rendering — those keep their
+ *     existing rules. Only the surrounding chrome changes.
+ *   - Markdown / code / katex — left untouched.
+ *   - Mobile breakpoints inside styles.css — kept as-is, the
+ *     overrides respect every existing media query by being
+ *     more specific than them.
+ *
+ * Token source: all colors / radii / shadows come from the
+ * `--lobe-*` variables defined in `themes.css`. No hard-coded
+ * hex values appear in this file.
+ * ============================================================= */
+
+
+/* ───────────────────────────────────────────────────────────
+ * 1. PAGE-LEVEL CHROME
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode="dark"] .app,
+[data-mode="dark"] body {
+  background-color: var(--lobe-bg-layout);
+  color: var(--lobe-text);
+}
+
+[data-mode="light"] .app,
+[data-mode="light"] body {
+  background-color: var(--lobe-bg-layout);
+  color: var(--lobe-text);
+}
+
+/* Default text color applies to anything not explicitly themed */
+[data-mode="dark"] .main,
+[data-mode="dark"] .sidebar,
+[data-mode="dark"] .top-bar {
+  color: var(--lobe-text);
+}
+[data-mode="light"] .main,
+[data-mode="light"] .sidebar,
+[data-mode="light"] .top-bar {
+  color: var(--lobe-text);
+}
+
+/* Global font — keep the bundled Plus Jakarta Sans / Inter / Noto
+   stack that styles.css imports; only switch the rendering order
+   to put the lobehub-preferred family first. */
+[data-mode] .app,
+[data-mode] .app button,
+[data-mode] .app input,
+[data-mode] .app textarea,
+[data-mode] .app select {
+  font-family: var(--ui-font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Modern scrollbar — slim, low-contrast, lobehub-feel */
+[data-mode] .sidebar ::-webkit-scrollbar,
+[data-mode] .main ::-webkit-scrollbar,
+[data-mode] .recents-panel ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-mode] .sidebar ::-webkit-scrollbar-track,
+[data-mode] .main ::-webkit-scrollbar-track,
+[data-mode] .recents-panel ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-mode] .sidebar ::-webkit-scrollbar-thumb,
+[data-mode] .main ::-webkit-scrollbar-thumb,
+[data-mode] .recents-panel ::-webkit-scrollbar-thumb {
+  background: var(--lobe-fill-secondary);
+  border-radius: var(--lobe-radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+[data-mode] .sidebar ::-webkit-scrollbar-thumb:hover,
+[data-mode] .main ::-webkit-scrollbar-thumb:hover,
+[data-mode] .recents-panel ::-webkit-scrollbar-thumb:hover {
+  background: var(--lobe-fill);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* Selection */
+[data-mode] ::selection {
+  background: var(--lobe-accent-soft);
+  color: var(--lobe-text);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 2. SIDEBAR
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .sidebar {
+  background-color: var(--lobe-bg-container-secondary);
+  border-right: 1px solid var(--lobe-border-secondary);
+  box-shadow: none;
+}
+
+/* Sidebar inner — keep the content frame, soften the padding */
+[data-mode] .sidebar-inner {
+  padding: 8px;
+  gap: 4px;
+}
+
+/* Header — pe-flat, no box */
+[data-mode] .sidebar-header {
+  padding: 6px 4px 10px;
+  border-bottom: none;
+}
+[data-mode] .sidebar-logo {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--lobe-text);
+  padding: 0 8px;
+}
+[data-mode] .sidebar-logo-img {
+  filter: none;
+}
+[data-mode] .sidebar-logo .cg-sidebar-caret {
+  opacity: 0;
+}
+
+/* Sidebar header actions — flatter icon buttons */
+[data-mode] .sidebar-header-actions {
+  gap: 2px;
+}
+[data-mode] .sidebar-header-actions .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--lobe-radius);
+  color: var(--lobe-text-secondary);
+  background: transparent;
+  border: none;
+  transition: background-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .sidebar-header-actions .icon-btn:hover {
+  background-color: var(--lobe-fill-tertiary);
+  color: var(--lobe-text);
+}
+[data-mode] .sidebar-header-actions .icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Nav buttons — lobehub-style flat pill */
+[data-mode] .sidebar-nav {
+  padding: 4px 0;
+  gap: 2px;
+}
+[data-mode] .sidebar-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0 10px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: var(--lobe-radius);
+  color: var(--lobe-text);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .sidebar-nav-btn:hover {
+  background-color: var(--lobe-fill-tertiary);
+}
+[data-mode] .sidebar-nav-btn.active,
+[data-mode] .sidebar-nav-btn[aria-current="page"] {
+  background-color: var(--lobe-fill-secondary);
+  font-weight: 500;
+}
+[data-mode] .sidebar-nav-btn svg {
+  width: 18px;
+  height: 18px;
+  color: var(--lobe-text-secondary);
+  flex-shrink: 0;
+  stroke-width: 1.75;
+}
+[data-mode] .sidebar-nav-btn:hover svg {
+  color: var(--lobe-text);
+}
+[data-mode] .sidebar-nav-btn.active svg {
+  color: var(--lobe-text);
+}
+[data-mode] .sidebar-nav-btn .nav-kbd {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: var(--lobe-radius-xs);
+  background: var(--lobe-fill-secondary);
+  color: var(--lobe-text-tertiary);
+  font-weight: 500;
+  font-family: var(--ui-font-sans);
+}
+
+/* Search row — single rounded input, lobehub-style */
+[data-mode] .sidebar-search-row {
+  margin-top: 4px;
+  padding: 0;
+  gap: 4px;
+}
+[data-mode] .sidebar-search {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--lobe-radius);
+  background-color: var(--lobe-fill-tertiary);
+  border: 1px solid transparent;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .sidebar-search:focus-within {
+  background-color: var(--lobe-bg-container);
+  border-color: var(--lobe-border);
+}
+[data-mode] .sidebar-search-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--lobe-text-tertiary);
+  flex-shrink: 0;
+}
+[data-mode] .sidebar-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--lobe-text);
+  margin-left: 8px;
+}
+[data-mode] .sidebar-search input::placeholder {
+  color: var(--lobe-text-tertiary);
+}
+[data-mode] .sidebar-view-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--lobe-radius);
+  border: none;
+  background: transparent;
+  color: var(--lobe-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .sidebar-view-btn:hover {
+  background-color: var(--lobe-fill-tertiary);
+  color: var(--lobe-text);
+}
+[data-mode] .sidebar-view-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Recents / knowledge panel headers */
+[data-mode] .recents-header {
+  padding: 14px 10px 6px;
+}
+[data-mode] .recents-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--lobe-text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/* Recents list — pill rows on hover, like lobehub conversations */
+[data-mode] .recents-panel .recents-row,
+[data-mode] #recentsList .recents-item,
+[data-mode] #recentsList > * {
+  border-radius: var(--lobe-radius);
+}
+[data-mode] #recentsList > *:hover {
+  background-color: var(--lobe-fill-tertiary);
+}
+
+/* Tag chips inside recents */
+[data-mode] .recents-filter-chips {
+  padding: 0 8px 6px;
+  gap: 4px;
+}
+[data-mode] .recents-filter-chips button {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--lobe-radius-pill);
+  border: 1px solid var(--lobe-border-secondary);
+  background: transparent;
+  color: var(--lobe-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .recents-filter-chips button:hover {
+  background-color: var(--lobe-fill-tertiary);
+  color: var(--lobe-text);
+}
+[data-mode] .recents-filter-chips button.active,
+[data-mode] .recents-filter-chips button[aria-pressed="true"] {
+  background-color: var(--lobe-text);
+  border-color: var(--lobe-text);
+  color: var(--lobe-on-primary);
+}
+
+/* Footer / user row */
+[data-mode] .sidebar-footer {
+  border-top: none;
+  padding: 6px 4px 8px;
+  margin-top: auto;
+}
+[data-mode] .sidebar-footer-actions {
+  gap: 2px;
+}
+[data-mode] .sidebar-footer .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--lobe-radius);
+  border: none;
+  background: transparent;
+  color: var(--lobe-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .sidebar-footer .icon-btn:hover {
+  background-color: var(--lobe-fill-tertiary);
+  color: var(--lobe-text);
+}
+[data-mode] .sidebar-footer .icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+[data-mode] .user-row {
+  padding: 6px 8px;
+  border-radius: var(--lobe-radius);
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .user-row:hover {
+  background-color: var(--lobe-fill-tertiary);
+}
+[data-mode] .user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--lobe-radius-pill);
+  background: var(--lobe-accent-soft);
+  color: var(--lobe-accent);
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+[data-mode] .user-name {
+  color: var(--lobe-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+[data-mode] .user-plan {
+  color: var(--lobe-text-tertiary);
+  font-size: 11px;
+}
+
+/* Resize handle */
+[data-mode] .sidebar-resize-handle {
+  background: transparent;
+  transition: background-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .sidebar-resize-handle:hover,
+[data-mode] .sidebar-resize-handle.is-active {
+  background-color: var(--lobe-accent-soft);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 3. TOP BAR (mode segmented control)
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .top-bar {
+  background: transparent;
+  border-bottom: none;
+  padding: 12px 24px;
+  height: auto;
+  min-height: 56px;
+}
+
+/* Desktop: the base chatgpt-v2 layer collapses .top-bar-right to
+   width:0 / visibility:hidden (to keep the mode tabs centered), which
+   also makes the in-session Find/Share buttons unclickable on desktop
+   once a conversation starts (toggleShareBtn only clears their
+   .hidden). Reveal the group during an active conversation; margin-
+   left:auto anchors it to the right edge while the tabs stay centered.
+   Specificity (#appShell + body attribute + .top-bar-right) and
+   !important beat the base `#appShell .top-bar-right` rule. */
+@media (min-width: 769px) {
+  body[data-conversation-active="true"] #appShell .top-bar-right {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    visibility: visible;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+}
+
+/* Desktop idle composer: chatgpt-v2.css pins the one-row pill to a
+   hardcoded 732px (commit ffb7d1e4), which freezes the user-facing
+   "content width" display preference for the topic composer. Restore
+   the scale-aware reading-column token so the composer widens with
+   --app-width-scale (covered by home-customization.spec). The extra
+   `body` keeps specificity above the v2 rule regardless of order. */
+@media (min-width: 769px) {
+  body #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    width: min(100%, var(--conversation-composer-width), 560px) !important;
+    max-width: min(var(--conversation-composer-width), 560px) !important;
+  }
+}
+
+[data-mode] .top-mode-tabs {
+  background-color: var(--lobe-fill-tertiary);
+  border-radius: var(--lobe-radius);
+  padding: 3px;
+  gap: 0;
+}
+[data-mode] .app-mode-toggle {
+  height: 30px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  border-radius: var(--lobe-radius-sm);
+  color: var(--lobe-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .app-mode-toggle:hover {
+  color: var(--lobe-text);
+}
+[data-mode] .app-mode-toggle.active,
+[data-mode] .app-mode-toggle[aria-selected="true"] {
+  background-color: var(--lobe-bg-container);
+  color: var(--lobe-text);
+  box-shadow: var(--lobe-shadow-tertiary);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 4. MAIN AREA + CHAT
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .main {
+  background-color: var(--lobe-bg-layout);
+  background-image: none;
+}
+
+[data-mode] .main-bg {
+  display: none;
+}
+
+[data-mode] .messages {
+  padding: 12px 0;
+  gap: 20px;
+}
+
+[data-mode] .msg-row {
+  border-radius: var(--lobe-radius-lg);
+  padding: 4px 0;
+}
+
+[data-mode] .bubble {
+  border-radius: var(--lobe-radius-lg);
+  padding: 14px 18px;
+  font-size: 15px;
+  line-height: 1.6;
+  border: 1px solid transparent;
+  transition: border-color 120ms var(--ui-ease-out, ease);
+}
+
+[data-mode] .msg-row.user .bubble,
+[data-mode] .msg-user .bubble {
+  background-color: var(--lobe-bg-container);
+  border-color: var(--lobe-border-secondary);
+  color: var(--lobe-text);
+}
+
+[data-mode] .msg-row.assistant .bubble,
+[data-mode] .msg-assistant .bubble {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--lobe-text);
+}
+
+/* Inline toolbar under assistant messages — slim & soft */
+[data-mode] .msg-row .msg-actions,
+[data-mode] .msg-row .message-actions {
+  opacity: 0;
+  transition: opacity 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .msg-row:hover .msg-actions,
+[data-mode] .msg-row:hover .message-actions,
+[data-mode] .msg-row:focus-within .msg-actions,
+[data-mode] .msg-row:focus-within .message-actions {
+  opacity: 1;
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 5. CHAT COMPOSER (the input box at the bottom)
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .chat-composer,
+[data-mode] #chatComposerRoot,
+[data-mode] #topicComposerRoot {
+  background-color: transparent;
+  border: none;
+  padding: 12px 16px 16px;
+}
+
+[data-mode] .composer-surface,
+[data-mode] .composer-shell,
+[data-mode] .composer-card {
+  background-color: var(--lobe-bg-container);
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  box-shadow: var(--lobe-shadow-tertiary);
+  padding: 12px 14px 8px;
+  transition: border-color 120ms var(--ui-ease-out, ease),
+              box-shadow 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .composer-surface:focus-within,
+[data-mode] .composer-shell:focus-within,
+[data-mode] .composer-card:focus-within {
+  border-color: var(--lobe-border);
+  box-shadow: 0 0 0 3px var(--lobe-accent-soft),
+              var(--lobe-shadow-tertiary);
+}
+
+/* Fallback — if the legacy composer doesn't use composer-surface,
+   give the inner wrapper the glass look anyway */
+[data-mode] .composer-shell .composer-inner,
+[data-mode] .composer-card .composer-inner {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Tool lane below the textarea */
+[data-mode] .composer-tools,
+[data-mode] .composer-toolbar {
+  padding: 6px 0 0;
+  gap: 4px;
+  border-top: none;
+}
+
+[data-mode] .composer-tool,
+[data-mode] .composer-tools .icon-btn,
+[data-mode] .composer-tools button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--lobe-radius);
+  border: none;
+  background: transparent;
+  color: var(--lobe-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .composer-tool:hover,
+[data-mode] .composer-tools .icon-btn:hover,
+[data-mode] .composer-tools button:hover {
+  background-color: var(--lobe-fill-tertiary);
+  color: var(--lobe-text);
+}
+[data-mode] .composer-tool.active,
+[data-mode] .composer-tool[aria-pressed="true"] {
+  background-color: var(--lobe-accent-soft);
+  color: var(--lobe-accent);
+}
+[data-mode] .composer-tool svg,
+[data-mode] .composer-tools .icon-btn svg,
+[data-mode] .composer-tools button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Send button — primary pill */
+[data-mode] .composer-send,
+[data-mode] .composer-tools .send-btn,
+[data-mode] .composer-tools button[type="submit"] {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--lobe-radius);
+  background-color: var(--lobe-text);
+  color: var(--lobe-on-primary);
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              transform 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .composer-send:hover,
+[data-mode] .composer-tools .send-btn:hover,
+[data-mode] .composer-tools button[type="submit"]:hover {
+  background-color: var(--lobe-primary-hover);
+  transform: translateY(-0.5px);
+}
+[data-mode] .composer-send:disabled,
+[data-mode] .composer-tools .send-btn:disabled,
+[data-mode] .composer-tools button[type="submit"]:disabled {
+  background-color: var(--lobe-fill-secondary);
+  color: var(--lobe-text-quaternary);
+  cursor: not-allowed;
+  transform: none;
+}
+[data-mode] .composer-send svg,
+[data-mode] .composer-tools .send-btn svg,
+[data-mode] .composer-tools button[type="submit"] svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Pill chips inside composer (model picker, effort picker) */
+[data-mode] .composer-pill,
+[data-mode] .composer-tools .pill,
+[data-mode] .model-pill {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--lobe-radius-pill);
+  background: var(--lobe-fill-tertiary);
+  color: var(--lobe-text-secondary);
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .composer-pill:hover,
+[data-mode] .composer-tools .pill:hover,
+[data-mode] .model-pill:hover {
+  background: var(--lobe-fill-secondary);
+  color: var(--lobe-text);
+  border-color: var(--lobe-border-secondary);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 6. DISPLAY-PREFS POPOVER (the slider drawer)
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .display-prefs-popover {
+  background-color: var(--lobe-bg-elevated);
+  border: 1px solid var(--lobe-border);
+  border-radius: var(--lobe-radius-lg);
+  box-shadow: var(--lobe-shadow-secondary);
+  padding: 4px;
+  backdrop-filter: blur(var(--lobe-glass-blur));
+  -webkit-backdrop-filter: blur(var(--lobe-glass-blur));
+}
+
+[data-mode] .display-prefs-row {
+  padding: 10px 12px;
+  border-radius: var(--lobe-radius);
+  transition: background-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .display-prefs-row:hover {
+  background-color: var(--lobe-fill-quaternary);
+}
+[data-mode] .display-prefs-label {
+  font-size: 13px;
+  color: var(--lobe-text);
+  font-weight: 500;
+}
+[data-mode] .display-prefs-label .value {
+  color: var(--lobe-text-tertiary);
+  font-weight: 400;
+}
+
+/* Segmented controls — pill toggles */
+[data-mode] .display-prefs-segs {
+  background-color: var(--lobe-fill-tertiary);
+  border-radius: var(--lobe-radius);
+  padding: 2px;
+  gap: 0;
+}
+[data-mode] .display-prefs-seg {
+  height: 26px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--lobe-radius-sm);
+  color: var(--lobe-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .display-prefs-seg:hover {
+  color: var(--lobe-text);
+}
+[data-mode] .display-prefs-seg.active,
+[data-mode] .display-prefs-seg[aria-checked="true"] {
+  background-color: var(--lobe-bg-container);
+  color: var(--lobe-text);
+  box-shadow: var(--lobe-shadow-tertiary);
+}
+
+/* Color swatches — lobehub-style round chips */
+[data-mode] .color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--lobe-radius-pill);
+  border: 2px solid var(--lobe-border);
+  cursor: pointer;
+  transition: transform 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .color-swatch:hover {
+  transform: scale(1.08);
+}
+[data-mode] .color-swatch.active,
+[data-mode] .color-swatch[aria-pressed="true"] {
+  border-color: var(--lobe-text);
+  box-shadow: 0 0 0 2px var(--lobe-bg-container),
+              0 0 0 4px var(--lobe-text);
+}
+
+/* Toggle (knob switch) */
+[data-mode] .grid-toggle {
+  width: 36px;
+  height: 20px;
+  border-radius: var(--lobe-radius-pill);
+  background-color: var(--lobe-fill);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .grid-toggle[aria-checked="true"] {
+  background-color: var(--lobe-text);
+}
+[data-mode] .toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--lobe-radius-pill);
+  background-color: var(--lobe-bg-container);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .grid-toggle[aria-checked="true"] .toggle-knob {
+  transform: translateX(16px);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 7. MODALS, POPOVERS, DROPDOWNS
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .modal-card,
+[data-mode] .popover,
+[data-mode] .dropdown {
+  background-color: var(--lobe-bg-elevated);
+  border: 1px solid var(--lobe-border);
+  border-radius: var(--lobe-radius-lg);
+  box-shadow: var(--lobe-shadow-modal);
+  backdrop-filter: blur(var(--lobe-glass-blur));
+  -webkit-backdrop-filter: blur(var(--lobe-glass-blur));
+}
+
+[data-mode] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+[data-mode] .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--lobe-text);
+}
+
+[data-mode] .modal-body {
+  color: var(--lobe-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+[data-mode] .btn,
+[data-mode] button.btn-primary,
+[data-mode] button.btn-secondary,
+[data-mode] button.btn-danger {
+  height: var(--lobe-control);
+  padding: 0 16px;
+  border-radius: var(--lobe-radius);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease);
+}
+
+[data-mode] .btn-primary,
+[data-mode] button.btn-primary {
+  background-color: var(--lobe-text);
+  color: var(--lobe-on-primary);
+}
+[data-mode] .btn-primary:hover,
+[data-mode] button.btn-primary:hover {
+  background-color: var(--lobe-primary-hover);
+}
+[data-mode] .btn-primary:disabled,
+[data-mode] button.btn-primary:disabled {
+  background-color: var(--lobe-fill-secondary);
+  color: var(--lobe-text-quaternary);
+  cursor: not-allowed;
+}
+
+[data-mode] .btn-secondary,
+[data-mode] button.btn-secondary {
+  background-color: var(--lobe-bg-container);
+  color: var(--lobe-text);
+  border-color: var(--lobe-border);
+}
+[data-mode] .btn-secondary:hover,
+[data-mode] button.btn-secondary:hover {
+  background-color: var(--lobe-fill-tertiary);
+  border-color: var(--lobe-border);
+}
+
+[data-mode] .btn-danger,
+[data-mode] button.btn-danger {
+  background-color: var(--lobe-error);
+  color: #ffffff;
+}
+[data-mode] .btn-danger:hover,
+[data-mode] button.btn-danger:hover {
+  filter: brightness(1.05);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 8. CONNECTORS / PLUGINS / SETTINGS CARDS
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .connector-card,
+[data-mode] .plugin-card,
+[data-mode] .settings-card {
+  background-color: var(--lobe-bg-container);
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  padding: 16px 18px;
+  transition: border-color 120ms var(--ui-ease-out, ease),
+              box-shadow 120ms var(--ui-ease-out, ease),
+              transform 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .connector-card:hover,
+[data-mode] .plugin-card:hover,
+[data-mode] .settings-card:hover {
+  border-color: var(--lobe-border);
+  box-shadow: var(--lobe-shadow-tertiary);
+}
+
+[data-mode] .connector-card .card-title,
+[data-mode] .plugin-card .card-title,
+[data-mode] .settings-card .card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lobe-text);
+}
+[data-mode] .connector-card .card-desc,
+[data-mode] .plugin-card .card-desc,
+[data-mode] .settings-card .card-desc {
+  font-size: 13px;
+  color: var(--lobe-text-secondary);
+  line-height: 1.5;
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 9. INPUTS (auth gate, settings, search)
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] input[type="text"],
+[data-mode] input[type="email"],
+[data-mode] input[type="password"],
+[data-mode] input[type="search"],
+[data-mode] input[type="url"],
+[data-mode] textarea,
+[data-mode] select {
+  background-color: var(--lobe-bg-container);
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius);
+  color: var(--lobe-text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 0 12px;
+  height: var(--lobe-control);
+  transition: border-color 120ms var(--ui-ease-out, ease),
+              box-shadow 120ms var(--ui-ease-out, ease);
+}
+[data-mode] input[type="text"]:focus,
+[data-mode] input[type="email"]:focus,
+[data-mode] input[type="password"]:focus,
+[data-mode] input[type="search"]:focus,
+[data-mode] input[type="url"]:focus,
+[data-mode] textarea:focus,
+[data-mode] select:focus {
+  outline: none;
+  border-color: var(--lobe-accent);
+  box-shadow: 0 0 0 3px var(--lobe-accent-soft);
+}
+[data-mode] input::placeholder,
+[data-mode] textarea::placeholder {
+  color: var(--lobe-text-tertiary);
+}
+
+[data-mode] textarea {
+  height: auto;
+  padding: 10px 12px;
+  min-height: 56px;
+  resize: vertical;
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 10. AUTH GATE
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .auth-gate {
+  background-color: var(--lobe-bg-layout);
+}
+
+[data-mode] .auth-card {
+  background-color: var(--lobe-bg-container);
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  box-shadow: var(--lobe-shadow-secondary);
+  padding: 28px 28px 24px;
+}
+
+[data-mode] .auth-brand {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--lobe-text);
+}
+
+[data-mode] .auth-tabs {
+  border-bottom: 1px solid var(--lobe-border-secondary);
+  gap: 4px;
+}
+[data-mode] .auth-tab {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--lobe-text-secondary);
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: color 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .auth-tab:hover {
+  color: var(--lobe-text);
+}
+[data-mode] .auth-tab.active {
+  color: var(--lobe-text);
+  border-bottom-color: var(--lobe-text);
+}
+
+[data-mode] .auth-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lobe-text);
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+[data-mode] .auth-lede {
+  font-size: 14px;
+  color: var(--lobe-text-secondary);
+  line-height: 1.6;
+}
+[data-mode] .auth-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--lobe-text);
+  letter-spacing: -0.01em;
+}
+[data-mode] .auth-foot {
+  color: var(--lobe-text-tertiary);
+  font-size: 13px;
+}
+[data-mode] .auth-foot a,
+[data-mode] .auth-inline-link {
+  color: var(--lobe-text);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 120ms var(--ui-ease-out, ease);
+}
+[data-mode] .auth-foot a:hover,
+[data-mode] .auth-inline-link:hover {
+  color: var(--lobe-accent);
+}
+
+[data-mode] .auth-btn {
+  height: var(--lobe-control-lg);
+  padding: 0 16px;
+  border-radius: var(--lobe-radius);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 120ms var(--ui-ease-out, ease),
+              border-color 120ms var(--ui-ease-out, ease),
+              color 120ms var(--ui-ease-out, ease),
+              transform 120ms var(--ui-ease-out, ease);
+  margin-top: 16px;
+}
+[data-mode] .auth-btn.primary {
+  background-color: var(--lobe-text);
+  color: var(--lobe-on-primary);
+}
+[data-mode] .auth-btn.primary:hover {
+  background-color: var(--lobe-primary-hover);
+}
+[data-mode] .auth-btn.secondary {
+  background-color: var(--lobe-bg-container);
+  color: var(--lobe-text);
+  border-color: var(--lobe-border);
+}
+[data-mode] .auth-btn.secondary:hover {
+  background-color: var(--lobe-fill-tertiary);
+}
+[data-mode] .auth-github-btn {
+  background-color: var(--lobe-bg-container);
+  border-color: var(--lobe-border);
+  color: var(--lobe-text);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 11. CODE / MARKDOWN BLOCKS
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] pre,
+[data-mode] code {
+  font-family: "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
+}
+
+[data-mode] pre {
+  background-color: var(--lobe-bg-container-secondary);
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+[data-mode] :not(pre) > code {
+  background-color: var(--lobe-fill-tertiary);
+  border-radius: var(--lobe-radius-xs);
+  padding: 1px 6px;
+  font-size: 0.9em;
+  color: var(--lobe-text);
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 12. HOME SURFACE — Socratic workspace shortcuts
+ *     Mirrors LobeHub's centered workbench: a compact context
+ *     chip above the greeting and four quiet entry cards below
+ *     the composer. Everything is additive; existing e2e hooks
+ *     and composer geometry stay untouched.
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] #topicSetup {
+  position: relative;
+}
+
+[data-mode] .lobe-home-context {
+  position: absolute;
+  top: clamp(170px, calc(50% - 240px), 320px);
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px 7px 8px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-pill);
+  background: color-mix(in srgb, var(--lobe-bg-container) 72%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--lobe-text);
+  box-shadow: var(--lobe-shadow-tertiary);
+}
+
+[data-mode] .lobe-home-context-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--lobe-accent-soft);
+  color: var(--lobe-accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+[data-mode] .lobe-home-context-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+}
+
+[data-mode] .lobe-home-context-copy strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+[data-mode] .lobe-home-context-copy small {
+  color: var(--lobe-text-tertiary);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+[data-mode] .lobe-home-context-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  color: var(--lobe-text-tertiary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+[data-mode] .lobe-home-context-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lobe-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lobe-success) 18%, transparent);
+}
+
+[data-mode] .lobe-home-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 760px);
+  margin-top: 8px;
+}
+
+[data-mode] .lobe-home-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  background: color-mix(in srgb, var(--lobe-bg-container) 78%, transparent);
+  color: var(--lobe-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms var(--ui-ease-out, ease),
+              background-color 140ms var(--ui-ease-out, ease),
+              box-shadow 140ms var(--ui-ease-out, ease);
+}
+
+[data-mode] .lobe-home-action:hover,
+[data-mode] .lobe-home-action:focus-visible {
+  border-color: var(--lobe-border);
+  background: var(--lobe-bg-elevated);
+  box-shadow: var(--lobe-shadow-tertiary);
+  outline: none;
+}
+
+[data-mode] .lobe-home-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--lobe-fill-tertiary);
+  color: var(--lobe-text-secondary);
+}
+
+[data-mode] .lobe-home-action-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+[data-mode] .lobe-home-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+[data-mode] .lobe-home-action-copy strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+[data-mode] .lobe-home-action-copy small {
+  color: var(--lobe-text-tertiary);
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+
+@media (max-width: 900px) {
+  [data-mode] .lobe-home-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  [data-mode] .lobe-home-context {
+    max-width: min(100%, 320px);
+  }
+
+  [data-mode] .lobe-home-context-copy small {
+    display: none;
+  }
+
+  [data-mode] .lobe-home-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 13. UTILITY TOKENS — exposed for inline styles / scripts
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .surface-page    { background-color: var(--lobe-bg-layout); }
+[data-mode] .surface-card    { background-color: var(--lobe-bg-container); border: 1px solid var(--lobe-border-secondary); border-radius: var(--lobe-radius-lg); }
+[data-mode] .surface-elevated{ background-color: var(--lobe-bg-elevated); border: 1px solid var(--lobe-border); border-radius: var(--lobe-radius-lg); box-shadow: var(--lobe-shadow-secondary); }
+[data-mode] .text-primary    { color: var(--lobe-text); }
+[data-mode] .text-secondary  { color: var(--lobe-text-secondary); }
+[data-mode] .text-tertiary   { color: var(--lobe-text-tertiary); }
+[data-mode] .text-quaternary { color: var(--lobe-text-quaternary); }
+[data-mode] .text-accent     { color: var(--lobe-accent); }
+
+
+/* ───────────────────────────────────────────────────────────
+ * 14. CONVERSATION + SETTINGS REFINEMENTS
+ *     Adds the small LobeHub-style message author row and turns
+ *     the settings modal into a grouped application-config card.
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .message-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--lobe-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+[data-mode] .message-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--lobe-accent-soft);
+  color: var(--lobe-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+[data-mode] .message-name {
+  line-height: 1;
+}
+
+[data-mode] .settings-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: min(86vh, 780px);
+  border-radius: 18px;
+}
+
+[data-mode] .settings-body {
+  gap: 14px;
+  padding: 18px 22px 22px;
+}
+
+[data-mode] .settings-hero {
+  padding: 14px 16px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  background: linear-gradient(135deg, var(--lobe-fill-quaternary), transparent 70%);
+}
+
+[data-mode] .settings-hero-title {
+  margin: 0;
+  color: var(--lobe-text);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+[data-mode] .settings-hero-subtitle {
+  margin: 4px 0 0;
+  color: var(--lobe-text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+[data-mode] .settings-section {
+  padding: 14px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  background: color-mix(in srgb, var(--lobe-bg-container) 72%, transparent);
+}
+
+[data-mode] .settings-section-head {
+  margin-bottom: 12px;
+}
+
+[data-mode] .settings-section-head h3 {
+  margin: 0;
+  color: var(--lobe-text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+[data-mode] .settings-section-head p {
+  margin: 3px 0 0;
+  color: var(--lobe-text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+[data-mode] .settings-card--toggle {
+  padding: 12px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius);
+  background: var(--lobe-fill-quaternary);
+}
+
+[data-mode] .settings-field {
+  margin: 0;
+}
+
+[data-mode] .settings-section .settings-label-row {
+  margin-bottom: 8px;
+}
+
+[data-mode] .settings-section .settings-hint {
+  display: block;
+  margin-bottom: 10px;
+}
+
+[data-mode] .settings-section .settings-actions {
+  margin-top: 16px;
+}
+
+/* ───────────────────────────────────────────────────────────
+ * 14b. CONNECTOR DIRECTORY — LobeHub-style master/detail
+ * ─────────────────────────────────────────────────────────── */
+
+[data-mode] .plugin-directory-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  gap: 22px;
+  align-items: start;
+}
+
+[data-mode] .plugin-directory-row {
+  cursor: pointer;
+}
+
+[data-mode] .plugin-directory-row.is-selected {
+  border-color: var(--lobe-accent-border) !important;
+  background: var(--lobe-accent-soft) !important;
+}
+
+[data-mode] .plugin-directory-row:focus-visible {
+  outline: 2px solid var(--lobe-accent);
+  outline-offset: 2px;
+}
+
+[data-mode] .plugin-directory-detail {
+  position: sticky;
+  top: 0;
+  padding: 16px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-lg);
+  background: var(--lobe-bg-container);
+  box-shadow: var(--lobe-shadow-tertiary);
+}
+
+[data-mode] .plugin-directory-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+[data-mode] .plugin-directory-detail-head h3 {
+  margin: 0;
+  color: var(--lobe-text);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+[data-mode] .plugin-directory-status {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 2px 7px;
+  border-radius: var(--lobe-radius-pill);
+  background: var(--lobe-fill-tertiary);
+  color: var(--lobe-text-secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+[data-mode] .plugin-directory-status.connected {
+  background: color-mix(in srgb, var(--lobe-success) 18%, transparent);
+  color: var(--lobe-success);
+}
+
+[data-mode] .plugin-directory-detail-desc {
+  margin: 0 0 14px;
+  color: var(--lobe-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+[data-mode] .plugin-directory-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+[data-mode] .plugin-directory-capabilities span {
+  padding: 4px 8px;
+  border: 1px solid var(--lobe-border-secondary);
+  border-radius: var(--lobe-radius-pill);
+  background: var(--lobe-fill-quaternary);
+  color: var(--lobe-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+[data-mode] .plugin-directory-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+[data-mode] .plugin-directory-meta div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+[data-mode] .plugin-directory-meta dt {
+  color: var(--lobe-text-tertiary);
+  font-size: 12px;
+}
+
+[data-mode] .plugin-directory-meta dd {
+  margin: 0;
+  color: var(--lobe-text);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: right;
+}
+
+[data-mode] .plugin-directory-detail-action {
+  padding-top: 14px;
+  border-top: 1px solid var(--lobe-border-secondary);
+}
+
+@media (max-width: 900px) {
+  [data-mode] .plugin-directory-body {
+    grid-template-columns: 1fr;
+  }
+
+  [data-mode] .plugin-directory-detail {
+    position: static;
+  }
+}
+
+
+/* ───────────────────────────────────────────────────────────
+ * 15. KEYFRAMES — gentle entry animation, lobehub-style
+ * ─────────────────────────────────────────────────────────── */
+
+@keyframes lobe-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+[data-mode] .modal-card,
+[data-mode] .popover,
+[data-mode] .dropdown,
+[data-mode] .display-prefs-popover {
+  animation: lobe-fade-in 160ms var(--ui-ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-mode] *,
+  [data-mode] *::before,
+  [data-mode] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================
+ * CHATGPT SCREENSHOT FIDELITY LAYER
+ * The supplied desktop captures are the visual source of truth.
+ * This final block deliberately outranks the older experimental
+ * LobeHub layer while retaining the existing application behavior.
+ * ============================================================= */
+
+html[data-mode="dark"] #appShell {
+  --cg-page: #000;
+  --cg-rail: #000;
+  --cg-surface: #212121;
+  --cg-surface-hover: #2f2f2f;
+  --cg-border: rgba(255, 255, 255, 0.12);
+  --cg-border-strong: rgba(255, 255, 255, 0.18);
+  --cg-text: #f7f7f7;
+  --cg-text-secondary: #c8c8c8;
+  --cg-text-muted: #a2a2a2;
+  --cg-text-faint: #707070;
+  color-scheme: dark;
+}
+
+html[data-mode="dark"] body,
+html[data-mode="dark"] #appShell,
+html[data-mode="dark"] #appShell .main,
+html[data-mode="dark"] #appShell .main-content,
+html[data-mode="dark"] #appShell .main-bg,
+html[data-mode="dark"] #appShell .top-bar {
+  background: #000 !important;
+  background-image: none !important;
+}
+
+html[data-mode="dark"] #appShell .sidebar {
+  width: 260px !important;
+  min-width: 260px !important;
+  background: #000 !important;
+  background-image: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow: none !important;
+}
+
+html[data-mode="dark"] #appShell .sidebar::after { content: none !important; }
+
+@media (min-width: 769px) {
+  #appShell .main {
+    box-sizing: border-box !important;
+    flex: 0 0 calc(100% - 260px) !important;
+    width: calc(100% - 260px) !important;
+    max-width: calc(100% - 260px) !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+  #appShell .sidebar.collapsed ~ .main {
+    flex-basis: 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}
+
+#appShell .sidebar-inner {
+  padding: 8px 8px 0 !important;
+  gap: 2px !important;
+}
+
+#appShell .sidebar-header {
+  min-height: 50px !important;
+  padding: 7px 8px 9px !important;
+}
+
+#appShell .sidebar-logo {
+  padding: 0 !important;
+  gap: 8px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+#appShell .sidebar-logo-img { display: none !important; }
+#appShell .sidebar-logo .cg-sidebar-caret { display: none !important; }
+#appShell .sidebar-header-actions { display: flex !important; }
+#appShell .sidebar-header-actions .icon-btn {
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  color: #a5a5a5 !important;
+  background: transparent !important;
+}
+
+#appShell .sidebar-nav {
+  padding: 8px 0 16px !important;
+  gap: 3px !important;
+}
+
+#appShell .sidebar-nav-btn {
+  min-height: 36px !important;
+  padding: 7px 10px !important;
+  gap: 11px !important;
+  border-radius: 11px !important;
+  color: #ececec !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+#appShell .sidebar-nav-btn svg {
+  width: 19px !important;
+  height: 19px !important;
+  opacity: 1 !important;
+}
+
+#appShell #navNew.sidebar-nav-btn,
+#appShell .sidebar-nav-btn.active,
+#appShell .sidebar-nav-btn[aria-current="page"] {
+  background: #1f1f1f !important;
+}
+
+#appShell .sidebar-search-row { display: none !important; }
+#appShell .recents-panel { margin-top: 4px !important; }
+#appShell .recents-header { padding: 8px 8px 6px !important; }
+#appShell .recents-title {
+  color: #777 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+}
+#appShell .recents-filter-chips { display: none !important; }
+#appShell .recent-item {
+  min-height: 35px !important;
+  padding: 7px 8px !important;
+  border-radius: 8px !important;
+}
+#appShell .recent-item-text {
+  color: #e6e6e6 !important;
+  font-size: 13px !important;
+  line-height: 21px !important;
+}
+
+#appShell .sidebar-footer {
+  min-height: 64px !important;
+  margin: 0 -8px !important;
+  padding: 8px 12px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+#appShell .sidebar-footer .user-row { padding: 3px 0 !important; }
+#appShell .sidebar-footer .user-avatar { width: 30px !important; height: 30px !important; }
+#appShell .sidebar-footer .user-name { font-size: 14px !important; }
+#appShell .sidebar-footer .user-plan { color: #9b9b9b !important; font-size: 12px !important; }
+#appShell .sidebar-footer-actions #themeToggle { display: none !important; }
+
+#appShell .top-bar {
+  min-height: 40px !important;
+  padding: 3px 12px !important;
+  border-bottom: 0 !important;
+}
+#appShell .top-mode-tabs {
+  min-width: 160px !important;
+  height: 32px !important;
+  padding: 2px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: #151515 !important;
+  box-shadow: none !important;
+}
+#appShell .top-mode-tabs .app-mode-toggle {
+  min-width: 106px !important;
+  padding: 0 22px !important;
+  color: #a8a8a8 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  color: #f6f6f6 !important;
+  background: #1f1f1f !important;
+  box-shadow: none !important;
+}
+
+#appShell .main-inner { max-width: none !important; }
+#appShell #topicSetup {
+  box-sizing: border-box !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  min-height: calc(100dvh - 40px) !important;
+  padding: 200px 24px 40px !important;
+}
+#appShell #topicSetup > .topic-title,
+#appShell #topicSetup > .topic-sub,
+#appShell #topicSetup > .mobile-starter-prompts,
+#appShell #topicSetup > .cg-history,
+#appShell #topicSetup > #topicInputWrap {
+  top: 0 !important;
+  left: 0 !important;
+}
+#appShell #topicSetup::before,
+#appShell #topicSetup::after { display: none !important; }
+#appShell .lobe-home-context { display: none !important; }
+#appShell #topicSetup .topic-title.greeting {
+  display: block !important;
+  margin: 0 0 30px !important;
+  max-width: none !important;
+  color: #f7f7f7 !important;
+  font-size: calc(clamp(24px, 2vw, 30px) * var(--app-font-scale, 1)) !important;
+  font-weight: 400 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.025em !important;
+  text-align: center !important;
+}
+
+#appShell #topicInputWrap {
+  width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
+  max-width: calc(768px * var(--app-width-scale, 1)) !important;
+  min-height: 54px !important;
+  margin: 0 auto !important;
+  border: 1px solid #303030 !important;
+  border-radius: 28px !important;
+  background: #212121 !important;
+  box-shadow: none !important;
+}
+@media (min-width: 769px) {
+  body #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
+    max-width: calc(768px * var(--app-width-scale, 1)) !important;
+  }
+}
+#appShell #topicInputWrap .composer-editor-root { min-height: 54px !important; }
+#appShell #topicInputWrap .rich-composer,
+#appShell #topicInputWrap .rich-composer-editor,
+#appShell #topicInputWrap .ProseMirror { min-height: 54px !important; }
+#appShell #topicInputWrap .rich-composer-editor,
+#appShell #topicInputWrap .ProseMirror {
+  padding-top: 16px !important;
+  padding-bottom: 13px !important;
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+#appShell #topicInputWrap .topic-footer {
+  padding: 10px !important;
+  align-self: stretch !important;
+}
+#appShell #topicInputWrap .attach-btn,
+#appShell #topicInputWrap .mobile-mic-btn {
+  display: inline-flex !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  color: #d2d2d2 !important;
+}
+#appShell #topicInputWrap .effort-trigger {
+  height: 32px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  color: #aaa !important;
+  font-size: 14px !important;
+}
+#appShell #topicInputWrap #startBtn {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  color: #111 !important;
+  background: #f4f4f4 !important;
+}
+
+#appShell .lobe-home-actions {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  width: min(100%, 720px) !important;
+  margin: 24px auto 0 !important;
+}
+#appShell .lobe-home-action {
+  min-height: 40px !important;
+  padding: 7px 10px !important;
+  gap: 12px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#appShell .lobe-home-action:hover,
+#appShell .lobe-home-action:focus-visible { background: #151515 !important; }
+#appShell .lobe-home-action-icon {
+  width: 22px !important;
+  height: 22px !important;
+  flex-basis: 22px !important;
+  border-radius: 0 !important;
+  color: #ddd !important;
+  background: transparent !important;
+}
+#appShell .lobe-home-action-icon svg { width: 18px !important; height: 18px !important; }
+#appShell .lobe-home-action-copy { display: block !important; }
+#appShell .lobe-home-action-copy strong {
+  display: block !important;
+  color: #b9b9b9 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 22px !important;
+}
+#appShell .lobe-home-action-copy small { display: none !important; }
+
+/* Connector directory — faithful to the supplied plugin capture. */
+body.workspace-active #appShell .plugins-panel.main-page {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 54px clamp(36px, 8vw, 150px) 80px !important;
+  background: #000 !important;
+}
+#appShell #pluginsList { width: 100% !important; }
+#appShell .plugin-directory {
+  width: min(100%, 1050px) !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  color: #f7f7f7 !important;
+}
+#appShell .plugin-directory-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 40px !important;
+  margin: 0 0 40px !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+#appShell .plugin-directory-heading h2 {
+  margin: 0 !important;
+  color: #f7f7f7 !important;
+  font-size: 31px !important;
+  font-weight: 500 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.03em !important;
+}
+#appShell .plugin-directory-desc {
+  margin: 8px 0 0 !important;
+  color: #aaa !important;
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+#appShell .plugin-directory-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+#appShell .plugin-directory-search {
+  width: min(330px, 28vw) !important;
+  height: 42px !important;
+  padding: 0 16px !important;
+  gap: 9px !important;
+  border: 1px solid #3d3d3d !important;
+  border-radius: 22px !important;
+  background: #212121 !important;
+}
+#appShell .plugin-directory-search input {
+  height: 40px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #eee !important;
+  font-size: 14px !important;
+}
+#appShell .plugin-directory-add {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid #3d3d3d !important;
+  border-radius: 50% !important;
+  background: #212121 !important;
+  color: #eee !important;
+}
+#appShell .plugin-directory-add svg { width: 20px !important; height: 20px !important; }
+#appShell .plugin-installed-strip {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 13px !important;
+  margin: 0 0 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+#appShell .plugin-installed-label {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #e4e4e4 !important;
+  font-size: 14px !important;
+}
+#appShell .plugin-installed-icons { display: flex !important; gap: 8px !important; }
+#appShell .plugin-installed-icons .workspace-row-icon,
+#appShell .plugin-directory-row .workspace-row-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  border: 0 !important;
+  border-radius: 11px !important;
+  background: #202020 !important;
+}
+#appShell .plugin-installed-icons svg,
+#appShell .plugin-directory-row .workspace-row-icon svg { width: 26px !important; height: 26px !important; }
+#appShell .plugin-directory-tabs {
+  display: inline-flex !important;
+  gap: 2px !important;
+  margin: 0 0 38px !important;
+  padding: 2px !important;
+  border: 0 !important;
+  border-radius: 24px !important;
+  background: transparent !important;
+}
+#appShell .plugin-directory-tabs button {
+  height: 38px !important;
+  padding: 0 18px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  color: #aaa !important;
+  background: transparent !important;
+  font-size: 14px !important;
+}
+#appShell .plugin-directory-tabs button.active {
+  color: #f5f5f5 !important;
+  background: #4a4a4a !important;
+}
+#appShell .plugin-directory-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 36px !important;
+}
+#appShell .plugin-directory-section > h3 {
+  margin: 0 0 12px !important;
+  color: #ececec !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+#appShell .plugin-directory-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  column-gap: 70px !important;
+  row-gap: 4px !important;
+}
+#appShell .plugin-directory-row {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 68px !important;
+  padding: 8px 6px 8px 0 !important;
+  gap: 12px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#appShell .plugin-directory-row:hover { background: #111 !important; }
+#appShell .plugin-directory-row .workspace-row-copy { min-width: 0 !important; flex: 1 !important; }
+#appShell .plugin-directory-row .workspace-row-copy strong {
+  display: block !important;
+  overflow: hidden !important;
+  color: #f5f5f5 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#appShell .plugin-directory-row .workspace-row-copy span {
+  display: block !important;
+  overflow: hidden !important;
+  color: #999 !important;
+  font-size: 13px !important;
+  line-height: 19px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#appShell .plugin-directory-icon-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: #eee !important;
+}
+#appShell .plugin-directory-icon-action:hover { background: #242424 !important; }
+#appShell .plugin-directory-icon-action:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.38 !important;
+}
+#appShell .plugin-directory-icon-action:disabled:hover { background: transparent !important; }
+#appShell .plugin-directory-icon-action svg { width: 19px !important; height: 19px !important; }
+#appShell .plugin-directory-note { margin-top: 28px !important; color: #777 !important; }
+#appShell .codex-mcp-card { display: none !important; }
+
+/* Application settings retains its behavior but adopts the same black,
+   unframed configuration language as the reference app shell. */
+html[data-mode="dark"] #appShell .settings-overlay { background: rgba(0, 0, 0, 0.72) !important; }
+html[data-mode="dark"] #appShell .settings-modal {
+  width: min(720px, calc(100vw - 32px)) !important;
+  max-width: 720px !important;
+  border: 1px solid #2b2b2b !important;
+  border-radius: 16px !important;
+  background: #0d0d0d !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55) !important;
+}
+html[data-mode="dark"] #appShell .settings-hero { display: none !important; }
+html[data-mode="dark"] #appShell .settings-section {
+  padding: 18px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #242424 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+@media (max-width: 900px) {
+  body.workspace-active #appShell .plugins-panel.main-page { padding: 38px 24px 64px !important; }
+  #appShell .plugin-directory-head { align-items: stretch !important; flex-direction: column !important; gap: 20px !important; }
+  #appShell .plugin-directory-tools { width: 100% !important; }
+  #appShell .plugin-directory-search { width: 100% !important; flex: 1 !important; }
+  #appShell .plugin-directory-list { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 768px) {
+  html[data-mode="dark"] #appShell .sidebar {
+    width: min(300px, 84vw) !important;
+    min-width: min(300px, 84vw) !important;
+  }
+  #appShell .main {
+    flex-basis: 100% !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+  #appShell #topicSetup { justify-content: center !important; padding: 24px 12px 88px !important; }
+  #appShell #topicSetup .topic-title.greeting { margin-bottom: 20px !important; font-size: calc(24px * var(--app-font-scale, 1)) !important; }
+  #appShell .lobe-home-actions { display: none !important; }
+  #appShell #topicInputWrap { width: 100% !important; max-width: none !important; }
+}
+
+/* The legacy page shell keeps compatibility hooks in the DOM, but the live
+   React directory owns plugin content and all OpenConnector actions. Hide only
+   the old static placeholder controls, never the React mount itself. */
+#appShell .main {
+  left: 260px !important;
+  width: calc(100% - 260px) !important;
+}
+#appShell .sidebar.collapsed ~ .main {
+  flex-basis: 100% !important;
+  left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  #appShell .main {
+    flex-basis: 100% !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+  }
+}

@@ -25,6 +25,7 @@ import { saveCurrentSession } from '../session/persistence.js';
 import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
 import { resetCrossSessionKBCache } from '../ui/knowledgeCrossSession.js';
+import { renderGreeting } from '../ui/greeting.js';
 
 function _t(key, fallback) {
   try {
@@ -140,6 +141,7 @@ export async function resetApp(){
   setChatIdInURL(null);
   try { setExamIdInURL(null); } catch (_) {}
   document.getElementById("topicSetup").classList.remove("hidden");
+  try { renderGreeting(); } catch (_) {}
   document.getElementById("diagnosticView").classList.add("hidden");
   document.getElementById("chatView").classList.add("hidden");
   if (typeof window.hideMainPages === "function") window.hideMainPages();

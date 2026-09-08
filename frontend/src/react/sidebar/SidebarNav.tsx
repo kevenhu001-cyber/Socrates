@@ -23,16 +23,16 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>',
   },
   {
-    key: 'projects',
-    label: 'Projects',
-    i18nKey: 'sidebar.nav.projects',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14l-6.5-4L6 21z"/></svg>',
-  },
-  {
     key: 'library',
     label: 'Library',
     i18nKey: 'sidebar.nav.library',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  },
+  {
+    key: 'projects',
+    label: 'Projects',
+    i18nKey: 'sidebar.nav.projects',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14l-6.5-4L6 21z"/></svg>',
   },
   {
     key: 'scheduled',
