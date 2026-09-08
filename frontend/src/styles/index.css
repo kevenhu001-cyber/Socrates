@@ -26,3 +26,7 @@
 @import './tokens.css';
 @import './themes.css';
 @import '../styles.css';
+/* NOTE: lobe-overrides.css is loaded directly from index.html as a
+   separate <link> at the END of the stylesheet list, so it wins
+   over chatgpt-ui.css / chatgpt-v2.css. Keeping it out of this
+   @import chain avoids double-inclusion in the Vite bundle. */

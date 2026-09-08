@@ -19,6 +19,10 @@ function createLocalApiStubPlugin() {
         const [pathOnly] = rawUrl.split('?');
         if (!pathOnly.startsWith('/api/')) return next();
         if (!LOCAL_AUTH_BYPASS) return next();
+        // The browser client intentionally uses /api/v2/* to avoid stale CDN
+        // responses in production. Normalize that prefix for this local-only
+        // auth stub so navigation works without a separate API server.
+        const localPath = pathOnly.replace(/^\/api\/v2\//, '/api/');
 
         const LOCAL_USER = {
           id: 'local-dev',
@@ -28,15 +32,15 @@ function createLocalApiStubPlugin() {
           preferences: {},
         };
 
-        if (pathOnly === '/api/auth/me') {
+        if (localPath === '/api/auth/me') {
           return send(res, 200, { user: LOCAL_USER });
         }
-        if (pathOnly === '/api/auth/login'
-            || pathOnly === '/api/auth/register'
-            || pathOnly === '/api/auth/login-with-code') {
+        if (localPath === '/api/auth/login'
+            || localPath === '/api/auth/register'
+            || localPath === '/api/auth/login-with-code') {
           return send(res, 200, { user: LOCAL_USER });
         }
-        if (pathOnly === '/api/auth/logout') {
+        if (localPath === '/api/auth/logout') {
           return send(res, 200, { ok: true });
         }
         return next();
@@ -95,7 +99,7 @@ export default defineConfig({
         target: `http://127.0.0.1:${process.env.API_PORT || 3037}`,
         bypass(req) {
           const [pathOnly] = (req.url || '').split('?');
-          if (pathOnly.startsWith('/api/auth/')) {
+          if (pathOnly.startsWith('/api/auth/') || pathOnly.startsWith('/api/v2/auth/')) {
             return pathOnly;
           }
         },

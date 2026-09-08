@@ -78,3 +78,135 @@
   --ui-success: 142 50% 35%;
   --ui-muted: 0 0% 50%;
 }
+
+/* ============================================================
+   LOBEHUB DESIGN TOKENS
+   ------------------------------------------------------------
+   Inspired by lobehub's DESIGN.md / DESIGN.dark.md semantic
+   token model. These coexist with the legacy `--ui-*` tokens
+   above — every legacy rule still resolves; the lobehub tokens
+   are consumed only by `styles/lobe-overrides.css` and any
+   future code that opts in by referencing them.
+   No legacy rule references these; no behavior change outside
+   the override layer.
+   ============================================================ */
+
+[data-mode="dark"] {
+  /* Lobehub semantic tokens (Dark) */
+  --lobe-bg-layout: #000000;
+  --lobe-bg-container: #0d0d0d;
+  --lobe-bg-container-secondary: #070707;
+  --lobe-bg-elevated: #1a1a1a;
+  --lobe-bg-spotlight: #2d2d2d;
+
+  --lobe-text: #ffffff;
+  --lobe-text-secondary: #aaaaaa;
+  --lobe-text-tertiary: #6f6f6f;
+  --lobe-text-quaternary: #555555;
+
+  --lobe-border: #202020;
+  --lobe-border-secondary: #1a1a1a;
+
+  --lobe-fill: rgba(255, 255, 255, 0.16);
+  --lobe-fill-secondary: rgba(255, 255, 255, 0.1);
+  --lobe-fill-tertiary: rgba(255, 255, 255, 0.06);
+  --lobe-fill-quaternary: rgba(255, 255, 255, 0.02);
+
+  --lobe-primary: #eeeeee;
+  --lobe-primary-hover: #ffffff;
+  --lobe-primary-active: #dddddd;
+  --lobe-on-primary: #000000;
+
+  --lobe-success: #c4f042;
+  --lobe-warning: #ffb224;
+  --lobe-error: #f4416c;
+  --lobe-info: #60b1ff;
+
+  /* Accent — default monochrome (white) for primary; the amber
+     accent is the same accent-color Socrates uses today
+     (#d99a2b — `data-hue=40`). Expose it as a CSS var so the
+     override layer can re-use the existing accent picker without
+     breaking anything else. */
+  --lobe-accent: #d99a2b;
+  --lobe-accent-hover: #e6ad48;
+  --lobe-accent-soft: rgba(217, 154, 43, 0.18);
+  --lobe-accent-border: rgba(217, 154, 43, 0.35);
+  --lobe-on-accent: #0d0d0d;
+
+  /* Shadows (shared between light and dark) */
+  --lobe-shadow-tertiary: 0 3px 1px -1px rgba(26, 26, 26, 0.06);
+  --lobe-shadow-secondary: 0 8px 16px -4px rgba(0, 0, 0, 0.4);
+  --lobe-shadow-modal: 0 20px 20px -8px rgba(0, 0, 0, 0.48);
+
+  /* Geometry */
+  --lobe-radius-xs: 4px;
+  --lobe-radius-sm: 6px;
+  --lobe-radius: 8px;
+  --lobe-radius-lg: 12px;
+  --lobe-radius-pill: 9999px;
+
+  --lobe-control-sm: 28px;
+  --lobe-control: 36px;
+  --lobe-control-lg: 40px;
+
+  /* Glass-morphism tuning */
+  --lobe-glass-bg: rgba(13, 13, 13, 0.72);
+  --lobe-glass-border: rgba(255, 255, 255, 0.06);
+  --lobe-glass-blur: 20px;
+}
+
+[data-mode="light"] {
+  /* Lobehub semantic tokens (Light) */
+  --lobe-bg-layout: #f8f8f8;
+  --lobe-bg-container: #ffffff;
+  --lobe-bg-container-secondary: #fbfbfb;
+  --lobe-bg-elevated: #ffffff;
+  --lobe-bg-spotlight: #dddddd;
+
+  --lobe-text: #080808;
+  --lobe-text-secondary: #666666;
+  --lobe-text-tertiary: #999999;
+  --lobe-text-quaternary: #bbbbbb;
+
+  --lobe-border: #e3e3e3;
+  --lobe-border-secondary: #eeeeee;
+
+  --lobe-fill: rgba(0, 0, 0, 0.12);
+  --lobe-fill-secondary: rgba(0, 0, 0, 0.06);
+  --lobe-fill-tertiary: rgba(0, 0, 0, 0.03);
+  --lobe-fill-quaternary: rgba(0, 0, 0, 0.015);
+
+  --lobe-primary: #222222;
+  --lobe-primary-hover: #000000;
+  --lobe-primary-active: #404040;
+  --lobe-on-primary: #ffffff;
+
+  --lobe-success: #379d4a;
+  --lobe-warning: #ee9e0b;
+  --lobe-error: #ec5e41;
+  --lobe-info: #0072f5;
+
+  --lobe-accent: #b8860b;
+  --lobe-accent-hover: #a37508;
+  --lobe-accent-soft: rgba(184, 134, 11, 0.14);
+  --lobe-accent-border: rgba(184, 134, 11, 0.32);
+  --lobe-on-accent: #ffffff;
+
+  --lobe-shadow-tertiary: 0 3px 1px -1px rgba(26, 26, 26, 0.06);
+  --lobe-shadow-secondary: 0 8px 16px -4px rgba(0, 0, 0, 0.12);
+  --lobe-shadow-modal: 0 20px 20px -8px rgba(0, 0, 0, 0.16);
+
+  --lobe-radius-xs: 4px;
+  --lobe-radius-sm: 6px;
+  --lobe-radius: 8px;
+  --lobe-radius-lg: 12px;
+  --lobe-radius-pill: 9999px;
+
+  --lobe-control-sm: 28px;
+  --lobe-control: 36px;
+  --lobe-control-lg: 40px;
+
+  --lobe-glass-bg: rgba(255, 255, 255, 0.78);
+  --lobe-glass-border: rgba(0, 0, 0, 0.06);
+  --lobe-glass-blur: 20px;
+}

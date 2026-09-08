@@ -127,6 +127,12 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
         ? String(liveMessage._turnViewportTarget)
         : undefined}
     >
+      {role === 'assistant' ? (
+        <div className="message-author" aria-hidden="true">
+          <span className="message-avatar">S</span>
+          <span className="message-name">Socrates</span>
+        </div>
+      ) : null}
       {role === 'user' && attachments.length > 0 ? (
         <div className="msg-attachment-chips" aria-label="Attachments">
           {attachments.map((attachment, index) => {

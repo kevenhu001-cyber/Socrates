@@ -15,8 +15,8 @@ test('sidebar exposes only the requested primary destinations', async ({ page })
   );
   expect(visibleIds).toEqual([
     'navNew',
-    'navProjects',
     'navLibrary',
+    'navProjects',
     'navScheduled',
     'navPlugins',
     'navExam',
@@ -33,12 +33,10 @@ test('Plugins is a direct sidebar destination', async ({ page }) => {
   await page.locator('#navPlugins').click();
   await expect(page.locator('#navPlugins')).toHaveClass(/active/);
   await expect(page.locator('#pluginsPanel')).toBeVisible();
-  /* The React directory opens on the "installed" scope (plugin-directory.spec
-     owns the detailed scope/filter matrix). The default smoke catalog has no
-     connected apps, so the landing view is the empty state until the user
-     browses all plugins. */
-  await expect(page.locator('.plugin-directory-empty')).toBeVisible();
-  await page.getByRole('tab', { name: 'All plugins' }).click();
+  /* The React directory opens on the public scope (plugin-directory.spec
+     owns the detailed scope/filter matrix). The default smoke catalog has
+     no connected apps, so the landing view lists every plugin. */
+  await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('.plugin-directory-row')).toHaveCount(5);
 });
 
