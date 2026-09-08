@@ -704,8 +704,8 @@
   border-radius: var(--lobe-radius-lg);
   box-shadow: var(--lobe-shadow-secondary);
   padding: 4px;
-  backdrop-filter: blur(var(--lobe-glass-blur));
   -webkit-backdrop-filter: blur(var(--lobe-glass-blur));
+  backdrop-filter: blur(var(--lobe-glass-blur));
 }
 
 [data-mode] .display-prefs-row {
@@ -817,14 +817,14 @@
   border: 1px solid var(--lobe-border);
   border-radius: var(--lobe-radius-lg);
   box-shadow: var(--lobe-shadow-modal);
-  backdrop-filter: blur(var(--lobe-glass-blur));
   -webkit-backdrop-filter: blur(var(--lobe-glass-blur));
+  backdrop-filter: blur(var(--lobe-glass-blur));
 }
 
 [data-mode] .modal-overlay {
   background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 
 [data-mode] .modal-title {
@@ -1153,8 +1153,8 @@
   border: 1px solid var(--lobe-border-secondary);
   border-radius: var(--lobe-radius-pill);
   background: color-mix(in srgb, var(--lobe-bg-container) 72%, transparent);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   color: var(--lobe-text);
   box-shadow: var(--lobe-shadow-tertiary);
 }

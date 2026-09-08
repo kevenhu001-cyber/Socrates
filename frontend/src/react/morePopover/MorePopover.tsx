@@ -34,8 +34,8 @@ const PLUGINS_ICON =
 const EXAM_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>';
 
-/* Plugins and Exam live here because the desktop sidebar nav is trimmed to
-   five entries; they are destinations, so they sit above the settings group. */
+/* Plugins and Exam stay available in More as a secondary group while the
+   desktop sidebar keeps the reference's compact primary navigation. */
 const ITEMS: MenuItemSpec[] = [
   { action: 'plugins', labelKey: 'sidebar.nav.plugins', labelFallback: 'Plugins', icon: PLUGINS_ICON },
   { action: 'exam', labelKey: 'sidebar.nav.exam', labelFallback: 'Exam', icon: EXAM_ICON },

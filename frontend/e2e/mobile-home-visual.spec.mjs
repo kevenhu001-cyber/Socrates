@@ -108,7 +108,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      outside the repo for the design-QA pass. */
   await page.setViewportSize({ width: 390, height: 756 });
   await page.waitForTimeout(180);
-  await page.screenshot({ path: '/tmp/socrates-mobile-reference-implementation.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-mobile-reference-implementation.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(180);
 

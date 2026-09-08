@@ -52,9 +52,9 @@ test('light conversation home has a neutral readable palette and balanced compos
 
   expect(geometry.title).not.toBeNull();
   expect(geometry.composer).not.toBeNull();
-  /* The reference uses a shallow, single-line composer with all controls aligned. */
-  expect(geometry.composer?.height).toBe(48);
-  expect(geometry.topicFontSize).toBe(14);
+  /* ChatGPT.html measures 768 x 52 with a 16px editor at 1440x900. */
+  expect(geometry.composer?.height).toBe(52);
+  expect(geometry.topicFontSize).toBe(16);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(18);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(24);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);

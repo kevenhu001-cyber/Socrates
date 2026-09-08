@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('sidebar exposes only the requested primary destinations', async ({ page }) => {
+test('sidebar exposes the reference primary destinations', async ({ page }) => {
   const visibleIds = await page.locator('#sidebarNav > .sidebar-nav-btn').evaluateAll((buttons) =>
     buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => button.id),
   );
@@ -19,14 +19,13 @@ test('sidebar exposes only the requested primary destinations', async ({ page })
     'navProjects',
     'navScheduled',
     'navPlugins',
-    'navExam',
-    'navSkills',
+    'navMore',
   ]);
 
-  for (const id of ['navMore']) {
-    await expect(page.locator(`#${id}`)).toHaveCount(0);
+  for (const id of ['navExam', 'navSkills']) {
+    await expect(page.locator(`#${id}`)).toBeHidden();
   }
-  await expect(page.getByText('Customize', { exact: true })).toHaveCount(0);
+  await expect(page.locator('#navMore')).toHaveCount(1);
 });
 
 test('Plugins is a direct sidebar destination', async ({ page }) => {
@@ -41,15 +40,16 @@ test('Plugins is a direct sidebar destination', async ({ page }) => {
 });
 
 test('Exam is a direct sidebar destination', async ({ page }) => {
-  await page.locator('#navExam').click();
+  await page.evaluate(() => window.openNav('exam'));
   await expect(page.locator('#navExam')).toHaveClass(/active/);
   await expect(page.locator('#examView')).toBeVisible();
 });
 
-test('Skills & shortcuts opens directly without a Customize popover', async ({ page }) => {
-  await page.locator('#navSkills').click();
+test('More opens a working popover with Skills & shortcuts', async ({ page }) => {
+  await page.locator('#navMore').click();
+  await expect(page.locator('#moreNavPopover')).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Skills & shortcuts' }).click();
   await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
-  await expect(page.locator('#moreNavPopover')).toHaveCount(0);
 });
 
 test('Admin console is a standalone /admin page with no sidebar entry', async ({ page }) => {

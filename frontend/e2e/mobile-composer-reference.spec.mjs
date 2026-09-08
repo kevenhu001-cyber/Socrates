@@ -74,5 +74,5 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const menu = page.locator('.effort-menu.portal-open');
   await expect(menu).toBeVisible();
   await expect(menu).toContainText('5.6 Luna');
-  await page.screenshot({ path: '/tmp/socrates-mobile-composer-reference.png', fullPage: true });
+  await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png', fullPage: true });
 });

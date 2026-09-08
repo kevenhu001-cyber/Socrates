@@ -47,6 +47,12 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v3"/><path d="M15 3v3"/><path d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>',
   },
   {
+    key: 'more',
+    label: 'More',
+    i18nKey: 'sidebar.nav.more',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>',
+  },
+  {
     key: 'exam',
     label: 'Exam',
     i18nKey: 'sidebar.nav.exam',
@@ -125,7 +131,7 @@ export interface SidebarNavHandle {
  * Hydrate the legacy `#sidebarNav` element with React. Idempotent — a
  * second call returns the existing handle. The nav element itself is
  * preserved (same id, same `aria-label`, same nav DOM siblings); React
- * owns only its direct children (the 7 buttons). The /admin operator
+ * owns only its direct children (the 8 buttons). The /admin operator
  * console is intentionally NOT a sidebar destination: it is a
  * standalone page reached by direct URL (legacy WORKSPACE_ROUTES +
  * openAdmin), so the admin surface is not advertised in the nav.
