@@ -338,6 +338,7 @@
         <span data-i18n-key="sidebar.nav.more">更多</span>
       </button>
     </nav>
+    <div class="sidebar-more-popover hidden" id="moreNavPopover" role="menu" aria-label="更多"></div>
     <!-- Unified sidebar search + view switch. The search box filters the
          session list in place (setRecentsSearch → renderRecents). The two
          icon buttons are tutor-only entries to the Knowledge map and the
@@ -625,9 +626,11 @@
                 <button type="button" class="effort-item" data-effort="low" role="option"><span data-i18n-key="effort.low">Low</span></button>
               </div>
             </div>
-            <button class="mobile-mic-btn" id="topicMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
-            </button>
+            <!-- P_mic-dedup — the standalone mic button is gone: the white
+                 startBtn already doubles as the voice-dictation trigger
+                 whenever the composer is empty (legacyShellListeners routes
+                 the idle click to toggleSpeechInput), so a second mic only
+                 duplicated that affordance one slot to the left. -->
             <button class="start-btn" id="startBtn" aria-label="Voice input" title="Voice input">
               <span id="startBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
             </button>
@@ -635,6 +638,31 @@
         </div>
 
         <div class="home-suggestions-wrap" id="homeSuggestionsWrap"></div>
+
+        <!-- Reference landing shortcuts. Each row delegates to an existing
+             composer extension, so this is a real entry point rather than a
+             decorative copy of the reference page. The AI-backed suggestions
+             block above takes precedence whenever it has a valid response. -->
+        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions">
+          <button type="button" class="home-quick-action" data-home-action="upload">
+            <span class="home-quick-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5.5 17 4.5-4.5 3.2 3.2 2.2-2.2 3.1 3.5"/></svg>
+            </span>
+            <span class="home-quick-action-copy"><span data-i18n-key="home.quick.upload">添加图片或文件</span></span>
+          </button>
+          <button type="button" class="home-quick-action" data-home-action="write">
+            <span class="home-quick-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.2-1 10.6-10.6a2.1 2.1 0 0 0-3-3L5.2 16z"/><path d="m14.8 6.2 3 3"/></svg>
+            </span>
+            <span class="home-quick-action-copy"><span data-i18n-key="home.quick.write">撰写或编辑</span></span>
+          </button>
+          <button type="button" class="home-quick-action" data-home-action="research">
+            <span class="home-quick-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.7 12h16.6M12 3.5c2.1 2.3 3.2 5.1 3.2 8.5S14.1 18.2 12 20.5C9.9 18.2 8.8 15.4 8.8 12S9.9 5.8 12 3.5Z"/></svg>
+            </span>
+            <span class="home-quick-action-copy"><span data-i18n-key="home.quick.research">搜索网页</span></span>
+          </button>
+        </div>
 
       </div>
 
@@ -701,8 +729,8 @@
     <div class="plugins-panel main-page hidden" id="pluginsPanel">
       <div class="plugins-panel-tabs">
         <div class="pill" role="tablist" aria-label="插件视图">
-          <button type="button" class="active" data-tab="plugins">插件</button>
-          <button type="button" data-tab="skills">技能</button>
+          <button type="button" role="tab" class="active" data-tab="plugins">插件</button>
+          <button type="button" role="tab" data-tab="skills">技能</button>
         </div>
       </div>
       <div class="plugins-panel-head">
@@ -720,52 +748,52 @@
       <section class="plugins-installed">
         <div class="plugins-installed-label">已安装</div>
         <div class="plugins-installed-icons">
-          <span class="installed-icon" style="background:#5f33c1">P</span>
-          <span class="installed-icon" style="background:#2a8eef">D</span>
-          <span class="installed-icon" style="background:#c0392b">G</span>
-          <span class="installed-icon" style="background:#f0c419">N</span>
-          <span class="installed-icon" style="background:#4f9d69">S</span>
-          <span class="installed-icon" style="background:#9b59b6">Z</span>
-          <span class="installed-icon" style="background:#0aa4ad">F</span>
-          <span class="installed-icon" style="background:#1d1d1d">⌘</span>
+          <span class="installed-icon installed-icon--purple">P</span>
+          <span class="installed-icon installed-icon--blue">D</span>
+          <span class="installed-icon installed-icon--red">G</span>
+          <span class="installed-icon installed-icon--yellow">N</span>
+          <span class="installed-icon installed-icon--green">S</span>
+          <span class="installed-icon installed-icon--violet">Z</span>
+          <span class="installed-icon installed-icon--teal">F</span>
+          <span class="installed-icon installed-icon--black">⌘</span>
           <span class="installed-icon add" aria-label="添加更多">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </span>
         </div>
       </section>
       <div class="plugins-scope-tabs" role="tablist" aria-label="来源">
-        <button type="button" class="active" data-scope="public">公开</button>
-        <button type="button" data-scope="personal">个人</button>
+        <button type="button" role="tab" class="active" data-scope="public">公开</button>
+        <button type="button" role="tab" data-scope="personal">个人</button>
       </div>
       <h2 class="plugins-section-title">热门</h2>
       <div class="plugins-cards">
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:linear-gradient(135deg,#ea4335,#fbbc05,#34a853,#4285f4)">M</span>
+          <span class="glyph glyph--gmail">M</span>
           <span class="copy"><strong>Gmail</strong><small>Read and manage Gmail</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:#1d1d1d">⌘</span>
+          <span class="glyph glyph--github">⌘</span>
           <span class="copy"><strong>GitHub</strong><small>Triage PRs, issues, CI, and publish flows</small></span>
           <span class="menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg></span>
         </button>
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:linear-gradient(135deg,#34a853,#fbbc05,#4285f4)">▲</span>
+          <span class="glyph glyph--gdrive">▲</span>
           <span class="copy"><strong>Google Drive</strong><small>Drive, Docs, Sheets or Slides</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:linear-gradient(135deg,#36c5f0,#e01e5b,#2eb67d,#ecb22e)">#</span>
+          <span class="glyph glyph--slack">#</span>
           <span class="copy"><strong>Slack</strong><small>Read and manage Slack</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:#0078d4">O</span>
+          <span class="glyph glyph--outlook">O</span>
           <span class="copy"><strong>Outlook Email</strong><small>Triage Outlook inboxes</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:linear-gradient(135deg,#00c4cc,#7d2ae8)">C</span>
+          <span class="glyph glyph--canva">C</span>
           <span class="copy"><strong>Canva</strong><small>Create, review, edit designs</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>
@@ -773,12 +801,12 @@
       <h2 class="plugins-section-title">新品推荐</h2>
       <div class="plugins-cards">
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:linear-gradient(135deg,#1e88e5,#26c6da)">+</span>
+          <span class="glyph glyph--healthcare">+</span>
           <span class="copy"><strong>Healthcare Public Data</strong><small>Search official public healthcare sources</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>
         <button type="button" class="plugins-card">
-          <span class="glyph" style="background:linear-gradient(135deg,#7c4dff,#7e57c2)">D</span>
+          <span class="glyph glyph--datadog">D</span>
           <span class="copy"><strong>Datadog (Preview)</strong><small>Search and act on your data</small></span>
           <span class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
         </button>

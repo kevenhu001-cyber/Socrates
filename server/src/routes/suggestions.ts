@@ -1,28 +1,21 @@
-/* P_suggestions-ai — generates two starter prompts for the landing
- * composer by reading the user's recent sessions and asking the LLM
- * to propose natural follow-ups. Falls back to a hard-coded library
- * when the user has no history, when the provider is unreachable, or
- * when the upstream call fails / returns unparsable output.
+/*
+ * P_suggestions-ai — generates the three personalised starter prompts shown
+ * beneath the landing composer.
  *
- * Caching:
- *   In-memory per userId, TTL 30 min. Survives only this process;
- *   cold deploys regenerate once. Fine because the per-user request
- *   rate is bounded by chatLimiter (60/hr).
+ * Contract:
+ *   - only the built-in Beagle provider is used;
+ *   - the user must have at least one active session;
+ *   - the model must return exactly three valid, distinct prompts;
+ *   - any missing prerequisite or invalid output returns an empty list.
  *
- * Concurrency:
- *   A single in-flight map coalesces concurrent first-load requests
- *   from the same user so two browser tabs do not double-bill the LLM.
- *
- * Output contract matches the library shape used by
- * frontend/src/ui/suggestions.js:
- *   { id, prompt, icon }
- * Icons come from the same ICON_CACHE the front-end uses, so the
- * renderer never sees an icon it cannot draw. */
+ * There is deliberately no hard-coded fallback: the landing surface hides
+ * the suggestion block unless the complete three-item result is available.
+ */
 
 import { Router } from 'express';
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { sessions } from '../db/schema.js';
+import { memories, messages, sessions, users } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/apiKey.js';
@@ -30,10 +23,20 @@ import { callChatCompletion } from '../services/llm.js';
 
 const router = Router();
 
+type SuggestionIcon = 'spark' | 'history' | 'target';
+
 interface Suggestion {
   id: string;
   prompt: string;
-  icon: string;
+  icon: SuggestionIcon;
+}
+
+interface SuggestionContext {
+  recentSessions: Array<{ title: string | null; topic: string | null; mode: string | null }>;
+  recentMessages: Array<{ role: string; content: string }>;
+  customInstructions: string;
+  preferences: unknown;
+  memories: string[];
 }
 
 interface CachedEntry {
@@ -41,78 +44,95 @@ interface CachedEntry {
   expiresAt: number;
 }
 
-/* Allowed icon keys the renderer knows how to draw. Anything else
-   collapses to `follow` server-side so a model hallucination cannot
-   break the SPA icon cache. */
-const ALLOWED_ICONS = new Set<string>([
-  'briefing', 'inbox', 'notes', 'code', 'database', 'regex', 'teach',
-  'quiz', 'compare', 'summarize', 'spark', 'pen', 'globe', 'scale',
-  'follow',
-]);
-const ICON_ROTATION: string[] = ['spark', 'follow', 'briefing', 'teach', 'code', 'compare', 'notes', 'pen'];
-
-/* Per-user cache. */
+const SUGGESTION_COUNT = 3;
+const ICON_ROTATION: SuggestionIcon[] = ['spark', 'history', 'target'];
 const CACHE_TTL_MS = 30 * 60 * 1000;
-const cache: Map<string, CachedEntry> = new Map();
+const EMPTY_RESULT = (source: string) => ({ suggestions: [] as Suggestion[], source });
 
-/* Coalesce concurrent first-load requests for the same user. */
+/* Per-user + locale cache. Empty results are intentionally not cached so a
+   user who chats or connects Beagle after the first check can get prompts
+   without waiting for a stale negative entry. */
+const cache: Map<string, CachedEntry> = new Map();
 const inFlight: Map<string, Promise<{ suggestions: Suggestion[]; source: string }>> = new Map();
 
-function getCached(userId: string): Suggestion[] | null {
-  const entry = cache.get(userId);
+function cacheKey(userId: string, lang: string): string {
+  return `${userId}:${lang}`;
+}
+
+function getCached(userId: string, lang: string): Suggestion[] | null {
+  const key = cacheKey(userId, lang);
+  const entry = cache.get(key);
   if (!entry) return null;
   if (entry.expiresAt <= Date.now()) {
-    cache.delete(userId);
+    cache.delete(key);
     return null;
   }
   return entry.suggestions;
 }
 
-function setCached(userId: string, suggestions: Suggestion[]): void {
-  cache.set(userId, { suggestions, expiresAt: Date.now() + CACHE_TTL_MS });
+function setCached(userId: string, lang: string, suggestions: Suggestion[]): void {
+  if (suggestions.length !== SUGGESTION_COUNT) return;
+  cache.set(cacheKey(userId, lang), {
+    suggestions,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
 }
 
-/* Hard-coded fallbacks. Picked to cover common first-run and provider-
-   down cases without leaking hardcoded prompts to the live UI in the
-   happy path. */
-function getFallbackStarters(lang: string): Suggestion[] {
-  if (lang === 'zh') {
-    return [
-      { id: 'fb-briefing', prompt: '给我一份晨间简报 — 列出今天最该知道的三件事', icon: 'briefing' },
-      { id: 'fb-teach', prompt: '像给好奇的青少年讲一样教我一个新概念 — 先讲直觉', icon: 'teach' },
-    ];
-  }
-  return [
-    { id: 'fb-briefing', prompt: 'Give me a morning briefing — top three things I should know today', icon: 'briefing' },
-    { id: 'fb-teach', prompt: 'Teach me a new concept like I am a curious teenager — start with intuition', icon: 'teach' },
-  ];
+function truncate(value: unknown, maxLength: number): string {
+  const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-/* Build the LLM messages. Each is short, locale-aware, and asks for a
-   strict JSON array so the parser can recover even when the model
-   wraps the array in a code fence. */
-function buildPromptMessages(
-  recentSessions: Array<{ title: string | null; topic: string | null; mode: string | null }>,
-  lang: string,
-): Array<{ role: string; content: string }> {
-  const lines: string[] = [];
-  for (const s of recentSessions) {
-    const label = ((s.title || s.topic || '') as string).trim();
-    if (label) lines.push(`- ${label}`);
-  }
+function buildPromptMessages(context: SuggestionContext, lang: string): Array<{ role: string; content: string }> {
+  const sessionLines = context.recentSessions
+    .map((session) => truncate(session.title || session.topic, 160))
+    .filter(Boolean)
+    .map((label) => `- ${label}`);
 
-  const context = lines.length > 0 ? lines.join('\n') : '(none)';
-  const count = 2;
+  const messageLines = context.recentMessages
+    .map((message) => {
+      const role = message.role === 'assistant' ? 'assistant' : 'user';
+      const content = truncate(message.content, 500);
+      return content ? `- ${role}: ${content}` : '';
+    })
+    .filter(Boolean);
+
+  const preferenceLines: string[] = [];
+  if (context.customInstructions) {
+    preferenceLines.push(`- Custom instructions: ${truncate(context.customInstructions, 1000)}`);
+  }
+  if (context.preferences && Object.keys(context.preferences as Record<string, unknown>).length > 0) {
+    try {
+      preferenceLines.push(`- Preferences: ${truncate(JSON.stringify(context.preferences), 1200)}`);
+    } catch (_) { /* ignore non-serialisable preference blobs */ }
+  }
+  const memoryLines = context.memories
+    .map((memory) => truncate(memory, 300))
+    .filter(Boolean)
+    .map((memory) => `- ${memory}`);
+
+  const sections = [
+    sessionLines.length ? `Recent sessions:\n${sessionLines.join('\n')}` : '',
+    messageLines.length ? `Recent messages:\n${messageLines.join('\n')}` : '',
+    preferenceLines.length ? `User preferences:\n${preferenceLines.join('\n')}` : '',
+    memoryLines.length ? `Saved memories:\n${memoryLines.join('\n')}` : '',
+  ].filter(Boolean);
+  const contextText = sections.length ? sections.join('\n\n') : '(no usable context)';
 
   if (lang === 'zh') {
     return [
       {
         role: 'system',
-        content: '你是 Socrates 应用的开场白生成器。根据用户最近的对话主题，生成 2 个简短的、可直接发送的中文开场白。每个不超过 30 个汉字，不要包含占位符（如 [topic]）。必须严格用 JSON 数组返回，例如 ["...","..."]。',
+        content: [
+          '你是 Socrates 首页的建议生成器。',
+          '根据用户真实的会话历史、近期消息、个人偏好和已保存记忆，生成恰好 3 条可以直接发送的新对话开场白。',
+          '要求：每条都具体、互不重复、自然，能延续用户真正关心的话题；不要泛泛而谈，不要编造用户没有表达过的身份或经历；不要使用 emoji；不要包含 [占位符]、代码块或解释。',
+          '只输出严格的 JSON 字符串数组，例如 ["...","...","..."]。如果上下文不足，输出 []。',
+        ].join('\n'),
       },
       {
         role: 'user',
-        content: `以下是用户最近的对话主题（按时间倒序，最多 15 条）：\n${context}\n\n请生成 2 条直接可用的开场白。`,
+        content: `${contextText}\n\n请生成恰好 3 条中文建议。`,
       },
     ];
   }
@@ -120,61 +140,74 @@ function buildPromptMessages(
   return [
     {
       role: 'system',
-      content: "You are the conversation starter generator for the Socrates app. Based on the user's recent chat topics, generate 2 short, directly-sendable English prompts. Each must be under 30 words, must not contain placeholders such as [topic], and must be self-contained. Always return a strict JSON array, e.g. [\"...\",\"...\"].",
+      content: [
+        'You generate starter prompts for the Socrates landing page.',
+        'Using the real session history, recent messages, preferences, and saved memories below, produce exactly three directly sendable prompts for a new conversation.',
+        'Each prompt must be specific, distinct, natural, and grounded in a topic the user actually cares about. Do not invent identities or experiences, do not use emoji, and do not include placeholders, code fences, or commentary.',
+        'Return only a strict JSON array of three strings, for example ["...","...","..."]. Return [] when the context is insufficient.',
+      ].join('\n'),
     },
     {
       role: 'user',
-      content: `Recent chat topics for this user (most recent first, up to 15):\n${context}\n\nGenerate ${count} starter prompts.`,
+      content: `${contextText}\n\nGenerate exactly ${SUGGESTION_COUNT} English starter prompts.`,
     },
   ];
 }
 
-/* Parse the model output. Accepts arrays the model wrapped in
-   ```json … ``` fences, arrays with surrounding prose, or pure arrays.
-   Returns null on any failure so the caller's fallback runs. */
+/* Parse arrays wrapped in a JSON fence or prose. Returns null on any failure. */
 function parseSuggestionsArray(content: string): unknown[] | null {
   if (typeof content !== 'string') return null;
   const trimmed = content.trim();
-  /* 1) Direct JSON.parse on the whole response. */
   try {
-    const arr = JSON.parse(trimmed);
-    if (Array.isArray(arr)) return arr;
-  } catch (_) { /* try fenced */ }
-  /* 2) Look for the first [...] bracket-balanced substring. */
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (_) { /* try the bracket-balanced slice below */ }
+
   const open = trimmed.indexOf('[');
   const close = trimmed.lastIndexOf(']');
   if (open === -1 || close === -1 || close <= open) return null;
-  const candidate = trimmed.slice(open, close + 1);
   try {
-    const arr = JSON.parse(candidate);
-    if (Array.isArray(arr)) return arr;
-  } catch (_) { /* fall through */ }
-  return null;
+    const parsed = JSON.parse(trimmed.slice(open, close + 1));
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
 }
 
-/* Sanitize and shape the parsed array into the renderer contract. */
+function normalizePrompt(value: unknown, lang: string): string | null {
+  if (typeof value !== 'string') return null;
+  const prompt = value.replace(/\s+/g, ' ').trim();
+  if (!prompt) return null;
+  if (/\[[^\]]+\]|\{\{[^}]+\}\}/.test(prompt)) return null;
+  if (/[\r\n]/.test(value)) return null;
+  if (/```/.test(prompt)) return null;
+  if (/\p{Extended_Pictographic}/u.test(prompt)) return null;
+  const maxLength = lang === 'zh' ? 60 : 120;
+  if (prompt.length < 6 || prompt.length > maxLength) return null;
+  return prompt;
+}
+
+/* Strict shaper: exactly three valid, distinct prompts or no suggestions. */
 function shapeSuggestions(rawArr: unknown, lang: string): Suggestion[] {
-  if (!Array.isArray(rawArr)) return [];
-  const out: Suggestion[] = [];
-  for (let i = 0; i < rawArr.length && out.length < 2; i++) {
-    const item = rawArr[i];
-    const prompt = String(item == null ? '' : item).trim();
-    if (!prompt) continue;
-    /* Reject placeholders — the renderer does not interpolate them
-       and shipping "Teach me [topic]…" to a real user is dead UX. */
-    if (/\[[^\]]+\]/.test(prompt)) continue;
-    /* Length guard: keep chips short enough that mobile ellipsis never
-       hides the verb. */
-    const maxLen = lang === 'zh' ? 60 : 120;
-    const trimmed = prompt.length > maxLen ? prompt.slice(0, maxLen - 1) + '…' : prompt;
-    const icon = ICON_ROTATION[out.length % ICON_ROTATION.length];
-    out.push({
-      id: `ai-${Date.now()}-${out.length}`,
-      prompt: trimmed,
-      icon,
-    });
+  if (!Array.isArray(rawArr) || rawArr.length !== SUGGESTION_COUNT) return [];
+
+  const prompts: string[] = [];
+  for (const item of rawArr) {
+    const candidate = item && typeof item === 'object'
+      ? (item as { prompt?: unknown; text?: unknown }).prompt ?? (item as { text?: unknown }).text
+      : item;
+    const prompt = normalizePrompt(candidate, lang);
+    if (!prompt) return [];
+    const duplicate = prompts.some((existing) => existing.toLocaleLowerCase() === prompt.toLocaleLowerCase());
+    if (duplicate) return [];
+    prompts.push(prompt);
   }
-  return out;
+
+  return prompts.map((prompt, index) => ({
+    id: `ai-${Date.now()}-${index}`,
+    prompt,
+    icon: ICON_ROTATION[index],
+  }));
 }
 
 async function generateStarters(
@@ -183,6 +216,7 @@ async function generateStarters(
 ): Promise<{ suggestions: Suggestion[]; source: string }> {
   const db = getDb();
   const recentSessions = await db.select({
+    id: sessions.id,
     title: sessions.title,
     topic: sessions.topic,
     mode: sessions.mode,
@@ -192,51 +226,81 @@ async function generateStarters(
     .orderBy(desc(sessions.updatedAt))
     .limit(15);
 
-  /* No history → fall back to the static library. New users get the
-     same first impression regardless of provider availability. */
   if (recentSessions.length === 0) {
-    return { suggestions: getFallbackStarters(lang), source: 'fallback-empty' };
+    return EMPTY_RESULT('empty-no-history');
   }
 
-  const provider = await getActiveApiKey(userId).catch(() => null);
-  if (!provider || !provider.keyPlaintext || !provider.url || !provider.model) {
-    return { suggestions: getFallbackStarters(lang), source: 'fallback-no-provider' };
+  /* Only the built-in Beagle model may generate landing suggestions. A
+     user's own provider is intentionally ignored: this surface is a
+     Beagle capability, not a generic LLM feature. */
+  const provider = await getActiveApiKey(null).catch(() => null);
+  if (!provider || !provider.isBuiltIn || !provider.keyPlaintext || !provider.url || !provider.model) {
+    return EMPTY_RESULT('empty-no-beagle');
   }
 
-  const messages = buildPromptMessages(
-    recentSessions.map(s => ({ title: s.title, topic: s.topic, mode: s.mode })),
-    lang,
-  );
+  const sessionIds = recentSessions.map((session) => session.id);
+  const [messageRows, profileRow, memoryRows] = await Promise.all([
+    db.select({
+      role: messages.role,
+      content: messages.rawText,
+      fallbackContent: messages.content,
+    })
+      .from(messages)
+      .where(inArray(messages.sessionId, sessionIds))
+      .orderBy(desc(messages.createdAt))
+      .limit(30),
+    db.select({
+      customInstructions: users.customInstructions,
+      preferences: users.preferences,
+    })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+    db.select({ text: memories.text })
+      .from(memories)
+      .where(and(eq(memories.userId, userId), eq(memories.enabled, true)))
+      .orderBy(desc(memories.createdAt))
+      .limit(10),
+  ]);
+
+  const context: SuggestionContext = {
+    recentSessions: recentSessions.map((session) => ({
+      title: session.title,
+      topic: session.topic,
+      mode: session.mode,
+    })),
+    recentMessages: messageRows
+      .slice()
+      .reverse()
+      .map((message) => ({
+        role: message.role,
+        content: message.content || message.fallbackContent || '',
+      }))
+      .filter((message) => message.content),
+    customInstructions: profileRow[0]?.customInstructions || '',
+    preferences: profileRow[0]?.preferences || {},
+    memories: memoryRows.map((memory) => memory.text),
+  };
 
   try {
     const result = await callChatCompletion({
       apiBase: provider.url,
       apiKey: provider.keyPlaintext,
       model: provider.model,
-      messages,
-      maxTokens: 200,
-      temperature: 0.8,
+      messages: buildPromptMessages(context, lang),
+      maxTokens: 300,
+      temperature: 0.5,
     });
-    const content = (result && result.content) ? result.content : '';
-    const arr = parseSuggestionsArray(content);
-    if (!arr) {
-      return { suggestions: getFallbackStarters(lang), source: 'fallback-bad-output' };
-    }
-    const shaped = shapeSuggestions(arr, lang);
-    if (shaped.length === 0) {
-      return { suggestions: getFallbackStarters(lang), source: 'fallback-shape-empty' };
-    }
-    /* Pad to two items by appending a fallback so the front-end
-       always renders two chips. */
-    while (shaped.length < 2) {
-      const fb = getFallbackStarters(lang)[shaped.length];
-      shaped.push(fb);
-    }
+    const parsed = parseSuggestionsArray(result?.content || '');
+    if (!parsed) return EMPTY_RESULT('empty-bad-output');
+
+    const shaped = shapeSuggestions(parsed, lang);
+    if (shaped.length !== SUGGESTION_COUNT) return EMPTY_RESULT('empty-invalid-output');
     return { suggestions: shaped, source: 'ai' };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.warn('[suggestions] LLM generation failed:', message);
-    return { suggestions: getFallbackStarters(lang), source: 'fallback-error' };
+    console.warn('[suggestions] Beagle generation failed:', message);
+    return EMPTY_RESULT('empty-error');
   }
 }
 
@@ -244,57 +308,45 @@ router.get('/starters', requireAuth, chatLimiter, async (req, res, next) => {
   try {
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'unauthorized' });
-    /* The browser always sends the user's UI locale; we use it to
-       choose the system prompt language, never to gate the route. */
-    const lang = (req.query.lang === 'zh' || req.query.lang === 'en')
-      ? req.query.lang
-      : 'en';
+    const lang = req.query.lang === 'zh' || req.query.lang === 'en' ? req.query.lang : 'en';
 
-    const cached = getCached(userId);
-    if (cached) {
-      return res.json({
-        suggestions: cached,
-        source: 'cache',
-      });
-    }
+    const cached = getCached(userId, lang);
+    if (cached) return res.json({ suggestions: cached, source: 'cache' });
 
-    if (inFlight.has(userId)) {
-      const { suggestions, source } = await inFlight.get(userId)!;
+    const key = cacheKey(userId, lang);
+    if (inFlight.has(key)) {
+      const { suggestions, source } = await inFlight.get(key)!;
       return res.json({ suggestions, source });
     }
 
     const promise = generateStarters(userId, lang);
-    inFlight.set(userId, promise);
+    inFlight.set(key, promise);
     try {
       const { suggestions, source } = await promise;
-      setCached(userId, suggestions);
+      if (suggestions.length === SUGGESTION_COUNT) setCached(userId, lang, suggestions);
       return res.json({ suggestions, source });
     } finally {
-      inFlight.delete(userId);
+      inFlight.delete(key);
     }
   } catch (err) {
     next(err);
   }
 });
 
-/* Test-only — invalidate the per-user cache. Wired in case the
-   SPA exposes a "regenerate" affordance later; for now it is also
-   reachable from internal tests. */
+/* Test-only — invalidate the per-user cache for every locale. */
 router.post('/starters/invalidate', requireAuth, async (req, res) => {
   const userId = req.userId;
   if (!userId) return res.status(401).json({ error: 'unauthorized' });
-  cache.delete(userId);
+  for (const key of cache.keys()) {
+    if (key.startsWith(`${userId}:`)) cache.delete(key);
+  }
   return res.json({ ok: true });
 });
 
-/* P_suggestions-test-harness — expose the pure helpers so the unit
-   test suite can exercise the parser/shaper without spinning up the
-   DB or the LLM. Stripped from the production bundle by tree-shaking
-   if no test import references the symbol. */
 export const __test = {
   parseSuggestionsArray,
   shapeSuggestions,
-  getFallbackStarters,
+  buildPromptMessages,
 };
 
 export default router;

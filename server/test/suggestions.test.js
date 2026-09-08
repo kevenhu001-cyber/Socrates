@@ -1,13 +1,10 @@
 // @ts-check
 /**
- * Unit tests for src/routes/suggestions.ts — the AI-generated starter
- * prompt engine. We isolate the pure helpers (parseSuggestionsArray,
- * shapeSuggestions, getFallbackStarters-equivalent behaviour) and
- * verify the parser/shaper handle every shape the upstream LLM might
- * produce. The DB-touching parts (generateStarters, the router) are
- * exercised end-to-end via the deploy verification, not here.
+ * Unit tests for src/routes/suggestions.ts.
  *
- * Run with: npm test
+ * The landing suggestions are a strict three-item contract: no fallback,
+ * no partial render, and no suggestions without history + the built-in
+ * Beagle provider.
  */
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +14,6 @@ import express from 'express';
 import { eq } from 'drizzle-orm';
 
 import suggestionsRouter, { __test } from '../src/routes/suggestions.js';
-import { requireAuth } from '../src/middleware/auth.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { authSessions as authSessionsTable, sessions as sessionsTable, users as usersTable } from '../src/db/schema.js';
 import { listen, httpRequest } from './_http.js';
@@ -26,23 +22,22 @@ const t = __test;
 
 describe('suggestions parser', () => {
   test('parses a plain JSON array', () => {
-    const arr = t.parseSuggestionsArray('["hello", "world"]');
-    assert.deepEqual(arr, ['hello', 'world']);
+    const arr = t.parseSuggestionsArray('["hello", "world", "again"]');
+    assert.deepEqual(arr, ['hello', 'world', 'again']);
   });
 
   test('parses a fenced json array', () => {
-    const arr = t.parseSuggestionsArray('```json\n["hello", "world"]\n```');
-    assert.deepEqual(arr, ['hello', 'world']);
+    const arr = t.parseSuggestionsArray('```json\n["hello", "world", "again"]\n```');
+    assert.deepEqual(arr, ['hello', 'world', 'again']);
   });
 
   test('parses a prose-wrapped array', () => {
-    const arr = t.parseSuggestionsArray('Sure, here are two:\n["hello", "world"]\nEnjoy!');
-    assert.deepEqual(arr, ['hello', 'world']);
+    const arr = t.parseSuggestionsArray('Sure, here are three:\n["hello", "world", "again"]\nEnjoy!');
+    assert.deepEqual(arr, ['hello', 'world', 'again']);
   });
 
   test('returns null on non-array JSON', () => {
-    const arr = t.parseSuggestionsArray('{"a": 1}');
-    assert.equal(arr, null);
+    assert.equal(t.parseSuggestionsArray('{"a": 1}'), null);
   });
 
   test('returns null on garbage input', () => {
@@ -58,44 +53,35 @@ describe('suggestions parser', () => {
 });
 
 describe('suggestions shaper', () => {
-  test('produces two suggestions from a valid array', () => {
-    const out = t.shapeSuggestions(['Review my last PR', 'Help me draft an email'], 'en');
-    assert.equal(out.length, 2);
+  test('produces exactly three suggestions from a valid array', () => {
+    const out = t.shapeSuggestions(['Review my last PR', 'Help me draft an email', 'Plan tomorrow'], 'en');
+    assert.equal(out.length, 3);
     assert.equal(out[0].prompt, 'Review my last PR');
-    assert.equal(out[1].prompt, 'Help me draft an email');
+    assert.equal(out[2].prompt, 'Plan tomorrow');
     assert.ok(out[0].id.startsWith('ai-'));
-    assert.ok(typeof out[0].icon === 'string' && out[0].icon.length > 0);
+    assert.deepEqual(out.map((item) => item.icon), ['spark', 'history', 'target']);
+  });
+
+  test('rejects arrays that do not contain exactly three prompts', () => {
+    assert.equal(t.shapeSuggestions(['one', 'two'], 'en').length, 0);
+    assert.equal(t.shapeSuggestions(['one', 'two', 'three', 'four'], 'en').length, 0);
   });
 
   test('rejects prompts containing placeholder brackets', () => {
-    const out = t.shapeSuggestions(['Teach me [topic] in 5 minutes'], 'en');
-    assert.equal(out.length, 0);
+    assert.equal(t.shapeSuggestions(['Teach me [topic] in 5 minutes', 'two', 'three'], 'en').length, 0);
   });
 
-  test('truncates overlong English prompts to 120 chars + ellipsis', () => {
+  test('rejects overlong prompts instead of truncating them', () => {
     const long = 'a'.repeat(200);
-    const out = t.shapeSuggestions([long], 'en');
-    assert.equal(out.length, 1);
-    assert.equal(out[0].prompt.length, 120);
-    assert.ok(out[0].prompt.endsWith('…'));
+    assert.equal(t.shapeSuggestions([long, 'two', 'three'], 'en').length, 0);
   });
 
-  test('truncates overlong Chinese prompts to 60 chars + ellipsis', () => {
-    const long = '测'.repeat(100);
-    const out = t.shapeSuggestions([long], 'zh');
-    assert.equal(out.length, 1);
-    assert.equal(out[0].prompt.length, 60);
+  test('rejects emoji in generated prompts', () => {
+    assert.equal(t.shapeSuggestions(['Plan my week 🚀', 'two', 'three'], 'en').length, 0);
   });
 
-  test('skips empty prompts', () => {
-    const out = t.shapeSuggestions(['', '   ', 'actual prompt'], 'en');
-    assert.equal(out.length, 1);
-    assert.equal(out[0].prompt, 'actual prompt');
-  });
-
-  test('caps output at two items even when input is longer', () => {
-    const out = t.shapeSuggestions(['a', 'b', 'c', 'd'], 'en');
-    assert.equal(out.length, 2);
+  test('rejects duplicate prompts', () => {
+    assert.equal(t.shapeSuggestions(['same prompt', 'same prompt', 'third prompt'], 'en').length, 0);
   });
 
   test('returns empty array for non-array input', () => {
@@ -105,34 +91,27 @@ describe('suggestions shaper', () => {
   });
 });
 
-describe('suggestions fallback starters', () => {
-  test('returns Chinese fallback for zh locale', () => {
-    const fb = t.getFallbackStarters('zh');
-    assert.equal(fb.length, 2);
-    assert.ok(/[\u4e00-\u9fff]/.test(fb[0].prompt), 'zh fallback should contain CJK');
-    assert.equal(fb[0].icon, 'briefing');
-  });
-
-  test('returns English fallback for en locale', () => {
-    const fb = t.getFallbackStarters('en');
-    assert.equal(fb.length, 2);
-    assert.ok(/[A-Za-z]/.test(fb[0].prompt));
-    assert.equal(fb[0].icon, 'briefing');
-  });
-
-  test('falls back to English for unknown locale', () => {
-    const fb = t.getFallbackStarters('xx');
-    assert.equal(fb.length, 2);
-    assert.ok(/[A-Za-z]/.test(fb[0].prompt));
+describe('suggestions prompt context', () => {
+  test('includes history, preferences, and memories in the model prompt', () => {
+    const messages = t.buildPromptMessages({
+      recentSessions: [{ title: 'Rust async runtime', topic: 'rust', mode: 'chat' }],
+      recentMessages: [{ role: 'user', content: 'I am comparing Tokio and async-std.' }],
+      customInstructions: 'Prefer concise examples.',
+      preferences: { language: 'zh' },
+      memories: ['The user is learning systems programming.'],
+    }, 'en');
+    const combined = messages.map((message) => message.content).join('\n');
+    assert.match(combined, /Rust async runtime/);
+    assert.match(combined, /Tokio and async-std/);
+    assert.match(combined, /Prefer concise examples/);
+    assert.match(combined, /systems programming/);
+    assert.match(combined, /exactly three/i);
   });
 });
 
-/* DB-backed integration suite: requires DATABASE_URL. Skipped otherwise
-   to keep the suite hermetic. Verifies the route returns fallback for
-   no-history users and serves two suggestions for users with history.
-   The history test hits the live provider when one is configured, so
-   it accepts every documented source label — only the two-chip
-   contract and (via invalidate) a fresh recompute are asserted. */
+/* DB-backed integration suite: requires DATABASE_URL. Skipped otherwise.
+   Verifies the route returns an empty list for no-history users and only
+   ever returns 0 or exactly 3 suggestions for users with history. */
 describe('suggestions route (DB-backed)', () => {
   let testUser = null;
   let testSid = null;
@@ -143,9 +122,6 @@ describe('suggestions route (DB-backed)', () => {
     if (!process.env.DATABASE_URL) return;
     await initDb(process.env.DATABASE_URL);
     const db = getDb();
-    /* users.id is a uuid PK — a random string trips PG's uuid parser,
-       and the display-name column is `displayName` (display_name),
-       not `name` (silently dropped by drizzle). */
     const id = randomUUID();
     const [u] = await db.insert(usersTable).values({
       id,
@@ -155,9 +131,6 @@ describe('suggestions route (DB-backed)', () => {
       passwordHash: 'x',
     }).returning();
     testUser = u;
-    /* The router applies the real requireAuth (sid cookie → session
-       lookup), so a stub req.userId middleware cannot authenticate:
-       mint a real session following the oauthFlow.test.js pattern. */
     testSid = randomBytes(32).toString('hex');
     await db.insert(authSessionsTable).values({
       token: testSid,
@@ -183,18 +156,17 @@ describe('suggestions route (DB-backed)', () => {
     if (process.env.DATABASE_URL) await closeDb();
   });
 
-  test('returns fallback for user with no history', async () => {
+  test('returns an empty list for a user with no history', async () => {
     if (!process.env.DATABASE_URL || !server) return;
     const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: testSid } });
     assert.equal(r.status, 200);
-    assert.equal(r.body.suggestions.length, 2);
-    assert.equal(r.body.source, 'fallback-empty');
+    assert.equal(r.body.suggestions.length, 0);
+    assert.equal(r.body.source, 'empty-no-history');
   });
 
-  test('returns two suggestions for user with history (provider path)', async () => {
+  test('returns either exactly three valid suggestions or an empty result', async () => {
     if (!process.env.DATABASE_URL || !server) return;
     const db = getDb();
-    /* Insert three sessions so the engine has history to read. */
     for (let i = 0; i < 3; i++) {
       await db.insert(sessionsTable).values({
         userId: testUser.id,
@@ -204,9 +176,6 @@ describe('suggestions route (DB-backed)', () => {
         phase: 'chat',
       });
     }
-    /* The previous test cached this user's (empty-history) result for
-       30 minutes. Bust it through the test-only invalidate endpoint
-       so this request recomputes from the seeded history. */
     const inv = await httpRequest(server.url + '/api/suggestions/starters/invalidate', {
       method: 'POST',
       cookies: { sid: testSid },
@@ -214,17 +183,7 @@ describe('suggestions route (DB-backed)', () => {
     assert.equal(inv.status, 200);
     const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: testSid } });
     assert.equal(r.status, 200);
-    assert.equal(r.body.suggestions.length, 2);
-    /* Any live-provider outcome is acceptable: 'ai' on good output,
-       'fallback-no-provider' when no key is configured, and the
-       'fallback-*' family when the call fails or the model returns
-       something unshapable (temperature 0.8 makes the latter
-       nondeterministic — the route still owes the UI two chips).
-       'cache' is rejected on purpose: the invalidate call above
-       guarantees this request recomputes from the seeded history. */
-    assert.ok(
-      ['ai', 'fallback-no-provider', 'fallback-error', 'fallback-bad-output', 'fallback-shape-empty'].includes(r.body.source),
-      `unexpected source: ${r.body.source}`,
-    );
+    assert.ok(r.body.suggestions.length === 0 || r.body.suggestions.length === 3);
+    if (r.body.suggestions.length === 3) assert.equal(r.body.source, 'ai');
   });
 });

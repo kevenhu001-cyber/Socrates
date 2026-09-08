@@ -95,11 +95,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell #navPlugins {
   order: 5;
 }
-#appShell #navExam {
+#appShell #navMore {
   order: 6;
 }
-#appShell #navSkills {
+#appShell #navExam {
   order: 7;
+}
+#appShell #navSkills {
+  order: 8;
 }
 
 /* Recents section header + history rows follow the reference's quiet list. */
@@ -141,6 +144,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 #appShell #topicSetup .topic-title.greeting {
   font-weight: 400;
   letter-spacing: -0.01em;
+  /* text-wrap: balance keeps multi-line greeting headings from leaving a
+     short orphan on the second line. Chrome < 114 falls back to the
+     default wrapping, which is acceptable — the heading still wraps
+     cleanly because the container width is fixed. */
+  overflow-wrap: break-word;
   text-wrap: balance;
 }
 
@@ -223,8 +231,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   color: var(--cg-text-muted) !important;
 }
 
-/* Reference send button: solid dark circle in light mode. */
-[data-mode="light"] #appShell #topicInputWrap #startBtn {
+/* Reference send button: solid dark circle in light mode. The
+   specificity has to clear chatgpt-v2's `#startBtn:not(.active)`
+   rule, so it carries the same :not(.active) shape. */
+[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
+[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active {
   color: #fff !important;
   background: #111 !important;
 }
@@ -404,15 +415,15 @@ body.workspace-active #appShell .main-page {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   color: var(--cg-text-muted);
 }
 
-#appShell .home-suggestion-icon .suggestion-emoji {
-  font-size: 17px;
-  line-height: 1;
+#appShell .home-suggestion-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 #appShell .home-suggestion-text {
@@ -456,6 +467,19 @@ body.workspace-active #appShell .main-page {
 #appShell .home-suggestion-dismiss:hover {
   background: var(--cg-surface-raised);
   color: var(--cg-text);
+}
+
+/* Dismiss animation. mountHomeSuggestions() toggles these classes instead of
+   setting inline styles so the IDE no-inline-styles hint stays happy. */
+#appShell .home-suggestion-item.home-suggestion-item--dismissing {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+#appShell .home-suggestion-item.home-suggestion-item--dismissed {
+  display: none;
 }
 
 @media (max-width: 768px) {
@@ -652,4 +676,872 @@ body.workspace-active #appShell .main-page {
   background: var(--cg-surface-hover);
 }
 
+/* --------------------------------------------------------------------------
+   10. Final desktop parity pass.
 
+   The earlier sections above established the reference direction but still
+   inherited several geometry values from the Kimi/Cowork layers (246px rail,
+   732px content, 70px composer, 44px suggestion rows). The measurements below
+   come from the saved ChatGPT.html at 1440x900:
+
+     rail       260px
+     content    768px, centred in the area right of the rail
+     greeting   24px / 28px, weight 400
+     composer   768 x 52, radius 26
+     suggestion 52px row, 24px top inset
+
+   Everything here is desktop-only and presentation-only. DOM ids, data-nav
+   hooks and the live OpenConnector directory stay untouched.
+   -------------------------------------------------------------------------- */
+@media (min-width: 769px) {
+  #appShell {
+    --cg-sidebar-width: 260px;
+  }
+
+  #appShell .sidebar {
+    width: 260px !important;
+    min-width: 260px !important;
+  }
+
+  #appShell .main {
+    padding-left: 260px !important;
+  }
+
+  #appShell .sidebar.collapsed ~ .main,
+  #appShell:has(.sidebar.collapsed) .main {
+    padding-left: 0 !important;
+  }
+
+  #appShell .sidebar-inner {
+    padding: 8px 6px 7px !important;
+  }
+
+  #appShell .sidebar-header {
+    min-height: 52px !important;
+    padding: 12px 8px 6px 14px !important;
+  }
+
+  #appShell .sidebar-logo {
+    padding-left: 0 !important;
+    font-size: 16px !important;
+    font-weight: 650 !important;
+  }
+
+  #appShell .sidebar-nav {
+    gap: 0 !important;
+    padding: 7px 0 9px !important;
+  }
+
+  #appShell .sidebar-nav-btn {
+    width: 100% !important;
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+  }
+
+  #appShell .sidebar-nav-btn.active,
+  #appShell .sidebar-nav-btn[aria-current="page"],
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell
+    #navNew.sidebar-nav-btn {
+    background: var(--cg-surface-hover) !important;
+  }
+
+  #appShell .recents-header {
+    padding: 10px 10px 4px !important;
+  }
+
+  #appShell .recents-title {
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+
+  #appShell .recent-item {
+    min-height: 32px !important;
+    padding: 5px 10px !important;
+  }
+
+  #appShell .recent-item-text {
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  #appShell .sidebar-footer {
+    min-height: 68px !important;
+    margin: 0 -6px !important;
+    padding: 10px 14px !important;
+  }
+
+  /* Top segmented control: reference is 214 x 32, optically centred on the
+     content pane rather than on the full viewport (the rail is asymmetric). */
+  #appShell .top-bar {
+    position: relative !important;
+    min-height: 44px !important;
+    padding: 6px 16px !important;
+  }
+
+  #appShell .top-mode-tabs {
+    position: absolute !important;
+    top: 6px !important;
+    left: 50% !important;
+    width: 214px !important;
+    min-width: 214px !important;
+    height: 32px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+    transform: translateX(-50%) !important;
+  }
+
+  #appShell .top-mode-tabs .app-mode-toggle {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    height: 26px !important;
+    padding: 0 14px !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+  }
+
+  body[data-conversation-active="true"] #appShell .top-bar-right {
+    visibility: visible !important;
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
+
+  /* Home: one optical group centred in the pane below the 44px top bar. */
+  #appShell #topicSetup {
+    min-height: calc(100dvh - 44px) !important;
+    padding: 0 24px 22px !important;
+    justify-content: flex-start !important;
+  }
+
+  #appShell #topicSetup > .topic-title,
+  #appShell #topicSetup > .topic-sub,
+  #appShell #topicSetup > .mobile-starter-prompts,
+  #appShell #topicSetup > .cg-history,
+  #appShell #topicSetup > #topicInputWrap {
+    top: 0 !important;
+    left: 0 !important;
+  }
+
+  #appShell #topicSetup .topic-title.greeting {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 42px !important;
+    margin: 0 auto !important;
+    font-size: calc(24px * var(--app-font-scale, 1)) !important;
+    font-weight: 400 !important;
+    line-height: 28px !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    /* P_chatgpt-baseline-composer — the home composer geometry mirrors
+       the ChatGPT reference surface: 768px wide, 52px tall, 28px fully
+       rounded pill. The grid template reserves 36px columns for the
+       attach/mic/send controls, lets the editor grow in the middle
+       column, and lets the effort picker shrink to its own intrinsic
+       width.
+
+       The grid track is the full 52px so the editor root stretches to
+       the optical midline of the pill, and the 0 top/bottom padding
+       lets the editor's own vertical padding absorb the visual spacing.
+       The shared index.css rule that sets padding: 0 10px 0 4px is
+       overridden here because the chatgpt-v2 layer needs the side
+       buttons flush with the inner edge. */
+    width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
+    max-width: calc(768px * var(--app-width-scale, 1)) !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    margin: 22px auto 0 !important;
+    padding: 0 8px !important;
+    border-radius: 28px !important;
+    /* P_mic-dedup — four tracks: attach, editor, effort, send. */
+    grid-template-columns: 36px minmax(0, 1fr) auto 36px !important;
+    grid-template-rows: 52px !important;
+    align-items: center !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-self: stretch !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 9px 4px !important;
+    overflow: hidden !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn,
+  #appShell #topicInputWrap:not(.voice-recording-active) .mobile-mic-btn {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  #appShell .home-suggestions-wrap {
+    width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
+    margin: 0 auto !important;
+  }
+
+  #appShell .home-suggestions-list {
+    gap: 0 !important;
+    padding: 24px 0 10px !important;
+  }
+
+  #appShell .home-suggestion-btn {
+    min-height: 52px !important;
+    padding: 12px 40px 12px 14px !important;
+    border-radius: 8px !important;
+    gap: 12px !important;
+  }
+
+  #appShell .home-suggestion-text {
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  /* Workspace pages share the same 768px column. Library's reference
+     capture is 15px right of the exact centre because of its outer gutter;
+     keep that bias explicit instead of baking it into every page. */
+  body.workspace-active #appShell .main-page {
+    position: relative !important;
+    left: 0 !important;
+    width: min(768px, calc(100% - 64px)) !important;
+    max-width: 768px !important;
+    margin-inline: auto !important;
+    padding: 30px 0 72px !important;
+  }
+
+  body.workspace-active #appShell #libraryPanel.main-page {
+    left: 15px !important;
+    width: min(738px, calc(100% - 64px)) !important;
+    max-width: 738px !important;
+  }
+
+  #appShell #libraryPanel .workspace-page-head {
+    margin-bottom: 47px !important;
+  }
+
+  #appShell #libraryPanel .workspace-page-head p {
+    display: none !important;
+  }
+
+  #appShell .plugins-panel-tabs,
+  #appShell .plugins-top-tabs {
+    position: fixed !important;
+    z-index: 6 !important;
+    top: 6px !important;
+    left: calc(50% + 130px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* The React directory mounts inside #pluginsPanel, whose scroll container
+     would otherwise clip the fixed top tabs at y=6. Keep the page scroll on
+     the list itself so the tabs remain in the reference top-bar position. */
+  body.workspace-active:has(#pluginsPanel:not(.hidden)) #appShell #mainContent,
+  #appShell #pluginsPanel[data-live-directory="true"] {
+    overflow: visible !important;
+  }
+
+  body.workspace-active:has(#pluginsPanel:not(.hidden)) #appShell #mainContent {
+    position: relative !important;
+    z-index: 10 !important;
+  }
+
+  #appShell #pluginsPanel[data-live-directory="true"] #pluginsList {
+    max-height: 100% !important;
+    overflow-y: auto !important;
+  }
+
+  #appShell .plugins-panel-tabs .pill,
+  #appShell .plugins-top-tabs .pill {
+    height: 32px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+  }
+
+  #appShell .plugins-panel-tabs .pill button,
+  #appShell .plugins-top-tabs .pill button {
+    height: 26px !important;
+    min-width: 68px !important;
+    padding: 0 15px !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+  }
+
+  #appShell .workspace-page-head,
+  #appShell .plugin-directory-head,
+  #appShell .scheduled-directory-head {
+    align-items: flex-start !important;
+    margin-bottom: 40px !important;
+  }
+
+  #appShell .workspace-page-head h1,
+  #appShell .plugin-directory-heading h2,
+  #appShell .scheduled-directory-head h1 {
+    margin: 0 !important;
+    font-size: 30px !important;
+    font-weight: 500 !important;
+    line-height: 36px !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  #appShell .workspace-page-head p,
+  #appShell .plugin-directory-desc,
+  #appShell .scheduled-directory-head p {
+    margin: 4px 0 0 !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  #appShell .workspace-head-actions,
+  #appShell .plugin-directory-tools {
+    gap: 16px !important;
+  }
+
+  #appShell .workspace-search-field,
+  #appShell .plugin-directory-search {
+    width: 238px !important;
+    height: 36px !important;
+    padding-inline: 14px !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+  }
+
+  #appShell .plugin-directory-add-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* OpenConnector directory, restyled as the reference's two-column list. */
+  #appShell .plugin-directory {
+    width: 100% !important;
+    max-width: 768px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  #appShell .plugin-installed-strip {
+    margin: 0 0 20px !important;
+  }
+
+  #appShell .plugin-installed-label {
+    margin: 0 0 10px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+
+  #appShell .plugin-installed-icons {
+    gap: 8px !important;
+  }
+
+  #appShell .plugin-installed-icons .workspace-row-icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+  }
+
+  #appShell .plugin-installed-icons .workspace-row-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  #appShell .plugin-directory-tabs {
+    align-self: flex-start !important;
+    width: auto !important;
+    margin: 0 0 10px !important;
+    padding: 2px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  #appShell .plugin-directory-tabs button {
+    height: 30px !important;
+    padding: 0 15px !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+  }
+
+  #appShell .plugin-directory-body {
+    display: block !important;
+  }
+
+  #appShell .plugin-directory-section {
+    margin: 0 !important;
+  }
+
+  #appShell .plugin-directory-section + .plugin-directory-section {
+    margin-top: 28px !important;
+  }
+
+  #appShell .plugin-directory-section > h3 {
+    margin: 0 0 4px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+  }
+
+  #appShell .plugin-directory-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 38px !important;
+    row-gap: 0 !important;
+  }
+
+  #appShell .plugins-list .connector-row.plugin-directory-row {
+    min-height: 68px !important;
+    padding: 8px 0 !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #appShell .plugin-directory-row:hover {
+    background: var(--cg-surface-hover) !important;
+  }
+
+  #appShell .plugin-directory-row .workspace-row-icon {
+    width: 40px !important;
+    height: 40px !important;
+    margin-right: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  #appShell .plugin-directory-row .workspace-row-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  #appShell .plugin-directory-row .workspace-row-copy strong {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+  }
+
+  #appShell .plugin-directory-row .workspace-row-copy span {
+    font-size: 13px !important;
+    line-height: 18px !important;
+  }
+
+  #appShell .plugin-directory-icon-action {
+    width: 28px !important;
+    height: 28px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  #appShell .plugin-directory-icon-action:hover {
+    background: var(--cg-surface-hover) !important;
+  }
+
+  #appShell .plugin-directory-icon-action svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* Scheduled directory: reference header rhythm and 60px task composer. */
+  #appShell .scheduled-directory {
+    width: 100% !important;
+    max-width: 768px !important;
+    margin: 0 auto !important;
+  }
+
+  #appShell .scheduled-directory .workspace-eyebrow {
+    display: none !important;
+  }
+
+  #appShell .scheduled-task-composer {
+    height: 60px !important;
+    margin-bottom: 28px !important;
+    border-radius: 30px !important;
+  }
+
+  #appShell .scheduled-task-composer input {
+    font-size: 16px !important;
+  }
+
+  #appShell .scheduled-section-heading {
+    margin-bottom: 4px !important;
+    font-size: 14px !important;
+  }
+
+  #appShell .scheduled-recommendations {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 38px !important;
+  }
+
+  #appShell .scheduled-recommendation {
+    min-height: 68px !important;
+    padding: 8px 0 !important;
+  }
+
+  #appShell .scheduled-recommendation-copy strong {
+    font-size: 14px !important;
+  }
+
+  #appShell .scheduled-recommendation-copy small {
+    font-size: 13px !important;
+  }
+
+  /* Library rows and tabs follow the same table rhythm as the reference. */
+  #appShell .workspace-toolbar {
+    margin-bottom: 28px !important;
+  }
+
+  #appShell .workspace-tabs button,
+  #appShell .library-tab {
+    min-height: 32px !important;
+    padding: 0 15px !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+  }
+
+  #appShell .workspace-table {
+    font-size: 14px !important;
+  }
+
+  #appShell .workspace-table-head,
+  #appShell .library-row {
+    min-height: 52px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. Final measured parity corrections.
+
+   The supplied dark reference keeps the navigation glyphs, exposes the
+   existing sidebar search affordance in the header, and uses the same compact
+   36px control rhythm across the home and workspace pages. These overrides
+   only change presentation; the existing navigation, directory data and
+   OpenConnector actions remain the source of truth.
+   -------------------------------------------------------------------------- */
+[data-mode="dark"] {
+  /* The supplied baseline uses a true-black canvas with a charcoal
+     composer/active-surface layer. Keep light mode's existing tokens intact. */
+  --cg-page: #000000;
+  --cg-rail: #000000;
+  --cg-surface: #212121;
+  --cg-surface-raised: #2a2a2a;
+  --cg-surface-hover: #2a2a2a;
+  --cg-border: rgb(255 255 255 / 10%);
+  --cg-border-strong: rgb(255 255 255 / 18%);
+}
+
+@media (min-width: 769px) {
+  #appShell .sidebar-inner {
+    position: relative !important;
+  }
+
+  #appShell .sidebar-nav-btn {
+    gap: 10px !important;
+    padding-left: 12px !important;
+  }
+
+  #appShell .sidebar-nav-btn svg {
+    display: inline-flex !important;
+    flex: 0 0 20px !important;
+    width: 20px !important;
+    height: 20px !important;
+    color: currentColor !important;
+  }
+
+  /* Reuse the real sidebar search control as a header icon. The input stays
+     in the DOM for filtering and keyboard access, but is visually collapsed
+     until the user focuses it. */
+  #appShell .sidebar-search-row {
+    display: flex !important;
+    position: absolute !important;
+    z-index: 4 !important;
+    top: 10px !important;
+    right: 46px !important;
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+  }
+
+  #appShell .sidebar-search {
+    width: 32px !important;
+    height: 32px !important;
+    border: 0 !important;
+    border-radius: 9px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #appShell .sidebar-search-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  #appShell .sidebar-search input {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+
+  /* The reference segmented control is 220 x 40 with 36px inner segments. */
+  #appShell .top-mode-tabs {
+    width: 220px !important;
+    min-width: 220px !important;
+    height: 40px !important;
+    top: 6px !important;
+    padding: 2px !important;
+    gap: 0 !important;
+  }
+
+  #appShell .top-mode-tabs .app-mode-toggle {
+    height: 36px !important;
+    padding: 0 15px !important;
+  }
+
+  /* The reference workspace heads use 28px type and 240px search fields. */
+  body.workspace-active #appShell .main-page {
+    padding-top: 27px !important;
+  }
+
+  #appShell .workspace-page-head h1,
+  #appShell .plugin-directory-heading h2,
+  #appShell .scheduled-directory-head h1 {
+    font-size: 28px !important;
+    line-height: 36px !important;
+  }
+
+  #appShell .workspace-search-field,
+  #appShell .plugin-directory-search {
+    width: 240px !important;
+  }
+
+  #appShell #libraryPanel.main-page {
+    left: 17px !important;
+    width: min(736px, calc(100% - 64px)) !important;
+    max-width: 736px !important;
+  }
+
+  #appShell #libraryPanel .workspace-page-head {
+    margin-bottom: 44px !important;
+  }
+
+  #appShell #libraryPanel .workspace-create-button {
+    width: 76px !important;
+    min-width: 76px !important;
+    padding-inline: 0 !important;
+    justify-content: center !important;
+  }
+
+  #appShell #libraryPanel .workspace-create-button svg {
+    display: none !important;
+  }
+
+  #appShell .workspace-tabs button,
+  #appShell .plugin-directory-tabs button {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-inline: 17px !important;
+  }
+
+  /* Scheduled recommendations are a single quiet list in the reference,
+     while the underlying click-to-create behavior remains unchanged. */
+  #appShell .scheduled-directory-head {
+    margin-bottom: 67px !important;
+  }
+
+  #appShell .scheduled-directory-head p {
+    display: none !important;
+  }
+
+  #appShell .scheduled-filter-button {
+    width: 72px !important;
+    min-width: 72px !important;
+    padding-inline: 0 !important;
+    justify-content: center !important;
+  }
+
+  #appShell .scheduled-filter-button svg {
+    display: none !important;
+  }
+
+  #appShell .scheduled-task-composer {
+    height: 54px !important;
+    min-height: 54px !important;
+    padding: 4px 5px 4px 5px !important;
+    border-radius: 27px !important;
+  }
+
+  #appShell .scheduled-task-composer input {
+    height: 44px !important;
+  }
+
+  #appShell .scheduled-composer-plus {
+    flex-basis: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  #appShell .scheduled-section-heading {
+    align-items: center !important;
+    height: 40px !important;
+    margin-top: 23px !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+  }
+
+  #appShell .scheduled-section-heading span:first-child {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    border: 1px solid var(--cg-border-strong) !important;
+    border-radius: 8px !important;
+    color: var(--cg-text-secondary) !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+  }
+
+  #appShell .scheduled-section-heading span:last-child {
+    display: none !important;
+  }
+
+  #appShell .scheduled-recommendations {
+    grid-template-columns: 1fr !important;
+    column-gap: 0 !important;
+  }
+
+  #appShell .scheduled-recommendation {
+    min-height: 72px !important;
+    padding: 8px 0 !important;
+  }
+
+  #appShell .scheduled-recommendation-add {
+    visibility: hidden !important;
+  }
+
+  #appShell .plugin-directory-row {
+    min-height: 72px !important;
+  }
+}
+
+/* Functional landing shortcuts shown when the server has no AI-generated
+   starter block. They mirror the supplied reference's quiet icon rows while
+   delegating to the existing upload/write/research extensions. */
+#appShell .home-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(100%, 720px);
+  margin: 24px auto 0;
+}
+
+#appShell #homeSuggestionsWrap[data-state="ready"] + .home-quick-actions {
+  display: none !important;
+}
+
+#appShell .home-quick-action {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 10px;
+  gap: 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--cg-text-secondary);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+#appShell .home-quick-action:hover,
+#appShell .home-quick-action:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+#appShell .home-quick-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  color: var(--cg-text-muted);
+}
+
+#appShell .home-quick-action-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+#appShell .home-quick-action-copy {
+  display: block;
+  min-width: 0;
+  color: var(--cg-text-secondary);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+#appShell .home-quick-action:hover .home-quick-action-copy,
+#appShell .home-quick-action:focus-visible .home-quick-action-copy {
+  color: var(--cg-text);
+}
+
+@media (max-width: 768px) {
+  [data-mode="dark"] {
+    /* P_mobile-black-canvas — the mobile home page collapses onto a
+       true black canvas so the pill composer stands out cleanly without
+       any charcoal-on-charcoal bleed. Desktop keeps its slightly
+       lighter #212121 reading surface; mobile drops to #000 to match
+       the reference's near-black phone surface. */
+    --cg-page: #000000;
+    --cg-rail: #000000;
+  }
+
+  #appShell .home-quick-actions {
+    display: none !important;
+  }
+}

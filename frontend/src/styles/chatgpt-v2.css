@@ -17,33 +17,84 @@
     font-weight: 500 !important;
     letter-spacing: -0.025em !important;
   }
+  /* P_chatgpt-composer-desktop — the home composer geometry is borrowed
+     from the ChatGPT reference surface: 768px width, 52px height, 28px
+     fully-rounded pill, no idle border, and 36px square buttons. The grid
+     keeps the attach button (col 1) on the left, the editor (col 2)
+     growing, the effort picker (col 3) shrinking, and the mic + send
+     buttons (col 4/5) anchoring the right edge with equal widths.
+
+     The padding here is asymmetric on purpose: 9px on the left/right
+     gives the editor and the side buttons breathing room, while 0 on
+     top/bottom keeps the 42px content area aligned with the grid row.
+     The editor's own padding (14px 6px below) absorbs the visual
+     spacing so the placeholder sits on the optical midline of the
+     52px pill instead of hugging the top edge. */
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    width: min(100%, 732px) !important;
-    max-width: 732px !important;
-    height: 48px !important;
-    min-height: 48px !important;
-    margin-top: 20px;
-    padding: 0 7px 0 2px !important;
-    border-radius: 24px !important;
-    grid-template-columns: 42px minmax(0, 1fr) auto 30px 34px !important;
-    grid-template-rows: 46px !important;
+    width: min(100%, 768px) !important;
+    max-width: 768px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    margin-top: 22px;
+    padding: 0 8px !important;
+    border-radius: 28px !important;
+    /* P_mic-dedup — four tracks: attach, editor, effort, send. */
+    grid-template-columns: 36px minmax(0, 1fr) auto 36px !important;
+    grid-template-rows: 52px !important;
+    align-items: center !important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-self: stretch !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer > div {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
   }
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
-    height: 46px !important;
-    min-height: 46px !important;
-    max-height: 46px !important;
-    padding: 12px 2px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 9px 4px !important;
     overflow: hidden !important;
-    font-size: 14px !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
   }
   #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn,
   #appShell #topicInputWrap:not(.voice-recording-active) .mobile-mic-btn,
   #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
-    width: 30px !important;
-    min-width: 30px !important;
-    height: 30px !important;
-    min-height: 30px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+  /* P_chatgpt-effort-trigger — the reasoning-effort button on the home
+     composer is a fully rounded 60×36 pill that shows the current
+     effort label (高/中/低) plus a small caret. The shared shell rule
+     below keeps the picker min-height at 34px and the trigger corners
+     at 17px; both fall short of the reference geometry, so this block
+     forces the bigger pill and lets the caret drive the open state. */
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker {
+    grid-column: 3;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .effort-trigger {
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    border-radius: 9999px !important;
+    font-size: 13px !important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
+    width: 16px;
+    height: 16px;
   }
   body.workspace-active #appShell #mainInner { width: 100%; max-width: none; }
   body.workspace-active #appShell .main-page {
@@ -267,9 +318,34 @@
 
 #appShell #topicInputWrap:not(.voice-recording-active),
 #appShell #chatInputWrap:not(.voice-recording-active) {
-  border: 1px solid var(--cgv-border-strong) !important;
-  background: var(--cg-surface) !important;
+  /* P_chatgpt-composer-border — the ChatGPT reference surface is a flat,
+     borderless pill on a slightly darker canvas. The previous 1px stroke
+     reads as a frame around the composer on dark and looked visually
+     heavier than the reference. Drop the idle border entirely and rely on
+     the focus state below to show an outline when the editor is active.
+     The mobile section further down re-adds a hairline so the pill stays
+     visible against the #000 phone canvas. */
+  border: 0 !important;
+  background: var(--cgv-composer-surface, rgb(33 33 33)) !important;
   box-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+  /* P_mobile-composer-outline — on phones the page canvas drops to pure
+     black (see ref-baseline.css), which would leave the borderless pill
+     invisible. Re-add a hairline stroke here and lift the surface one
+     step above the canvas so the composer's silhouette stays readable. */
+  #appShell #topicInputWrap:not(.voice-recording-active),
+  #appShell #chatInputWrap:not(.voice-recording-active) {
+    border: 1px solid var(--cg-border) !important;
+    background: var(--cgv-composer-surface, #1a1a1a) !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+  #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+    border-color: rgb(255 255 255 / 30%) !important;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 10%) !important;
+  }
 }
 
 #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
@@ -278,17 +354,18 @@
   box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) !important;
 }
 
-#appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
-#appShell #chatInputWrap:not(.voice-recording-active) .send-btn {
-  color: var(--cg-text-secondary) !important;
-  background: var(--cg-surface-hover) !important;
-  box-shadow: none !important;
-}
-
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
 #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active),
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
-  color: var(--cg-accent-ink) !important;
-  background: var(--cg-accent) !important;
+  /* P_chatgpt-send-idle — the reference paints the voice/send control
+     white so it always stands out on the dark pill. The shared index.css
+     rule targets `#startBtn:not(.active)` with the same specificity we
+     use here, so we explicitly list both states (active + not active)
+     to win the cascade and keep the icon legible on the white surface. */
+  color: rgb(20 20 20) !important;
+  background: rgb(255 255 255) !important;
+  box-shadow: none !important;
 }
 
 /* Static workspace shell used before the live directory data arrives. */
@@ -441,6 +518,28 @@
   min-width: 0;
   flex: 1;
 }
+
+/* Installed-plugin chip backgrounds and card glyph gradients.
+   Centralised here so the markup stays free of inline styles
+   (webhint no-inline-styles) while keeping each connector's brand colour
+   discoverable from the class name. */
+#appShell .installed-icon--purple   { background: #5f33c1; }
+#appShell .installed-icon--blue     { background: #2a8eef; }
+#appShell .installed-icon--red      { background: #c0392b; }
+#appShell .installed-icon--yellow   { background: #f0c419; }
+#appShell .installed-icon--green    { background: #4f9d69; }
+#appShell .installed-icon--violet   { background: #9b59b6; }
+#appShell .installed-icon--teal     { background: #0aa4ad; }
+#appShell .installed-icon--black    { background: #1d1d1d; color: #fff; }
+
+#appShell .plugins-card .glyph--gmail     { background: linear-gradient(135deg, #ea4335, #fbbc05, #34a853, #4285f4); color: #fff; }
+#appShell .plugins-card .glyph--github    { background: #1d1d1d; color: #fff; }
+#appShell .plugins-card .glyph--gdrive    { background: linear-gradient(135deg, #34a853, #fbbc05, #4285f4); color: #fff; }
+#appShell .plugins-card .glyph--slack     { background: linear-gradient(135deg, #36c5f0, #e01e5b, #2eb67d, #ecb22e); color: #fff; }
+#appShell .plugins-card .glyph--outlook   { background: #0078d4; color: #fff; }
+#appShell .plugins-card .glyph--canva     { background: linear-gradient(135deg, #00c4cc, #7d2ae8); color: #fff; }
+#appShell .plugins-card .glyph--healthcare{ background: linear-gradient(135deg, #1e88e5, #26c6da); color: #fff; }
+#appShell .plugins-card .glyph--datadog   { background: linear-gradient(135deg, #7c4dff, #7e57c2); color: #fff; }
 
 #appShell .plugins-card .copy strong,
 #appShell .plugins-card .copy small {
@@ -732,6 +831,26 @@ html[data-mode="light"] #appShell {
   background: var(--cg-surface) !important;
 }
 
+@media (max-width: 768px) {
+  /* P_mobile-composer-outline — must live AFTER the shared rule above:
+     that rule paints every input surface with `--cg-surface` (#212121),
+     which disappears against the #000 mobile canvas. This block wins the
+     cascade on phones and gives the composer a hairline stroke plus one
+     step of surface lift so its silhouette stays readable. */
+  #appShell #topicInputWrap:not(.voice-recording-active),
+  #appShell #chatInputWrap:not(.voice-recording-active) {
+    border: 1px solid var(--cg-border) !important;
+    background: var(--cgv-composer-surface, #1a1a1a) !important;
+    box-shadow: none !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+  #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+    border-color: rgb(255 255 255 / 30%) !important;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 10%) !important;
+  }
+}
+
 #appShell #topicInputWrap:not(.voice-recording-active),
 #appShell #chatInputWrap:not(.voice-recording-active) {
   box-shadow: var(--cg-composer-shadow) !important;
@@ -743,17 +862,20 @@ html[data-mode="light"] #appShell {
   box-shadow: var(--cg-composer-focus-shadow) !important;
 }
 
-#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.active),
-#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active) {
-  color: var(--cg-text-secondary) !important;
-  background: var(--cg-surface-hover) !important;
-}
-
 #appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
 #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
   color: var(--cg-accent-ink) !important;
   background: var(--cg-accent) !important;
 }
+
+/* P_chatgpt-send-removal — the duplicate idle-state rule that lived
+   here used `--cg-surface-hover`, which paints the send/voice control
+   in the same dark gray as the rest of the chrome and overrode the
+   ChatGPT-style white override above. The two definitions had to agree
+   on the same property so the second one (loaded later in the sheet)
+   could not silently win the cascade. The idle state is fully covered
+   by the `chatgpt-send-idle` block at the top of this layer; the
+   active state keeps its accent fill for in-session send buttons. */
 
 #appShell .plugins-panel-tabs .pill,
 #appShell .plugins-scope-tabs button.active,

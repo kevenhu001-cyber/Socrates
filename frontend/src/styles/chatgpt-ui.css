@@ -421,8 +421,11 @@ body,
 }
 
 #appShell #topicInputWrap:not(.voice-recording-active) {
+  /* P_mic-dedup — the dedicated mic button was removed as a duplicate of
+     the idle startBtn voice affordance, so the topic grid drops from five
+     tracks to four: attach, editor, effort, send. */
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px;
+  grid-template-columns: 46px minmax(0, 1fr) auto 38px;
   grid-template-rows: 66px;
   align-items: center;
   height: 68px !important;
@@ -575,6 +578,12 @@ body,
   color: var(--cg-accent-ink);
   background: var(--cg-accent) !important;
   box-shadow: none !important;
+}
+
+/* P_mic-dedup — with the mic track gone the topic send button shifts one
+   column left; the in-chat composer keeps its own mic and stays on 5. */
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
+  grid-column: 4;
 }
 
 #appShell #topicInputWrap:not(.voice-recording-active) #startBtn:hover,
@@ -1754,18 +1763,30 @@ body.workspace-active #appShell .workspace-row:hover {
 
   #appShell #topicInputWrap:not(.voice-recording-active),
   #appShell #chatInputWrap:not(.voice-recording-active) {
+    /* P_mobile-composer-shell — the mobile composer is a true black pill
+       that sits flush against the #000 canvas. The 1px stroke uses the
+       shared border token so it reads as the same divider color as
+       everything else in dark mode; the 56px height matches the
+       reference's phone composer geometry (44px button column + 12px
+       optical padding), and the 28px border-radius keeps the half-pill
+       silhouette at this height. */
     width: 100% !important;
     max-width: none !important;
-    min-height: 62px;
-    height: 62px !important;
-    border-radius: 31px !important;
+    min-height: 56px;
+    height: 56px !important;
+    border: 1px solid var(--cg-border) !important;
+    border-radius: 28px !important;
+    background: var(--cgv-composer-surface, #1a1a1a) !important;
+    box-shadow: none !important;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active) {
-    grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
-    grid-template-rows: 60px;
+    /* P_mic-dedup — three tracks on mobile: attach, editor, send. */
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
+    grid-template-rows: 54px;
     margin-top: 0;
     padding-right: 7px;
+    align-items: center;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker,
@@ -1791,21 +1812,29 @@ body.workspace-active #appShell .workspace-row:hover {
     min-height: 34px !important;
   }
 
+  /* P_mic-dedup — topic send fills the old mic track's neighbour slot. */
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
+    grid-column: 3;
+  }
+
   #appShell #chatInputWrap:not(.voice-recording-active) {
     padding-right: 7px;
   }
 
   #appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body {
     grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
-    grid-template-rows: 60px;
+    grid-template-rows: 54px;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
   #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
-    height: 60px !important;
-    min-height: 60px !important;
-    max-height: 60px !important;
-    padding: 17px 0 !important;
+    /* 54px cell minus the 1px border leaves a 52px visual column. The
+       14px side padding centers the 26px line-height copy on the pill's
+       midline while leaving room for the caret. */
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    padding: 13px 0 !important;
     font-size: 15px;
     line-height: 26px;
   }
@@ -1834,7 +1863,8 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   #appShell #topicInputWrap:has(.composer-plugin-chips) {
-    grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
+    /* P_mic-dedup — chips strip above, controls row below, no mic track. */
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
     grid-template-rows: 32px 60px;
   }
 
@@ -1851,7 +1881,7 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
-    grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
     grid-template-rows: minmax(68px, auto) 42px;
   }
 
@@ -2079,23 +2109,23 @@ body.workspace-active #appShell .workspace-row:hover {
 @media (max-width: 768px) {
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)),
   #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    height: 62px !important;
-    min-height: 62px !important;
+    height: 56px !important;
+    min-height: 56px !important;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    grid-template-rows: 60px !important;
+    grid-template-rows: 54px !important;
   }
 
   #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
-    grid-template-rows: 60px !important;
+    grid-template-rows: 54px !important;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
   #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
-    height: 60px !important;
-    min-height: 60px !important;
-    max-height: 60px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
   }
 
   #appShell #topicInputWrap:has(.composer-plugin-chips),
@@ -2120,7 +2150,7 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
-    grid-template-columns: 44px minmax(0, 1fr) auto 32px 36px !important;
+    grid-template-columns: 44px minmax(0, 1fr) auto 36px !important;
     grid-template-rows: minmax(68px, auto) 42px !important;
   }
 
@@ -2148,6 +2178,11 @@ body.workspace-active #appShell .workspace-row:hover {
     grid-row: 2 !important;
   }
 
+  /* P_mic-dedup — topic multiline send shifts into the vacated mic track. */
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn {
+    grid-column: 4 !important;
+  }
+
   #appShell #topicInputWrap:has(.composer-plugin-chips) .composer-editor-root,
   #appShell #chatInputWrap:has(.composer-plugin-chips) .composer-editor-root {
     grid-column: 2 !important;
@@ -2170,6 +2205,11 @@ body.workspace-active #appShell .workspace-row:hover {
   #appShell #chatInputWrap:has(.composer-plugin-chips) .send-btn {
     grid-column: 4 !important;
     grid-row: 2 !important;
+  }
+
+  /* P_mic-dedup — topic chips send shifts into the vacated mic track. */
+  #appShell #topicInputWrap:has(.composer-plugin-chips) #startBtn {
+    grid-column: 3 !important;
   }
 }
 
