@@ -127,10 +127,11 @@ a{color:inherit;text-decoration:none}
 
    The body attribute `data-conversation-active` is set by
    `syncConversationActive()` in src/ui/mobileModeSwitch.js. The
-   attribute is monotonic: once it flips to "true" it stays "true"
-   for the lifetime of the page, even across resetApp() — the
-   user picks Chat or Tutor once on the landing surface, and the
-   top-bar pill is a pre-flight control rather than an in-flight one.
+   attribute is derived from the current session state: it is "true"
+   only while a conversation is actually in progress, and flips back
+   to "false" whenever the user returns to the topic-input page
+   (resetApp / new chat), so the top-bar pill reappears for the
+   next conversation.
 
    This single rule covers:
      • #modeSegmentedTop — the centered Chat/Tutor pill (desktop)
@@ -1753,9 +1754,9 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
 /* P_hide-mode-switch-in-conversation — see the canonical rule near
    the top of this file (line ~130). The pre-existing rule was kept
    here for historical reference but the authoritative copy lives
-   up there. The attribute is monotonic — once flipped to "true"
-   by syncConversationActive(), the pill stays hidden for the rest
-   of the page lifetime. */
+   up there. The attribute reflects the live conversation state, so
+   the pill is hidden only while a conversation is active and
+   reappears when the user returns to the topic-input page. */
 [data-mode=light] .top-mode-tabs .app-mode-toggle.active{background:hsl(var(--bg-400))}
 /* Compatibility layer: the final responsive contract below keeps the shared
    pill on the empty landing surface and only hides it for live conversations. */

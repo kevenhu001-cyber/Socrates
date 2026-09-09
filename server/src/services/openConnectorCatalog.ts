@@ -6,7 +6,8 @@
  * inventory, and credential forms shaped for the existing frontend dialog.
  */
 
-import { OPEN_CONNECTOR_APP_INVENTORY } from './openConnectorAppInventory.js';
+import { OPEN_CONNECTOR_APP_INVENTORY, READY_CONNECTOR_APPS } from './openConnectorAppInventory.js';
+import type { OpenConnectorAppEntry } from './openConnectorAppInventory.js';
 import type { SidecarProvider } from './openConnectorSidecar.js';
 
 export const OC_ID_PREFIX = 'oc_';
@@ -28,6 +29,10 @@ export interface OcCatalogItem {
   description: string;
   capabilities: string[];
   authType: OcAuthType;
+  /** False when the OpenConnector sidecar is not serving this app yet
+   * (catalog is shown anyway so the directory stays full; the frontend
+   * renders the Connect action disabled). */
+  available: boolean;
   credentialInput?: { fields: OcCredentialField[] };
 }
 
@@ -118,6 +123,40 @@ export function buildOpenConnectorCatalogItems(providers: SidecarProvider[]): Oc
   }
   return items;
 }
+
+export function ocStubCatalogItem(entry: OpenConnectorAppEntry): OcCatalogItem {
+  return {
+    id: `${OC_ID_PREFIX}${entry.ocService}`,
+    service: entry.ocService as string,
+    name: entry.displayName,
+    description: `Connect ${entry.displayName} to use its actions in chat. (via OpenConnector)`,
+    capabilities: ['Actions'],
+    authType: 'oauth',
+    available: false,
+  };
+}
+
+/* Full directory builder: every phase-1 inventory service appears in the
+ * catalog. Apps the sidecar actually serves get the real provider
+ * metadata (available: true); the rest become disabled stubs so the
+ * plugin page stays complete even before the sidecar comes online.
+ * Pass null when the sidecar is unreachable to stub everything.
+ *
+ * The inventory can map several entries onto one ocService (e.g. 网易邮箱
+ * and 网易企业邮箱 both use netease_mail); the directory dedupes by
+ * service so every row has a unique id and connects one sidecar app. */
+export function buildOpenConnectorCatalogWithFallback(providers: SidecarProvider[] | null): OcCatalogItem[] {
+  const byService = new Map((providers || []).map((item) => [item.service, item]));
+  const seen = new Set<string>();
+  const items: OcCatalogItem[] = [];
+  for (const entry of READY_CONNECTOR_APPS) {
+    if (!entry.ocService || seen.has(entry.ocService)) continue;
+    seen.add(entry.ocService);
+    const meta = byService.get(entry.ocService);
+    items.push(meta ? ocCatalogItem(entry, meta) : ocStubCatalogItem(entry));
+  }
+  return items;
+}
 export function ocCatalogItem(
   entry: (typeof OPEN_CONNECTOR_APP_INVENTORY)[number],
   meta: SidecarProvider,
@@ -131,6 +170,7 @@ export function ocCatalogItem(
     description: `Connect ${entry.displayName} to use its ${actionCount} actions in chat. (via OpenConnector)`,
     capabilities: Array.isArray(meta.categories) && meta.categories.length > 0 ? meta.categories : ['Actions'],
     authType,
+    available: true,
     ...(ocCredentialInput(meta, authType) ? { credentialInput: ocCredentialInput(meta, authType) } : {}),
   };
 }

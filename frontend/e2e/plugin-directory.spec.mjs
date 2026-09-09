@@ -108,6 +108,44 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('#taskForm textarea[name="prompt"]')).toHaveValue(/daily briefing/i);
 });
 
+test('OpenConnector apps the sidecar does not serve yet render disabled', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await page.route('**/api/**', async (route) => {
+    if (!route.request().url().includes('project-connectors')) {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        openConnector: { available: false },
+        connectors: [
+          { id: 'github', name: 'GitHub', description: 'Repositories', authType: 'oauth', available: undefined, connection: null },
+          { id: 'oc_slack', name: 'Slack', description: 'Connect Slack to use its actions in chat. (via OpenConnector)', capabilities: ['Actions'], authType: 'oauth', available: false, connection: null },
+          { id: 'oc_amap', name: '高德地图', description: 'Connect 高德地图 to use its actions in chat. (via OpenConnector)', capabilities: ['Actions'], authType: 'api_key', available: false, connection: null },
+        ],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#navPlugins').click();
+  await expect(page.locator('.plugin-directory')).toBeVisible();
+  await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
+
+  /* Legacy OOMOL apps stay connectable when the gateway is configured. */
+  await expect(page.locator('[data-connector-id="github"] button.plugin-directory-icon-action')).toBeEnabled();
+  /* Sidecar-stubbed apps are greyed out with the setup-needed title. */
+  const slack = page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action');
+  await expect(slack).toBeDisabled();
+  await expect(slack).toHaveAttribute('title', 'Server setup needed');
+  const amap = page.locator('[data-connector-id="oc_amap"] button.plugin-directory-icon-action');
+  await expect(amap).toBeDisabled();
+});
+
 test('OAuth return restores the original composer surface and plugin context', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.addInitScript(() => {

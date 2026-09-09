@@ -77,15 +77,13 @@ export function selectAppMode(mode) {
    callers invoke this via syncAppModeUI() / resetApp() — the
    MutationObserver on msgList covers the message-driven path.
 
-   P_hide-mode-switch-monotonic — once a conversation has started
-   (syncConversationActive flips the body attribute to true), the
-   attribute stays true for the rest of the page lifetime. The user
-   picks Chat or Tutor once, on the landing surface; after that the
-   top-bar pill disappears and never reappears (not on resetApp, not
-   on a new chat). To switch modes again the user has to refresh the
-   page, which mirrors the "only show before the conversation starts"
-   contract: the toggle is a pre-flight choice, not an in-flight one. */
-var _everStartedConversation = false;
+   P_hide-mode-switch-reappears — the visibility is derived purely
+   from the current session state, never latched. The user can pick
+   Chat or Tutor again every time they land on the topic-input page
+   (fresh load, after "New chat", after exiting a workspace), and the
+   pill hides only while a conversation is actually in progress. This
+   is the pre-flight contract: the toggle is a per-conversation
+   choice, not a once-per-page one. */
 
 function _isConversationActive() {
   if (stateStore.read('topic')) return true;
@@ -103,8 +101,7 @@ function _isConversationActive() {
 }
 
 export function syncConversationActive() {
-  if (_isConversationActive()) _everStartedConversation = true;
-  var active = _everStartedConversation;
+  var active = _isConversationActive();
   try {
     document.body.setAttribute("data-conversation-active", active ? "true" : "false");
   } catch (_) {}

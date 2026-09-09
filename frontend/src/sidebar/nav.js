@@ -35,6 +35,7 @@ function _publishWorkspaceState() {
         projectsData: workspaceCache.projects || [],
         pluginsData: workspaceCache.connectors || [],
         projectConnectorConfigured: !!workspaceCache.projectConnectorConfigured,
+        openConnectorAvailable: !!workspaceCache.openConnectorAvailable,
         mcpData: workspaceCache.mcp || [],
         mcpConfigured: !!workspaceCache.mcpConfigured,
         mcpProjectId: workspaceCache.mcpProjectId || null,
@@ -46,7 +47,7 @@ function _publishWorkspaceState() {
 }
 
 var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
-var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null };
+var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null, openConnectorAvailable: false };
 var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam", admin: "/admin" };
 var CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
 var CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
@@ -594,6 +595,7 @@ async function renderPlugins() {
     var mcp = await api("/api/agent-mcp" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")).catch(function () { return { enabled: false, configured: false, servers: [] }; });
     workspaceCache.connectors = (res && res.connectors) || [];
     workspaceCache.projectConnectorConfigured = !!(res && res.configured);
+    workspaceCache.openConnectorAvailable = !!(res && res.openConnector && res.openConnector.available);
     workspaceCache.mcp = (mcp && mcp.servers) || [];
     workspaceCache.mcpConfigured = !!(mcp && mcp.configured);
     workspaceCache.mcpProjectId = (mcp && mcp.projectId) || projectId || null;
@@ -603,6 +605,7 @@ async function renderPlugins() {
     workspaceCache.connectors = [];
     workspaceCache.mcp = [];
     workspaceCache.mcpConfigured = false;
+    workspaceCache.openConnectorAvailable = false;
     _publishWorkspaceState();
     toast(err && err.status === 401
       ? "Sign in to connect apps."

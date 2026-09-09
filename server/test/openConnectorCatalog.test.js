@@ -5,14 +5,17 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   OPEN_CONNECTOR_APP_INVENTORY,
+  READY_CONNECTOR_APPS,
 } from '../src/services/openConnectorAppInventory.js';
 import {
   buildOpenConnectorCatalogItems,
+  buildOpenConnectorCatalogWithFallback,
   ocAuthType,
   ocCatalogItem,
   ocCredentialInput,
   ocInventoryEntry,
   ocOAuthAppForm,
+  ocStubCatalogItem,
 } from '../src/services/openConnectorCatalog.js';
 import { connectionNameForUser, parseSidecarError } from '../src/services/openConnectorSidecar.js';
 import {
@@ -98,6 +101,58 @@ test('buildOpenConnectorCatalogItems skips unknown services', () => {
   const ids = items.map((item) => item.id);
   assert.ok(ids.includes('oc_slack'));
   assert.ok(!ids.some((id) => id.includes('whatever')));
+});
+
+test('ocCatalogItem marks served apps available', () => {
+  const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.label === '高德地图');
+  const item = ocCatalogItem(entry, { service: 'amap', authTypes: ['api_key'], auth: [], categories: ['Location'], actions: [{}, {}] });
+  assert.equal(item.available, true);
+});
+
+test('ocStubCatalogItem builds disabled entries without provider metadata', () => {
+  const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.label === '高德地图');
+  const item = ocStubCatalogItem(entry);
+  assert.equal(item.id, 'oc_amap');
+  assert.equal(item.name, '高德地图');
+  assert.equal(item.available, false);
+  assert.deepEqual(item.capabilities, ['Actions']);
+  assert.equal(item.authType, 'oauth');
+  assert.equal(item.credentialInput, undefined);
+});
+
+test('buildOpenConnectorCatalogWithFallback covers the full ready inventory', () => {
+  /* The inventory can map several entries to one ocService (e.g. 网易邮箱 /
+     网易企业邮箱 both use netease_mail); the directory dedupes by service
+     so every row has a unique id. */
+  const readyServices = new Set(READY_CONNECTOR_APPS.map((entry) => entry.ocService));
+
+  /* No sidecar: every phase-1 service appears as a disabled stub. */
+  const stubs = buildOpenConnectorCatalogWithFallback(null);
+  assert.equal(stubs.length, readyServices.size);
+  assert.ok(stubs.length > 100);
+  assert.ok(stubs.every((item) => item.available === false));
+  assert.equal(new Set(stubs.map((item) => item.id)).size, stubs.length);
+  for (const item of stubs) {
+    assert.ok(ocInventoryEntry(item.id), `${item.id} must be a resolvable oc_ id`);
+  }
+
+  /* Partial sidecar: served apps get real metadata, the rest stay stubs. */
+  const slackMeta = { service: 'slack', displayName: 'Slack', categories: ['Messaging'], authTypes: ['oauth2'], auth: [], actions: [{}, {}] };
+  const mixed = buildOpenConnectorCatalogWithFallback([slackMeta]);
+  assert.equal(mixed.length, readyServices.size);
+  const slack = mixed.find((item) => item.id === 'oc_slack');
+  assert.equal(slack.available, true);
+  assert.deepEqual(slack.capabilities, ['Messaging']);
+  assert.ok(slack.description.includes('2 actions'));
+  const served = mixed.filter((item) => item.available === true);
+  const stubCount = mixed.filter((item) => item.available === false).length;
+  assert.equal(stubCount, mixed.length - served.length);
+  assert.ok(served.length >= 1);
+  for (const item of served) {
+    assert.equal(item.service, 'slack');
+  }
+  /* No sidecar config at all → every entry is a stub. */
+  assert.ok(buildOpenConnectorCatalogWithFallback(null).every((item) => item.available === false));
 });
 
 test('connectionNameForUser fits the sidecar naming rule', () => {

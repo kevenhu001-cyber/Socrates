@@ -34,6 +34,7 @@ const INITIAL: WorkspaceSnapshot = {
   projectsData: [],
   pluginsData: [],
   projectConnectorConfigured: false,
+  openConnectorAvailable: false,
   mcpData: [],
   mcpConfigured: false,
   mcpProjectId: null,

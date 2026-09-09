@@ -9,7 +9,7 @@ import {
   getProjectConnector, getProjectConnectorProvider, isProjectConnectorConfigured,
 } from '../services/oomolProjectConnector.js';
 import {
-  OC_ID_PREFIX, buildOpenConnectorCatalogItems, ocAuthType, ocInventoryEntry, ocOAuthAppForm,
+  OC_ID_PREFIX, buildOpenConnectorCatalogWithFallback, ocAuthType, ocInventoryEntry, ocOAuthAppForm,
   type OcCatalogItem, type OcInventoryRef,
 } from '../services/openConnectorCatalog.js';
 import {
@@ -199,12 +199,19 @@ router.get('/:provider/status', requireAuth, async (req, res, next) => {
  * only the HTTP/DB orchestration stays here. */
 
 async function listOpenConnectorCatalogItems(): Promise<{ available: boolean; items: OcCatalogItem[] }> {
-  if (!isOpenConnectorSidecarConfigured()) return { available: false, items: [] };
+  /* The full phase-1 inventory always renders in the directory — apps
+     the sidecar cannot serve yet come back as disabled stubs
+     (available: false) so the plugin page is complete before the
+     sidecar is online. When the sidecar is configured, served apps
+     switch to their real provider metadata (available: true). */
+  if (!isOpenConnectorSidecarConfigured()) {
+    return { available: false, items: buildOpenConnectorCatalogWithFallback(null) };
+  }
   try {
     const providers = await listSidecarProviders();
-    return { available: true, items: buildOpenConnectorCatalogItems(providers) };
+    return { available: true, items: buildOpenConnectorCatalogWithFallback(providers) };
   } catch {
-    return { available: false, items: [] };
+    return { available: false, items: buildOpenConnectorCatalogWithFallback(null) };
   }
 }
 
