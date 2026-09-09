@@ -5,7 +5,7 @@ import { getDb } from '../db/index.js';
 import { projectConnectorConnections } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import {
-  PROJECT_CONNECTOR_CATALOG, connectorErrorPayload, externalUserId,
+  PROJECT_CONNECTOR_CATALOG, cloudProviderSelector, connectorErrorPayload, externalUserId,
   getProjectConnector, getProjectConnectorProvider, isProjectConnectorConfigured,
 } from '../services/oomolProjectConnector.js';
 import {
@@ -118,7 +118,7 @@ async function connectViaGateway(
       const apiKey = req.body && typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : '';
       if (!apiKey) return res.status(400).json({ error: 'Missing apiKey', code: 'missing_api_key' });
       const account = await provider.connect.apiKey(externalUserId(req.userId), {
-        service: ref.service,
+        ...cloudProviderSelector(ref.service),
         connectionName: CONNECTION_NAME,
         apiKey,
       });
@@ -137,7 +137,7 @@ async function connectViaGateway(
         ? req.body.values : null;
       if (!values) return res.status(400).json({ error: 'Missing values object', code: 'missing_values' });
       const account = await provider.connect.customCredential(externalUserId(req.userId), {
-        service: ref.service,
+        ...cloudProviderSelector(ref.service),
         connectionName: CONNECTION_NAME,
         values,
       });
@@ -162,7 +162,7 @@ async function connectViaGateway(
      * only opaque request/account IDs, never a credential, then monitor in the
      * background for a responsive UI. */
     const request = await provider.connect.oauth(externalUserId(req.userId), {
-      service: ref.service,
+      ...cloudProviderSelector(ref.service),
       connectionName: CONNECTION_NAME,
       returnUri: appReturnUri(req, ref.id),
     });
