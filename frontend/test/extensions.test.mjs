@@ -4,9 +4,7 @@ import test from 'node:test';
 import { ExtensionRegistry } from '../src/extensions/registry.ts';
 import { publishAgentRun, getAgentRunSnapshot } from '../src/extensions/agentRunStore.ts';
 import { writeExtension } from '../src/extensions/modules/write.ts';
-import { researchExtension } from '../src/extensions/modules/research.ts';
 import { exploreExtension } from '../src/extensions/modules/explore.ts';
-import { deepResearchExtension } from '../src/extensions/modules/deepResearch.ts';
 import { analyzeExtension } from '../src/extensions/modules/analyze.ts';
 import { examExtension } from '../src/extensions/modules/exam.ts';
 import { extensiveThinkingExtension } from '../src/extensions/modules/extensiveThinking.ts';
@@ -15,9 +13,7 @@ import { skillsExtension } from '../src/extensions/modules/skills.ts';
 
 const MODULES = [
   writeExtension,
-  researchExtension,
   exploreExtension,
-  deepResearchExtension,
   analyzeExtension,
   examExtension,
   extensiveThinkingExtension,
@@ -47,9 +43,7 @@ test('registry rejects duplicate keys', () => {
 test('registry placement ordering is ascending', () => {
   const r = new ExtensionRegistry();
   r.register(writeExtension)
-    .register(researchExtension)
     .register(exploreExtension)
-    .register(deepResearchExtension)
     .register(analyzeExtension)
     .register(examExtension)
     .register(extensiveThinkingExtension)
@@ -59,30 +53,27 @@ test('registry placement ordering is ascending', () => {
   const tools = r.byPlacement('tools');
   const orders = tools.map((d) => d.placement.tools ?? -1);
   assert.deepEqual(orders, [...orders].sort((a, b) => a - b));
-  assert.ok(orders.length >= 8, 'tools menu should have 8+ items');
+  assert.ok(orders.length >= 6, 'tools menu should have 6+ items');
   assert.equal(tools[0].key, 'upload', 'upload opens the tools menu');
   assert.equal(tools[tools.length - 1].key, 'skills', 'skills closes the tools menu');
 
   const picker = r.byPlacement('picker');
   const pickerKeys = picker.map((d) => d.key);
-  assert.ok(pickerKeys.includes('deepResearch'));
   assert.ok(pickerKeys.includes('exam'));
   assert.ok(pickerKeys.includes('extensiveThinking'));
 });
 
 test('template extensions preserve byte-identical legacy prompts', () => {
   assert.match(writeExtension.systemPrompt ?? '', /expert writing and editing assistant/);
-  assert.match(researchExtension.systemPrompt ?? '', /source-research mode/);
   assert.match(exploreExtension.systemPrompt ?? '', /Stage 1 — Scope/);
   assert.match(analyzeExtension.systemPrompt ?? '', /data-analysis mode/);
 });
 
-test('research and explore share the legacy webSearch side-effect key', () => {
+test('write and explore keep their canonical registry keys', () => {
   // The legacy EXTENSION_SIDE_EFFECTS map is keyed by extensionKey, and the
-  // chip's × button calls clearActiveTemplate() directly — so the template
-  // key must stay "webSearch" to keep the toggle in sync on every path.
+  // chip's × button calls clearActiveTemplate() directly — so template
+  // keys must stay stable to keep the toggle in sync on every path.
   assert.equal(writeExtension.key, 'write');
-  assert.equal(researchExtension.key, 'research');
   assert.equal(exploreExtension.key, 'explore');
 });
 
@@ -139,7 +130,7 @@ test('agent-run store ignores malformed events', () => {
   assert.equal(getAgentRunSnapshot().revision, before);
 });
 
-test('research/explore onActivate publish planning with a shared runId', () => {
+test('explore/analyze onActivate publish planning with a shared runId', () => {
   let templateSpec = null;
   const published = [];
   const fakeCtx = {
@@ -151,17 +142,6 @@ test('research/explore onActivate publish planning with a shared runId', () => {
     focusComposer: () => {},
     publishAgentRun: (ev) => published.push(ev),
   };
-  researchExtension.onActivate(fakeCtx);
-  assert.ok(templateSpec, 'research setTemplate called');
-  assert.match(templateSpec.runId, /^research-/);
-  assert.equal(templateSpec.workflow, 'research');
-  assert.equal(published.length, 1);
-  assert.equal(published[0].stage, 'planning');
-  assert.equal(published[0].status, 'running');
-  assert.equal(published[0].workflow, 'research');
-  assert.equal(published[0].runId, templateSpec.runId, 'runId shared with setTemplate');
-  templateSpec = null;
-  published.length = 0;
   exploreExtension.onActivate(fakeCtx);
   assert.ok(templateSpec, 'explore setTemplate called');
   assert.match(templateSpec.runId, /^explore-/);

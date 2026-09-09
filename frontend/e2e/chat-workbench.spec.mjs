@@ -131,8 +131,8 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* A grown (multiline) composer uses the 24px two-tier radius; the 34px
-     pill applies only to the idle single-line shell. The control sizes
+  /* A grown (multiline) composer uses the 24px two-tier radius; the pill
+     applies only to the idle single-line shell. The control sizes
      (36px send, 42px attach) are state-independent in the current layer. */
   expect(composed.wrapRadius).toBe(24);
   expect(composed.wrapBorder).not.toBe('0px');

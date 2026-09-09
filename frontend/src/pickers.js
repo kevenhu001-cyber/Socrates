@@ -7,7 +7,6 @@
 import { esc } from './render/helpers.js';
 import { webSearchOn, setWebSearchOn } from './config/providers.js';
 import { stateStore } from './state/store.js';
-import { showToast } from './ui/toast.js';
 
 /* P_init-sync — providers가 서버에서 로드되었는지 추적.
    syncModelPills()가 providers=[] 상태에서 "Add a model"을 렌더링하지 않고
@@ -414,7 +413,6 @@ document.addEventListener("click",function(e){
 /* The Extension panel provides toggles the user actively controls
  * each turn:
  *   - Extensive thinking (verbose scholar prompt ↔ concise prompt)
- *   - Deep Research (autonomous multi-step research agent)
  *   - Generate exam (action button, no .on state)
  * Tutor/chat mode is now switched via the top-bar segmented control. */
 
@@ -422,7 +420,6 @@ document.addEventListener("click",function(e){
    the inline chip display. */
 var EXTENSION_ICONS = {
   extensiveThinking: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1H7a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1v1a3 3 0 0 0 3 3"/><path d="M12 22a3 3 0 0 0 3-3v-1h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-2-2h-1v-1a3 3 0 0 0-3-3"/><circle cx="12" cy="12" r="1.5" opacity="0.5"/></svg>',
-  deepResearch: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l6-3 6 3 6-3V3l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>',
   exam: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 3h16v18H4z"/><path d="M8 8h8M8 12h5M8 16h3"/><path d="m15 15 1.5 1.5L20 13"/></svg>',
 };
 
@@ -449,40 +446,6 @@ var EXTENSIONS=[
          window.clearActiveTemplate();
        }
      }
-     syncExtensionsUI();
-   }},
-  {key:"deepResearch", name:"Deep Research",
-   icon: EXTENSION_ICONS.deepResearch,
-   on:false, onChange:function(v){
-     var ext = EXTENSIONS.find(function(e){return e.key==="deepResearch"});
-     if(ext) ext.on = !!v;
-     try{ window.deepResearchOn = !!v; }catch(_){}
-     /* Use setActiveTemplate to show the chip when active */
-     if(v && typeof window.setActiveTemplate === "function"){
-       window.setActiveTemplate({
-         id: "tpl-deep-research",
-         title: "Deep Research",
-         icon: EXTENSION_ICONS.deepResearch,
-         systemPrompt: "",
-         body: "",
-         hint: (typeof window.t === "function" && window.t("composer.deepResearchHint")) || "Plan, search, read, report",
-         extensionKey: "deepResearch"
-       });
-     }else if(!v && typeof window.clearActiveTemplate === "function"){
-       if(window._activeTemplate && window._activeTemplate.extensionKey === "deepResearch"){
-         window.clearActiveTemplate();
-       }
-     }
-     if(v){
-       var surface = getVisibleComposerSurface();
-       if(getComposerMarkdown(surface).trim() && typeof window.launchDeepResearch === "function"){
-         window.launchDeepResearch();
-       }else{
-         focusComposer(surface);
-         showToast((typeof window.t === "function" && window.t("composer.deepResearch.hint")) || "Enter a research topic, then press send.");
-       }
-     }
-     if(typeof window.syncQuickChips === "function") window.syncQuickChips();
      syncExtensionsUI();
    }},
   {key:"exam",         name:"Generate exam",
@@ -554,10 +517,9 @@ function countActiveExtensions(){
 }
 function syncExtensionsUI(){
   /* Re-sync .on from window state so the checkmarks reflect the
-   * registry-driven toggles (extensiveThinking + deepResearch). */
+   * registry-driven extensiveThinking toggle. */
   EXTENSIONS.forEach(function(ext){
     if(ext.key==="extensiveThinking") ext.on = !!window.extensiveThinkingOn;
-    if(ext.key==="deepResearch") ext.on = !!window.deepResearchOn;
   });
   renderExtensionsMenu();
   var trigger=document.getElementById("extensionsTrigger");
@@ -649,10 +611,5 @@ export {
   markProvidersFetched,
 };
 export { EXTENSIONS };
-import {
-  focusComposer,
-  getComposerMarkdown,
-  getVisibleComposerSurface,
-} from './react/composer-input/controller.ts';
 
 import { setActiveProvider } from './ui/settings.js';

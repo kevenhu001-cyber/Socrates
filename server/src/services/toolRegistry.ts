@@ -7,6 +7,7 @@ import {
   CONNECTOR_TOOL_NAMES,
 } from './connectorTools.js';
 import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from './projectConnectorTools.js';
+import { OPEN_CONNECTOR_CHAT_TOOLS } from './openConnectorChatTools.js';
 import { UNIFIED_CODEX_ENABLED, WORKSPACE_AGENT_TOOL } from './agentRuntime.js';
 
 /** The model-facing capability registry. Route-specific executors retain
@@ -59,6 +60,17 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
     { name: PROJECT_CONNECTOR_TOOL_NAMES.TODOIST_LIST_TASKS, modelDefinition: PROJECT_CONNECTOR_TOOLS[3], enabled: Boolean(projectConnectorConnectionsByProvider?.todoist), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
     { name: PROJECT_CONNECTOR_TOOL_NAMES.GITLAB_IDENTITY, modelDefinition: PROJECT_CONNECTOR_TOOLS[4], enabled: Boolean(projectConnectorConnectionsByProvider?.gitlab), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
     { name: PROJECT_CONNECTOR_TOOL_NAMES.QQ_MAIL_SEARCH, modelDefinition: PROJECT_CONNECTOR_TOOLS[5], enabled: Boolean(projectConnectorConnectionsByProvider?.qq_mail), pure: true, sessionSerial: false, maxConcurrency: 2, retries: 0 },
+    /* OpenConnector chat tools (curated read-only allow-list). Each entry is
+       offered only when the user connected that oc_<service> app. */
+    ...OPEN_CONNECTOR_CHAT_TOOLS.map((tool) => ({
+      name: tool.tool,
+      modelDefinition: { type: 'function', function: { name: tool.tool, description: tool.description, parameters: tool.parameters } },
+      enabled: Boolean(projectConnectorConnectionsByProvider?.[`oc_${tool.service}`]),
+      pure: true,
+      sessionSerial: false,
+      maxConcurrency: 2,
+      retries: 0,
+    })),
   ];
   return {
     entries,

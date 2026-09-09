@@ -1,6 +1,8 @@
 // Codex is a first-class adapter inside the Socrates conversation. These
 // smoke tests deliberately exercise the shared chat stream, inline tool row,
 // approval surface, and run-history API instead of a separate Codex modal.
+// (The Codex composer extension itself was removed; workspace_agent tool
+// events below come from the model/server stream, not from a menu entry.)
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
@@ -60,18 +62,6 @@ async function mockUnifiedChat(page) {
   });
   return decisions;
 }
-
-test('Codex activation adds a composer context, not a standalone panel', async ({ page }) => {
-  await mockAuthedApp(page);
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-  await enterChat(page);
-
-  await page.evaluate(() => window.__socratesExtensionDispatch?.('codex'));
-  await expect(page.locator('#chatComposerRoot .composer-extension-token')).toBeVisible();
-  await expect(page.locator('#chatComposerRoot .composer-extension-token-label')).toContainText('Codex');
-  await expect(page.locator('.codex-panel')).toHaveCount(0);
-});
 
 test('Chat renders Codex progress and an actionable approval inline', async ({ page }) => {
   await mockAuthedApp(page);

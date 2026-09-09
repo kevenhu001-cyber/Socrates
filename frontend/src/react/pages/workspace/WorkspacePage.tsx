@@ -301,7 +301,6 @@ function PluginDirectory({ plugins, configured, dispatch }: {
         </div>
         <div className="plugin-directory-tools">
           <label className="plugin-directory-search"><SearchIcon /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
-          <button type="button" className="plugin-directory-add-btn" aria-label={i18n('plugins.add', 'Add plugin')} title={i18n('plugins.add', 'Add plugin')} onClick={() => (window as any).openPluginMarketplace?.()}><PlusIcon /></button>
         </div>
       </div>
 

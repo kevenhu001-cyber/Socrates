@@ -629,9 +629,82 @@ window.checkCodexMcpHealth = async function (key) {
     await renderPlugins();
   } catch (error) { toast((error && error.message) || "Could not check MCP server"); }
 };
+/* OpenConnector OAuth apps are user-supplied: before the authorize redirect,
+ * check whether this oc_ app already has an OAuth client registered. If not,
+ * show the setup dialog (redirect URI to register + client fields) and only
+ * continue to authorization after the user saves it. Returns 'proceed' when
+ * the caller should continue, 'dialog' when the dialog took over. */
+async function prepareOpenConnectorOAuth(id) {
+  var connector = (workspaceCache.connectors || []).filter(function (c) { return c.id === id; })[0];
+  if (!connector || connector.authType !== "oauth") return "proceed";
+  var cfg;
+  try {
+    cfg = await api("/api/project-connectors/" + encodeURIComponent(id) + "/oauth-config");
+  } catch (error) {
+    toast((error && error.message) || "Could not load OAuth setup.");
+    return "dialog";
+  }
+  if (cfg && cfg.configured) return "proceed";
+  openOAuthAppDialog(id, connector, cfg || {});
+  return "dialog";
+}
+
+function openOAuthAppDialog(id, connector, cfg) {
+  var fields = Array.isArray(cfg.extraFields) ? cfg.extraFields : [];
+  var fieldsHtml = fields.map(function (f) {
+    var help = f.help ? '<p class="workspace-note">' + esc(f.help) + "</p>" : "";
+    var required = f.required ? " required" : "";
+    return '<label class="workspace-field" data-secret="' + (f.secret ? "1" : "") + '"><span>' + esc(f.label) + '</span><input name="' + esc(f.key) + '" type="' + esc(f.type || "text") + '"' + required + ' autocomplete="off" spellcheck="false"></label>' + help;
+  }).join("");
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + t("dialog.oauthApp.title", "Connect ") + esc(connector.name) + '</h2><p>' + t("dialog.oauthApp.lede", "Bring your own OAuth app: register the callback URL below in your provider app, then paste its credentials.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="oauthAppForm" class="workspace-form">'
+    + '<label class="workspace-field"><span>' + t("dialog.oauthApp.redirectUri", "Callback URL (register this in your OAuth app)") + '</span><input name="redirectUri" readonly value="' + esc(cfg.expectedRedirectUri || "") + '" onclick="this.select()"></label>'
+    + '<label class="workspace-field"><span>' + t("dialog.oauthApp.clientId", "Client ID") + '</span><input name="clientId" required value="' + esc(cfg.clientId || "") + '" autocomplete="off" spellcheck="false"></label>'
+    + (cfg.clientSecretRequired === false ? "" : '<label class="workspace-field"><span>' + t("dialog.oauthApp.clientSecret", "Client secret") + '</span><input name="clientSecret" type="password" required autocomplete="off" spellcheck="false"></label>')
+    + fieldsHtml
+    + '<div class="workspace-dialog-actions"><span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + t("dialog.oauthApp.save", "Save and continue") + "</button></div></form>");
+  byId("oauthAppForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    var submit = form.querySelector('button[type="submit"]');
+    var extra = {};
+    var secretExtra = {};
+    Array.prototype.forEach.call(form.querySelectorAll(".workspace-field[data-secret] input"), function (input) {
+      if (!input.name || input.name === "clientId" || input.name === "clientSecret" || input.name === "redirectUri") return;
+      var bucket = input.closest(".workspace-field").getAttribute("data-secret") === "1" ? secretExtra : extra;
+      bucket[input.name] = input.value;
+    });
+    submit.disabled = true; submit.textContent = t("dialog.oauthApp.saving", "Saving…");
+    try {
+      await api("/api/project-connectors/" + encodeURIComponent(id) + "/oauth-config", {
+        method: "PUT",
+        body: {
+          clientId: form.elements.clientId.value,
+          clientSecret: form.elements.clientSecret ? form.elements.clientSecret.value : "",
+          extra: extra,
+          secretExtra: secretExtra,
+        },
+      });
+      closeWorkspaceDialog();
+      await window.connectProjectConnector(id);
+    } catch (err) {
+      toast((err && err.message) || "Could not save OAuth setup.");
+      submit.disabled = false; submit.textContent = t("dialog.oauthApp.save", "Save and continue");
+    }
+  });
+}
+
 window.connectProjectConnector = async function (id) {
   try {
+    if (String(id || "").indexOf("oc_") === 0) {
+      var step = await prepareOpenConnectorOAuth(id);
+      if (step !== "proceed") return;
+    }
     var result = await api("/api/project-connectors/" + encodeURIComponent(id) + "/connect", { method: "POST" });
+    if (result && result.status === "connected") {
+      await renderPlugins();
+      toast(t("toast.appConnected", "App connected"));
+      return;
+    }
     if (!result || !result.authorizationUrl) throw new Error("No authorization URL was returned");
     rememberConnectorReturnContext(id);
     window.location.assign(result.authorizationUrl);

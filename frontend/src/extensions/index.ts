@@ -15,15 +15,12 @@ import { buildExtensionContext } from './context';
 import { getVisibleComposerSurface } from '../react/composer-input/controller';
 
 import { writeExtension } from './modules/write';
-import { researchExtension } from './modules/research';
 import { exploreExtension } from './modules/explore';
-import { deepResearchExtension } from './modules/deepResearch';
 import { analyzeExtension } from './modules/analyze';
 import { examExtension } from './modules/exam';
 import { extensiveThinkingExtension } from './modules/extensiveThinking';
 import { uploadExtension } from './modules/upload';
 import { skillsExtension } from './modules/skills';
-import { codexExtension } from './modules/codex';
 
 let installed = false;
 
@@ -39,15 +36,12 @@ export function installExtensions(): void {
 
   registry
     .register(writeExtension)
-    .register(researchExtension)
     .register(exploreExtension)
-    .register(deepResearchExtension)
     .register(analyzeExtension)
     .register(examExtension)
     .register(extensiveThinkingExtension)
     .register(uploadExtension)
-    .register(skillsExtension)
-    .register(codexExtension);
+    .register(skillsExtension);
 }
 
 /**

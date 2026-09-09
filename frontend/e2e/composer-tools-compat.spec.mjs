@@ -34,13 +34,13 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'research', 'write', 'deepResearch', 'explore', 'analyze', 'codex', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'write', 'explore', 'analyze', 'exam', 'skills']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'write', 'research', 'deepResearch',
-    'explore', 'analyze', 'codex', 'exam', 'skills', 'extensiveThinking',
+    'camera', 'photos', 'upload', 'write',
+    'explore', 'analyze', 'exam', 'skills', 'extensiveThinking',
   ]);
 });
 
@@ -68,17 +68,16 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
     return s ? { isOpen: s.isOpen, mode: s.mode, triggerId: s.triggerId } : null;
   });
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
-  const desktopPrimary = menu.locator('.composer-tools-desktop-items > .composer-tools-item');
-  await expect(desktopPrimary).toHaveCount(2);
-  await expect(desktopPrimary.nth(0)).toContainText('Upload files');
-  await expect(desktopPrimary.nth(1)).toContainText('Web search');
-  const moreTools = menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle');
-  await expect(moreTools).toHaveAttribute('aria-expanded', 'false');
-  await expect(menu.locator('#composerToolsDesktopMore [data-composer-action="write"]')).toBeHidden();
-  await moreTools.click();
-  await expect(moreTools).toHaveAttribute('aria-expanded', 'true');
-  await expect(menu.locator('#composerToolsDesktopMore [data-composer-action="write"]')).toBeVisible();
-  await moreTools.click();
+  /* Expanded card: every workflow is visible at once with no disclosure. */
+  const desktopItems = menu.locator('.composer-tools-desktop-items > .composer-tools-item');
+  await expect(desktopItems).toHaveCount(6);
+  await expect(desktopItems.nth(0)).toContainText('Upload files');
+  /* Footer filter narrows the expanded list. */
+  await menu.locator('.composer-tools-footer-search input').fill('exam');
+  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(1);
+  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item').first()).toContainText('Generate exam');
+  await menu.locator('.composer-tools-footer-search input').fill('');
+  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(6);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,
@@ -102,11 +101,10 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  // Capture calls to composeAction (write) and researchAction (research).
+  // Capture calls to composeAction (write) and toggleExtensionByKey (exam).
   await page.evaluate(() => {
     window.__composerCalls = [];
     window.__socratesLegacy.composer.composeAction = () => window.__composerCalls.push('write');
-    window.__socratesLegacy.composer.researchAction = () => window.__composerCalls.push('research');
     window.__socratesLegacy.composer.openAttachmentPicker = () => window.__composerCalls.push('upload');
     window.__socratesLegacy.composer.toggleExtensionByKey = (key) => window.__composerCalls.push(key);
     window.__socratesLegacy.navigation.openPromptTemplatesModal = () => window.__composerCalls.push('skills');
@@ -123,11 +121,10 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   await expect(menu).not.toHaveClass(/hidden/);
 
   // Click the "write" item (closes the menu via the legacy handler).
-  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
   await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
-  // Re-open and click the "research" item.
+  // Re-open and click the "exam" item.
   await page.evaluate(() => {
     const btn = document.getElementById('chatComposerToolsBtn');
     if (btn && typeof window.toggleComposerTools === 'function') {
@@ -135,13 +132,12 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
     }
   });
   await expect(menu).not.toHaveClass(/hidden/);
-  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
-  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="research"]').click();
+  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="exam"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   const calls = await page.evaluate(() => window.__composerCalls);
   expect(calls).toContain('write');
-  expect(calls).toContain('research');
+  expect(calls).toContain('exam');
 });
 
 test('Composer tools menu React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
@@ -241,7 +237,6 @@ test('desktop workflow selection embeds a themed token in the editable content',
   const menu = page.locator('#composerToolsMenu');
   const write = menu.locator('.composer-tools-desktop-items [data-composer-action="write"]');
   expect(await write.count()).toBe(1);
-  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
   await write.click();
 
   await expect(menu).toHaveClass(/hidden/);
@@ -261,7 +256,6 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await token.locator('.composer-extension-token-remove').click();
   await expect(editor.locator('.composer-extension-token')).toHaveCount(0);
   await plus.click();
-  await menu.locator('.composer-tools-desktop-items .composer-tools-more-toggle').click();
   await menu.locator('.composer-tools-desktop-items [data-composer-action="write"]').click();
 
   await page.evaluate(() => {

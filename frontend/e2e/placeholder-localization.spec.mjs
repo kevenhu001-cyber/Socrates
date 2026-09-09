@@ -12,13 +12,13 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
   await waitForAppShell(page);
 
   const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
-  await expect(editor).toHaveAttribute('aria-label', 'How can I help you today?');
+  await expect(editor).toHaveAttribute('aria-label', 'Ask Socrates...');
 
   /* Switch the app language at runtime — the composer must re-localize
      without a reload and without losing the draft. */
   await page.evaluate(() => window.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
-  await expect(editor).toHaveAttribute('aria-label', '今天有什么可以帮你的？');
+  await expect(editor).toHaveAttribute('aria-label', '问问 Socrates…');
 
   const zhState = await editor.evaluate((el) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
@@ -27,7 +27,7 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
     return { content: before.content, fontFamily: before.fontFamily };
   });
   expect(zhState).not.toBeNull();
-  expect(zhState.content).toContain('今天有什么可以帮你的');
+  expect(zhState.content).toContain('问问 Socrates');
   expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Plus Jakarta Sans');
   expect(zhState.fontFamily).toContain('Noto Sans SC');
   expect(zhState.fontFamily).toContain('Inter');
@@ -35,7 +35,7 @@ test('zh UI localizes live with the bundled Plus Jakarta Sans face', async ({ pa
 
   /* Switching back to English must restore the Latin UI face. */
   await page.evaluate(() => window.setLang('en'));
-  await expect(editor).toHaveAttribute('aria-label', 'How can I help you today?');
+  await expect(editor).toHaveAttribute('aria-label', 'Ask Socrates...');
   const enFont = await editor.evaluate((el) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';

@@ -22,7 +22,6 @@ export function installHomeSurface() {
     const action = actionTarget.dataset.homeAction;
     const delegates = {
       write: 'composeAction',
-      research: 'researchAction',
     };
     if (action === 'upload') {
       /* Keep the entry point on the real composer tools control so the
