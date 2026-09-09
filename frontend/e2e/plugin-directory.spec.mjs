@@ -146,6 +146,40 @@ test('OpenConnector apps the sidecar does not serve yet render disabled', async 
   await expect(amap).toBeDisabled();
 });
 
+test('OpenConnector apps served through the OOMOL cloud stay connectable', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await page.route('**/api/**', async (route) => {
+    if (!route.request().url().includes('project-connectors')) {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        openConnector: { available: false, cloud: true },
+        connectors: [
+          { id: 'oc_slack', name: 'Slack', description: 'Connect Slack to use its 2 actions in chat. (via OpenConnector)', capabilities: ['Messaging'], authType: 'oauth', available: true, connection: null },
+          { id: 'oc_amap', name: '高德地图', description: 'Connect 高德地图 to use its 15 actions in chat. (via OpenConnector)', capabilities: ['Location'], authType: 'api_key', available: true, credentialInput: { fields: [{ key: 'apiKey', label: 'API Key', type: 'password', required: true }] }, connection: null },
+        ],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#navPlugins').click();
+  await expect(page.locator('.plugin-directory')).toBeVisible();
+  await expect(page.locator('.plugin-directory-row')).toHaveCount(2);
+
+  /* Cloud-served apps are enabled with the Connect title. */
+  await expect(page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action')).toBeEnabled();
+  const amap = page.locator('[data-connector-id="oc_amap"] button.plugin-directory-icon-action');
+  await expect(amap).toBeEnabled();
+  await expect(amap).toHaveAttribute('title', 'Connect');
+});
+
 test('OAuth return restores the original composer surface and plugin context', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.addInitScript(() => {

@@ -9,8 +9,39 @@
 import { OPEN_CONNECTOR_APP_INVENTORY, READY_CONNECTOR_APPS } from './openConnectorAppInventory.js';
 import type { OpenConnectorAppEntry } from './openConnectorAppInventory.js';
 import type { SidecarProvider } from './openConnectorSidecar.js';
+import { OPEN_CONNECTOR_CLOUD_AUTH } from './openConnectorCloudAuth.generated.js';
 
 export const OC_ID_PREFIX = 'oc_';
+
+/* Minimal provider metadata shared by the sidecar path (live SidecarProvider)
+ * and the OOMOL-cloud path (static OPEN_CONNECTOR_CLOUD_AUTH snapshot).
+ * SidecarProvider is structurally assignable to OcProviderMeta. */
+export interface OcAuthField {
+  key: string;
+  label?: string;
+  inputType?: string;
+  secret?: boolean;
+  required?: boolean;
+  placeholder?: string;
+  description?: string;
+}
+
+export interface OcAuthEntry {
+  type: string;
+  label?: string;
+  placeholder?: string;
+  description?: string;
+  fields?: OcAuthField[];
+}
+
+export interface OcProviderMeta {
+  authTypes: string[];
+  auth: OcAuthEntry[];
+  categories?: string[];
+  actions?: unknown[];
+  /** Cloud snapshot only: number of provider actions (no live actions array). */
+  actionCount?: number;
+}
 
 export type OcAuthType = 'oauth' | 'api_key' | 'custom_credential' | 'no_auth';
 
@@ -50,7 +81,7 @@ export function ocInventoryEntry(id: unknown): OcInventoryRef | null {
   return entry ? { entry, service } : null;
 }
 
-export function ocAuthType(meta: SidecarProvider): OcAuthType {
+export function ocAuthType(meta: OcProviderMeta): OcAuthType {
   const types = meta.authTypes || [];
   if (types.includes('oauth2')) return 'oauth';
   if (types.includes('api_key')) return 'api_key';
@@ -58,7 +89,7 @@ export function ocAuthType(meta: SidecarProvider): OcAuthType {
   return 'no_auth';
 }
 
-export function ocCredentialInput(meta: SidecarProvider, authType: OcAuthType): OcCatalogItem['credentialInput'] {
+export function ocCredentialInput(meta: OcProviderMeta, authType: OcAuthType): OcCatalogItem['credentialInput'] {
   if (authType === 'api_key') {
     const config = meta.auth.find((item) => item.type === 'api_key');
     return { fields: [{
@@ -73,7 +104,7 @@ export function ocCredentialInput(meta: SidecarProvider, authType: OcAuthType): 
     const config = meta.auth.find((item) => item.type === 'custom_credential');
     return { fields: (config?.fields || []).map((field) => ({
       key: field.key,
-      label: field.label,
+      label: field.label || field.key,
       type: field.secret ? 'password' : (field.inputType === 'email' ? 'email' : 'text'),
       required: field.required !== false,
       help: field.description || field.placeholder || undefined,
@@ -159,10 +190,10 @@ export function buildOpenConnectorCatalogWithFallback(providers: SidecarProvider
 }
 export function ocCatalogItem(
   entry: (typeof OPEN_CONNECTOR_APP_INVENTORY)[number],
-  meta: SidecarProvider,
+  meta: OcProviderMeta,
 ): OcCatalogItem {
   const authType = ocAuthType(meta);
-  const actionCount = Array.isArray(meta.actions) ? meta.actions.length : 0;
+  const actionCount = Array.isArray(meta.actions) ? meta.actions.length : (meta.actionCount ?? 0);
   return {
     id: `${OC_ID_PREFIX}${entry.ocService}`,
     service: entry.ocService as string,
@@ -173,4 +204,20 @@ export function ocCatalogItem(
     available: true,
     ...(ocCredentialInput(meta, authType) ? { credentialInput: ocCredentialInput(meta, authType) } : {}),
   };
+}
+
+/* OOMOL-cloud directory builder: same inventory rows as the sidecar fallback,
+ * but every snapshotted service is connectable through the OOMOL project
+ * gateway (the user provisions providers in the OOMOL cloud console).
+ * Services missing from the snapshot stay disabled stubs. */
+export function buildOpenConnectorCatalogForCloud(): OcCatalogItem[] {
+  const seen = new Set<string>();
+  const items: OcCatalogItem[] = [];
+  for (const entry of READY_CONNECTOR_APPS) {
+    if (!entry.ocService || seen.has(entry.ocService)) continue;
+    seen.add(entry.ocService);
+    const meta = OPEN_CONNECTOR_CLOUD_AUTH[entry.ocService];
+    items.push(meta ? ocCatalogItem(entry, meta) : ocStubCatalogItem(entry));
+  }
+  return items;
 }
