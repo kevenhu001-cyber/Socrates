@@ -9,9 +9,10 @@ import {
   getProjectConnector, getProjectConnectorProvider, isProjectConnectorConfigured,
 } from '../services/oomolProjectConnector.js';
 import {
-  OC_ID_PREFIX, buildOpenConnectorCatalogWithFallback, ocAuthType, ocInventoryEntry, ocOAuthAppForm,
+  OC_ID_PREFIX, buildOpenConnectorCatalogForCloud, buildOpenConnectorCatalogWithFallback, ocAuthType, ocInventoryEntry, ocOAuthAppForm,
   type OcCatalogItem, type OcInventoryRef,
 } from '../services/openConnectorCatalog.js';
+import { OPEN_CONNECTOR_CLOUD_AUTH } from '../services/openConnectorCloudAuth.generated.js';
 import {
   SidecarError, connectionNameForUser, getSidecarConnectionStatus, getSidecarOAuthConfig,
   isOpenConnectorSidecarConfigured, listSidecarProviders, startSidecarOAuth,
@@ -80,7 +81,7 @@ router.get('/', requireAuth, async (req, res, next) => {
     return res.json({
       mode: 'oomol-project-connector',
       configured: isProjectConnectorConfigured(),
-      openConnector: { available: openConnector.available },
+      openConnector: { available: openConnector.available, cloud: openConnector.cloud },
       connectors: [
         ...PROJECT_CONNECTOR_CATALOG.map((item) => ({ ...item, connection: publicConnection(byProvider.get(item.id)) })),
         ...openConnectors,
@@ -97,20 +98,31 @@ router.post('/:provider/connect', requireAuth, async (req, res, next) => {
   }
   const provider = getProjectConnectorProvider(req.params.provider);
   if (!provider) return res.status(404).json({ error: 'Unknown connector provider' });
-  const project = getProjectConnector();
-  if (!project) return res.status(503).json({ error: 'OOMOL ProjectConnector is not configured', code: 'project_connector_not_configured' });
+  await connectViaGateway(req, res, next, { id: provider.id, service: provider.service, authType: provider.authType });
+});
+
+/* Shared OOMOL-gateway connect flow for legacy providers and (in cloud mode)
+ * OpenConnector apps. Response contracts match what the frontend expects:
+ * sync paths → 201 { status: 'connected', ... }; OAuth → 201
+ * { requestId, authorizationUrl, expiresAt } followed by background polling. */
+async function connectViaGateway(
+  req: Request, res: Response, next: NextFunction,
+  ref: { id: string; service: string; authType: string },
+): Promise<Response | undefined> {
+  const provider = getProjectConnector();
+  if (!provider) return res.status(503).json({ error: 'OOMOL ProjectConnector is not configured', code: 'project_connector_not_configured' });
   try {
-    if (provider.authType === 'api_key') {
+    if (ref.authType === 'api_key') {
       /* Per-user upstream API key (e.g. GitLab PAT). Synchronous: the SDK
        * returns a ConnectedAccount immediately; we never see the key again. */
       const apiKey = req.body && typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : '';
       if (!apiKey) return res.status(400).json({ error: 'Missing apiKey', code: 'missing_api_key' });
-      const account = await project.connect.apiKey(externalUserId(req.userId), {
-        service: provider.service,
+      const account = await provider.connect.apiKey(externalUserId(req.userId), {
+        service: ref.service,
         connectionName: CONNECTION_NAME,
         apiKey,
       });
-      await saveRequest(req.userId!, provider.id, {
+      await saveRequest(req.userId!, ref.id, {
         id: `sync_${Date.now()}`,
         status: 'connected',
         connectedAccountId: account.connectedAccountId,
@@ -118,18 +130,18 @@ router.post('/:provider/connect', requireAuth, async (req, res, next) => {
       });
       return res.status(201).json({ status: 'connected', connectedAccountId: account.connectedAccountId, displayName: (account as { displayName?: string | null }).displayName || null });
     }
-    if (provider.authType === 'custom_credential') {
+    if (ref.authType === 'custom_credential') {
       /* Per-user custom credential fields (e.g. QQ Mail address + auth code).
        * Synchronous: SDK returns a ConnectedAccount; we never see the values again. */
       const values = req.body && req.body.values && typeof req.body.values === 'object' && !Array.isArray(req.body.values)
         ? req.body.values : null;
       if (!values) return res.status(400).json({ error: 'Missing values object', code: 'missing_values' });
-      const account = await project.connect.customCredential(externalUserId(req.userId), {
-        service: provider.service,
+      const account = await provider.connect.customCredential(externalUserId(req.userId), {
+        service: ref.service,
         connectionName: CONNECTION_NAME,
         values,
       });
-      await saveRequest(req.userId!, provider.id, {
+      await saveRequest(req.userId!, ref.id, {
         id: `sync_${Date.now()}`,
         status: 'connected',
         connectedAccountId: account.connectedAccountId,
@@ -137,25 +149,34 @@ router.post('/:provider/connect', requireAuth, async (req, res, next) => {
       });
       return res.status(201).json({ status: 'connected', connectedAccountId: account.connectedAccountId, displayName: (account as { displayName?: string | null }).displayName || null });
     }
+    if (ref.authType === 'no_auth') {
+      /* No credential to verify (open data APIs). Record connected directly. */
+      await saveRequest(req.userId!, ref.id, {
+        id: `sync_${Date.now()}`,
+        status: 'connected',
+        connectionName: CONNECTION_NAME,
+      });
+      return res.status(201).json({ status: 'connected', connectedAccountId: null, displayName: null });
+    }
     /* Default: OAuth2 redirect flow. The gateway owns the OAuth callback. Persist
      * only opaque request/account IDs, never a credential, then monitor in the
      * background for a responsive UI. */
-    const request = await project.connect.oauth(externalUserId(req.userId), {
-      service: provider.service,
+    const request = await provider.connect.oauth(externalUserId(req.userId), {
+      service: ref.service,
       connectionName: CONNECTION_NAME,
-      returnUri: appReturnUri(req, provider.id),
+      returnUri: appReturnUri(req, ref.id),
     });
-    await saveRequest(req.userId!, provider.id, request);
-    void project.waitForConnection(request, { maxWaitMs: 610_000 }).then(
-      (finalRequest) => saveRequest(req.userId!, provider.id, finalRequest),
-      (error) => saveRequest(req.userId!, provider.id, { ...request, status: 'failed', errorMessage: connectorErrorPayload(error).message }),
+    await saveRequest(req.userId!, ref.id, request);
+    void provider.waitForConnection(request, { maxWaitMs: 610_000 }).then(
+      (finalRequest) => saveRequest(req.userId!, ref.id, finalRequest),
+      (error) => saveRequest(req.userId!, ref.id, { ...request, status: 'failed', errorMessage: connectorErrorPayload(error).message }),
     );
     return res.status(201).json({ requestId: request.id, authorizationUrl: request.authorizationUrl, expiresAt: request.expiresAt });
   } catch (error) {
     const payload = connectorErrorPayload(error);
     return res.status(payload.status).json({ error: payload.message, code: payload.code });
   }
-});
+}
 
 router.get('/:provider/status', requireAuth, async (req, res, next) => {
   const oc = ocInventoryEntry(req.params.provider);
@@ -165,25 +186,35 @@ router.get('/:provider/status', requireAuth, async (req, res, next) => {
   }
   const provider = getProjectConnectorProvider(req.params.provider);
   if (!provider) return res.status(404).json({ error: 'Unknown connector provider' });
+  await pollGatewayConnection(req, res, next, provider.id);
+});
+
+/* Shared OOMOL-gateway status poll for legacy providers and (in cloud mode)
+ * OpenConnector apps. Reports the last known row when the gateway or the
+ * request is gone instead of failing. */
+async function pollGatewayConnection(
+  req: Request, res: Response,   next: NextFunction,
+  providerId: string,
+): Promise<Response | undefined> {
   try {
     const db = getDb();
     const [row] = await db.select().from(projectConnectorConnections).where(and(
       eq(projectConnectorConnections.userId, req.userId!),
-      eq(projectConnectorConnections.provider, provider.id),
+      eq(projectConnectorConnections.provider, providerId),
     )).limit(1);
     if (!row || !row.requestId || !isProjectConnectorConfigured()) return res.json({ connection: publicConnection(row) });
     const request = await getProjectConnector()!.getConnectionRequest(row.requestId);
-    await saveRequest(req.userId!, provider.id, request);
+    await saveRequest(req.userId!, providerId, request);
     const [updated] = await db.select().from(projectConnectorConnections).where(and(
       eq(projectConnectorConnections.userId, req.userId!),
-      eq(projectConnectorConnections.provider, provider.id),
+      eq(projectConnectorConnections.provider, providerId),
     )).limit(1);
     return res.json({ connection: publicConnection(updated) });
   } catch (error) {
     const payload = connectorErrorPayload(error);
     return res.status(payload.status).json({ error: payload.message, code: payload.code });
   }
-});
+}
 
 /* ---- OpenConnector-backed apps (oc_<service>) ----
  *
@@ -198,20 +229,29 @@ router.get('/:provider/status', requireAuth, async (req, res, next) => {
  * untouched. Pure mapping lives in openConnectorCatalog.ts (unit-tested);
  * only the HTTP/DB orchestration stays here. */
 
-async function listOpenConnectorCatalogItems(): Promise<{ available: boolean; items: OcCatalogItem[] }> {
+async function listOpenConnectorCatalogItems(): Promise<{ available: boolean; cloud: boolean; items: OcCatalogItem[] }> {
   /* The full phase-1 inventory always renders in the directory — apps
      the sidecar cannot serve yet come back as disabled stubs
      (available: false) so the plugin page is complete before the
      sidecar is online. When the sidecar is configured, served apps
-     switch to their real provider metadata (available: true). */
+     switch to their real provider metadata (available: true).
+     OOMOL-cloud mode (sidecar down, project key configured): every
+     snapshotted service is connectable through the OOMOL gateway the
+     user provisioned in the cloud console. */
   if (!isOpenConnectorSidecarConfigured()) {
-    return { available: false, items: buildOpenConnectorCatalogWithFallback(null) };
+    if (isProjectConnectorConfigured()) {
+      return { available: false, cloud: true, items: buildOpenConnectorCatalogForCloud() };
+    }
+    return { available: false, cloud: false, items: buildOpenConnectorCatalogWithFallback(null) };
   }
   try {
     const providers = await listSidecarProviders();
-    return { available: true, items: buildOpenConnectorCatalogWithFallback(providers) };
+    return { available: true, cloud: false, items: buildOpenConnectorCatalogWithFallback(providers) };
   } catch {
-    return { available: false, items: buildOpenConnectorCatalogWithFallback(null) };
+    if (isProjectConnectorConfigured()) {
+      return { available: false, cloud: true, items: buildOpenConnectorCatalogForCloud() };
+    }
+    return { available: false, cloud: false, items: buildOpenConnectorCatalogWithFallback(null) };
   }
 }
 
@@ -226,6 +266,18 @@ async function connectOpenConnector(
   req: Request, res: Response, next: NextFunction,
   entry: OcInventoryRef['entry'], service: string, id: string,
 ): Promise<void> {
+  /* OOMOL-cloud mode: drive the provider through the project gateway the
+   * user provisioned in the OOMOL cloud console (same contracts as the
+   * legacy provider routes). */
+  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
+    const meta = OPEN_CONNECTOR_CLOUD_AUTH[service];
+    await connectViaGateway(req, res, next, {
+      id,
+      service,
+      authType: ocAuthType(meta ?? { authTypes: ['oauth2'], auth: [] }),
+    });
+    return;
+  }
   try {
     const meta = await findSidecarProvider(service);
     const authType = ocAuthType(meta);
@@ -285,6 +337,11 @@ async function pollOpenConnectorStatus(
   req: Request, res: Response, next: NextFunction,
   service: string, id: string,
 ): Promise<void> {
+  /* OOMOL-cloud mode: poll the gateway connection request like legacy. */
+  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
+    await pollGatewayConnection(req, res, next, id);
+    return;
+  }
   try {
     const db = getDb();
     const [row] = await db.select().from(projectConnectorConnections).where(and(
@@ -333,6 +390,19 @@ export default router;
 router.get('/:provider/oauth-config', requireAuth, async (req, res) => {
   const oc = ocInventoryEntry(req.params.provider);
   if (!oc) return res.status(404).json({ error: 'Unknown connector provider' });
+  /* OOMOL-cloud mode: OAuth apps are provisioned in the OOMOL cloud console,
+   * so there is nothing to bring-your-own here — tell the frontend to
+   * proceed straight to the gateway authorize redirect. */
+  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
+    return res.json({
+      service: oc.service,
+      configured: true,
+      clientId: null,
+      expectedRedirectUri: null,
+      clientSecretRequired: false,
+      extraFields: [],
+    });
+  }
   try {
     const meta = await findSidecarProvider(oc.service);
     if (ocAuthType(meta) !== 'oauth') {
@@ -359,6 +429,9 @@ router.get('/:provider/oauth-config', requireAuth, async (req, res) => {
 router.put('/:provider/oauth-config', requireAuth, async (req, res) => {
   const oc = ocInventoryEntry(req.params.provider);
   if (!oc) return res.status(404).json({ error: 'Unknown connector provider' });
+  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
+    return res.status(400).json({ error: 'OAuth apps are managed in the OOMOL console in cloud mode', code: 'cloud_managed' });
+  }
   try {
     const meta = await findSidecarProvider(oc.service);
     if (ocAuthType(meta) !== 'oauth') {

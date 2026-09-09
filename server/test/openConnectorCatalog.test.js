@@ -8,6 +8,10 @@ import {
   READY_CONNECTOR_APPS,
 } from '../src/services/openConnectorAppInventory.js';
 import {
+  OPEN_CONNECTOR_CLOUD_AUTH,
+} from '../src/services/openConnectorCloudAuth.generated.js';
+import {
+  buildOpenConnectorCatalogForCloud,
   buildOpenConnectorCatalogItems,
   buildOpenConnectorCatalogWithFallback,
   ocAuthType,
@@ -223,4 +227,46 @@ test('Chat tool execution fails closed without a connection', async () => {
   const unknown = await executeOpenConnectorTool('oc_nope_nothing', {}, 'user-1', { status: 'connected' });
   assert.equal(unknown.status, 'failed');
   assert.equal(unknown.errorCode, 'invalid_tool_arguments');
+});
+
+test('Cloud auth snapshot covers every ready service with usable auth', () => {
+  const readyServices = new Set(READY_CONNECTOR_APPS.map((entry) => entry.ocService));
+  assert.ok(readyServices.size > 100);
+  for (const service of readyServices) {
+    const meta = OPEN_CONNECTOR_CLOUD_AUTH[service];
+    assert.ok(meta, `${service} missing from cloud snapshot (regen via scripts/gen-oc-cloud-auth.mjs)`);
+    assert.ok(Array.isArray(meta.authTypes) && meta.authTypes.length > 0, `${service} needs authTypes`);
+    assert.ok(Array.isArray(meta.auth), `${service} needs auth array`);
+    assert.ok(Array.isArray(meta.categories), `${service} needs categories`);
+    assert.equal(typeof meta.actionCount, 'number', `${service} needs actionCount`);
+  }
+});
+
+test('buildOpenConnectorCatalogForCloud marks snapshotted apps available', () => {
+  const readyServices = new Set(READY_CONNECTOR_APPS.map((entry) => entry.ocService));
+  const items = buildOpenConnectorCatalogForCloud();
+  assert.equal(items.length, readyServices.size);
+  assert.ok(items.length > 100);
+  assert.ok(items.every((item) => item.available === true));
+  assert.equal(new Set(items.map((item) => item.id)).size, items.length);
+  for (const item of items) {
+    assert.ok(ocInventoryEntry(item.id), `${item.id} must be a resolvable oc_ id`);
+    assert.ok(item.description.includes('actions'), `${item.id} description mentions actions`);
+  }
+  const amap = items.find((item) => item.id === 'oc_amap');
+  assert.equal(amap.authType, 'api_key');
+  assert.equal(amap.credentialInput.fields[0].key, 'apiKey');
+  assert.equal(amap.credentialInput.fields[0].type, 'password');
+  const slack = items.find((item) => item.id === 'oc_slack');
+  assert.equal(slack.authType, 'oauth');
+  assert.equal(slack.credentialInput, undefined);
+});
+
+test('ocCatalogItem honors cloud-style meta without a live actions array', () => {
+  const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.label === '高德地图');
+  const item = ocCatalogItem(entry, OPEN_CONNECTOR_CLOUD_AUTH.amap);
+  assert.equal(item.id, 'oc_amap');
+  assert.equal(item.available, true);
+  assert.ok(item.description.includes(String(OPEN_CONNECTOR_CLOUD_AUTH.amap.actionCount)));
+  assert.deepEqual(item.capabilities, OPEN_CONNECTOR_CLOUD_AUTH.amap.categories);
 });
