@@ -1,0 +1,203 @@
+/* Screenshot app inventory for the OpenConnector integration (phase 1).
+ *
+ * Each entry maps one app shown in the reference screenshots to its provider
+ * directory under open-connector/src/providers. Entries with
+ * ocService === null do not exist upstream yet and are phase-2 work (new
+ * provider definitions following open-connector/AGENTS.md).
+ *
+ * Display rule confirmed with the user: apps that originally have a Chinese
+ * name show the Chinese name, English-origin apps keep their native name.
+ */
+
+export interface OpenConnectorAppEntry {
+  /** Label exactly as shown in the reference screenshots. */
+  label: string;
+  /** Provider directory under open-connector/src/providers, or null when missing upstream. */
+  ocService: string | null;
+  /** Final directory display name shown in the Socrates plugin directory. */
+  displayName: string;
+  /** Phase-1 ready, or phase-2 work still needed. */
+  status: 'ready' | 'missing';
+  /** Extra context for ambiguous mappings. */
+  note?: string;
+}
+
+export const OPEN_CONNECTOR_APP_INVENTORY: OpenConnectorAppEntry[] = [
+  // ---- Screenshot 1: productivity / project ----
+  { label: 'Google 日历', ocService: 'googlecalendar', displayName: 'Google 日历', status: 'ready' },
+  { label: '百度网盘', ocService: null, displayName: '百度网盘', status: 'missing' },
+  { label: '宝塔 MCP', ocService: null, displayName: '宝塔 MCP', status: 'missing' },
+  { label: '北大法宝-法律智能检索', ocService: null, displayName: '北大法宝-法律智能检索', status: 'missing' },
+  { label: '滴答清单', ocService: 'ticktick', displayName: '滴答清单', status: 'ready' },
+  { label: '高德地图', ocService: 'amap', displayName: '高德地图', status: 'ready' },
+  { label: '聚水潭 ERP', ocService: null, displayName: '聚水潭 ERP', status: 'missing' },
+  { label: '快麦 ERP', ocService: null, displayName: '快麦 ERP', status: 'missing' },
+  { label: '麦当劳中国 MCP', ocService: 'mcdonalds_cn', displayName: '麦当劳中国', status: 'ready', note: 'Upstream has no MCP-suffixed variant; mapped to the China provider.' },
+  { label: '美团', ocService: null, displayName: '美团', status: 'missing' },
+  { label: '轻流', ocService: null, displayName: '轻流', status: 'missing' },
+  { label: '瑞幸咖啡', ocService: 'luckin_coffee', displayName: '瑞幸咖啡', status: 'ready' },
+  { label: '顺丰速运', ocService: null, displayName: '顺丰速运', status: 'missing' },
+  { label: '腾讯文档', ocService: 'tencent_docs', displayName: '腾讯文档', status: 'ready' },
+  { label: '旺店 ERP', ocService: null, displayName: '旺店 ERP', status: 'missing' },
+  { label: 'Teamup 日历', ocService: null, displayName: 'Teamup 日历', status: 'missing' },
+  { label: 'Google Sheets', ocService: null, displayName: 'Google Sheets', status: 'missing' },
+  { label: 'Google Forms', ocService: null, displayName: 'Google Forms', status: 'missing' },
+  { label: 'Airtable', ocService: 'airtable', displayName: 'Airtable', status: 'ready' },
+  { label: 'Trello', ocService: 'trello', displayName: 'Trello', status: 'ready' },
+  { label: 'Asana', ocService: 'asana', displayName: 'Asana', status: 'ready' },
+  { label: 'Jira', ocService: 'jira', displayName: 'Jira', status: 'ready' },
+  { label: 'Linear', ocService: 'linear', displayName: 'Linear', status: 'ready' },
+  { label: 'ClickUp', ocService: 'clickup', displayName: 'ClickUp', status: 'ready' },
+  { label: 'monday', ocService: 'monday', displayName: 'monday', status: 'ready' },
+  { label: 'Pipedrive', ocService: 'pipedrive', displayName: 'Pipedrive', status: 'ready' },
+  { label: '1Password', ocService: 'one_password', displayName: '1Password', status: 'ready' },
+  { label: '7shifts', ocService: '7_shifts', displayName: '7shifts', status: 'ready' },
+  { label: 'Accredible Certificates', ocService: 'accredible_certificates', displayName: 'Accredible Certificates', status: 'ready' },
+  { label: 'AccuLynx', ocService: 'acculynx', displayName: 'AccuLynx', status: 'ready' },
+  { label: 'Acuity Scheduling', ocService: null, displayName: 'Acuity Scheduling', status: 'missing' },
+  { label: 'Affinity', ocService: 'affinity', displayName: 'Affinity', status: 'ready' },
+  { label: 'Agiled', ocService: 'agiled', displayName: 'Agiled', status: 'ready' },
+  // ---- Screenshot 2: communication ----
+  { label: '钉钉 MCP', ocService: null, displayName: '钉钉 MCP', status: 'missing', note: 'Upstream has dingtalk_bot only; no MCP-suffixed variant.' },
+  { label: '钉钉机器人', ocService: 'dingtalk_bot', displayName: '钉钉机器人', status: 'ready' },
+  { label: '飞书', ocService: 'feishu', displayName: '飞书', status: 'ready' },
+  { label: '飞书应用机器人', ocService: 'feishu_app_bot', displayName: '飞书应用机器人', status: 'ready' },
+  { label: '飞书自定义机器人', ocService: 'feishu_custom_bot', displayName: '飞书自定义机器人', status: 'ready' },
+  { label: '企业微信 MCP', ocService: null, displayName: '企业微信 MCP', status: 'missing', note: 'Upstream has wecom_bot only; no MCP-suffixed variant.' },
+  { label: '企业微信机器人', ocService: 'wecom_bot', displayName: '企业微信机器人', status: 'ready' },
+  { label: '网易企业邮箱', ocService: 'netease_mail', displayName: '网易企业邮箱', status: 'ready', note: 'Shares the netease_mail provider with 网易邮箱.' },
+  { label: '网易邮箱', ocService: 'netease_mail', displayName: '网易邮箱', status: 'ready', note: 'Shares the netease_mail provider with 网易企业邮箱.' },
+  { label: 'Discord 机器人', ocService: 'discordbot', displayName: 'Discord 机器人', status: 'ready' },
+  { label: 'IMAP 邮箱', ocService: null, displayName: 'IMAP 邮箱', status: 'missing' },
+  { label: 'QQ 邮箱', ocService: 'qq_mail', displayName: 'QQ 邮箱', status: 'ready' },
+  { label: 'Slack 机器人', ocService: null, displayName: 'Slack 机器人', status: 'missing' },
+  { label: 'Gmail', ocService: 'gmail', displayName: 'Gmail', status: 'ready' },
+  { label: 'Slack', ocService: 'slack', displayName: 'Slack', status: 'ready' },
+  { label: 'Outlook', ocService: 'outlook', displayName: 'Outlook', status: 'ready' },
+  { label: 'Discord', ocService: 'discord', displayName: 'Discord', status: 'ready' },
+  { label: 'Telegram Bot', ocService: 'telegram', displayName: 'Telegram Bot', status: 'ready' },
+  { label: 'Twilio', ocService: 'twilio', displayName: 'Twilio', status: 'ready' },
+  { label: 'SendGrid', ocService: 'sendgrid', displayName: 'SendGrid', status: 'ready' },
+  { label: 'Zendesk', ocService: 'zendesk', displayName: 'Zendesk', status: 'ready' },
+  { label: 'Intercom', ocService: 'intercom', displayName: 'Intercom', status: 'ready' },
+  { label: '2Chat', ocService: 'twochat', displayName: '2Chat', status: 'ready' },
+  { label: 'AgentMail', ocService: 'agent_mail', displayName: 'AgentMail', status: 'ready' },
+  { label: 'Agora', ocService: 'agora', displayName: 'Agora', status: 'ready' },
+  { label: 'Aircall', ocService: 'aircall', displayName: 'Aircall', status: 'ready' },
+  { label: 'Altiria', ocService: null, displayName: 'Altiria', status: 'missing' },
+  { label: 'Atlas.so', ocService: 'atlas_so', displayName: 'Atlas.so', status: 'ready' },
+  { label: 'Avochato', ocService: null, displayName: 'Avochato', status: 'missing' },
+  { label: 'Bark', ocService: 'bark', displayName: 'Bark', status: 'ready' },
+  { label: 'Beamer', ocService: 'beamer', displayName: 'Beamer', status: 'ready' },
+  { label: 'Bird', ocService: 'bird', displayName: 'Bird', status: 'ready' },
+  { label: 'Bluesky', ocService: 'bluesky', displayName: 'Bluesky', status: 'ready' },
+  // ---- Screenshot 3: communication, continued ----
+  { label: 'CallerAPI', ocService: 'callerapi', displayName: 'CallerAPI', status: 'ready' },
+  { label: 'Callingly', ocService: 'callingly', displayName: 'Callingly', status: 'ready' },
+  { label: 'CallPage', ocService: 'callpage', displayName: 'CallPage', status: 'ready' },
+  { label: 'Campaign Cleaner', ocService: 'campaign_cleaner', displayName: 'Campaign Cleaner', status: 'ready' },
+  { label: 'Chat API for WhatsApp', ocService: 'whatsapp', displayName: 'Chat API for WhatsApp', status: 'ready' },
+  { label: 'Chatwork', ocService: 'chatwork', displayName: 'Chatwork', status: 'ready' },
+  { label: 'Chorus', ocService: 'chorus', displayName: 'Chorus', status: 'ready' },
+  { label: 'Circle', ocService: 'circle', displayName: 'Circle', status: 'ready' },
+  { label: 'ClickMeeting', ocService: 'clickmeeting', displayName: 'ClickMeeting', status: 'ready' },
+  { label: 'ClickSend', ocService: 'clicksend', displayName: 'ClickSend', status: 'ready' },
+  { label: 'Cloudflare Email Routing', ocService: 'cloudflare_email_routing', displayName: 'Cloudflare Email Routing', status: 'ready' },
+  { label: 'CommPeak', ocService: null, displayName: 'CommPeak', status: 'missing' },
+  { label: 'Courier', ocService: 'courier', displayName: 'Courier', status: 'ready' },
+  { label: 'Crisp', ocService: 'crisp', displayName: 'Crisp', status: 'ready' },
+  { label: 'Daily', ocService: null, displayName: 'Daily', status: 'missing', note: 'Upstream has dailybot only.' },
+  { label: 'Dailybot', ocService: 'dailybot', displayName: 'Dailybot', status: 'ready' },
+  { label: 'Data247', ocService: 'data247', displayName: 'Data247', status: 'ready' },
+  { label: 'DialMyCalls', ocService: null, displayName: 'DialMyCalls', status: 'missing' },
+  { label: 'Discourse', ocService: 'discourse', displayName: 'Discourse', status: 'ready' },
+  { label: 'Dixa', ocService: 'dixa', displayName: 'Dixa', status: 'ready' },
+  { label: 'Elastic Email', ocService: null, displayName: 'Elastic Email', status: 'missing' },
+  { label: 'Emailable', ocService: 'emailable', displayName: 'Emailable', status: 'ready' },
+  { label: 'EmailListVerify', ocService: 'emaillistverify', displayName: 'EmailListVerify', status: 'ready' },
+  { label: 'EmailOctopus', ocService: 'emailoctopus', displayName: 'EmailOctopus', status: 'ready' },
+  { label: 'Encharge', ocService: 'encharge', displayName: 'Encharge', status: 'ready' },
+  { label: 'Freshdesk', ocService: 'freshdesk', displayName: 'Freshdesk', status: 'ready' },
+  { label: 'Freshservice', ocService: 'freshservice', displayName: 'Freshservice', status: 'ready' },
+  { label: 'Freshstatus', ocService: null, displayName: 'Freshstatus', status: 'missing' },
+  { label: 'Front', ocService: 'front', displayName: 'Front', status: 'ready' },
+  { label: 'Gleap', ocService: 'gleap', displayName: 'Gleap', status: 'ready' },
+  { label: 'GoDial', ocService: 'godial', displayName: 'GoDial', status: 'ready' },
+  { label: 'Google Chat', ocService: null, displayName: 'Google Chat', status: 'missing' },
+  { label: 'Google Meet', ocService: null, displayName: 'Google Meet', status: 'missing' },
+  // ---- Screenshot 4: AI and Chinese services ----
+  { label: '百度地图', ocService: 'baidu_maps', displayName: '百度地图', status: 'ready' },
+  { label: '百度千帆', ocService: 'qianfan', displayName: '百度千帆', status: 'ready' },
+  { label: '得到大脑', ocService: null, displayName: '得到大脑', status: 'missing' },
+  { label: '豆包 Seedream', ocService: null, displayName: '豆包 Seedream', status: 'missing' },
+  { label: '豆包语音', ocService: null, displayName: '豆包语音', status: 'missing' },
+  { label: '华宇元典法律数据', ocService: 'yuandian', displayName: '华宇元典法律数据', status: 'ready' },
+  { label: '即梦 AI', ocService: 'jimeng_ai', displayName: '即梦 AI', status: 'ready' },
+  { label: '可灵 AI', ocService: null, displayName: '可灵 AI', status: 'missing' },
+  { label: '通义千问', ocService: null, displayName: '通义千问', status: 'missing' },
+  { label: '同程心', ocService: null, displayName: '同程心', status: 'missing' },
+  { label: '万相', ocService: null, displayName: '万相', status: 'missing' },
+  { label: '知乎', ocService: 'zhihu', displayName: '知乎', status: 'ready' },
+  { label: 'ima 知识库', ocService: 'ima', displayName: 'ima 知识库', status: 'ready' },
+  { label: 'Lingvanex 翻译 API', ocService: 'lingvanex_translation_api', displayName: 'Lingvanex 翻译 API', status: 'ready' },
+  { label: 'Microsoft 文本翻译', ocService: null, displayName: 'Microsoft 文本翻译', status: 'missing' },
+  { label: 'Torii 图片翻译器', ocService: 'torii', displayName: 'Torii 图片翻译器', status: 'ready' },
+  { label: 'OpenAI', ocService: 'openai', displayName: 'OpenAI', status: 'ready' },
+  { label: 'Anthropic', ocService: 'anthropic', displayName: 'Anthropic', status: 'ready' },
+  { label: 'Gemini', ocService: 'gemini', displayName: 'Gemini', status: 'ready' },
+  { label: 'Perplexity', ocService: 'perplexity', displayName: 'Perplexity', status: 'ready' },
+  { label: 'DeepSeek', ocService: 'deepseek', displayName: 'DeepSeek', status: 'ready' },
+  { label: 'Affinda', ocService: 'affinda', displayName: 'Affinda', status: 'ready' },
+  { label: 'AgentQL', ocService: 'agentql', displayName: 'AgentQL', status: 'ready' },
+  { label: 'Agenty', ocService: 'agenty', displayName: 'Agenty', status: 'ready' },
+  { label: 'Airbrake', ocService: 'airbrake', displayName: 'Airbrake', status: 'ready' },
+  { label: 'AiVOOV', ocService: 'aivoov', displayName: 'AiVOOV', status: 'ready' },
+  { label: 'Alt Text Generator AI', ocService: null, displayName: 'Alt Text Generator AI', status: 'missing', note: 'Upstream has alt_text_ai (AltText.ai) only.' },
+  { label: 'AltText.ai', ocService: 'alt_text_ai', displayName: 'AltText.ai', status: 'ready' },
+  { label: 'Anchor Browser', ocService: 'anchor_browser', displayName: 'Anchor Browser', status: 'ready' },
+  { label: 'Anthropic Admin', ocService: 'anthropic_admin', displayName: 'Anthropic Admin', status: 'ready' },
+  { label: 'AnySearch', ocService: 'anysearch', displayName: 'AnySearch', status: 'ready' },
+  { label: 'APIPie AI', ocService: 'apipie_ai', displayName: 'APIPie AI', status: 'ready' },
+  { label: 'AssemblyAI', ocService: 'assemblyai', displayName: 'AssemblyAI', status: 'ready' },
+  // ---- Screenshot 5: AI, continued ----
+  { label: 'Botpress', ocService: 'botpress', displayName: 'Botpress', status: 'ready' },
+  { label: 'Botsonic', ocService: 'botsonic', displayName: 'Botsonic', status: 'ready' },
+  { label: 'Browse AI', ocService: 'browse_ai', displayName: 'Browse AI', status: 'ready' },
+  { label: 'Browser Use', ocService: null, displayName: 'Browser Use', status: 'missing' },
+  { label: 'ChatBotKit', ocService: 'chatbotkit', displayName: 'ChatBotKit', status: 'ready' },
+  { label: 'ChatPDF', ocService: 'chatpdf', displayName: 'ChatPDF', status: 'ready' },
+  { label: 'Claid AI', ocService: 'claid_ai', displayName: 'Claid AI', status: 'ready' },
+  { label: 'Cloudflare Docs', ocService: null, displayName: 'Cloudflare Docs', status: 'missing' },
+  { label: 'Codegen', ocService: 'codegen', displayName: 'Codegen', status: 'ready' },
+  { label: 'Cohere', ocService: 'cohere', displayName: 'Cohere', status: 'ready' },
+  { label: 'Consensus', ocService: null, displayName: 'Consensus', status: 'missing' },
+  { label: 'Context7', ocService: 'context7', displayName: 'Context7', status: 'ready' },
+  { label: 'Cursor', ocService: 'cursor', displayName: 'Cursor', status: 'ready' },
+  { label: 'CustomGPT.ai', ocService: 'customgpt', displayName: 'CustomGPT.ai', status: 'ready' },
+  { label: 'Dandelion API', ocService: null, displayName: 'Dandelion API', status: 'missing' },
+  { label: 'Deck.co', ocService: 'deck_co', displayName: 'Deck.co', status: 'ready' },
+  { label: 'Deepgram', ocService: 'deepgram', displayName: 'Deepgram', status: 'ready' },
+  { label: 'DeepL', ocService: 'deepl', displayName: 'DeepL', status: 'ready' },
+  { label: 'Detect Language', ocService: 'detect_language', displayName: 'Detect Language', status: 'ready' },
+  { label: 'DeutschlandGPT', ocService: null, displayName: 'DeutschlandGPT', status: 'missing' },
+  { label: 'Devin', ocService: 'devin', displayName: 'Devin', status: 'ready' },
+  { label: 'Diffbot', ocService: 'diffbot', displayName: 'Diffbot', status: 'ready' },
+  { label: 'DocsBot AI', ocService: 'docsbot_ai', displayName: 'DocsBot AI', status: 'ready' },
+  { label: 'Docsumo', ocService: 'docsumo', displayName: 'Docsumo', status: 'ready' },
+  { label: 'DumplingAI', ocService: null, displayName: 'DumplingAI', status: 'missing' },
+  { label: 'E2B', ocService: 'e2b', displayName: 'E2B', status: 'ready' },
+  { label: 'Eagle Doc', ocService: 'eagle_doc', displayName: 'Eagle Doc', status: 'ready' },
+  { label: 'Eden AI', ocService: 'edenai', displayName: 'Eden AI', status: 'ready' },
+  { label: 'ElevenLabs', ocService: 'elevenlabs', displayName: 'ElevenLabs', status: 'ready' },
+  { label: 'ElevenReader', ocService: 'elevenreader', displayName: 'ElevenReader', status: 'ready' },
+];
+
+/** Phase-1 apps backed by a real OpenConnector provider. */
+export const READY_CONNECTOR_APPS: OpenConnectorAppEntry[] = OPEN_CONNECTOR_APP_INVENTORY.filter(
+  (entry) => entry.status === 'ready' && entry.ocService !== null,
+);
+
+/** Screenshot apps with no upstream provider yet; phase-2 work. */
+export const MISSING_CONNECTOR_APPS: OpenConnectorAppEntry[] = OPEN_CONNECTOR_APP_INVENTORY.filter(
+  (entry) => entry.status === 'missing',
+);

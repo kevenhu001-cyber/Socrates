@@ -63,6 +63,29 @@ function position(el, trigger) {
   var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
   var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;
   var viewportWidth = viewport ? viewport.width : window.innerWidth;
+  var mode = trigger.dataset ? trigger.dataset.composerMode : null;
+
+  /* Home (topic) composer on desktop: the expanded card always opens below
+     the input and stretches toward the viewport bottom with an internal
+     scrollbar, so it never covers the greeting above and never spills past
+     the page. Width tracks the input box so both edges align. */
+  if (mode === "topic" && viewportWidth > 768) {
+    var wrap = trigger.closest ? trigger.closest("#topicInputWrap") : null;
+    var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
+    var menuTop = r.bottom + 8;
+    var room = viewportBottom - menuTop - 16;
+    el.style.maxHeight = Math.min(Math.max(room, 96), 560) + "px";
+    el.style.width = Math.max(280, Math.min(wrapRect.width || 620, viewportWidth - 16)) + "px";
+    el.style.left = "0px";
+    el.style.top = "0px";
+    var menuWidth = el.offsetWidth || 620;
+    var menuLeft = Math.max(8, Math.min(wrapRect.left, viewportWidth - menuWidth - 8));
+    el.style.left = menuLeft + "px";
+    el.style.top = menuTop + "px";
+    return;
+  }
+
+  el.style.width = "";
   el.style.maxHeight = Math.max(120, viewportBottom - viewportTop - 16) + "px";
   el.style.left = "0px";
   el.style.top = "0px";

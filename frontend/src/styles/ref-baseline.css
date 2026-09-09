@@ -105,6 +105,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   order: 8;
 }
 
+/* Sidebar nav is a flat list: no hairline divider between 项目 and 定时任务.
+   styles.css adds a two-tier separator on [data-nav="scheduled"]; neutralize
+   it here so all six rows share the same rhythm. */
+#appShell .sidebar-nav-btn[data-nav="scheduled"] {
+  margin-top: 0 !important;
+  border-top: 0 !important;
+}
+
 /* Recents section header + history rows follow the reference's quiet list. */
 #appShell .recents-title {
   color: var(--cg-text-muted);
@@ -653,6 +661,25 @@ body.workspace-active #appShell .main-page {
   gap: 8px !important;
 }
 
+/* P_directory-tools — the header tools row holds only the search field
+   (each directory row carries its own connect button, so there is no
+   header-level add action). Let the search fill the row so the input
+   renders at a usable width instead of collapsing to the icon. */
+#appShell .plugin-directory-tools .plugin-directory-search {
+  flex: 1 1 240px !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+#appShell .plugin-directory-tools .plugin-directory-search input {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+}
+@media (max-width: 900px) {
+  #appShell .plugin-directory-tools {
+    width: 100% !important;
+  }
+}
+
 #appShell .plugin-directory-add-btn {
   width: 36px;
   height: 36px;
@@ -675,6 +702,38 @@ body.workspace-active #appShell .main-page {
 
 #appShell .plugin-directory-add-btn:hover {
   background: var(--cg-surface-hover);
+}
+
+/* P_directory-mono-tiles — single-color brand marks need a light tile to
+   read on the dark directory (same pattern as the legacy connector tile
+   list in styles.css). Multi-color marks keep the raised dark tile. */
+#appShell .plugin-directory-row .connector-icon.connector-telegram,
+#appShell .plugin-directory-row .connector-icon.connector-slack,
+#appShell .plugin-directory-row .connector-icon.connector-twilio,
+#appShell .plugin-directory-row .connector-icon.connector-circle,
+#appShell .plugin-directory-row .connector-icon.connector-cloudflare,
+#appShell .plugin-directory-row .connector-icon.connector-airtable,
+#appShell .plugin-directory-row .connector-icon.connector-trello,
+#appShell .plugin-directory-row .connector-icon.connector-asana,
+#appShell .plugin-directory-row .connector-icon.connector-jira,
+#appShell .plugin-directory-row .connector-icon.connector-linear,
+#appShell .plugin-directory-row .connector-icon.connector-clickup,
+#appShell .plugin-directory-row .connector-icon.connector-one_password,
+#appShell .plugin-directory-row .connector-icon.connector-zendesk,
+#appShell .plugin-directory-row .connector-icon.connector-intercom,
+#appShell .plugin-directory-row .connector-icon.connector-agora,
+#appShell .plugin-directory-row .connector-icon.connector-aircall,
+#appShell .plugin-directory-row .connector-icon.connector-bluesky,
+#appShell .plugin-directory-row .connector-icon.connector-discourse,
+#appShell .plugin-directory-row .connector-icon.connector-deepgram,
+#appShell .plugin-directory-row .connector-icon.connector-airbrake,
+#appShell .plugin-directory-row .connector-icon.connector-whatsapp,
+#appShell .plugin-directory-row .connector-icon.connector-baidu_maps,
+#appShell .plugin-directory-row .connector-icon.connector-zhihu,
+#appShell .plugin-directory-row .connector-icon.connector-mcdonalds_cn {
+  background: #fff !important;
+  color: #111 !important;
+  border-color: rgb(0 0 0 / 8%) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -911,6 +970,19 @@ body.workspace-active #appShell .main-page {
     min-width: 36px !important;
     height: 36px !important;
     min-height: 36px !important;
+  }
+
+  /* P_effort-send-adjacency — the mic track is gone, so the send button
+     takes grid column 4 directly after the effort picker. Leaving it on
+     column 5 creates an empty track that reads as a gap between the
+     effort pill and the send button. */
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .effort-picker {
+    justify-self: end !important;
+    margin-right: 4px !important;
   }
 
   #appShell .home-suggestions-wrap {
@@ -1272,56 +1344,83 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .sidebar-nav-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
     gap: 10px !important;
     padding-left: 12px !important;
+    text-align: left !important;
   }
 
   #appShell .sidebar-nav-btn svg {
     display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     flex: 0 0 20px !important;
     width: 20px !important;
     height: 20px !important;
+    margin: 0 !important;
     color: currentColor !important;
   }
 
-  /* Reuse the real sidebar search control as a header icon. The input stays
-     in the DOM for filtering and keyboard access, but is visually collapsed
-     until the user focuses it. */
+  #appShell .sidebar-nav-btn > span:not(.nav-kbd) {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 20px !important;
+    text-align: left !important;
+  }
+
+  /* Sidebar search + Knowledge / Mistakes actions stay in normal flow
+     directly above the Recents list (最近会话), not floating in the
+     header. Keep the full-width filter input plus the two icon buttons
+     on one row so nothing overlaps the top bar. */
   #appShell .sidebar-search-row {
     display: flex !important;
-    position: absolute !important;
-    z-index: 4 !important;
-    top: 10px !important;
-    right: 46px !important;
-    width: 32px !important;
-    height: 32px !important;
-    padding: 0 !important;
+    position: static !important;
+    z-index: auto !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 0 10px !important;
+    gap: 6px !important;
   }
 
   #appShell .sidebar-search {
-    width: 32px !important;
-    height: 32px !important;
-    border: 0 !important;
-    border-radius: 9px !important;
-    background: transparent !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    height: 36px !important;
+    border: 1px solid var(--cg-border) !important;
+    border-radius: 10px !important;
+    background: var(--cg-surface) !important;
     box-shadow: none !important;
   }
 
   #appShell .sidebar-search-icon {
-    width: 20px !important;
-    height: 20px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
 
   #appShell .sidebar-search input {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
     padding: 0 !important;
     border: 0 !important;
-    clip: rect(0 0 0 0) !important;
-    clip-path: inset(50%) !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
+    clip: auto !important;
+    clip-path: none !important;
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+
+  #appShell .sidebar-view-btn {
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    height: 36px !important;
   }
 
   /* The reference segmented control is 220 x 40 with 36px inner segments. */
@@ -1554,4 +1653,166 @@ body.workspace-active #appShell .main-page {
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
     background: linear-gradient(to bottom, transparent, #000 24px) !important;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Final override: no idle selected-state wash on sidebar nav.
+   Nav rows stay transparent until hovered; the current section keeps its
+   brighter text color. The doubled #appShell id outranks every earlier
+   pill rule (active / aria-current / home-state / light-mode repairs),
+   and this block sits last so it also wins ties. Hover keeps its wash.
+   -------------------------------------------------------------------------- */
+#appShell#appShell .sidebar-nav-btn,
+#appShell#appShell .sidebar-nav-btn.active,
+#appShell#appShell .sidebar-nav-btn[aria-current="page"],
+#appShell#appShell #navNew.sidebar-nav-btn,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell
+  #navNew.sidebar-nav-btn {
+  background: transparent !important;
+}
+
+#appShell#appShell .sidebar-nav-btn:hover,
+#appShell#appShell .sidebar-nav-btn:focus-visible {
+  background: var(--cg-surface-hover) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Final override: desktop chat composer matches the ChatGPT reference pill
+   (second screenshot): one compact row — plus / editor / effort / mic /
+   send — on a fully rounded surface. Earlier layers left a 68px wrap with
+   a 66px editor row, 42px attach hit area, and zero column gaps, which
+   read as a tall flat bar next to the reference. Pin the compact idle
+   geometry here (idle = no multiline draft, no plugin chips). Multiline
+   and plugin-chip drafts keep their two-row expansion below.
+   -------------------------------------------------------------------------- */
+@media (min-width: 769px) {
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: 54px !important;
+    min-height: 54px !important;
+    padding: 1px 6px 1px 2px !important;
+    border-radius: 999px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
+    grid-template-columns: 40px minmax(0, 1fr) auto 32px 34px !important;
+    grid-template-rows: 52px !important;
+    column-gap: 4px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .footer-left-group .effort-picker {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
+    display: inline-flex !important;
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .send-btn {
+    grid-column: 5 !important;
+    grid-row: 1 !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    padding: 14px 4px !important;
+  }
+
+  /* Give the pill gutters against the viewport edge so it reads as a
+     floating capsule rather than a full-bleed bar. The legacy fade painted
+     a gray veil over the black page; the reference floats the pill on the
+     bare canvas, so the bar itself stays transparent. */
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputBar {
+    padding-inline: 16px !important;
+    background: transparent !important;
+  }
+
+  /* Multiline + plugin-chip drafts expand to content above and controls
+     below, keeping the same five controls in the action row. */
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active),
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) {
+    border-radius: 24px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .chat-composer-body {
+    grid-template-columns: 40px minmax(0, 1fr) auto 32px 34px !important;
+    column-gap: 4px !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .mobile-mic-btn {
+    display: inline-flex !important;
+    grid-column: 4 !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer .send-btn,
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .chat-input-footer .send-btn {
+    grid-column: 5 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Projects directory readability — body copy shipped one step smaller than
+   the surrounding surfaces (12px header description, 13px row summary).
+   Lift the Projects surface one step; title size and control geometry stay
+   as they are. Scoped to .projects-directory so Library / Plugins keep
+   their own scale.
+   -------------------------------------------------------------------------- */
+#appShell .projects-directory .workspace-page-head p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#appShell .project-row .workspace-row-copy strong {
+  font-size: 16px;
+}
+
+#appShell .project-row .workspace-row-copy span {
+  font-size: 14px;
+  line-height: 1.55;
 }

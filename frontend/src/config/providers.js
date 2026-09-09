@@ -15,10 +15,9 @@
  * Reasoning/vision flags stay on (Beagle supports both by default). */
 var BEAGLE_BUILT_IN = { id: "beagle-built-in", label: "Beagle", url: "/api/minimax/v1", model: "", vision: true, isBuiltIn: true, key: "" };
 var apiConfig = { activeId: null, providers: [] };
-/* Web Search default differs by mode — see the post-init block below
- * that runs after appMode is loaded from localStorage. We initialise
- * to true here and override below. */
-var webSearchOn = true;
+/* Web search is off by default. A stored explicit preference still wins;
+ * see the post-init block below that runs after appMode is loaded. */
+var webSearchOn = false;
 /* Extensive thinking: chat-mode prompt switch. When on, the full
  * CHAT_SYSTEM_PROMPT (verbose "careful scholar" voice + thinking suffix)
  * is injected; when off, CHAT_CONCISE_PROMPT replaces both. This is no
@@ -32,20 +31,14 @@ try {
   var savedMode = localStorage.getItem("socrates-appmode");
   if (savedMode === "chat" || savedMode === "tutor") appMode = savedMode;
 } catch {}
-/* Web Search mode-aware default: chat mode → on, tutor mode → off.
-   Tutor-mode Socratic tutoring doesn't need web search for conceptual
-   topics (e.g. 复变函数), and the diagnostic-phase auto-search at
-   submitChatMessage adds 12s+ of latency to the first turn. An
-   existing explicit user preference (any non-null value) still wins
-   so switching modes doesn't silently flip the toggle. */
+/* Web search stays off unless the user explicitly enabled it before.
+   An existing stored preference (any non-null value) still wins. */
 try {
   var _wsSaved = localStorage.getItem("socrates-websearch");
   if (_wsSaved !== null) {
     webSearchOn = _wsSaved === "true";
-  } else if (appMode === "tutor") {
-    webSearchOn = false;
   }
-} catch { /* localStorage blocked — keep chat-mode default (true) */ }
+} catch { /* localStorage blocked — keep the default (false) */ }
 /* Deep thinking now follows the reasoning-effort picker: High effort
  * enables the verbose prompt, Medium/Low use the concise one. Derive the
  * initial value from the persisted effort so the first turn matches the

@@ -4,7 +4,7 @@ import { syncThemeUI } from './displayPrefs.js';
 var I18N={
   en:{
     "chat.placeholder":"Type your thinking...",
-    "chat.inputPlaceholder":"How can I help you today?",
+    "chat.inputPlaceholder":"Ask Socrates...",
     "chat.hint":"Shift+Enter for new line",
     "chat.send":"Send",
     /* P_attachments — UI strings for the chat-input attachment chip
@@ -970,7 +970,7 @@ var I18N={
   },
   zh:{
     "chat.placeholder":"输入你的想法...",
-    "chat.inputPlaceholder":"今天有什么可以帮你的？",
+    "chat.inputPlaceholder":"问问 Socrates…",
     "chat.hint":"Shift+Enter 换行",
     "chat.send":"发送",
     /* P_attachments — see matching en block. */

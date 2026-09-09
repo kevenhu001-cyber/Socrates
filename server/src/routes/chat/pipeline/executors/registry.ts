@@ -21,8 +21,10 @@ import {
   executePersonalConnector,
   executeProjectConnector,
 } from './connectors.js';
+import { executeOpenConnector } from './openConnector.js';
 import { CONNECTOR_TOOL_NAMES } from '../../../../services/connectorTools.js';
 import { PROJECT_CONNECTOR_TOOL_NAMES } from '../../../../services/projectConnectorTools.js';
+import { getOpenConnectorChatTool } from '../../../../services/openConnectorChatTools.js';
 
 export interface ToolExecutorRegistry {
   /** Exact-name executor map. */
@@ -41,6 +43,10 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
   ]);
 
   const families: Array<{ includes: (name: string) => boolean; executor: ToolExecutor }> = [
+    {
+      includes: (name) => name.startsWith('oc_') && getOpenConnectorChatTool(name) !== null,
+      executor: executeOpenConnector,
+    },
     {
       includes: (name) => Object.values(PROJECT_CONNECTOR_TOOL_NAMES).includes(name as never),
       executor: executeProjectConnector,

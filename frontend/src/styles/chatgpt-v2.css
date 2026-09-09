@@ -231,7 +231,6 @@
 
 #appShell #navExam,
 #appShell #navSkills,
-#appShell .sidebar-search-row,
 #appShell .recents-filter-chips,
 #appShell .sidebar-header #newChatBtn,
 #appShell #apiSettingsBtn {
@@ -272,6 +271,31 @@
   min-width: 0 !important;
   flex: 0 0 0 !important;
   visibility: hidden;
+}
+
+/* P_topbar-sidebar-toggle — the collapse above hides both side groups at
+   every viewport, which removes the sidebar open button on desktop once
+   the sidebar is closed. Restore the three-zone rhythm on desktop (the
+   mode tabs stay absolutely centered, so the sides don't shift them). */
+@media (min-width: 769px) {
+  #appShell .top-bar {
+    justify-content: space-between !important;
+  }
+  #appShell .top-bar-left {
+    width: auto !important;
+    min-width: 44px !important;
+    flex: 0 0 auto !important;
+    visibility: visible;
+    justify-content: flex-start;
+  }
+  #appShell .top-bar-right {
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    visibility: visible;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
 }
 
 #appShell .top-mode-tabs {

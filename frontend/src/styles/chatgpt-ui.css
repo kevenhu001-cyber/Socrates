@@ -828,8 +828,12 @@ body,
    directory section underneath them. */
 
 #composerToolsMenu {
-  width: min(620px, calc(100vw - 32px)) !important;
-  max-height: min(72vh, 620px) !important;
+  /* Width and max-height stay non-important on purpose: the positioning
+     script sizes the card per trigger (composer-aligned width, room-to-
+     viewport-bottom height) via inline styles, which must win. The #id
+     selector still beats the base class rules in styles.css. */
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(72vh, 620px);
   padding: 8px !important;
   overflow-y: auto;
   border: 1px solid var(--cg-border-strong) !important;
@@ -1005,6 +1009,113 @@ body,
   color: var(--cg-text-muted);
   font-size: 12px;
   text-align: center;
+}
+
+/* Expanded plus-menu card: single continuous list with a footer filter,
+   mirroring the reference screenshot. Workflows and connectors share one
+   row rhythm (icon + single-line title/description); the footer input
+   filters both sections at once. UI-only: picking behavior is unchanged. */
+#composerToolsMenu .composer-tools-desktop-items.composer-tools-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-item {
+  min-height: 34px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-copy {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-copy > span {
+  flex: 0 0 auto;
+  max-width: 38%;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-copy small {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+}
+
+#composerToolsMenu .composer-tools-plugins {
+  margin-top: 2px;
+  padding: 2px 0 0;
+  border-top: 0;
+}
+
+#composerToolsMenu .composer-tools-section-heading {
+  display: none;
+}
+
+#composerToolsMenu .composer-tools-plugin-list {
+  grid-template-columns: minmax(0, 1fr);
+  max-height: none;
+  overflow: visible;
+}
+
+#composerToolsMenu .composer-tools-plugin-item {
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 10px;
+}
+
+#composerToolsMenu .composer-tools-plugin-copy {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+#composerToolsMenu .composer-tools-plugin-name {
+  flex: 0 0 auto;
+  max-width: 38%;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+#composerToolsMenu .composer-tools-plugin-copy small {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+}
+
+#composerToolsMenu .composer-tools-plugin-status {
+  display: none;
+}
+
+#composerToolsMenu .composer-tools-plugin-item.is-selected .composer-tools-plugin-status {
+  display: block;
+}
+
+#composerToolsMenu .composer-tools-footer-search.composer-tools-search {
+  height: 32px;
+  margin: 4px 0 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#composerToolsMenu .composer-tools-footer-search.composer-tools-search:focus-within {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+#composerToolsMenu .composer-tools-footer-search input::placeholder {
+  color: var(--cg-text-muted);
+}
+
+#composerToolsMenu {
+  overscroll-behavior: contain;
 }
 
 /* Workspace pages */
@@ -2085,8 +2196,10 @@ body.workspace-active #appShell .workspace-row:hover {
 
   #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
     display: grid !important;
-    grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px !important;
-    grid-template-rows: 66px !important;
+    /* Reference pill keeps plus / editor / effort / mic / send; the final
+       ref-baseline override pins the authoritative compact geometry. */
+    grid-template-columns: 40px minmax(0, 1fr) auto 32px 34px !important;
+    grid-template-rows: 52px !important;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,

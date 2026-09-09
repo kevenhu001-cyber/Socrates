@@ -54,13 +54,9 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
   },
 ];
 
-/* Keep the first layer short enough to sit beside/above the composer without
-   becoming a second navigation panel. The desktop pair mirrors ChatGPT's
-   add-content/search affordances; every other workflow remains available in
-   the expanded layer below it. */
-const DESKTOP_PRIMARY_WORKFLOW_ORDER = ['upload', 'research'] as const;
-const DESKTOP_PRIMARY_WORKFLOW_KEYS = new Set<string>(DESKTOP_PRIMARY_WORKFLOW_ORDER);
-const WORKFLOW_ORDER = ['write', 'research', 'deepResearch', 'explore', 'analyze', 'codex', 'exam', 'skills'] as const;
+/* Expanded desktop list shows every workflow at once; mobile keeps its own
+   compact disclosure below. */
+const WORKFLOW_ORDER = ['write', 'explore', 'analyze', 'exam', 'skills'] as const;
 
 const TOOLS_DISCLOSURE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="2" fill="currentColor" stroke="none"/></svg>';
 
@@ -82,9 +78,7 @@ function i18n(key: string, fallback: string): string {
 }
 
 function menuCopy(spec: MenuItemSpec): { label: string; description: string } {
-  const labelKey = spec.key === 'research' ? 'composer.tools.webSearch' : spec.nameKey;
-  const labelFallback = spec.key === 'research' ? 'Web search' : spec.nameFallback;
-  const label = i18n(labelKey, labelFallback);
+  const label = i18n(spec.nameKey, spec.nameFallback);
   const description = spec.descriptionKey
     ? i18n(spec.descriptionKey, spec.descriptionFallback ?? '')
     : '';
@@ -252,14 +246,15 @@ function ComposerPluginItem({
 function PluginItems({
   isOpen,
   mode,
+  query,
   onClose,
 }: {
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
+  query: string;
   onClose: () => void;
 }) {
   const [plugins, setPlugins] = useState<ReadonlyArray<PluginCatalogEntry>>([]);
-  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
@@ -267,7 +262,6 @@ function PluginItems({
 
   useEffect(() => {
     if (!isOpen) {
-      setQuery('');
       return undefined;
     }
     let cancelled = false;
@@ -315,10 +309,6 @@ function PluginItems({
         <span>Plugins</span>
         <span>{plugins.filter((plugin) => plugin.connectionStatus === 'connected').length} connected</span>
       </div>
-      <label className="composer-tools-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search plugins" aria-label="Search plugins" />
-      </label>
       {loading ? <div className="composer-tools-plugin-state">Loading plugins…</div> : null}
       {!loading && error ? <div className="composer-tools-plugin-state">Plugins unavailable. Open Plugin Center to retry.</div> : null}
       {!loading && !error && visiblePlugins.length === 0 ? <div className="composer-tools-plugin-state">No matching plugins.</div> : null}
@@ -350,17 +340,21 @@ function MenuItems({
   mode: 'topic' | 'chat' | null;
 }) {
   const [showMore, setShowMore] = useState(false);
+  const [query, setQuery] = useState('');
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPluginCount = mode ? selectionSnapshot[mode].length : 0;
   useEffect(() => {
-    if (!isOpen) setShowMore(false);
+    if (!isOpen) {
+      setShowMore(false);
+      setQuery('');
+    }
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
     const frame = window.requestAnimationFrame(() => repositionComposerTools());
     return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, showMore, selectedPluginCount]);
+  }, [isOpen, showMore, query, selectedPluginCount]);
 
   const closeMenu = () => {
     const snapshot = installComposerToolsBridge().getSnapshot();
@@ -371,19 +365,17 @@ function MenuItems({
   };
 
   const definitions = toolDefinitions();
-  const primary = DESKTOP_PRIMARY_WORKFLOW_ORDER
-    .map((key) => definitions.find((spec) => spec.key === key))
-    .filter((spec): spec is MenuItemSpec => Boolean(spec));
-  const secondary = WORKFLOW_ORDER
-    .filter((key) => !DESKTOP_PRIMARY_WORKFLOW_KEYS.has(key))
-    .map((key) => definitions.find((spec) => spec.key === key))
-    .filter((spec): spec is MenuItemSpec => Boolean(spec));
-  const secondaryKeys = new Set(secondary.map((spec) => spec.key));
-  definitions.forEach((spec) => {
-    if (!DESKTOP_PRIMARY_WORKFLOW_KEYS.has(spec.key) && !secondaryKeys.has(spec.key)) {
-      secondary.push(spec);
-    }
-  });
+  const normalizedQuery = query.trim().toLowerCase();
+  const matchesQuery = (spec: MenuItemSpec): boolean => {
+    if (!normalizedQuery) return true;
+    const { label, description } = menuCopy(spec);
+    return [label, description, spec.key].join(' ').toLowerCase().includes(normalizedQuery);
+  };
+  /* Expanded desktop list mirrors the reference card: every workflow is
+     visible at once, no "More tools" disclosure. Mobile keeps its own
+     compact disclosure below. */
+  const expandedTools = definitions.filter(matchesQuery);
+  const footerPlaceholder = i18n('composer.tools.searchFooter', '输入以搜索插件、文件、文件夹和技能');
   const mobileSecondary = [
     ...WORKFLOW_ORDER
       .map((key) => definitions.find((spec) => spec.key === key))
@@ -394,8 +386,11 @@ function MenuItems({
 
   return (
     <>
-      <div className="composer-tools-desktop-items">
-        {primary.map((spec) => (
+      <div className="composer-tools-desktop-items composer-tools-expanded">
+        {expandedTools.length === 0 ? (
+          <div className="composer-tools-plugin-state">{i18n('composer.tools.noMatch', 'No matching tools.')}</div>
+        ) : null}
+        {expandedTools.map((spec) => (
           <MenuItem
             key={spec.key}
             spec={spec}
@@ -403,17 +398,6 @@ function MenuItems({
             onPick={onPick}
           />
         ))}
-        <ToolsDisclosure expanded={showMore} onToggle={() => setShowMore((value) => !value)} />
-        <div id="composerToolsDesktopMore" className="composer-tools-more-items" hidden={!showMore}>
-          {secondary.map((spec) => (
-            <MenuItem
-              key={spec.key}
-              spec={spec}
-              active={spec.key === activeKey}
-              onPick={onPick}
-            />
-          ))}
-        </div>
       </div>
       <div className="composer-tools-mobile-items">
         {MOBILE_MENU_ITEMS.map((item) => (
@@ -436,7 +420,15 @@ function MenuItems({
           ))}
         </div>
       </div>
-      <PluginItems isOpen={isOpen} mode={mode} onClose={closeMenu} />
+      <PluginItems isOpen={isOpen} mode={mode} query={query} onClose={closeMenu} />
+      <label className="composer-tools-footer-search composer-tools-search">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={footerPlaceholder}
+          aria-label={footerPlaceholder}
+        />
+      </label>
     </>
   );
 }

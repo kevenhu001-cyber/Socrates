@@ -1,0 +1,136 @@
+/* Pure catalog mapping for OpenConnector-backed directory apps.
+ *
+ * The vendored OpenConnector sidecar owns provider metadata; this module
+ * owns how Socrates presents it: stable oc_<service> ids (never colliding
+ * with the OOMOL-gateway catalog), user-confirmed display names from the
+ * inventory, and credential forms shaped for the existing frontend dialog.
+ */
+
+import { OPEN_CONNECTOR_APP_INVENTORY } from './openConnectorAppInventory.js';
+import type { SidecarProvider } from './openConnectorSidecar.js';
+
+export const OC_ID_PREFIX = 'oc_';
+
+export type OcAuthType = 'oauth' | 'api_key' | 'custom_credential' | 'no_auth';
+
+export interface OcCredentialField {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  help?: string;
+}
+
+export interface OcCatalogItem {
+  id: string;
+  service: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  authType: OcAuthType;
+  credentialInput?: { fields: OcCredentialField[] };
+}
+
+export type OcInventoryRef = {
+  entry: (typeof OPEN_CONNECTOR_APP_INVENTORY)[number];
+  service: string;
+};
+
+export function ocInventoryEntry(id: unknown): OcInventoryRef | null {
+  const raw = String(id || '').toLowerCase();
+  if (!raw.startsWith(OC_ID_PREFIX)) return null;
+  const service = raw.slice(OC_ID_PREFIX.length).toLowerCase();
+  if (!service) return null;
+  const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.status === 'ready' && item.ocService === service);
+  return entry ? { entry, service } : null;
+}
+
+export function ocAuthType(meta: SidecarProvider): OcAuthType {
+  const types = meta.authTypes || [];
+  if (types.includes('oauth2')) return 'oauth';
+  if (types.includes('api_key')) return 'api_key';
+  if (types.includes('custom_credential')) return 'custom_credential';
+  return 'no_auth';
+}
+
+export function ocCredentialInput(meta: SidecarProvider, authType: OcAuthType): OcCatalogItem['credentialInput'] {
+  if (authType === 'api_key') {
+    const config = meta.auth.find((item) => item.type === 'api_key');
+    return { fields: [{
+      key: 'apiKey',
+      label: config?.label || 'API Key',
+      type: 'password',
+      required: true,
+      help: config?.description || config?.placeholder || undefined,
+    }] };
+  }
+  if (authType === 'custom_credential') {
+    const config = meta.auth.find((item) => item.type === 'custom_credential');
+    return { fields: (config?.fields || []).map((field) => ({
+      key: field.key,
+      label: field.label,
+      type: field.secret ? 'password' : (field.inputType === 'email' ? 'email' : 'text'),
+      required: field.required !== false,
+      help: field.description || field.placeholder || undefined,
+    })) };
+  }
+  return undefined;
+}
+
+export interface OcOAuthAppField extends OcCredentialField {
+  secret: boolean;
+}
+
+export interface OcOAuthAppForm {
+  clientSecretRequired: boolean;
+  extraFields: OcOAuthAppField[];
+}
+
+export function ocOAuthAppForm(auth: {
+  tokenEndpointAuthMethod?: string;
+  clientConfigFields?: Array<{
+    key: string; label: string; inputType?: string; required?: boolean; secret?: boolean;
+    placeholder?: string; description?: string; location?: string;
+  }>;
+} | null | undefined): OcOAuthAppForm {
+  const fields = Array.isArray(auth?.clientConfigFields) ? auth.clientConfigFields : [];
+  return {
+    clientSecretRequired: auth?.tokenEndpointAuthMethod !== 'none',
+    extraFields: fields.map((field) => ({
+      key: field.key,
+      label: field.label,
+      type: field.secret || field.location === 'secretExtra' ? 'password' : (field.inputType === 'email' ? 'email' : 'text'),
+      required: field.required !== false,
+      help: field.description || field.placeholder || undefined,
+      secret: Boolean(field.secret || field.location === 'secretExtra'),
+    })),
+  };
+}
+
+export function buildOpenConnectorCatalogItems(providers: SidecarProvider[]): OcCatalogItem[] {
+  const byService = new Map(providers.map((item) => [item.service, item]));
+  const items: OcCatalogItem[] = [];
+  for (const entry of OPEN_CONNECTOR_APP_INVENTORY) {
+    if (entry.status !== 'ready' || !entry.ocService) continue;
+    const meta = byService.get(entry.ocService);
+    if (!meta) continue;
+    items.push(ocCatalogItem(entry, meta));
+  }
+  return items;
+}
+export function ocCatalogItem(
+  entry: (typeof OPEN_CONNECTOR_APP_INVENTORY)[number],
+  meta: SidecarProvider,
+): OcCatalogItem {
+  const authType = ocAuthType(meta);
+  const actionCount = Array.isArray(meta.actions) ? meta.actions.length : 0;
+  return {
+    id: `${OC_ID_PREFIX}${entry.ocService}`,
+    service: entry.ocService as string,
+    name: entry.displayName,
+    description: `Connect ${entry.displayName} to use its ${actionCount} actions in chat. (via OpenConnector)`,
+    capabilities: Array.isArray(meta.categories) && meta.categories.length > 0 ? meta.categories : ['Actions'],
+    authType,
+    ...(ocCredentialInput(meta, authType) ? { credentialInput: ocCredentialInput(meta, authType) } : {}),
+  };
+}
