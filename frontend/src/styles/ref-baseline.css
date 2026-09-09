@@ -736,6 +736,50 @@ body.workspace-active #appShell .main-page {
   border-color: rgb(0 0 0 / 8%) !important;
 }
 
+/* P_directory-oc-tiles — plugin ids for OpenConnector apps are namespaced
+   (`oc_<service>`, e.g. `oc_telegram` → class `connector-oc_telegram`), so
+   the legacy-form selectors above never match them. Mirror the white-tile
+   treatment for the namespaced classes, plus dark single-color marks that
+   would vanish on the default dark tile (openai, elevenlabs, pipedrive,
+   encharge, deck_co, emaillistverify). */
+#appShell .plugin-directory-row .connector-icon.connector-oc_telegram,
+#appShell .plugin-directory-row .connector-icon.connector-oc_slack,
+#appShell .plugin-directory-row .connector-icon.connector-oc_twilio,
+#appShell .plugin-directory-row .connector-icon.connector-oc_circle,
+#appShell .plugin-directory-row .connector-icon.connector-oc_cloudflare_email_routing,
+#appShell .plugin-directory-row .connector-icon.connector-oc_airtable,
+#appShell .plugin-directory-row .connector-icon.connector-oc_trello,
+#appShell .plugin-directory-row .connector-icon.connector-oc_asana,
+#appShell .plugin-directory-row .connector-icon.connector-oc_jira,
+#appShell .plugin-directory-row .connector-icon.connector-oc_linear,
+#appShell .plugin-directory-row .connector-icon.connector-oc_clickup,
+#appShell .plugin-directory-row .connector-icon.connector-oc_one_password,
+#appShell .plugin-directory-row .connector-icon.connector-oc_zendesk,
+#appShell .plugin-directory-row .connector-icon.connector-oc_intercom,
+#appShell .plugin-directory-row .connector-icon.connector-oc_agora,
+#appShell .plugin-directory-row .connector-icon.connector-oc_aircall,
+#appShell .plugin-directory-row .connector-icon.connector-oc_bluesky,
+#appShell .plugin-directory-row .connector-icon.connector-oc_discourse,
+#appShell .plugin-directory-row .connector-icon.connector-oc_deepgram,
+#appShell .plugin-directory-row .connector-icon.connector-oc_airbrake,
+#appShell .plugin-directory-row .connector-icon.connector-oc_whatsapp,
+#appShell .plugin-directory-row .connector-icon.connector-oc_baidu_maps,
+#appShell .plugin-directory-row .connector-icon.connector-oc_zhihu,
+#appShell .plugin-directory-row .connector-icon.connector-oc_mcdonalds_cn,
+#appShell .plugin-directory-row .connector-icon.connector-oc_openai,
+#appShell .plugin-directory-row .connector-icon.connector-oc_elevenlabs,
+#appShell .plugin-directory-row .connector-icon.connector-oc_pipedrive,
+#appShell .plugin-directory-row .connector-icon.connector-oc_encharge,
+#appShell .plugin-directory-row .connector-icon.connector-oc_deck_co,
+#appShell .plugin-directory-row .connector-icon.connector-oc_emaillistverify,
+#appShell .plugin-directory-row .connector-icon.connector-oc_agenty,
+#appShell .plugin-directory-row .connector-icon.connector-oc_cursor,
+#appShell .plugin-directory-row .connector-icon.connector-oc_deepgram {
+  background: #fff !important;
+  color: #111 !important;
+  border-color: rgb(0 0 0 / 8%) !important;
+}
+
 /* --------------------------------------------------------------------------
    10. Final desktop parity pass.
 

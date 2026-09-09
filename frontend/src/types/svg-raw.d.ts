@@ -5,3 +5,10 @@ declare module '*.svg?raw' {
   const src: string;
   export default src;
 }
+
+// Type declaration for Vite asset URL imports (emitted file URL at build
+// time). Used by connector-icons.ts for the long-tail PNG brand marks.
+declare module '*.png' {
+  const src: string;
+  export default src;
+}
