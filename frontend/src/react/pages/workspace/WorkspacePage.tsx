@@ -238,11 +238,15 @@ type WorkspacePlugin = {
   capabilities?: string[];
   authType?: string;
   connection?: { status?: string; displayName?: string } | null;
+  /* OpenConnector apps the sidecar is not serving yet come back with
+     available: false and stay disabled until it comes online. */
+  available?: boolean;
 };
 
-function PluginDirectory({ plugins, configured, dispatch }: {
+function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch }: {
   plugins: ReadonlyArray<WorkspacePlugin>;
   configured: boolean;
+  openConnectorAvailable: boolean;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
   const [query, setQuery] = useState('');
@@ -277,10 +281,17 @@ function PluginDirectory({ plugins, configured, dispatch }: {
     if (status === 'initiated') {
       return <button type="button" className="plugin-directory-icon-action" aria-label={i18n('plugins.refreshStatus', 'Refresh') + ' ' + plugin.name} title={i18n('plugins.refreshStatus', 'Refresh')} onClick={() => dispatch.refreshPlugin(plugin.id)}><PlusIcon /></button>;
     }
+    /* Legacy OOMOL apps need the gateway configured; OpenConnector apps
+       need the sidecar actually serving them (available: true). Stub
+       catalog entries (available: false) stay disabled until the
+       sidecar serves the app. */
+    const isOc = plugin.id.startsWith('oc_');
+    const connectable = plugin.available !== false && (isOc || configured);
+    const connectTitle = connectable ? i18n('plugins.connect', 'Connect') : i18n('plugins.serverSetupNeeded', 'Unavailable');
     if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
-      return <button type="button" className="plugin-directory-icon-action" disabled={!configured} aria-label={i18n('plugins.connect', 'Connect') + ' ' + plugin.name} title={configured ? i18n('plugins.connect', 'Connect') : i18n('plugins.serverSetupNeeded', 'Unavailable')} onClick={() => dispatch.openPluginForm(plugin.id)}><PlusIcon /></button>;
+      return <button type="button" className="plugin-directory-icon-action" disabled={!connectable} aria-label={connectTitle + ' ' + plugin.name} title={connectTitle} onClick={() => dispatch.openPluginForm(plugin.id)}><PlusIcon /></button>;
     }
-    return <button type="button" className="plugin-directory-icon-action" disabled={!configured} aria-label={i18n('plugins.connect', 'Connect') + ' ' + plugin.name} title={configured ? i18n('plugins.connect', 'Connect') : i18n('plugins.serverSetupNeeded', 'Unavailable')} onClick={() => dispatch.connectPlugin(plugin.id)}><PlusIcon /></button>;
+    return <button type="button" className="plugin-directory-icon-action" disabled={!connectable} aria-label={connectTitle + ' ' + plugin.name} title={connectTitle} onClick={() => dispatch.connectPlugin(plugin.id)}><PlusIcon /></button>;
   };
 
   const popularPlugins = visiblePlugins.slice(0, 6);
@@ -318,10 +329,10 @@ function PluginDirectory({ plugins, configured, dispatch }: {
 
       <div className="plugin-directory-body">
         {visiblePlugins.length === 0 ? <div className="plugin-directory-empty"><strong>{i18n('plugins.noMatch', 'No matching plugins')}</strong><span>{i18n('plugins.tryDifferent', 'Try a different search.')}</span></div> : null}
-        {popularPlugins.length > 0 ? <section className="plugin-directory-section"><h3>{i18n('plugins.popular', 'Popular')}</h3><div className="plugin-directory-list">{popularPlugins.map((plugin) => <div className="connector-row plugin-directory-row" key={plugin.id}><span className={'workspace-row-icon connector-icon connector-' + plugin.id}><ConnectorMark id={plugin.id} name={plugin.name} /></span><div className="workspace-row-copy"><strong>{plugin.name}</strong><span>{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</span></div><div className="plugin-directory-row-action">{renderAction(plugin)}</div></div>)}</div></section> : null}
-        {newPlugins.length > 0 ? <section className="plugin-directory-section"><h3>{i18n('plugins.new', 'New and notable')}</h3><div className="plugin-directory-list">{newPlugins.map((plugin) => <div className="connector-row plugin-directory-row" key={plugin.id}><span className={'workspace-row-icon connector-icon connector-' + plugin.id}><ConnectorMark id={plugin.id} name={plugin.name} /></span><div className="workspace-row-copy"><strong>{plugin.name}</strong><span>{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</span></div><div className="plugin-directory-row-action">{renderAction(plugin)}</div></div>)}</div></section> : null}
+        {popularPlugins.length > 0 ? <section className="plugin-directory-section"><h3>{i18n('plugins.popular', 'Popular')}</h3><div className="plugin-directory-list">{popularPlugins.map((plugin) => <div className="connector-row plugin-directory-row" data-connector-id={plugin.id} key={plugin.id}><span className={'workspace-row-icon connector-icon connector-' + plugin.id}><ConnectorMark id={plugin.id} name={plugin.name} /></span><div className="workspace-row-copy"><strong>{plugin.name}</strong><span>{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</span></div><div className="plugin-directory-row-action">{renderAction(plugin)}</div></div>)}</div></section> : null}
+        {newPlugins.length > 0 ? <section className="plugin-directory-section"><h3>{i18n('plugins.new', 'New and notable')}</h3><div className="plugin-directory-list">{newPlugins.map((plugin) => <div className="connector-row plugin-directory-row" data-connector-id={plugin.id} key={plugin.id}><span className={'workspace-row-icon connector-icon connector-' + plugin.id}><ConnectorMark id={plugin.id} name={plugin.name} /></span><div className="workspace-row-copy"><strong>{plugin.name}</strong><span>{plugin.description || i18n('plugins.noDescription', 'Use this app in chat')}</span></div><div className="plugin-directory-row-action">{renderAction(plugin)}</div></div>)}</div></section> : null}
       </div>
-      {!configured && plugins.length > 0 ? <p className="plugin-directory-note">{i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}</p> : null}
+      {!configured && !openConnectorAvailable && plugins.length > 0 ? <p className="plugin-directory-note">{i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}</p> : null}
     </section>
   );
 }
@@ -372,24 +383,17 @@ function CodexMcpView({ servers, configured, dispatch }: {
   );
 }
 
-function PluginsView({ plugins, configured, mcp, mcpConfigured, dispatch }: {
+function PluginsView({ plugins, configured, openConnectorAvailable, mcp, mcpConfigured, dispatch }: {
   plugins: ReadonlyArray<WorkspacePlugin>;
   configured: boolean;
+  openConnectorAvailable: boolean;
   mcp: ReadonlyArray<{ key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: string; healthStatus?: string; lastError?: string | null }>;
   mcpConfigured: boolean;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
-  if (plugins.length === 0) {
-    return (
-      <>
-        <PluginDirectory plugins={plugins} configured={configured} dispatch={dispatch} />
-        <CodexMcpView servers={mcp} configured={mcpConfigured} dispatch={dispatch} />
-      </>
-    );
-  }
   return (
     <>
-      <PluginDirectory plugins={plugins} configured={configured} dispatch={dispatch} />
+      <PluginDirectory plugins={plugins} configured={configured} openConnectorAvailable={openConnectorAvailable} dispatch={dispatch} />
       <CodexMcpView servers={mcp} configured={mcpConfigured} dispatch={dispatch} />
     </>
   );
@@ -409,7 +413,7 @@ function WorkspacePage({ page }: { page: string }) {
     case 'projects':
       return <ProjectsView projects={snap.projectsData} dispatch={dispatch} />;
     case 'plugins':
-      return <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} mcp={snap.mcpData} mcpConfigured={snap.mcpConfigured} dispatch={dispatch} />;
+      return <PluginsView plugins={snap.pluginsData} configured={snap.projectConnectorConfigured} openConnectorAvailable={snap.openConnectorAvailable} mcp={snap.mcpData} mcpConfigured={snap.mcpConfigured} dispatch={dispatch} />;
     default:
       return null;
   }

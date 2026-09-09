@@ -4,6 +4,7 @@ export interface WorkspaceSnapshot {
   projectsData: ReadonlyArray<ProjectItem>;
   pluginsData: ReadonlyArray<PluginItem>;
   projectConnectorConfigured: boolean;
+  openConnectorAvailable: boolean;
   mcpData: ReadonlyArray<McpServerItem>;
   mcpConfigured: boolean;
   mcpProjectId: string | null;
@@ -14,7 +15,7 @@ export interface WorkspaceSnapshot {
 
 export interface LibraryItem { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string; mimeType?: string; source?: string; }
 export interface ProjectItem { id: string; name: string; description?: string; color?: string; systemPrompt?: string; }
-export interface PluginItem { id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null; credentialInput?: { fields: Array<{ key: string; label: string; type?: string; required?: boolean; help?: string }> } }
+export interface PluginItem { id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null; credentialInput?: { fields: Array<{ key: string; label: string; type?: string; required?: boolean; help?: string }> }; available?: boolean }
 export interface McpServerItem { key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: 'global' | 'project'; healthStatus?: string; lastError?: string | null; lastCheckedAt?: string | null; }
 
 export interface WorkspaceBridge {
