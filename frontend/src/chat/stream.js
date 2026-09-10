@@ -160,6 +160,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        * Reasoning knobs, built-in identity, and custom-instructions
        * prepending are owned by buildChatRequestBody — see chat/api.js. */
       var apiBody=buildChatRequestBody(messages,maxTokens,0.7);
+      /* M1 async — bind the stream to a detached turn when the caller
+         created one. The server mirrors frames into chat_turn_events
+         and keeps running detached on socket close; turnId travels in
+         the body (the route also accepts ?turnId=). */
+      try{
+        if(opts&&typeof opts.turnId==="string"&&opts.turnId)apiBody.turnId=opts.turnId;
+      }catch(_){}
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
         body:apiBody,

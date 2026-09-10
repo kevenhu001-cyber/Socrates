@@ -16,6 +16,7 @@ import sessionRouter from './routes/sessions.js';
    /api/suggestions/* paths are not claimed by the chat router. */
 import suggestionsRouter from './routes/suggestions.js';
 import chatRouter from './routes/chat.js';
+import chatTurnsRouter from './routes/chatTurns.js';
 import ttsRouter from './routes/tts.js';
 import ragRouter from './routes/rag.js';
 import embeddingConfigRouter from './routes/embeddingConfig.js';
@@ -514,6 +515,10 @@ app.use('/api/admin-auth', adminAuthRouter);
 
 // Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
 app.use('/api/chat', chatRouter);
+
+// Chat turns (M1 async) — detached turn rows + ?after= event replay.
+// Mounted beside /api/chat; shares its resource scope via the router.
+app.use('/api/chat-turns', chatTurnsRouter);
 
 // Execution SSE stream — standalone endpoint for real-time code execution progress
 // Mounted at /api/executions/:id/stream for frontend EventSource consumption.

@@ -232,6 +232,13 @@
       "when": 1788570664822,
       "tag": "0032_embedding_config",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788979511065,
+      "tag": "0033_wealthy_invaders",
+      "breakpoints": true
     }
   ]
 }

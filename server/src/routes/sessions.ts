@@ -18,6 +18,7 @@ import { writeLimiter } from '../middleware/rateLimit.js';
 import { NotFound, Forbidden, BadRequest } from '../lib/errors.js';
 import { indexMessageChunks } from '../services/chunkIndex.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
+import { compressSessionMessages } from '../services/sessionCompressor.js';
 import { getSessionLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 
@@ -26,24 +27,35 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || '/tmp/socrates-uploads';
 // P6.x — zod schema caps field lengths and validates types; throws
 // ZodError → errorHandler returns 400 with the offending path.
 const SessionPayloadSchema = z.object({
-  id: z.string().uuid().optional(),
+  /* M3 — coerce instead of reject: a legacy/non-UUID client id used to
+   * 400 here (the isUuid fallback below was dead code because parse ran
+   * first). Non-UUID ids now become undefined so the route mints/adopts
+   * a canonical UUID the same way an omitted id does. */
+  id: z.preprocess((v) => (isUuid(v) ? v : undefined), z.string().uuid().optional()),
   topic: z.string().max(10000).optional().default(''),
   title: z.string().max(10000).optional(),
   domain: z.string().max(10000).optional().nullable(),
-  mode: z.enum(['tutor', 'chat']).optional().default('chat'),
-  phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic'),
+  /* M3 — unknown enum members (stale clients, future modes) degrade to
+   * the default instead of failing the whole save with a 400. */
+  mode: z.enum(['tutor', 'chat']).optional().default('chat').catch('chat'),
+  phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic').catch('topic'),
   /* P_exam-history — top-level session "shape". 'exam' is set by the
    * front-end when saving a finished exam; the chat service still uses
    * 'tutor' / 'chat'. Default 'chat' keeps every existing client call
    * site working unchanged. */
-  kind: z.enum(['chat', 'tutor', 'exam']).optional().default('chat'),
+  kind: z.enum(['chat', 'tutor', 'exam']).optional().default('chat').catch('chat'),
   /* P_exam-history — full rendered exam payload: {topic, difficulty,
    * count, lang, types, questions:[...], answers:{...}, submitted, results?}.
    * Lives on the same row as the session, so a single
    * POST /api/sessions carries the exam to the server and a single
    * GET /api/sessions/:id returns it for re-rendering. */
   examData: z.any().optional().nullable(),
-  projectId: z.string().uuid().optional().nullable(),
+  /* M3 — "" or a malformed id degrades to null (unfiled) instead of a
+   * 400 that blocks the entire conversation save. */
+  projectId: z.preprocess(
+    (v) => (v == null || v === '' ? null : (isUuid(v) ? v : null)),
+    z.string().uuid().optional().nullable(),
+  ),
   messages: z.array(z.object({
     role: z.string(),
     rawText: z.string().max(200000).optional().nullable(),
@@ -154,6 +166,99 @@ const router = Router();
 
 router.use(requireAuth, resourceScope('sessions'));
 
+/* M3 — pre-parse sanitizer: over-capacity payloads used to 400 the
+ * entire save (sticky failure: every later save re-sent the same oversize
+ * state and re-toasted). Truncate here so the schema max()s stay as a
+ * backstop but never fire on real traffic. Budgets mirror the schema;
+ * the AI summarizer (sessionCompressor) is the primary path for long
+ * histories — this is the dumb fallback that guarantees a save lands. */
+function clipStr(v: unknown, max: number): string | null | undefined {
+  if (v == null) return v as null | undefined;
+  const s = typeof v === 'string' ? v : String(v);
+  return s.length > max ? s.slice(0, max) : s;
+}
+
+function clipArr<T>(v: unknown, max: number, keep: 'first' | 'last' = 'first'): T[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  if (v.length <= max) return v as T[];
+  return (keep === 'last' ? v.slice(v.length - max) : v.slice(0, max)) as T[];
+}
+
+function sanitizeSessionPayload(body: any): any {
+  if (!body || typeof body !== 'object') return body;
+  const out: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+  out.topic = clipStr(out.topic, 10000);
+  out.title = clipStr(out.title, 10000);
+  out.domain = out.domain == null ? out.domain : clipStr(out.domain, 10000);
+  if (Array.isArray(out.messages)) {
+    // Keep the most recent turns: the tail holds the live context.
+    const msgs = clipArr<any>(out.messages, 1000, 'last') || [];
+    out.messages = msgs.map((m) => {
+      if (!m || typeof m !== 'object') return { role: 'user', rawText: '' };
+      const c: Record<string, unknown> = { ...(m as Record<string, unknown>) };
+      c.role = typeof c.role === 'string' && c.role ? c.role : 'user';
+      c.rawText = clipStr(c.rawText, 200000);
+      c.content = clipStr(c.content, 200000);
+      c.html = clipStr(c.html, 500000);
+      c.type = clipStr(c.type, 50);
+      c.clientId = clipStr(c.clientId, 100);
+      c.reasoningContent = clipStr(c.reasoningContent, 500000);
+      if (c.sources !== undefined && c.sources !== null) {
+        const s = clipArr(c.sources, 100) || [];
+        c.sources = s;
+      }
+      if (Array.isArray(c.attachments)) {
+        c.attachments = (clipArr(c.attachments, 20) || []).map((a: any) => {
+          if (!a || typeof a !== 'object') return { id: '', kind: 'file', name: 'file', mime: 'application/octet-stream', size: 0 };
+          const x: Record<string, unknown> = { ...(a as Record<string, unknown>) };
+          x.id = clipStr(x.id, 100) || '';
+          x.kind = clipStr(x.kind, 50) || 'file';
+          x.name = clipStr(x.name, 500) || 'file';
+          x.mime = clipStr(x.mime, 200) || 'application/octet-stream';
+          x.docKind = clipStr(x.docKind, 20);
+          x.dataUrl = clipStr(x.dataUrl, 2_000_000);
+          x.text = clipStr(x.text, 500_000);
+          if (typeof x.size !== 'number' || !(x.size >= 0)) x.size = 0;
+          else if (x.size > 50 * 1024 * 1024) x.size = 50 * 1024 * 1024;
+          return x;
+        });
+      }
+      if (Array.isArray(c.toolCalls)) {
+        c.toolCalls = (clipArr(c.toolCalls, 20) || []).map((t: any) => {
+          if (!t || typeof t !== 'object') return { id: '', name: 'tool' };
+          const x: Record<string, unknown> = { ...(t as Record<string, unknown>) };
+          x.id = clipStr(x.id, 200) || '';
+          x.name = clipStr(x.name, 100) || 'tool';
+          x.output = clipStr(x.output, 500_000);
+          x.argumentsText = clipStr(x.argumentsText, 500_000);
+          x.stderr = clipStr(x.stderr, 500_000);
+          x.errorText = clipStr(x.errorText, 100_000);
+          x.userMessage = clipStr(x.userMessage, 500_000);
+          x.detail = typeof x.detail === 'string' ? clipStr(x.detail, 100_000) : x.detail;
+          x.progressPhase = clipStr(x.progressPhase, 200);
+          x.executionId = clipStr(x.executionId, 200);
+          if (typeof x.durationMs === 'number' && x.durationMs > 86_400_000) x.durationMs = 86_400_000;
+          if (Array.isArray(x.artifacts)) x.artifacts = clipArr(x.artifacts, 20);
+          if (Array.isArray(x.results)) x.results = clipArr(x.results, 20);
+          if (Array.isArray(x.steps)) x.steps = clipArr(x.steps, 60);
+          return x;
+        });
+      }
+      return c;
+    });
+  }
+  if (Array.isArray(out.kbNodes)) out.kbNodes = clipArr(out.kbNodes, 5000);
+  if (Array.isArray(out.mistakes)) out.mistakes = clipArr(out.mistakes, 1000);
+  if (Array.isArray(out.boundariesHistory)) out.boundariesHistory = clipArr(out.boundariesHistory, 100);
+  if (typeof out.practicePhase === 'string' && out.practicePhase.length > 50) {
+    out.practicePhase = out.practicePhase.slice(0, 50);
+  }
+  if (typeof out.mistakeFilter === 'string' && out.mistakeFilter.length > 50) {
+    out.mistakeFilter = out.mistakeFilter.slice(0, 50);
+  }
+  return out;
+}
+
 /* ─── List sessions ─── */
 router.get('/', async (req, res, next) => {
   try {
@@ -236,12 +341,39 @@ router.get('/', async (req, res, next) => {
 router.post('/', writeLimiter, async (req, res, next) => {
   try {
     const db = getDb();
-    // zod throws ZodError on malformed input → errorHandler returns 400.
+    // M3: sanitize before validate (see sanitizeSessionPayload) so
+    // over-capacity states truncate instead of 400-looping forever.
+    // zod still throws ZodError on structurally malformed input → errorHandler returns 400.
     const { id, topic, title, domain, mode, phase, kind, examData,
             projectId,
             messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode,
             teachingStage, currentExampleIdx, practiceAttempts, practicePhase,
-            teachingPlan, boundariesHistory, mistakeFilter, branchedFrom } = SessionPayloadSchema.parse(req.body);
+            teachingPlan, boundariesHistory, mistakeFilter, branchedFrom } = SessionPayloadSchema.parse(sanitizeSessionPayload(req.body));
+
+    /* M3 — automatic context compression. When the history exceeds the
+     * token budget the built-in model summarizes the older turns and the
+     * summary replaces them (older turns discarded); otherwise the tail
+     * is kept verbatim. Never blocks the save: any failure falls back
+     * to the sanitized payload above, which always fits the schema. */
+    let persistMsgs = msgs;
+    let compressed: { didCompress: boolean; keptTurns: number; droppedTurns: number; summaryTokens: number; summarizer: string } | null = null;
+    if (Array.isArray(msgs) && msgs.length > 0) {
+      try {
+        const result = await compressSessionMessages(msgs as any[]);
+        if (result.didCompress) {
+          persistMsgs = result.messages as typeof msgs;
+          compressed = {
+            didCompress: true,
+            keptTurns: result.keptTurns,
+            droppedTurns: result.droppedTurns,
+            summaryTokens: result.summaryTokens,
+            summarizer: result.summarizer,
+          };
+        }
+      } catch (err) {
+        console.warn('[sessions] compression skipped:', (err as Error).message);
+      }
+    }
 
     /* ─── Atomic transaction ───
      * Wraps the existence check + upsert in a transaction to prevent a
@@ -375,9 +507,9 @@ router.post('/', writeLimiter, async (req, res, next) => {
       // this dedup, a session re-save that contains two messages with the
       // same clientId (placeholder + finalised, or a duplicate tool card)
       // throws 23505 and the POST returns 500.
-      if (Array.isArray(msgs) && msgs.length) {
+      if (Array.isArray(persistMsgs) && persistMsgs.length) {
         const _insertBase = Date.now();
-        const rows = msgs.map((m, i) => {
+        const rows = persistMsgs.map((m, i) => {
           const contentRaw = m.rawText || m.content || '';
           return {
             role: m.role || 'user',
@@ -543,7 +675,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
         console.warn(`[sessions] workspace initialization deferred for ${sessionId.session.id}: ${(workspaceErr as Error).message}`);
       }
     }
-    return res.status(id ? 200 : 201).json(sessionId.session);
+    return res.status(id ? 200 : 201).json({ ...sessionId.session, compressed });
   } catch (err) { next(err); }
 });
 

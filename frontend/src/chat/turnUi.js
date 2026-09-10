@@ -7,6 +7,7 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.js';
+import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
 
 function _t(key) {
   try {
@@ -95,6 +96,10 @@ export function setChatStopState(active) {
 export function handleSendClick() {
   var btn = document.getElementById('sendBtn');
   if (btn && btn.dataset.stop === '1') {
+    /* M2 Stop semantics — aborting the socket only detaches the feed
+       when the turn is bound; flip the server turn to interrupted so
+       the detached worker stops instead of running to completion. */
+    try{ interruptPendingTurn(); }catch(_){}
     if (turnState.activeChatCtl) {
       turnState.activeChatCtl.abort();
     }
@@ -113,10 +118,29 @@ export function handleSendClick() {
 }
 
 export function stopChatResponse() {
+  try{ interruptPendingTurn(); }catch(_){}
   if (turnState.activeChatCtl && typeof turnState.activeChatCtl.abort === 'function') {
     turnState.activeChatCtl.abort();
   }
   if (window._activeChatAbort) {
     try { window._activeChatAbort('user-stop'); } catch (_) {}
   }
+}
+
+/* Best-effort Stop propagation for bound turns. Reads the pending-turn
+   pointer for the active session and flips the server row; the worker
+   polls the row and aborts the upstream call. Fire-and-forget: socket
+   abort below already detaches the feed. */
+function interruptPendingTurn() {
+  var sid = null;
+  try{ sid = stateStore.read('currentSessionId') || null; }catch(_){}
+  if (!sid) return;
+  var pending = null;
+  try{ pending = loadPendingTurn(sid); }catch(_){}
+  if (!pending || !pending.turnId) return;
+  try{ clearPendingTurn(sid); }catch(_){}
+  try{
+    var p = interruptChatTurn(pending.turnId);
+    if (p && typeof p.catch === 'function') p.catch(function(){});
+  }catch(_){}
 }

@@ -19,7 +19,8 @@
 
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
-import { sessions } from '../../../db/schema.js';
+import { chatTurns, sessions } from '../../../db/schema.js';
+import { publishChatTurnEvent, setChatTurnStatus } from '../../../services/chatTurns.js';
 import { isToolFinishReason, streamChatCompletion } from '../../../services/llm.js';
 import {
   normalizeToolCalls,
@@ -49,7 +50,7 @@ import type {
 } from './types.js';
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
-  const { req, res, prep, sessionIdFromQuery, projectIdFromBody } = ctx;
+  const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort } = prep.payload;
 
   // Set SSE headers
@@ -115,9 +116,59 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
 
   const abortController = new AbortController();
   let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
+  /* M1 async — when a turn is bound, socket close detaches the SSE feed
+   * instead of cancelling the run: the upstream LLM keeps going, frames
+   * keep landing in chat_turn_events, and the client re-attaches with
+   * ?after=. Without a turn binding the legacy behaviour stands (abort). */
+  let sseDetached = false;
+
+  /* Throttled turn checkpoint: fullText/fullReasoning are mirrored onto
+   * the turn row so a re-attaching client can bootstrap without replaying
+   * thousands of delta events. Tool deltas/progress stay SSE-only (write
+   * amplification); tool_use/tool_result boundaries are persisted. */
+  let turnCheckpointTimer: ReturnType<typeof setInterval> | null = null;
+  const checkpointTurn = () => {
+    if (!turnId) return;
+    const db = getDb();
+    db.update(chatTurns)
+      .set({ fullText: fullText || null, fullReasoning: fullReasoning || null, updatedAt: new Date() })
+      .where(eq(chatTurns.id, turnId))
+      .catch(() => {});
+  };
+  /* M2 Stop semantics: closing the socket detaches (network drop keeps
+   * running), while an explicit Stop goes through POST
+   * /api/chat-turns/:id/interrupt which flips the row. The worker polls
+   * the row on the checkpoint cadence and aborts the upstream call when
+   * the user asked to stop. */
+  const maybeAbortIfInterrupted = async () => {
+    if (!turnId || abortController.signal.aborted) return;
+    try {
+      const db = getDb();
+      const [row] = await db
+        .select({ status: chatTurns.status })
+        .from(chatTurns)
+        .where(eq(chatTurns.id, turnId))
+        .limit(1);
+      if (row && row.status === 'interrupted') {
+        abortController.abort('turn_interrupted');
+      }
+    } catch { /* a failed poll must not kill the stream */ }
+  };
+  const clearTurnTimer = () => {
+    if (turnCheckpointTimer) {
+      clearInterval(turnCheckpointTimer);
+      turnCheckpointTimer = null;
+    }
+  };
 
   req.on('close', () => {
     trackSseConnection(req.app, -1);
+    if (turnId) {
+      // Detached mode: keep the run alive, drop only the socket feed.
+      sseDetached = true;
+      checkpointTurn();
+      return;
+    }
     if (!abortController.signal.aborted) {
       abortController.abort('client_disconnected');
     }
@@ -137,7 +188,63 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }
   });
 
-  const emitter = new SseEmitter(res, () => abortController.signal.aborted);
+  const emitter = new SseEmitter(res, () => abortController.signal.aborted || sseDetached);
+  /* M1 async — mirror lifecycle frames into the bound turn. Content and
+   * reasoning deltas are persisted per-chunk (they are the resume
+   * baseline); tool_use/tool_result/agent frames mark boundaries;
+   * high-frequency progress/deltas stay SSE-only. All taps are
+   * fire-and-forget so a slow DB never stalls the live stream. */
+  if (turnId) {
+    const tap = (event: string, data: Record<string, unknown>) => {
+      publishChatTurnEvent(turnId, event, data).catch(() => {});
+    };
+    const innerContent = emitter.content.bind(emitter);
+    emitter.content = (chunk: string) => {
+      innerContent(chunk);
+      tap('content', { delta: chunk });
+    };
+    const innerReasoning = emitter.reasoning.bind(emitter);
+    emitter.reasoning = (reasoning: string) => {
+      innerReasoning(reasoning);
+      tap('reasoning', { delta: reasoning });
+    };
+    const innerEvent = emitter.event.bind(emitter);
+    emitter.event = (name: string, data: unknown) => {
+      innerEvent(name, data);
+      if (
+        name === 'tool_use' ||
+        name === 'tool_result' ||
+        name === 'tool_approval' ||
+        name === 'agent_step' ||
+        name === 'agent_plan' ||
+        name === 'execution_start' ||
+        name === 'error'
+      ) {
+        tap(name, (data ?? {}) as Record<string, unknown>);
+        checkpointTurn();
+      }
+    };
+    const innerFinish = emitter.finish.bind(emitter);
+    emitter.finish = () => {
+      innerFinish();
+      tap('turn_done', { fullTextLength: fullText.length });
+    };
+    const innerFatal = emitter.fatal.bind(emitter);
+    emitter.fatal = (err: Error) => {
+      innerFatal(err);
+      tap('turn_failed', { error: err.message });
+    };
+    await setChatTurnStatus(turnId, 'running').catch(() => {});
+    await publishChatTurnEvent(turnId, 'turn_started', {
+      sessionId: sessionIdFromQuery,
+      model: provider.model,
+    }).catch(() => {});
+    turnCheckpointTimer = setInterval(() => {
+      checkpointTurn();
+      void maybeAbortIfInterrupted();
+    }, 2000);
+    turnCheckpointTimer.unref?.();
+  }
   const writeSse = (payload: string) => emitter.write(payload);
 
   /* ─── Tool-calling loop ─────────────────────────────────────────
@@ -290,6 +397,19 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           source: 'chat',
         });
       }
+      if (turnId) {
+        clearTurnTimer();
+        checkpointTurn();
+        // An explicit Stop already flipped the row to interrupted via the
+        // interrupt endpoint; don't overwrite it with failed.
+        if (abortController.signal.reason !== 'turn_interrupted') {
+          await setChatTurnStatus(turnId, 'failed', {
+            fullText: fullText || null,
+            fullReasoning: fullReasoning || null,
+            error: (upstreamErr as Error).message,
+          }).catch(() => {});
+        }
+      }
       return;
     }
 
@@ -430,15 +550,33 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }
   }
 
-  /* Abort guard — if the client disconnected during tool execution,
-   * skip the finalisation (writing [DONE] to a closed socket would
+  /* Abort guard — with no turn bound, a client disconnect during tool
+   * execution skips finalisation (writing [DONE] to a closed socket would
    * throw, and the recordUsage below would charge for an incomplete
-   * response). The req.on('close') handler already stopped the
-   * upstream LLM call; we just need to avoid touching the response
-   * object. */
-  if (abortController.signal.aborted) {
+   * response). With a turn bound the socket close only detached the feed
+   * (see the req.on('close') handler): the run continues detached unless
+   * the abort came from an explicit Stop (turn_interrupted). */
+  if (abortController.signal.aborted && !turnId) {
     /* Still record partial usage so the operator can see incomplete
      * responses in the heatmap and diagnose client-drop patterns. */
+    if (req.userId && fullText.length > 0) {
+      recordUsage({
+        userId: req.userId,
+        model: provider.model,
+        sessionId: sessionIdFromQuery,
+        promptTokens,
+        completionTokens: estimateTokens(fullText),
+        source: 'chat',
+      });
+    }
+    return;
+  }
+  if (abortController.signal.aborted && turnId) {
+    // Explicit Stop on a bound turn: persist the partial answer so a
+    // re-attach sees what had streamed, then stop. The row itself was
+    // already flipped to interrupted by the interrupt endpoint.
+    clearTurnTimer();
+    checkpointTurn();
     if (req.userId && fullText.length > 0) {
       recordUsage({
         userId: req.userId,
@@ -470,6 +608,14 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   // P_streaming-survival — mark stream as completed BEFORE clearing
   // streaming_text, so the close handler doesn't overwrite with stale data.
   streamCompleted = true;
+  if (turnId) {
+    clearTurnTimer();
+    checkpointTurn();
+    await setChatTurnStatus(turnId, 'completed', {
+      fullText: fullText || null,
+      fullReasoning: fullReasoning || null,
+    }).catch(() => {});
+  }
   // P_streaming-survival — clear streaming_text on normal completion
   // so the client knows no partial content needs recovery.
   if (sessionIdFromQuery) {
