@@ -120,6 +120,8 @@ export function toolIcon(name: string): string {
       return STROKE_ICONS.spec;
     case 'workspace_agent':
       return STROKE_ICONS.agent;
+    case 'initialize_workspace':
+      return STROKE_ICONS.agent;
     case 'github_list_repos':
     case 'gitee_list_repos':
       return STROKE_ICONS.repo;

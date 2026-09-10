@@ -19,9 +19,9 @@
  *    pixel value to keep the rhythm consistent.
  *  - Breakpoints match the project's existing media-query ladders
  *    (≤480 px, ≤768 px, ≥1200 px).
- *  - Accent lightness steps mirror the legacy HSL palette so the
- *    `setAccentColor()` hue picker keeps working — see
- *    `displayPrefs.js` for the corresponding inline overrides.
+ *  - Accent steps are monochrome: the app ships no selectable theme
+ *    colour, so the accent ladder mirrors the black/white/gray palette
+ *    in `styles.css`.
  *
  * Theme resolution
  *  - `themeMode` describes the *effective* mode (light/dark) that
@@ -170,9 +170,9 @@ export const breakpoints = {
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '43 77% 62%',
-    soft: '43 40% 20%',
-    surface: '43 40% 20%',
+    strong: '0 0% 100%',
+    soft: '0 0% 20%',
+    surface: '0 0% 20%',
   },
   bg: {
     page: '#212121',
@@ -202,9 +202,9 @@ export const darkPalette: ThemePalette = {
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '43 65% 42%',
-    soft: '43 40% 90%',
-    surface: '43 40% 90%',
+    strong: '0 0% 10%',
+    soft: '0 0% 90%',
+    surface: '0 0% 90%',
   },
   bg: {
     page: '#ffffff',

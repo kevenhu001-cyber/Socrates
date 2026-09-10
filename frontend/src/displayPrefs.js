@@ -1,6 +1,6 @@
 /* ─── Display Preferences Module ───
-   Text size, content width, background colors, grid toggle,
-   accent color. Persisted in localStorage as `socrates-display`.
+   Text size, content width, background colors, grid toggle.
+   Persisted in localStorage as `socrates-display`.
    ============================================================ */
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.js';
@@ -139,6 +139,12 @@ export function loadDisplayPrefs() {
       if (p.showGrid === true) displayPrefs.showGrid = true;
       else displayPrefs.showGrid = false;
     }
+  } catch { /* ignore */ }
+  /* One-time cleanup: the accent-colour picker was removed, so drop any
+     persisted accent preference and never let it resurface. */
+  try {
+    localStorage.removeItem("socrates-accent-hex");
+    localStorage.removeItem("socrates-accent-hue");
   } catch { /* ignore */ }
   /* One-time migration (bgMigratedV1): earlier builds shipped warm/green
      default background picks (#252220 / #ded6c8) and let users store any
@@ -299,102 +305,8 @@ export function toggleGrid() {
   saveDisplayPrefs();
 }
 
-/* ── accent color ── */
-export function setAccentColor(hue) {
-  var num = parseInt(hue, 10);
-  if (isNaN(num)) return;
-  var root = document.documentElement;
-  var sat = num === 0 || num === 0 ? "0%" : "77%";
-  root.style.setProperty("--accent-000", num + " " + sat + " 62%");
-  root.style.setProperty("--accent-100", num + " " + sat + " 62%");
-  root.style.setProperty("--accent-900", num + " 40% 20%");
-  /* Preset selection clears any custom-hex override so the two
-     systems don't fight over who "owns" the accent. */
-  try { localStorage.removeItem("socrates-accent-hex"); } catch {}
-  try { localStorage.setItem("socrates-accent-hue", String(num)); } catch { /* ignore */ }
-  var swatches = document.querySelectorAll(".color-swatch");
-  swatches.forEach(function (s) {
-    var isPreset = s.classList.contains("color-swatch") && !s.classList.contains("color-swatch-custom");
-    s.classList.toggle("active", isPreset && parseInt(s.dataset.hue, 10) === num);
-  });
-  /* Reset the custom input swatch visually to its placeholder plus. */
-  var customSwatch = document.getElementById("accentCustomSwatch");
-  if (customSwatch) customSwatch.classList.remove("active");
-}
-
-/* Hex → HSL helper. Accepts #RGB or #RRGGBB (case-insensitive). Returns
-   {h:0-360, s:0-100, l:0-100}. The math mirrors the standard CSS
-   Color Module Level 3 algorithm. */
-function hexToHsl(hex) {
-  var h = String(hex || "").trim().replace(/^#/, "");
-  if (h.length === 3) h = h.split("").map(function (c) { return c + c; }).join("");
-  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
-  var r = parseInt(h.slice(0, 2), 16) / 255;
-  var g = parseInt(h.slice(2, 4), 16) / 255;
-  var b = parseInt(h.slice(4, 6), 16) / 255;
-  var max = Math.max(r, g, b), min = Math.min(r, g, b);
-  var hh, ss, ll = (max + min) / 2;
-  if (max === min) { hh = ss = 0; }
-  else {
-    var d = max - min;
-    ss = ll > 0.5 ? d / (2 - max - min) : d / (max + min);
-    if (max === r) hh = (g - b) / d + (g < b ? 6 : 0);
-    else if (max === g) hh = (b - r) / d + 2;
-    else hh = (r - g) / d + 4;
-    hh /= 6;
-  }
-  return {
-    h: Math.round(hh * 360),
-    s: Math.round(ss * 100),
-    l: Math.round(ll * 100),
-  };
-}
-
-/* Apply a fully custom accent color from the native color picker.
-   The hex is converted to HSL and the same CSS custom properties as
-   setAccentColor are written, so every themed surface updates. The
-   dark-tone (--accent-900) is derived by dropping lightness ~35pp
-   so backgrounds still read against the custom hue. */
-export function setAccentCustom(hex) {
-  var hsl = hexToHsl(hex);
-  if (!hsl) return;
-  var root = document.documentElement;
-  /* Lightness clamps: very dark custom colors should still produce
-     a usable background tone; very light ones need a darker bg pair. */
-  var fgL = Math.max(35, Math.min(70, hsl.l));
-  var bgL = Math.max(8, Math.min(28, hsl.l - 35));
-  var sPct = hsl.s + "%";
-  var hslStr = hsl.h + " " + sPct + " " + fgL + "%";
-  var bgStr = hsl.h + " " + sPct + " " + bgL + "%";
-  root.style.setProperty("--accent-000", hslStr);
-  root.style.setProperty("--accent-100", hslStr);
-  root.style.setProperty("--accent-900", bgStr);
-  try { localStorage.setItem("socrates-accent-hex", hex); } catch { /* ignore */ }
-  /* Custom overrides preset — clear the saved hue and any .active on
-     preset swatches, then mark the custom swatch active. */
-  try { localStorage.removeItem("socrates-accent-hue"); } catch {}
-  var swatches = document.querySelectorAll(".color-swatch");
-  swatches.forEach(function (s) {
-    if (s.classList.contains("color-swatch-custom")) {
-      s.classList.add("active");
-      /* Reflect the picked color as the swatch background so the
-         user sees what they chose without re-opening the picker. */
-      s.style.setProperty("--swatch", hex);
-    } else {
-      s.classList.remove("active");
-    }
-  });
-}
-
-/* Restore the default Amber accent: clears any saved hex + hue and
-   re-applies setAccentColor(40) so the active-ring lands on Amber. */
-export function resetAccentColor() {
-  try { localStorage.removeItem("socrates-accent-hex"); } catch {}
-  setAccentColor(40);
-}
-
 /* The display-preferences popover is legacy markup, but it owns its own
- * controls. Mounting the listeners here keeps theme/accent/background
+ * controls. Mounting the listeners here keeps theme/background
  * changes independent from the document-wide data-action dispatcher. */
 export function mountDisplayPrefsListeners(){
   var popover=document.getElementById("displayPrefsPopover");
@@ -430,17 +342,6 @@ export function mountDisplayPrefsListeners(){
   });
   bindAll("#displayPrefsWidthSegs [data-width]","click",function(e){
     setDisplayWidth(parseFloat(e.currentTarget.dataset.width));
-  });
-  bind(document.getElementById("accentResetBtn"),"click",function(e){
-    e.preventDefault();
-    resetAccentColor();
-  });
-  bindAll("#displayAccentColors .color-swatch[data-hue]","click",function(e){
-    e.preventDefault();
-    setAccentColor(e.currentTarget.dataset.hue);
-  });
-  bind(document.getElementById("accentCustomInput"),"input",function(e){
-    setAccentCustom(e.currentTarget.value);
   });
   bind(document.getElementById("gridToggle"),"click",function(e){
     e.preventDefault();

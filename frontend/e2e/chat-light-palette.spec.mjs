@@ -52,7 +52,6 @@ async function snapshotPalette(page) {
       avatar: style('#appShell .user-avatar'),
       composer: style('#chatInputWrap'),
       send: style('#sendBtn'),
-      accent: getComputedStyle(document.documentElement).getPropertyValue('--cg-accent').trim(),
     };
   });
 }
@@ -148,11 +147,9 @@ test('mobile light conversation inverts header controls and the canvas fade', as
   expect(mobile.inputBar.backgroundImage).toContain('rgb(255, 255, 255) 24px');
   expect(mobile.inputBar.backgroundImage).not.toContain('rgb(0, 0, 0) 24px');
 
-  // Header circle button is light with a dark glyph…
-  const openBg = parseRgb(mobile.openBtn.backgroundColor);
+  // Header controls are borderless dark glyphs on the white page now.
   const openFg = parseRgb(mobile.openBtn.color);
-  expect(luminance(openBg)).toBeGreaterThan(0.8);
-  expect(contrast(openFg, openBg)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(openFg, [255, 255, 255])).toBeGreaterThanOrEqual(4.5);
 
   // …and the icon-only actions are dark on the white bar.
   expect(contrast(parseRgb(mobile.findBtn.color), [255, 255, 255])).toBeGreaterThanOrEqual(4.5);

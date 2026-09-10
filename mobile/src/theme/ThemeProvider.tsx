@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
-import { buildTheme, withAlpha, type Theme, type ThemeMode } from './theme';
+import { buildTheme, type Theme, type ThemeMode } from './theme';
 import { getItem, setItem } from '../platform/secureStorage';
 import { setAppStatusBarStyle } from '../native/statusBar';
 import { displayPrefsStore } from '../displayPrefs/displayPrefsStore';
@@ -36,9 +36,9 @@ async function writeStoredPreference(value: ThemePreference) {
   }
 }
 
-/* P0 1:1 helpers — mirror `frontend/src/displayPrefs.js:setAccentCustom`
- * and `frontend/src/util/colors.js:applyCustomBg` so a custom hex
- * produces the same derived tones on both clients. */
+/* P0 1:1 helpers — mirror `frontend/src/util/colors.js:applyCustomBg`
+ * so a custom background hex produces the same derived tones on both
+ * clients. */
 
 function parseHex(hex: string): { h: number; s: number; l: number } | null {
   const h = hex.trim().replace(/^#/, '');
@@ -71,16 +71,6 @@ function hslToHex(h: number, s: number, l: number): string {
   const f = (n: number) => ln - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
   const to = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0');
   return `#${to(f(0))}${to(f(8))}${to(f(4))}`;
-}
-
-/* `setAccentCustom` derivation: fg lightness clamped 35–70, bg tone
- * ~35pp darker clamped 8–28. Returns the soft/bg hex for `accentSoft`. */
-function deriveAccentSoft(accentHex: string): string {
-  const hsl = parseHex(accentHex);
-  if (!hsl) return withAlpha(accentHex, 0.16);
-  const fgL = Math.max(35, Math.min(70, hsl.l));
-  const bgL = Math.max(8, Math.min(28, hsl.l - 35));
-  return hslToHex(hsl.h, hsl.s, bgL);
 }
 
 /* `applyCustomBg` derivation: keep only lightness (force grayscale to
@@ -163,22 +153,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const theme = useMemo(() => {
     const base = buildTheme(mode);
-    const accent = displayPrefs.accentColor;
     const bgOverride = mode === 'dark' ? displayPrefs.bgDark : displayPrefs.bgLight;
-    if (!accent && !bgOverride) {
+    if (!bgOverride) {
       /* No color overrides — still inject fontScale + contentWidth so
        * consumers can read them off the theme object. */
       return { ...base, fontScale: displayPrefs.fontScale, contentWidth: displayPrefs.contentWidth };
     }
-    const accentPatch = accent
-      ? {
-          accent,
-          accentStrong: accent,
-          accentSoft: deriveAccentSoft(accent),
-          action: accent,
-          actionPressed: accent,
-        }
-      : {};
     const bgRamp = bgOverride ? deriveBgRamp(bgOverride, mode) : null;
     const bgPatch = bgRamp
       ? {
@@ -195,7 +175,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       contentWidth: displayPrefs.contentWidth,
       colors: {
         ...base.colors,
-        ...accentPatch,
         ...bgPatch,
       },
     };

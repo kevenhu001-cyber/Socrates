@@ -576,6 +576,7 @@ Environment="CODEX_APP_SERVER_BIN=${codex_bin}"
 Environment=CODEX_HOME=${CODEX_HOME}
 Environment=CODEX_WORKSPACE_ROOT=${CODEX_HOME}/workspaces
 Environment=PATH=${CODEX_INSTALL_DIR}/bin:${CODEX_INSTALL_DIR}/codex-path:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ReadWritePaths=${CODEX_HOME}
 EOF
   $SUDO systemctl daemon-reload
   echo "Codex harness drop-in active (bin=${codex_bin}, home=${CODEX_HOME})"

@@ -163,6 +163,7 @@ function startToolCardTimer(card) {
    the inline row and this card. */
 export var TOOL_META = {
   workspace_agent:    { cls: "codex", short: "Codex", tone: "purple" },
+  initialize_workspace: { cls: "codex", short: "Workspace", tone: "purple" },
   render_visualization: { cls: "tool-visual", short: "Visual", tone: "purple" },
   web_search:        { cls: "websearch", short: "Search", tone: "teal"   },
   web_fetch:         { cls: "webfetch",  short: "Fetch",  tone: "teal"   },

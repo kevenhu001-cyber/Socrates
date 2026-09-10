@@ -12,6 +12,7 @@
 
 import type { ToolExecutor } from './types.js';
 import { executeWorkspaceAgent } from './workspaceAgent.js';
+import { executeInitializeWorkspace } from './workspaceInit.js';
 import { executeCodeInterpreter } from './codeInterpreter.js';
 import { executeRenderVisualization } from './renderVisualization.js';
 import { executeWebSearch } from './webSearch.js';
@@ -34,6 +35,7 @@ export interface ToolExecutorRegistry {
 export function createToolExecutorRegistry(): ToolExecutorRegistry {
   const exact = new Map<string, ToolExecutor>([
     ['workspace_agent', executeWorkspaceAgent],
+    ['initialize_workspace', executeInitializeWorkspace],
     ['code_interpreter', executeCodeInterpreter],
     ['render_visualization', executeRenderVisualization],
     ['web_search', executeWebSearch],
