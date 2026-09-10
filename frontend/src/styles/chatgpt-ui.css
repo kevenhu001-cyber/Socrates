@@ -1496,26 +1496,6 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   font-weight: 550;
 }
 
-.codex-mcp-card {
-  margin-top: 48px !important;
-  padding: 20px !important;
-  border: 1px solid var(--cg-border) !important;
-  border-radius: var(--cg-radius-md) !important;
-  background: var(--cg-surface) !important;
-}
-
-.codex-mcp-heading h2 {
-  color: var(--cg-text) !important;
-  font-family: var(--cg-font) !important;
-  font-size: 18px !important;
-  font-weight: 550 !important;
-}
-
-.codex-mcp-badge {
-  color: var(--cg-text-muted) !important;
-  background: var(--cg-surface-raised) !important;
-}
-
 /* Scheduled */
 
 .scheduled-directory {
@@ -2143,28 +2123,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
   .scheduled-recommendation-copy small {
     white-space: normal;
-  }
-
-  .codex-mcp-card {
-    margin-top: 34px !important;
-    padding: 16px !important;
-  }
-
-  .codex-mcp-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .codex-mcp-actions {
-    width: 100%;
-    justify-content: stretch;
-    gap: 8px;
-  }
-
-  .codex-mcp-actions .codex-mcp-health,
-  .codex-mcp-actions .codex-mcp-toggle {
-    flex: 1 1 0;
-    min-height: 40px;
   }
 }
 
@@ -2853,14 +2811,6 @@ body.workspace-active #appShell .project-row {
 .plugin-directory-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 12px; line-height: 17px; }
 .plugin-directory-action { min-width: 34px; min-height: 34px; padding: 6px 12px; background: transparent !important; }
 .plugin-directory-note { margin: 18px 0 0; }
-
-.codex-mcp-card { margin-top: 42px !important; border-radius: 16px !important; background: transparent !important; }
-.codex-mcp-card > summary { list-style: none; cursor: pointer; }
-.codex-mcp-card > summary::-webkit-details-marker { display: none; }
-.codex-mcp-card:not([open]) { padding: 14px 18px !important; }
-.codex-mcp-card:not([open]) .codex-mcp-heading { margin: 0; align-items: center; }
-.codex-mcp-card:not([open]) .workspace-eyebrow { display: none; }
-.codex-mcp-card:not([open]) h2 { margin: 0; color: var(--cg-text-secondary); font-size: 14px; font-weight: 550; }
 
 @media (max-width: 900px) {
   body.workspace-active #appShell .main-page { padding: 48px 28px 64px; }

@@ -253,7 +253,7 @@ export async function askChatTurn(userText,pendingOverride){
     },
     onToolResult:function(r){
       ctl.recordToolResult(r);
-      if(r&&r.runId){var _agentWaiting2=r.status==="awaiting_approval";publishWorkspaceAgentEvent(r.runId,_agentWaiting2?"awaiting_approval":r.ok===false?"failed":"completed",_agentWaiting2?"running":r.ok===false?"failed":"succeeded",{message:r.error||(_agentWaiting2?"Approval required":"Codex workspace run finished")});}
+      if(r&&r.runId){var _agentWaiting2=r.status==="awaiting_approval";publishWorkspaceAgentEvent(r.runId,_agentWaiting2?"awaiting_approval":r.ok===false?"failed":"completed",_agentWaiting2?"running":r.ok===false?"failed":"succeeded",{message:r.error||(_agentWaiting2?"Approval required":"Workspace run finished")});}
       if(r&&r.id&&window._activeTemplate&&window._activeTemplate.runId){
         publishActiveWorkflowEvent("reading","running",{message:"Reading results…",toolCallIds:[r.id]});
       }

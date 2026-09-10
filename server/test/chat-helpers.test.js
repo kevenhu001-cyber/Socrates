@@ -610,7 +610,7 @@ describe('appendNativeToolContract', () => {
 });
 
 describe('appendToolRoutingHints', () => {
-  test('tells the model the interface streams Codex steps itself', () => {
+  test('tells the model the interface streams agent steps itself', () => {
     const out = appendToolRoutingHints([{ role: 'system', content: 'base' }], ['workspace_agent']);
     assert.match(out[0].content, /Choose `workspace_agent` automatically/);
     assert.match(out[0].content, /Do not wait for the user to enable Agent/);

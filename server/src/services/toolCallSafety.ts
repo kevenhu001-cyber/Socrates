@@ -488,7 +488,7 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
   // workspace agent
   bash: 'workspace_agent', shell: 'workspace_agent', terminal: 'workspace_agent',
   run_command: 'workspace_agent', execute_command: 'workspace_agent',
-  codex: 'workspace_agent', agent: 'workspace_agent', workspace: 'workspace_agent',
+    agent: 'workspace_agent', workspace: 'workspace_agent',
   // planning
   plan: 'create_plan', make_plan: 'create_plan', todo: 'create_plan', todo_write: 'create_plan',
   update_plan: 'create_plan', spec: 'create_spec', requirements: 'create_spec',

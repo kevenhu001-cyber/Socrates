@@ -1,64 +1,63 @@
 /**
  * Unified Agent Runtime
  *
- * Native tools and Codex both surface through the same run/event/approval
- * contract. Native tools still execute in chat/stream.ts because they have
- * specialised streaming semantics; this module owns the durable, resumable
- * workspace-agent path and is also the shared API used by Chat, Tutor and
- * scheduled jobs.
+ * Native tools and the Pi workspace agent both surface through the same
+ * run/event contract. Native tools still execute in chat/stream.ts because
+ * they have specialised streaming semantics; this module owns the durable
+ * workspace-agent path used by Chat, Tutor and scheduled jobs.
  */
 
-import { randomUUID } from 'node:crypto';
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { asc, and, desc, eq, inArray, max } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import {
-  agentApprovals,
   agentJobs,
   agentRunEvents,
   agentRuns,
   artifacts,
-  codexThreads,
   codexWorkspaces,
   projects,
-  scheduledTasks,
   sessions,
 } from '../db/schema.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
-import { codexHarness, CODEX_ENABLED } from './codexHarness.js';
-import { mapCodexNotification } from './codexEvents.js';
-import { CODEX_MCP_ENABLED, resolveCodexMcpConfig } from './codexMcp.js';
 import {
   ensureProjectWorkspace,
   ensureSessionWorkspace,
   ensureWorkspaceForKey,
   ensureWorkspaceInstructions,
   removeSessionWorkspace,
-  resolveCodexProvider,
   sessionWorkspaceKey,
-} from './codexProvider.js';
+} from './workspacePaths.js';
+import {
+  PI_AGENT_ENABLED,
+  runPiAgentTask,
+  type PiAgentEvent,
+  type PiAgentProvider,
+} from './piAgent.js';
+import { getActiveApiKey } from './apiKey.js';
 import {
   WORKSPACE_LIMIT_DEFAULTS,
   assertWorkspaceDiskWithinLimit,
+  limitsFromPolicy,
   normalizeWorkspaceLimits,
   workspaceResourceSnapshot,
 } from './workspaceResources.js';
 
-export const UNIFIED_CODEX_ENABLED = CODEX_ENABLED && process.env.CODEX_UNIFIED_RUNTIME !== 'false';
-export const CODEX_BACKGROUND_ENABLED = UNIFIED_CODEX_ENABLED && process.env.CODEX_BACKGROUND !== 'false';
+export const WORKSPACE_AGENT_ENABLED = PI_AGENT_ENABLED;
+export const WORKSPACE_AGENT_BACKGROUND_ENABLED = PI_AGENT_ENABLED;
 
 const MAX_TASK_LENGTH = 20_000;
 const MAX_EVENT_TEXT = 120_000;
 const MAX_RUN_OUTPUT_CHARS = 2_000_000;
-const TURN_TIMEOUT_MS = Math.max(60_000, Number(process.env.CODEX_TURN_TIMEOUT_MS || 15 * 60_000));
+const TURN_TIMEOUT_MS = Math.max(60_000, Number(process.env.PI_AGENT_TURN_TIMEOUT_MS || process.env.CODEX_TURN_TIMEOUT_MS || 15 * 60_000));
 
 export const WORKSPACE_AGENT_TOOL = {
   type: 'function',
   function: {
     name: 'workspace_agent',
     description:
-      'Runs the Socrates project workspace agent powered by Codex. Select it automatically when the user asks to create, edit, review, or inspect project files, implement/fix/refactor code, run commands or tests, explore a repository, perform an experiment, use MCP/project workspace context, or continue work across turns—even when only one file is involved. Do not wait for a manual Agent mode or worker start. Keep ordinary explanations, short calculations, and simple web research in native tools. The server owns the workspace, model, sandbox, MCP configuration, and approval policy. Read-only actions run automatically; file writes, commands, network side effects, and other risky actions may pause for an explicit user approval. After it finishes, summarize the result and mention any generated files or artifacts.',
+      'Runs the Socrates project workspace agent powered by the Pi coding agent (read, bash, edit, write tools). Select it automatically when the user asks to create, edit, review, or inspect project files, implement/fix/refactor code, run commands or tests, explore a repository, perform an experiment, use project workspace context, or continue work across turns—even when only one file is involved. Do not wait for a manual Agent mode or worker start. Keep ordinary explanations, short calculations, and simple web research in native tools. The server owns the workspace, sandbox, and resource limits. Call initialize_workspace first when the user wants an explicit workspace or a clean slate. After it finishes, summarize the result and mention any generated files or artifacts.',
     parameters: {
       type: 'object',
       properties: {
@@ -187,7 +186,6 @@ interface RuntimeSubscriber {
 const subscribers = new Map<string, Set<RuntimeSubscriber>>();
 const sequenceQueues = new Map<string, Promise<unknown>>();
 const activeTurns = new Map<string, { threadId: string; turnId: string | null; abort?: () => void }>();
-const activeWatchers = new Set<string>();
 
 function safeText(value: unknown, workspacePath?: string): string {
   let text = String(value ?? '');
@@ -234,18 +232,7 @@ function isValidUuid(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-function rpcId(value: string): number | string {
-  return /^\d+$/.test(value) ? Number(value) : value;
-}
 
-function statusFromTurn(status: unknown): AgentRunStatus {
-  const normalized = String(status || '').toLowerCase();
-  if (normalized.includes('interrupt') || normalized === 'cancelled') return 'interrupted';
-  if (normalized === 'completed' || normalized === 'success' || normalized === 'succeeded') return 'completed';
-  if (normalized === 'awaiting_approval') return 'awaiting_approval';
-  if (normalized === 'failed' || normalized === 'error') return 'failed';
-  return 'running';
-}
 
 function artifactLanguage(filePath: string): string | null {
   const ext = path.extname(filePath).toLowerCase();
@@ -480,6 +467,30 @@ export interface UpdateWorkspacePolicyInput {
 }
 
 /**
+ * Resolve the conversation workspace without mutating its policy. Returns
+ * the server-owned path, the persisted policy, normalized limits, and the
+ * current disk-gate result for the pre-run check.
+ */
+export async function getWorkspaceContext(
+  userId: string,
+  sessionId: string | null,
+  projectId: string | null,
+) {
+  const workspace = await getOrCreateWorkspace(userId, sessionId, projectId, DEFAULT_POLICY);
+  const policy = workspace.row.policy && typeof workspace.row.policy === 'object'
+    ? (workspace.row.policy as Record<string, unknown>)
+    : { ...DEFAULT_POLICY };
+  return {
+    workspaceId: workspace.row.id,
+    workspaceKey: workspace.row.workspaceKey,
+    path: workspace.path,
+    policy,
+    limits: limitsFromPolicy(policy),
+    disk: assertWorkspaceDiskWithinLimit(workspace.path, policy),
+  };
+}
+
+/**
  * Apply model-declared resource limits to the conversation workspace,
  * creating it on first use. `reset` wipes the tree (server-owned path
  * only) so the next task starts clean. Returns the normalized policy and
@@ -520,7 +531,7 @@ export async function updateWorkspacePolicy(input: UpdateWorkspacePolicyInput) {
 
 /** Reconcile the durable workspace for every existing session after startup. */
 export async function ensureSessionWorkspacesOnStartup(): Promise<{ checked: number; created: number; failed: number }> {
-  if (!UNIFIED_CODEX_ENABLED) return { checked: 0, created: 0, failed: 0 };
+  if (!WORKSPACE_AGENT_ENABLED) return { checked: 0, created: 0, failed: 0 };
   const db = getDb();
   const rows = await db.select({ id: sessions.id, userId: sessions.userId, projectId: sessions.projectId }).from(sessions);
   let created = 0;
@@ -549,99 +560,33 @@ export async function removeSessionWorkspacesForUser(userId: string, sessionIds:
   for (const sessionId of ids) removeSessionWorkspace(userId, sessionId);
 }
 
-async function startCodexThread(
-  run: typeof agentRuns.$inferSelect,
-  context: { projectId: string | null; project: typeof projects.$inferSelect | null },
-  workspace: { row: typeof codexWorkspaces.$inferSelect; path: string },
-) {
-  /* Codex reads AGENTS.md while opening the thread. Write the stable session
-   * guidance before thread/start so the first turn sees the same workspace
-   * contract as every later turn. */
-  ensureWorkspaceInstructions(workspace.path, context.project?.systemPrompt);
-  await codexHarness.ensureStarted();
-  const provider = await resolveCodexProvider(run.userId);
-  const mcpConfig = CODEX_MCP_ENABLED
-    ? await resolveCodexMcpConfig(run.userId, context.projectId)
-    : null;
-  const requestedThreadId = run.threadId;
-  let thread: any = null;
-
-  // A persisted thread may survive a web-server restart. Ask the app-server
-  // to resume it when possible; older Codex builds can reject this method,
-  // in which case the run remains auditable and the caller gets a clear
-  // disconnected state instead of silently starting a new conversation.
-  if (requestedThreadId) {
-    try {
-      const resumed = await codexHarness.request('thread/resume', {
-        threadId: requestedThreadId,
-        cwd: workspace.path,
-        approvalPolicy: DEFAULT_POLICY.approvalPolicy,
-        sandbox: DEFAULT_POLICY.sandbox,
-        ...((provider.config || mcpConfig) ? { config: { ...(provider.config || {}), ...(mcpConfig || {}) } } : {}),
-      });
-      thread = resumed?.thread || { id: requestedThreadId };
-    } catch (err) {
-      if (codexHarness.isThreadOwner(requestedThreadId, run.userId)) {
-        thread = { id: requestedThreadId };
-      } else {
-        throw new Error(`Codex thread could not be resumed: ${(err as Error).message}`);
-      }
-    }
-  }
-
-  if (!thread) {
-    const params: Record<string, unknown> = {
-      cwd: workspace.path,
-      approvalPolicy: DEFAULT_POLICY.approvalPolicy,
-      sandbox: DEFAULT_POLICY.sandbox,
-      // Unlike the legacy compatibility route, unified threads are durable.
-      ephemeral: false,
-      sessionStartSource: 'socrates',
+async function resolvePiProvider(userId: string): Promise<PiAgentProvider | null> {
+  try {
+    const provider = await getActiveApiKey(userId);
+    if (!provider?.url || !provider.model) return null;
+    return {
+      baseUrl: String(provider.url).replace(/\/+$/, ''),
+      model: String(provider.model),
+      apiKey: provider.keyPlaintext || null,
     };
-    const config = { ...(provider.config || {}), ...(mcpConfig || {}) };
-    if (Object.keys(config).length) params.config = config;
-    if (provider.model) params.model = provider.model;
-    const result = await codexHarness.request('thread/start', params);
-    thread = result?.thread;
+  } catch (err) {
+    console.warn('[agent-runtime] provider lookup failed:', (err as Error).message);
+    return null;
   }
-  if (!thread?.id) throw new Error('Codex thread/start returned no thread id');
+}
 
-  codexHarness.claimThread(thread.id, run.userId, String(thread.model ?? provider.model ?? ''));
-  const db = getDb();
-  const [existing] = await db.select().from(codexThreads).where(eq(codexThreads.threadId, String(thread.id))).limit(1);
-  if (!existing) {
-    await db.insert(codexThreads).values({
-      userId: run.userId,
-      projectId: context.projectId,
-      sessionId: run.sessionId,
-      workspaceId: workspace.row.id,
-      threadId: String(thread.id),
-      status: 'active',
-      model: thread.model ?? provider.model,
-      providerMode: provider.mode,
-    });
-  } else {
-    await db.update(codexThreads).set({ status: 'active', updatedAt: new Date(), lastTurnId: run.threadId ? existing.lastTurnId : null })
-      .where(eq(codexThreads.id, existing.id));
+function piStepItemType(kind: string): string {
+  switch (kind) {
+    case 'command': return 'commandExecution';
+    case 'file_change': return 'fileChange';
+    case 'search': return 'webSearch';
+    case 'mcp': return 'mcpToolCall';
+    default: return 'commandExecution';
   }
-  await db.update(agentRuns).set({
-    threadId: String(thread.id),
-    workspaceId: workspace.row.id,
-    providerMode: provider.mode,
-    model: thread.model ?? provider.model,
-    status: 'running',
-  }).where(eq(agentRuns.id, run.id));
-  await publishAgentEvent(run.id, 'thread_started', {
-    threadId: String(thread.id),
-    workspaceId: workspace.row.id,
-    providerMode: provider.mode,
-    model: thread.model ?? provider.model,
-  }, workspace.path);
-  return { threadId: String(thread.id), provider, workspacePath: workspace.path };
 }
 
 export async function createAgentRun(input: CreateAgentRunInput) {
-  if (!UNIFIED_CODEX_ENABLED) throw new NotFound('Unified Codex runtime is disabled');
+  if (!WORKSPACE_AGENT_ENABLED) throw new NotFound('Workspace agent runtime is disabled');
   const task = String(input.task || '').trim();
   if (!task) throw new BadRequest('task is required');
   if (task.length > MAX_TASK_LENGTH) throw new BadRequest('task is too long');
@@ -740,31 +685,6 @@ async function updateRunStatus(runId: string, status: AgentRunStatus, patch: Rec
   }
 }
 
-async function recordApproval(run: typeof agentRuns.$inferSelect, data: Record<string, unknown>, workspacePath: string) {
-  const db = getDb();
-  const requestId = String(data.requestId ?? '');
-  if (!requestId) return;
-  const kind = String(data.kind || 'unknown');
-  let [existing] = await db.select().from(agentApprovals)
-    .where(and(eq(agentApprovals.runId, run.id), eq(agentApprovals.requestId, requestId))).limit(1);
-  if (!existing) {
-    [existing] = await db.insert(agentApprovals).values({
-      runId: run.id,
-      userId: run.userId,
-      threadId: String(data.threadId || run.threadId || ''),
-      requestId,
-      kind,
-      payload: redactForEvent(data, workspacePath) as Record<string, unknown>,
-    }).returning();
-  }
-  await updateRunStatus(run.id, 'awaiting_approval');
-  await publishAgentEvent(run.id, 'approval_required', { ...data, approvalId: existing?.id || requestId }, workspacePath);
-}
-
-function approvalDataFromPending(pending: { rpcId: number | string; method: string; threadId: string; turnId: string | null; itemId: string | null; params: Record<string, unknown> }) {
-  const mapped = mapCodexNotification(pending.method, pending.params, pending.rpcId);
-  return mapped?.event === 'approval_required' ? mapped.data : null;
-}
 
 export async function runAgentTurn(
   runId: string,
@@ -774,7 +694,6 @@ export async function runAgentTurn(
   options: { stopOnApproval?: boolean } = {},
 ): Promise<AgentRunResult> {
   let run = await loadRun(runId, userId);
-  let threadInfo: Awaited<ReturnType<typeof startCodexThread>> | null = null;
   if (taskOverride != null) {
     const task = String(taskOverride).trim();
     if (!task || task.length > MAX_TASK_LENGTH) throw new BadRequest('Invalid task');
@@ -785,74 +704,65 @@ export async function runAgentTurn(
   let project: Awaited<ReturnType<typeof projectForRun>> | null = null;
   try {
     workspace = await workspaceForRun(run);
-    if (!run.threadId) {
-      project = await projectForRun(run);
-      const started = await startCodexThread(run, { projectId: run.projectId, project }, workspace);
-      threadInfo = started;
-      run = (await loadRun(runId, userId));
-      run = { ...run, threadId: started.threadId, workspaceId: workspace.row.id };
-      workspace = await workspaceForRun(run);
-    }
-
     project = await projectForRun(run);
-    if (!threadInfo) threadInfo = await startCodexThread(run, { projectId: run.projectId, project }, workspace);
   } catch (err) {
     const message = safeText((err as Error).message || err, workspace?.path);
     await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(() => undefined);
     await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace?.path).catch(() => undefined);
     throw err;
   }
-  if (!workspace || !threadInfo) throw new Error('Codex thread initialization returned no workspace');
-  const threadId = threadInfo.threadId;
+  if (!workspace) throw new Error('Workspace initialization returned no directory');
+  const policy = workspace.row.policy && typeof workspace.row.policy === 'object'
+    ? (workspace.row.policy as Record<string, unknown>)
+    : { ...DEFAULT_POLICY };
+  const disk = assertWorkspaceDiskWithinLimit(workspace.path, policy);
+  if (!disk.ok) {
+    const message = `workspace_disk_limit: ${disk.usageBytes} bytes used, ${disk.maxBytes} bytes allowed.`;
+    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(() => undefined);
+    await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace.path).catch(() => undefined);
+    throw new BadRequest(message);
+  }
+  const piProvider = await resolvePiProvider(userId);
+  const abortController = new AbortController();
   let output = '';
-  let usage: unknown = null;
-  let turnId: string | null = null;
-  let approvalPersistence: Promise<unknown> | null = null;
-  let settled = false;
-  let resolveDone: (result: { status: AgentRunStatus; error?: string | null }) => void = () => undefined;
-  let rejectDone: (error: Error) => void = () => undefined;
-  const done = new Promise<{ status: AgentRunStatus; error?: string | null }>((resolve, reject) => {
-    resolveDone = resolve;
-    rejectDone = reject;
-  });
 
-  const finish = (result: { status: AgentRunStatus; error?: string | null }) => {
-    if (settled) return;
-    settled = true;
-    resolveDone(result);
-  };
-  const onEvent = (method: string, params: Record<string, any>, meta?: { rpcId: number | string }) => {
-    const mapped = mapCodexNotification(method, params, meta?.rpcId);
-    if (!mapped) return;
-    const data = mapped.data;
-    if (mapped.event === 'delta') output = appendBoundedOutput(output, data.delta);
-    if (mapped.event === 'usage') usage = data.usage || null;
-    if (mapped.event === 'turn_started') {
-      turnId = data.turnId ? String(data.turnId) : turnId;
-      void publishAgentEvent(runId, 'turn_started', { ...data, turnId }, workspace.path);
-    } else if (mapped.event === 'turn_completed') {
-      const status = statusFromTurn(data.status);
-      void publishAgentEvent(runId, 'turn_completed', data, workspace.path);
-      finish({ status, error: data.error ? String(data.error) : null });
-    } else if (mapped.event === 'approval_required') {
-      approvalPersistence = recordApproval(run, data, workspace.path);
-      if (options.stopOnApproval) finish({ status: 'awaiting_approval' });
-    } else {
-      void publishAgentEvent(runId, mapped.event, data, workspace.path);
+  const onEvent = (event: PiAgentEvent) => {
+    if (event.type === 'delta' && event.chunk) {
+      output = appendBoundedOutput(output, event.chunk);
+      void publishAgentEvent(runId, 'delta', { delta: event.chunk }, workspace.path);
+      return;
+    }
+    if (event.type === 'reasoning' && event.chunk) {
+      void publishAgentEvent(runId, 'reasoning', { delta: event.chunk }, workspace.path);
+      return;
+    }
+    if (event.type === 'step_update' && event.chunk) {
+      void publishAgentEvent(runId, 'tool_output', { delta: event.chunk }, workspace.path);
+      return;
+    }
+    if (event.type === 'step_start' && event.step) {
+      void publishAgentEvent(runId, 'tool', {
+        itemId: event.step.stepId,
+        type: piStepItemType(event.step.kind),
+        command: event.step.command,
+        status: 'inProgress',
+      }, workspace.path);
+      return;
+    }
+    if (event.type === 'step_end' && event.step) {
+      void publishAgentEvent(runId, 'item_completed', {
+        itemId: event.step.stepId,
+        type: piStepItemType(event.step.kind),
+        command: event.step.command,
+        status: event.step.isError ? 'failed' : 'completed',
+        exitCode: event.step.isError ? 1 : 0,
+        aggregatedOutput: event.step.output,
+      }, workspace.path);
     }
   };
 
-  const unsubscribe = codexHarness.onThreadEvent(threadId, onEvent);
-  for (const pending of codexHarness.listApprovals(threadId)) {
-    const pendingData = approvalDataFromPending(pending);
-    if (pendingData) void recordApproval(run, pendingData, workspace.path);
-  }
-
-  const abortTurn = () => {
-    const activeTurnId = turnId || activeTurns.get(runId)?.turnId;
-    if (activeTurnId) void codexHarness.request('turn/interrupt', { threadId, turnId: activeTurnId }).catch(() => undefined);
-  };
-  activeTurns.set(runId, { threadId, turnId, abort: abortTurn });
+  const abortTurn = () => abortController.abort();
+  activeTurns.set(runId, { threadId: '', turnId: null, abort: abortTurn });
   const onAbort = () => abortTurn();
   if (signal) {
     if (signal.aborted) onAbort();
@@ -864,27 +774,23 @@ export async function runAgentTurn(
     const prompt = project?.systemPrompt
       ? `[Project instructions]\n${String(project.systemPrompt).slice(0, 50_000)}\n\n[Task]\n${run.task}`
       : run.task;
-    const turnResult = await codexHarness.request('turn/start', {
-      threadId,
-      clientUserMessageId: randomUUID(),
-      input: [{ type: 'text', text: prompt }],
+    const agentResult = await runPiAgentTask({
+      task: prompt,
+      workspacePath: workspace.path,
+      sessionId: `socrates-${run.sessionId || run.id}`,
+      signal: abortController.signal,
+      limits: { maxMemoryMb: limitsFromPolicy(policy).maxMemoryMb },
+      provider: piProvider,
+      onEvent,
     });
-    turnId = turnResult?.turn?.id ? String(turnResult.turn.id) : turnId;
-    activeTurns.set(runId, { threadId, turnId, abort: abortTurn });
-    if (turnId) {
-      await getDb().update(codexThreads).set({ lastTurnId: turnId, updatedAt: new Date(), status: 'active' }).where(eq(codexThreads.threadId, threadId));
-    }
-    const timeout = setTimeout(() => {
-      abortTurn();
-      finish({ status: 'failed', error: 'Codex turn timed out' });
-    }, TURN_TIMEOUT_MS);
-    timeout.unref?.();
-    const completed = await done;
-    if (approvalPersistence) await approvalPersistence;
-    clearTimeout(timeout);
-    const finalStatus = completed.status;
-    const finalError = completed.error || null;
-    const summary = output.trim().slice(0, 12_000) || (finalError ? null : 'Codex completed the workspace task.');
+    output = agentResult.output || output;
+    const finalStatus: AgentRunStatus = agentResult.status === 'completed'
+      ? 'completed'
+      : agentResult.status === 'aborted'
+        ? 'interrupted'
+        : 'failed';
+    const finalError = agentResult.error || null;
+    const summary = output.trim().slice(0, 12_000) || (finalError ? null : 'The workspace agent completed the task.');
     let artifactsFound: Array<Record<string, unknown>> = [];
     if (finalStatus === 'completed') {
       try { artifactsFound = await collectWorkspaceArtifacts(run, workspace.path); }
@@ -893,13 +799,12 @@ export async function runAgentTurn(
     await updateRunStatus(runId, finalStatus, {
       summary,
       error: finalError,
-      usage: usage && typeof usage === 'object' ? usage : {},
+      usage: {},
     });
-    await publishAgentEvent(runId, finalStatus === 'completed' ? 'run_completed' : finalStatus === 'interrupted' ? 'run_interrupted' : finalStatus === 'awaiting_approval' ? 'run_waiting' : 'run_failed', {
+    await publishAgentEvent(runId, finalStatus === 'completed' ? 'run_completed' : finalStatus === 'interrupted' ? 'run_interrupted' : 'run_failed', {
       status: finalStatus,
       summary,
       error: finalError,
-      usage,
     }, workspace.path);
     return {
       runId,
@@ -907,7 +812,6 @@ export async function runAgentTurn(
       output,
       summary,
       artifacts: artifactsFound,
-      threadId,
       workspaceId: workspace.row.id,
       error: finalError,
     };
@@ -915,10 +819,8 @@ export async function runAgentTurn(
     const message = safeText((err as Error).message || err, workspace.path);
     await updateRunStatus(runId, 'failed', { error: message, summary: null });
     await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace.path);
-    rejectDone(err as Error);
     throw err;
   } finally {
-    unsubscribe();
     activeTurns.delete(runId);
     if (signal) signal.removeEventListener('abort', onAbort);
   }
@@ -932,9 +834,6 @@ export async function runWorkspaceAgent(input: CreateAgentRunInput, signal?: Abo
 export async function getAgentRun(userId: string, runId: string) {
   const run = await loadRun(runId, userId);
   const db = getDb();
-  const approvals = await db.select().from(agentApprovals)
-    .where(and(eq(agentApprovals.runId, run.id), eq(agentApprovals.userId, userId), eq(agentApprovals.status, 'pending')))
-    .orderBy(desc(agentApprovals.createdAt));
   const generatedArtifacts = await db.select({
     id: artifacts.id,
     name: artifacts.title,
@@ -944,7 +843,7 @@ export async function getAgentRun(userId: string, runId: string) {
   }).from(artifacts)
     .where(and(eq(artifacts.agentRunId, run.id), eq(artifacts.userId, userId)))
     .orderBy(asc(artifacts.createdAt));
-  return { run, approvals, artifacts: generatedArtifacts };
+  return { run, artifacts: generatedArtifacts };
 }
 
 /**
@@ -954,87 +853,6 @@ export async function getAgentRun(userId: string, runId: string) {
  * finalizes the run after the user decides, even when no browser SSE stream
  * is open anymore.
  */
-async function watchAgentTurn(runId: string, userId: string, threadId: string) {
-  if (activeWatchers.has(runId) || activeTurns.has(runId)) return;
-  activeWatchers.add(runId);
-  let unsubscribe: (() => void) | null = null;
-  try {
-    const run = await loadRun(runId, userId);
-    const db = getDb();
-    const workspace = await workspaceForRun(run);
-    await codexHarness.ensureStarted();
-    codexHarness.claimThread(threadId, userId, run.model || '');
-    let output = '';
-    let usage: unknown = null;
-    let approvalPersistence: Promise<unknown> | null = null;
-    let settled = false;
-    let resolveDone: (result: { status: AgentRunStatus; error?: string | null }) => void = () => undefined;
-    const done = new Promise<{ status: AgentRunStatus; error?: string | null }>((resolve) => { resolveDone = resolve; });
-    const finish = (result: { status: AgentRunStatus; error?: string | null }) => {
-      if (settled) return;
-      settled = true;
-      resolveDone(result);
-    };
-    const onEvent = (method: string, params: Record<string, any>, meta?: { rpcId: number | string }) => {
-      const mapped = mapCodexNotification(method, params, meta?.rpcId);
-      if (!mapped) return;
-      if (mapped.event === 'delta') output = appendBoundedOutput(output, mapped.data.delta);
-      if (mapped.event === 'usage') usage = mapped.data.usage || null;
-      if (mapped.event === 'approval_required') {
-        approvalPersistence = recordApproval(run, mapped.data, workspace.path);
-      } else if (mapped.event === 'turn_completed') {
-        void publishAgentEvent(runId, 'turn_completed', mapped.data, workspace.path);
-        finish({ status: statusFromTurn(mapped.data.status), error: mapped.data.error ? String(mapped.data.error) : null });
-      } else {
-        void publishAgentEvent(runId, mapped.event, mapped.data, workspace.path);
-      }
-    };
-    unsubscribe = codexHarness.onThreadEvent(threadId, onEvent);
-    const timeout = setTimeout(() => finish({ status: 'failed', error: 'Codex approval continuation timed out' }), TURN_TIMEOUT_MS);
-    timeout.unref?.();
-    const completed = await done;
-    if (approvalPersistence) await approvalPersistence;
-    clearTimeout(timeout);
-    const summary = output.trim().slice(0, 12_000) || completed.error || null;
-    if (completed.status === 'completed') {
-      try { await collectWorkspaceArtifacts(run, workspace.path); }
-      catch (err) { console.warn('[agent-runtime] resumed artifact collection failed:', (err as Error).message); }
-    }
-    await updateRunStatus(runId, completed.status, { summary, error: completed.error || null, usage: usage || {} });
-    await publishAgentEvent(runId, completed.status === 'completed' ? 'run_completed' : completed.status === 'interrupted' ? 'run_interrupted' : 'run_failed', {
-      status: completed.status,
-      summary,
-      error: completed.error || null,
-      usage,
-    }, workspace.path);
-    if (run.source === 'scheduled') {
-      const [task] = await db.select().from(scheduledTasks).where(eq(scheduledTasks.lastRunId, runId)).limit(1);
-      if (task) {
-        const recurring = ['hourly', 'daily', 'weekly', 'monthly'].includes(String(task.frequency));
-        let nextRunAt: Date | null = null;
-        if (recurring) {
-          nextRunAt = new Date();
-          if (task.frequency === 'hourly') nextRunAt.setHours(nextRunAt.getHours() + 1);
-          if (task.frequency === 'daily') nextRunAt.setDate(nextRunAt.getDate() + 1);
-          if (task.frequency === 'weekly') nextRunAt.setDate(nextRunAt.getDate() + 7);
-          if (task.frequency === 'monthly') nextRunAt.setMonth(nextRunAt.getMonth() + 1);
-        }
-        await db.update(scheduledTasks).set({
-          status: completed.status === 'completed' ? (recurring ? 'active' : 'completed') : 'failed',
-          nextRunAt,
-          updatedAt: new Date(),
-        }).where(eq(scheduledTasks.id, task.id));
-      }
-    }
-  } catch (err) {
-    const message = safeText((err as Error).message || err);
-    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(() => undefined);
-    await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }).catch(() => undefined);
-  } finally {
-    unsubscribe?.();
-    activeWatchers.delete(runId);
-  }
-}
 
 export async function listAgentRuns(userId: string, filters: { sessionId?: string; projectId?: string; limit?: number } = {}) {
   const db = getDb();
@@ -1059,45 +877,22 @@ export async function listAgentEvents(userId: string, runId: string, after = 0, 
     })));
 }
 
-export async function decideAgentApproval(userId: string, runId: string, approvalId: string, decision: string) {
-  const allowed = new Set(['accept', 'acceptForSession', 'decline', 'cancel']);
-  if (!allowed.has(decision)) throw new BadRequest('Invalid approval decision');
-  await loadRun(runId, userId);
-  const db = getDb();
-  const [approval] = await db.select().from(agentApprovals)
-    .where(and(eq(agentApprovals.id, approvalId), eq(agentApprovals.runId, runId), eq(agentApprovals.userId, userId))).limit(1);
-  if (!approval) throw new NotFound('Approval not found');
-  if (approval.status !== 'pending') return { ok: true, status: approval.status, idempotent: true };
-  const ok = codexHarness.respondToRequest(rpcId(approval.requestId), { decision });
-  if (!ok) throw new NotFound('Approval request is no longer pending');
-  const status = decision === 'accept' ? 'accepted' : decision === 'acceptForSession' ? 'accepted_for_session' : decision === 'decline' ? 'declined' : 'cancelled';
-  await db.update(agentApprovals).set({ status, decision, decidedAt: new Date() }).where(eq(agentApprovals.id, approval.id));
-  await updateRunStatus(runId, status.startsWith('accepted') ? 'running' : 'failed', status.startsWith('accepted') ? {} : { error: `Approval ${status}` });
-  await publishAgentEvent(runId, 'approval_decided', { approvalId: approval.id, decision, status });
-  if (status.startsWith('accepted') && !activeTurns.has(runId)) {
-    void watchAgentTurn(runId, userId, approval.threadId);
-  }
-  return { ok: true, status, idempotent: false };
-}
 
 export async function interruptAgentRun(userId: string, runId: string) {
-  const run = await loadRun(runId, userId);
+  await loadRun(runId, userId);
   const active = activeTurns.get(runId);
-  const threadId = run.threadId || active?.threadId;
-  const turnId = active?.turnId || null;
-  if (!threadId || !turnId) {
+  if (!active) {
     await updateRunStatus(runId, 'interrupted', { summary: 'Stopped before the turn started.' });
     return { ok: true, status: 'interrupted' };
   }
-  await codexHarness.request('turn/interrupt', { threadId, turnId });
-  await publishAgentEvent(runId, 'run_interrupted', { turnId });
+  active.abort?.();
+  await publishAgentEvent(runId, 'run_interrupted', {});
   return { ok: true, status: 'interrupt_requested' };
 }
 
 export async function resumeAgentRun(userId: string, runId: string, task?: string, signal?: AbortSignal) {
-  const run = await loadRun(runId, userId);
-  if (!run.threadId) throw new BadRequest('Run has no resumable Codex thread');
-  return runAgentTurn(run.id, userId, task, signal);
+  await loadRun(runId, userId);
+  return runAgentTurn(runId, userId, task, signal);
 }
 
 export async function retryAgentRun(userId: string, runId: string, signal?: AbortSignal) {
@@ -1113,22 +908,14 @@ export async function retryAgentRun(userId: string, runId: string, signal?: Abor
   return runAgentTurn(retry.id, userId, undefined, signal);
 }
 
-export async function rehydrateAgentThread(userId: string, runId: string) {
-  const run = await loadRun(runId, userId);
-  if (!run.threadId) throw new BadRequest('Run has no Codex thread');
-  const workspace = await workspaceForRun(run);
-  await startCodexThread(run, { projectId: run.projectId, project: await projectForRun(run) }, workspace);
-  await updateRunStatus(runId, 'disconnected', { summary: 'Codex thread reconnected; ready to resume.' });
-  return getAgentRun(userId, runId);
-}
 
 /**
- * On a server restart the in-memory harness ownership table is empty. Probe
- * unfinished persisted runs so the application either reclaims their thread
- * or marks them explicitly disconnected for a user-driven resume.
+ * On server restart every in-flight Pi process is gone. Mark unfinished
+ * runs explicitly interrupted so the UI offers a resume/retry instead of
+ * leaving them pinned in `running`.
  */
 export async function recoverAgentRunsOnStartup(): Promise<{ checked: number; recovered: number; disconnected: number }> {
-  if (!UNIFIED_CODEX_ENABLED) return { checked: 0, recovered: 0, disconnected: 0 };
+  if (!WORKSPACE_AGENT_ENABLED) return { checked: 0, recovered: 0, disconnected: 0 };
   const db = getDb();
   const rows = await db.select().from(agentRuns)
     .where(inArray(agentRuns.status, ['starting', 'running', 'awaiting_approval']))
@@ -1136,26 +923,15 @@ export async function recoverAgentRunsOnStartup(): Promise<{ checked: number; re
   let recovered = 0;
   let disconnected = 0;
   for (const run of rows) {
-    if (!run.threadId) {
-      await updateRunStatus(run.id, 'disconnected', { error: 'Run was interrupted by a server restart.' });
-      disconnected++;
-      continue;
-    }
-    try {
-      const workspace = await workspaceForRun(run);
-      await startCodexThread(run, { projectId: run.projectId, project: await projectForRun(run) }, workspace);
-      if (run.status === 'awaiting_approval') await updateRunStatus(run.id, 'awaiting_approval');
-      else await updateRunStatus(run.id, 'disconnected', { summary: 'Thread reconnected after restart; resume to continue.' });
-      await publishAgentEvent(run.id, 'thread_status', {
-        status: run.status === 'awaiting_approval' ? 'awaiting_approval' : 'disconnected',
-        recovered: true,
-      }, workspace.path);
-      recovered++;
-    } catch (err) {
-      await updateRunStatus(run.id, 'disconnected', { error: safeText((err as Error).message || err) });
-      await publishAgentEvent(run.id, 'thread_status', { status: 'disconnected', recovered: false }).catch(() => undefined);
-      disconnected++;
-    }
+    await updateRunStatus(run.id, 'interrupted', {
+      error: 'Run was interrupted by a server restart.',
+      completedAt: new Date(),
+    });
+    await publishAgentEvent(run.id, 'run_interrupted', {
+      status: 'interrupted',
+      reason: 'server_restart',
+    }).catch(() => undefined);
+    disconnected++;
   }
   return { checked: rows.length, recovered, disconnected };
 }

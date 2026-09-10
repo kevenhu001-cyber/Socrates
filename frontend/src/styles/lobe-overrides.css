@@ -2058,7 +2058,6 @@ body.workspace-active #appShell .plugins-panel.main-page {
 #appShell .plugin-directory-icon-action:disabled:hover { background: transparent !important; }
 #appShell .plugin-directory-icon-action svg { width: 19px !important; height: 19px !important; }
 #appShell .plugin-directory-note { margin-top: 28px !important; color: #777 !important; }
-#appShell .codex-mcp-card { display: none !important; }
 
 /* Application settings retains its behavior but adopts the same black,
    unframed configuration language as the reference app shell. */

@@ -122,7 +122,6 @@ function suppressReferenceDuplicates() {
       '#pluginsPanel.workspace-ref-active:not([data-live-directory="true"]) .plugin-directory-note,',
       '#pluginsPanel.workspace-ref-active:not([data-live-directory="true"]) .plugin-directory-warning,',
       '#pluginsPanel.workspace-ref-active:not([data-live-directory="true"]) #pluginsList:not(.visually-hidden),',
-      '#pluginsPanel.workspace-ref-active:not([data-live-directory="true"]) .codex-mcp-card { display: none !important; }',
 
       '#libraryPanel.workspace-ref-active:not([data-live-directory="true"]) .workspace-page-head,',
       '#libraryPanel.workspace-ref-active:not([data-live-directory="true"]) .plugin-directory-head,',

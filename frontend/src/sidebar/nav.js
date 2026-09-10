@@ -592,13 +592,12 @@ async function renderPlugins() {
   try {
     var projectId = window.stateStore.read("currentProjectId") || null;
     var res = await api("/api/project-connectors").catch(function () { return {}; });
-    var mcp = await api("/api/agent-mcp" + (projectId ? "?projectId=" + encodeURIComponent(projectId) : "")).catch(function () { return { enabled: false, configured: false, servers: [] }; });
     workspaceCache.connectors = (res && res.connectors) || [];
     workspaceCache.projectConnectorConfigured = !!(res && res.configured);
     workspaceCache.openConnectorAvailable = !!(res && res.openConnector && res.openConnector.available);
-    workspaceCache.mcp = (mcp && mcp.servers) || [];
-    workspaceCache.mcpConfigured = !!(mcp && mcp.configured);
-    workspaceCache.mcpProjectId = (mcp && mcp.projectId) || projectId || null;
+    workspaceCache.mcp = [];
+    workspaceCache.mcpConfigured = false;
+    workspaceCache.mcpProjectId = projectId || null;
     paintPlugins();
     _publishWorkspaceState();
   } catch (err) {
@@ -615,23 +614,6 @@ async function renderPlugins() {
 function paintPlugins() {
   return;
 }
-
-window.toggleCodexMcp = async function (key, enabled) {
-  try {
-    var projectId = workspaceCache.mcpProjectId || window.stateStore.read("currentProjectId") || null;
-    await api("/api/agent-mcp/" + encodeURIComponent(key), { method: "PATCH", body: { enabled: !!enabled, projectId: projectId || null } });
-    await renderPlugins();
-    toast(enabled ? "Codex tool enabled" : "Codex tool disabled");
-  } catch (error) { toast((error && error.message) || "Could not update Codex tool"); }
-};
-
-window.checkCodexMcpHealth = async function (key) {
-  try {
-    var projectId = workspaceCache.mcpProjectId || window.stateStore.read("currentProjectId") || null;
-    await api("/api/agent-mcp/" + encodeURIComponent(key) + "/health", { method: "POST", body: { projectId: projectId || null } });
-    await renderPlugins();
-  } catch (error) { toast((error && error.message) || "Could not check MCP server"); }
-};
 /* OpenConnector OAuth apps are user-supplied: before the authorize redirect,
  * check whether this oc_ app already has an OAuth client registered. If not,
  * show the setup dialog (redirect URI to register + client fields) and only
@@ -837,7 +819,7 @@ function agentRunTime(value) {
 function renderProjectRunHistory(projectId) {
   var host = byId("projectRunHistory");
   if (!host) return;
-  host.innerHTML = '<div class="workspace-loading">' + esc(t("dialog.project.runsLoading", "Loading Codex runs…")) + '</div>';
+  host.innerHTML = '<div class="workspace-loading">' + esc(t("dialog.project.runsLoading", "Loading agent runs…")) + '</div>';
   api("/api/agent-runs?projectId=" + encodeURIComponent(projectId) + "&limit=8").then(function (result) {
     var runs = result && Array.isArray(result.runs) ? result.runs : [];
     var current = byId("projectRunHistory");
@@ -845,7 +827,7 @@ function renderProjectRunHistory(projectId) {
     current.innerHTML = "";
     var heading = document.createElement("div");
     heading.className = "project-runtime-heading";
-    heading.textContent = t("dialog.project.runsTitle", "Codex workspace runs");
+    heading.textContent = t("dialog.project.runsTitle", "Workspace agent runs");
     current.appendChild(heading);
     if (!runs.length) {
       var empty = document.createElement("p");
@@ -860,7 +842,7 @@ function renderProjectRunHistory(projectId) {
       var copy = document.createElement("div");
       copy.className = "project-run-copy";
       var task = document.createElement("strong");
-      task.textContent = run.task || t("dialog.project.untitledRun", "Untitled Codex task");
+      task.textContent = run.task || t("dialog.project.untitledRun", "Untitled agent task");
       var meta = document.createElement("span");
       meta.textContent = agentRunStatusLabel(run.status) + (agentRunTime(run.startedAt) ? " · " + agentRunTime(run.startedAt) : "");
       copy.appendChild(task);
@@ -880,7 +862,7 @@ function renderProjectRunHistory(projectId) {
   });
 }
 window.openAgentRunDetails = async function (runId) {
-  showDialog('<div class="workspace-dialog-title"><div><h2>' + t("dialog.project.runDetails", "Codex run") + '</h2><p>' + t("dialog.project.runDetailsLoading", "Loading the execution record…") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div id="agentRunDetails" class="agent-run-details"><div class="workspace-loading">' + esc(t("dialog.project.runsLoading", "Loading Codex runs…")) + '</div></div>');
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + t("dialog.project.runDetails", "Agent run") + '</h2><p>' + t("dialog.project.runDetailsLoading", "Loading the execution record…") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><div id="agentRunDetails" class="agent-run-details"><div class="workspace-loading">' + esc(t("dialog.project.runsLoading", "Loading agent runs…")) + '</div></div>');
   try {
     var result = await api("/api/agent-runs/" + encodeURIComponent(runId));
     var host = byId("agentRunDetails");
@@ -937,7 +919,7 @@ function toLocalDateTimeValue(value) {
   var p = function (n) { return String(n).length < 2 ? "0" + n : String(n); };
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
 }
-/* Codex-aware scheduled task editor — the Scheduled page's first-class
+/* Workspace-agent scheduled task editor — the Scheduled page's first-class
    runtime form. */
 function openAgentTaskForm(task, initialPrompt) {
   var editing = !!task;
@@ -946,7 +928,7 @@ function openAgentTaskForm(task, initialPrompt) {
   var activeProjectId = (task && task.projectId) || window.stateStore.read("currentProjectId") || "";
   var projectOptions = '<option value="">' + esc(t("dialog.task.noProject", "No project")) + '</option>';
   (workspaceCache.projects || []).forEach(function (project) { projectOptions += '<option value="' + esc(project.id) + '">' + esc(project.name) + '</option>'; });
-  showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.agent", "Agent") + '</span><select name="agentKind"><option value="native">' + t("dialog.task.nativeAgent", "Socrates · native tools") + '</option><option value="codex">' + t("dialog.task.codexAgent", "Codex · project workspace") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.project", "Project") + '</span><select name="projectId">' + projectOptions + '</select></label></div><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.codexNote", "Codex scheduled runs share the selected project workspace. Read-only work runs unattended; file changes, commands, and network side effects pause for approval.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : '') + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + '</button></div></form>');
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + (editing ? t("dialog.task.editTitle", "Edit task") : t("dialog.task.newTitle", "Schedule a task")) + '</h2><p>' + t("dialog.task.subtitle", "Choose what should run and when to check back.") + '</p></div><button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div><form id="taskForm" class="workspace-form"><label class="workspace-field"><span>' + t("dialog.task.field", "Task") + '</span><input name="title" maxlength="120" required value="' + esc(task && task.title) + '" placeholder="' + t("dialog.task.titlePh", "Send me a weekly study plan") + '"></label><label class="workspace-field"><span>' + t("dialog.task.prompt", "Prompt") + '</span><textarea name="prompt" rows="3" placeholder="' + t("dialog.task.promptPh", "What should Socrates do when this task runs?") + '">' + esc(task && task.prompt) + '</textarea></label><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.agent", "Agent") + '</span><select name="agentKind"><option value="native">' + t("dialog.task.nativeAgent", "Socrates · native tools") + '</option><option value="codex">' + t("dialog.task.codexAgent", "Pi Agent · project workspace") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.project", "Project") + '</span><select name="projectId">' + projectOptions + '</select></label></div><div class="workspace-form-grid"><label class="workspace-field"><span>' + t("dialog.task.repeat", "Repeat") + '</span><select name="frequency"><option value="once">' + t("scheduled.freq.once", "Once") + '</option><option value="daily">' + t("scheduled.freq.daily", "Daily") + '</option><option value="weekly">' + t("scheduled.freq.weekly", "Weekly") + '</option><option value="monthly">' + t("scheduled.freq.monthly", "Monthly") + '</option></select></label><label class="workspace-field"><span>' + t("dialog.task.firstRun", "First run") + '</span><input name="nextRunAt" type="datetime-local" value="' + esc(next) + '"></label></div><p class="workspace-note">' + t("dialog.task.codexNote", "Pi Agent scheduled runs work inside the selected project workspace with server-enforced disk limits.") + '</p><div class="workspace-dialog-actions">' + (editing ? '<button type="button" class="workspace-danger" onclick="deleteScheduledTask(\'' + esc(task.id) + '\')">' + t("common.delete", "Delete") + '</button>' : '') + '<span></span><button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + '</button><button class="workspace-primary" type="submit">' + (editing ? t("dialog.task.save", "Save task") : t("scheduled.createTask", "Create task")) + '</button></div></form>');
   var form = byId("taskForm");
   if (!editing && initialPrompt && form) {
     form.elements.title.value = initialPrompt.slice(0, 120);

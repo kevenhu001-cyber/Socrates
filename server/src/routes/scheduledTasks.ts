@@ -4,7 +4,7 @@ import { getDb } from '../db/index.js';
 import { projects, scheduledTasks, sessions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
-import { CODEX_BACKGROUND_ENABLED } from '../services/agentRuntime.js';
+import { WORKSPACE_AGENT_BACKGROUND_ENABLED } from '../services/agentRuntime.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -46,7 +46,7 @@ router.post('/', async (req, res, next) => {
     const firstRun = parseNextRunAt(nextRunAt) || new Date();
     const db = getDb();
     const normalizedAgentKind = agentKind === 'codex' ? 'codex' : 'native';
-    if (normalizedAgentKind === 'codex' && !CODEX_BACKGROUND_ENABLED) {
+    if (normalizedAgentKind === 'codex' && !WORKSPACE_AGENT_BACKGROUND_ENABLED) {
       throw new BadRequest('Codex background runs are disabled');
     }
     if (sessionId) {
@@ -104,7 +104,7 @@ router.patch('/:id', async (req, res, next) => {
     if (patch.agentKind !== undefined && patch.agentKind !== 'native' && patch.agentKind !== 'codex') {
       throw new BadRequest('agentKind must be native or codex');
     }
-    if (patch.agentKind === 'codex' && !CODEX_BACKGROUND_ENABLED) {
+    if (patch.agentKind === 'codex' && !WORKSPACE_AGENT_BACKGROUND_ENABLED) {
       throw new BadRequest('Codex background runs are disabled');
     }
     if (patch.projectId) {

@@ -192,7 +192,7 @@ export function updateInlineToolLabel(row: HTMLElement, text: string): void {
 }
 
 function runningLabel(name: string): string {
-  if (name === 'workspace_agent') return translate('tool.actionCodex', 'Working in the Codex workspace…');
+  if (name === 'workspace_agent') return translate('tool.actionCodex', 'Working in the workspace…');
   if (SEARCH_TOOLS.has(name)) return translate('tool.actionSearch', 'Searching the web…');
   if (name === 'code_interpreter' || name === 'Code') return translate('tool.actionCode', 'Executing code…');
   if (name === 'render_visualization') return translate('tool.actionVisual', 'Creating a visual');
@@ -216,7 +216,7 @@ function doneLabel(name: string, result: InlineToolResult | null): string {
   if (name === 'web_fetch') return translate('tool.doneFetch', 'Read the page');
   if (name === 'create_plan') return translate('tool.donePlan', 'Drafted a plan');
   if (name === 'create_spec') return translate('tool.doneSpec', 'Drafted a spec');
-  if (name === 'workspace_agent') return translate('tool.doneCodex', 'Completed the Codex workspace task');
+  if (name === 'workspace_agent') return translate('tool.doneCodex', 'Completed the workspace task');
   if (name === 'Read' || name === 'Glob' || name === 'Grep' || name === 'WebFetch') return translate('tool.doneRead', 'Read files');
   if (name === 'Write' || name === 'Edit' || name === 'Bash') return translate('tool.doneWrite', 'Updated files');
   return translate('tool.doneDefault', 'Finished using tool');
@@ -225,7 +225,7 @@ function doneLabel(name: string, result: InlineToolResult | null): string {
 function errorLabel(name: string, result: InlineToolResult | null): string {
   if (result && result.status === 'timeout') return translate('tool.statusTimeout', 'Timeout');
   if (SEARCH_TOOLS.has(name)) return translate('tool.searchFailed', 'Web search failed');
-  if (name === 'workspace_agent') return translate('tool.codexFailed', 'Codex workspace task failed');
+  if (name === 'workspace_agent') return translate('tool.codexFailed', 'Workspace task failed');
   return translate('tool.actionFailed', 'Tool call failed');
 }
 
@@ -258,7 +258,7 @@ function sourcesHtml(sources: SourceItem[]): string {
 }
 
 const INLINE_DETAIL_LIMIT = 12_000;
-/* Codex TOOL_CALL_MAX_LINES: keep head+tail lines of oversized tool output,
+/* TOOL_CALL_MAX_LINES: keep head+tail lines of oversized tool output,
    ellipsize the middle ("… +N lines"). */
 const INLINE_DETAIL_HEAD_LINES = 5;
 const INLINE_DETAIL_TAIL_LINES = 5;

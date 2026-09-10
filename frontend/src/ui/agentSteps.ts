@@ -1,10 +1,9 @@
 /**
- * ui/agentSteps.ts — Codex agent activity rendered as inline chat steps.
+ * ui/agentSteps.ts — Agent activity rendered as inline chat steps.
  *
- * The workspace agent used to be one opaque row: "Working in the Codex
- * workspace…" followed by a summary. The server now projects each Codex
+ * The workspace agent used to be one opaque row: "Working in the workspace…" followed by a summary. The server now projects each agent
  * thread item into a step (services/agentStepProjection.ts), and this module
- * renders those steps the way the Codex interface does:
+ * renders those steps the way the agent interface does:
  *
  *     用时 1h 39m 2s  ⌄
  *     ⊡ 读取了文件      cat notes.txt
@@ -45,7 +44,7 @@ export interface AgentPlanData {
 const MAX_COMMAND_CHARS = 96;
 const MAX_OUTPUT_CHARS = 4000;
 
-/* Chinese baseline copy, matching the Codex interface wording. */
+/* Chinese baseline copy, matching the agent interface wording. */
 const LABELS = {
   command: { key: 'agent.stepCommand', text: '运行了命令' },
   commandDone: { key: 'agent.stepCommandDone', text: '已运行' },
@@ -180,7 +179,7 @@ function stepsHost(section: HTMLElement): HTMLElement {
 /**
  * Create or update one step row, keyed by `stepId`.
  *
- * Codex reports every item twice (started, then completed), so this is an
+ * The agent reports every item twice (started, then completed), so this is an
  * upsert: the running row is created on the first event and settled in place
  * by the second, which keeps the reading order stable.
  */
@@ -279,7 +278,7 @@ function renderStepBody(row: HTMLElement, step: AgentStepData): void {
 /**
  * Create or update the plan checklist for a run.
  *
- * Codex re-sends its whole todo list on every change, so the card is
+ * The agent re-sends its whole todo list on every change, so the card is
  * rewritten in place instead of appending a new one per update.
  */
 export function upsertAgentPlan(

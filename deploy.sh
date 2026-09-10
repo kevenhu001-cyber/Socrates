@@ -46,13 +46,10 @@ fi
 # smaller or larger deployment hosts.
 FRONTEND_NODE_OPTIONS="${FRONTEND_NODE_OPTIONS:---max-old-space-size=1024}"
 
-# ─── Codex harness (embedded agent runtime) ─────────────────────────
-# CODEX_ENABLED=0 skips binary install + systemd drop-in + gates.
-# The install itself is idempotent and version-pinned; bump CODEX_VERSION
-# to upgrade the embedded codex-app-server package.
-CODEX_ENABLED="${CODEX_ENABLED:-1}"
-CODEX_VERSION="${CODEX_VERSION:-0.149.1}"
-CODEX_INSTALL_DIR="${CODEX_INSTALL_DIR:-/opt/socrates-codex}"
+# ─── Workspace agent runtime ─────────────────────────────────────────
+# The conversational and scheduled workspace agent runs on the Pi coding
+# agent. This deploy writes a systemd drop-in with the resolved pi binary,
+# the workspace root, and the writable paths; no Codex runtime is installed.
 CODEX_HOME="${CODEX_HOME:-/var/lib/socrates-codex}"
 CODEX_DROPIN="${CODEX_DROPIN:-/etc/systemd/system/socrates-api.service.d/codex.conf}"
 
@@ -488,111 +485,49 @@ if [ -f "$STATUS_SRC" ]; then
   echo "  status:  ${STATUS_FILE}"
 fi
 
-# ─── 2c. Codex harness (embedded agent runtime) ──────────────────────
-# Installs the pinned codex-app-server Linux package (idempotent, SHA256-
-# verified) and seeds an independent CODEX_HOME, then points the backend at
-# them via a systemd drop-in so the next `systemctl start` below picks them
-# up. The harness is lazy — it only spawns when a user opens the Codex
-# panel — so a failed install must fail the deploy, not the first request.
-# Detect a host-provided Codex so we don't re-download the pinned package.
-# The deploy may run as root, but the binary is owned/run by the deploy
-# user (ubuntu), so resolve it from that account's PATH. Falls back to a
-# set of well-known install locations, then to a PATH lookup.
-detect_local_codex() {
-  local u="${DEPLOY_USER:-$(id -un)}"
-  local p=""
-  # Prefer the deploy user's login shell PATH (npm-global, volta, …).
-  if command -v sudo >/dev/null 2>&1 && [[ "$u" != "$(id -un)" ]]; then
-    p=$(sudo -u "$u" bash -lc 'command -v codex-app-server || command -v codex' 2>/dev/null || true)
-  fi
-  if [[ -z "$p" ]]; then
-    for cand in \
-      "/home/ubuntu/.npm-global/bin/codex" \
-      "/usr/local/bin/codex" "/usr/local/bin/codex-app-server" \
-      "/usr/bin/codex" "/usr/bin/codex-app-server"; do
-      [[ -x "$cand" ]] && { p="$cand"; break; }
-    done
-  fi
-  if [[ -z "$p" ]]; then
-    p=$(command -v codex-app-server 2>/dev/null || command -v codex 2>/dev/null || true)
-  fi
-  [[ -n "$p" ]] || return 0
-  # Normalize symlinks so the recorded path is stable, then confirm -V works.
-  if command -v readlink >/dev/null 2>&1; then
-    p=$(readlink -f "$p" 2>/dev/null || echo "$p")
-  fi
-  if [[ -x "$p" ]] && "$p" -V >/dev/null 2>&1; then
-    # The codex CLI exposes the server as a subcommand; the harness appends
-    # `--listen stdio://`, which the CLI rejects at top level. Record the
-    # subcommand with the binary (mirrors install-codex.sh), or the systemd
-    # drop-in would spawn `codex --listen …` and every workspace task would
-    # fail during initialization.
-    if [[ "$(basename "$p")" != "codex-app-server" ]]; then
-      echo "$p app-server"
-    else
-      echo "$p"
-    fi
-  fi
-}
-
-install_codex_harness() {
-  # Auto-detect a locally installed Codex; if present, point the harness at
-  # it and skip the GitHub download entirely.
-  local local_codex
-  local_codex=$(detect_local_codex || true)
-  if [[ -n "$local_codex" ]]; then
-    echo "Detected local Codex at $local_codex — skipping download."
-    export CODEX_APP_SERVER_BIN="$local_codex"
-  else
-    echo "No local Codex found — will download pinned codex-app-server $CODEX_VERSION."
-  fi
-
-  echo "Installing Codex harness (codex-app-server $CODEX_VERSION)…"
-  if ! "$SERVER_DIR/scripts/install-codex.sh" --install; then
-    echo "ERROR: Codex harness install failed" >&2
-    return 1
-  fi
-
-  # The binary the backend will actually spawn: prefer the exact command
-  # install-codex.sh resolved and verified (it carries the `app-server`
-  # subcommand for CLI installs), then the env detection, then the package.
-  local codex_bin=""
-  if [[ -f "${CODEX_INSTALL_DIR}/.bin-path" ]]; then
-    codex_bin=$(cat "${CODEX_INSTALL_DIR}/.bin-path")
-  fi
-  codex_bin="${codex_bin:-${CODEX_APP_SERVER_BIN:-${CODEX_INSTALL_DIR}/bin/codex-app-server}}"
-
-  # systemd drop-in — set after the service unit is already installed so
-  # this deploy never edits the unit file itself (upgrades/removals keep
-  # working, and `systemctl cat socrates-api` shows the split config).
-  # The CODEX_APP_SERVER_BIN value is quoted: a CLI-derived command carries
-  # the `app-server` subcommand after a space and must stay one assignment.
+# ─── Workspace agent runtime (Pi) ─────────────────────────────────────
+# Writes the systemd drop-in: resolved pi binary, workspace root, writable
+# paths. No Codex runtime is installed or started.
+write_agent_dropin() {
+  # Pi Agent runtime for the conversational and scheduled workspace agent.
+  # Resolve the binary now so the drop-in pins an absolute path; disable the
+  # tool cleanly when the host has no `pi` install instead of failing turns.
   echo "Writing systemd drop-in $CODEX_DROPIN…"
   $SUDO mkdir -p "$(dirname "$CODEX_DROPIN")"
+
+  PI_AGENT_BIN_RESOLVED="${PI_AGENT_BIN:-}"
+  if [[ -z "$PI_AGENT_BIN_RESOLVED" ]]; then
+    for cand in /home/ubuntu/.volta/bin/pi /home/ubuntu/.npm-global/bin/pi /usr/local/bin/pi /usr/bin/pi; do
+      if [[ -x "$cand" ]]; then PI_AGENT_BIN_RESOLVED="$cand"; break; fi
+    done
+  fi
+  if [[ -z "$PI_AGENT_BIN_RESOLVED" ]] && command -v pi >/dev/null 2>&1; then
+    PI_AGENT_BIN_RESOLVED="$(command -v pi)"
+  fi
+  PI_AGENT_ENABLED_VALUE=1
+  PI_AGENT_BIN_DIR=""
+  if [[ -n "$PI_AGENT_BIN_RESOLVED" && -x "$PI_AGENT_BIN_RESOLVED" ]]; then
+    PI_AGENT_BIN_DIR="$(dirname "$PI_AGENT_BIN_RESOLVED")"
+  else
+    PI_AGENT_ENABLED_VALUE=0
+    echo "WARNING: no pi binary found — workspace_agent will be disabled (set PI_AGENT_BIN to enable)" >&2
+  fi
+
   $SUDO tee "$CODEX_DROPIN" >/dev/null <<EOF
 [Service]
-Environment=CODEX_ENABLED=1
-Environment="CODEX_APP_SERVER_BIN=${codex_bin}"
-Environment=CODEX_HOME=${CODEX_HOME}
-Environment=CODEX_WORKSPACE_ROOT=${CODEX_HOME}/workspaces
-Environment=PATH=${CODEX_INSTALL_DIR}/bin:${CODEX_INSTALL_DIR}/codex-path:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=WORKSPACE_ROOT=${CODEX_HOME}/workspaces
+Environment=PI_AGENT_ENABLED=${PI_AGENT_ENABLED_VALUE}
+Environment="PI_AGENT_BIN=${PI_AGENT_BIN_RESOLVED}"
+Environment=PATH=${PI_AGENT_BIN_DIR:+${PI_AGENT_BIN_DIR}:}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ReadWritePaths=${CODEX_HOME}
+ReadWritePaths=/home/ubuntu/.pi
 EOF
   $SUDO systemctl daemon-reload
-  echo "Codex harness drop-in active (bin=${codex_bin}, home=${CODEX_HOME})"
+  echo "Workspace agent drop-in active (pi=${PI_AGENT_BIN_RESOLVED:-none}, home=${CODEX_HOME})"
 }
 
-if [[ "$CODEX_ENABLED" != "0" ]]; then
-  if ! install_codex_harness; then
-    exit 1
-  fi
-else
-  echo "Codex harness skipped (CODEX_ENABLED=0)"
-  if [[ -f "$CODEX_DROPIN" ]]; then
-    echo "Removing stale Codex drop-in $CODEX_DROPIN…"
-    $SUDO rm -f "$CODEX_DROPIN"
-    $SUDO systemctl daemon-reload
-  fi
+if ! write_agent_dropin; then
+  exit 1
 fi
 
 # ─── 3. Build swap: stop first to avoid race with systemd restart ─────
@@ -848,24 +783,22 @@ else
   GATE_RESULTS+=("  admin.config $ADMIN_GATE_CODE  ← FAIL")
 fi
 
-# 4.5f. Codex harness — pinned binary + CODEX_HOME ready, and the backend's
-# codex router is mounted (401 = route exists behind auth; 404 = missing).
-if [[ "$CODEX_ENABLED" != "0" ]]; then
-  if "$SERVER_DIR/scripts/install-codex.sh" --check; then
-    GATE_RESULTS+=("  codex.harness $CODEX_VERSION ok")
-  else
-    echo "GATE FAIL: codex harness check failed (run 'sudo $SERVER_DIR/scripts/install-codex.sh --install')" >&2
-    GATE_FAILED=1
-    GATE_RESULTS+=("  codex.harness INVALID  ← FAIL")
-  fi
-  CODEX_API_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/codex/capabilities || echo 000)
-  if [[ "$CODEX_API_CODE" == "401" ]]; then
-    GATE_RESULTS+=("  codex.api mounted (auth 401)")
-  else
-    echo "GATE FAIL: /api/codex/capabilities returned $CODEX_API_CODE (expected 401)" >&2
-    GATE_FAILED=1
-    GATE_RESULTS+=("  codex.api $CODEX_API_CODE  ← FAIL")
-  fi
+# 4.5f. Workspace agent — the Pi binary must be present, and the durable
+# run API must be mounted (401 = route exists behind auth; 404 = missing).
+if [[ "$PI_AGENT_ENABLED_VALUE" == "1" && -n "$PI_AGENT_BIN_RESOLVED" && -x "$PI_AGENT_BIN_RESOLVED" ]]; then
+  GATE_RESULTS+=("  pi.agent $(basename "$PI_AGENT_BIN_RESOLVED") ok")
+else
+  echo "GATE FAIL: pi binary missing while the agent runtime reports enabled" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  pi.agent MISSING  ← FAIL")
+fi
+PI_AGENT_API_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/agent-runs/capabilities || echo 000)
+if [[ "$PI_AGENT_API_CODE" == "401" ]]; then
+  GATE_RESULTS+=("  pi.api mounted (auth 401)")
+else
+  echo "GATE FAIL: /api/agent-runs/capabilities returned $PI_AGENT_API_CODE (expected 401)" >&2
+  GATE_FAILED=1
+  GATE_RESULTS+=("  pi.api $PI_AGENT_API_CODE  ← FAIL")
 fi
 
 # 4.5g. State file: update only on full success so last-known-good is preserved.
@@ -916,8 +849,8 @@ if [[ $GATE_FAILED -eq 0 ]]; then
       "schemaTablesVerified": $([ "${SKIP_SCHEMA_VERIFY:-0}" = "1" ] && echo false || echo true),
       "bundleMd5Integrity": true,
       "nginxReloaded": $([ "$NGINX_STATUS" = "reloaded" ] && echo true || echo false),
-      "codexHarness": $([ "$CODEX_ENABLED" != "0" ] && echo true || echo false),
-      "codexApiMounted": $([ "$CODEX_ENABLED" != "0" ] && [ "$CODEX_API_CODE" = "401" ] && echo true || echo false)
+      "piAgentEnabled": $([ "$PI_AGENT_ENABLED_VALUE" = "1" ] && echo true || echo false),
+      "piAgentApiMounted": $([ "$PI_AGENT_API_CODE" = "401" ] && echo true || echo false)
     }
   }
 }
