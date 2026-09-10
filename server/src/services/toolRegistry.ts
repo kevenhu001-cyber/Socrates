@@ -8,7 +8,8 @@ import {
 } from './connectorTools.js';
 import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from './projectConnectorTools.js';
 import { OPEN_CONNECTOR_CHAT_TOOLS } from './openConnectorChatTools.js';
-import { UNIFIED_CODEX_ENABLED, WORKSPACE_AGENT_TOOL } from './agentRuntime.js';
+import { WORKSPACE_AGENT_TOOL, INITIALIZE_WORKSPACE_TOOL } from './agentRuntime.js';
+import { PI_AGENT_ENABLED } from './piAgent.js';
 
 /** The model-facing capability registry. Route-specific executors retain
  * their streaming/session semantics while availability is defined once.
@@ -29,11 +30,12 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
 }) {
   const entries = [
     { name: 'code_interpreter', modelDefinition: codeInterpreterToolDef, enabled: Boolean(codeInterpreterToolDef), pure: false, sessionSerial: true, maxConcurrency: 1, retries: 0 },
-    /* The Codex workspace agent is the first-class multi-step adapter. It
-       remains feature-flagged so Chat can be migrated independently from
-       existing native tools during rollout. The executor lives in the chat
-       route and delegates to the durable Agent Runtime. */
-    { name: 'workspace_agent', modelDefinition: WORKSPACE_AGENT_TOOL, enabled: UNIFIED_CODEX_ENABLED, pure: false, sessionSerial: true, maxConcurrency: 1, retries: 0 },
+    /* The workspace agent runs on the Pi coding-agent CLI (read / bash /
+       edit / write) inside the server-owned conversation workspace. It is
+       feature-flagged so Chat can fall back to native tools when Pi is not
+       installed on the host. */
+    { name: 'workspace_agent', modelDefinition: WORKSPACE_AGENT_TOOL, enabled: PI_AGENT_ENABLED, pure: false, sessionSerial: true, maxConcurrency: 1, retries: 0 },
+    { name: 'initialize_workspace', modelDefinition: INITIALIZE_WORKSPACE_TOOL, enabled: PI_AGENT_ENABLED, pure: false, sessionSerial: true, maxConcurrency: 1, retries: 0 },
     { name: 'render_visualization', modelDefinition: VISUALIZATION_TOOL, enabled: process.env.VISUALIZATION_TOOL_ENABLED !== 'false', pure: true, sessionSerial: false, maxConcurrency: 4, retries: 1 },
     /* Tutor and Chat share the same native capability surface. Pedagogical
        search restraint belongs in the Tutor system policy; hiding the schema

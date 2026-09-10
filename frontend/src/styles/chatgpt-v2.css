@@ -214,15 +214,14 @@
 }
 
 #appShell .sidebar {
-  --cg-sidebar-width: 246px;
-  width: var(--cg-sidebar-width) !important;
-  min-width: var(--cg-sidebar-width) !important;
+  width: var(--app-sidebar-width, 246px) !important;
+  min-width: var(--app-sidebar-width, 246px) !important;
   border-right: 1px solid var(--cgv-border) !important;
   background: var(--cg-rail) !important;
 }
 
 #appShell .main {
-  padding-left: var(--cg-sidebar-width) !important;
+  padding-left: var(--app-sidebar-width, 246px) !important;
 }
 
 #appShell .sidebar.collapsed ~ .main {
@@ -553,14 +552,16 @@
 /* Installed-plugin chip backgrounds and card glyph gradients.
    Centralised here so the markup stays free of inline styles
    (webhint no-inline-styles) while keeping each connector's brand colour
-   discoverable from the class name. */
-#appShell .installed-icon--purple   { background: #5f33c1; }
-#appShell .installed-icon--blue     { background: #2a8eef; }
-#appShell .installed-icon--red      { background: #c0392b; }
-#appShell .installed-icon--yellow   { background: #f0c419; }
-#appShell .installed-icon--green    { background: #4f9d69; }
-#appShell .installed-icon--violet   { background: #9b59b6; }
-#appShell .installed-icon--teal     { background: #0aa4ad; }
+   discoverable from the class name. The installed chip placeholders are
+   monochrome chrome; the `.glyph--*` card logos keep their real brand
+   colours. */
+#appShell .installed-icon--purple   { background: #3d3d3d; }
+#appShell .installed-icon--blue     { background: #4a4a4a; }
+#appShell .installed-icon--red      { background: #2e2e2e; }
+#appShell .installed-icon--yellow   { background: #6b6b6b; }
+#appShell .installed-icon--green    { background: #565656; }
+#appShell .installed-icon--violet   { background: #757575; }
+#appShell .installed-icon--teal     { background: #656565; }
 #appShell .installed-icon--black    { background: #1d1d1d; color: #fff; }
 
 #appShell .plugins-card .glyph--gmail     { background: linear-gradient(135deg, #ea4335, #fbbc05, #34a853, #4285f4); color: #fff; }
@@ -941,7 +942,6 @@ html[data-mode="light"] #appShell {
 }
 
 #appShell .recents-new-btn:hover svg,
-#appShell .color-swatch-custom:hover svg,
 #appShell .attach-btn:hover svg,
 #appShell .send-btn:hover svg {
   transform: none !important;

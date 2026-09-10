@@ -135,8 +135,6 @@ export interface LegacyWorkspace {
   refreshProjectConnector(id: string): void;
   openProjectConnectorForm(id: string): void;
   exitPluginsView(): void;
-  toggleCodexMcp(key: string, enabled: boolean): Promise<void> | void;
-  checkCodexMcpHealth(key: string): Promise<void> | void;
   openArxivSearch(): void;
   openZoteroLibrary(): void;
 }

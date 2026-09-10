@@ -18,8 +18,9 @@
  *    `xl`, `xxl`).
  *  - Breakpoints match the project's existing media-query ladders
  *    (≤480 px, ≤768 px, ≥1200 px).
- *  - Accent is a single gold/amber hue across light + dark — do not
- *    introduce the per-mode action blue that mobile currently uses.
+ *  - Accent is a fixed monochrome ramp (white-on-black in dark mode,
+ *    black-on-white in light mode). The app no longer ships a
+ *    selectable theme colour.
  */
 
 export type ThemeMode = 'light' | 'dark';
@@ -157,11 +158,11 @@ export const borderAlpha = 0.25;
  */
 export const darkPalette: ThemePalette = {
   mode: 'dark',
-  /* --accent-000 / --accent-900 */
+  /* --accent-000 / --accent-900 — monochrome */
   accent: {
-    strong: '43 77% 62%',
-    soft: '43 40% 20%',
-    surface: '43 40% 20%',
+    strong: '0 0% 100%',
+    soft: '0 0% 20%',
+    surface: '0 0% 20%',
   },
   /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
   bg: {
@@ -188,38 +189,38 @@ export const darkPalette: ThemePalette = {
   danger: '0 65% 62%',
   success: '145 50% 50%',
   muted: '0 0% 55%',
-  onAccent: '0 0% 100%',
+  onAccent: '0 0% 10%',
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '43 65% 42%',
-    soft: '43 40% 90%',
-    surface: '43 40% 90%',
+    strong: '0 0% 10%',
+    soft: '0 0% 90%',
+    surface: '0 0% 90%',
   },
   bg: {
-    page: '40 25% 96%',
-    raised: '38 20% 92%',
-    overlay: '42 33% 98%',
-    hover: '36 15% 87%',
+    page: '0 0% 98%',
+    raised: '0 0% 95%',
+    overlay: '0 0% 100%',
+    hover: '0 0% 91%',
     sunken: '0 0% 100%',
   },
   text: {
-    primary: '34 10% 16%',
-    secondary: '34 8% 28%',
-    tertiary: '34 6% 43%',
-    muted: '34 5% 50%',
-    disabled: '34 5% 50%',
+    primary: '0 0% 13%',
+    secondary: '0 0% 27%',
+    tertiary: '0 0% 44%',
+    muted: '0 0% 52%',
+    disabled: '0 0% 52%',
   },
   border: {
-    subtle: '38 12% 86%',
-    default: '36 10% 78%',
-    strong: '36 9% 72%',
+    subtle: '0 0% 88%',
+    default: '0 0% 80%',
+    strong: '0 0% 74%',
   },
   danger: '0 60% 45%',
   success: '152 50% 35%',
-  muted: '34 5% 50%',
+  muted: '0 0% 52%',
   onAccent: '0 0% 100%',
 };
 
@@ -239,5 +240,5 @@ export function resolveBackground(mode: ThemeMode): string {
   /* Hex literals, not the HSL triplets above — this value is painted
    * before any stylesheet parses, so it must be a self-contained color.
    * Keep in sync with `bg.page` in both palettes. */
-  return mode === 'light' ? '#f7f6f2' : '#212121';
+  return mode === 'light' ? '#fafafa' : '#212121';
 }

@@ -96,7 +96,7 @@ export async function createStreamToolContext(req: Request & { userId?: string }
 
   /* Side-effecting tools never accept a fuzzy name match: acting on a
    * guess is worse than returning a correction to the model. */
-  const FUZZY_SAFE = (name: string) => name !== 'code_interpreter' && name !== 'workspace_agent';
+  const FUZZY_SAFE = (name: string) => name !== 'code_interpreter' && name !== 'workspace_agent' && name !== 'initialize_workspace';
 
   return {
     toolPolicy,

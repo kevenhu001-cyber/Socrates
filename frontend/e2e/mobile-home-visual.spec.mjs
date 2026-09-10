@@ -49,17 +49,20 @@ test('mobile conversation home matches the compact dark reference layout', async
     };
   });
 
-  expect(geometry.left?.width).toBe(44);
-  expect(geometry.left?.height).toBe(44);
-  expect(geometry.right?.width).toBe(44);
+  expect(geometry.left?.width).toBe(40);
+  expect(geometry.left?.height).toBe(40);
+  expect(geometry.right?.width).toBe(40);
   expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(168);
   expect(geometry.modeTabs?.height).toBeGreaterThanOrEqual(40);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(geometry.composer?.height).toBe(62);
-  expect(geometry.topicFontSize).toBe(18);
+  /* Mobile parity: two-row card — editor on top, controls below. */
+  expect(geometry.composer?.height).toBeGreaterThanOrEqual(100);
+  expect(geometry.composer?.height).toBeLessThanOrEqual(140);
+  expect(geometry.topicFontSize).toBe(17);
   expect(geometry.composer?.y).toBeGreaterThan(600);
   expect(geometry.composer?.y).toBeLessThan(820);
-  expect(geometry.background).toBe('rgb(33, 33, 33)');
+  /* P_mobile-black-canvas — the dark mobile canvas is pure #000. */
+  expect(geometry.background).toBe('rgb(0, 0, 0)');
   expect(geometry.pageToken).toBe('0 0% 13%');
 
   /* The active-chat header uses the reference's one tactile navigation
@@ -91,7 +94,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
     };
   });
-  expect(headerVisual.sidebar?.width).toBe(44);
+  expect(headerVisual.sidebar?.width).toBe(40);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
   expect(headerVisual.find?.borderWidth).toBe('0px');
@@ -119,15 +122,16 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(composer).toHaveClass(/composer-focused/);
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
   expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(2);
-  await expect(composer).not.toHaveClass(/composer-multiline/);
-  await expect(composer.locator('.effort-picker')).toBeHidden();
+  /* Mobile parity shows the effort pill at rest, like the reference. */
+  await expect(composer.locator('.effort-picker')).toBeVisible();
 
   await editor.fill('This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.');
-  await expect(composer).toHaveClass(/composer-multiline/);
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
     .toBeGreaterThan(beforeFocus + 24);
   await expect(composer.locator('.effort-picker')).toBeVisible();
-  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(1);
+  /* The landing composer has no separate mic control; the start button
+     doubles as the voice affordance. */
+  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(0);
   await expect(composer.locator('.start-btn')).toBeVisible();
   await expect(composer.locator('.start-btn')).toHaveAttribute('aria-label', 'Send');
 
@@ -142,10 +146,10 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(4);
   await expect(menu.locator('#composerToolsMobileMore [data-composer-action="extensiveThinking"]')).toBeHidden();
   const menuBox = await menu.boundingBox();
-  /* On phones the add-content menu is a full-width bottom sheet so search,
-     plugin rows, and the existing workflow disclosure remain touchable. */
-  expect(menuBox?.width).toBeLessThanOrEqual(390);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(360);
+  /* On phones the add-content menu is a floating card anchored above the
+     composer, matching the mobile reference. */
+  expect(menuBox?.width).toBeLessThanOrEqual(300);
+  expect(menuBox?.width).toBeGreaterThanOrEqual(240);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

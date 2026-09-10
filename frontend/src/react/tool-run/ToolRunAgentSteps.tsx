@@ -1,5 +1,5 @@
 /**
- * react/tool-run/ToolRunAgentSteps.tsx — the Codex step log under a run's row.
+ * react/tool-run/ToolRunAgentSteps.tsx — the agent step log under a run's row.
  *
  * A workspace-agent turn reports its activity as a list of steps plus a todo
  * plan. Drawing that is genuinely intricate (running vs done rows, diffs, exit

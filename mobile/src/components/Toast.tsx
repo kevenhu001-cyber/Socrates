@@ -130,7 +130,7 @@ export function ToastHost() {
   const tone = rendered.type === 'success'
     ? colors.success
     : rendered.type === 'warning'
-      ? colors.brand
+      ? colors.warning
       : rendered.type === 'error'
         ? colors.danger
         : colors.accent;

@@ -55,6 +55,8 @@ export interface Palette {
   successSoft: string;
   danger: string;
   dangerSoft: string;
+  /** Semantic warning tone (kept amber — not a brand colour). */
+  warning: string;
   white: string;
   black: string;
   overlay: string;
@@ -100,22 +102,23 @@ function buildPalette(mode: ThemeMode): Palette {
     accent: base.accent.strong,
     accentSoft: base.accent.soft,
     action: base.accent.strong,
-    actionPressed: isDark ? '#d4a836' : '#7d510d',
-    scrim: isDark ? 'rgba(0, 0, 0, 0.68)' : 'rgba(26, 22, 14, 0.45)',
+    actionPressed: isDark ? '#d4d4d4' : '#333333',
+    scrim: isDark ? 'rgba(0, 0, 0, 0.68)' : 'rgba(0, 0, 0, 0.45)',
     voiceBlue: isDark ? '#2b7fff' : '#0a84ff',
     success: base.success,
     danger: base.danger,
+    warning: isDark ? '#f5b544' : '#b45309',
     white: base.white,
     black: base.black,
     overlay: base.overlay,
     statusBarStyle: base.statusBarStyle,
     scrollbar: base.scrollbar,
     /* Mobile-local derived fields (aligned with frontend / ChatGPT tokens). */
-    surfaceRaised: isDark ? '#212121' : '#f6f0dd',
-    surfacePressed: isDark ? '#2f3238' : '#e2d8be',
-    accentStrong: isDark ? '#e9be53' : '#7d510d',
-    brand: isDark ? '#cb9543' : '#9a5f1d',
-    brandSoft: isDark ? '#2a1f0c' : '#ead8b3',
+    surfaceRaised: isDark ? '#212121' : '#f2f2f2',
+    surfacePressed: isDark ? '#2f2f2f' : '#e8e8e8',
+    accentStrong: isDark ? '#ffffff' : '#111111',
+    brand: isDark ? '#d4d4d4' : '#1a1a1a',
+    brandSoft: isDark ? '#2a2a2a' : '#e6e6e6',
     successSoft: isDark ? '#1c3a2b' : '#d3e7d8',
     dangerSoft: isDark ? '#3a1f1f' : '#efd2d2',
     codeBg: base.codeBg,

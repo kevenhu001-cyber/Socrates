@@ -70,9 +70,9 @@ export interface ToolRunView {
    * sandbox run looked frozen.
    */
   liveOutput?: string;
-  /** Set when the call is blocked on a user decision (Codex approvals). */
+  /** Set when the call is blocked on a user decision (legacy approvals). */
   approval?: ApprovalView;
-  /** Codex / agent-run step log, rendered by ui/agentSteps into a host. */
+  /** Agent-run step log, rendered by ui/agentSteps into a host. */
   agentRun?: {
     runId: string | null;
     steps: AgentStepData[];
@@ -479,7 +479,7 @@ const MAX_SOURCE_HOSTS = 8;
 
 /**
  * Line-aware head/tail truncation. Mirrors ui/toolInline.ts's
- * truncateDetailLines (Codex TOOL_CALL_MAX_LINES) without the WASM hop: the
+ * truncateDetailLines (TOOL_CALL_MAX_LINES) without the WASM hop: the
  * mechanism library path is exercised in test/wasmParity.test.mjs against the
  * ui implementation, and this keeps the model importable in plain Node.
  */
@@ -678,10 +678,10 @@ export function approvalViewOf(call: ToolCallRecord): ApprovalView | null {
   if (!approval || !approval.approvalId || !approval.runId) return null;
   const kind = String(approval.kind || '');
   const title = kind === 'commandExecution'
-    ? translate('tool.codexCommandApproval', 'Codex wants to run a command')
+    ? translate('tool.codexCommandApproval', 'The agent wants to run a command')
     : kind === 'fileChange'
-      ? translate('tool.codexFileApproval', 'Codex wants to change files')
-      : translate('tool.codexApproval', 'Codex needs your approval');
+      ? translate('tool.codexFileApproval', 'The agent wants to change files')
+      : translate('tool.codexApproval', 'The agent needs your approval');
   const facts: Array<{ label: string; value: string }> = [];
   const action = approval.command || approval.changes || kind;
   if (action) facts.push({ label: translate('tool.action', 'Action'), value: String(action) });

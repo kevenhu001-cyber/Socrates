@@ -116,7 +116,7 @@ export function ScheduledScreen({ navigation }: Props) {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
             const active = item.status !== 'paused' && item.status !== 'completed' && item.status !== 'failed';
-            const statusColor = item.status === 'failed' ? colors.danger : active ? colors.success : '#f59e0b';
+            const statusColor = item.status === 'failed' ? colors.danger : active ? colors.success : colors.warning;
             return <View style={[styles.row, { borderBottomColor: colors.border }]}>
               {/* 1:1 Parity with frontend `.task-status` (styles.css:621-624) */}
               <View style={[styles.statusDotWrapper, { backgroundColor: withAlpha(statusColor, 0.15) }]}>

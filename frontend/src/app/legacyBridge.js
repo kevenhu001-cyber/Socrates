@@ -214,8 +214,6 @@ window.__socratesLegacy = {
     refreshProjectConnector: window.refreshProjectConnector,
     openProjectConnectorForm: window.openProjectConnectorForm,
     exitPluginsView: window.exitPluginsView,
-    toggleCodexMcp: window.toggleCodexMcp,
-    checkCodexMcpHealth: window.checkCodexMcpHealth,
     openArxivSearch: window.openArxivSearch,
     openZoteroLibrary: window.openZoteroLibrary,
   },

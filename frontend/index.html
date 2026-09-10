@@ -83,6 +83,7 @@
 <link rel="stylesheet" href="/src/styles/chatgpt-ui.css">
 <link rel="stylesheet" href="/src/styles/chatgpt-v2.css">
 <link rel="stylesheet" href="/src/styles/ref-baseline.css">
+<link rel="stylesheet" href="/src/styles/mobile-parity.css">
 </head>
 <body>
 
@@ -422,31 +423,6 @@
               <button type="button" class="display-prefs-seg" data-width="1" title="Medium">M</button>
               <button type="button" class="display-prefs-seg" data-width="1.3" title="Wide">L</button>
               <button type="button" class="display-prefs-seg" data-width="1.7" title="Full width">XL</button>
-            </div>
-          </div>
-          <!-- Accent color picker — Ant Design ColorPicker-inspired.
-               Preset swatches plus a custom <input type="color"> for any
-               user-chosen accent, with a reset button to restore defaults. -->
-          <div class="display-prefs-row">
-            <div class="display-prefs-label">
-              <span>Accent color</span>
-              <button type="button" class="accent-reset-btn" id="accentResetBtn" title="Reset accent to default">Reset</button>
-            </div>
-            <div class="display-prefs-colors" id="displayAccentColors">
-              <button type="button" class="color-swatch" data-hue="35" title="Gold"></button>
-              <button type="button" class="color-swatch" data-hue="160" title="Teal"></button>
-              <button type="button" class="color-swatch" data-hue="210" title="Blue"></button>
-              <button type="button" class="color-swatch" data-hue="270" title="Purple"></button>
-              <button type="button" class="color-swatch" data-hue="330" title="Rose"></button>
-              <button type="button" class="color-swatch" data-hue="40" title="Amber (default)"></button>
-              <!-- Custom accent: a native color input styled as a swatch.
-                   oninput fires every time the user drags in the picker,
-                   so the UI updates live. The default value matches the
-                   Amber preset so it doesn't start blank. -->
-              <label class="color-swatch color-swatch-custom" id="accentCustomSwatch" title="Custom color">
-                <input type="color" id="accentCustomInput" value="#d99a2b" aria-label="Accent color">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-              </label>
             </div>
           </div>
           <!-- Grid background toggle -->
@@ -859,6 +835,7 @@
                chat-view's top edge. The CSS rule `.chat-input-bar >
                .new-reply-pill` keys off this parent. -->
           <div class="new-reply-pill" id="newReplyPill" role="button" tabindex="0" aria-label="Jump to new reply">↓ New reply</div>
+          <div class="chat-disclaimer" id="chatDisclaimer" data-i18n-key="chat.disclaimer"></div>
           <div class="chat-input-wrap" id="chatInputWrap">
             <!-- P_attachments — chip strip above the textarea. Each
                  chip is rendered by renderAttachmentChips() in main.js;

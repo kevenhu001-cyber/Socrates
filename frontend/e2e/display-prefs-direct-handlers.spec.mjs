@@ -12,13 +12,15 @@ test('display preferences own their controls without data-action delegation', as
   expect(await popover.locator('[data-action], [data-action-input]').count()).toBe(0);
   await expect(page.locator('#themeToggle')).not.toHaveAttribute('data-action', /.+/);
   await expect(page.locator('#displayPrefsBtn')).not.toHaveAttribute('data-action', /.+/);
+  /* The accent-colour picker is gone: the app ships a fixed
+     black/white/gray palette. */
+  await expect(popover.locator('#displayAccentColors, .color-swatch, #accentCustomInput')).toHaveCount(0);
 
   await page.locator('#displayPrefsBtn').click();
   await expect(popover).toBeVisible();
 
   await page.locator('#displayPrefsFontSegs [data-font="1.375"]').click();
   await page.locator('#displayPrefsWidthSegs [data-width="1.7"]').click();
-  await page.locator('#displayAccentColors .color-swatch[data-hue="210"]').click();
   await page.locator('#gridToggle').click();
 
   await page.locator('#displayPrefsBgDark').evaluate((input) => {
@@ -35,36 +37,20 @@ test('display preferences own their controls without data-action delegation', as
   await expect(page.locator('#gridToggle')).toHaveClass(/on/);
   await expect.poll(() => page.evaluate(() => ({
     display: JSON.parse(localStorage.getItem('socrates-display') || '{}'),
-    hue: localStorage.getItem('socrates-accent-hue'),
+    accentHue: localStorage.getItem('socrates-accent-hue'),
     accentHex: localStorage.getItem('socrates-accent-hex'),
-    accentToken: document.documentElement.style.getPropertyValue('--accent-000'),
   }))).toMatchObject({
     display: { font: 1.375, width: 1.7, darkBg: '#123456', lightBg: '#eeeeee', showGrid: true },
-    hue: '210',
+    accentHue: null,
     accentHex: null,
-    accentToken: '210 77% 62%',
   });
-
-  await page.locator('#accentCustomInput').evaluate((input) => {
-    input.value = '#336699';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  await expect.poll(() => page.evaluate(() => ({
-    accentHex: localStorage.getItem('socrates-accent-hex'),
-    hue: localStorage.getItem('socrates-accent-hue'),
-  }))).toEqual({ accentHex: '#336699', hue: null });
 
   await page.locator('#displayPrefsBgDarkReset').click();
   await page.locator('#displayPrefsBgLightReset').click();
-  await page.locator('#accentResetBtn').click();
-  await expect.poll(() => page.evaluate(() => ({
-    display: JSON.parse(localStorage.getItem('socrates-display') || '{}'),
-    hue: localStorage.getItem('socrates-accent-hue'),
-    accentHex: localStorage.getItem('socrates-accent-hex'),
-  }))).toMatchObject({
-    display: { darkBg: '', lightBg: '' },
-    hue: '40',
-    accentHex: null,
+  await expect.poll(() => page.evaluate(() =>
+    JSON.parse(localStorage.getItem('socrates-display') || '{}'))).toMatchObject({
+    darkBg: '',
+    lightBg: '',
   });
 
   const modeBefore = await page.locator('html').getAttribute('data-mode');
