@@ -20,6 +20,8 @@ const REQUIRED_TABLES = [
   'tts_results', // per-message TTS persistence (M4 follow-up)
   'session_chunks', // session-scoped RAG BM25 index (M3 deferred)
   'embedding_config', // admin-managed embedding provider (admin backend)
+  'chat_turns', // detached async chat turns (M1)
+  'chat_turn_events', // turn event replay log (M1)
 ] as const;
 
 async function main() {
