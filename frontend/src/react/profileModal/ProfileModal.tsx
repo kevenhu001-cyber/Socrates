@@ -308,6 +308,7 @@ function ProfileModal() {
         <button
           type="button"
           className="profile-btn close-btn"
+          data-initial-focus
           onClick={() => dispatch.close()}
         >
           {i18n('common.close', 'Close')}

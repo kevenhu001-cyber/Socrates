@@ -610,10 +610,6 @@
   background: var(--cg-surface-hover);
 }
 
-#appShell .spaces-list {
-  border-top: 1px solid var(--cgv-border);
-}
-
 #appShell .spaces-list-header,
 #appShell .spaces-list-row {
   display: grid;

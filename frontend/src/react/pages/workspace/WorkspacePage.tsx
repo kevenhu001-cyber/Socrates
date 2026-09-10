@@ -299,12 +299,6 @@ function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch
 
   return (
     <section className="workspace-surface plugin-directory" aria-labelledby="plugin-directory-title">
-      <div className="plugins-top-tabs">
-        <div className="pill" role="tablist" aria-label={i18n('plugins.topTabs', 'Directory tabs')}>
-          <button type="button" className="active" role="tab" aria-selected="true">{i18n('sidebar.plugins.title', 'Plugins')}</button>
-          <button type="button" role="tab" aria-selected="false" onClick={() => (window as any).openPromptTemplatesModal?.()}>{i18n('plugins.skillsTab', 'Skills')}</button>
-        </div>
-      </div>
       <div className="plugin-directory-head">
         <div className="plugin-directory-heading">
           <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
