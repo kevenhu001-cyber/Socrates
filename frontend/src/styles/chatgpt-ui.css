@@ -2744,7 +2744,7 @@ body.workspace-active #appShell .library-row {
   border-bottom: 1px solid var(--cg-border);
 }
 
-.library-checkbox-label { padding-left: 4px; opacity: .16; transition: opacity .16s ease; }
+.library-checkbox-label { padding-left: 4px; opacity: 0; transition: opacity .16s ease; }
 .library-row:hover .library-checkbox-label,
 .library-row-selected .library-checkbox-label,
 .library-checkbox-label:focus-within { opacity: 1; }
