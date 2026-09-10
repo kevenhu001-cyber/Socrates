@@ -106,6 +106,7 @@ frontend/index.html.bak
 !site/media/*.png
 !assets/buildResources/icon_android_1024.png
 !assets/buildResources/icon_android_foreground_1024.png
+!frontend/src/assets/connector-icons/*.png
 
 # ── Local Playwright debug probe scripts/artifacts ──
 frontend/debug/
