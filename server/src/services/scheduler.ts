@@ -17,7 +17,7 @@ import { scheduledTasks, sessions, messages, users } from '../db/schema.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm.js';
 import {
-  CODEX_BACKGROUND_ENABLED,
+  WORKSPACE_AGENT_BACKGROUND_ENABLED,
   createAgentRun,
   ensureSessionWorkspaceForSession,
   runAgentTurn,
@@ -81,15 +81,15 @@ export function computeNextRunAt(frequency: string | null | undefined, from: Dat
  */
 async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; awaitingApproval?: boolean }> {
   const db = getDb();
-  let codexRunId: string | undefined;
+  let agentRunId: string | undefined;
   let content = '';
   let sessionId = task.sessionId;
 
-  /* Codex needs its session before thread/start so the first turn gets the
+  /* The workspace agent needs its session before thread/start so the first turn gets the
    * same isolated directory as retries and later scheduled runs. Native
    * tasks can continue creating their result session after completion. */
   if (task.agentKind === 'codex') {
-    if (!CODEX_BACKGROUND_ENABLED) throw new Error('Codex background runs are disabled');
+    if (!WORKSPACE_AGENT_BACKGROUND_ENABLED) throw new Error('Workspace agent background runs are disabled');
     if (sessionId) {
       const [existing] = await db.select({ id: sessions.id }).from(sessions)
         .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId)))
@@ -114,7 +114,7 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
   }
 
   if (task.agentKind === 'codex') {
-    /* Scheduled Codex tasks use the session workspace and durable run
+    /* Scheduled workspace-agent tasks use the session workspace and durable run
      * history. `stopOnApproval` makes unattended side effects pause the job
      * and notify through the run/event surface instead of holding the poller
      * open until a human appears. The approval continuation watcher in the
@@ -127,7 +127,7 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
       kind: 'scheduled',
       source: 'scheduled',
     });
-    codexRunId = created.run.id;
+    agentRunId = created.run.id;
     const rawPolicy = task.runPolicy && typeof task.runPolicy === 'object' && !Array.isArray(task.runPolicy)
       ? task.runPolicy as Record<string, unknown>
       : {};
@@ -139,18 +139,18 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
     policyTimer?.unref?.();
     let result;
     try {
-      result = await runAgentTurn(codexRunId, task.userId, undefined, controller.signal, { stopOnApproval: true });
+      result = await runAgentTurn(agentRunId, task.userId, undefined, controller.signal);
     } finally {
       if (policyTimer) clearTimeout(policyTimer);
     }
     if (result.status === 'awaiting_approval') {
-      await db.update(scheduledTasks).set({ lastRunId: codexRunId, status: 'paused', nextRunAt: null, lastRunAt: new Date(), updatedAt: new Date() }).where(eq(scheduledTasks.id, task.id));
-      console.info(`[scheduler] task ${task.id} paused for Codex approval (run ${codexRunId})`);
-      return { runId: codexRunId, awaitingApproval: true };
+      await db.update(scheduledTasks).set({ lastRunId: agentRunId, status: 'paused', nextRunAt: null, lastRunAt: new Date(), updatedAt: new Date() }).where(eq(scheduledTasks.id, task.id));
+      console.info(`[scheduler] task ${task.id} paused for approval (run ${agentRunId})`);
+      return { runId: agentRunId, awaitingApproval: true };
     }
-    if (result.status !== 'completed') throw new Error(result.error || `Codex run ${result.status}`);
+    if (result.status !== 'completed') throw new Error(result.error || `Agent run ${result.status}`);
     content = (result.output || result.summary || '').trim();
-    if (!content) throw new Error('Codex returned an empty response');
+    if (!content) throw new Error('The agent returned an empty response');
   }
   const provider = await getActiveApiKey(task.userId);
   if (task.agentKind !== 'codex' && (!provider || !provider.keyPlaintext)) {
@@ -235,9 +235,9 @@ async function executeTask(task: ScheduledTaskRow): Promise<{ runId?: string; aw
     rawText: content,
     type: 'assistant',
     model: provider?.model || null,
-    agentRunId: codexRunId || null,
+    agentRunId: agentRunId || null,
   });
-  return { runId: codexRunId };
+  return { runId: agentRunId };
 }
 
 /**

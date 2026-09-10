@@ -26,16 +26,25 @@ dependencies, builds into an isolated candidate directory, preserves the
 previous compiled tree, and restores it automatically if restart or health
 checks fail.
 
-## Unified Codex runtime
+## Workspace agent runtime (Pi)
 
-The web Chat/Tutor flow uses `/api/agent-runs` for durable workspace runs,
-replayable events, approvals, artifacts, and restart recovery. The legacy
-`/api/codex/*` routes remain available for compatibility. The rollout switches
-are `CODEX_UNIFIED_RUNTIME`, `CODEX_BACKGROUND`, and `CODEX_MCP`; all default to
-enabled when Codex itself is enabled.
+The web Chat/Tutor flow and scheduled tasks use `/api/agent-runs` for durable
+workspace runs, replayable events, artifacts, and restart recovery. Runs are
+executed by the `pi` coding agent (`--mode json`, read/bash/edit/write tools)
+inside a server-owned per-conversation workspace; the model, endpoint, and key
+follow the user's active provider in Socrates, and built-in Beagle keeps its
+monthly quota gate.
 
-MCP servers are server-owned. Set `CODEX_MCP_URL` for the Socrates discovery
-server or `CODEX_MCP_SERVERS` to a JSON array/object of approved HTTPS
-endpoints. Users can only toggle those catalog entries globally or per project
-through `/api/agent-mcp`; credentials and arbitrary client-supplied URLs are
-never passed to Codex.
+Configuration:
+
+- `PI_AGENT_ENABLED` — set to `0` to disable the workspace agent tool.
+- `PI_AGENT_BIN` — absolute path to the `pi` binary (auto-detected by deploy).
+- `PI_AGENT_PROVIDER` / `PI_AGENT_MODEL` / `PI_AGENT_THINKING` — optional
+  fallback when the user has no active provider.
+- `WORKSPACE_ROOT` — workspace directory root (falls back to the legacy
+  `CODEX_WORKSPACE_ROOT`); memory/disk defaults come from
+  `WORKSPACE_MAX_MEMORY_MB` and `WORKSPACE_MAX_DISK_MB`.
+
+The legacy `/api/codex/*` and `/api/agent-mcp` routes, the Codex app-server
+harness, and MCP settings management have been removed. Workspace trees written
+under the old Codex root remain readable through the fallback above.

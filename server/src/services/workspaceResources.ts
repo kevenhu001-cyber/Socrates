@@ -3,14 +3,12 @@
  * workspace created by the `initialize_workspace` tool.
  *
  * The model declares a memory and disk budget; this module normalizes the
- * numbers (so the tool schema, the durable `codex_workspaces.policy` row,
+ * numbers (so the tool schema, the durable workspace policy row,
  * and the pre-run disk gate agree) and measures on-disk usage so the
  * server can hard-enforce the storage cap before starting an agent turn.
  *
- * Memory is persisted on the policy and applied where the runtime supports
- * a per-process limit; the Codex app-server is a single shared process, so
- * the cap is enforced for sandboxed executions and reported to the model
- * rather than applied as a cgroup limit here.
+ * Memory is persisted on the policy and applied to the Pi agent process as
+ * a Node heap cap at spawn time (`--max-old-space-size`).
  */
 
 import { readdirSync, statSync } from 'node:fs';
@@ -33,13 +31,13 @@ function resolveDefault(raw: string | undefined, fallback: number, min: number, 
 
 export const WORKSPACE_LIMIT_DEFAULTS = {
   maxMemoryMb: resolveDefault(
-    process.env.CODEX_WORKSPACE_MAX_MEMORY_MB,
+    process.env.WORKSPACE_MAX_MEMORY_MB || process.env.CODEX_WORKSPACE_MAX_MEMORY_MB,
     512,
     WORKSPACE_LIMIT_BOUNDS.minMemoryMb,
     WORKSPACE_LIMIT_BOUNDS.maxMemoryMb,
   ),
   maxDiskMb: resolveDefault(
-    process.env.CODEX_WORKSPACE_MAX_DISK_MB,
+    process.env.WORKSPACE_MAX_DISK_MB || process.env.CODEX_WORKSPACE_MAX_DISK_MB,
     256,
     WORKSPACE_LIMIT_BOUNDS.minDiskMb,
     WORKSPACE_LIMIT_BOUNDS.maxDiskMb,

@@ -1,25 +1,23 @@
 /** Unified Agent Runtime HTTP surface.
  *
  * The client consumes one run contract regardless of whether the underlying
- * adapter is native or Codex. This route intentionally exposes workspace and
- * policy identifiers, never real filesystem paths or provider credentials.
+ * adapter is native or the Pi workspace agent. This route intentionally
+ * exposes workspace and policy identifiers, never real filesystem paths or
+ * provider credentials.
  */
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { BadRequest } from '../lib/errors.js';
 import { startSseKeepalive, trackSseConnection, writeSseEvent, writeSseHeaders } from '../lib/sse.js';
 import {
-  UNIFIED_CODEX_ENABLED,
-  CODEX_BACKGROUND_ENABLED,
+  WORKSPACE_AGENT_ENABLED,
+  WORKSPACE_AGENT_BACKGROUND_ENABLED,
   WORKSPACE_AGENT_TOOL,
   createAgentRun,
-  decideAgentApproval,
   getAgentRun,
   interruptAgentRun,
   listAgentEvents,
   listAgentRuns,
-  rehydrateAgentThread,
   resumeAgentRun,
   retryAgentRun,
   runAgentTurn,
@@ -51,20 +49,6 @@ function publicRun(run: any) {
     usage: run.usage,
     startedAt: run.startedAt,
     completedAt: run.completedAt,
-  };
-}
-
-function publicApproval(approval: any) {
-  return {
-    id: approval.id,
-    runId: approval.runId,
-    threadId: approval.threadId,
-    requestId: approval.requestId,
-    kind: approval.kind,
-    status: approval.status,
-    payload: approval.payload || {},
-    createdAt: approval.createdAt,
-    decidedAt: approval.decidedAt,
   };
 }
 
@@ -128,19 +112,15 @@ async function streamRun(req: any, res: any, runId: string, run: Promise<unknown
 
 router.get('/capabilities', requireAuth, async (req, res) => {
   res.json({
-    enabled: UNIFIED_CODEX_ENABLED,
+    enabled: WORKSPACE_AGENT_ENABLED,
     providerModes: ['user', 'server'],
-    adapters: ['native', 'codex'],
-    background: CODEX_BACKGROUND_ENABLED,
-    mcp: {
-      enabled: (await import('../services/codexMcp.js')).CODEX_MCP_ENABLED,
-      managementPath: '/api/agent-mcp',
-    },
+    adapters: ['native', 'pi'],
+    background: WORKSPACE_AGENT_BACKGROUND_ENABLED,
     tool: WORKSPACE_AGENT_TOOL,
     policy: {
       sandbox: 'workspace-write',
-      approvalPolicy: 'on-request',
-      unattended: 'read-only',
+      approvalPolicy: 'never',
+      unattended: 'workspace-write',
     },
   });
 });
@@ -177,7 +157,7 @@ router.get('/:id', requireAuth, async (req, res, next) => {
   try {
     const result = await getAgentRun(req.userId!, String(req.params.id));
     const events = await listAgentEvents(req.userId!, String(req.params.id), 0, 80);
-    res.json({ run: publicRun(result.run), approvals: result.approvals.map(publicApproval), artifacts: (result.artifacts || []).map(publicArtifact), events });
+    res.json({ run: publicRun(result.run), artifacts: (result.artifacts || []).map(publicArtifact), events });
   } catch (err) { next(err); }
 });
 
@@ -231,15 +211,6 @@ router.post('/:id/turns', requireAuth, async (req, res, next) => {
   }
 });
 
-router.post('/:id/approvals/:approvalId', requireAuth, async (req, res, next) => {
-  try {
-    const decision = String(req.body?.decision || '').trim();
-    if (!decision) throw new BadRequest('decision is required');
-    const result = await decideAgentApproval(req.userId!, String(req.params.id), String(req.params.approvalId), decision);
-    res.json(result);
-  } catch (err) { next(err); }
-});
-
 router.post('/:id/interrupt', requireAuth, async (req, res, next) => {
   try { res.json(await interruptAgentRun(req.userId!, String(req.params.id))); }
   catch (err) { next(err); }
@@ -256,13 +227,6 @@ router.post('/:id/retry', requireAuth, async (req, res, next) => {
   try {
     const result = await retryAgentRun(req.userId!, String(req.params.id));
     res.status(202).json({ result, runId: result.runId });
-  } catch (err) { next(err); }
-});
-
-router.post('/:id/rehydrate', requireAuth, async (req, res, next) => {
-  try {
-    const result = await rehydrateAgentThread(req.userId!, String(req.params.id));
-    res.json({ run: publicRun(result.run), approvals: result.approvals.map(publicApproval), artifacts: (result.artifacts || []).map(publicArtifact) });
   } catch (err) { next(err); }
 });
 

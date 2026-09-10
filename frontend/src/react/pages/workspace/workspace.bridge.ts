@@ -114,8 +114,6 @@ export function useWorkspaceDispatch() {
     refreshPlugin: (id: string) => w.refreshProjectConnector(id),
     openPluginForm: (id: string) => w.openProjectConnectorForm(id),
     exitPlugins: () => w.exitPluginsView(),
-    toggleCodexMcp: (key: string, enabled: boolean) => w.toggleCodexMcp(key, enabled),
-    checkCodexMcpHealth: (key: string) => w.checkCodexMcpHealth(key),
     openArxiv: () => w.openArxivSearch(),
     openZotero: () => w.openZoteroLibrary(),
   };

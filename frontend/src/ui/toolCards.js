@@ -162,7 +162,7 @@ function startToolCardTimer(card) {
    monochrome icon set (ui/icons/toolIcons.ts) carries identity in both
    the inline row and this card. */
 export var TOOL_META = {
-  workspace_agent:    { cls: "codex", short: "Codex", tone: "purple" },
+  workspace_agent:    { cls: "codex", short: "Agent", tone: "purple" },
   initialize_workspace: { cls: "codex", short: "Workspace", tone: "purple" },
   render_visualization: { cls: "tool-visual", short: "Visual", tone: "purple" },
   web_search:        { cls: "websearch", short: "Search", tone: "teal"   },

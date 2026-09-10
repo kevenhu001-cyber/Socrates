@@ -22,7 +22,7 @@ export function installShutdown(server: Server): void {
       try { const { stopScheduler } = await import('../services/scheduler.js'); stopScheduler(); } catch {}
       try { const { stopStatusMonitor } = await import('../services/statusMonitor.js'); stopStatusMonitor(); } catch {}
       await stopRustFetchWorker().catch(() => {});
-      try { const { codexHarness } = await import('../services/codexHarness.js'); await codexHarness.stop(); } catch {}
+      /* Pi agent runs are per-turn child processes; nothing to stop here. */
       // Pubsub holds its own long-lived LISTEN connection (not from the
       // pool), so closeDb() below does not reach it. Without this the
       // process can linger after every other handle is closed.

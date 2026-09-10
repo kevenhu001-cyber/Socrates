@@ -1,7 +1,7 @@
 /**
  * react/tool-run/ToolRunApproval.tsx — a decision the run is blocked on.
  *
- * Codex pauses mid-turn whenever it wants to run a command or change files,
+ * The agent pauses mid-turn whenever it wants to run a command or change files,
  * and the prompt used to be DOM that chat/toolRuntime.ts hung off the live row.
  * That made it a second-class citizen: it survived re-painting of the row but
  * vanished whenever React rebuilt the bubble, leaving a run waiting on a

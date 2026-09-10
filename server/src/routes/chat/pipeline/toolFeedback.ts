@@ -85,8 +85,8 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
 
   if (toolName === 'workspace_agent') {
     return result.status === 'completed'
-      ? `[status: completed]\n[run_id: ${result.runId || 'unknown'}]\n[workspace_id: ${result.workspaceId || 'unknown'}]\n${result.output || result.stdout || '(no output)'}\nThe Codex workspace run is rendered inline. Summarize the concrete changes, tests, and artifacts in the user's language.`
-      : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nIf the run is awaiting approval, wait for the user decision instead of starting a duplicate run.`;
+      ? `[status: completed]\n[run_id: ${result.runId || 'unknown'}]\n[workspace_id: ${result.workspaceId || 'unknown'}]\n${result.output || result.stdout || '(no output)'}\nThe workspace run is rendered inline. Summarize the concrete changes, tests, and artifacts in the user's language.`
+      : `[status: ${result.status || 'failed'}]\n[run_id: ${result.runId || 'unknown'}]\n[error_code: ${result.errorCode || 'workspace_agent_failed'}]\n${result.error || 'The workspace agent did not complete.'}\nDo not start a duplicate run; report the failure or continue with a corrected task.`;
   }
 
   if (result.correction) {

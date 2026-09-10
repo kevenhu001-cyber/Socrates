@@ -1,9 +1,9 @@
 /**
- * agentStepProjection.ts — Codex runtime events → chat-visible steps.
+ * agentStepProjection.ts — Agent runtime events → chat-visible steps.
  *
  * The workspace agent used to appear in chat as a single opaque card: the
  * user saw "working…" and then a summary, with no view of the commands it
- * ran or the files it touched. Codex already reports each of those as a
+ * ran or the files it touched. The agent reports each of those as a
  * thread item, so this module turns the runtime event stream into the small
  * vocabulary the chat UI renders inline:
  *
@@ -17,10 +17,10 @@
  * Redaction note: events published by agentRuntime have already passed
  * through redactForEvent/safeText, so workspace paths appear as
  * `[workspace]` and secrets as `[redacted]`. This module only ever narrows
- * or relabels that data; it never reaches for raw Codex payloads.
+ * or relabels that data; it never reaches for raw runtime payloads.
  */
 
-/** Chinese step labels, matching the Codex interface wording. */
+/** Chinese step labels, matching the agent step wording. */
 export const AGENT_STEP_LABELS = {
   command: '运行了命令',
   commandDone: '已运行',
@@ -43,7 +43,7 @@ export interface AgentStepDiffStat {
 
 export interface AgentStep {
   type: 'step';
-  /** Codex item id; stable across the started/completed pair. */
+  /** Agent item id; stable across the started/completed pair. */
   stepId: string;
   kind: AgentStepKind;
   /** Ready-to-render Chinese label. */
@@ -55,7 +55,7 @@ export interface AgentStep {
   exitCode: number | null;
   durationMs: number | null;
   diffStat: AgentStepDiffStat | null;
-  /** Bounded tail of command output, when Codex reported it. */
+  /** Bounded tail of command output, when the agent reported it. */
   output: string | null;
 }
 
@@ -80,7 +80,7 @@ const READ_ONLY_COMMANDS = new Set([
   'pwd', 'which', 'type', 'basename', 'dirname', 'readlink',
 ]);
 
-/** Codex sends a command as argv, a string, or a shell wrapper. */
+/** The agent sends a command as argv, a string, or a shell wrapper. */
 export function normalizeCommand(command: unknown): string {
   if (Array.isArray(command)) {
     const parts = command.map((part) => String(part ?? '')).filter(Boolean);
@@ -95,7 +95,7 @@ export function normalizeCommand(command: unknown): string {
     if (record.command !== undefined) return normalizeCommand(record.command);
     if (Array.isArray(record.argv)) return normalizeCommand(record.argv);
   }
-  /* Codex also reports the already-joined form, e.g.
+  /* The agent also reports the already-joined form, e.g.
      `/bin/bash -lc 'cat notes.txt'`. Unwrap it so the label logic sees the
      real command rather than the shell. */
   const text = String(command ?? '').trim();
@@ -278,7 +278,7 @@ export function projectAgentEvent(event: {
   switch (itemType) {
     case 'commandExecution': {
       const step = commandStep(data, status);
-      /* A non-zero exit is a failure even when Codex only reports
+      /* A non-zero exit is a failure even when the runtime only reports
          `completed`, so the step row can show it in the error state. */
       if (!started && typeof step.exitCode === 'number' && step.exitCode !== 0) step.status = 'failed';
       return step;
@@ -314,7 +314,7 @@ export function projectAgentEvent(event: {
       });
     }
     default:
-      /* agentMessage, reasoning, plan text items, and anything Codex adds
+      /* agentMessage, reasoning, plan text items, and anything the agent adds
          later stay out of the step list. */
       return null;
   }
