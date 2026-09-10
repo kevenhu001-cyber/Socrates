@@ -15,6 +15,9 @@ import type { MountSpec } from './registry';
 import { hydrateComposerToolsMenu } from '../../composer/ComposerToolsMenu';
 import { hydrateCmdKOverlay } from '../../cmdk/CommandPalette';
 import { hydrateFindInSession } from '../../find-in-session/FindInSession';
+// Clerk auth controls intentionally NOT mounted in the SPA — auth lives
+// on the marketing site (site/). The ClerkAuthControls export is still
+// available for the marketing-site React shell to re-use.
 import { hydrateMorePopover } from '../../morePopover';
 import { hydrateProfileModal } from '../../profileModal';
 import { hydrateShareModal } from '../../shareModal';

@@ -874,9 +874,9 @@ body.workspace-active #appShell .main-page {
   }
 
   #appShell .sidebar-footer {
-    min-height: 68px !important;
+    min-height: 50px !important;
     margin: 0 -6px !important;
-    padding: 10px 14px !important;
+    padding: 8px 14px !important;
   }
 
   /* Top segmented control: reference is 214 x 32, optically centred on the

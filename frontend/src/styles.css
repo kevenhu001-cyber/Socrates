@@ -10778,6 +10778,14 @@ html[data-theme=socrates][data-mode=light]{
   #appShell #findBtn:focus-visible,
   #appShell #shareBtn:focus-visible{background:hsl(0 0% 100%/.1);color:#fff}
   #appShell #shareBtn .share-btn-label{display:none}
+  /* Hide chat-specific chrome on non-chat pages — overrides the force-show
+     rules above (specificity 0,2,1 beats the 0,2,0 show rules). */
+  body.workspace-active #appShell #modeSegmentedTop,
+  body.workspace-active #appShell #mobileIncognitoBtn,
+  body.exam-active #appShell #modeSegmentedTop,
+  body.exam-active #appShell #mobileIncognitoBtn,
+  body.admin-active #appShell #modeSegmentedTop,
+  body.admin-active #appShell #mobileIncognitoBtn{display:none!important}
 }
 
 /* ==========================================================================
@@ -11065,6 +11073,27 @@ html[data-theme=socrates][data-mode=light]{
   background:hsl(0 0% 13%);
   color:hsl(0 0% 100%);
 }
+
+/* Clerk auth controls — top-bar island. Sized to match other top-bar
+   buttons; the user button (when signed-in) inherits Clerk's own
+   styling. */
+.clerk-auth-root{display:inline-flex;align-items:center;gap:6px}
+.clerk-auth-controls{display:inline-flex;align-items:center;gap:6px}
+.top-bar-btn{
+  height:32px;
+  padding:0 12px;
+  border-radius:999px;
+  border:0.5px solid hsl(0 0% 100%/.14);
+  background:hsl(0 0% 100%/.04);
+  color:inherit;
+  font:inherit;
+  font-size:13px;
+  cursor:pointer;
+  transition:background-color .12s,border-color .12s;
+}
+.top-bar-btn:hover{background:hsl(0 0% 100%/.10);border-color:hsl(0 0% 100%/.22)}
+.top-bar-btn.clerk-signup{background:hsl(0 0% 100%);color:hsl(0 0% 7%);border-color:transparent}
+.top-bar-btn.clerk-signup:hover{background:hsl(0 0% 92%)}
 [data-mode="light"] .top-bar .toggle-sidebar:hover,
 [data-mode="light"] .top-bar .icon-btn:hover{
   background:hsl(0 0% 94%);

@@ -18,6 +18,7 @@
 - Treat `frontend/src/main.js` (10k+ lines), `server/src/index.runtime.ts`, auth, migrations, and `deploy.sh` as high-churn or high-impact surfaces. Prefer extracted modules and add focused regression coverage.
 - `deploy.sh` must remain single-writer, preserve `dist.previous`, and restore the previous backend after a failed restart or health gate. If changing its swap/rollback flow, test the lock, candidate cleanup, and error trap paths.
 - `.github/workflows/ci.yml` is the frontend/server merge gate. Keep type checks, build, unit tests, and frontend Playwright smoke tests intact; preserve concurrency cancellation and failure artifacts. Note that CI does not currently cover `mobile/`, `capacitor/`, `site/`, `packages/`, `tools-rust/`, or `open-connector/`.
+- **Brand assets — favicon is locked to `logo.png`.** `frontend/public/favicon.png` and `site/favicon.png` must stay byte-identical to their respective `logo.png` siblings (currently 2077 bytes each). Do not replace either favicon with a tray variant, an emoji, a service icon, or any auto-generated image. If the logo itself is updated, re-copy `logo.png` over `favicon.png` in the same directory; both files move together.
 
 ## Next checks
 

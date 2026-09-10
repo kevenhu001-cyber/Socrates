@@ -16,6 +16,19 @@
   <link rel="stylesheet" href="editorial.css?cb=20260825">
   <link rel="stylesheet" href="brand.css?cb=20260825g">
   <link rel="canonical" href="https://topodrive.top/">
+  <!-- Clerk auth widget — see site/clerk-auth.js. The publishable key is
+       non-secret; the SPA at http://localhost:5173/ is the post-sign-in
+       destination in dev. In production, override via data-app-url to
+       point at the deployed SPA host. -->
+  <script
+    async
+    crossorigin="anonymous"
+    data-clerk-auth
+    data-publishable-key="pk_test_Y2xvc2UtbmFyd2hhbC0zODA1LmNsZXJrLmFjY291bnRzLmRldiQ"
+    data-app-url="http://localhost:5173/"
+    src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js">
+  </script>
+  <script src="clerk-auth.js" defer></script>
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/index.md" title="Markdown twin of the home page">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Socrates">
@@ -168,7 +181,19 @@
       <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
         <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
         <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div>
-        <div class="ed-header-actions"><div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a></div>
+        <div class="ed-header-actions">
+          <!-- Clerk auth widget — Sign in / Sign up when signed-out,
+               "Open Socrates" + Sign out when signed-in. Auth lives on
+               the marketing site per product flow; after a successful
+               sign-in, the user is redirected to the SPA's topic-input
+               landing page. -->
+          <div data-clerk-user-root class="clerk-user-root" hidden>
+            <a class="ed-button-quiet" data-clerk-open-app href="http://localhost:5173/">Open Socrates</a>
+            <button type="button" class="ed-button-quiet clerk-btn-signout" data-clerk-signout>Sign out</button>
+          </div>
+          <div data-clerk-auth-root class="clerk-auth-root"></div>
+          <div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><a class="ed-button" href="https://app.topodrive.top">Try Socrates</a>
+        </div>
         <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
       </nav>
     </div>
