@@ -120,7 +120,6 @@
   }
 }
 
-#appShell .sidebar-logo-img,
 #appShell .sidebar-logo .cg-sidebar-caret,
 #appShell .sidebar-nav-btn .nav-kbd { display: none !important; }
 #appShell .sidebar-header { min-height: 38px; padding: 3px 4px 5px; }

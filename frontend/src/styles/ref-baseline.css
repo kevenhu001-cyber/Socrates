@@ -1783,6 +1783,22 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   background: var(--cg-surface-hover) !important;
 }
 
+/* #navNew carries an extra id in its transparent resting rule, so the
+   generic doubled-id hover wash above loses the specificity tie. Re-assert
+   the wash for the primary entry so it responds to hover like every other
+   row. The home-state selector needs the same body:not prefix as its
+   transparent counterpart to win that tie too. */
+#appShell#appShell #navNew.sidebar-nav-btn:hover,
+#appShell#appShell #navNew.sidebar-nav-btn:focus-visible,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell
+  #navNew.sidebar-nav-btn:hover,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell
+  #navNew.sidebar-nav-btn:focus-visible {
+  background: var(--cg-surface-hover) !important;
+}
+
 /* --------------------------------------------------------------------------
    Final override: desktop chat composer matches the ChatGPT reference pill
    (second screenshot): one compact row — plus / editor / effort / mic /

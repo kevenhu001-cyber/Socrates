@@ -1644,7 +1644,6 @@ html[data-mode="dark"] #appShell .sidebar::after { content: none !important; }
   font-weight: 600 !important;
 }
 
-#appShell .sidebar-logo-img { display: none !important; }
 #appShell .sidebar-logo .cg-sidebar-caret { display: none !important; }
 #appShell .sidebar-header-actions { display: flex !important; }
 #appShell .sidebar-header-actions .icon-btn {
