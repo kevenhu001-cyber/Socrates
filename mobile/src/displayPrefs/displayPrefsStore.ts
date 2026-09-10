@@ -1,17 +1,16 @@
 /* Display preferences store — mirrors `frontend/src/displayPrefs.js`
- * (font scale + width scale + accent hue/custom + bg dark / light +
- * grid). Values below are 1:1 with the web defaults so both clients
- * boot identically; ThemeProvider derives live colors/layout from them.
+ * (font scale + width scale + bg dark / light + grid). Values below
+ * are 1:1 with the web defaults so both clients boot identically;
+ * ThemeProvider derives live colors/layout from them.
  *
  * Frontend ground truth:
  *   DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375] default 1.125 (M)
  *   DISPLAY_WIDTH_STEPS = [0.85, 1, 1.3, 1.7]    default 1 (M)
  *   content column      = 58rem * widthScale (928px at scale 1)
- *   accent presets      = hues [35,160,210,270,330,40] (40 Amber default)
  *   bg pickers          = free hex, defaults #212121 / #ffffff
  *   grid                = showGrid false default
  * See `frontend/src/displayPrefs.js:10-17`,
- * `frontend/src/styles.css:1050`, `frontend/index.html:427-432`. */
+ * `frontend/src/styles.css:1050`, `frontend/index.html:410-424`. */
 import { getItem, setItem } from '../platform/secureStorage';
 
 const STORAGE_KEY = 'socrates.displayPrefs.v1';
@@ -44,7 +43,6 @@ export function pxToWidthScale(px: number): number {
 export interface DisplayPrefs {
   fontScale: number;
   contentWidth: number;
-  accentColor: string | null;
   bgDark: string | null;
   bgLight: string | null;
   gridEnabled: boolean;
@@ -53,7 +51,6 @@ export interface DisplayPrefs {
 const defaults: DisplayPrefs = {
   fontScale: 1.125,
   contentWidth: BASE_CONTENT_WIDTH,
-  accentColor: null,
   bgDark: null,
   bgLight: null,
   gridEnabled: false,
@@ -96,7 +93,10 @@ export const displayPrefsStore = {
     try {
       const stored = await getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as Partial<DisplayPrefs>;
+        const parsed = JSON.parse(stored) as Partial<DisplayPrefs> & { accentColor?: unknown };
+        /* The accent-colour setting was removed with the monochrome
+         * palette; drop any persisted value so it cannot resurface. */
+        delete parsed.accentColor;
         prefs = { ...defaults, ...parsed };
         /* Migrate pre-P0 values to the canonical web steps so users
          * on the old mobile-only ladder (font 0.9/1/1.1/1.2,

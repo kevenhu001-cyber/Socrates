@@ -85,7 +85,7 @@ initLinkFavicons();
 import { toggleSidebar } from './sidebar/index.js';
 
 
-import { initTheme, loadDisplayPrefs, mountDisplayPrefsListeners, setAccentColor, setAccentCustom } from './displayPrefs.js';
+import { initTheme, loadDisplayPrefs, mountDisplayPrefsListeners } from './displayPrefs.js';
 import { syncExtensionsUI, syncModelPills, syncWebSearchUI } from './pickers.js';
 import { bootstrapApp } from './app/bootstrap.js';
 import { installWidgetRuntime } from './app/widgetSetup.js';
@@ -126,18 +126,6 @@ initSidebarChrome();
    adds the live OS preference listener and wires the selector in Display
    settings without causing a dark-mode flash on refresh. */
 initTheme();
-/* Restore saved accent: custom hex takes priority over preset hue,
-   since once a user picks a custom color the preset index would
-   just point at the nearest hue and overwrite their choice. */
-try{
-  var savedHex=localStorage.getItem("socrates-accent-hex");
-  if(savedHex)setAccentCustom(savedHex);
-  else{
-    var savedHue=localStorage.getItem("socrates-accent-hue");
-    if(savedHue)setAccentColor(parseInt(savedHue,10));
-    else setAccentColor(40);
-  }
-}catch {}
 /* Apply text-size / content-width prefs (must run before any layout
    that depends on .main-inner max-width). */
 loadDisplayPrefs();

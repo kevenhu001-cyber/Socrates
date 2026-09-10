@@ -180,7 +180,7 @@ function ScheduledPage() {
           {visibleTasks.map((task) => {
               const active = task.status === 'pending' || task.status === 'active';
               const detailParts = [
-                task.agentKind === 'codex' ? 'Codex' : null,
+                task.agentKind === 'codex' ? 'Agent' : null,
                 statusLabel(task.status, active) + ' · ' + i18n('scheduled.freq.' + (task.frequency || 'once'), task.frequency || 'once'),
                 active ? formatTime(task.nextRunAt) : null,
                 task.lastRunAt

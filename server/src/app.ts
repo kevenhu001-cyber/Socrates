@@ -44,9 +44,7 @@ import minimaxRouter from './routes/minimaxProxy.js';
 import mistakesRouter from './routes/mistakes.js';
 import knowledgeBoundaryRouter from './routes/knowledgeBoundary.js';
 import visionRouter from './routes/vision.js';
-import codexRouter from './routes/codex.js';
 import agentRunsRouter from './routes/agentRuns.js';
-import agentMcpRouter from './routes/agentMcp.js';
 import statusRouter from './routes/status.js';
 import mobileRouter from './routes/mobile.js';
 import mcpRouter from './routes/mcp.js';
@@ -591,7 +589,6 @@ app.use('/api/scheduled-tasks', scheduledTasksRouter);
 /* Unified Agent Runtime — native tools and Codex share durable runs,
  * approvals, events, workspaces, and recovery through this surface. */
 app.use('/api/agent-runs', agentRunsRouter);
-app.use('/api/agent-mcp', agentMcpRouter);
 
 /* ─── Plugins ─── */
 app.use('/api/plugins', pluginsRouter);
@@ -727,7 +724,7 @@ app.use('/api/vision', visionRouter);
  * Mounted before the SPA fallback. All routes require auth; the client
  * never supplies config/policy — the server builds the per-thread
  * provider + workspace + approval/sandbox overrides from the DB. */
-app.use('/api/codex', codexRouter);
+
 
 /* ────────────────────────────
    Static SPA — serve the built frontend from frontend/dist/

@@ -53,12 +53,10 @@ test('topic composer changes geometry only after a second rendered line', async 
   await editor.fill('One line');
   await page.waitForTimeout(80);
   expect(await heightOf(wrap)).toBe(baseline);
-  await expect(wrap).not.toHaveClass(/composer-multiline/);
 
   const growth = await sampleDuring(page, '#topicInputWrap', async () => {
     await editor.fill('First line\nSecond line');
   });
-  await expect(wrap).toHaveClass(/composer-multiline/);
   expect(await heightOf(wrap)).toBeGreaterThan(baseline);
   /* fill() clears then retypes, which can paint one isolated empty-editor
      frame; a real paste replaces atomically. Allow a single dip but never
@@ -73,7 +71,6 @@ test('topic composer changes geometry only after a second rendered line', async 
   const shrink = await sampleDuring(page, '#topicInputWrap', async () => {
     await editor.fill('Back to one line');
   });
-  await expect(wrap).not.toHaveClass(/composer-multiline/);
   expect(await heightOf(wrap)).toBe(baseline);
   /* Shrinking glides from the tall two-tier height down to the one-row
      baseline — it must never bounce back upward on the way down. */
@@ -104,7 +101,6 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   const growth = await sampleDuring(page, '#chatInputWrap', async () => {
     await editor.fill('Pasted first line\nPasted second line\nPasted third line');
   });
-  await expect(wrap).toHaveClass(/composer-multiline/);
   /* The multiline layout is a designed two-tier grid (editor row + control
      row), so the wrap lands strictly taller than the single-row baseline.
      fill() replaces content as clear-then-retype, which can paint a single
@@ -122,7 +118,6 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   const shrink = await sampleDuring(page, '#chatInputWrap', async () => {
     await editor.fill('short');
   });
-  await expect(wrap).not.toHaveClass(/composer-multiline/);
   expect(await heightOf(wrap)).toBe(baseline);
   /* Shrinking glides from the tall two-tier height down to the one-row
      baseline — it must never bounce back upward on the way down. */
@@ -132,10 +127,9 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
 
   await page.setViewportSize({ width: 320, height: 844 });
   await editor.fill('This text stays stable while the narrower container wraps it onto additional rendered lines.');
-  await expect(wrap).toHaveClass(/composer-multiline/);
+  expect(await heightOf(wrap)).toBeGreaterThan(baseline);
   await page.setViewportSize(MOBILE);
   await editor.fill('');
-  await expect(wrap).not.toHaveClass(/composer-multiline/);
   await expect.poll(() => heightOf(wrap)).toBe(baseline);
 });
 

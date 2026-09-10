@@ -172,8 +172,7 @@ function runningLabel(call: ToolCallLike): RunLabel {
     return { text: translate('tool.actionFetch', 'Reading the page…') };
   }
   if (name === 'code_interpreter' || name === 'Code') {
-    /* Once the sandbox has printed something, "executing" is stale: the wait
-       is on the analysis, and the reader sees that. `tool_progress` records
+    /* Once the sandbox has printed something, "executing" is stale: the wait       is on the analysis, and the reader sees that. `tool_progress` records
        the last phase on the entry, which is what the legacy DOM writer used
        to upgrade its own label from. */
     const phase = String(call._progressPhase || '');
@@ -187,6 +186,9 @@ function runningLabel(call: ToolCallLike): RunLabel {
   }
   if (name === 'workspace_agent') {
     return { text: translate('tool.actionCodex', 'Working in the workspace…') };
+  }
+  if (name === 'initialize_workspace') {
+    return { text: translate('tool.actionInitWorkspace', 'Initializing the workspace…') };
   }
   if (name === 'Read' || name === 'Glob' || name === 'Grep') {
     const file = basename(filePathOf(call.input)) || clip(queryOf(call.input), 32);
@@ -242,6 +244,9 @@ function doneLabel(call: ToolCallLike): RunLabel {
   }
   if (name === 'workspace_agent') {
     return { text: translate('tool.doneCodex', 'Workspace run') };
+  }
+  if (name === 'initialize_workspace') {
+    return { text: translate('tool.doneInitWorkspace', 'Workspace ready') };
   }
   if (name === 'Bash') {
     const cmd = commandOf(call.input);

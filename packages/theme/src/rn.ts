@@ -28,8 +28,8 @@
  *
  * Consequence worth remembering: in dark mode `bg.overlay` (#0d0d0d) is
  * DARKER than `bg.page` (#212121). Cards sit below the page on the
- * lightness ramp; in light mode the relationship flips (#fcfbf8 over
- * #f7f6f2). Getting this backwards inverts the entire UI.
+ * lightness ramp; in light mode the relationship flips (#ffffff over
+ * #fafafa). Getting this backwards inverts the entire UI.
  */
 
 import {
@@ -71,11 +71,11 @@ export interface ThemePaletteHex extends Omit<ThemePalette, 'accent' | 'bg' | 't
 
 const darkHex: ThemePaletteHex = {
   mode: 'dark',
-  /* --accent-000 / --accent-900 */
+  /* --accent-000 / --accent-900 — monochrome */
   accent: {
-    strong: '#e9be53',
-    soft: '#473c1f',
-    surface: '#473c1f',
+    strong: '#ffffff',
+    soft: '#333333',
+    surface: '#333333',
   },
   /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
   bg: {
@@ -103,39 +103,39 @@ const darkHex: ThemePaletteHex = {
   danger: '#dd5f5f',
   success: '#40bf75',
   muted: '#8c8c8c',
-  /* --oncolor-100 — the glyph color on `.send-btn.active` */
-  onAccent: '#ffffff',
+  /* glyph color on the now-white active send button */
+  onAccent: '#1a1a1a',
 };
 
 const lightHex: ThemePaletteHex = {
   mode: 'light',
   accent: {
-    strong: '#b18925',
-    soft: '#f0eadb',
-    surface: '#f0eadb',
+    strong: '#1a1a1a',
+    soft: '#e6e6e6',
+    surface: '#e6e6e6',
   },
   bg: {
-    page: '#f7f6f2',
-    raised: '#efece7',
-    overlay: '#fcfbf8',
-    hover: '#e3dfd9',
+    page: '#fafafa',
+    raised: '#f2f2f2',
+    overlay: '#ffffff',
+    hover: '#e8e8e8',
     sunken: '#ffffff',
   },
   text: {
-    primary: '#2d2925',
-    secondary: '#4d4842',
-    tertiary: '#746f67',
-    muted: '#868079',
-    disabled: '#868079',
+    primary: '#212121',
+    secondary: '#454545',
+    tertiary: '#707070',
+    muted: '#858585',
+    disabled: '#858585',
   },
   border: {
-    subtle: '#e0dcd7',
-    default: '#cdc8c1',
-    strong: '#beb9b1',
+    subtle: '#e0e0e0',
+    default: '#cccccc',
+    strong: '#bdbdbd',
   },
   danger: '#b82e2e',
   success: '#2d865c',
-  muted: '#868079',
+  muted: '#858585',
   onAccent: '#ffffff',
 };
 
@@ -185,18 +185,18 @@ export function buildMappedPalette(mode: ThemeMode): MappedPalette {
     statusBarStyle: isDark ? 'light' : 'dark',
     white: '#ffffff',
     black: '#000000',
-    scrollbar: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(26,22,14,0.20)',
-    overlay: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(26,22,14,0.45)',
-    reasoningBg: isDark ? '#1a1d24' : '#e1d6b8',
-    reasoningFg: isDark ? '#9da4af' : '#4d443a',
-    codeBg: isDark ? '#0a0c10' : '#ddd2b6',
-    codeFg: isDark ? '#e7eaf0' : '#1a160e',
-    codeBorder: isDark ? '#1f2330' : '#b8ac8e',
-    toolCardBg: isDark ? 'rgba(255,255,255,0.062)' : 'rgba(26,22,14,0.05)',
-    toolCardBgHover: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(26,22,14,0.08)',
-    toolCardBgSunken: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(26,22,14,0.032)',
-    toolCardBorder: isDark ? 'rgba(255,255,255,0.095)' : 'rgba(26,22,14,0.11)',
-    toolCardBorderStrong: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(26,22,14,0.19)',
-    toolCardFocus: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(26,22,14,0.35)',
+    scrollbar: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.20)',
+    overlay: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.45)',
+    reasoningBg: isDark ? '#1a1a1a' : '#efefef',
+    reasoningFg: isDark ? '#a0a0a0' : '#4a4a4a',
+    codeBg: isDark ? '#0a0a0a' : '#f0f0f0',
+    codeFg: isDark ? '#e7e7e7' : '#1a1a1a',
+    codeBorder: isDark ? '#232323' : '#d0d0d0',
+    toolCardBg: isDark ? 'rgba(255,255,255,0.062)' : 'rgba(0,0,0,0.05)',
+    toolCardBgHover: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)',
+    toolCardBgSunken: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.032)',
+    toolCardBorder: isDark ? 'rgba(255,255,255,0.095)' : 'rgba(0,0,0,0.11)',
+    toolCardBorderStrong: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.19)',
+    toolCardFocus: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)',
   };
 }

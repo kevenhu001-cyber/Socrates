@@ -38,9 +38,9 @@
   --cg-text-secondary: #c5c5c5;
   --cg-text-muted: #9b9b9b;
   --cg-text-faint: #717171;
-  --cg-accent: #f0b84b;
-  --cg-accent-strong: #ffc85f;
-  --cg-accent-ink: #17110a;
+  --cg-accent: #f5f5f5;
+  --cg-accent-strong: #ffffff;
+  --cg-accent-ink: #0a0a0a;
   --cg-danger: #ef8f8f;
 }
 
@@ -56,8 +56,8 @@
   --cg-text-secondary: #595959;
   --cg-text-muted: #858585;
   --cg-text-faint: #a4a4a4;
-  --cg-accent: #ae7415;
-  --cg-accent-strong: #8c5c0f;
+  --cg-accent: #171717;
+  --cg-accent-strong: #000000;
   --cg-accent-ink: #fff;
   --cg-danger: #b65050;
 }
@@ -78,17 +78,19 @@ body,
 }
 
 #appShell {
-  --app-sidebar-width: var(--cg-sidebar-width);
-  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--cg-sidebar-width) - 48px));
-  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--cg-sidebar-width) - 48px));
+  /* --app-sidebar-width is intentionally NOT declared here: sidebarResize.js
+     sets it on <html>, and a local declaration would shadow that value and
+     freeze the sidebar drag. Falls back to --cg-sidebar-width (240/260px). */
+  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
+  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
   --workbench-content-max: var(--cg-content-width);
 }
 
 /* Shell / rail */
 
 #appShell .sidebar {
-  width: var(--cg-sidebar-width) !important;
-  min-width: var(--cg-sidebar-width) !important;
+  width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
+  min-width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
   background: var(--cg-rail) !important;
   background-image: none !important;
   border-right: 1px solid var(--cg-border) !important;
@@ -271,8 +273,10 @@ body,
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--cg-accent);
-  color: var(--cg-accent-ink);
+  /* Default identity mark is neutral gray; the gold accent stays reserved
+     for interactive/active surfaces instead of every avatar. */
+  background: var(--cg-surface-hover);
+  color: var(--cg-text);
   font-size: 11px;
   font-weight: 700;
 }
@@ -307,7 +311,7 @@ body,
 /* Top bar and landing */
 
 #appShell .main {
-  padding-left: var(--cg-sidebar-width) !important;
+  padding-left: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
 }
 
 #appShell .sidebar.collapsed ~ .main {
@@ -1492,26 +1496,6 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   font-weight: 550;
 }
 
-.codex-mcp-card {
-  margin-top: 48px !important;
-  padding: 20px !important;
-  border: 1px solid var(--cg-border) !important;
-  border-radius: var(--cg-radius-md) !important;
-  background: var(--cg-surface) !important;
-}
-
-.codex-mcp-heading h2 {
-  color: var(--cg-text) !important;
-  font-family: var(--cg-font) !important;
-  font-size: 18px !important;
-  font-weight: 550 !important;
-}
-
-.codex-mcp-badge {
-  color: var(--cg-text-muted) !important;
-  background: var(--cg-surface-raised) !important;
-}
-
 /* Scheduled */
 
 .scheduled-directory {
@@ -2139,28 +2123,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
   .scheduled-recommendation-copy small {
     white-space: normal;
-  }
-
-  .codex-mcp-card {
-    margin-top: 34px !important;
-    padding: 16px !important;
-  }
-
-  .codex-mcp-row {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .codex-mcp-actions {
-    width: 100%;
-    justify-content: stretch;
-    gap: 8px;
-  }
-
-  .codex-mcp-actions .codex-mcp-health,
-  .codex-mcp-actions .codex-mcp-toggle {
-    flex: 1 1 0;
-    min-height: 40px;
   }
 }
 
@@ -2849,14 +2811,6 @@ body.workspace-active #appShell .project-row {
 .plugin-directory-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 12px; line-height: 17px; }
 .plugin-directory-action { min-width: 34px; min-height: 34px; padding: 6px 12px; background: transparent !important; }
 .plugin-directory-note { margin: 18px 0 0; }
-
-.codex-mcp-card { margin-top: 42px !important; border-radius: 16px !important; background: transparent !important; }
-.codex-mcp-card > summary { list-style: none; cursor: pointer; }
-.codex-mcp-card > summary::-webkit-details-marker { display: none; }
-.codex-mcp-card:not([open]) { padding: 14px 18px !important; }
-.codex-mcp-card:not([open]) .codex-mcp-heading { margin: 0; align-items: center; }
-.codex-mcp-card:not([open]) .workspace-eyebrow { display: none; }
-.codex-mcp-card:not([open]) h2 { margin: 0; color: var(--cg-text-secondary); font-size: 14px; font-weight: 550; }
 
 @media (max-width: 900px) {
   body.workspace-active #appShell .main-page { padding: 48px 28px 64px; }

@@ -252,7 +252,6 @@ test('resolveToolName maps documented synonyms onto canonical tools', () => {
     python: 'code_interpreter',
     run_code: 'code_interpreter',
     bash: 'workspace_agent',
-    codex: 'workspace_agent',
     plan: 'create_plan',
     spec: 'create_spec',
     chart: 'render_visualization',

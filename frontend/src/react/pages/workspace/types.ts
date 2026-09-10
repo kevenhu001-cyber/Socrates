@@ -45,8 +45,6 @@ declare global {
     connectProjectConnector?: (id: string) => void;
     refreshProjectConnector?: (id: string) => void;
     openProjectConnectorForm?: (id: string) => void;
-    toggleCodexMcp?: (key: string, enabled: boolean) => void;
-    checkCodexMcpHealth?: (key: string) => void;
     openArxivSearch?: () => void;
     openZoteroLibrary?: () => void;
     ensureSlashApps?: () => void;
