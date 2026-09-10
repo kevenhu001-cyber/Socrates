@@ -89,8 +89,8 @@ export function isUserAbort(error: unknown, signal?: AbortSignal): boolean {
     || reason === 'sign-out'
     || reason === 'first-delta-timeout') return true;
   /* AbortController.abort() without an explicit reason is how the Codex
-     Stop button cancels its turn. Timeout/heartbeat callers provide named
-     reasons, so an unnamed DOM abort is safe to classify as user intent. */
+     Stop button cancels its turn. The client never aborts on a timer, so
+     an unnamed DOM abort is safe to classify as user intent. */
   return !!signal?.aborted
     && (!reason
       || reason === 'abort'

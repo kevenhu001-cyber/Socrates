@@ -225,14 +225,12 @@ export function addStreamingMessage(opts){
   /* Unique ID for the retry button so we can attach a click handler after
      setting innerHTML (innerHTML wipes previous listeners). */
   var retryBtnId="retry-"+Math.random().toString(36).slice(2,10);
-  /* No-response watchdog: FIRST_DELTA_TIMEOUT_MS matches the stream
-     timeout so there is effectively one timeout — the model can take
-     up to 120s to start generating without a false expiry. Firing
-     writes an error status (with Retry) to the message data. */
-  var FIRST_DELTA_TIMEOUT_MS=120000;
   /* The waiting line is data drawn by TurnStatus. stampWaiting(0) paints
      the first frame immediately so a fast first delta still had a visible
-     predecessor state in the status history. */
+     predecessor state in the status history. There is deliberately no
+     first-delta watchdog: a reasoning model may think for as long as it
+     needs, so the waiting line stays up until real content arrives or the
+     user stops the turn. */
   stampWaiting(0);
   scheduleActiveTurnToTop(list,div,msgIdx,retryViewport);
   /* Morph the send button into a red Stop so the user can abort
@@ -249,26 +247,6 @@ export function addStreamingMessage(opts){
     if(finished||!firstDelta)return;
     stampWaiting(Math.round((Date.now()-thinkStarted)/1000));
   },1000);
-  var firstDeltaTimer=setTimeout(function(){
-    if(finished||!firstDelta)return;
-    if(_elapsedTick)clearInterval(_elapsedTick);
-    finished=true;
-    if(toolRuntime)toolRuntime.dispose();
-    cancelScheduledRender();
-    stateStore.dispatch({type:'state/set',key:'lastCallError',value:"No response for "+Math.round(FIRST_DELTA_TIMEOUT_MS/1000)+"s"});
-    /* Cancel the underlying stream so it doesn't keep running in the
-       background holding resources for the full timeout window. */
-    try{if(window._activeChatAbort)window._activeChatAbort("first-delta-timeout")}catch(_){}
-    var _timeoutCopy=_t("common.noResponseTimeout").replace("{sec}",Math.round(FIRST_DELTA_TIMEOUT_MS/1000));
-    /* The entry stays a live turn: React's status line carries the failure
-       and the Retry affordance, and retrying starts a new turn, so nothing
-       has to be baked into `html` here. */
-    setLiveStatus({phase:"error",label:_timeoutCopy,error:_timeoutCopy,retryable:true});
-    claimLiveRetry(ret,function(){
-      if(typeof onRetry==="function"){try{onRetry()}catch {/* retry handler threw */}}
-    });
-    updateChatStats();
-  },FIRST_DELTA_TIMEOUT_MS);
 
   /* Follow the answer as it grows, unless the reader said otherwise. React
      paints the text in its own commit off the delta publish, which can land
@@ -468,7 +446,6 @@ export function addStreamingMessage(opts){
          waiting status before execution progress begins. */
       if(firstDelta&&!finished){
         firstDelta=false;
-        clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         cancelScheduledRender();
         pendingRender=requestAnimationFrame(function(){doRender()});
@@ -517,8 +494,7 @@ export function addStreamingMessage(opts){
       var wasFirst=firstDelta;
       if(wasFirst){
         firstDelta=false;
-        /* First delta arrived — stop the watchdog and elapsed counter. */
-        clearTimeout(firstDeltaTimer);
+        /* First delta arrived — stop the elapsed counter. */
         if(_elapsedTick)clearInterval(_elapsedTick);
         /* The waiting line is retired with the first real content. */
         clearLiveStatus();
@@ -611,7 +587,6 @@ export function addStreamingMessage(opts){
         finished=true;
         _disposed=true;
         /* Still tear down timers / SSE so nothing leaks. */
-        clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         cancelScheduledRender();
         toolRuntime.dispose();
@@ -635,7 +610,6 @@ export function addStreamingMessage(opts){
       _disposed=true;
       _publishThinkingPanelEnd();
       toolRuntime.dispose();
-      clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
       cancelScheduledRender();
       /* P1.2 — single formatMsg pass at finish time, written to
@@ -1003,7 +977,6 @@ export function addStreamingMessage(opts){
       finished=true;
       _disposed=true;
       _publishThinkingPanelEnd();
-      clearTimeout(firstDeltaTimer);
       if(_elapsedTick)clearInterval(_elapsedTick);
       cancelScheduledRender();
       /* Restore the send button — but only if no new stream has
@@ -1113,7 +1086,6 @@ export function addStreamingMessage(opts){
         finished=true;
         _publishThinkingPanelEnd();
         toolRuntime.cancel();
-        clearTimeout(firstDeltaTimer);
         if(_elapsedTick)clearInterval(_elapsedTick);
         cancelScheduledRender();
        try{
@@ -1241,9 +1213,9 @@ export function addStreamingMessage(opts){
   };
   /* Publish this controller on window so a subsequent turn in the same
      chat can call turnState.activeChatCtl.abort() to evict the "正在思考…"
-     bubble immediately instead of leaving it pinned until its 45 s
-     first-delta timer fires. The next addStreamingMessage() call will
-     overwrite turnState.activeChatCtl with its own controller. */
+     bubble immediately instead of leaving it pinned while the model is
+     still thinking. The next addStreamingMessage() call will overwrite
+     turnState.activeChatCtl with its own controller. */
   turnState.activeChatCtl=ret;
   return ret;
 }

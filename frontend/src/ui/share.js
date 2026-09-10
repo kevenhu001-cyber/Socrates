@@ -144,7 +144,6 @@ async function createShareLink() {
     var r = await apiFetch("/api/sessions/" + encodeURIComponent(sessionId) + "/share", {
       method: "POST",
       body: { visibility: _shareVisibility },
-      timeoutMs: 8000,
     });
     if (r && r.token) {
       _shareToken = r.token;

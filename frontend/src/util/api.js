@@ -5,8 +5,10 @@
  *
  *  - Always includes credentials so the sid cookie travels.
  *  - Attaches X-CSRF-Token for state-changing requests.
- *  - Wraps fetch in an AbortController with a default 30 s timeout
- *    (overridable via opts.timeoutMs).
+ *  - No response timeout at all. The request is only aborted when the
+ *    caller passes opts.signal (user stop / session switch). Reasoning
+ *    models may think for an unbounded amount of time, so the client
+ *    must never decide on its own that a response took too long.
  *  - Normalises both `fetch()` throws (network / CORS / offline) and
  *    non-2xx responses into a single ApiError shape.
  *  - Exposes opts.signal so callers can chain their own AbortController.
@@ -83,8 +85,6 @@ export async function apiFetchRaw(path, opts = {}) {
     if (t) opts.headers['X-CSRF-Token'] = t;
   }
   const controller = new AbortController();
-  const rawTimeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 30000;
-  const tmo = setTimeout(() => { try { controller.abort(); } catch (_) {} }, rawTimeoutMs);
   /* P_abort_listener_cleanup — the listener we add to opts.signal
      captures `controller`. After the fetch returns the listener is
      dead weight; in the streaming path the caller's signal is a
@@ -103,13 +103,11 @@ export async function apiFetchRaw(path, opts = {}) {
   try {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
   } catch {
-    clearTimeout(tmo);
     if (opts.signal && onCallerAbort) {
       try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
     }
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
   }
-  clearTimeout(tmo);
   if (opts.signal && onCallerAbort) {
     try { opts.signal.removeEventListener('abort', onCallerAbort); } catch (_) {}
   }
@@ -168,10 +166,8 @@ export async function apiFetch(path, opts = {}) {
     opts.headers['Cache-Control'] = 'no-store';
     opts.headers['Pragma'] = 'no-cache';
   }
-  const timeoutMs = typeof opts.timeoutMs === 'number' ? opts.timeoutMs : 30000;
   const userSignal = opts.signal || null;
   const controller = new AbortController();
-  const timer = setTimeout(() => { try { controller.abort(); } catch (_) {} }, timeoutMs);
   // Track the abort listener so we can detach it after the call completes,
   // preventing listener accumulation when a long-lived signal is reused.
   let onUserAbort = null;
@@ -186,7 +182,6 @@ export async function apiFetch(path, opts = {}) {
   try {
     r = await fetch(path, Object.assign({}, opts, { signal: controller.signal }));
   } catch (e) {
-    clearTimeout(timer);
     if (userSignal && onUserAbort) {
       try { userSignal.removeEventListener('abort', onUserAbort); } catch (_) {}
     }
@@ -199,7 +194,6 @@ export async function apiFetch(path, opts = {}) {
       0
     );
   } finally {
-    clearTimeout(timer);
     if (userSignal && onUserAbort) {
       try { userSignal.removeEventListener('abort', onUserAbort); } catch (_) {}
     }
@@ -225,13 +219,11 @@ export async function apiFetch(path, opts = {}) {
       try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (_) {}
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {
       // Use a fresh AbortController for the CSRF refresh — the original
-      // controller may already be aborted (timeout / user abort), which
-      // would silently fail the CSRF token fetch and leave the retry
-      // without a valid token, causing a permanent 403 loop.
+      // controller may already be aborted by a user stop, which would
+      // silently fail the CSRF token fetch and leave the retry without a
+      // valid token, causing a permanent 403 loop.
       const csrfController = new AbortController();
-      const csrfTimer = setTimeout(() => { try { csrfController.abort(); } catch (_) {} }, 5000);
       try { await fetch('/api/v2/auth/csrf-token', { credentials: 'include', signal: csrfController.signal }); } catch (_) {}
-      clearTimeout(csrfTimer);
       await new Promise((res) => setTimeout(res, 0));
       return apiFetch(path, Object.assign({}, opts, { _csrfRetried: true }));
     }

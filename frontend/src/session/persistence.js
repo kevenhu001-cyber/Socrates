@@ -230,7 +230,6 @@ function doSave(){
       apiFetch("/api/sessions/"+encodeURIComponent(curSid),{
         method:"PATCH",
         body:{streamingText:null,streamingReasoning:null},
-        timeoutMs:5000,
       }).catch(function(){});
     }
     _renderRecents();}).catch(function(e){

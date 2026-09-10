@@ -3,11 +3,6 @@ import { parseOneDiagResponse } from './diagnosticParser.js';
 import { stateStore } from '../state/store.js';
 
 const MAX_TOKENS_DIAG = 8000;
-/* U-H3 — shorter total-timeout for the FIRST diagnostic question so a
-   dead/slow provider surfaces quickly (retry prompt) instead of leaving
-   the user watching the spinner for the full streaming budget. Later
-   questions keep the default budget (passed as undefined below). */
-const DIAG_FIRST_TIMEOUT_MS = 20000;
 var DIAG_SYSTEM_PROMPT = "You are a thoughtful diagnostic tutor. Generate exactly 1 multiple-choice question (this is question {questionNumber} of 5, focused on {aspect}) to assess a learner's grasp of {topic}.\n\n{previousQuestions}\n\nVoice and form:\n- Write the question and all options in {language}. The learner thinks in {language}; the text must read as native, not a translation. Match the learner's input language exactly.\n- Use academic but accessible language, like a kind teacher who is precise yet warm. Imagine a professor explaining to a curious student over tea.\n- Show depth and a small intellectual flavor (韵味) in the question. It should feel thoughtful, never mechanical. Probe what the learner truly understands, not just surface familiarity.\n- Avoid em-dashes (—, ——) completely — they are the most recognizable tell of AI-generated writing. Use periods, commas, semicolons, or parentheses instead. If you find yourself typing an em dash, stop and restructure the sentence.\n- Use Markdown for formatting (bold, italic, code) and LaTeX ($...$ or $$...$$) for mathematical notation where applicable.\n\nStructure:\n- The question must probe {aspect} from a different angle than anything listed above.\n- The question must target a SPECIFIC knowledge point within {aspect}. Name it in the knowledgePoint field (e.g. \"matrix multiplication rules\", \"Ohm's law derivation\", \"binary search edge cases\"). This maps the question to a concrete concept so the teaching plan can address it precisely.\n- Provide 3 to 4 options labeled A, B, C, D.\n- Each option includes a level field: internalized (deep grasp), fuzzy (some knowledge with gaps), or blank (no knowledge).\n- Output ONLY a single valid JSON object, no other text: {\"q\":\"question text\", \"knowledgePoint\":\"specific concept being tested\", \"opts\":[{\"letter\":\"A\",\"text\":\"option text\",\"level\":\"internalized\"}, ...]}\n- Do NOT wrap the JSON in code fences.\n- CRITICAL: inside any string value, NEVER use ASCII double quotes (\\\"...) to quote phrases. Use full-width quotation marks 「...」 or 『...』 for CJK text, or just plain text without quotes for English. ASCII double quotes are reserved for JSON delimiters only.";
 
 /* The five probe angles, one per question. Mapped 1:1 to the
@@ -70,7 +65,7 @@ export async function generateDiagnosticQuestions(topic,language,onProgress,shou
     }
     if(onProgress)onProgress(i+1,questionCount,null);
     var msgs=[{role:'system',content:prompt},{role:'user',content:'Topic: '+topic}];
-    var resp=await callAPI(msgs,MAX_TOKENS_DIAG,i===0?DIAG_FIRST_TIMEOUT_MS:undefined);
+    var resp=await callAPI(msgs,MAX_TOKENS_DIAG);
     if(!resp){
       if(!window.stateStore.read("lastCallError"))stateStore.dispatch({type:'state/set',key:'lastCallError',value:"Diag call returned empty response"});
       break;

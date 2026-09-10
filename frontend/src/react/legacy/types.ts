@@ -207,7 +207,7 @@ export interface LegacyThinking {
 
 /**
  * Live-turn controls that a declarative render needs to hand back to the
- * streaming pipeline: retrying a turn that timed out before its first token,
+ * streaming pipeline: retrying a turn that failed before its first token,
  * and answering a tool-approval request the run is blocked on.
  */
 export interface LegacyLiveTurn {

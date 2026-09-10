@@ -306,6 +306,10 @@ async function generateStarters(
 
 router.get('/starters', requireAuth, chatLimiter, async (req, res, next) => {
   try {
+    /* Home starter prompts come from a model call, so this response can
+       take as long as the model needs; opt out of the global request
+       deadline (see timeoutMiddleware). */
+    res.locals.timeoutMs = 0;
     const userId = req.userId;
     if (!userId) return res.status(401).json({ error: 'unauthorized' });
     const lang = req.query.lang === 'zh' || req.query.lang === 'en' ? req.query.lang : 'en';

@@ -125,11 +125,10 @@ export async function authBoot(){
       cfgOk=true;
     }
     /* P_privacy-leak — bridge the server-side capability hint to
-     * window so isReasoningProvider() / pickStreamBudgets() can pick
-     * longer timeouts and request reasoning_effort for the built-in
-     * provider without ever knowing its model name. Default false
-     * (assume non-reasoning) if the server is older and doesn't send
-     * the field. */
+     * window so isReasoningProvider() can request reasoning_effort for
+     * the built-in provider without ever knowing its model name.
+     * Default false (assume non-reasoning) if the server is older and
+     * doesn't send the field. */
     try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (_) {}
   }catch(_){/* config fetch failed */}
   /* Promote to the module-level flag so refreshApiConfig() — which

@@ -19,7 +19,6 @@ function tr(key) { return typeof window.t === 'function' ? window.t(key) : key; 
      resolves, so a slow refresh never causes a turn to ship without
      grounding. */
 var SEARCH_REFRESH_EVERY=5;
-var SEARCH_TIMEOUT_MS=12000;
 /* Hard cap on /api/web-search POSTs per single fetchWebContext call.
    Each query variant + the retry (if all fail) consumes one. This
    caps the total backend search volume and prevents runaway costs
@@ -38,19 +37,9 @@ export async function fetchWebContext(topic,opts){
   if(!webSearchOn||!topic)return{ok:false,reason:"disabled",results:0,context:""};
   if(opts.background){
     /* Background refresh — set the pill to "refreshing" but don't await.
-       Also start a watchdog so the pill never stays on "Refreshing…"
-       forever if the search hangs. */
+       The refresh paints its own success/error pill when it finishes;
+       there is no client-side deadline on it. */
     try{setSearchPill("loading",0,"Refreshing…")}catch(_){}
-    var bgWd=setTimeout(function(){
-      try{setSearchPill("err",0,"Search refresh timed out")}catch(_){}
-    },SEARCH_TIMEOUT_MS+2000);
-    /* No-op shim so subsequent successful setSearchPill clears the timer. */
-    var _bgClearPillTimer=function(){
-      try{clearTimeout(bgWd)}catch(_){}
-    };
-    /* Attach the clear to a one-shot wrapper on window so the existing
-       setSearchPill calls inside this function will clear it. */
-    window.__bgPillTimerClear=_bgClearPillTimer;
   }else{
     try{setSearchPill("loading",0,"Searching…")}catch(_){}
   }
@@ -58,7 +47,6 @@ export async function fetchWebContext(topic,opts){
   /* Offline precheck — fail fast in background too, so the pill
      resolves to an error state instead of hanging on "Refreshing…". */
   if(offlineGuard()){
-    if(opts.background){try{window.__bgPillTimerClear&&window.__bgPillTimerClear()}catch(_){}}
     try{setSearchPill("err",0,"Offline")}catch(_){}
     return{ok:false,reason:"offline",results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
   }
@@ -80,8 +68,6 @@ export async function fetchWebContext(topic,opts){
   if(queries.length>_wsRemaining)queries=queries.slice(0,_wsRemaining);
   _emit("expanding",{queries:queries.slice(),count:queries.length});
   /* Always do at least one search; dedupe results by URL. */
-  var ac=new AbortController();
-  var tmo=setTimeout(function(){ac.abort("timeout")},SEARCH_TIMEOUT_MS);
   try{
     /* Run searches in parallel for both queries. */
     var searchResults=[];
@@ -91,8 +77,7 @@ export async function fetchWebContext(topic,opts){
       _wsRemaining--;
       return apiFetchRaw("/api/web-search",{
         method:"POST",
-        body:{query:q,count:8},
-        signal:ac.signal
+        body:{query:q,count:8}
       }).then(function(r){
         return r.json().then(function(d){return{ok:true,query:q,results:(d&&d.results)||[]}});
       }).catch(function(e){return{ok:false,status:e&&e.status,reason:e&&e.message,results:[]}});
@@ -112,7 +97,6 @@ export async function fetchWebContext(topic,opts){
       }
       if(searchResults.length>=25)break;
     }
-    clearTimeout(tmo);
     /* If every search failed AND we used the rewriter, retry once with
        the raw topic — sometimes the rewriter is too aggressive. */
     if(!searchResults.length&&queries[0]!==topic&&_wsRemaining>0){
@@ -121,8 +105,7 @@ export async function fetchWebContext(topic,opts){
       try{
         var r2=await apiFetchRaw("/api/web-search",{
           method:"POST",
-          body:{query:topic,count:8},
-          signal:ac.signal
+          body:{query:topic,count:8}
         });
         var d2=await r2.json();
         searchResults=(d2.results||[]).map(function(x){return Object.assign({matchedQuery:topic},x)});
@@ -141,7 +124,6 @@ export async function fetchWebContext(topic,opts){
       return{ok:false,reason:emsg,results:0,context:opts.background?window.stateStore.read("searchContext")||"":""};
     }
     var d={results:searchResults,query:queries.join(" | ")};
-    clearTimeout(tmo);
     if(!d.results||!d.results.length){
       stateStore.dispatch({type:'state/batch',patch:{
         searchContextError:null,
@@ -163,8 +145,7 @@ export async function fetchWebContext(topic,opts){
       try{
         var fb=await apiFetchRaw("/api/fetch-batch",{
           method:"POST",
-          body:{urls:topUrls},
-          signal:ac.signal
+          body:{urls:topUrls}
         });
         var fd=await fb.json();
         fetched=fd.results||[];
@@ -305,7 +286,6 @@ export async function fetchWebContext(topic,opts){
     try{setSearchPill("ok",enriched.length,enriched.length+" sources"+(fetchedCount?" · "+fetchedCount+" full":""))}catch(_){}
     return{ok:true,reason:"ok",results:enriched.length,context:ctx,sources:enriched};
   }catch(e){
-    clearTimeout(tmo);
     var emsg=(e&&e.message)||String(e);
     console.log("[web search] failed");
     stateStore.dispatch({type:'state/set',key:'searchContextError',value:emsg});
@@ -368,11 +348,8 @@ async function judgeSearchQuality(sources, topic){
     {role:"system",content:"You are a strict JSON-output search-quality judge. Output JSON only, no prose, no markdown fences."},
     {role:"user",content:promptText}
   ];
-  var judgeCtl=new AbortController();
-  var timer=setTimeout(function(){try{judgeCtl.abort("judge-ceiling")}catch(_){}},4000);
   try{
     var raw=await callAPI(msgs,80);
-    clearTimeout(timer);
     if(!raw)return{score:3,rewrite:""};
     /* callAPI may return a string (the LLM's reply content) or an
      * object with {content} or {text} depending on the provider. */
@@ -400,7 +377,6 @@ async function judgeSearchQuality(sources, topic){
     scoreN=Math.max(0,Math.min(5,scoreN));
     return{score:scoreN,rewrite:(typeof parsed.rewrite==="string")?parsed.rewrite:""};
   }catch {
-    clearTimeout(timer);
     /* Treat judge failures as "good enough" (don't retry). */
     return{score:3,rewrite:""};
   }
@@ -489,7 +465,6 @@ export function extractChatQuery(){
    Falls back to the raw text if the model is unavailable or doesn't
    return valid JSON. Cached per user text via a Map. */
 var _rewriterCache=new Map();
-var REWRITER_TIMEOUT_MS=10000;
 
 export async function rewriteQueryForSearch(rawText){
   if(!rawText||!hasUsableActive())return null;
@@ -515,11 +490,8 @@ export async function rewriteQueryForSearch(rawText){
     {role:"system",content:prompt},
     {role:"user",content:rawText.slice(0,500)}
   ];
-  var ac=new AbortController();
-  var tmo=setTimeout(function(){ac.abort()},REWRITER_TIMEOUT_MS);
   try{
-    var r=await apiFetch("/api/chat",{method:"POST",body:{messages:msgs,temperature:0.3,max_tokens:250,mode:"chat"},signal:ac.signal});
-    clearTimeout(tmo);
+    var r=await apiFetch("/api/chat",{method:"POST",body:{messages:msgs,temperature:0.3,max_tokens:250,mode:"chat"}});
     var txt=(r&&typeof r.content==="string")?r.content:
       (r&&r.choices&&r.choices[0]&&r.choices[0].message&&r.choices[0].message.content)||"";
     if(!txt)return null;
@@ -536,7 +508,6 @@ export async function rewriteQueryForSearch(rawText){
     _rewriterCache.set(rawText,cleaned);
     return cleaned;
   }catch {
-    clearTimeout(tmo);
     console.log("[rewriter] failed");
     return null;
   }
@@ -562,10 +533,4 @@ export function setSearchPill(kind,count,label){
   p.className="search-pill "+kind;
   p.textContent=tr("chat.webSearchLabel")+" "+(label||(count>0?tr("chat.webSearchSources").replace("{n}",count):""));
   p.title=kind==="ok"?tr("chat.webSearchResults"):kind==="err"?tr("chat.webSearchFailed"):"";
-  /* Background refresh installs a watchdog timer that flips the pill
-     to "Search refresh timed out" if the refresh hangs. Any successful
-     (or any error) pill update from inside the refresh clears that
-     timer so we don't end up overwriting the real result with a fake
-     timeout error. */
-  try{if(typeof window.__bgPillTimerClear==="function"){window.__bgPillTimerClear();window.__bgPillTimerClear=null}}catch(_){}
 }

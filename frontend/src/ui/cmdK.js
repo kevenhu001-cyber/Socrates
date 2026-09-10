@@ -134,7 +134,6 @@ function onCmdKInput(q) {
     window.apiFetch("/api/search", {
       method: "POST",
       body: { q: q, scope: "all", limit: 20 },
-      timeoutMs: 4000,
     }).then(function (r) {
       if (r && Array.isArray(r.hits) && r.hits.length) {
         /* Stale-response guard — the user may have kept typing while
@@ -227,7 +226,6 @@ function onCmdKKey(ev) {
         window.apiFetch("/api/search", {
           method: "POST",
           body: { q: q, scope: "all", limit: 20 },
-          timeoutMs: 5000,
         }).then(function (r) {
           if (r && Array.isArray(r.hits) && r.hits.length) {
             _cmdKResults = r.hits.map(function (h) {

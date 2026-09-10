@@ -266,16 +266,13 @@ if (typeof window.setLang === 'function') {
 
 /* ─── chat/offline.js ─── */
 import {
-  STREAM_TIMEOUT_MS, STREAM_HEARTBEAT_MS, STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
-  offlineGuard, sleepBackoff, makeAIWatchdog,
+  STREAM_MAX_ATTEMPTS, STREAM_RETRYABLE_STATUS,
+  offlineGuard, sleepBackoff,
 } from './chat/offline.js';
-window.STREAM_TIMEOUT_MS = STREAM_TIMEOUT_MS;
-window.STREAM_HEARTBEAT_MS = STREAM_HEARTBEAT_MS;
 window.STREAM_MAX_ATTEMPTS = STREAM_MAX_ATTEMPTS;
 window.STREAM_RETRYABLE_STATUS = STREAM_RETRYABLE_STATUS;
 window.offlineGuard = offlineGuard;
 window.sleepBackoff = sleepBackoff;
-window.makeAIWatchdog = makeAIWatchdog;
 
 /* ─── ui/usage.js ─── */
 import { openUsageModal, closeUsageModal, loadUsageData, loadUsageMonth, showUsageTip, hideUsageTip } from './ui/usage.js';

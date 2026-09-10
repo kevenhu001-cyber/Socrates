@@ -120,7 +120,6 @@ function saveProfileName(newName) {
   window.apiFetch("/api/users/me", {
     method: "PATCH",
     body: { displayName: name },
-    timeoutMs: 8000,
   }).then(function () {
     window.CURRENT_USER.displayName = name;
     renderUserFooter();
@@ -174,7 +173,6 @@ function onCustomInstructionsChange() {
     window.apiFetch("/api/users/me", {
       method: "PATCH",
       body: { customInstructions: buildCustomInstructionsString(value) },
-      timeoutMs: 8000,
     }).then(function () {}).catch(function () {
       console.log("[custom-inst] server sync failed");
     });

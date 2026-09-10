@@ -504,7 +504,6 @@ export async function loadSession(id){
         apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
           method:"PATCH",
           body:{streamingText:null,streamingReasoning:null},
-          timeoutMs:5000,
         }).catch(function(){});
         var lastUserMsg=null;
         for(var ui=stateStore.read("messages").length-1;ui>=0;ui--){
@@ -525,7 +524,6 @@ export async function loadSession(id){
       apiFetch("/api/sessions/"+encodeURIComponent(s.id),{
         method:"PATCH",
         body:{streamingText:null,streamingReasoning:null},
-        timeoutMs:5000,
       }).catch(function(){});
     }
     /* P_context-race — currentSessionId and URL are set HERE, AFTER

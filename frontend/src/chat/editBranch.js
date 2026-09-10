@@ -76,7 +76,6 @@ export function editUserMessage(messageId){
     var patchPromise=apiFetch(messageApiPath(messageId),{
       method:"PATCH",
       body:{content:editedText,regenerate:false,discardFollowing:true},
-      timeoutMs:15000
     }).catch(function(e){
       /* A just-created local message may not have reached the session
          upsert yet. The local state remains authoritative and the next save
@@ -171,7 +170,6 @@ export function regenerateAssistantMessage(messageId){
     patchPromise=apiFetch(messageApiPath(userMessageId),{
       method:"PATCH",
       body:{content:userText,regenerate:false,discardFollowing:true},
-      timeoutMs:15000
     }).catch(function(e){
       if(!e||e.status!==404)console.log("[msg-regen] server cleanup failed");
     });

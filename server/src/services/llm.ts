@@ -5,19 +5,36 @@
  * Supports: any OpenAI-compatible API (OpenAI, Anthropic via proxy, MiniMax, etc.)
  */
 
-/* LLM streaming budgets.
+/* LLM streaming budgets — both deadlines are DISABLED unless the operator
+ * opts in through the environment.
  *
- * LLM_TOTAL_TIMEOUT_MS — hard ceiling on the entire request. Reasoning
- *   models (DeepSeek R1, QwQ, MiniMax reasoning variants) routinely
- *   stream chain-of-thought for 2-3 minutes, then continue with the
- *   final answer. 180 s covers that while still failing fast on a
- *   hung upstream.
+ * A reasoning model may legitimately think for minutes, and the browser no
+ * longer applies any deadline of its own, so the server must not cut a
+ * healthy response either.
  *
- * LLM_SILENCE_TIMEOUT_MS — separate watchdog that aborts the upstream
- * fetch if NO bytes arrive for this many ms. Reset on every chunk so
- * a healthy but slow stream (long thinking) never trips it. */
-const LLM_TOTAL_TIMEOUT_MS = 300_000;
-const LLM_SILENCE_TIMEOUT_MS = 120_000;
+ * LLM_TOTAL_TIMEOUT_MS — hard ceiling on the entire upstream request.
+ *   0 (default) = no ceiling; set it when a deployment needs a hard cap so
+ *   a stuck upstream cannot hold a worker forever.
+ *
+ * LLM_SILENCE_TIMEOUT_MS — aborts the upstream fetch when NO bytes arrive
+ *   for this many ms, measured from the first chunk onwards. 0 (default) =
+ *   disabled; set it to catch genuinely dead connections. */
+function readTimeoutEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw == null || raw === '') return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+const LLM_TOTAL_TIMEOUT_MS = readTimeoutEnv('LLM_TOTAL_TIMEOUT_MS', 0);
+const LLM_SILENCE_TIMEOUT_MS = readTimeoutEnv('LLM_SILENCE_TIMEOUT_MS', 0);
+
+/** Aborts when any of the given signals aborts; never aborts on its own. */
+function combineSignals(...candidates: Array<AbortSignal | null | undefined>): AbortSignal {
+  const signals = candidates.filter((item): item is AbortSignal => item != null);
+  if (signals.length === 0) return new AbortController().signal;
+  if (signals.length === 1) return signals[0];
+  return AbortSignal.any(signals);
+}
 /* P_provider-max-tokens — 32K was larger than the output budget accepted by
  * a number of OpenAI-compatible gateways.  Keep the public request ceiling
  * at 32K, but use a conservative default when the caller did not choose a
@@ -199,18 +216,21 @@ export async function streamChatCompletion(
 ) {
   const { apiBase, apiKey, model, messages, maxTokens, temperature = 0.7, signal, reasoning_effort, extra_body, tools, tool_choice } = opts;
 
-  const totalSignal = AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS);
+  const totalSignal = LLM_TOTAL_TIMEOUT_MS > 0 ? AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS) : null;
   const silenceController = new AbortController();
   let silenceTimer: ReturnType<typeof setTimeout> | null = null;
   const armSilenceTimer = () => {
+    if (LLM_SILENCE_TIMEOUT_MS <= 0) return;
     if (silenceTimer) clearTimeout(silenceTimer);
     silenceTimer = setTimeout(() => {
       try { silenceController.abort('silence-timeout'); } catch { /* ignore */ }
     }, LLM_SILENCE_TIMEOUT_MS);
   };
-  const mergedSignal = signal
-    ? AbortSignal.any([signal, totalSignal, silenceController.signal])
-    : AbortSignal.any([totalSignal, silenceController.signal]);
+  const mergedSignal = combineSignals(
+    signal,
+    totalSignal,
+    LLM_SILENCE_TIMEOUT_MS > 0 ? silenceController.signal : null,
+  );
 
   try {
     if (Array.isArray(tools) && tools.length > 0) {
@@ -500,17 +520,20 @@ export async function streamChatCompletion(
   } catch (err) {
     if (silenceTimer) clearTimeout(silenceTimer);
     if ((err as Error).name === 'AbortError') {
-      // Distinguish user-initiated abort (client disconnect) from
-      // server-side timeout. The user signal fires on disconnect;
-      // the total timeout fires after LLM_TOTAL_TIMEOUT_MS; the
-      // silence timer fires when no bytes arrive for
-      // LLM_SILENCE_TIMEOUT_MS.
+      // Distinguish user-initiated abort (client disconnect) from the
+      // optional server-side deadlines. The user signal fires on
+      // disconnect; LLM_TOTAL_TIMEOUT_MS / LLM_SILENCE_TIMEOUT_MS only
+      // exist when the operator configured them.
       if (signal && signal.aborted) {
         onDone({ finishReason: null }); // Client disconnected — clean close
-      } else if ((err as Error).message && (err as Error).message.indexOf('silence-timeout') >= 0) {
+      } else if (silenceController.signal.aborted) {
         onError(new Error(`LLM stream stalled: no data for ${LLM_SILENCE_TIMEOUT_MS / 1000} s`));
-      } else {
+      } else if (LLM_TOTAL_TIMEOUT_MS > 0) {
         onError(new Error(`LLM request timed out after ${LLM_TOTAL_TIMEOUT_MS / 1000} s`));
+      } else {
+        /* No deadline is configured, so there is nothing to report as a
+           timeout; treat it as a closed connection. */
+        onDone({ finishReason: null });
       }
     } else {
       onError(err as Error);
@@ -530,9 +553,12 @@ export async function streamChatCompletion(
 export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
   const { apiBase, apiKey, signal, tools } = opts;
 
-  const mergedSignal = signal
-    ? AbortSignal.any([signal, AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS)])
-    : AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS);
+  /* Only the caller's signal and the optional operator-configured total
+     deadline bound this request; there is no implicit server-side cap. */
+  const mergedSignal = combineSignals(
+    signal,
+    LLM_TOTAL_TIMEOUT_MS > 0 ? AbortSignal.timeout(LLM_TOTAL_TIMEOUT_MS) : null,
+  );
 
   let response: Response | undefined;
   const variants = requestBodyVariants(opts, false);

@@ -50,19 +50,9 @@ export function beginAgentTextStream(){
     if(pending){cancelAnimationFrame(pending);pending=null}
     if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null}
   }
-  /* First-delta watchdog: if no text chunk arrives within 45s, surface an
-     error so the user isn't left looking at an empty assistant bubble. */
-  var FIRST_DELTA_TIMEOUT_MS=45000;
-  var firstDelta=true;
-  var firstDeltaTimer=setTimeout(function(){
-    if(finished||firstDelta===false)return;
-    finished=true;
-    cancelScheduled();
-    body.innerHTML=
-      '<div class="msg-error">'+
-        '<span class="msg-error-text">Response timed out</span>'+
-      '</div>';
-  },FIRST_DELTA_TIMEOUT_MS);
+  /* No first-delta watchdog: a reasoning model may think for as long as
+     it needs before the first visible chunk, so the cursor simply stays
+     up until the stream produces text or the caller finalizes. */
   function doRender(){
     pending=null;
     if(finished)return;
@@ -105,17 +95,12 @@ export function beginAgentTextStream(){
   return {
     append:function(delta){
       if(finished)return;
-      if(firstDelta){
-        firstDelta=false;
-        clearTimeout(firstDeltaTimer);
-      }
       full+=delta||"";
       schedule();
     },
     finalize:function(){
       if(finished)return;
       finished=true;
-      clearTimeout(firstDeltaTimer);
       cancelScheduled();
       var sc=list||scrollContainer();
       var wasPinned=!!sc&&(!window.stateStore.read("_userScrolledAway"))&&
