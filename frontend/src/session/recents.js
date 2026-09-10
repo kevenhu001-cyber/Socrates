@@ -172,8 +172,7 @@ export async function actuallyDeleteSession(id,ev){
   /* Single-step: server's DELETE /api/sessions/:id now deletes
      directly without requiring archive first. */
   apiFetch("/api/sessions/"+encodeURIComponent(id),{
-    method:"DELETE",
-    timeoutMs:8000
+    method:"DELETE"
   }).then(function(){
     showToast(_t("session.deleted"));
     /* P_delete-stale — if no sessions remain, make sure the
@@ -223,8 +222,7 @@ export function restoreSession(id){
   if(idx<0)return;
   serverCache.sessions[idx].archivedAt=null;
   apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
-    method:"DELETE",
-    timeoutMs:8000
+    method:"DELETE"
   }).catch(function(){
     /* archive sync failed */
   });
@@ -251,8 +249,7 @@ export function confirmPurgeSession(id){
   ).then(function(yes){
     if(!yes)return;
     apiFetch("/api/sessions/"+encodeURIComponent(id),{
-      method:"DELETE",
-      timeoutMs:8000
+      method:"DELETE"
     }).then(function(){
       /* P_purge-bounce — if the purged session is the active one,
          bounce out to the topic-setup screen so stale content isn't

@@ -54,7 +54,6 @@ export function fireFeedback(
     apiFetch(messageApiPath(messageId, '/feedback'), {
       method: 'PUT',
       body: { rating, categories: categories || null },
-      timeoutMs: 8000,
     }).catch(function () {
       /* Telemetry failures are non-fatal. */
       console.debug('[msg-feedback] not sent');
@@ -155,7 +154,6 @@ export function deleteUserMessage(messageId: string): void {
   publishReactChatRuntime({ type: 'state-synced', reason: 'message-deleted' });
   apiFetch(messageApiPath(messageId), {
     method: 'DELETE',
-    timeoutMs: 8000,
   }).catch(function (e: { status?: number } | null) {
     if (!e || e.status !== 404) console.log('[msg-delete] not synced');
   });

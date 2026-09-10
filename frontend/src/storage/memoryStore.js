@@ -53,7 +53,6 @@ function _syncToServer() {
     window.apiFetch("/api/memory", {
       method: "PUT",
       body: { memories: _memories || [] },
-      timeoutMs: 10000,
     }).catch(function () { /* server sync failed — local state is preserved */ });
   } catch { /* ignore */ }
 }
@@ -62,7 +61,7 @@ function _syncToServer() {
 function loadFromServer() {
   if (typeof window.apiFetch !== "function") return;
   try {
-    window.apiFetch("/api/memory", { method: "GET", timeoutMs: 10000 })
+    window.apiFetch("/api/memory", { method: "GET" })
       .then(function (res) {
         if (res && Array.isArray(res.memories) && res.memories.length) {
           _memories = res.memories;

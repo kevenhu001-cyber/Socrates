@@ -10,9 +10,15 @@ import { wwwAuthenticateChallenge, OAUTH_AUTHORIZATION_ENDPOINT } from '../lib/o
  * 504 response and aborts the downstream pipeline (no more middleware
  * or route handlers run).
  *
- * The chat SSE endpoint (/api/chat/stream) has its own per-LLM-call
- * AbortController with a longer timeout; this is a safety net for
- * everything else (DB queries, file I/O, web fetches, etc.).
+ * Two categories opt out of the deadline entirely, because their
+ * responses are legitimately long-lived and the client applies no
+ * deadline of its own:
+ *   - SSE routes (/api/chat/stream, execution progress, …), detected by
+ *     Content-Type once the response has started.
+ *   - Routes that set `res.locals.timeoutMs = 0` (non-streaming LLM
+ *     responses, e.g. POST /api/chat).
+ * The remaining routes (DB, file I/O, web fetches, …) keep the default
+ * REQUEST_TIMEOUT_MS budget as a safety net.
  */
 export function timeoutMiddleware(req: Request, res: Response, next: NextFunction) {
   const DEFAULT_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
@@ -27,8 +33,8 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
     if (res.headersSent) {
       /* P_sse_timeout_exempt — SSE responses (chat stream, execution
        * progress, status subscribe, …) are legitimately long-lived and
-       * manage their own lifecycle (per-stream AbortController budgets
-       * in llm.ts, heartbeats in lib/sse.ts). Destroying the socket at
+       * manage their own lifecycle (optional env-gated LLM budgets in
+       * llm.ts, heartbeats in lib/sse.ts). Destroying the socket at
        * 120s cut every reply longer than the global budget mid-stream;
        * the frontend's stall-retry then masked it as a flaky reconnect.
        * Detect by Content-Type instead of a path allow-list so every
@@ -42,12 +48,13 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
       return;
     }
     /* P_long-llm-override — non-streaming LLM routes (POST /api/chat,
-     * minimax proxy) await up to LLM_TOTAL_TIMEOUT_MS (300 s) before
-     * sending headers, so the 120 s default 504'd slow reasoning
-     * answers. A route opts out by setting res.locals.timeoutMs; when
-     * the default fires early we re-arm for the remainder instead of
-     * killing the request. */
+     * minimax proxy, suggestions) await the upstream for as long as the
+     * model thinks, so they opt out with `res.locals.timeoutMs = 0`
+     * (no deadline) or extend it with a larger value. A route sets the
+     * value after this middleware has already armed the default timer,
+     * so the decision is made here when the default fires. */
     const custom = Number((res.locals as Record<string, unknown>)?.timeoutMs);
+    if (Number.isFinite(custom) && custom === 0) return;
     if (Number.isFinite(custom) && custom > DEFAULT_TIMEOUT_MS) {
       const allowed = Math.min(custom, MAX_TIMEOUT_MS);
       const remaining = allowed - (Date.now() - startedAt);

@@ -161,9 +161,7 @@ async function loadSuggestions(
   key: string,
 ): Promise<void> {
   try {
-    const payload = await apiFetch(`/api/suggestions/starters?lang=${encodeURIComponent(lang)}`, {
-      timeoutMs: 25_000,
-    });
+    const payload = await apiFetch(`/api/suggestions/starters?lang=${encodeURIComponent(lang)}`);
     if (currentUserId() !== userId || currentLang() !== lang) return;
     const items = normalizeSuggestions(payload);
     if (items.length !== SUGGESTION_COUNT) {

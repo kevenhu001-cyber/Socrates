@@ -1,19 +1,19 @@
 // src/chat/offline.ts — Phase C-3.4 extraction
-// Universal AI-call retry/offline helpers, shared by chat/stream.ts
-// and the in-page streaming code paths in main.js.
+// Universal AI-call retry/offline helpers, shared by the chat streaming
+// code paths.
 //
-//   STREAM_TIMEOUT_MS / STREAM_HEARTBEAT_MS / STREAM_MAX_ATTEMPTS /
-//   STREAM_RETRYABLE_STATUS — compatibility constants.
-//   makeAIWatchdog(totalMs, heartbeatMs, onTimeout)
+//   STREAM_MAX_ATTEMPTS / STREAM_RETRYABLE_STATUS — retry policy constants.
 //   offlineGuard()                              — navigator.onLine check
 //   sleepBackoff()                              — fixed five-second delay
 //
+// There is deliberately no watchdog / heartbeat / total-budget helper here:
+// a reasoning model may think for an unbounded amount of time, so the client
+// never aborts a response on its own. Only a user stop, a session switch, or
+// a transport error ends a request.
+//
 // Window exposures (window.offlineGuard / sleepBackoff /
-// STREAM_TIMEOUT_MS / STREAM_HEARTBEAT_MS / STREAM_MAX_ATTEMPTS /
-// STREAM_RETRYABLE_STATUS) live in src/windowExports.js.
+// STREAM_MAX_ATTEMPTS / STREAM_RETRYABLE_STATUS) live in src/windowExports.js.
 
-export const STREAM_TIMEOUT_MS    = 300000;   /* 5 min — balances reasoning models vs perceived hangs */
-export const STREAM_HEARTBEAT_MS  = 60000;    /* 60 s silence before we treat as stall */
 /* Six attempts = the initial request plus five fixed-delay retries. */
 export const STREAM_MAX_ATTEMPTS  = 6;
 export const STREAM_RETRY_DELAYS  = [5000];              /* legacy export; policy is fixed */
@@ -31,68 +31,6 @@ export const STREAM_RETRYABLE_STATUS: Record<number, boolean> = {
   408: true, 425: true, 429: true, 500: true, 502: true,
   503: true, 504: true, 520: true, 522: true,
 };
-
-export interface AIWatchdog {
-  ac: AbortController;
-  stop: (reason?: string) => void;
-  touch: () => void;
-  isStopped: () => boolean;
-  reason: () => string;
-  lastTouch: () => number;
-}
-
-/* Wraps a single fetch + stream read loop with:
-     - total budget (kills the request after N ms no matter what)
-     - silence heartbeat (kills the request after M ms of no bytes)
-     - offline precheck (no point retrying if navigator says we're offline)
-   Returns an opaque handle with .stop(reason) and .touch() methods. */
-export function makeAIWatchdog(totalMs: number, heartbeatMs: number, onTimeout?: (type: string, ms: number) => void): AIWatchdog {
-  let stopped = false;
-  let reason = '';
-  const ac = new AbortController();
-  let tmo: ReturnType<typeof setTimeout> | null = null;
-  let hb: ReturnType<typeof setTimeout> | null = null;
-  let lastTouch = Date.now();
-
-  function stop(r?: string) {
-    if (stopped) return;
-    stopped = true;
-    reason = r || 'stopped';
-    try { ac.abort(reason); } catch (_) { /* ignore */ }
-    if (tmo) { clearTimeout(tmo); tmo = null; }
-    if (hb) { clearTimeout(hb); hb = null; }
-  }
-  if (totalMs > 0) {
-    tmo = setTimeout(function () {
-      stop('total-timeout-' + totalMs + 'ms');
-      if (typeof onTimeout === 'function') {
-        try { onTimeout('total', totalMs); } catch (_) { /* ignore */ }
-      }
-    }, totalMs);
-  }
-  function armHb() {
-    if (hb) clearTimeout(hb);
-    hb = setTimeout(function () {
-      stop('heartbeat-' + heartbeatMs + 'ms');
-      if (typeof onTimeout === 'function') {
-        try { onTimeout('heartbeat', heartbeatMs); } catch (_) { /* ignore */ }
-      }
-    }, heartbeatMs);
-  }
-  function touch() {
-    lastTouch = Date.now();
-    if (heartbeatMs > 0 && !stopped) armHb();
-  }
-  if (heartbeatMs > 0) armHb();
-  return {
-    ac,
-    stop,
-    touch,
-    isStopped: function () { return stopped; },
-    reason: function () { return reason; },
-    lastTouch: function () { return lastTouch; },
-  };
-}
 
 /* Returns true if we know the network is unreachable. Callers should
    short-circuit their fetch attempts in that case (no point waiting

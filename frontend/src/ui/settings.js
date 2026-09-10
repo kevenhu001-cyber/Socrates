@@ -438,7 +438,7 @@ function saveSettings() {
     var hasReplacementKey = !_maskedKeys[p.id] && !!(p.key && p.key.trim());
     if (p.id.startsWith("new-")) {
       var body = { label: p.label || "", url: p.url || "", key: p.key || "", model: p.model || "", isMultimodal: !!p.vision };
-      return window.apiFetch("/api/api-key", { method: "POST", body: body, timeoutMs: 10_000 }).then(function (r) {
+      return window.apiFetch("/api/api-key", { method: "POST", body: body }).then(function (r) {
         if (r && r.id) { p.id = r.id; results.lastValidId = p.id; }
         results.saved++;
       });
@@ -447,7 +447,7 @@ function saveSettings() {
       /* Empty password fields mean "keep the encrypted key", never
          replace it with an encryption of an empty string. */
       if (hasReplacementKey) body.key = p.key;
-      return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "PATCH", body: body, timeoutMs: 10_000 }).then(function () {
+      return window.apiFetch("/api/api-key/" + encodeURIComponent(p.id), { method: "PATCH", body: body }).then(function () {
         results.lastValidId = p.id;
         results.saved++;
       });

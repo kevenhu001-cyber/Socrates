@@ -5,8 +5,7 @@
    _activeChatAbort coordination stay in main.js's addStreamingMessage
    (deferred to a dedicated refactor PR).
    Reads main.js globals via window.* (state, getActiveProvider,
-   sleepBackoff, offlineGuard, isReasoningProvider,
-   STREAM_TIMEOUT_MS, etc.). */
+   sleepBackoff, offlineGuard, isReasoningProvider, etc.). */
 
 import { apiFetchRaw } from '../util/api.js';
 import { stateStore } from '../state/store.js';
@@ -17,8 +16,6 @@ import {
   waitForAIRetry,
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
-
-import { pickStreamBudgets } from '../config/providers.js';
 
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
@@ -66,25 +63,21 @@ function clearActiveChatAbort(){
    onDelta(text, full) is called for every text chunk the upstream produces.
    Resolves to {text,html,widgets,cancelled} on success, or null on failure.
    Stability features (in order of importance):
-   - Acks on every chunk via watchdog.touch() so a stalled stream aborts
-     after STREAM_HEARTBEAT_MS, not after STREAM_TIMEOUT_MS.
-   - Five fixed-delay retries on transient 5xx/429/heartbeat/total-timeout.
+   - No client-side response deadline and no silence watchdog: a reasoning
+     model may think for as long as it needs. Retries still cover transient
+     5xx/429/network failures, and the server keeps the socket warm with
+     SSE keepalives.
+   - Five fixed-delay retries on transient 5xx / 429 / network failures.
    - User Stop click returns cancelled:true (not an error). */
 export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   /* Read main.js globals via window — this module stays independent. */
   var getActiveProvider=window.getActiveProvider;
   var offlineGuard=window.offlineGuard;
-  /* P_reasoning_budget — pick the silence/total budget per provider.
-     Reasoning models stream 30-90s of sparse thinking tokens; a 60s
-     heartbeat on them would falsely trip "stalled" and waste a retry. */
-  var _budget=(typeof pickStreamBudgets==="function"
-    ? pickStreamBudgets()
-    : { timeoutMs: window.STREAM_TIMEOUT_MS||240000, heartbeatMs: window.STREAM_HEARTBEAT_MS||45000 });
-  var STREAM_TIMEOUT_MS=_budget.timeoutMs;
-  var STREAM_HEARTBEAT_MS=_budget.heartbeatMs;
-  /* Provider-specific timeout/heartbeat budgets remain intact, but retry
-     count is global: five retries after the initial attempt. A small
-     window override is retained for deterministic unit harnesses. */
+  /* P_no-response-timeout — the per-provider total/silence budgets were
+     removed. Long reasoning is legitimate, so the only ways out of this
+     loop are: user Stop, session switch/supersede, a transport error, or
+     a completed response. Retry count is global: five retries after the
+     initial attempt, with a small window override for unit harnesses. */
   var configuredAttempts=opts&&typeof opts.maxAttempts==='number'
     ? opts.maxAttempts
     : window.STREAM_MAX_ATTEMPTS;
@@ -147,8 +140,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       try{ac.abort(reason)}catch(_){}
     };
     window._activeChatAbort._fromThisCall=true;
-    var tmo=setTimeout(function(){try{ac.abort("timeout")}catch(_){}},STREAM_TIMEOUT_MS);
-    var hbTmo=null;
     var resp=null;
     try{
       /* P0.3 — use apiFetchRaw so credentials / CSRF / 401 → handleAuthExpired /
@@ -170,19 +161,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
         body:apiBody,
-        signal:ac.signal,
-        timeoutMs:STREAM_TIMEOUT_MS
+        signal:ac.signal
       });
     }catch(e){
-      clearTimeout(tmo);
-      if(hbTmo)clearTimeout(hbTmo);
       var eStatus=e&&e.status;
       var isAbort=(e&&(e.name==="AbortError"||ac.signal.aborted));
       var requestError=makeStreamError(
         isAbort
-          ? (ac.signal.reason==="heartbeat"
-            ? "stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)"
-            : "request timed out or was interrupted")
+          ? "request was interrupted"
           : (eStatus?eStatus+" ":"network: ")+(e&&e.message||e),
         eStatus,
         e&&e.body,
@@ -208,8 +194,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       finishTurn();
       return null;
     }
-    clearTimeout(tmo);
-
     if(!resp.body||!resp.body.getReader){
       lastErr=makeStreamError("no stream body");
       if(await waitForRetry(attempt,lastErr)){
@@ -249,7 +233,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        the bubble replays the whole turn and duplicates both prose and tools. */
     var semanticActivity=false;
     var streamError=null;
-    var heartbeatFired=false;   /* used instead of e.message to detect heartbeat abort */
     /* Parse ONE SSE frame (the text between two "\n\n" delimiters, or the
        leftover buffer flushed at stream end). Extracted so the same logic
        runs for both the delimited frames in the read loop AND the final
@@ -576,13 +559,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       while(true){
         var step=await reader.read();
         if(step.done)break;
-        /* Heartbeat: every chunk we receive resets the silence timer. */
-        if(hbTmo)clearTimeout(hbTmo);
-        hbTmo=setTimeout(function(){
-          /* No data for STREAM_HEARTBEAT_MS — treat as a hang. */
-          heartbeatFired=true;
-          try{ac.abort("heartbeat")}catch(_){}
-        },STREAM_HEARTBEAT_MS);
         bytesReceived+=step.value.byteLength;
         gotAnyData=gotAnyData||step.value.byteLength>0;
         /* Decode with stream:true so multi-byte chars split across chunks
@@ -596,16 +572,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         });
         if(cancelled)break;
       }
-      /* Clear heartbeat — stream ended naturally. */
-      if(hbTmo){clearTimeout(hbTmo);hbTmo=null}
-      /* P_tmo_cleanup — also clear the total-timeout watchdog on the
-         happy path. Without this, `tmo` keeps a closure (capturing
-         `ac`, the abort listener, and STREAM_TIMEOUT_MS) alive for
-         up to the full budget AFTER the stream completed. Over many
-         turns this pins the previous AbortController + Response
-         state, increasing GC pressure and — on some browsers — the
-         chance that a stale watchdog fires during the next call. */
-      if(tmo){clearTimeout(tmo);tmo=null}
       /* P_reader_release — explicitly release the reader so the
          underlying HTTP/2 stream can be returned to the connection
          pool. Without this, the browser keeps the stream counted
@@ -654,12 +620,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       }
     }catch(e){
       console.error("[API stream] read error:",e);
-      if(hbTmo){clearTimeout(hbTmo);hbTmo=null}
       if(e&&(e.name==="AbortError"||e.code===20)){
-        var isHeartbeat=heartbeatFired;
-        var attemptError=makeStreamError(isHeartbeat
-          ?"stream stalled (no data for "+(STREAM_HEARTBEAT_MS/1000)+"s)"
-          :"stream request timed out or was interrupted");
+        /* A transport-level interruption (connection dropped, proxy
+           closed the socket) is retryable only before anything visible
+           reached the caller. There is no client-side deadline and no
+           silence watchdog: a slow-but-healthy reasoning stream is
+           never aborted from here. */
+        var attemptError=makeStreamError("stream was interrupted before it completed");
         attemptError.reason=ac.signal.reason;
         if(!isUserAbort(e,ac.signal)&&!isUserAbort(e,turnAbort.signal)
            &&!semanticActivity&&await waitForRetry(attempt,attemptError)){
@@ -670,14 +637,11 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           unbindAttempt();
           continue;
         }
-        if(isHeartbeat&&semanticActivity){
-          lastErr=attemptError.message+" after partial output; automatic replay suppressed";
-        }
         /* User Stop click — return a cancelled result with whatever
            text already streamed, so the bubble cleans up silently
            instead of showing an error. */
         if(isUserAbort(e,ac.signal)||isUserAbort(e,turnAbort.signal)
-           ||(!isHeartbeat&&!semanticActivity&&(!ac.signal.reason||ac.signal.reason==="user-stop"))){
+           ||(!semanticActivity&&(!ac.signal.reason||ac.signal.reason==="user-stop"))){
           /* A named user stop is preferred. The no-reason fallback keeps
              compatibility with browsers that expose AbortError without the
              custom reason attached. */
@@ -721,10 +685,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     /* Empty stream — server returned 200 but no body. Treat as
        retriable (rare, but happens on flaky upstreams).
        P_silence_fix — preserve any real error already captured from
-       event:error SSE frames instead of overwriting with generic
-       "empty stream". Without this, the user always sees
-       "response interrupted: empty stream" even when the real
-       cause was "LLM stream stalled: no data for 60s". */
+       event:error SSE frames instead of overwriting it with the
+       generic "empty stream". */
     if(!gotAnyData&&!full&&!formattedHtml){
       lastErr=makeStreamError("empty stream ("+bytesReceived+" bytes received)");
       if(await waitForRetry(attempt,lastErr)){
@@ -757,8 +719,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
     }
     /* P_global_handle_cleanup — drop the global abort handle so
        a future "session-switch" or "user-stop" call doesn't fire
-       a closure that pins this call's AbortController for the
-       remaining watchdog window. */
+       a closure that pins this call's AbortController. */
     finishTurn();
     return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false};
   }

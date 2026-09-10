@@ -43,7 +43,9 @@ function consumeSseBuffer(buffer, onFrame) {
   return rest;
 }
 
-const STREAM_TIMEOUT_MS = 600000;
+/* No client-side deadline for a Codex turn: the workspace agent runs
+   commands and edits files for as long as the task needs. Only the Stop
+   button (an AbortController) or a transport error ends the stream. */
 
 /* ── panel-scoped styles (kept local so we never touch styles.css) ── */
 const PANEL_CSS = `
@@ -737,7 +739,6 @@ async function startTurn(text) {
           method: 'POST',
           body: { input: text },
           signal: controller.signal,
-          timeoutMs: STREAM_TIMEOUT_MS,
         });
         if (!resp.body || typeof resp.body.getReader !== 'function') {
           throw Object.assign(new Error('Codex stream has no response body'), { code: 'EMPTY_STREAM' });

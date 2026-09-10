@@ -134,7 +134,6 @@ export function addTagToSession(id,tag){
   apiFetch("/api/sessions/"+encodeURIComponent(id)+"/tags",{
     method:"PUT",
     body:{tags:s.tags},
-    timeoutMs:8000
   }).catch(function(err){
     console.debug("[tags] server sync failed:",err&&err.message);
   });
@@ -150,7 +149,6 @@ export function removeTagFromSession(id,tag){
   apiFetch("/api/sessions/"+encodeURIComponent(id)+"/tags",{
     method:"PUT",
     body:{tags:s.tags},
-    timeoutMs:8000
   }).catch(function(){
     /* tags sync failed */
   });

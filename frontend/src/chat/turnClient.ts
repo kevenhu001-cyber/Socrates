@@ -100,7 +100,7 @@ export async function subscribeChatTurnEvents(
   try {
     resp = await apiFetchRaw(
       `/api/chat-turns/${encodeURIComponent(turnId)}/events?after=${encodeURIComponent(String(Math.max(0, after || 0)))}`,
-      { signal: signal || undefined, timeoutMs: 300_000 },
+      { signal: signal || undefined },
     );
   } catch (err) {
     handlers.onError?.(err);

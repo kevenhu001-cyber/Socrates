@@ -164,7 +164,7 @@ async function _planResearch(query) {
     { role: "user", content: String(query || "").slice(0, 1200) }
   ];
   try {
-    var raw = await callAPI(messages, 600, 20000);
+    var raw = await callAPI(messages, 600);
     var text = typeof raw === "string" ? raw : "";
     var match = text.match(/\[[\s\S]*\]/);
     var parsed = match ? JSON.parse(match[0]) : null;
@@ -265,7 +265,7 @@ async function _synthesizeReport(query, plan, extracts) {
       var synthesized = await callAPI([
         { role: "system", content: "You are a careful research analyst. Never invent evidence or citations." },
         { role: "user", content: synthesisPrompt }
-      ], undefined, 90000);
+      ], undefined);
       if (typeof synthesized === "string" && synthesized.trim().length > 300) {
         return synthesized.trim();
       }

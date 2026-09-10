@@ -141,9 +141,9 @@ describe('timeoutMiddleware', () => {
   });
 
   test('res.locals.timeoutMs defers the 504 for long LLM calls', async () => {
-    /* Non-streaming LLM routes await up to 300 s before headers;
-     * they set res.locals.timeoutMs so the default budget re-arms
-     * instead of killing the request at 50 ms here. */
+    /* Non-streaming LLM routes can await the upstream model before sending
+     * headers; they set a larger res.locals.timeoutMs so the default
+     * budget re-arms instead of killing the request at 50 ms here. */
     const prev = process.env.REQUEST_TIMEOUT_MS;
     process.env.REQUEST_TIMEOUT_MS = '50';
     try {
@@ -158,6 +158,28 @@ describe('timeoutMiddleware', () => {
       await new Promise((resolve) => setTimeout(resolve, 150));
       assert.equal(res._status, 504);
       assert.equal(res._body.code, 'REQUEST_TIMEOUT');
+    } finally {
+      if (prev === undefined) delete process.env.REQUEST_TIMEOUT_MS;
+      else process.env.REQUEST_TIMEOUT_MS = prev;
+    }
+  });
+
+  test('res.locals.timeoutMs = 0 disables the deadline for long LLM responses', async () => {
+    /* Non-streaming LLM routes set 0 so a slow model is never cut off;
+     * the middleware must not emit a 504 even though the default budget
+     * (50 ms here) has long expired. */
+    const prev = process.env.REQUEST_TIMEOUT_MS;
+    process.env.REQUEST_TIMEOUT_MS = '50';
+    try {
+      const req = fakeReq();
+      const res = fakeRes();
+      res.locals = { timeoutMs: 0 };
+      timeoutMiddleware(req, res, () => {
+        /* never respond — simulate a model that is still thinking. */
+      });
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      assert.equal(res._status, null);
+      assert.equal(res.destroyed, false);
     } finally {
       if (prev === undefined) delete process.env.REQUEST_TIMEOUT_MS;
       else process.env.REQUEST_TIMEOUT_MS = prev;

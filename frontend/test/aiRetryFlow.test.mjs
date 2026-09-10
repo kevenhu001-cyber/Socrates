@@ -30,8 +30,6 @@ function installStreamEnvironment(responses) {
     state,
     getActiveProvider: () => ({ isBuiltIn: false, name: 'test' }),
     offlineGuard: () => false,
-    STREAM_TIMEOUT_MS: 10_000,
-    STREAM_HEARTBEAT_MS: 10_000,
     STREAM_MAX_ATTEMPTS: 6,
     appMode: 'chat',
   };

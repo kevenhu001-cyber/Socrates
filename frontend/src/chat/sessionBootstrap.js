@@ -353,7 +353,6 @@ export async function startSession(){
       Promise.resolve(saveState.saveInFlight).catch(function(){}).then(function(){
         return apiFetch("/api/sessions/"+encodeURIComponent(cancelledSid),{
           method:"DELETE",
-          timeoutMs:8000,
         });
       }).then(function(){
         return refreshServerSessions();

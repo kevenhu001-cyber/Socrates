@@ -747,18 +747,17 @@ configurePromptSuffixes({ getUserMemories: getUserMemories });
    Resolves to {text,html,widgets,cancelled} on success, or null on failure.
 
    Stability features (in order of importance):
-   - 120s total budget via AbortController (catches hung streams)
-   - Up to 3 automatic retries on 408/429/5xx/network/empty-stream
-     with exponential backoff (600ms, 1.5s, 3.5s)
-   - 60s heartbeat timeout during streaming (no chunk for 60s aborts
-     that attempt and retries — catches connections that go silent)
-   - Honors Retry-After header on 429/503
+   - No client-side response deadline: a reasoning model may think for as
+     long as it needs. Only a user stop, a session switch, or a transport
+     error ends the stream.
+   - Up to five fixed-delay retries on 408/429/5xx/network failures,
+     before any visible output has been emitted.
    - UTF-8 safe: TextDecoder with stream:true + final flush
    - SSE frames: supports `data:` only and `event:` + `data:` style frames
    - onDelta errors are swallowed; a render bug never kills the stream
    - Empty delta is OK if backend sent a __FORMATTED__ pre-render
-   - Returns cancelled:true if the AbortController fired (caller can
-     decide whether to show a "stopped" UI or fall back to mock) */
+   - Returns cancelled:true if the abort fired (caller can decide
+     whether to show a "stopped" UI or fall back to mock) */
 
 /* Cycle through active projects. If the current session is in a
    project, move to the next one; if not, pick the first project. */
@@ -851,9 +850,6 @@ try{window.incognitoOn=false;}catch(_){}
    up (Phase C deferral), so re-bind here. */
 /* P_minimax-reasoning-split — stream.js checks this to decide whether
    to send `reasoning_split: true` in extra_body for MiniMax models. */
-/* P_reasoning_budget — paired with the stream.js call at line 47.
-   Without this, reasoning models (DeepSeek R1 / QwQ / MiniMax) hit
-   the default 60 s heartbeat mid-think and the stream aborts. */
 /* P_share-load-bridge — auth/boot.js:44 calls `loadSharedSession`
    when a visitor opens `?share=TOKEN`, before any auth flow. Without
    this binding, that call throws TypeError, the surrounding try/catch

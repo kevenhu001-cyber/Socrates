@@ -224,10 +224,10 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       );
     } else {
       // ── Non-streaming: JSON response ──
-      /* P_long-llm-override — same 300 s budget as /api/chat above;
-       * without this the 120 s global timeout 504s slow reasoning
-       * answers before the upstream responds. */
-      res.locals.timeoutMs = 300_000;
+      /* P_long-llm-override — same as /api/chat: the non-streaming proxy
+       * waits for the upstream model however long it thinks, so it opts
+       * out of the global request deadline (see timeoutMiddleware). */
+      res.locals.timeoutMs = 0;
       const result = await callChatCompletion({
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,

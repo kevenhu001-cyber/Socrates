@@ -38,10 +38,11 @@ const router = Router();
    marked isGuest in DB). */
 router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audit('chat:sync'), async (req, res, next) => {
   try {
-    /* P_long-llm-override — this non-streaming call awaits the upstream
-     * for up to LLM_TOTAL_TIMEOUT_MS (300 s); opt out of the 120 s
-     * global request timeout (see timeoutMiddleware). */
-    res.locals.timeoutMs = 300_000;
+    /* P_long-llm-override — this non-streaming call waits for the upstream
+     * model for as long as it needs to think. `timeoutMs = 0` opts out of
+     * the global request deadline entirely (see timeoutMiddleware); the
+     * client applies no deadline of its own either. */
+    res.locals.timeoutMs = 0;
     const prep = await prepareChatRequest(req, res);
     if (!prep.ok) return;
     const { messages: finalMessages, provider, safeExtraBody, temperature, maxTokens, reasoning_effort } = prep.payload;
