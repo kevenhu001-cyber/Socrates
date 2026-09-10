@@ -249,6 +249,35 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   background: #111 !important;
 }
 
+/* The in-session composer shares the same reference control: solid dark
+   circle in light mode. Without this the shared chatgpt-v2 idle rule
+   paints it white, which disappears on the white composer surface. */
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:not(.active),
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active,
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.chat-stop,
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn.agent-stop {
+  color: #fff !important;
+  background: #111 !important;
+}
+
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* Reference composer outline — light mode. chatgpt-v2 drops the idle
+   border entirely (`border: 0 !important`) and relies on the shadow,
+   which reads as no edge at all against the white canvas. Restore a
+   hairline plus a clearly stronger focus ring in light mode only. */
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) {
+  border: 1px solid rgb(0 0 0 / 20%) !important;
+}
+
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: rgb(0 0 0 / 38%) !important;
+  box-shadow: 0 0 0 3px rgb(0 0 0 / 6%), var(--cg-composer-shadow) !important;
+}
+
 [data-mode="light"] #appShell .lobe-home-action:hover,
 [data-mode="light"] #appShell .lobe-home-action:focus-visible {
   background: var(--cg-surface-hover) !important;
@@ -802,13 +831,16 @@ body.workspace-active #appShell .main-page {
     --cg-sidebar-width: 260px;
   }
 
+  /* Drag-to-resize owns --app-sidebar-width (set by sidebarResize.js on
+     <html>); these rules must consume it rather than pin 260px or the
+     handle updates the variable with no visible effect. */
   #appShell .sidebar {
-    width: 260px !important;
-    min-width: 260px !important;
+    width: var(--app-sidebar-width, 260px) !important;
+    min-width: var(--app-sidebar-width, 260px) !important;
   }
 
   #appShell .main {
-    padding-left: 260px !important;
+    padding-left: var(--app-sidebar-width, 260px) !important;
   }
 
   #appShell .sidebar.collapsed ~ .main,
@@ -1689,13 +1721,43 @@ body.workspace-active #appShell .main-page {
     display: none !important;
   }
 
-  /* P_mobile-black-canvas-fade — the legacy conversation layer fades
-     .chat-input-bar into hsl(var(--cowork-page)) (#212121 in dark),
-     which reads as a gray patch under the pill on the black canvas.
-     Keep the fade silhouette but land it on pure black so the safe-area
-     strip below the composer stays #000. */
+  /* P_mobile-canvas-fade — the legacy conversation layer fades
+     .chat-input-bar into the canvas colour. Land the fade on the active
+     --cg-page (pure black on the dark phone canvas, white in light mode)
+     so the safe-area strip below the composer matches the page instead of
+     forcing a black band under a white light-mode page. */
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
-    background: linear-gradient(to bottom, transparent, #000 24px) !important;
+    background: linear-gradient(to bottom, transparent, var(--cg-page) 24px) !important;
+  }
+
+  /* Mobile header controls: the hardcoded dark-on-light palette only
+     works on the black phone canvas. In light mode invert the circle
+     buttons and give the icon-only actions a dark glyph. */
+  [data-mode="light"] #appShell #sidebarOpenBtn,
+  [data-mode="light"] #appShell #mobileIncognitoBtn {
+    border-color: rgb(0 0 0 / 10%) !important;
+    background: hsl(0 0% 100% / 96%) !important;
+    color: hsl(0 0% 14%) !important;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 8%) !important;
+  }
+
+  [data-mode="light"] #appShell #sidebarOpenBtn:hover,
+  [data-mode="light"] #appShell #mobileIncognitoBtn:hover {
+    background: hsl(0 0% 93%) !important;
+    color: hsl(0 0% 4%) !important;
+  }
+
+  [data-mode="light"] #appShell #findBtn,
+  [data-mode="light"] #appShell #shareBtn {
+    color: hsl(0 0% 22%) !important;
+  }
+
+  [data-mode="light"] #appShell #findBtn:hover,
+  [data-mode="light"] #appShell #shareBtn:hover,
+  [data-mode="light"] #appShell #findBtn:focus-visible,
+  [data-mode="light"] #appShell #shareBtn:focus-visible {
+    background: rgb(0 0 0 / 6%) !important;
+    color: hsl(0 0% 6%) !important;
   }
 }
 

@@ -26,3 +26,29 @@
 - Server or schema: run typecheck and focused tests; document migration/rollback implications.
 - Cross-client API changes: update the OpenAPI description and check `mobile/` compatibility.
 - Deployment changes: use a non-production dry-run environment or shell-level validation before operating on web roots or services.
+
+## Incremental testing (required)
+
+Do not run the full `test:unit` / Playwright suites for every change. Tests are slow
+(unit ≈2 min, full Playwright much longer), so map the diff to tests and run only those.
+
+1. Find the change set: `git status --short` + `git diff --name-only HEAD` (or diff
+   against the last verified commit you recorded).
+2. Map changed files to specs:
+   - `frontend/src/styles*` (tokens/themes/shell CSS) → `e2e/landing-light-visual`,
+     `e2e/chat-light-palette`, `e2e/theme-system`, `e2e/chat-workbench`,
+     `e2e/home-customization`.
+   - `frontend/src/ui/sidebarResize.js`, sidebar chrome/nav → `e2e/sidebar-resize`,
+     `e2e/sidebar-compat`, `e2e/sidebar-nav`.
+   - Composer (`react/composer-input`, `ui/composerTools`, `#chatInputWrap`) →
+     `e2e/composer-*`, `e2e/chat-workbench`, `e2e/repro-input-overlap`.
+   - `frontend/src/chat/*` / `render/*` → `e2e/chat-send`, `e2e/chat-stop-resend`,
+     `e2e/streaming-render`, `e2e/message-list-compat`, plus `test/<module>.test.mjs`.
+   - New modules with no matching spec: run only the smallest relevant unit file
+     (`node --experimental-strip-types --test test/<file>.test.mjs`) and add a focused
+     spec instead of relying on the full suite.
+3. Run a subset, e.g.:
+   `npx playwright test --config=playwright.config.mjs e2e/<spec>.spec.mjs --workers=1`
+4. If an existing spec fails, rebuild `git stash`-clean HEAD (or inspect the traces)
+   to confirm it is pre-existing before attributing it to the change.
+

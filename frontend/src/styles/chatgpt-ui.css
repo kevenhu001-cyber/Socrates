@@ -78,17 +78,19 @@ body,
 }
 
 #appShell {
-  --app-sidebar-width: var(--cg-sidebar-width);
-  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--cg-sidebar-width) - 48px));
-  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--cg-sidebar-width) - 48px));
+  /* --app-sidebar-width is intentionally NOT declared here: sidebarResize.js
+     sets it on <html>, and a local declaration would shadow that value and
+     freeze the sidebar drag. Falls back to --cg-sidebar-width (240/260px). */
+  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
+  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
   --workbench-content-max: var(--cg-content-width);
 }
 
 /* Shell / rail */
 
 #appShell .sidebar {
-  width: var(--cg-sidebar-width) !important;
-  min-width: var(--cg-sidebar-width) !important;
+  width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
+  min-width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
   background: var(--cg-rail) !important;
   background-image: none !important;
   border-right: 1px solid var(--cg-border) !important;
@@ -271,8 +273,10 @@ body,
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--cg-accent);
-  color: var(--cg-accent-ink);
+  /* Default identity mark is neutral gray; the gold accent stays reserved
+     for interactive/active surfaces instead of every avatar. */
+  background: var(--cg-surface-hover);
+  color: var(--cg-text);
   font-size: 11px;
   font-weight: 700;
 }
@@ -307,7 +311,7 @@ body,
 /* Top bar and landing */
 
 #appShell .main {
-  padding-left: var(--cg-sidebar-width) !important;
+  padding-left: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
 }
 
 #appShell .sidebar.collapsed ~ .main {

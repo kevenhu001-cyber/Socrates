@@ -40,7 +40,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 ::view-transition-new(root){animation:.3s ease-out vt-fade-in;z-index:2}
 @keyframes vt-fade-out{from{opacity:1}to{opacity:0}}
 @keyframes vt-fade-in{from{opacity:0}to{opacity:1}}
-:root{--surface-page:var(--bg-100);--surface-raised:var(--bg-200);--surface-overlay:var(--bg-000);--surface-hover:var(--bg-300);--surface-input:var(--bg-000);--text-primary:var(--text-100);--text-secondary:var(--text-400);--text-tertiary:var(--text-500);--border-default:var(--border-300);--border-subtle:var(--border-300);--accent:var(--accent-000);--accent-bg:var(--accent-900);--font-scale:var(--app-font-scale,1);--sidebar-width:var(--app-sidebar-width,18rem);--sidebar-font-scale:calc(var(--app-font-scale,1) * 0.92)}
+:root{--surface-page:var(--bg-100);--surface-raised:var(--bg-200);--surface-overlay:var(--bg-000);--surface-hover:var(--bg-300);--surface-input:var(--bg-000);--text-primary:var(--text-100);--text-secondary:var(--text-400);--text-tertiary:var(--text-500);--border-default:var(--border-300);--border-subtle:var(--border-300);--accent:var(--accent-000);--accent-bg:var(--accent-900);--font-scale:var(--app-font-scale,1);--app-sidebar-width:16.25rem;/* 260px — default until sidebarResize.js restores the stored width */--sidebar-width:var(--app-sidebar-width,18rem);--sidebar-font-scale:calc(var(--app-font-scale,1) * 0.92)}
 
 /* ── Tool card design tokens (P_tool-card-minimal) ─────────────────
    A grayscale, ChatGPT-style visual language shared by every
@@ -9107,17 +9107,17 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
    ══════════════════════════════════════════════════════════════════ */
 
 /* ── 1. User message bubble — make the existing bubble legible ─────── */
-/* Warm bubble surface tokens. Dark: a lifted neutral-warm panel that
-   sits ~5–6% above the page instead of ~3%. Light: a warm sand tint a
-   few points BELOW the page so the right-aligned prompt reads as a
-   distinct card on the cream background. */
+/* Bubble surface tokens. Dark: a lifted neutral-warm panel that sits
+   ~5–6% above the page instead of ~3%. Light: a neutral gray card a few
+   points BELOW the page so the right-aligned prompt reads as a distinct
+   surface without a warm/yellow cast. */
 :root{
   --user-bubble-bg:38 6% 17%;
   --user-bubble-border:36 8% 26%;
 }
 [data-theme=socrates][data-mode=light]{
-  --user-bubble-bg:40 30% 90%;
-  --user-bubble-border:38 22% 80%;
+  --user-bubble-bg:0 0% 94%;
+  --user-bubble-border:0 0% 86%;
 }
 .msg.user .msg-body{
   background:hsl(var(--user-bubble-bg));
@@ -9129,8 +9129,11 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 /* Conversation workbench layer paints the page at --workbench-page(10%),
    so the bubble tokens above (17%) already clear it in dark mode. Give
    the workbench its own slightly warmer bubble so it harmonizes with the
-   workbench palette rather than the global --bg atoms. */
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg.user .msg-body{
+   workbench palette rather than the global --bg atoms. Light mode keeps
+   the neutral --user-bubble-* surface from above — the dark override here
+   must stay scoped to dark, otherwise it fights the light palette and
+   paints a near-black bubble with dark text. */
+[data-mode=dark] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg.user .msg-body{
   background:hsl(30 4% 16%);
   border-color:hsl(30 4% 24%);
 }
@@ -10829,9 +10832,10 @@ html[data-theme=socrates][data-mode=light]{
   border-right:0.5px solid hsl(0 0% 0% / 0.06);
 }
 .sidebar{
-  --app-sidebar-width:16.25rem; /* 260px — ChatGPT rail width */
-  min-width:var(--app-sidebar-width);
-  width:var(--app-sidebar-width);
+  /* Read the JS-managed width from :root — redeclaring it here would
+     shadow documentElement and freeze the drag-to-resize handle. */
+  min-width:var(--app-sidebar-width,16.25rem);
+  width:var(--app-sidebar-width,16.25rem);
 }
 .sidebar.collapsed{
   width:var(--app-sidebar-width);

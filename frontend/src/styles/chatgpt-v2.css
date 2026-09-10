@@ -214,15 +214,14 @@
 }
 
 #appShell .sidebar {
-  --cg-sidebar-width: 246px;
-  width: var(--cg-sidebar-width) !important;
-  min-width: var(--cg-sidebar-width) !important;
+  width: var(--app-sidebar-width, 246px) !important;
+  min-width: var(--app-sidebar-width, 246px) !important;
   border-right: 1px solid var(--cgv-border) !important;
   background: var(--cg-rail) !important;
 }
 
 #appShell .main {
-  padding-left: var(--cg-sidebar-width) !important;
+  padding-left: var(--app-sidebar-width, 246px) !important;
 }
 
 #appShell .sidebar.collapsed ~ .main {
