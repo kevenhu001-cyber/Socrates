@@ -25,6 +25,7 @@ import { renderLinkPreviews, renderNoUrlHint } from '../ui/linkPreviews.js';
 import { getReasoningEffort } from '../ui/effortPicker.js';
 import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.js';
+import { clearPendingTurn, createChatTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
 import { addMessage } from './messages.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
@@ -214,6 +215,25 @@ export async function askChatTurn(userText,pendingOverride){
        multimodal turn can never pick up a newer draft's attachments. */
     quietTurn(askChatTurn(userText,pendingContent));
   }});
+  /* M1 async — create the detached turn before streaming so a socket
+     drop mid-turn leaves a resumable server-side run. Best-effort:
+     a failed create falls back to the legacy unbound stream. The
+     pending pointer survives reloads; it is cleared on finish/cancel
+     below and re-attached by loadSession when still open. */
+  var _turnId=null;
+  var _turnSessionId=stateStore.read("currentSessionId")||null;
+  try{
+    var _clientTurnId=newClientTurnId();
+    var _created=await createChatTurn({
+      clientTurnId:_clientTurnId,
+      sessionId:_turnSessionId,
+      input:{ text:String(userText||"").slice(0,20000) },
+    });
+    if(_created&&_created.turn&&_created.turn.id){
+      _turnId=_created.turn.id;
+      if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:_turnId,clientTurnId:_clientTurnId,lastSeq:0});
+    }
+  }catch(_){_turnId=null}
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
      controller's onInlineTool), so the transient thinking-pill label
@@ -259,9 +279,16 @@ export async function askChatTurn(userText,pendingOverride){
     onToolCallDelta:function(d){
       if(!d)return;
       if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
-    }
+    },
+    turnId:_turnId,
   });
   handleChatApiResult(result,ctl,userText);
+  /* M1 async — finish/cancel consume the pending pointer; a transport
+     failure keeps it so reload/reconnect can re-attach to the detached
+     run instead of opening a duplicate LLM call. */
+  try{
+    if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId);
+  }catch(_){}
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   updateChatStats();
   if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length))saveCurrentSession();

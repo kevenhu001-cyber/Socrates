@@ -719,9 +719,24 @@ window.refreshProjectConnector = async function (id) {
 };
 window.openProjectConnectorForm = function (id) {
   var connector = (workspaceCache.connectors || []).filter(function (c) { return c.id === id; })[0];
-  if (!connector || !connector.credentialInput || !connector.credentialInput.fields) {
+  if (!connector) {
     toast(t("toast.connectorNoForm", "This connector is missing a credential form.")); return;
   }
+  var conn = connector.connection || null;
+  var connected = !!conn && (conn.status === "connected" || conn.status === "initiated");
+  if (connector.credentialInput && connector.credentialInput.fields) {
+    openCredentialDialog(connector);
+    return;
+  }
+  /* OAuth-style connectors expose no credential form by design — Manage
+   * shows the live connection facts with Refresh / Disconnect actions. */
+  if (connected) {
+    openManageDialog(connector, conn);
+    return;
+  }
+  toast(t("toast.connectorNoForm", "This connector is missing a credential form."));
+};
+function openCredentialDialog(connector) {
   var fieldsHtml = connector.credentialInput.fields.map(function (f) {
     var help = f.help ? '<p class="workspace-note">' + esc(f.help) + '</p>' : "";
     var required = f.required ? " required" : "";
@@ -752,6 +767,40 @@ window.openProjectConnectorForm = function (id) {
     }
   });
 };
+
+function openManageDialog(connector, conn) {
+  var id = connector.id;
+  var account = conn.displayName || conn.connectionName || "";
+  var updated = "";
+  try { updated = conn.updatedAt ? new Date(conn.updatedAt).toLocaleString() : ""; } catch (_) { updated = ""; }
+  var errorHtml = conn.lastError
+    ? '<p class="workspace-note">' + esc(t("plugins.manageDialog.error", "Last error")) + ': ' + esc(conn.lastError) + "</p>"
+    : "";
+  showDialog('<div class="workspace-dialog-title"><div><h2>' + esc(t("plugins.manage", "Manage") + " " + connector.name) + "</h2><p>" + esc(connector.description || "") + "</p></div>"
+    + '<button onclick="closeWorkspaceDialog()" aria-label="' + t("dialog.close", "Close") + '">×</button></div>'
+    + '<div class="workspace-form">'
+    + '<label class="workspace-field"><span>' + esc(t("plugins.manageDialog.status", "Status")) + '</span><input readonly value="' + esc(conn.status + (account ? " · " + account : "")) + '"></label>'
+    + '<label class="workspace-field"><span>' + esc(t("plugins.manageDialog.account", "Account")) + '</span><input readonly value="' + esc(account || "—") + '"></label>'
+    + (updated ? '<label class="workspace-field"><span>' + esc(t("plugins.manageDialog.updated", "Updated")) + '</span><input readonly value="' + esc(updated) + '"></label>' : "")
+    + errorHtml
+    + '<div class="workspace-dialog-actions"><span></span>'
+    + '<button type="button" class="workspace-secondary" data-action="refresh">' + esc(t("plugins.manageDialog.refresh", "Refresh")) + "</button>"
+    + '<button type="button" class="workspace-danger" data-action="disconnect">' + esc(t("plugins.manageDialog.disconnect", "Disconnect")) + "</button>"
+    + '<button type="button" class="workspace-secondary" onclick="closeWorkspaceDialog()">' + t("common.cancel", "Cancel") + "</button></div></div>");
+  var dialog = byId("workspaceDialog");
+  dialog.querySelector('[data-action="refresh"]').addEventListener("click", async function () {
+    closeWorkspaceDialog();
+    await window.refreshProjectConnector(id);
+    window.openProjectConnectorForm(id);
+  });
+  dialog.querySelector('[data-action="disconnect"]').addEventListener("click", async function () {
+    if (!(await confirmAction(t("confirm.disconnectApp.title", "Disconnect this app?"), t("confirm.disconnectApp.msg", "Socrates will remove the stored connection.")))) return;
+    try {
+      await api("/api/project-connectors/" + encodeURIComponent(id) + "/connection", { method: "DELETE" });
+      closeWorkspaceDialog(); await renderPlugins(); toast(t("toast.appDisconnected", "App disconnected"));
+    } catch (err) { toast((err && err.message) || t("toast.appDisconnectFailed", "Could not disconnect app")); }
+  });
+}
 
 function ensureDialog() {
   var dialog = byId("workspaceDialog");

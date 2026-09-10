@@ -14,7 +14,7 @@ import {
 } from '../services/openConnectorCatalog.js';
 import { OPEN_CONNECTOR_CLOUD_AUTH } from '../services/openConnectorCloudAuth.generated.js';
 import {
-  SidecarError, connectionNameForUser, getSidecarConnectionStatus, getSidecarOAuthConfig,
+  SidecarError, connectionNameForUser, deleteSidecarConnection, getSidecarConnectionStatus, getSidecarOAuthConfig,
   isOpenConnectorSidecarConfigured, listSidecarProviders, startSidecarOAuth,
   upsertSidecarConnection, upsertSidecarOAuthConfig, type SidecarProvider,
 } from '../services/openConnectorSidecar.js';
@@ -187,6 +187,36 @@ router.get('/:provider/status', requireAuth, async (req, res, next) => {
   const provider = getProjectConnectorProvider(req.params.provider);
   if (!provider) return res.status(404).json({ error: 'Unknown connector provider' });
   await pollGatewayConnection(req, res, next, provider.id);
+});
+
+/* Disconnect: forget the binding Socrates-side. In sidecar mode the sidecar
+ * connection is dropped too (best effort — a sidecar failure never blocks
+ * the local unbind). In OOMOL-cloud mode the gateway grant itself stays
+ * until revoked at the provider; only our row (and its UI state) is
+ * removed, matching what the directory renders. */
+router.delete('/:provider/connection', requireAuth, async (req, res, next) => {
+  const id = String(req.params.provider || '');
+  const oc = ocInventoryEntry(id);
+  if (!oc && !getProjectConnectorProvider(id)) {
+    return res.status(404).json({ error: 'Unknown connector provider' });
+  }
+  try {
+    if (oc && isOpenConnectorSidecarConfigured()) {
+      try {
+        await deleteSidecarConnection({ service: oc.service, connectionName: connectionNameForUser(req.userId) });
+      } catch {
+        /* Local unbind stays authoritative; surfaced via updatedAt below. */
+      }
+    }
+    const db = getDb();
+    await db.delete(projectConnectorConnections).where(and(
+      eq(projectConnectorConnections.userId, req.userId!),
+      eq(projectConnectorConnections.provider, id),
+    ));
+    return res.json({ status: 'disconnected' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 /* Shared OOMOL-gateway status poll for legacy providers and (in cloud mode)

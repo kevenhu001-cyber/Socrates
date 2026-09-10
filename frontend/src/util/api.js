@@ -211,8 +211,16 @@ export async function apiFetch(path, opts = {}) {
   let json = null;
   try { json = text ? JSON.parse(text) : null; } catch (_) {}
   if (!r.ok) {
-    const msg = (json && (json.detail || json.title || json.error)) || ('HTTP ' + r.status);
-    const err = makeApiError(r.status, msg, json, json && json.code, 0);
+    /* M3 — surface the server's message/code. The validation error shape
+       is {code:'VALIDATION_ERROR', message:'Request validation failed'} —
+       the old lookup (detail/title/error only) discarded `message` and
+       every 400 rendered as the opaque 'HTTP 400'. */
+    const msg = (json && (json.message || json.detail || json.title || json.error)) || ('HTTP ' + r.status);
+    const err = makeApiError(r.status, typeof msg === 'string' ? msg : ('HTTP ' + r.status), json, json && json.code, 0);
+    try {
+      const rid = r.headers && typeof r.headers.get === 'function' ? r.headers.get('X-Request-Id') : null;
+      if (rid) err.requestId = rid;
+    } catch (_) {}
     if (r.status === 401 && !opts._authEndpoint && !_isInGraceWindow()) {
       try { _on401 && _on401('apiFetch:' + method + ' ' + path); } catch (_) {}
     } else if (r.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD') {

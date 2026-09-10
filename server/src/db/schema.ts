@@ -635,6 +635,52 @@ export const agentJobs = pgTable('agent_jobs', {
 ]);
 
 /* ──────────────────────────────────────────────
+   Chat turns — detached async chat execution (M1).
+   One row per user turn submitted to the chat surface. The LLM loop
+   runs detached from the HTTP socket lifetime: POST creates the row
+   (idempotent on clientTurnId), the worker appends sequenced events
+   to chat_turn_events, and the client (re)subscribes with ?after=.
+   Mirrors the agent_runs/agent_run_events pattern without sharing
+   its Codex workspace semantics.
+   status: queued | running | awaiting_approval | completed | failed | interrupted
+   ────────────────────────────────────────────── */
+export const chatTurns = pgTable('chat_turns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
+  clientTurnId: text('client_turn_id').notNull(),
+  status: text('status').notNull().default('queued'),
+  model: text('model'),
+  generation: integer('generation').notNull().default(1),
+  inputSnapshot: jsonb('input_snapshot'),
+  fullText: text('full_text'),
+  fullReasoning: text('full_reasoning'),
+  toolCalls: jsonb('tool_calls').default([]),
+  usage: jsonb('usage').default({}),
+  error: text('error'),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('chat_turns_user_client_turn_idx').on(table.userId, table.clientTurnId),
+  index('chat_turns_user_id_idx').on(table.userId),
+  index('chat_turns_session_id_idx').on(table.sessionId),
+  index('chat_turns_status_idx').on(table.status),
+]);
+
+export const chatTurnEvents = pgTable('chat_turn_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  turnId: uuid('turn_id').notNull().references(() => chatTurns.id, { onDelete: 'cascade' }),
+  sequence: integer('sequence').notNull(),
+  event: text('event').notNull(),
+  payload: jsonb('payload').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('chat_turn_events_turn_sequence_idx').on(table.turnId, table.sequence),
+  index('chat_turn_events_turn_id_idx').on(table.turnId),
+]);
+
+/* ──────────────────────────────────────────────
    Codex MCP settings — server-owned MCP catalog selections.
    The URL and transport come from the server catalog; users can only
    enable/disable a known server globally or for one of their projects.

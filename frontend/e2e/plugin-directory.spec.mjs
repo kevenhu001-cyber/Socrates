@@ -146,6 +146,55 @@ test('OpenConnector apps the sidecar does not serve yet render disabled', async 
   await expect(amap).toBeDisabled();
 });
 
+test('connected apps open manage or credential dialogs, disconnect works', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  let deleteSeen = null;
+  await page.route('**/api/**', async (route) => {
+    const url = route.request().url();
+    if (url.includes('project-connectors') && route.request().method() === 'DELETE') {
+      deleteSeen = url;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'disconnected' }) });
+      return;
+    }
+    if (!route.request().url().includes('project-connectors')) {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        connectors: [
+          { id: 'oc_slack', name: 'Slack', description: 'Team chat', capabilities: ['Messaging'], authType: 'oauth', available: true,
+            connection: { status: 'connected', displayName: 'Study org', updatedAt: '2026-09-09T00:00:00.000Z' } },
+          { id: 'oc_amap', name: '高德地图', description: 'Maps', capabilities: ['Location'], authType: 'api_key', available: true,
+            credentialInput: { fields: [{ key: 'apiKey', label: 'API Key', type: 'password', required: true }] },
+            connection: { status: 'connected', displayName: null, updatedAt: '2026-09-09T00:00:00.000Z' } },
+        ],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#navPlugins').click();
+  await expect(page.locator('.plugin-directory')).toBeVisible();
+  await page.evaluate(() => { window.showConfirm = async () => true; });
+
+  /* OAuth app without a credential form gets the manage dialog. */
+  await page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action').click();
+  await expect(page.locator('#workspaceDialog [data-action="disconnect"]')).toBeVisible();
+  await expect(page.locator('#workspaceDialog input').first()).toHaveValue(/connected.*Study org/);
+  await page.locator('#workspaceDialog [data-action="disconnect"]').click();
+  await expect.poll(() => deleteSeen).toContain('/oc_slack/connection');
+  await expect(page.locator('#workspaceDialog')).toHaveClass(/hidden/);
+
+  /* Key-based app still gets its credential form. */
+  await page.locator('[data-connector-id="oc_amap"] button.plugin-directory-icon-action').click();
+  await expect(page.locator('#projectConnectorForm')).toBeVisible();
+});
+
 test('OpenConnector apps served through the OOMOL cloud stay connectable', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.route('**/api/**', async (route) => {

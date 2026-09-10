@@ -19,7 +19,11 @@
 import { requireAuth } from '../../middleware/auth.js';
 import { resourceScope } from '../../middleware/scopes.js';
 import { parseChatSessionId, requireOwnedSession } from '../../lib/sessionOwnership.js';
+import { isUuid } from '../../lib/validate.js';
+import { NotFound } from '../../lib/errors.js';
 import { getDb } from '../../db/index.js';
+import { chatTurns } from '../../db/schema.js';
+import { and, eq } from 'drizzle-orm';
 import {
   chatRateLimitDispatch,
   prepareChatRequest,
@@ -71,6 +75,21 @@ export function registerStreamRoute(router: Router) {
       }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
+      /* M1 async — optional detached-turn binding. The turn must belong
+       * to the caller; otherwise the run proceeds unbound (legacy path)
+       * rather than leaking another user's turn stream. */
+      let turnId: string | null = null;
+      const rawTurnId = req.query.turnId ?? req.body?.turnId;
+      if (typeof rawTurnId === 'string' && rawTurnId) {
+        if (!isUuid(rawTurnId)) throw new NotFound('Chat turn not found');
+        const [owned] = await getDb().select({ id: chatTurns.id })
+          .from(chatTurns)
+          .where(and(eq(chatTurns.id, rawTurnId), eq(chatTurns.userId, req.userId!)))
+          .limit(1);
+        if (!owned) throw new NotFound('Chat turn not found');
+        turnId = owned.id;
+      }
+
       const prep = await prepareChatRequest(req, res);
       if (!prep.ok) return;
 
@@ -80,6 +99,7 @@ export function registerStreamRoute(router: Router) {
         prep: prep as typeof prep & { ok: true },
         sessionIdFromQuery,
         projectIdFromBody,
+        turnId,
       });
     } catch (err) { next(err); }
   });

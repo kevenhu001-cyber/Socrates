@@ -85,4 +85,13 @@ export interface ChatStreamPipelineContext {
   prep: Exclude<Awaited<ReturnType<typeof import('../helpers.js').prepareChatRequest>>, { ok: false }>;
   sessionIdFromQuery: string | null;
   projectIdFromBody: string | null;
+  /**
+   * M1 async — detached turn binding. When set, the pipeline mirrors
+   * content/reasoning/tool lifecycle frames into chat_turn_events,
+   * checkpoints fullText/fullReasoning onto the turn row, and keeps
+   * running detached when the SSE socket closes (the client re-attaches
+   * with GET /api/chat-turns/:id/events?after=). Ownership is validated
+   * in the route before the pipeline starts.
+   */
+  turnId?: string | null;
 }

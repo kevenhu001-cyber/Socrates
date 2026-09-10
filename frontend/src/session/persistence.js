@@ -243,7 +243,7 @@ function doSave(){
     try{
       var el=document.createElement("div");
       el.className="msg-toast msg-toast-error";
-      el.textContent=_t("sessions.save_failed","Save failed")+": "+e.message;
+      el.textContent=_t("sessions.save_failed","Save failed")+": "+e.message+(e.requestId?(" (ref "+e.requestId+")"):"");
       document.body.appendChild(el);
       requestAnimationFrame(function(){el.classList.add("visible")});
       setTimeout(function(){

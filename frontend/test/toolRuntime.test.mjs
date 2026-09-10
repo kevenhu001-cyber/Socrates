@@ -3,9 +3,10 @@ import test from 'node:test';
 
 import { JSDOM } from 'jsdom';
 
-/* Agent-step rendering needs a real DOM (it builds <details> rows). The
-   older tests below keep using the tiny body stub, which the runtime
-   tolerates by design. */
+/* Data-only runtime: the tests assert on message.toolCalls[] (the single
+   source react/tool-run renders from), never on mounted DOM. Rows, groups,
+   approval panels and step hosts are drawn by React; the runtime only keeps
+   the data current and publishes `tool-run-updated`. */
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
@@ -63,7 +64,6 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
 
   const runtime = createToolRuntime({
     body: makeBody(),
-    stillOwnsSlot: () => true,
     getMessage: () => message,
     requestAnimationFrame(callback) { scheduled = callback; return 17; },
     cancelAnimationFrame(id) { cancelledFrame = id; },
@@ -92,58 +92,42 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
 test('ToolRuntime treats duplicate tool_use events as idempotent', () => {
   const message = { toolCalls: [] };
   const mounted = [];
-  globalThis.document = {
-    createElement(tag) {
-      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
-    },
-  };
-  try {
-    const runtime = createToolRuntime({
-      body: { querySelector() { return null; }, querySelectorAll() { return []; } },
-      getMessage: () => message,
-      onInlineTool(entry, row) { mounted.push({ entry, row }); },
-      EventSource: null,
-      mode: 'compact',
-    });
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    getMessage: () => message,
+    onInlineTool(entry, row) { mounted.push({ entry, row }); },
+    EventSource: null,
+    mode: 'compact',
+  });
 
-    runtime.recordToolUse({ id: 'same-call', name: 'web_search', input: { query: 'first' } });
-    runtime.recordToolUse({ id: 'same-call', name: 'web_search', input: { query: 'second' } });
+  runtime.recordToolUse({ id: 'same-call', name: 'web_search', input: { query: 'first' } });
+  runtime.recordToolUse({ id: 'same-call', name: 'web_search', input: { query: 'second' } });
 
-    assert.equal(message.toolCalls.length, 1);
-    assert.equal(mounted.length, 1);
-    assert.deepEqual(message.toolCalls[0].input, { query: 'second' });
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
+  assert.equal(message.toolCalls.length, 1);
+  assert.equal(mounted.length, 1);
+  assert.equal(mounted[0].row, null, 'no DOM row is created — only the split point is recorded');
+  assert.deepEqual(message.toolCalls[0].input, { query: 'second' });
+  runtime.dispose();
 });
 
-test('ToolRuntime drains progress that arrives before tool_use', () => {  const message = { toolCalls: [] };
-  globalThis.document = {
-    createElement(tag) {
-      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
-    },
-  };
-  try {
-    const runtime = createToolRuntime({
-      body: { querySelector() { return null; }, querySelectorAll() { return []; } },
-      getMessage: () => message,
-      onInlineTool() {},
-      EventSource: null,
-      mode: 'compact',
-    });
+test('ToolRuntime drains progress that arrives before tool_use', () => {
+  const message = { toolCalls: [] };
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    getMessage: () => message,
+    onInlineTool() {},
+    EventSource: null,
+    mode: 'compact',
+  });
 
-    runtime.recordToolProgress({ id: 'late-use', phase: 'running', elapsedMs: 125 });
-    assert.equal(message._orphanProgress['late-use'].length, 1);
-    runtime.recordToolUse({ id: 'late-use', name: 'web_search', input: { query: 'q' } });
+  runtime.recordToolProgress({ id: 'late-use', phase: 'running', elapsedMs: 125 });
+  assert.equal(message._orphanProgress['late-use'].length, 1);
+  runtime.recordToolUse({ id: 'late-use', name: 'web_search', input: { query: 'q' } });
 
-    assert.equal(message._orphanProgress['late-use'], undefined);
-    assert.equal(message.toolCalls[0]._run.phase, 'running');
-    assert.equal(message.toolCalls[0]._run.elapsedMs, 125);
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
+  assert.equal(message._orphanProgress['late-use'], undefined);
+  assert.equal(message.toolCalls[0]._run.phase, 'running');
+  assert.equal(message.toolCalls[0]._run.elapsedMs, 125);
+  runtime.dispose();
 });
 
 test('ToolRuntime uses the main chat SSE as the default execution channel', () => {
@@ -174,113 +158,72 @@ test('ToolRuntime does not open a progress stream after a terminal result', () =
     addEventListener(name, callback) { this.listeners[name] = callback; }
     close() {}
   }
-  globalThis.document = {
-    createElement(tag) {
-      return { tagName: tag, dataset: {}, className: '', innerHTML: '' };
-    },
-  };
-  try {
-    const runtime = createToolRuntime({
-      body: makeBody(),
-      getMessage: () => message,
-      onInlineTool() {},
-      EventSource: FakeEventSource,
-      useExecutionEventSource: true,
-      mode: 'compact',
-    });
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    getMessage: () => message,
+    onInlineTool() {},
+    EventSource: FakeEventSource,
+    useExecutionEventSource: true,
+    mode: 'compact',
+  });
 
-    runtime.recordToolResult({
-      id: 'already-done',
-      name: 'code_interpreter',
-      executionId: 'exec-done',
-      ok: true,
-      status: 'completed',
-      output: 'done',
-    });
-    runtime.recordExecutionStart({ id: 'already-done', executionId: 'exec-done' });
+  runtime.recordToolResult({
+    id: 'already-done',
+    name: 'code_interpreter',
+    executionId: 'exec-done',
+    ok: true,
+    status: 'completed',
+    output: 'done',
+  });
+  runtime.recordExecutionStart({ id: 'already-done', executionId: 'exec-done' });
 
-    assert.equal(sources.length, 0);
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
+  assert.equal(sources.length, 0);
+  runtime.dispose();
 });
 
-test('ToolRuntime compact mode mounts inline rows instead of cards', () => {
+test('ToolRuntime records rows on the data instead of mounting DOM', () => {
   const message = { toolCalls: [] };
   let scheduled = null;
-  let appended = 0;
   const mounted = [];
-  let mountedRow = null;
-  // Minimal DOM stub — createInlineToolRow only needs an element with
-  // dataset / className / innerHTML; updateInlineToolCodePreview needs a
-  // .tool-inline-detail child and appendChild.
-  const makeDetail = () => ({
-    dataset: {}, textContent: '', querySelector: () => null,
-    appendChild() {}, replaceChildren() {},
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    onInlineTool(entry, row) { mounted.push({ entry, row }); return 42; },
+    requestAnimationFrame(callback) { scheduled = callback; return 19; },
+    cancelAnimationFrame() {},
+    EventSource: null,
+    mode: 'compact',
   });
-  globalThis.document = {
-    createElement(tag) {
-      return {
-        tagName: tag, dataset: {}, className: '', innerHTML: '', textContent: '',
-        querySelector(sel) { return sel === '.tool-inline-detail' ? makeDetail() : null; },
-        appendChild() {}, replaceChildren() {},
-      };
-    },
-  };
-  try {
-    const body = {
-      querySelector() { return null; },
-      querySelectorAll(sel) {
-        appended++;
-        return sel.indexOf('.tool-inline') === 0 && mountedRow ? [mountedRow] : [];
-      },
-    };
-    const runtime = createToolRuntime({
-      body,
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      onInlineTool(entry, row) { mounted.push({ entry, row }); return 42; },
-      requestAnimationFrame(callback) { scheduled = callback; return 19; },
-      cancelAnimationFrame() {},
-      EventSource: null,
-      mode: 'compact',
-    });
 
-    // P_tool-delta-stream — compact rows now render live code previews,
-    // so recordToolCallDelta schedules the rAF flush instead of dropping
-    // the delta (there was no card to update before this fix).
-    runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
-    assert.notEqual(scheduled, null);
+  // Deltas schedule the rAF flush; recordToolUse drains the buffer into
+  // the entry before the flush runs.
+  runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
+  assert.notEqual(scheduled, null, 'delta schedules a flush');
 
-    // recordToolUse pushes the entry onto the message, drains the
-    // buffered delta into the entry, and hands a running .tool-inline
-    // row to onInlineTool. No legacy card DOM.
-    const out = runtime.recordToolUse({ id: 'no-card', name: 'web_search', input: { query: 'q' } });
-    assert.equal(out, null);
-    assert.equal(message.toolCalls.length, 1);
-    assert.equal(message.toolCalls[0].name, 'web_search');
-    assert.equal(message.toolCalls[0].input.__raw, '{"code":"x"}');
-    assert.equal(mounted.length, 1);
-    mountedRow = mounted[0].row;
-    assert.equal(mounted[0].entry.id, 'no-card');
-    assert.equal(mounted[0].row.className, 'tool-inline');
-    assert.equal(mounted[0].row.dataset.tool, 'web_search');
-    assert.equal(mounted[0].row.dataset.state, 'running');
-    // No .agent-tool-card was enumerated yet — the body.querySelectorAll
-    // hook only fires when the flush runs.
-    assert.equal(appended, 0);
+  // P_tool-delta-stream — deltas schedule the rAF flush; the flush lands
+  // the cumulative arguments on the entry for the live preview.
+  runtime.recordToolCallDelta({ id: 'no-card', index: 0, arguments: '{"code":"x"}' });
+  assert.notEqual(scheduled, null);
 
-    // The flush had its delta drained by recordToolUse, so it early-
-    // returns without touching the DOM.
-    const flush = scheduled;
-    scheduled = null;
-    flush();
-    assert.equal(appended, 0);
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
+  // recordToolUse pushes the entry onto the message, drains the buffered
+  // delta into the entry, and records the split point. No DOM anywhere.
+  const out = runtime.recordToolUse({ id: 'no-card', name: 'web_search', input: { query: 'q' } });
+  assert.equal(out, null);
+  assert.equal(message.toolCalls.length, 1);
+  assert.equal(message.toolCalls[0].name, 'web_search');
+  assert.equal(message.toolCalls[0].input.__raw, '{"code":"x"}');
+  assert.equal(message.toolCalls[0].textOffset, 42, 'offset stamped at mount time');
+  assert.equal(mounted.length, 1);
+  assert.equal(mounted[0].entry.id, 'no-card');
+  assert.equal(mounted[0].row, null, 'the host is asked for the split point only');
+
+  // The buffered delta was drained by recordToolUse, so the scheduled
+  // flush finds nothing and stays a no-op.
+  assert.notEqual(scheduled, null);
+  scheduled();
+  assert.equal(message.toolCalls[0].argumentsText, '{"code":"x"}');
+  runtime.dispose();
 });
 
 test('ToolRuntime exposes whether any tool is still active', () => {
@@ -288,7 +231,7 @@ test('ToolRuntime exposes whether any tool is still active', () => {
     toolCalls: [{ id: 'running', name: 'code_interpreter', output: null, isError: false }],
   };
   const runtime = createToolRuntime({
-    body: { querySelector() { return null; }, querySelectorAll() { return []; } },
+    body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
     EventSource: null,
@@ -301,489 +244,122 @@ test('ToolRuntime exposes whether any tool is still active', () => {
   runtime.dispose();
 });
 
-function makeLiveSlotDom() {
-  const childNodes = [];
-  const liveSlot = {
-    childNodes,
-    get firstElementChild() { return childNodes[0] || null; },
-    get children() { return childNodes; },
-    querySelector(sel) {
-      if (sel !== '.tool-inline[data-tcid]') return null;
-      for (let i = 0; i < childNodes.length; i++) {
-        const n = childNodes[i];
-        if (n && n.className === 'tool-inline' && n.dataset && n.dataset.tcid) return n;
-      }
-      return null;
-    },
-    appendChild(node) {
-      // P_test_live_slot — the live slot moves children between mounts.
-      // If a row is already in the slot (e.g. the runtime re-uses the
-      // host for a same-id update), drop the prior reference first so
-      // the post-conditions can detect duplicate mounts.
-      if (node && node.parentNode && node.parentNode !== liveSlot) {
-        const prev = node.parentNode;
-        const idx = prev.childNodes ? prev.childNodes.indexOf(node) : -1;
-        if (idx >= 0) prev.childNodes.splice(idx, 1);
-      }
-      const existing = childNodes.indexOf(node);
-      if (existing >= 0) childNodes.splice(existing, 1);
-      childNodes.push(node);
-      if (node && typeof node === 'object') node.parentNode = liveSlot;
-      return node;
-    },
-    removeChild(node) {
-      const idx = childNodes.indexOf(node);
-      if (idx >= 0) childNodes.splice(idx, 1);
-      if (node && typeof node === 'object') node.parentNode = null;
-      return node;
-    },
-  };
-  return liveSlot;
-}
+/* ─── Retired surfaces: the live single-card slot and imperative grouping ──
+   The slot was never mounted in production (streamingTurn deliberately left
+   it unset) and grouping is derived by react/tool-run from textOffset
+   adjacency. These pin the data contract that replaced them: every tool_use
+   is persisted with its own split point, and terminal states land per entry. */
 
-// Body stub whose querySelector resolves `[data-tcid="…"]` into the live
-// slot's rows, mirroring findCard() in toolRuntime.ts.
-function makeLiveSlotBody(liveSlot) {
-  return {
-    childNodes: [liveSlot],
-    querySelector(sel) {
-      const m = /^\[data-tcid="([^"]+)"\]$/.exec(sel || '');
-      if (!m) return null;
-      for (let i = 0; i < liveSlot.childNodes.length; i++) {
-        const n = liveSlot.childNodes[i];
-        if (n && n.dataset && n.dataset.tcid === m[1]) return n;
-      }
-      return null;
-    },
-    querySelectorAll() { return []; },
-  };
-}
-
-function installLiveSlotDocument() {
-  globalThis.document = {
-    createElement(tag) {
-      const el = {
-        tagName: tag, dataset: {}, className: '', innerHTML: '', textContent: '',
-        parentNode: null,
-        _isConnected: false,
-        get isConnected() { return this._isConnected || !!(this.parentNode); },
-        getAnimations() { return []; },
-        querySelector() { return null; },
-        getAttribute(name) {
-          return name === 'data-tcid' ? (this.dataset.tcid || null) : (this.dataset[name] || null);
-        },
-        hasAttribute(name) {
-          return name in this.dataset;
-        },
-        setAttribute(name, value) { this.dataset[name] = String(value); },
-        insertAdjacentElement() { return null; },
-        addEventListener() {},
-        removeEventListener() {},
-        appendChild(child) {
-          if (child && typeof child === 'object') child.parentNode = el;
-          return child;
-        },
-        remove() {
-          if (this.parentNode && Array.isArray(this.parentNode.childNodes)) {
-            const idx = this.parentNode.childNodes.indexOf(this);
-            if (idx >= 0) this.parentNode.childNodes.splice(idx, 1);
-          }
-          this.parentNode = null;
-        },
-        replaceChildren() {},
-      };
-      // classList mirrors className so classList.contains('tool-inline')
-      // behaves like a real DOM element (toolInline rows set className).
-      el.classList = {
-        add(c) { el.className = (el.className + ' ' + c).trim(); },
-        remove(c) { el.className = el.className.split(' ').filter((x) => x !== c).join(' '); },
-        contains(c) { return el.className.split(' ').indexOf(c) !== -1; },
-      };
-      return el;
-    },
-  };
-}
-
-test('ToolRuntime live single-card slot shows only the latest tool, persists all toolCalls', () => {
+test('ToolRuntime ignores the retired live single-card slot and persists every call', () => {
   const message = { toolCalls: [] };
-  const liveSlot = makeLiveSlotDom();
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      liveSingleCardSlot: liveSlot,
-      onInlineTool() { return 10; },
-      EventSource: null,
-      mode: 'compact',
-    });
+  const offsets = [10, 20, 30];
+  let next = 0;
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    liveSingleCardSlot: {},
+    onInlineTool() { return offsets[next++]; },
+    EventSource: null,
+    mode: 'compact',
+  });
 
-    runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 1 } });
-    runtime.recordToolUse({ id: 'B', name: 'code_interpreter', input: { q: 2 } });
-    runtime.recordToolUse({ id: 'C', name: 'web_search', input: { q: 3 } });
+  runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 1 } });
+  runtime.recordToolUse({ id: 'B', name: 'code_interpreter', input: { q: 2 } });
+  runtime.recordToolUse({ id: 'C', name: 'web_search', input: { q: 3 } });
 
-    return new Promise((resolve) => setTimeout(() => {
-      const liveRows = liveSlot.childNodes.filter((n) => n && n.dataset && n.dataset.tcid);
-      assert.equal(liveRows.length, 1, 'live slot must hold at most one tool row');
-      assert.equal(liveRows[0].dataset.tcid, 'C');
-      assert.deepEqual(message.toolCalls.map((t) => t.id), ['A', 'B', 'C']);
-      runtime.dispose();
-      resolve();
-    }, 320));
-  } finally {
-    delete globalThis.document;
-  }
+  assert.deepEqual(message.toolCalls.map((t) => t.id), ['A', 'B', 'C']);
+  assert.deepEqual(message.toolCalls.map((t) => t.textOffset), [10, 20, 30],
+    'each call keeps its own split point — no shared head offset');
+  runtime.dispose();
 });
 
-test('ToolRuntime live single-card slot updates same id in place without re-flashing', () => {
-  const message = { toolCalls: [] };
-  const liveSlot = makeLiveSlotDom();
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      liveSingleCardSlot: liveSlot,
-      onInlineTool() { return 5; },
-      EventSource: null,
-      mode: 'compact',
-    });
-    runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 1 } });
-    const first = liveSlot.childNodes[0];
-    runtime.recordToolUse({ id: 'A', name: 'web_search', input: { q: 2 } });
-    const liveRows = liveSlot.childNodes.filter((n) => n && n.dataset && n.dataset.tcid);
-    assert.equal(liveRows.length, 1, 'same-id update must not mount a second row');
-    assert.strictEqual(liveRows[0], first, 'same-id update must keep the existing row');
-    assert.equal(message.toolCalls[0].input.q, 2);
-    assert.equal(message.toolCalls.length, 1, 'same-id events must not duplicate the entry');
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime dispose tears down the live single-card slot cleanly', () => {
-  const message = { toolCalls: [{ id: 'A', name: 'web_search', artifacts: [] }] };
-  const liveSlot = makeLiveSlotDom();
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      liveSingleCardSlot: liveSlot,
-      onInlineTool() { return 0; },
-      EventSource: null,
-      mode: 'compact',
-    });
-    runtime.recordToolResult({ id: 'A', name: 'web_search', ok: true, status: 'completed', output: 'ok' });
-    runtime.dispose();
-    // After dispose, no new mount should occur even if a late event
-    // tries to drive the runtime.
-    runtime.recordToolUse({ id: 'B', name: 'web_search' });
-    assert.equal(message.toolCalls.length, 1, 'dispose must prevent late mounts');
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime collapses consecutive same-category live rows into a group', () => {
-  const message = { toolCalls: [] };
-  const liveSlot = makeLiveSlotDom();
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      liveSingleCardSlot: liveSlot,
-      onInlineTool() { return 0; },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 'g1', name: 'web_search', input: { query: 'a' } });
-    runtime.recordToolUse({ id: 'g2', name: 'web_search', input: { query: 'b' } });
-
-    assert.equal(message.toolCalls.length, 2);
-    const row1 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 'g1');
-    const row2 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 'g2');
-    assert.ok(row1 && row2, 'both rows must exist in the slot');
-    assert.equal(row2.dataset.merged, '1', 'second same-category row is merged/hidden');
-    assert.equal(row1.dataset.groupCount, '2', 'visible row shows the group count');
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime resets grouping on a category change', () => {
-  const message = { toolCalls: [] };
-  const liveSlot = makeLiveSlotDom();
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: { childNodes: [liveSlot], querySelector() { return null; }, querySelectorAll() { return []; } },
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      liveSingleCardSlot: liveSlot,
-      onInlineTool() { return 0; },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 'h1', name: 'web_search' });
-    runtime.recordToolUse({ id: 'h2', name: 'web_search' }); // merged
-    runtime.recordToolUse({ id: 'h3', name: 'code_interpreter' }); // different category
-
-    const row3 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 'h3');
-    assert.ok(row3, 'third row mounted');
-    assert.equal(row3.dataset.merged, undefined, 'category change must not merge');
-    assert.equal(row3.dataset.groupCount, undefined);
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime expands a merged row when it settles', () => {
-  const message = { toolCalls: [] };
-  const liveSlot = makeLiveSlotDom();
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: makeLiveSlotBody(liveSlot),
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      liveSingleCardSlot: liveSlot,
-      onInlineTool() { return 0; },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 's1', name: 'web_search', input: { query: 'a' } });
-    runtime.recordToolUse({ id: 's2', name: 'web_search', input: { query: 'b' } });
-    runtime.recordToolResult({ id: 's2', ok: true, status: 'completed', output: 'second result' });
-
-    const row2 = liveSlot.childNodes.find((r) => r && r.dataset.tcid === 's2');
-    assert.ok(row2, 'merged row must exist');
-    assert.equal(row2.dataset.merged, undefined, 'settled row is expanded (unhidden)');
-    assert.equal(row2.dataset.state, 'done');
-    // The settled member replaces the collapsed head as the visible row.
-    assert.equal(liveSlot.childNodes[liveSlot.childNodes.length - 1], row2);
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-/* ─── Message-flow grouping (no live slot) ─────────────────────────── */
-
-function makeInlineFlowBody(rows) {
-  return {
-    querySelector(sel) {
-      const m = /^\[data-tcid="([^"]+)"\]$/.exec(sel || '');
-      if (!m) return null;
-      return rows.find((r) => r && r.dataset && r.dataset.tcid === m[1]) || null;
-    },
-    querySelectorAll() { return rows; },
-    appendChild() {},
-  };
-}
-
-test('ToolRuntime merges consecutive same-category rows in the message flow', () => {
-  const message = { toolCalls: [] };
-  const rows = [];
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: makeInlineFlowBody(rows),
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      onInlineTool(entry, row) {
-        rows.push(row);
-        row._isConnected = true;
-        return 10;
-      },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 'g1', name: 'web_search', input: { query: 'a' } });
-    runtime.recordToolUse({ id: 'g2', name: 'web_search', input: { query: 'b' } });
-    runtime.recordToolUse({ id: 'g3', name: 'code_interpreter' });
-
-    assert.equal(rows.length, 2, 'same-category merge must not mount a second row');
-    const head = rows[0];
-    assert.equal(head.dataset.groupIds, 'g1,g2');
-    assert.equal(head.dataset.groupCount, '2');
-    assert.equal(message.toolCalls[1]._groupHeadId, 'g1');
-    assert.equal(message.toolCalls[1].textOffset, 10, 'merged member inherits head offset');
-    assert.equal(rows[1].dataset.tcid, 'g3', 'different category starts a new row');
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime breaks live grouping when text streams after a row', () => {
-  const message = { toolCalls: [] };
-  const rows = [];
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: makeInlineFlowBody(rows),
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      onInlineTool(entry, row) {
-        rows.push(row);
-        row._isConnected = true;
-        return 3;
-      },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 't1', name: 'web_search' });
-    runtime.noteTextDelta();
-    runtime.recordToolUse({ id: 't2', name: 'web_search' });
-
-    assert.equal(rows.length, 2, 'text delta must break the merge group');
-    assert.equal(message.toolCalls[1]._groupHeadId, undefined);
-    assert.equal(rows[1].dataset.groupIds, undefined);
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime settles a grouped row with aggregate done state', () => {
-  const message = { toolCalls: [] };
-  const rows = [];
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: makeInlineFlowBody(rows),
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      onInlineTool(entry, row) {
-        rows.push(row);
-        row._isConnected = true;
-        return 7;
-      },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 's1', name: 'web_search', input: { query: 'a' } });
-    runtime.recordToolUse({ id: 's2', name: 'web_search', input: { query: 'b' } });
-    runtime.recordToolResult({
-      id: 's2', ok: true, status: 'completed', output: 'b',
-      results: [{ title: 'B', url: 'https://b.test' }],
-    });
-    runtime.recordToolResult({
-      id: 's1', ok: true, status: 'completed', output: 'a',
-      results: [{ title: 'A', url: 'https://a.test' }],
-    });
-
-    const head = rows[0];
-    assert.equal(head.dataset.state, 'done');
-    assert.equal(head.dataset.groupSettled, '1');
-    assert.equal(message.toolCalls.length, 2, 'both members stay persisted');
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime marks a grouped row as error when a member fails', () => {
-  const message = { toolCalls: [] };
-  const rows = [];
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: makeInlineFlowBody(rows),
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      onInlineTool(entry, row) {
-        rows.push(row);
-        row._isConnected = true;
-        return 4;
-      },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 'f1', name: 'web_search' });
-    runtime.recordToolUse({ id: 'f2', name: 'web_search' });
-    runtime.recordToolResult({ id: 'f2', ok: true, status: 'completed', output: 'ok' });
-    runtime.recordToolResult({ id: 'f1', ok: false, status: 'failed', output: 'boom' });
-
-    const head = rows[0];
-    assert.equal(head.dataset.state, 'error');
-    assert.equal(head.dataset.groupSettled, '1');
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-test('ToolRuntime cancel settles grouped rows as stopped', () => {
-  const message = { toolCalls: [] };
-  const rows = [];
-  installLiveSlotDocument();
-  try {
-    const runtime = createToolRuntime({
-      body: makeInlineFlowBody(rows),
-      stillOwnsSlot: () => true,
-      getMessage: () => message,
-      onInlineTool(entry, row) {
-        rows.push(row);
-        row._isConnected = true;
-        return 0;
-      },
-      EventSource: null,
-      mode: 'compact',
-    });
-
-    runtime.recordToolUse({ id: 'c1', name: 'web_search' });
-    runtime.recordToolUse({ id: 'c2', name: 'web_search' });
-    runtime.cancel();
-
-    const head = rows[0];
-    assert.equal(head.dataset.state, 'stopped');
-    assert.equal(head.dataset.groupSettled, '1');
-    runtime.dispose();
-  } finally {
-    delete globalThis.document;
-  }
-});
-
-/* ── Codex agent steps ─────────────────────────────────────────────── */
-
-function agentRuntimeHarness() {
-  /* Earlier tests in this file swap in a stub document and delete it when
-     they finish, so restore the jsdom globals per harness. */
-  globalThis.window = dom.window;
-  globalThis.document = dom.window.document;
-  globalThis.HTMLElement = dom.window.HTMLElement;
-  globalThis.CSS = dom.window.CSS;
-  const body = document.createElement('div');
-  document.body.appendChild(body);
+test('ToolRuntime consecutive same-category calls are independent entries', () => {
   const message = { toolCalls: [] };
   const runtime = createToolRuntime({
-    body,
+    body: makeBody(),
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    onInlineTool() { return 0; },
+    EventSource: null,
+    mode: 'compact',
+  });
+
+  runtime.recordToolUse({ id: 'g1', name: 'web_search', input: { query: 'a' } });
+  runtime.recordToolUse({ id: 'g2', name: 'web_search', input: { query: 'b' } });
+  runtime.recordToolUse({ id: 'g3', name: 'code_interpreter' });
+
+  assert.equal(message.toolCalls.length, 3);
+  assert.equal(message.toolCalls[1]._groupHeadId, undefined, 'no merge metadata leaks onto the data');
+  runtime.noteTextDelta();
+  runtime.recordToolUse({ id: 'g4', name: 'web_search' });
+  assert.equal(message.toolCalls.length, 4);
+  runtime.dispose();
+});
+
+test('ToolRuntime settles each entry independently on terminal results', () => {
+  const message = { toolCalls: [] };
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    onInlineTool() { return 7; },
+    EventSource: null,
+    mode: 'compact',
+  });
+
+  runtime.recordToolUse({ id: 's1', name: 'web_search', input: { query: 'a' } });
+  runtime.recordToolUse({ id: 's2', name: 'web_search', input: { query: 'b' } });
+  runtime.recordToolResult({
+    id: 's2', ok: true, status: 'completed', output: 'b',
+    results: [{ title: 'B', url: 'https://b.test' }],
+  });
+  runtime.recordToolResult({ id: 'f1', ok: false, status: 'failed', output: 'boom' });
+
+  const byId = Object.fromEntries(message.toolCalls.map((t) => [t.id, t]));
+  assert.equal(byId.s2._run.phase, 'succeeded');
+  assert.equal(byId.s2.results.length, 1);
+  assert.equal(byId.f1._run.phase, 'failed');
+  assert.equal(byId.f1.isError, true);
+  assert.equal(byId.s1._run.phase, 'preparing', 'untouched entries keep running');
+  runtime.dispose();
+});
+
+test('ToolRuntime cancel marks every open run cancelled on the data', () => {
+  const message = { toolCalls: [] };
+  const runtime = createToolRuntime({
+    body: makeBody(),
+    stillOwnsSlot: () => true,
+    getMessage: () => message,
+    onInlineTool() { return 0; },
+    EventSource: null,
+    mode: 'compact',
+  });
+
+  runtime.recordToolUse({ id: 'c1', name: 'web_search' });
+  runtime.recordToolUse({ id: 'c2', name: 'web_search' });
+  runtime.cancel();
+
+  assert.equal(message.toolCalls[0]._run.phase, 'cancelled');
+  assert.equal(message.toolCalls[1]._run.phase, 'cancelled');
+  runtime.dispose();
+});
+
+/* ─── Codex agent steps (data only) ─────────────────────────────────── */
+
+function agentRuntimeHarness() {
+  const message = { toolCalls: [] };
+  const runtime = createToolRuntime({
+    body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
     requestAnimationFrame(callback) { callback(); return 1; },
     cancelAnimationFrame() {},
     EventSource: null,
     mode: 'compact',
-    onInlineTool(_entry, row) { body.appendChild(row); return 0; },
+    onInlineTool() { return 0; },
   });
-  return { body, message, runtime };
+  return { message, runtime };
 }
 
 function stepFrame(overrides = {}) {
@@ -793,7 +369,7 @@ function stepFrame(overrides = {}) {
     runId: 'run-1',
     stepId: 's1',
     kind: 'command',
-    title: '运行了命令',
+    title: 'ran a command',
     detail: 'npm test',
     command: 'npm test',
     status: 'running',
@@ -805,17 +381,12 @@ function stepFrame(overrides = {}) {
   };
 }
 
-test('agent steps render after the agent row and persist on the tool call', () => {
-  const { body, message, runtime } = agentRuntimeHarness();
+test('agent steps persist on the tool call keyed by stepId', () => {
+  const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: { task: 'do it' } });
   runtime.recordAgentStep(stepFrame());
   runtime.recordAgentStep(stepFrame({ status: 'done', durationMs: 1500 }));
   runtime.recordAgentStep(stepFrame({ stepId: 's2', kind: 'read', command: 'cat a.ts', status: 'done' }));
-
-  const host = body.querySelector('.agent-run-host');
-  assert.ok(host, 'the run host is mounted');
-  assert.equal(host.previousElementSibling.dataset.tcid, 'agent-1', 'host sits right after the agent row');
-  assert.equal(host.querySelectorAll('.agent-step').length, 2, 'the same stepId updates in place');
 
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
   assert.equal(entry.runId, 'run-1');
@@ -824,8 +395,8 @@ test('agent steps render after the agent row and persist on the tool call', () =
   runtime.dispose();
 });
 
-test('agent plan frames update one card per run', () => {
-  const { body, message, runtime } = agentRuntimeHarness();
+test('agent plan frames update the persisted checklist in place', () => {
+  const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   runtime.recordAgentPlan({
     type: 'plan', id: 'agent-1', runId: 'run-1',
@@ -836,50 +407,47 @@ test('agent plan frames update one card per run', () => {
     type: 'plan', id: 'agent-1', runId: 'run-1',
     steps: [{ title: 'a', status: 'done' }, { title: 'b', status: 'in_progress' }],
   });
-  const cards = body.querySelectorAll('.agent-plan');
-  assert.equal(cards.length, 1);
-  assert.equal(cards[0].dataset.progress, '1/2');
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
   assert.deepEqual(entry.plan.steps.map((step) => step.status), ['done', 'in_progress']);
   runtime.dispose();
 });
 
 test('agent frames that arrive before tool_use are replayed', () => {
-  const { body, message, runtime } = agentRuntimeHarness();
+  const { message, runtime } = agentRuntimeHarness();
   runtime.recordAgentStep(stepFrame({ id: '', stepId: 'early' }));
-  assert.equal(body.querySelector('.agent-step'), null, 'nothing renders without a row yet');
   assert.ok(message._orphanAgentFrames, 'the frame is buffered');
 
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
-  assert.ok(body.querySelector('.agent-step[data-step-id="early"]'), 'the buffered step is replayed');
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
   assert.equal(entry.steps.length, 1);
+  assert.equal(entry.steps[0].stepId, 'early');
   runtime.dispose();
 });
 
-test('the agent result settles the run and latches its duration', () => {
-  const { body, runtime } = agentRuntimeHarness();
+test('the agent result latches the terminal phase and duration on the data', () => {
+  const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   runtime.recordAgentStep(stepFrame());
   runtime.recordToolResult({
     id: 'agent-1', name: 'workspace_agent', ok: true, status: 'completed',
     output: 'done', durationMs: 62_000,
   });
-  const section = body.querySelector('.agent-run');
-  assert.equal(section.dataset.state, 'done');
-  assert.equal(section.querySelector('.agent-run-elapsed').textContent, '用时 1m 2s');
-  assert.equal(section.querySelector('.agent-step').dataset.state, 'done', 'a step still running is resolved');
+  const entry = message.toolCalls.find((call) => call.id === 'agent-1');
+  assert.equal(entry._run.phase, 'succeeded');
+  assert.equal(entry._run.durationMs, 62_000);
   runtime.dispose();
 });
 
-test('a failed agent run marks the section failed', () => {
-  const { body, runtime } = agentRuntimeHarness();
+test('a failed agent run marks the entry failed on the data', () => {
+  const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   runtime.recordAgentStep(stepFrame());
   runtime.recordToolResult({
     id: 'agent-1', name: 'workspace_agent', ok: false, status: 'failed', error: 'boom',
   });
-  assert.equal(body.querySelector('.agent-run').dataset.state, 'failed');
+  const entry = message.toolCalls.find((call) => call.id === 'agent-1');
+  assert.equal(entry._run.phase, 'failed');
+  assert.equal(entry.isError, true);
   runtime.dispose();
 });
 
@@ -902,7 +470,7 @@ function publishHarness(offset) {
   };
   let scheduled = null;
   const runtime = createToolRuntime({
-    body: { querySelector() { return null; }, querySelectorAll() { return []; } },
+    body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
     onInlineTool: () => offset,
