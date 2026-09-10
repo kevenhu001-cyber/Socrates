@@ -41,12 +41,14 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
   await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'true');
   await expect(composer.locator('#sendBtn .icon-arrow')).toHaveCount(1);
-  await expect(effort).toBeHidden();
+  /* Mobile parity shows the reasoning-level pill at rest. */
+  await expect(effort).toBeVisible();
 
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   await expect(effort).toBeVisible();
-  await expect(effort.locator('.effort-label')).toHaveText('5.6 Luna 中');
+  /* The mobile pill shows only the reasoning level, not the model name. */
+  await expect(effort.locator('.effort-label')).toHaveText('中');
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(96);

@@ -79,6 +79,9 @@ function _activeModelLabel() {
 
 function _triggerLabel(v) {
   var effort = _labelFor(v);
+  /* Mobile parity: the pill shows only the reasoning level, like the
+     chatgpt.com mobile composer. Desktop keeps the model + level. */
+  if (window.innerWidth <= 768) return effort;
   var model = _activeModelLabel();
   return model ? model + " " + effort : effort;
 }

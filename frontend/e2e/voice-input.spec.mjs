@@ -137,7 +137,9 @@ test('the empty landing primary action starts voice input and becomes send after
   const primary = page.locator('#startBtn');
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
   const mic = wrap.locator('.mobile-mic-btn');
-  await expect(mic).toHaveCount(1);
+  /* P_mic-dedup — the landing composer has no separate mic; the primary
+     start button is the single voice entry point. */
+  await expect(mic).toHaveCount(0);
   await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
@@ -176,7 +178,7 @@ test('the empty landing primary action starts voice input and becomes send after
   await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary.locator('.icon-arrow')).toHaveCount(1);
 
-  await mic.click();
+  await primary.click();
   const bar = wrap.locator('.voice-recording-bar');
   await expect(wrap).toHaveClass(/voice-recording-active/);
   await expect(bar).toBeVisible();

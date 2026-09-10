@@ -9,7 +9,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { asc, and, desc, eq, inArray, max } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
@@ -38,6 +38,12 @@ import {
   resolveCodexProvider,
   sessionWorkspaceKey,
 } from './codexProvider.js';
+import {
+  WORKSPACE_LIMIT_DEFAULTS,
+  assertWorkspaceDiskWithinLimit,
+  normalizeWorkspaceLimits,
+  workspaceResourceSnapshot,
+} from './workspaceResources.js';
 
 export const UNIFIED_CODEX_ENABLED = CODEX_ENABLED && process.env.CODEX_UNIFIED_RUNTIME !== 'false';
 export const CODEX_BACKGROUND_ENABLED = UNIFIED_CODEX_ENABLED && process.env.CODEX_BACKGROUND !== 'false';
@@ -69,6 +75,46 @@ export const WORKSPACE_AGENT_TOOL = {
         },
       },
       required: ['task'],
+      additionalProperties: false,
+    },
+  },
+} as const;
+
+/**
+ * `initialize_workspace` — explicit, model-callable workspace setup.
+ *
+ * The agent runtime lazily creates the workspace on the first run; this
+ * tool lets the model establish it up front with a declared resource
+ * budget, optionally wiping the tree for a clean start. The server owns
+ * the real path and the sandbox/approval policy; the model only ever sees
+ * a virtual `/workspace` mount and the normalized limits.
+ */
+export const INITIALIZE_WORKSPACE_TOOL = {
+  type: 'function',
+  function: {
+    name: 'initialize_workspace',
+    description:
+      'Initializes (or resets) the sandboxed workspace for this conversation and sets its resource limits before doing multi-step agent work. Call this once before the first workspace_agent task when the user asks for coding, file, or command work, and call it with reset=true when the user wants a clean workspace. Limits are clamped to the server-supported range and the storage cap is enforced before every agent turn. The server owns the workspace location, sandbox, and approval policy.',
+    parameters: {
+      type: 'object',
+      properties: {
+        max_memory_mb: {
+          type: 'integer',
+          minimum: 64,
+          maximum: 4096,
+          description: `Memory budget for agent executions in megabytes (default ${WORKSPACE_LIMIT_DEFAULTS.maxMemoryMb}, clamped to 64–4096).`,
+        },
+        max_disk_mb: {
+          type: 'integer',
+          minimum: 16,
+          maximum: 8192,
+          description: `Storage budget for the workspace tree in megabytes (default ${WORKSPACE_LIMIT_DEFAULTS.maxDiskMb}, clamped to 16–8192). Agent turns are refused while usage exceeds this cap.`,
+        },
+        reset: {
+          type: 'boolean',
+          description: 'When true, delete the existing workspace contents and start from an empty tree.',
+        },
+      },
       additionalProperties: false,
     },
   },
@@ -406,6 +452,8 @@ const DEFAULT_POLICY = {
   unattended: 'read-only',
   maxDurationMs: TURN_TIMEOUT_MS,
   maxOutputBytes: 2_000_000,
+  maxMemoryMb: WORKSPACE_LIMIT_DEFAULTS.maxMemoryMb,
+  maxDiskMb: WORKSPACE_LIMIT_DEFAULTS.maxDiskMb,
 };
 
 /**
@@ -420,6 +468,54 @@ export async function ensureSessionWorkspaceForSession(
 ) {
   if (!isValidUuid(sessionId)) throw new BadRequest('Invalid sessionId');
   return getOrCreateWorkspace(userId, sessionId, projectId, DEFAULT_POLICY);
+}
+
+export interface UpdateWorkspacePolicyInput {
+  userId: string;
+  sessionId?: string | null;
+  projectId?: string | null;
+  maxMemoryMb?: unknown;
+  maxDiskMb?: unknown;
+  reset?: unknown;
+}
+
+/**
+ * Apply model-declared resource limits to the conversation workspace,
+ * creating it on first use. `reset` wipes the tree (server-owned path
+ * only) so the next task starts clean. Returns the normalized policy and
+ * a usage snapshot the tool result can report back to the model.
+ */
+export async function updateWorkspacePolicy(input: UpdateWorkspacePolicyInput) {
+  const limits = normalizeWorkspaceLimits({
+    maxMemoryMb: input.maxMemoryMb,
+    maxDiskMb: input.maxDiskMb,
+  });
+  const workspace = await getOrCreateWorkspace(
+    input.userId,
+    input.sessionId || null,
+    input.projectId || null,
+    { ...DEFAULT_POLICY, ...limits },
+  );
+  if (input.reset === true) {
+    rmSync(workspace.path, { recursive: true, force: true });
+    mkdirSync(workspace.path, { recursive: true });
+  }
+  ensureWorkspaceInstructions(workspace.path, null);
+  const previous = workspace.row.policy && typeof workspace.row.policy === 'object'
+    ? (workspace.row.policy as Record<string, unknown>)
+    : {};
+  const policy = { ...DEFAULT_POLICY, ...previous, ...limits };
+  const db = getDb();
+  await db.update(codexWorkspaces)
+    .set({ policy, status: 'active', updatedAt: new Date(), lastUsedAt: new Date() })
+    .where(eq(codexWorkspaces.id, workspace.row.id));
+  return {
+    workspaceId: workspace.row.id,
+    workspaceKey: workspace.row.workspaceKey,
+    path: workspace.path,
+    policy,
+    snapshot: workspaceResourceSnapshot(workspace.path, policy),
+  };
 }
 
 /** Reconcile the durable workspace for every existing session after startup. */
@@ -562,6 +658,15 @@ export async function createAgentRun(input: CreateAgentRunInput) {
     context.projectId,
     DEFAULT_POLICY,
   );
+  /* Storage gate — the model sets the budget via initialize_workspace; a
+   * workspace over its cap must not silently grow further. */
+  const disk = assertWorkspaceDiskWithinLimit(workspace.path, workspace.row.policy);
+  if (!disk.ok) {
+    throw new BadRequest(
+      `workspace_disk_limit: ${disk.usageBytes} bytes used, ${disk.maxBytes} bytes allowed. ` +
+      'Reset the workspace (initialize_workspace with reset=true) or raise max_disk_mb before continuing.',
+    );
+  }
   const [run] = await db.insert(agentRuns).values({
     userId: input.userId,
     sessionId: context.session?.id || null,
