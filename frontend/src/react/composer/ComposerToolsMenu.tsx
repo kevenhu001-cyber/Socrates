@@ -28,6 +28,8 @@ type MenuItemSpec = ExtensionDefinition;
    actions stay together and workflows live behind one explicit disclosure.
    `labelKey` is resolved at render time so setLang() repaints the menu with
    the rest of the chrome. */
+const MOBILE_MENU_ICON_OPEN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+
 const MOBILE_MENU_ITEMS: ReadonlyArray<{
   action: ComposerToolsAction;
   labelKey: string;
@@ -38,19 +40,19 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
     action: 'camera',
     labelKey: 'composer.tools.camera',
     label: 'Camera',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7.5h3l1.4-2h7.2l1.4 2h3v11H4z"/><circle cx="12" cy="13" r="3.4"/></svg>',
+    icon: MOBILE_MENU_ICON_OPEN + '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
   },
   {
     action: 'photos',
     labelKey: 'composer.tools.photos',
     label: 'Photos',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><circle cx="15.5" cy="9" r="1.5"/><path d="m5.5 17 4.2-4.5 3.1 3 2.1-2 3.6 3.5"/></svg>',
+    icon: MOBILE_MENU_ICON_OPEN + '<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
   },
   {
     action: 'upload',
     labelKey: 'composer.tools.files',
     label: 'Files',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M8.5 12.5 14 7a3 3 0 0 1 4.2 4.2l-7 7a5 5 0 0 1-7.1-7.1l7.2-7.2"/><path d="m7.1 14 7-7"/></svg>',
+    icon: MOBILE_MENU_ICON_OPEN + '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
   },
 ];
 
