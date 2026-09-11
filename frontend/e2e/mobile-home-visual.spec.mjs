@@ -138,13 +138,13 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  await expect(menu.locator('.composer-tools-mobile-item')).toHaveCount(4);
+  /* Flat scrollable list: the three media shortcuts plus every workflow,
+     with no "Tools" disclosure row. */
+  await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(3);
   await expect(menu).toContainText('Camera');
   await expect(menu).toContainText('Photos');
   await expect(menu).toContainText('Files');
-  await expect(menu).toContainText('Tools');
-  await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(4);
-  await expect(menu.locator('#composerToolsMobileMore [data-composer-action="extensiveThinking"]')).toBeHidden();
+  await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
   /* On phones the add-content menu is a floating card anchored above the
      composer, matching the mobile reference. */
@@ -153,14 +153,11 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 
-  await menu.getByRole('menuitem', { name: 'Tools' }).click();
-  await expect(menu.getByRole('menuitem', { name: 'Think deeper' })).toBeVisible();
   await menu.getByRole('menuitem', { name: 'Think deeper' }).click();
   await expect(menu).toBeHidden();
   await expect.poll(async () => page.evaluate(() => window.extensiveThinkingOn === true)).toBe(true);
 
   await page.locator('#topicComposerToolsBtn').click();
-  await menu.getByRole('menuitem', { name: 'Tools' }).click();
   const activeThinking = menu.getByRole('menuitem', { name: 'Think deeper' });
   await expect(activeThinking).toHaveClass(/is-active/);
   await expect(activeThinking.locator('.composer-tools-active-dot')).toBeVisible();

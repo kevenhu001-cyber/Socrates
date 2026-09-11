@@ -1051,52 +1051,56 @@ body,
 
 #composerToolsMenu .composer-tools-plugins {
   margin-top: 2px;
-  padding: 2px 0 0;
+  padding: 0;
   border-top: 0;
-}
-
-#composerToolsMenu .composer-tools-section-heading {
-  display: none;
 }
 
 #composerToolsMenu .composer-tools-plugin-list {
   grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
   max-height: none;
   overflow: visible;
 }
 
 #composerToolsMenu .composer-tools-plugin-item {
-  min-height: 34px;
-  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
   border: 0;
   border-radius: 10px;
 }
 
-#composerToolsMenu .composer-tools-plugin-copy {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 8px;
+#composerToolsMenu .composer-plugin-mark {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cg-surface-raised);
+  color: var(--cg-text);
+}
+
+#composerToolsMenu .composer-plugin-mark svg {
+  width: 18px;
+  height: 18px;
 }
 
 #composerToolsMenu .composer-tools-plugin-name {
-  flex: 0 0 auto;
-  max-width: 38%;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-#composerToolsMenu .composer-tools-plugin-copy small {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cg-text);
 }
 
-#composerToolsMenu .composer-tools-plugin-status {
-  display: none;
-}
-
-#composerToolsMenu .composer-tools-plugin-item.is-selected .composer-tools-plugin-status {
-  display: block;
+#composerToolsMenu .composer-tools-check {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--cg-accent);
 }
 
 #composerToolsMenu .composer-tools-footer-search.composer-tools-search {
