@@ -184,8 +184,11 @@ export async function startSession(){
   if(_appMode()==="chat" || _deepResearchOn){
 
     /* STEP 1 — complete the visible swap in the click task. Browser paint
-       happens after this task, so a full-document View Transition only held
-       the landing page on screen longer and added a 300 ms cross-fade. */
+       happens after this task; `startViewTransition` runs its update
+       callback a task later, which would defer the user bubble and the
+       assistant placeholder out of the interaction frame, so the swap
+       itself stays instant and the incoming motion is carried by the
+       message entrance (`msgIn`) and the send-time anchor glide. */
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
