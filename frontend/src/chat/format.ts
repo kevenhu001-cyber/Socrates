@@ -89,7 +89,16 @@ interface StreamController {
   replaceWithError: (msg: string, retry: () => void) => void;
 }
 
-function handleChatApiResult(result: { cancelled?: boolean; text?: string } | null, ctl: StreamController, userText: string): void {
+/* `retry` is the owning turn's own replay closure (askChatTurn passes one
+   that carries the immutable pendingContent: image/PDF/text attachments and
+   plugin context). Falling back to the bare userText here used to drop that
+   content on every error-bubble Retry. */
+function handleChatApiResult(
+  result: { cancelled?: boolean; text?: string } | null,
+  ctl: StreamController,
+  userText: string,
+  retry?: () => unknown,
+): void {
   if (result && result.cancelled) {
     ctl.abort();
     return;
@@ -111,7 +120,9 @@ function handleChatApiResult(result: { cancelled?: boolean; text?: string } | nu
            (session-expired races the retry click); guard the promise so
            it never becomes an unhandledrejection + red banner. */
         try {
-          const p = (window as any).askChatTurn(userText) as Promise<unknown> | undefined;
+          const p = (typeof retry === 'function'
+            ? retry()
+            : (window as any).askChatTurn(userText)) as Promise<unknown> | undefined;
           if (p && typeof p.catch === 'function') {
             p.catch((e: unknown) => {
               const quiet = (window as any).isExpectedTurnAbort;

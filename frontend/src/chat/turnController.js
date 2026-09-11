@@ -73,6 +73,11 @@ export async function askChatTurn(userText,pendingOverride){
      consume-once window bridge. */
   var pendingContent = arguments.length>1 ? pendingOverride : turnState.pendingChatContent;
   try{turnState.pendingChatContent=null;}catch(_){}
+  /* Re-enter THIS turn with its immutable content. The error-bubble Retry
+     is wired by handleChatApiResult, so the closure has to be handed there
+     explicitly; without it the retry degrades to the visible rawText and
+     drops the turn's attachments / plugin context. */
+  var retryTurn=function(){ return askChatTurn(userText,pendingContent); };
   /* No API configured: provide a minimal local echo so the chat panel
      is not dead. Tells the user how to enable a real model. */
   if(!hasUsableActive()){
@@ -232,7 +237,7 @@ export async function askChatTurn(userText,pendingOverride){
     ctl=_addStreamingMessage({onRetry:function(){
       /* Carry this turn's immutable content directly so retrying an older
          multimodal turn can never pick up a newer draft's attachments. */
-      quietTurn(askChatTurn(userText,pendingContent));
+      quietTurn(retryTurn());
     }});
   }
   /* M1 async — create the detached turn before streaming so a socket
@@ -302,7 +307,7 @@ export async function askChatTurn(userText,pendingOverride){
     },
     turnId:_turnId,
   });
-  handleChatApiResult(result,ctl,userText);
+  handleChatApiResult(result,ctl,userText,retryTurn);
   /* M1 async — finish/cancel consume the pending pointer; a transport
      failure keeps it so reload/reconnect can re-attach to the detached
      run instead of opening a duplicate LLM call. */

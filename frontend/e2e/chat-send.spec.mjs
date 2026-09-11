@@ -103,6 +103,52 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   expect(placement.anchored).toBe(true);
 });
 
+test('mobile first turn stays at the transcript top when the viewport grows', async ({ page }) => {
+  await mockAuthedApp(page);
+  /* Keep the turn pending so the first prompt + thinking row can be measured. */
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 4_000));
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n',
+    });
+  });
+  /* A short viewport stands in for the keyboard-open frame the send-time
+     anchor measures; growing it stands in for the keyboard/composer collapse
+     that used to let a leading flex spacer push the prompt down. */
+  await page.setViewportSize({ width: 390, height: 600 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'First turn top smoke' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '77777777-7777-4777-8777-777777777777' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.body.dataset.conversationActive = 'true';
+    window.appMode = 'chat';
+    window.submitChatMessage('First prompt');
+  });
+  await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
+  await expect(page.locator('#msgList .thinking-placeholder')).toBeVisible();
+
+  const firstTurnOffset = () => page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const user = list.querySelector('.msg.user');
+    const listRect = list.getBoundingClientRect();
+    return Math.round(user.getBoundingClientRect().top - listRect.top);
+  });
+  await page.waitForTimeout(200);
+  expect(await firstTurnOffset()).toBeLessThanOrEqual(40);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(400);
+  expect(await firstTurnOffset()).toBeLessThanOrEqual(40);
+});
+
 test('retry replaces the failed answer and resumes at the visible error position', async ({ page }) => {
   await mockAuthedApp(page);
   let streamCalls = 0;
@@ -191,6 +237,62 @@ test('retry replaces the failed answer and resumes at the visible error position
     Math.abs(retried.offset - errorOffset),
     JSON.stringify({ errorOffset, retried }),
   ).toBeLessThanOrEqual(24);
+});
+
+test('retry replays the failed turn content including attachments', async ({ page }) => {
+  await mockAuthedApp(page);
+  const streamBodies = [];
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    streamBodies.push(route.request().postDataJSON());
+    if (streamBodies.length === 1) {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Temporary generation failure' }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: {"choices":[{"delta":{"content":"Retried answer"}}]}\n\ndata: [DONE]\n\n',
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Retry content smoke' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '55555555-5555-4555-8555-555555555555' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    window.appMode = 'chat';
+    /* Mutate the shared live array in place — window.attachments must keep
+       its identity across modules. */
+    window.attachments.push({
+      kind: 'text',
+      name: 'notes.txt',
+      text: 'Attachment payload the retry must preserve.',
+    });
+  });
+
+  await page.locator('#chatComposerRoot .rich-composer-editor').first().fill('Read the attached notes.');
+  await page.evaluate(() => window.submitChatMessage());
+
+  const retryButton = page.locator('#msgList .msg-error .msg-retry-btn').last();
+  await expect(retryButton).toBeVisible();
+  await retryButton.click();
+  await expect.poll(() => streamBodies.length).toBeGreaterThanOrEqual(2);
+
+  const retriedUser = [...streamBodies[1].messages]
+    .reverse()
+    .find((message) => message.role === 'user');
+  expect(Array.isArray(retriedUser?.content)).toBe(true);
+  expect(
+    retriedUser.content.some((part) => part.type === 'text' && /notes\.txt/.test(part.text)),
+  ).toBe(true);
 });
 
 test('the live turn keeps exactly one row while deltas arrive', async ({ page }) => {
