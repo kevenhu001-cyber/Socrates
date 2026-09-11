@@ -1,0 +1,231 @@
+// e2e/chat-keyboard-anchor.spec.mjs
+//
+// Keyboard-transition transcript anchoring contract:
+//
+//   1. A history reader is never dragged to the bottom when the virtual
+//      keyboard changes the transcript's flex height — neither through
+//      the external --keyboard-inset fallback nor through the measured
+//      visualViewport path.
+//   2. A reader following the bottom keeps following through the lift.
+//   3. A wheel/touch gesture during the transition owns the scroll: the
+//      anchor is abandoned instead of fighting the user.
+//
+// The measured path is driven through a fake window.visualViewport so the
+// real keyboardViewport.js rAF interpolation runs in Chromium.
+
+import { test } from './_lib.mjs';
+import { expect } from '@playwright/test';
+import { gotoAndSettle } from './_lib.mjs';
+import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
+
+/* Install a controllable visual viewport before the bundle loads. The app
+   shims must not use the real browser property, so every module that
+   reads it (keyboardViewport, composer popovers) sees this object. */
+function installFakeVisualViewport(page) {
+  return page.addInitScript(() => {
+    const listeners = { resize: new Set(), scroll: new Set() };
+    const fake = {
+      width: 390,
+      height: 844,
+      offsetTop: 0,
+      offsetLeft: 0,
+      pageTop: 0,
+      pageLeft: 0,
+      scale: 1,
+      addEventListener(type, fn) {
+        (listeners[type] || (listeners[type] = new Set())).add(fn);
+      },
+      removeEventListener(type, fn) {
+        if (listeners[type]) listeners[type].delete(fn);
+      },
+      dispatchEvent(event) {
+        const type = event && event.type;
+        if (listeners[type]) listeners[type].forEach((fn) => fn(event));
+        return true;
+      },
+      __resize({ height, offsetTop = 0 }) {
+        fake.height = height;
+        fake.offsetTop = offsetTop;
+        fake.dispatchEvent(new Event('resize'));
+      },
+    };
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      get: () => fake,
+    });
+    window.__fakeViewport = fake;
+  });
+}
+
+async function seedChat(page, count = 40) {
+  await page.evaluate((n) => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '99999999-9999-4999-8999-999999999999' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.documentElement.style.setProperty('--keyboard-inset', '0px');
+    document.documentElement.dataset.keyboardOpen = 'false';
+    for (let i = 0; i < n; i += 1) {
+      window.addMessage(i % 2 ? 'assistant' : 'user', `History ${i + 1}: ${'content '.repeat(8)}`);
+    }
+  }, count);
+  await expect(page.locator('#msgList .msg')).toHaveCount(count);
+  await page.waitForTimeout(250);
+}
+
+async function transcriptState(page) {
+  return page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const rows = list.querySelectorAll(':scope > .msg');
+    const listRect = list.getBoundingClientRect();
+    let anchorOffset = null;
+    let anchorText = null;
+    for (const row of rows) {
+      const rect = row.getBoundingClientRect();
+      if (rect.bottom > listRect.top + 1) {
+        anchorOffset = Math.round(rect.top - listRect.top);
+        anchorText = row.textContent.slice(0, 16);
+        break;
+      }
+    }
+    return {
+      scrollTop: Math.round(list.scrollTop),
+      clientHeight: Math.round(list.clientHeight),
+      distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
+      anchorOffset,
+      anchorText,
+      inset: getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset').trim(),
+      away: Boolean(window.stateStore.read('_userScrolledAway')),
+    };
+  });
+}
+
+test.beforeEach(async ({ page }) => {
+  await mockAuthedApp(page);
+  await installFakeVisualViewport(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+});
+
+test('external keyboard inset keeps a history reader anchored instead of snapping to the bottom', async ({ page }) => {
+  await seedChat(page);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = 600;
+  });
+  await page.waitForTimeout(200);
+  const before = await transcriptState(page);
+
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--keyboard-inset', '300px');
+  });
+  await page.waitForTimeout(450);
+  const after = await transcriptState(page);
+
+  expect(after.scrollTop).toBe(before.scrollTop);
+  expect(after.anchorText).toBe(before.anchorText);
+  expect(Math.abs(after.anchorOffset - before.anchorOffset)).toBeLessThanOrEqual(1);
+  expect(after.distanceFromBottom).toBeGreaterThan(64);
+});
+
+test('visualViewport keyboard lift follows a pinned reader through open and close', async ({ page }) => {
+  await seedChat(page);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  });
+  await page.waitForTimeout(200);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(100);
+
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
+  await page.waitForTimeout(400);
+  const lifted = await transcriptState(page);
+  expect(lifted.distanceFromBottom).toBeLessThanOrEqual(4);
+
+  /* Grow the latest answer while the keyboard is open (streaming tail /
+     late rich content): a following reader must keep the newest content
+     visible above the composer. */
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const body = list.querySelector('.msg:last-child .msg-body');
+    const late = document.createElement('div');
+    late.style.height = '240px';
+    body.appendChild(late);
+  });
+  await page.waitForTimeout(300);
+  expect((await transcriptState(page)).distanceFromBottom).toBeLessThanOrEqual(4);
+
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('0px');
+  await page.waitForTimeout(400);
+  const closed = await transcriptState(page);
+  expect(closed.distanceFromBottom).toBeLessThanOrEqual(4);
+});
+
+test('visualViewport keyboard lift keeps a history reader anchored and never forces the bottom', async ({ page }) => {
+  await seedChat(page);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    /* A real upward gesture marks the reader as inspecting history. */
+    list.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, bubbles: true }));
+    list.scrollTop = 600;
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
+  const before = await transcriptState(page);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(100);
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
+  await page.waitForTimeout(400);
+
+  const lifted = await transcriptState(page);
+  expect(lifted.scrollTop).toBe(before.scrollTop);
+  expect(lifted.anchorText).toBe(before.anchorText);
+  expect(Math.abs(lifted.anchorOffset - before.anchorOffset)).toBeLessThanOrEqual(1);
+  expect(lifted.distanceFromBottom).toBeGreaterThan(64);
+
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('0px');
+  await page.waitForTimeout(400);
+  const closed = await transcriptState(page);
+  expect(closed.anchorText).toBe(before.anchorText);
+  expect(Math.abs(closed.anchorOffset - before.anchorOffset)).toBeLessThanOrEqual(1);
+});
+
+test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }) => {
+  await seedChat(page);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  });
+  await page.waitForTimeout(200);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+
+  /* Mid-lift: the reader grabs the transcript and scrolls up. */
+  await page.waitForTimeout(40);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, bubbles: true }));
+    list.scrollTop = 400;
+  });
+  await page.waitForTimeout(500);
+
+  const state = await transcriptState(page);
+  expect(state.away).toBe(true);
+  expect(Math.abs(state.scrollTop - 400)).toBeLessThanOrEqual(1);
+  expect(state.distanceFromBottom).toBeGreaterThan(64);
+});

@@ -13,6 +13,21 @@ import { stateStore } from '../state/store.js';
 
 const SCROLL_SLACK = 64;   /* pixels from bottom considered "pinned" */
 
+/* Timestamp of the most recent user scroll gesture (wheel, touch drag,
+   keyboard scroll key, or a pill click). keyboardViewport.js snapshots
+   this when a keyboard transition begins and abandons its transcript
+   compensation as soon as a newer gesture lands — a live gesture always
+   owns the scroll. */
+let lastUserScrollIntentAt = 0;
+
+export function getLastScrollIntentAt(){
+  return lastUserScrollIntentAt;
+}
+
+function markUserScrollIntent(){
+  lastUserScrollIntentAt = Date.now();
+}
+
 export function showNewReplyPill(){
   const pill = document.getElementById("newReplyPill");
   if(pill) pill.classList.add("visible");
@@ -50,12 +65,14 @@ export function wireScrollPill(){
 
   function releasePin(){
     upIntentAt = Date.now();
+    markUserScrollIntent();
     if(!stateStore.read('_userScrolledAway')){
       stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:true});
     }
   }
 
   document.addEventListener("wheel", function(ev){
+    markUserScrollIntent();
     if(ev.deltaY < 0) releasePin();
     else if(ev.deltaY > 0) upIntentAt = 0;
   }, {passive:true, capture:true});
@@ -67,6 +84,7 @@ export function wireScrollPill(){
   document.addEventListener("touchmove", function(ev){
     if(touchY == null || !ev.touches || !ev.touches.length) return;
     const y = ev.touches[0].clientY;
+    if(Math.abs(y - touchY) > 4) markUserScrollIntent();
     if(y - touchY > 4) releasePin();      /* finger down = scrolling up */
     else if(touchY - y > 4) upIntentAt = 0;
     touchY = y;
@@ -76,8 +94,8 @@ export function wireScrollPill(){
     const el = ev.target;
     const tag = el && el.tagName;
     if(tag === "INPUT" || tag === "TEXTAREA" || (el && el.isContentEditable)) return;
-    if(ev.key === "ArrowUp" || ev.key === "PageUp" || ev.key === "Home") releasePin();
-    else if(ev.key === "End") upIntentAt = 0;
+    if(ev.key === "ArrowUp" || ev.key === "PageUp" || ev.key === "Home"){ markUserScrollIntent(); releasePin(); }
+    else if(ev.key === "End"){ markUserScrollIntent(); upIntentAt = 0; }
   }, true);
 
   document.addEventListener("scroll", function(ev){
@@ -139,6 +157,7 @@ export function wireScrollPill(){
         const sc = scrollContainer();
         if(sc) sc.scrollTop = sc.scrollHeight;
         upIntentAt = 0;
+        markUserScrollIntent();
         stateStore.dispatch({type:'state/set',key:'_userScrolledAway',value:false});
         hideNewReplyPill();
         return;
