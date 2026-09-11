@@ -8882,7 +8882,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
     padding-inline:16px;
-    padding-bottom:max(24px,env(safe-area-inset-bottom,0px));
+    /* P_kb-gap — the resting strip below the composer stays compact so the
+       gap to the virtual keyboard (overlay mode) or the resized viewport
+       edge (resizes-content mode) is a few px, not a 24-34px hole. */
+    padding-bottom:max(10px,env(safe-area-inset-bottom,0px));
     background:linear-gradient(to bottom,transparent,hsl(var(--cowork-page)) 24px);
   }
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #chatInputWrap,
@@ -10494,7 +10497,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
   /* In-session mobile card: inset from the viewport edge and one-row at
      rest; a measured multiline draft still gets its second control row. */
-  #appShell #chatInputBar{padding-inline:16px;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))}
+  /* P_kb-gap — same compact strip as the conversation-active rule above;
+     this later two-id selector is the one that actually wins on mobile. */
+  #appShell #chatInputBar{padding-inline:16px;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
   #appShell #chatInputWrap:not(.voice-recording-active){
     width:100%;
     max-width:none;
@@ -11639,6 +11644,18 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   :root[data-keyboard-open="true"] #appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer .send-btn{
     grid-column:5!important;
     grid-row:2!important;
+  }
+
+  /* P_kb-gap — while the keyboard is up it already covers the
+     home-indicator strip, so the resting safe-area/24px padding would
+     leave a visible hole between the composer and the keyboard. Keep a
+     tight 8px optical gap and drop the wrapper's resting margin. */
+  :root[data-keyboard-open="true"] #appShell #chatInputBar,
+  :root[data-keyboard-open="true"] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
+    padding-bottom:8px!important;
+  }
+  :root[data-keyboard-open="true"] .chat-view{
+    margin-bottom:0!important;
   }
 
   /* Surface the actual model/effort text on the selector. The bars and caret
