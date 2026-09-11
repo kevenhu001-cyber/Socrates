@@ -359,13 +359,15 @@ export function initChatComposerReserve(options){
       if(!pinnedBeforeResize&&previous&&current){
         pinnedBeforeResize=previous.scrollHeight-current.scrollTop-previous.clientHeight<=pinSlack;
       }
-      var externalKeyboardInsetOpen=false;
-      if(typeof document!=="undefined"&&document.documentElement){
-        var rootStyle=document.documentElement.style;
-        externalKeyboardInsetOpen=(parseFloat(rootStyle.getPropertyValue("--keyboard-inset"))||0)>0&&
-          document.documentElement.dataset.keyboardOpen!=="true";
-      }
-      if(!pinnedBeforeResize&&!externalKeyboardInsetOpen)return;
+      /* Only a reader who was following the bottom gets re-pinned. An
+         external --keyboard-inset write (a native bridge that changes the
+         inset without the app's own keyboard flag) still has to respect
+         the reader's position: a history reader keeps their exact
+         scrollTop instead of being dragged to the latest message. The
+         inset-driven re-anchor for the live keyboard path belongs to
+         keyboardViewport.js, which captures pin intent before the first
+         frame writes. */
+      if(!pinnedBeforeResize)return;
       /* A newly submitted turn deliberately owns the prompt's viewport
          offset while the composer changes height. The send path marks that
          ownership on the live list; history/layout-only updates do not. */

@@ -79,7 +79,7 @@ export function mountRegistryList(): MountSpec[] {
        runs, so every root can subscribe during mount. */
     { hostId: 'msgList', label: 'msg-list', mount: () => mountMessageList().root !== null },
     { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
-      setPillRoot(hydrateRoot(host, <StrictMode><NewReplyPill /></StrictMode>));
+      setPillRoot(hydrateRoot(host, <StrictMode><NewReplyPill host={host} /></StrictMode>));
     } },
     { hostId: 'sendBtnContent', label: 'send-button', mount: (host) => {
       createRoot(host).render(<StrictMode><SendButton /></StrictMode>);

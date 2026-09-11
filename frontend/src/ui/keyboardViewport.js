@@ -1,4 +1,6 @@
 import { smoothScrollToBottom } from './scroll.js';
+import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from './scrollDecision.ts';
+import { getLastScrollIntentAt } from './scrollPill.js';
 
 /*
  * Keep chat controls above mobile virtual keyboards.
@@ -39,6 +41,11 @@ import { smoothScrollToBottom } from './scroll.js';
  * CSS or JS — turns both shapes into one smooth, continuous lift and
  * prevents the composer from snapping ahead of the keyboard or
  * flashing between intermediate positions.
+ *
+ * The same controller anchors the transcript across the lift: a reader
+ * following the bottom stays on the newest content, while a reader
+ * inspecting history keeps their exact offset (visualViewport-driven
+ * compensation, never a forced scroll to the bottom).
  */
 
 /* Android/iOS WebViews can expose a 0–1px visual viewport for a transient
@@ -141,7 +148,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const viewport = window.visualViewport;
   let updateFrame = 0;
-  let pinFrame = 0;
+  let anchorFrame = 0;
+  let anchorClearTimer = 0;
   let motionFrame = 0;
   let blurRecheckTimer = 0;
   /* -1 forces the first write to apply, so --keyboard-inset and
@@ -152,6 +160,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let targetInset = 0;
   let motionFrom = 0;
   let motionStart = 0;
+  /* Reader position captured for the duration of a keyboard transition.
+     The captured intent (bottom-follow vs history) is authoritative for
+     the whole motion; per-frame geometry is not re-interpreted, so the
+     first shrunk frame cannot strand a pinned reader or drag a history
+     reader to the bottom. */
+  let transcriptAnchor = null;
 
   const prefersReducedMotion = () => {
     try {
@@ -173,36 +187,100 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     return measureKeyboardInset(appShellBottom(), viewport, window.innerHeight);
   };
 
-  /* One frame of the lift: write the current interpolated value and keep
-     a bottom-pinned transcript anchored to the new bottom edge. */
+  /* ── Transcript scroll anchoring ────────────────────────────────────
+   * A keyboard transition changes the transcript's flex height. The
+   * reader's intent is captured once, before the first frame writes the
+   * new inset, and restored after every layout commit:
+   *
+   *   - bottom-follow: the latest answer is kept flush above the composer
+   *     (snap, not a second animation that would amplify the lift);
+   *   - history: the exact scrollTop from before the change is kept
+   *     (clamped to the new range) so the visible text never jumps and is
+   *     never forced back to the bottom.
+   *
+   * Any wheel/touch/key gesture after the capture abandons the anchor —
+   * a live gesture always wins. */
+
+  const transcriptList = () => {
+    try {
+      return typeof document !== 'undefined' ? document.getElementById('msgList') : null;
+    } catch (_) { return null; }
+  };
+
+  const captureTranscriptAnchor = () => {
+    const list = transcriptList();
+    if (!list || typeof list.getBoundingClientRect !== 'function') return null;
+    const scrolledAway = Boolean(window.stateStore.read('_userScrolledAway'));
+    const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
+    return {
+      list,
+      scrollTop: Number(list.scrollTop) || 0,
+      pinned: !scrolledAway && distance <= KEYBOARD_PIN_SLACK,
+      intentAt: getLastScrollIntentAt(),
+    };
+  };
+
+  const armTranscriptAnchorClear = () => {
+    if (anchorClearTimer) clearTimeout(anchorClearTimer);
+    /* The anchor only has to outlive the lift plus one layout settle; a
+       lingering anchor would fight unrelated later layout shifts. */
+    anchorClearTimer = setTimeout(() => {
+      anchorClearTimer = 0;
+      transcriptAnchor = null;
+    }, KEYBOARD_LIFT_MS + 200);
+  };
+
+  const clearTranscriptAnchor = () => {
+    if (anchorClearTimer) { clearTimeout(anchorClearTimer); anchorClearTimer = 0; }
+    if (anchorFrame) { cancelAnimationFrame(anchorFrame); anchorFrame = 0; }
+    transcriptAnchor = null;
+  };
+
+  const beginTranscriptAnchor = () => {
+    transcriptAnchor = captureTranscriptAnchor();
+    armTranscriptAnchorClear();
+  };
+
+  const restoreTranscriptAnchor = () => {
+    anchorFrame = 0;
+    const anchor = transcriptAnchor;
+    if (!anchor || !anchor.list || anchor.list.isConnected === false) return;
+    const list = anchor.list;
+    const action = decideKeyboardAnchorAction(
+      { scrollTop: anchor.scrollTop, pinned: anchor.pinned },
+      {
+        maxScrollTop: list.scrollHeight - list.clientHeight,
+        scrolledAway: Boolean(window.stateStore.read('_userScrolledAway')),
+        userIntentAfterCapture: getLastScrollIntentAt() > anchor.intentAt,
+      },
+    );
+    if (action.type === 'none') {
+      clearTranscriptAnchor();
+      return;
+    }
+    if (action.type === 'follow-bottom') {
+      smoothScrollToBottom(list, { smooth: false });
+      return;
+    }
+    if (Math.abs(action.top - list.scrollTop) > 0.5) {
+      list.scrollTop = action.top;
+    }
+  };
+
+  const scheduleTranscriptRestore = () => {
+    if (anchorFrame || typeof window.requestAnimationFrame !== 'function') return;
+    anchorFrame = window.requestAnimationFrame(restoreTranscriptAnchor);
+  };
+
+  /* One frame of the lift: write the current interpolated value and
+     re-anchor the transcript after the flex layout commits. */
   const writeInsetFrame = (inset) => {
     const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
     if (roundedInset === appliedInset) return;
-    const list = typeof document !== 'undefined'
-      ? document.getElementById('msgList')
-      : null;
-    const readerMovedAway = Boolean(window.stateStore.read("_userScrolledAway"));
-    const wasPinned = Boolean(
-      list
-      && !readerMovedAway
-      && list.scrollHeight - list.scrollTop - list.clientHeight <= 96
-    );
-
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
-     * Preserve the bottom anchor only for a reader who was already following
-     * the latest message. Snap after layout settles instead of running a
-     * second long animation that can amplify the keyboard lift. */
-    if (wasPinned && list) {
-      if (pinFrame) cancelAnimationFrame(pinFrame);
-      pinFrame = requestAnimationFrame(() => {
-        pinFrame = 0;
-        if (!window.stateStore.read("_userScrolledAway")) {
-          smoothScrollToBottom(list, { smooth: false });
-        }
-      });
-    }
+     * Re-anchor on the next frame, once the new height is measured. */
+    if (transcriptAnchor) scheduleTranscriptRestore();
     appliedInset = roundedInset;
   };
 
@@ -229,6 +307,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
     if (roundedTarget === targetInset && motionFrame === 0 && appliedInset === roundedTarget) return;
     targetInset = roundedTarget;
+
+    /* Capture the reader's position once per transition, before the first
+     * frame writes, and keep it across progressive samples (iOS) until
+     * the motion settles. */
+    if (appliedInset >= 0) {
+      if (!transcriptAnchor) beginTranscriptAnchor();
+      else armTranscriptAnchorClear();
+    }
 
     /* Progressive viewports (iOS) deliver many small steps; a short glide
      * between samples keeps the motion continuous there too. Discrete
@@ -409,10 +495,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   return () => {
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
-    if (pinFrame) window.cancelAnimationFrame(pinFrame);
     if (motionFrame) window.cancelAnimationFrame(motionFrame);
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
+    clearTranscriptAnchor();
     try { root.style.removeProperty('--keyboard-inset'); } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
     try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
