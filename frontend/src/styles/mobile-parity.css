@@ -11,11 +11,6 @@
    (danger / success / warning) and third-party brand assets are untouched.
    ========================================================================== */
 
-/* Hidden everywhere except the ≤768px conversation surface below. */
-.chat-disclaimer {
-  display: none;
-}
-
 @media (max-width: 768px) {
   /* ─────────────────────────────────────────────────────────────
    * 1. Top bar — plain hamburger, centered segmented tabs.
@@ -395,16 +390,6 @@
   #appShell#appShell .msg.user .msg-body code {
     background: hsl(0 0% 100% / 14%) !important;
     color: hsl(0 0% 100%) !important;
-  }
-
-  #appShell#appShell .chat-disclaimer {
-    display: block !important;
-    margin: 0 auto 8px !important;
-    padding: 0 12px !important;
-    color: var(--cg-text-muted) !important;
-    font-size: 12px !important;
-    line-height: 16px !important;
-    text-align: center !important;
   }
 
   /* ─────────────────────────────────────────────────────────────
