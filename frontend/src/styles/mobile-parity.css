@@ -504,17 +504,18 @@
     display: none !important;
   }
 
+  /* The mobile-item icons keep `flex: 0 0 26px` from styles.css; override
+     the basis too or the 40px chip collapses to a 26x40 ellipse while the
+     workflow rows (no flex basis) stay circular. */
   body #composerToolsMenu .composer-tools-icon,
   body #composerToolsMenu .composer-plugin-mark {
+    flex: 0 0 40px !important;
     width: 40px !important;
     height: 40px !important;
+    min-width: 40px !important;
     border-radius: 50% !important;
     background: var(--cg-surface-raised) !important;
     color: var(--cg-text) !important;
-  }
-
-  body #composerToolsMenu .composer-plugin-mark {
-    flex-basis: 40px !important;
   }
 
   body #composerToolsMenu .composer-plugin-mark svg {
