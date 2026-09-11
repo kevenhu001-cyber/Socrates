@@ -452,10 +452,13 @@ export function initChatComposerReserve(options){
        snapping it to the bottom here would erase that position. */
     var retryOwnsViewport=!!(lastMessage&&
       lastMessage.getAttribute("data-viewport-anchor")==="retry");
-    /* Send-time turn anchors (prompt at viewport top + reserve) own the
-       scroll too; a content-follow must not fight them. */
-    var turnAnchorOwnsViewport=!!(list&&list.querySelector(".turn-viewport-anchor"));
-    var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorOwnsViewport&&wasPinned(beforeGrowth);
+    /* A fresh send owns the scroll while its anchor is still gliding and
+       converging (chat/turnAnchor.ts). Once that window closes, growth that
+       pushes the answer past the reserved room follows the tail again when
+       the reader is still pinned — the prompt-anchor itself does not block
+       sticky-bottom. */
+    var turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
+    var shouldFollow=grew&&!retryOwnsViewport&&!turnAnchorSettling&&wasPinned(beforeGrowth);
     contentFrame=requestAnimationFrame(function(){
       contentFrame=0;
       if(shouldFollow&&!userScrolledAway()){

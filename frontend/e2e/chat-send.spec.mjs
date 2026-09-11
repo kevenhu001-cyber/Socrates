@@ -77,6 +77,16 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   await page.waitForFunction(() => Boolean(
     document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-placeholder'),
   ));
+  /* The send-time anchor now glides the prompt into place; wait for the
+     settling window to close before measuring the final offset. */
+  await expect.poll(() => page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    if (list.dataset.turnAnchorSettling === 'true') return 9999;
+    const users = list.querySelectorAll('.msg.user');
+    const latest = users[users.length - 1];
+    if (!latest) return 9999;
+    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+  }), { timeout: 5_000 }).toBeLessThanOrEqual(24);
 
   const placement = await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -141,8 +151,9 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
     const listRect = list.getBoundingClientRect();
     return Math.round(user.getBoundingClientRect().top - listRect.top);
   });
-  await page.waitForTimeout(200);
-  expect(await firstTurnOffset()).toBeLessThanOrEqual(40);
+  /* The anchor glides the first prompt into place; poll until it settles
+     rather than sampling a fixed moment mid-glide. */
+  await expect.poll(firstTurnOffset, { timeout: 5_000 }).toBeLessThanOrEqual(40);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(400);

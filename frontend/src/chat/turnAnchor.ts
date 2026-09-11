@@ -15,6 +15,7 @@
 import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
+import { velocityScrollTo } from '../ui/scroll.js';
 import type { MessageEntry } from '../ui/messageActions.ts';
 
 export interface TurnAnchorDeps {
@@ -74,7 +75,7 @@ export function scheduleActiveTurnToTop(
   msgIdx: number,
   retryViewport: RetryViewportOffset | null,
 ): void {
-  let normalAnchorSettling = false;
+  let anchorMotionStarted = false;
   const messages = stateStore.read('messages') as MessageEntry[];
   let message: MessageEntry | null =
     msgIdx >= 0 && messages[msgIdx] ? messages[msgIdx] : null;
@@ -83,6 +84,17 @@ export function scheduleActiveTurnToTop(
     : (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
   function row(): HTMLElement | null {
     return turnRowFor(list, assistant, clientId);
+  }
+  /* The stamped reserve must be painted before the anchor can glide, or the
+     target scrollTop is clamped by a still-short scrollHeight and the motion
+     undershoots, then snaps. React commits the reserve from the message entry
+     one frame after the stamp; the legacy path writes the style synchronously. */
+  function anchorReservePainted(): boolean {
+    const mounted = row() as HTMLElement | null;
+    if (!mounted) return false;
+    const minHeight = parseFloat(mounted.style.minHeight) || 0;
+    const marginTop = parseFloat(mounted.style.marginTop) || 0;
+    return minHeight > 0 || marginTop > 0;
   }
   /* Reserve the row's leading space. A React row takes it from the message
      entry (MessageItem renders minHeight / .turn-viewport-anchor /
@@ -119,15 +131,21 @@ export function scheduleActiveTurnToTop(
   /* The composer can still be in its short focus/keyboard transition when
      the stream bubble is mounted. Keep the submitted prompt at the target
      offset while that bounded layout change settles; stop immediately when
-     the reader expresses upward intent. */
-  function settleNormalTurnAnchor(targetOffset: number, deadline: number): void {
-    if (!list || stateStore.read('_userScrolledAway')) return;
+     the reader expresses upward intent. `onDone` fires on every exit path so
+     the anchor-ownership flag is released even when the loop stops early. */
+  function settleNormalTurnAnchor(
+    targetOffset: number,
+    deadline: number,
+    onDone?: () => void,
+  ): void {
+    const finish = () => { if (onDone) onDone(); };
+    if (!list || stateStore.read('_userScrolledAway')) { finish(); return; }
     /* Stop once this turn's row is gone — the loop only promises to hold the
        prompt still while the composer's layout settles. */
-    if (!assistant!.isConnected && !row()) return;
+    if (!assistant!.isConnected && !row()) { finish(); return; }
     const users = list.querySelectorAll && list.querySelectorAll('.msg.user');
     const anchor = users && users.length ? users[users.length - 1] : null;
-    if (!anchor || !anchor.isConnected) return;
+    if (!anchor || !anchor.isConnected) { finish(); return; }
     const actualOffset = anchor.getBoundingClientRect().top - list.getBoundingClientRect().top;
     const delta = actualOffset - targetOffset;
     if (Math.abs(delta) > 1) {
@@ -137,8 +155,10 @@ export function scheduleActiveTurnToTop(
     }
     if (Date.now() < deadline) {
       requestAnimationFrame(function () {
-        settleNormalTurnAnchor(targetOffset, deadline);
+        settleNormalTurnAnchor(targetOffset, deadline, onDone);
       });
+    } else {
+      finish();
     }
   }
   function position(): void {
@@ -182,17 +202,25 @@ export function scheduleActiveTurnToTop(
       );
       stampAnchor('turn', reserve, targetOffset);
     }
+    if (!retryViewport && !anchorReservePainted()) return;
     if (!retryViewport) list.__socratesTurnViewportOwner = true;
     const listRect = list.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
-    const target = list.scrollTop + (anchorRect.top - listRect.top) - targetOffset;
-    list.scrollTop = Math.max(0, target);
+    /* `offsetTop` is layout-based (transforms ignored), so the entrance
+       animation on the fresh user bubble cannot bias the target. Retries
+       keep the rect-based measurement for their exact visible restore. */
+    const target = retryViewport
+      ? Math.max(0, list.scrollTop + (anchorRect.top - listRect.top) - targetOffset)
+      : Math.max(0, (anchor as HTMLElement).offsetTop - targetOffset);
     /* The retry placeholder's min-height and the React removal of the
        failed row can settle over several frames. A single scrollTop write
        therefore runs against stale scrollHeight and leaves the retry well
        below its captured viewport position. Re-align after layout settles,
-       then use margin only when the scroller genuinely has no more range. */
+       then use margin only when the scroller genuinely has no more range.
+       Retries stay an instant, exact restore of the failed answer's visible
+       offset — they are not a fresh send and must not animate. */
     if (retryViewport) {
+      list.scrollTop = target;
       requestAnimationFrame(function settleRetryAnchor(attempt: number) {
         const current = row();
         if (!current) return;
@@ -235,14 +263,28 @@ export function scheduleActiveTurnToTop(
           }
         }
       });
+      stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+      return;
     }
-    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
-    if (!retryViewport && !normalAnchorSettling) {
-      normalAnchorSettling = true;
-      requestAnimationFrame(function () {
-        settleNormalTurnAnchor(targetOffset, Date.now() + 420);
-      });
-    }
+    if (anchorMotionStarted) return;
+    anchorMotionStarted = true;
+    /* A normal send glides: the previous turns slide up and the submitted
+       prompt settles at the target offset instead of teleporting there.
+       `turnAnchorSettling` tells the content-follow observer to leave the
+       scroll alone until the motion and its convergence window finish. */
+    list.dataset.turnAnchorSettling = 'true';
+    const releaseAnchor = () => {
+      const done = () => {
+        if (list.dataset) delete list.dataset.turnAnchorSettling;
+      };
+      if (stateStore.read('_userScrolledAway')) { done(); return; }
+      stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+      settleNormalTurnAnchor(targetOffset, Date.now() + 420, done);
+    };
+    velocityScrollTo(list, target, { smooth: true }).then(() => {
+      if (!list.isConnected) return;
+      releaseAnchor();
+    });
   }
   /* A retry bubble is already mounted in the legacy list and its target
      offset is known. Position it synchronously so the first visible frame
@@ -252,9 +294,13 @@ export function scheduleActiveTurnToTop(
     /* Under React the live row is a commit away — when the stream starts the
        entry is only in `stateStore.read("messages")`. Bailing on that first null is what
        made the send-time anchor a no-op, so keep asking (bounded) until the
-       row exists and the scroll can be measured against it. */
+       row exists, its reserve is painted, and the scroll can be measured
+       against a target the scroller can actually reach. */
     position();
-    if (row() || ++positionWaits > 30) return;
+    const ready = retryViewport
+      ? Boolean(row())
+      : Boolean(row()) && anchorReservePainted();
+    if (ready || ++positionWaits > 30) return;
     requestAnimationFrame(positionSoon);
   }
   if (retryViewport && row()) position();
