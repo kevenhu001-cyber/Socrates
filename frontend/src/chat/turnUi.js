@@ -7,6 +7,7 @@
 import { stateStore } from '../state/store.js';
 import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.js';
+import { buildUserContentParts } from './history.js';
 import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
 
 function _t(key) {
@@ -60,14 +61,22 @@ export function markTurnEnded() {
    no new retry logic. Returns true if a resend was dispatched. */
 export function resendLastUserMessage() {
   var text = null;
+  var attachments = null;
   for (var i = stateStore.read('messages').length - 1; i >= 0; i--) {
-    if (stateStore.read('messages')[i] && stateStore.read('messages')[i].role === 'user') {
-      text = stateStore.read('messages')[i].rawText || stateStore.read('messages')[i].content || null;
+    var entry = stateStore.read('messages')[i];
+    if (entry && entry.role === 'user') {
+      text = entry.rawText || entry.content || null;
+      attachments = entry.attachments;
       break;
     }
   }
   if (text && typeof window.askChatTurn === 'function') {
-    quietTurn(window.askChatTurn(text));
+    /* Resend rewinds to the last user turn, so askChatTurn slices that
+       entry out of history and re-appends the explicit content — rebuild
+       its multimodal parts here or the resend loses image/PDF/text. */
+    var parts = null;
+    try { parts = buildUserContentParts(text, attachments); } catch (_) { parts = null; }
+    quietTurn(window.askChatTurn(text, parts));
     return true;
   }
   try { showToast(_t('toast.noRetryTarget')); } catch (_) {}

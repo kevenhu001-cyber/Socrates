@@ -9,6 +9,7 @@ import { saveState } from './saveState.js';
 import { serverCache } from './serverCache.js';
 import { turnState } from '../chat/turnState.js';
 import { quietTurn } from '../chat/turnUi.js';
+import { buildUserContentParts } from '../chat/history.js';
 import { apiFetch } from '../util/api.js';
 import { ensureSessionShape, setAppMode, syncSidebarForMode } from '../config/providers.js';
 import { syncChatModel } from '../pickers.js';
@@ -505,15 +506,22 @@ export async function loadSession(id){
           method:"PATCH",
           body:{streamingText:null,streamingReasoning:null},
         }).catch(function(){});
+        var lastUserEntry=null;
         var lastUserMsg=null;
         for(var ui=stateStore.read("messages").length-1;ui>=0;ui--){
           if(stateStore.read("messages")[ui]&&stateStore.read("messages")[ui].role==="user"){
-            lastUserMsg=stateStore.read("messages")[ui].rawText||stateStore.read("messages")[ui].content;
+            lastUserEntry=stateStore.read("messages")[ui];
+            lastUserMsg=lastUserEntry.rawText||lastUserEntry.content;
             break;
           }
         }
         if(lastUserMsg&&typeof window.askChatTurn==="function"){
-          quietTurn(window.askChatTurn(lastUserMsg));
+          /* The recovered bubble is removed first, so askChatTurn slices
+             this user turn out of history; carry its rebuilt multimodal
+             parts explicitly or the retry loses attachments. */
+          var lastUserParts=null;
+          try{lastUserParts=buildUserContentParts(lastUserMsg,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
+          quietTurn(window.askChatTurn(lastUserMsg,lastUserParts));
         }else{
           showToast(_t("toast.noRetryTarget"));
         }
@@ -736,12 +744,23 @@ export async function reattachPendingTurn(sessionId){
   if(typeof window.addStreamingMessage!=="function")return;
   var ctl=window.addStreamingMessage({onRetry:function(){
     try{
+      var lastUserEntry=null;
       var lastUser=null;
       var list=stateStore.read("messages")||[];
       for(var ui=list.length-1;ui>=0;ui--){
-        if(list[ui]&&list[ui].role==="user"){lastUser=list[ui].rawText||null;break}
+        if(list[ui]&&list[ui].role==="user"){
+          lastUserEntry=list[ui];
+          lastUser=lastUserEntry.rawText||null;
+          break;
+        }
       }
-      if(lastUser&&typeof window.askChatTurn==="function")quietTurn(window.askChatTurn(lastUser));
+      if(lastUser&&typeof window.askChatTurn==="function"){
+        /* Same slicing hazard as the recovered-stream retry above: carry
+           the stored multimodal parts through the replay. */
+        var lastUserParts=null;
+        try{lastUserParts=buildUserContentParts(lastUser,lastUserEntry&&lastUserEntry.attachments);}catch(_){lastUserParts=null;}
+        quietTurn(window.askChatTurn(lastUser,lastUserParts));
+      }
     }catch(_){}
   }});
   var subAbort=new AbortController();

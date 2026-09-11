@@ -11726,16 +11726,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   #appShell #topicInputWrap:not(.voice-recording-active) #startBtn svg,
   #appShell #chatInputWrap:not(.voice-recording-active) .send-btn svg{width:18px!important;height:18px!important}
 
-  /* Short transcripts sit on the composer like the supplied status card;
-     once the transcript is taller than the viewport the flex spacer shrinks
-     to zero, preserving normal scrolling. */
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList::before{
-    content:"";
-    display:block;
-    flex:1 1 auto;
-    min-height:0;
-    order:-1;
-  }
+  /* P_first-turn-top — no leading flex spacer above the transcript. A
+     spacer here consumed the send-time reserve (chat/turnAnchor.ts), so a
+     short first turn sat mid-pane; when the composer collapsed or the
+     keyboard closed and the viewport grew, the spacer absorbed the new
+     free space and pushed the prompt down with it. Messages now always
+     start at the top of the transcript, like a document page. */
 }
 
 /* P_hide-mode-switch-in-conversation — mobile override. The cowork mobile
