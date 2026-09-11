@@ -2,7 +2,7 @@ import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boo
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { getLegacyActions, t as _t } from '../legacy/gateway';
+import { t as _t } from '../legacy/gateway';
 import { repositionComposerTools } from '../../ui/composerTools';
 import { installComposerToolsBridge } from './composerTools.bridge';
 import {
@@ -55,12 +55,8 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
 ];
 
 /* Expanded desktop list shows every workflow at once; mobile keeps its own
-   compact disclosure below. */
+   compact list below. Both are flat, scrollable regions — no disclosure. */
 const WORKFLOW_ORDER = ['write', 'explore', 'analyze', 'exam', 'skills'] as const;
-
-const TOOLS_DISCLOSURE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="11" cy="17" r="2" fill="currentColor" stroke="none"/></svg>';
-
-const DISCLOSURE_CHEVRON = <svg className="composer-tools-disclosure" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>;
 
 const MOBILE_THINKING_SPEC: MenuItemSpec = {
   ...extensiveThinkingExtension,
@@ -153,56 +149,12 @@ function MobileMenuItem({
   );
 }
 
-function ToolsDisclosure({
-  expanded,
-  mobile,
-  onToggle,
-}: {
-  expanded: boolean;
-  mobile?: boolean;
-  onToggle: () => void;
-}) {
-  const labelKey = mobile
-    ? (expanded ? 'composer.tools.mobileLess' : 'composer.tools.mobile')
-    : (expanded ? 'composer.tools.less' : 'composer.tools.more');
-  const fallback = mobile
-    ? (expanded ? 'Hide tools' : 'Tools')
-    : (expanded ? 'Show fewer' : 'More tools');
-
-  return (
-    <button
-      type="button"
-      className={`composer-tools-more-toggle${mobile ? ' composer-tools-mobile-item' : ''}`}
-      role="menuitem"
-      aria-expanded={expanded}
-      aria-controls={mobile ? 'composerToolsMobileMore' : 'composerToolsDesktopMore'}
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        onToggle();
-      }}
-    >
-      <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: TOOLS_DISCLOSURE_ICON }} />
-      <span className="composer-tools-copy"><span>{i18n(labelKey, fallback)}</span></span>
-      {expanded ? <svg className="composer-tools-disclosure is-expanded" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg> : DISCLOSURE_CHEVRON}
-    </button>
-  );
-}
-
 function PluginMark({ plugin }: { plugin: PluginCatalogEntry }) {
   const markup = pluginIconMarkup(plugin.id);
   if (markup) {
     return <span className="composer-plugin-mark" aria-hidden="true" dangerouslySetInnerHTML={{ __html: markup }} />;
   }
   return <span className="composer-plugin-mark composer-plugin-mark-fallback" aria-hidden="true">{plugin.name.slice(0, 2).toUpperCase()}</span>;
-}
-
-function pluginStatusLabel(plugin: PluginCatalogEntry): string {
-  if (plugin.connectionStatus === 'connected') return plugin.displayName ? `Connected · ${plugin.displayName}` : 'Connected';
-  if (plugin.connectionStatus === 'initiated') return 'Waiting for authorization';
-  if (plugin.connectionStatus === 'needs_installation') return 'Finish installation';
-  if (plugin.connectionStatus === 'unavailable') return 'Unavailable';
-  return 'Connect to use';
 }
 
 function ComposerPluginItem({
@@ -214,49 +166,41 @@ function ComposerPluginItem({
   selected: boolean;
   onPick: (plugin: PluginCatalogEntry) => void;
 }) {
-  const connected = plugin.connectionStatus === 'connected';
-  const unavailable = plugin.connectionStatus === 'unavailable';
-  const capabilityText = plugin.capabilities.slice(0, 2).join(' · ');
   return (
     <button
       type="button"
-      className={`composer-tools-plugin-item${selected ? ' is-selected' : ''}${unavailable ? ' is-unavailable' : ''}`}
+      className={`composer-tools-plugin-item${selected ? ' is-selected' : ''}`}
       data-composer-plugin={plugin.id}
       role="menuitem"
-      disabled={unavailable}
-      aria-pressed={connected ? selected : undefined}
-      aria-label={`${plugin.name}: ${pluginStatusLabel(plugin)}`}
+      aria-pressed={selected}
+      aria-label={`${plugin.name}${selected ? ': added' : ''}`}
       onClick={(event) => {
         event.stopPropagation();
         onPick(plugin);
       }}
     >
       <PluginMark plugin={plugin} />
-      <span className="composer-tools-plugin-copy">
-        <span className="composer-tools-plugin-name">{plugin.name}</span>
-        <small>{plugin.description || capabilityText || pluginStatusLabel(plugin)}</small>
-      </span>
-      <span className={`composer-tools-plugin-status${connected ? ' is-connected' : ''}`}>
-        {connected ? (selected ? 'Added' : '+') : pluginStatusLabel(plugin)}
-      </span>
+      <span className="composer-tools-plugin-name">{plugin.name}</span>
+      {selected ? (
+        <svg className="composer-tools-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+      ) : null}
     </button>
   );
 }
 
+/* Only connected plugins appear in the composer menu — the reference list is
+   a roster of the apps the user already configured, never a directory with
+   connect prompts (that stays in the Plugin Center). */
 function PluginItems({
   isOpen,
   mode,
   query,
-  onClose,
 }: {
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
   query: string;
-  onClose: () => void;
 }) {
   const [plugins, setPlugins] = useState<ReadonlyArray<PluginCatalogEntry>>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPlugins = mode ? selectionSnapshot[mode] : [];
 
@@ -265,65 +209,47 @@ function PluginItems({
       return undefined;
     }
     let cancelled = false;
-    setLoading(true);
-    setError(false);
     loadPluginCatalog()
       .then((entries) => {
         if (!cancelled) setPlugins(entries);
       })
       .catch(() => {
-        if (!cancelled) setError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        /* An unreachable catalog simply leaves the menu plugin-free. */
       });
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  const visiblePlugins = useMemo(() => {
+  const connectedPlugins = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return plugins;
-    return plugins.filter((plugin) => [plugin.name, plugin.description, ...plugin.capabilities].join(' ').toLowerCase().includes(normalized));
+    return plugins.filter((plugin) => {
+      if (plugin.connectionStatus !== 'connected') return false;
+      if (!normalized) return true;
+      return [plugin.name, plugin.description, ...plugin.capabilities]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalized);
+    });
   }, [plugins, query]);
 
-  const pickPlugin = (plugin: PluginCatalogEntry) => {
+  if (connectedPlugins.length === 0) return null;
+
+  const togglePlugin = (plugin: PluginCatalogEntry) => {
     if (!mode) return;
-    if (plugin.connectionStatus === 'connected') {
-      toggleComposerPlugin(mode, plugin, pluginIconMarkup(plugin.id));
-      return;
-    }
-    const actions = getLegacyActions().workspace;
-    if (plugin.connectionStatus === 'initiated' || plugin.connectionStatus === 'needs_installation') {
-      actions?.refreshProjectConnector?.(plugin.id);
-    } else if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
-      actions?.openProjectConnectorForm?.(plugin.id);
-    } else {
-      actions?.connectProjectConnector?.(plugin.id);
-    }
-    onClose();
+    toggleComposerPlugin(mode, plugin, pluginIconMarkup(plugin.id));
   };
 
   return (
     <section className="composer-tools-plugins" aria-label="Plugins">
-      <div className="composer-tools-section-heading">
-        <span>Plugins</span>
-        <span>{plugins.filter((plugin) => plugin.connectionStatus === 'connected').length} connected</span>
+      <div className="composer-tools-plugin-list">
+        {connectedPlugins.map((plugin) => (
+          <ComposerPluginItem
+            key={plugin.id}
+            plugin={plugin}
+            selected={selectedPlugins.some((selectedPlugin) => selectedPlugin.id === plugin.id)}
+            onPick={togglePlugin}
+          />
+        ))}
       </div>
-      {loading ? <div className="composer-tools-plugin-state">Loading plugins…</div> : null}
-      {!loading && error ? <div className="composer-tools-plugin-state">Plugins unavailable. Open Plugin Center to retry.</div> : null}
-      {!loading && !error && visiblePlugins.length === 0 ? <div className="composer-tools-plugin-state">No matching plugins.</div> : null}
-      {!loading && !error && visiblePlugins.length > 0 ? (
-        <div className="composer-tools-plugin-list">
-          {visiblePlugins.map((plugin) => (
-            <ComposerPluginItem
-              key={plugin.id}
-              plugin={plugin}
-              selected={selectedPlugins.some((selectedPlugin) => selectedPlugin.id === plugin.id)}
-              onPick={pickPlugin}
-            />
-          ))}
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -339,30 +265,19 @@ function MenuItems({
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
 }) {
-  const [showMore, setShowMore] = useState(false);
   const [query, setQuery] = useState('');
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPluginCount = mode ? selectionSnapshot[mode].length : 0;
+
   useEffect(() => {
-    if (!isOpen) {
-      setShowMore(false);
-      setQuery('');
-    }
+    if (!isOpen) setQuery('');
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
     const frame = window.requestAnimationFrame(() => repositionComposerTools());
     return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, showMore, query, selectedPluginCount]);
-
-  const closeMenu = () => {
-    const snapshot = installComposerToolsBridge().getSnapshot();
-    const trigger = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
-    if (trigger && snapshot.mode && typeof window.toggleComposerTools === 'function') {
-      window.toggleComposerTools(trigger, snapshot.mode);
-    }
-  };
+  }, [isOpen, query, selectedPluginCount]);
 
   const definitions = toolDefinitions();
   const normalizedQuery = query.trim().toLowerCase();
@@ -371,11 +286,10 @@ function MenuItems({
     const { label, description } = menuCopy(spec);
     return [label, description, spec.key].join(' ').toLowerCase().includes(normalizedQuery);
   };
-  /* Expanded desktop list mirrors the reference card: every workflow is
-     visible at once, no "More tools" disclosure. Mobile keeps its own
-     compact disclosure below. */
   const expandedTools = definitions.filter(matchesQuery);
   const footerPlaceholder = i18n('composer.tools.searchFooter', '输入以搜索插件、文件、文件夹和技能');
+  /* Mobile keeps the media shortcuts plus every workflow in one flat list;
+     the menu scrolls instead of hiding rows behind a disclosure. */
   const mobileSecondary = [
     ...WORKFLOW_ORDER
       .map((key) => definitions.find((spec) => spec.key === key))
@@ -408,19 +322,16 @@ function MenuItems({
             onPick={onPick}
           />
         ))}
-        <ToolsDisclosure expanded={showMore} mobile onToggle={() => setShowMore((value) => !value)} />
-        <div id="composerToolsMobileMore" className="composer-tools-more-items composer-tools-mobile-more-items" hidden={!showMore}>
-          {mobileSecondary.map((spec) => (
-            <MenuItem
-              key={spec.key}
-              spec={spec}
-              active={spec.key === activeKey}
-              onPick={onPick}
-            />
-          ))}
-        </div>
+        {mobileSecondary.map((spec) => (
+          <MenuItem
+            key={spec.key}
+            spec={spec}
+            active={spec.key === activeKey}
+            onPick={onPick}
+          />
+        ))}
       </div>
-      <PluginItems isOpen={isOpen} mode={mode} query={query} onClose={closeMenu} />
+      <PluginItems isOpen={isOpen} mode={mode} query={query} />
       <label className="composer-tools-footer-search composer-tools-search">
         <input
           value={query}

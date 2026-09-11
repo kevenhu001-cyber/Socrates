@@ -9225,24 +9225,25 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
    lives behind that disclosure instead of turning the plus button into a
    second navigation panel. */
 .composer-tools-menu{
-  width:min(232px,calc(100vw - 16px));
-  max-height:min(62vh,380px);
+  width:min(264px,calc(100vw - 16px));
+  max-height:min(62vh,440px);
   overflow-y:auto;
-  padding:6px;
-  background:hsl(0 0% 20%/.98);
-  border:1px solid hsl(0 0% 100%/.14);
-  border-radius:14px;
-  box-shadow:0 16px 40px hsl(0 0% 0%/.36),0 1px 0 hsl(0 0% 100%/.04) inset;
+  overscroll-behavior:contain;
+  padding:8px;
+  background:var(--cg-surface);
+  border:1px solid var(--cg-border);
+  border-radius:18px;
+  box-shadow:0 18px 44px hsl(var(--always-black)/.3),0 1px 0 hsl(var(--always-white)/.04) inset;
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
 }
 .composer-tools-heading{
   padding:4px 10px 6px;
-  color:hsl(0 0% 100%/.78);
+  color:var(--cg-text-secondary);
   font-size:12px;
   font-weight:600;
 }
-.composer-tools-heading-hint{color:hsl(0 0% 100%/.52);font-size:11px}
+.composer-tools-heading-hint{color:var(--cg-text-muted);font-size:11px}
 .composer-tools-item,
 .composer-tools-more-toggle{
   display:flex;
@@ -9253,9 +9254,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   height:44px;
   padding:8px 10px;
   border:0;
-  border-radius:8px;
+  border-radius:10px;
   background:transparent;
-  color:hsl(0 0% 100%/.92);
+  color:var(--cg-text-secondary);
   font:500 14px/20px var(--font-sans);
   text-align:left;
   cursor:pointer;
@@ -9268,32 +9269,32 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .composer-tools-item:focus-visible,
 .composer-tools-more-toggle:hover,
 .composer-tools-more-toggle:focus-visible{
-  color:hsl(0 0% 100%);
-  background:hsl(0 0% 100%/.08);
+  color:var(--cg-text);
+  background:var(--cg-surface-hover);
   outline:0;
 }
 .composer-tools-item:focus-visible,
-.composer-tools-more-toggle:focus-visible{box-shadow:inset 0 0 0 2px hsl(0 0% 100%/.36)}
-.composer-tools-item.is-active{color:hsl(0 0% 100%);background:hsl(0 0% 100%/.1)}
-.composer-tools-icon{width:22px;height:22px;color:hsl(0 0% 100%/.78)}
+.composer-tools-more-toggle:focus-visible{box-shadow:inset 0 0 0 2px var(--cg-border-strong)}
+.composer-tools-item.is-active{color:var(--cg-text);background:var(--cg-surface-hover)}
+.composer-tools-icon{width:22px;height:22px;color:var(--cg-text-secondary)}
 .composer-tools-item:hover .composer-tools-icon,
 .composer-tools-item:focus-visible .composer-tools-icon,
 .composer-tools-more-toggle:hover .composer-tools-icon,
-.composer-tools-more-toggle:focus-visible .composer-tools-icon{color:hsl(0 0% 100%)}
+.composer-tools-more-toggle:focus-visible .composer-tools-icon{color:var(--cg-text)}
 .composer-tools-icon svg{width:18px;height:18px}
 .composer-tools-copy{gap:0;line-height:20px}
 .composer-tools-copy > span{font-size:14px;font-weight:500;color:inherit}
 .composer-tools-copy small,
 .composer-tools-item kbd{display:none}
 .composer-tools-more-toggle .composer-tools-copy{flex:1;min-width:0}
-.composer-tools-disclosure{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:hsl(0 0% 100%/.58);transition:transform .15s ease,color .15s ease}
+.composer-tools-disclosure{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:var(--cg-text-muted);transition:transform .15s ease,color .15s ease}
 .composer-tools-disclosure.is-expanded{transform:none}
 .composer-tools-more-toggle:hover .composer-tools-disclosure,
-.composer-tools-more-toggle:focus-visible .composer-tools-disclosure{color:hsl(0 0% 100%)}
+.composer-tools-more-toggle:focus-visible .composer-tools-disclosure{color:var(--cg-text)}
 .composer-tools-more-items{
   margin-top:4px;
   padding-top:4px;
-  border-top:1px solid hsl(0 0% 100%/.1);
+  border-top:1px solid var(--cg-border);
 }
 .composer-tools-more-items .composer-tools-item{font-size:13.5px}
 
@@ -9319,30 +9320,24 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 
 @media(max-width:768px){
   .composer-tools-menu{
-    width:min(224px,calc(100vw - 24px));
+    width:min(272px,calc(100vw - 24px));
     max-height:min(70vh,560px);
-    padding:6px;
-    border-radius:16px;
+    padding:8px;
+    border-radius:18px;
   }
   .composer-tools-heading{display:none}
   .composer-tools-item,
   .composer-tools-more-toggle{
-    min-height:46px;
-    height:46px;
-    padding:7px 8px;
-    gap:12px;
-    border-radius:10px;
-    font-size:14px;
+    min-height:56px;
+    height:56px;
+    padding:6px 8px;
+    gap:16px;
+    border-radius:12px;
+    font-size:16px;
   }
-  .composer-tools-more-toggle{color:hsl(0 0% 100%/.94)}
-  .composer-tools-mobile-more-items .composer-tools-item{
-    min-height:44px;
-    height:44px;
-  }
-  .composer-tools-more-items .composer-tools-item + .composer-tools-item,
-  .composer-tools-more-toggle + .composer-tools-more-items .composer-tools-item{margin-top:1px}
-  .composer-tools-mobile-more-items{margin-top:4px;padding-top:4px}
-  .composer-tools-mobile-more-items .composer-tools-copy small{display:none}
+  .composer-tools-item + .composer-tools-item,
+  .composer-tools-more-toggle + .composer-tools-item{margin-top:2px}
+  .composer-tools-copy > span{font-size:16px}
   #topicComposerToolsBtn,
   #chatComposerToolsBtn{width:44px;min-width:44px;height:44px;min-height:44px}
 }

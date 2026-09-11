@@ -495,24 +495,43 @@
     border-radius: 12px !important;
   }
 
-  /* Reference menu is attachment-only: hide the desktop twin list,
-     plugin directory and search footer on phones. */
+  /* Reference menu is one flat, scrollable list on phones: the desktop twin
+     list and the footer filter stay hidden, but connected plugins now stay
+     visible below the tool rows (see ComposerToolsMenu). */
   body #composerToolsMenu .composer-tools-desktop-items,
-  body #composerToolsMenu .composer-tools-plugins,
   body #composerToolsMenu .composer-tools-section-heading,
   body #composerToolsMenu .composer-tools-footer-search {
     display: none !important;
   }
 
-  body #composerToolsMenu .composer-tools-icon {
-    width: 32px !important;
-    height: 32px !important;
+  body #composerToolsMenu .composer-tools-icon,
+  body #composerToolsMenu .composer-plugin-mark {
+    width: 40px !important;
+    height: 40px !important;
     border-radius: 50% !important;
     background: var(--cg-surface-raised) !important;
     color: var(--cg-text) !important;
   }
 
+  body #composerToolsMenu .composer-plugin-mark {
+    flex-basis: 40px !important;
+  }
+
+  body #composerToolsMenu .composer-plugin-mark svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  body #composerToolsMenu .composer-tools-plugin-item {
+    min-height: 56px !important;
+    border-radius: 12px !important;
+  }
+
+  body #composerToolsMenu .composer-tools-plugin-name {
+    font-size: 16px !important;
+  }
+
   body #composerToolsMenu .composer-tools-copy span {
-    font-size: 15px !important;
+    font-size: 16px !important;
   }
 }

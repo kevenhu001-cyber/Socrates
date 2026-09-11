@@ -270,3 +270,40 @@ test('desktop workflow selection embeds a themed token in the editable content',
     fullPage: true,
   });
 });
+
+test('composer plus menu lists only connected plugins', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route(/\/api\/(v2\/)?project-connectors(\?|$)/, (route) => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        mode: 'oomol-project-connector',
+        configured: true,
+        connectors: [
+          { id: 'github', name: 'GitHub', description: 'Repos.', capabilities: ['Repos'], authType: 'oauth', configured: true, connection: { status: 'connected' } },
+          { id: 'notion', name: 'Notion', description: 'Pages.', capabilities: ['Pages'], authType: 'oauth', configured: true, connection: null },
+        ],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.locator('#topicComposerToolsBtn').click();
+  const menu = page.locator('#composerToolsMenu');
+  await expect(menu).toBeVisible();
+
+  // Connected plugin present; unconfigured plugin absent entirely.
+  const github = menu.locator('[data-composer-plugin="github"]');
+  await expect(github).toBeVisible();
+  await expect(github.locator('.composer-plugin-mark svg')).toHaveCount(1);
+  await expect(menu.locator('[data-composer-plugin="notion"]')).toHaveCount(0);
+
+  // The row toggles the plugin selection and shows the check affordance.
+  await github.click();
+  await expect(github).toHaveClass(/is-selected/);
+  await expect(github.locator('.composer-tools-check')).toHaveCount(1);
+  await expect(github).toHaveAttribute('aria-pressed', 'true');
+});
