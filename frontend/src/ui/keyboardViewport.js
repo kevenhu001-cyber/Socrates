@@ -149,7 +149,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const viewport = window.visualViewport;
   let updateFrame = 0;
   let anchorFrame = 0;
-  let anchorClearTimer = 0;
+  let anchorRefreshTimer = 0;
   let motionFrame = 0;
   let blurRecheckTimer = 0;
   /* -1 forces the first write to apply, so --keyboard-inset and
@@ -188,23 +188,32 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   /* ── Transcript scroll anchoring ────────────────────────────────────
-   * A keyboard transition changes the transcript's flex height. The
-   * reader's intent is captured once, before the first frame writes the
-   * new inset, and restored after every layout commit:
+   * The keyboard session is the anchoring lifetime: an anchor is captured
+   * when the composer takes focus (before any keyboard geometry lands),
+   * re-applied on every visualViewport resize/pan and after each layout
+   * commit, and refreshed once the geometry is calm:
    *
    *   - bottom-follow: the latest answer is kept flush above the composer
    *     (snap, not a second animation that would amplify the lift);
-   *   - history: the exact scrollTop from before the change is kept
-   *     (clamped to the new range) so the visible text never jumps and is
-   *     never forced back to the bottom.
+   *   - history: the reader's content stays at the same visual position —
+   *     a visualViewport pan is compensated in scrollTop and the captured
+   *     offset is clamped to the new range, never forced to the bottom.
    *
    * Any wheel/touch/key gesture after the capture abandons the anchor —
-   * a live gesture always wins. */
+   * a live gesture always wins — and the anchor is re-captured once the
+   * gesture settles so the next keyboard change still compensates. */
+
+  const ANCHOR_REFRESH_MS = 280;
 
   const transcriptList = () => {
     try {
       return typeof document !== 'undefined' ? document.getElementById('msgList') : null;
     } catch (_) { return null; }
+  };
+
+  const viewportOffsetTop = () => {
+    const value = viewport ? Number(viewport.offsetTop) : 0;
+    return Number.isFinite(value) ? value : 0;
   };
 
   const captureTranscriptAnchor = () => {
@@ -215,30 +224,43 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     return {
       list,
       scrollTop: Number(list.scrollTop) || 0,
+      offsetTop: viewportOffsetTop(),
       pinned: !scrolledAway && distance <= KEYBOARD_PIN_SLACK,
       intentAt: getLastScrollIntentAt(),
     };
   };
 
-  const armTranscriptAnchorClear = () => {
-    if (anchorClearTimer) clearTimeout(anchorClearTimer);
-    /* The anchor only has to outlive the lift plus one layout settle; a
-       lingering anchor would fight unrelated later layout shifts. */
-    anchorClearTimer = setTimeout(() => {
-      anchorClearTimer = 0;
-      transcriptAnchor = null;
-    }, KEYBOARD_LIFT_MS + 200);
-  };
-
-  const clearTranscriptAnchor = () => {
-    if (anchorClearTimer) { clearTimeout(anchorClearTimer); anchorClearTimer = 0; }
+  const dropTranscriptAnchor = () => {
     if (anchorFrame) { cancelAnimationFrame(anchorFrame); anchorFrame = 0; }
     transcriptAnchor = null;
   };
 
+  const clearTranscriptAnchor = () => {
+    if (anchorRefreshTimer) { clearTimeout(anchorRefreshTimer); anchorRefreshTimer = 0; }
+    dropTranscriptAnchor();
+  };
+
+  /* Re-capture from the settled geometry so later keyboard changes
+     compensate from the reader's latest position instead of a stale one.
+     Once the composer has lost focus and the close motion has settled,
+     the anchor is no longer needed. */
+  const scheduleAnchorRefresh = () => {
+    if (anchorRefreshTimer) clearTimeout(anchorRefreshTimer);
+    anchorRefreshTimer = setTimeout(() => {
+      anchorRefreshTimer = 0;
+      if (motionFrame) { scheduleAnchorRefresh(); return; }
+      if (isInputFocused()) {
+        transcriptAnchor = captureTranscriptAnchor();
+        return;
+      }
+      clearTranscriptAnchor();
+    }, ANCHOR_REFRESH_MS);
+  };
+
   const beginTranscriptAnchor = () => {
+    if (transcriptAnchor) return;
     transcriptAnchor = captureTranscriptAnchor();
-    armTranscriptAnchorClear();
+    scheduleAnchorRefresh();
   };
 
   const restoreTranscriptAnchor = () => {
@@ -252,10 +274,15 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         maxScrollTop: list.scrollHeight - list.clientHeight,
         scrolledAway: Boolean(window.stateStore.read('_userScrolledAway')),
         userIntentAfterCapture: getLastScrollIntentAt() > anchor.intentAt,
+        panDelta: viewportOffsetTop() - anchor.offsetTop,
       },
     );
     if (action.type === 'none') {
-      clearTranscriptAnchor();
+      /* A live gesture owns the scroll: drop the stale anchor but watch
+         for calm so the next keyboard change re-anchors from the new
+         reader position. */
+      dropTranscriptAnchor();
+      scheduleAnchorRefresh();
       return;
     }
     if (action.type === 'follow-bottom') {
@@ -307,14 +334,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
     if (roundedTarget === targetInset && motionFrame === 0 && appliedInset === roundedTarget) return;
     targetInset = roundedTarget;
-
-    /* Capture the reader's position once per transition, before the first
-     * frame writes, and keep it across progressive samples (iOS) until
-     * the motion settles. */
-    if (appliedInset >= 0) {
-      if (!transcriptAnchor) beginTranscriptAnchor();
-      else armTranscriptAnchorClear();
-    }
 
     /* Progressive viewports (iOS) deliver many small steps; a short glide
      * between samples keeps the motion continuous there too. Discrete
@@ -440,6 +459,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     applyInset(stableMeasuredInset(focused));
     applyTopicComposerFocused(focused);
     if (focused) scheduleTopicEnsure();
+    /* Anchoring follows the whole keyboard session: focus happens before
+       the first geometry change, so capturing here covers layout-resize
+       keyboards (Android/Capacitor, --keyboard-inset stays 0) as well as
+       overlay keyboards. Every visualViewport resize/pan re-applies the
+       captured reader position after the layout commit. */
+    if (focused || transcriptAnchor) {
+      beginTranscriptAnchor();
+      scheduleTranscriptRestore();
+      scheduleAnchorRefresh();
+    }
   };
 
   const schedule = () => {

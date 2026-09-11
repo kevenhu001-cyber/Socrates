@@ -41,6 +41,46 @@ test('history reader restores the captured offset (not the bottom)', () => {
   assert.deepEqual(action, { type: 'restore', top: 600 });
 });
 
+test('visual viewport pan shifts the restore target to keep content visually stable', () => {
+  const action = decideKeyboardAnchorAction(
+    { scrollTop: 600, pinned: false },
+    {
+      maxScrollTop: 3703,
+      scrolledAway: true,
+      userIntentAfterCapture: false,
+      panDelta: 120,
+    },
+  );
+  assert.deepEqual(action, { type: 'restore', top: 720 });
+});
+
+test('positive pan is clamped to the scrollable range and negative pan floors at zero', () => {
+  assert.deepEqual(
+    decideKeyboardAnchorAction(
+      { scrollTop: 3600, pinned: false },
+      {
+        maxScrollTop: 3703,
+        scrolledAway: true,
+        userIntentAfterCapture: false,
+        panDelta: 300,
+      },
+    ),
+    { type: 'restore', top: 3703 },
+  );
+  assert.deepEqual(
+    decideKeyboardAnchorAction(
+      { scrollTop: 40, pinned: false },
+      {
+        maxScrollTop: 3703,
+        scrolledAway: true,
+        userIntentAfterCapture: false,
+        panDelta: -120,
+      },
+    ),
+    { type: 'restore', top: 0 },
+  );
+});
+
 test('restore clamps to the current scrollable range', () => {
   assert.deepEqual(
     decideKeyboardAnchorAction(
@@ -92,21 +132,22 @@ test('missing or non-finite anchor input is a no-op / clamped to zero', () => {
   );
 });
 
-test('property: restore never exceeds the range and never passes the capture', () => {
+test('property: restore never exceeds the range and never passes capture + pan', () => {
   fc.assert(
     fc.property(
       fc.double({ min: -2000, max: 5000, noNaN: true }),
       fc.double({ min: 0, max: 5000, noNaN: true }),
-      (captured, maxScrollTop) => {
+      fc.double({ min: -400, max: 400, noNaN: true }),
+      (captured, maxScrollTop, panDelta) => {
         const action = decideKeyboardAnchorAction(
           { scrollTop: captured, pinned: false },
-          { maxScrollTop, scrolledAway: true, userIntentAfterCapture: false },
+          { maxScrollTop, scrolledAway: true, userIntentAfterCapture: false, panDelta },
         );
         assert.equal(action.type, 'restore');
         if (action.type !== 'restore') return;
         assert.ok(action.top >= 0);
         assert.ok(action.top <= maxScrollTop);
-        assert.ok(action.top <= Math.max(0, captured));
+        assert.ok(action.top <= Math.max(0, captured + panDelta));
       },
     ),
     { numRuns: 200 },

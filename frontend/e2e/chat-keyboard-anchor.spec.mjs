@@ -229,3 +229,90 @@ test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }
   expect(Math.abs(state.scrollTop - 400)).toBeLessThanOrEqual(1);
   expect(state.distanceFromBottom).toBeGreaterThan(64);
 });
+
+test('visual viewport pan compensates a history reader and returns on un-pan', async ({ page }) => {
+  await seedChat(page);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, bubbles: true }));
+    list.scrollTop = 600;
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(100);
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
+  await page.waitForTimeout(500);
+  const settled = await transcriptState(page);
+
+  /* iOS pans the visual viewport down while the keyboard is up. The
+     composer lift target is unchanged (offsetTop is included in the
+     measurement), but the transcript must compensate the pan so the
+     reader's content stays under the same visual position. */
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 410, offsetTop: 100 }));
+  await page.waitForTimeout(420);
+  const panned = await transcriptState(page);
+  expect(panned.away).toBe(true);
+  expect(panned.scrollTop).toBe(settled.scrollTop + 100);
+  expect(panned.anchorText).toBe(settled.anchorText);
+
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510, offsetTop: 0 }));
+  await page.waitForTimeout(420);
+  const unpanned = await transcriptState(page);
+  expect(unpanned.scrollTop).toBe(settled.scrollTop);
+  expect(unpanned.anchorText).toBe(settled.anchorText);
+  expect(unpanned.distanceFromBottom).toBeGreaterThan(64);
+});
+
+test('layout-viewport compression (Android resizes-content) follows pinned and anchors history', async ({ page }) => {
+  await seedChat(page);
+
+  /* Pinned: the layout shrinks like an Android resize-content keyboard. */
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  });
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(150);
+  await page.setViewportSize({ width: 390, height: 544 });
+  await page.waitForTimeout(450);
+  expect((await transcriptState(page)).distanceFromBottom).toBeLessThanOrEqual(4);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const body = list.querySelector('.msg:last-child .msg-body');
+    const late = document.createElement('div');
+    late.style.height = '200px';
+    body.appendChild(late);
+  });
+  await page.waitForTimeout(300);
+  expect((await transcriptState(page)).distanceFromBottom).toBeLessThanOrEqual(4);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(450);
+  expect((await transcriptState(page)).distanceFromBottom).toBeLessThanOrEqual(4);
+
+  /* History: the same compression must not move the reader. */
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, bubbles: true }));
+    list.scrollTop = 600;
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
+  const before = await transcriptState(page);
+  await page.setViewportSize({ width: 390, height: 544 });
+  await page.waitForTimeout(450);
+  const shrunk = await transcriptState(page);
+  expect(shrunk.scrollTop).toBe(before.scrollTop);
+  expect(shrunk.anchorText).toBe(before.anchorText);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(450);
+  const restored = await transcriptState(page);
+  expect(restored.scrollTop).toBe(before.scrollTop);
+  expect(restored.anchorText).toBe(before.anchorText);
+});
+

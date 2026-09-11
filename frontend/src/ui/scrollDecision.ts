@@ -52,6 +52,13 @@ export interface KeyboardAnchorContext {
   scrolledAway: boolean;
   /** Whether a newer wheel/touch/key gesture arrived after capture. */
   userIntentAfterCapture: boolean;
+  /**
+   * Visual-viewport pan since capture (visualViewport.offsetTop delta).
+   * iOS Safari pans the visual viewport to reveal a focused composer; the
+   * transcript compensates by the same amount so the reader's content
+   * stays under the same visual position.
+   */
+  panDelta?: number;
 }
 
 export type KeyboardAnchorAction =
@@ -65,8 +72,9 @@ export type KeyboardAnchorAction =
  *  - `follow-bottom` — the reader was following the latest answer and has
  *    not scrolled away; keep the newest content above the composer.
  *  - `restore` — the reader was inspecting history; return to the exact
- *    offset captured before the layout change (clamped to the new range)
- *    without ever forcing the bottom.
+ *    offset captured before the layout change, shifted by any visual
+ *    viewport pan and clamped to the new range, without ever forcing the
+ *    bottom.
  *  - `none` — a newer user gesture owns the scroll now; touch nothing.
  */
 export function decideKeyboardAnchorAction(
@@ -78,8 +86,9 @@ export function decideKeyboardAnchorAction(
   const maxTop = Number.isFinite(context.maxScrollTop)
     ? Math.max(0, context.maxScrollTop)
     : 0;
+  const pan = Number.isFinite(context.panDelta) ? (context.panDelta as number) : 0;
   const captured = Number.isFinite(anchor.scrollTop)
-    ? Math.max(0, anchor.scrollTop)
+    ? Math.max(0, anchor.scrollTop + pan)
     : 0;
   return { type: 'restore', top: Math.min(maxTop, captured) };
 }
