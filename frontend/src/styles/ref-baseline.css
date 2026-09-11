@@ -1039,6 +1039,26 @@ body.workspace-active #appShell .main-page {
     min-width: 36px !important;
     height: 36px !important;
     min-height: 36px !important;
+    border-radius: 50% !important;
+  }
+
+  /* The two edge actions are one optical pair: equal circles on the same
+     52px midline. The attach action uses a quiet raised surface while the
+     primary voice/send action keeps the high-contrast fill. */
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn {
+    align-self: center !important;
+    justify-self: center !important;
+    background: var(--cg-surface-raised) !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn:hover {
+    background: var(--cg-surface-hover) !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn svg {
+    width: 20px !important;
+    height: 20px !important;
+    transform: none !important;
   }
 
   #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
@@ -1046,6 +1066,18 @@ body.workspace-active #appShell .main-page {
     min-width: 36px !important;
     height: 36px !important;
     min-height: 36px !important;
+    align-self: center !important;
+    justify-self: center !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtnContent {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    height: 100%;
   }
 
   /* P_effort-send-adjacency — the mic track is gone, so the send button
@@ -1811,17 +1843,21 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 @media (min-width: 769px) {
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
     #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
-    height: 54px !important;
-    min-height: 54px !important;
-    padding: 1px 6px 1px 2px !important;
-    border-radius: 999px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    padding: 0 6px !important;
+    border-radius: 26px !important;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
     #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
-    grid-template-columns: 40px minmax(0, 1fr) auto 32px 34px !important;
-    grid-template-rows: 52px !important;
+    grid-template-columns: 40px minmax(0, 1fr) auto 32px 36px !important;
+    grid-template-rows: 100% !important;
     column-gap: 4px !important;
+    align-items: center !important;
+    align-self: stretch !important;
+    height: 100% !important;
+    min-height: 0 !important;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
@@ -1834,16 +1870,33 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn {
     grid-column: 1 !important;
     grid-row: 1 !important;
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    align-self: center !important;
+    justify-self: center !important;
+    border-radius: 50% !important;
+    background: var(--cg-surface-raised) !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn:hover {
+    background: var(--cg-surface-hover) !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .attach-btn svg {
+    width: 20px !important;
+    height: 20px !important;
+    transform: none !important;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
     #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .footer-left-group .effort-picker {
     grid-column: 3 !important;
     grid-row: 1 !important;
+    align-self: center !important;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
@@ -1855,24 +1908,43 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     min-width: 32px !important;
     height: 32px !important;
     min-height: 32px !important;
+    align-self: center !important;
+    justify-self: center !important;
+    /* The 20px microphone glyph carries more visual mass below its SVG
+       midpoint; lift the control one device pixel to share the edge
+       buttons' optical axis. */
+    transform: translateY(-1px) !important;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
     #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-input-footer .send-btn {
     grid-column: 5 !important;
     grid-row: 1 !important;
-    width: 34px !important;
-    min-width: 34px !important;
-    height: 34px !important;
-    min-height: 34px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    align-self: center !important;
+    justify-self: center !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+  }
+
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #sendBtnContent {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    height: 100%;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
     #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
-    height: 52px !important;
-    min-height: 52px !important;
-    max-height: 52px !important;
-    padding: 14px 4px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    padding: 13px 4px !important;
   }
 
   /* Give the pill gutters against the viewport edge so it reads as a
