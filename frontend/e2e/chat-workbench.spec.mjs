@@ -141,6 +141,43 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
+test('desktop idle composer keeps its edge controls circular and optically aligned', async ({ page }) => {
+  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
+
+  const geometry = await page.evaluate(() => {
+    const measure = (selector) => {
+      const node = document.querySelector(selector);
+      const rect = node?.getBoundingClientRect();
+      const style = node ? getComputedStyle(node) : null;
+      return rect && style ? {
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        centerY: rect.top + rect.height / 2,
+        radius: style.borderRadius,
+        background: style.backgroundColor,
+      } : null;
+    };
+    return {
+      wrap: measure('#chatInputWrap'),
+      attach: measure('#chatComposerToolsBtn'),
+      mic: measure('#chatMobileMicBtn'),
+      send: measure('#sendBtn'),
+    };
+  });
+
+  expect(geometry.wrap?.height).toBe(52);
+  expect(geometry.wrap?.radius).toBe('26px');
+  expect(geometry.attach?.width).toBe(36);
+  expect(geometry.attach?.height).toBe(36);
+  expect(geometry.attach?.radius).toBe('50%');
+  expect(geometry.attach?.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(geometry.send?.width).toBe(36);
+  expect(geometry.send?.height).toBe(36);
+  expect(geometry.send?.radius).toBe('50%');
+  expect(Math.abs((geometry.attach?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(0.5);
+  expect(Math.abs((geometry.mic?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(0.5);
+});
+
 test('mobile chat workbench keeps a focusable multiline composer without horizontal overflow', async ({ page }) => {
   await prepareChatWorkbench(page, {
     messages: BASE_MESSAGES,

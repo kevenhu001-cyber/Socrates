@@ -1,12 +1,11 @@
 import { createRoot, type Root } from 'react-dom/client';
-import { useLayoutEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import {
   getChatRuntimeSnapshot,
   subscribeToChatRuntime,
 } from '../chatRuntime.bridge';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { stateStore } from '../../state/store.js';
 import { MessageItem } from './MessageItem';
 import type { LegacyChatMessage } from '../types/domain';
 
@@ -65,22 +64,13 @@ function MessageList() {
     getVisibleMessagesSnapshot,
   );
   const items = visibleMessages;
-  // Legacy addMessage schedules its scroll before React has committed the
-  // new bubble. On a keyboard-constrained viewport that leaves the transcript
-  // one bubble above the true bottom. Scroll after this list's DOM commit,
-  // while still respecting a reader who deliberately scrolled away.
-  //
-  // Only scroll for a just-sent user message. Assistant entries (stream
-  // finalization, history restore) never move the viewport: the page must
-  // stay exactly where it is when an answer finishes.
-  useLayoutEffect(() => {
-    if (stateStore.read('_userScrolledAway')) return;
-    const list = document.getElementById(MSG_LIST_ID);
-    if (!list) return;
-    const last = items.length ? items[items.length - 1] : null;
-    const lastRole = last && typeof last.role === 'string' ? last.role : '';
-    if (lastRole === 'user') list.scrollTop = list.scrollHeight;
-  }, [items.length, items.length ? entryId(items[items.length - 1], `idx-${items.length - 1}`) : null]);
+  /* P_zero-delay — scroll ownership was here, but it raced with
+     turnAnchor.scheduleActiveTurnToTop (single owner now). The
+     send-time anchor in chat/turnAnchor.ts already moves the
+     viewport to the user bubble on commit; a second scrollTop
+     write from React caused the page to jump a frame later.
+     History mid-list scroll restoration lives in
+     ui/scroll.js#scrollToBottomIfPinned. */
 
   if (items.length === 0) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;

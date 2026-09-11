@@ -237,6 +237,16 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       shapeFrameRef.current = null;
       const wrap = editorDom.closest<HTMLElement>('.chat-input-wrap, .topic-input-wrap');
       if (!wrap) return;
+      /* P_zero-delay — when the parent page is mid-view-swap (e.g. the
+         topic-setup → chat-view flip in startSession()), the wrap is
+         inside an ancestor that just lost `display: none`. Its first
+         measurement on that frame is the pre-layout collapsed box, not
+         the post-layout box, so any animation sourced from it reads as
+         a 0 → 68 px jump on the very frame the user expects to be
+         static. Bail instead of writing transform-style state that the
+         browser will immediately invalidate on the next layout pass. */
+      const hiddenAncestor = editorDom.closest('.chat-view.hidden, .topic-setup.hidden, .main-inner.hidden');
+      if (hiddenAncestor) return;
       const style = getComputedStyle(editorDom);
       const lineHeight = Number.parseFloat(style.lineHeight) || 24;
       const isMultiline = wrap.classList.contains('composer-multiline');

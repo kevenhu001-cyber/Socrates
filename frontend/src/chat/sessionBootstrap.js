@@ -122,6 +122,18 @@ export async function startSession(){
     if(!tutorExploration)return;
   }
 
+  /* A new session owns a new streaming lifecycle. Retire the previous
+     session's controller before changing the session id or replacing its
+     messages; doing this later would also abort a placeholder created for
+     the new session. */
+  if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
+  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  turnState.activeChatCtl=null;
+  window._activeChatAbort=null;
+  turnState.chatStreaming=false;
+  turnState.chatStopMode=false;
+  try{delete window.__socratesSyncCtl}catch(_){}
+
   /* P_send-instant — common state setup. Run BEFORE the branch so both
      chat and tutor modes share the same fresh session identity. The
      individual branches then do their own synchronous view-swap; this
@@ -171,68 +183,66 @@ export async function startSession(){
 
   if(_appMode()==="chat" || _deepResearchOn){
 
-    /* STEP 1 — flip to chat view + commit the user bubble SYNCHRONOUSLY.
-       Everything in this block runs in the same task as the click. */
+    /* STEP 1 — complete the visible swap in the click task. Browser paint
+       happens after this task, so a full-document View Transition only held
+       the landing page on screen longer and added a 300 ms cross-fade. */
     document.getElementById("topicSetup").classList.add("hidden");
     document.getElementById("diagnosticView").classList.add("hidden");
     document.getElementById("chatView").classList.remove("hidden");
     if (typeof window.hideMainPages === "function") window.hideMainPages();
     toggleChatTopBarEls(true);
     clearLegacyMsgListChildren();
-    publishReactChatRuntime({type:"state-synced",reason:"new-chat-start"});
 
-    /* addMessage returns the clientId of the new bubble; the background
-       task uses it to patch attachments once buildMessageContent completes. */
+    /* The user turn must precede its assistant placeholder in the
+       authoritative message array. The old controller was retired above;
+       askChatTurn will explicitly claim this new placeholder. */
     var _startUserClientId = addMessage("user", stateStore.read("topic"), null, null, []);
-    /* Reset attachments + chips immediately so the topic-setup composer
-       looks "empty" once the view swap completes. */
+    var _startSaveP = saveState.saveInFlight || null;
+    var _syncCtl = null;
+    if(typeof window.addStreamingMessage === "function"){
+      try{
+        _syncCtl = window.addStreamingMessage({onRetry:function(){
+          try{ console.warn("[chat] sync start retry not wired yet"); }catch(_){}
+        }});
+      }catch(_){ /* askChatTurn will create the normal controller */ }
+    }
+    if(_syncCtl){try{window.__socratesSyncCtl=_syncCtl}catch(_){}}
+
+    /* Reset attachments + chips immediately so the topic composer cannot
+       leak its draft state into the now-visible chat composer. */
     if(typeof resetAttachments === "function") resetAttachments();
     if(typeof renderAttachmentChips === "function") renderAttachmentChips();
     if(typeof updateSendBtn === "function") updateSendBtn();
     updateKB();
     updateChatStats();
 
-    /* STEP 2 — defer to the next task. The current task still has
-       pending microtasks (React commit, scroll, …) that should land on
-       the topic-setup DOM, not the freshly-flipped chat-view. Same
-       reason as the original P_microtask-defer comment for askChatTurn:
-       addStreamingMessage() captures ownerSessionId immediately and
-       late microtasks could otherwise bump the placeholder out of slot. */
+    /* STEP 2 — let the React message commit and send-time anchor land before
+       starting network preparation. The visible placeholder remains owned
+       by this session throughout the deferred work. */
     setTimeout(async function(){
       /* F2b — flush cross-round transients (search cache, call metadata,
-         composer draft, plan fields, _pendingChat*). Placed BEFORE the
-         new-session abort so even if the abort fires during the helper,
-         we never carry the previous session's web-search result into the
-         new chat. */
+         composer draft, plan fields, _pendingChat*) before assembling the
+         first model request. */
       resetSessionTransients();
-      /* P_new-session-context-leak — also abort any in-flight stream from
-         a previous session so its late onDelta/finish callbacks can't
-         write into the freshly-cleared stateStore.read("messages"). */
-      if(window._activeChatAbort){try{window._activeChatAbort("new-session")}catch(_){}}
-      if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
-      turnState.activeChatCtl=null;
-      window._activeChatAbort=null;
-      turnState.chatStreaming=false;
-      turnState.chatStopMode=false;
-      /* P_attachments-start — assemble the first user message the same
-         way submitChatMessage does. Fire this in parallel with the
-         session save so neither blocks the other; both complete before
-         askChatTurn fires. */
-      var builtP = (typeof buildMessageContent === "function")
+      /* P_attachments-start — only block on buildMessageContent when
+         the topic actually carries attachments (vision/describe
+         roundtrips). Plain-text topics skip the await entirely, so
+         the click → first-token path is reduced to one macrotask. */
+      var _hasStartAttach = Array.isArray(window.attachments) && window.attachments.length > 0;
+      var builtP = (_hasStartAttach && typeof buildMessageContent === "function")
         ? buildMessageContent(topicForModel)
         : Promise.resolve({ rawText: topicForModel, parts: topicForModel, attachmentList: [] });
-      /* P_session-race — still awaits the save before askChatTurn so
-         requireOwnedSession() sees the row. The save runs concurrently
-         with buildMessageContent instead of blocking the view swap. */
-      var saveP = Promise.resolve(saveCurrentSession());
       var startBuilt;
       try {
-        [startBuilt] = await Promise.all([builtP, saveP]);
+        /* addMessage started the initial save synchronously. Await that same
+           request instead of starting a duplicate POST so createChatTurn can
+           attach to the new session row. The placeholder is already visible
+           while this and attachment preparation run. */
+        if(!_startSaveP){
+          try{_startSaveP=saveCurrentSession()}catch(_){_startSaveP=null}
+        }
+        [startBuilt] = await Promise.all([builtP, Promise.resolve(_startSaveP)]);
       } catch {
-        /* If either background call fails, fall back to a plain-text
-           turn so the user can still chat; buildMessageContent failure
-           on a topic without attachments is impossible, but defending
-           here keeps the click robust to a server hiccup. */
         startBuilt = { rawText: topicForModel, parts: topicForModel, attachmentList: [] };
       }
       var startChatContent = startBuilt.parts || topicForModel;

@@ -51,11 +51,22 @@ function _addStreamingMessage(opts) {
 
 export async function askChatTurn(userText,pendingOverride){
   publishThinkingTurnStart();
+  /* startSession can create the first assistant placeholder before any
+     network work so the transition never opens onto an empty transcript.
+     Claim it before the normal "supersede previous turn" cleanup; otherwise
+     that cleanup disposes the controller we are about to use. */
+  var precreatedCtl=null;
+  try{
+    if(typeof window!=="undefined"&&window.__socratesSyncCtl){
+      precreatedCtl=window.__socratesSyncCtl;
+      try{delete window.__socratesSyncCtl}catch(_){}
+    }
+  }catch(_){precreatedCtl=null}
   /* Abort the previous in-flight chat stream, if any. Without this the
      old streamCtl stays in "正在思考…" until its own 45 s timer fires,
      which makes the UI feel frozen when the user fires a follow-up
      while the previous reply is still in flight. */
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+  if(turnState.activeChatCtl&&turnState.activeChatCtl!==precreatedCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
   if(window._activeChatAbort){try{window._activeChatAbort("superseded")}catch(_){}}
   /* Capture this turn before any guard or await. New submit paths pass an
      immutable override; legacy edit/regenerate paths can still use the
@@ -65,6 +76,7 @@ export async function askChatTurn(userText,pendingOverride){
   /* No API configured: provide a minimal local echo so the chat panel
      is not dead. Tells the user how to enable a real model. */
   if(!hasUsableActive()){
+    if(precreatedCtl){try{precreatedCtl.abort()}catch(_){}}
     var fallback=userText
       ?"You said: \""+userText+"\". I can't actually reply yet because no model is configured — open Settings and add a provider to enable Chat mode."
       :"I'm in Chat mode but no model is configured. Open Settings to add a provider, and I'll be able to talk about \""+stateStore.read("topic")+"\" for real.";
@@ -77,7 +89,7 @@ export async function askChatTurn(userText,pendingOverride){
     var retryThisTurn=function(){
       quietTurn(askChatTurn(userText,pendingContent));
     };
-    var ctlOff=_addStreamingMessage({onRetry:retryThisTurn});
+    var ctlOff=precreatedCtl||_addStreamingMessage({onRetry:retryThisTurn});
     ctlOff.replaceWithError("You appear to be offline — check your connection and retry.",retryThisTurn);
     return;
   }
@@ -210,11 +222,19 @@ export async function askChatTurn(userText,pendingOverride){
      Spread the preview as individual console.warn lines so they show
      in the text output without needing to expand Array(2). */
   
-  var ctl=_addStreamingMessage({onRetry:function(){
-    /* Carry this turn's immutable content directly so retrying an older
-       multimodal turn can never pick up a newer draft's attachments. */
-    quietTurn(askChatTurn(userText,pendingContent));
-  }});
+  /* P_zero-delay — startSession() may have already created the
+     streaming controller in the same task as the click so the user
+     sees the assistant placeholder on the first paint. Reuse it
+     instead of spawning a second bubble (which would render twice
+     and double the React commit work). */
+  var ctl=precreatedCtl;
+  if(!ctl){
+    ctl=_addStreamingMessage({onRetry:function(){
+      /* Carry this turn's immutable content directly so retrying an older
+         multimodal turn can never pick up a newer draft's attachments. */
+      quietTurn(askChatTurn(userText,pendingContent));
+    }});
+  }
   /* M1 async — create the detached turn before streaming so a socket
      drop mid-turn leaves a resumable server-side run. Best-effort:
      a failed create falls back to the legacy unbound stream. The

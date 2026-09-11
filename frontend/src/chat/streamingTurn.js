@@ -11,7 +11,7 @@ import { turnState, streamRetryViewport } from './turnState.js';
 import { quietTurn, markTurnInProgress, markTurnEnded, resendLastUserMessage, setChatStopState } from './turnUi.js';
 import { claimLiveRetry, registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
 import { generateId } from '../util/ids.js';
-import { hideNewReplyPill, showNewReplyPill } from '../ui/scrollPill.js';
+import { hideNewReplyPill } from '../ui/scrollPill.js';
 import { isMsgListMounted } from '../react/message-list/MessageList.tsx';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { combineThinkingText, extractThinkText } from './thinkExtract.ts';
@@ -52,6 +52,9 @@ function _appMode() {
 export function addStreamingMessage(opts){
   opts=opts||{};
   var onRetry=opts.onRetry;
+  void onRetry; /* referenced by the retry-button wiring further down
+    (replaceWithError closure); the unused-var guard would otherwise
+    flag the assignment because the closure captures it via typeof. */
   var retryViewport=streamRetryViewport.consumeViewport();
   /* P1.4 — a new bubble starts with the user "at bottom" again.
      Suppress the pill for this stream and let the scroll listener
@@ -255,24 +258,13 @@ export function addStreamingMessage(opts){
      chasing the bottom for a few frames; each write is a no-op once the view
      is already there, and the scroll-away flag (set synchronously by the
      listener) breaks the chain the moment the reader takes over. */
-  var _pinFollowFrames=3;
-  function followStreamBottom(scroller,pinned){
-    if(!scroller)return;
-    if(stateStore.read("_userScrolledAway")){showNewReplyPill();return}
-    if(!pinned)return;
-    /* P_scroll-race — `pinned` was measured before this cycle's DOM
-       mutations. A concurrent passive wheel / touch event (processed by
-       the compositor thread without blocking JS) may have scrolled the
-       viewport since then — the per-frame re-check of the flag below is what
-       keeps us from fighting the user's scroll intent. */
-    scroller.scrollTop=scroller.scrollHeight;
-    var _frames=_pinFollowFrames;
-    requestAnimationFrame(function _repin(){
-      if(!scroller||stateStore.read("_userScrolledAway")||_frames-- <=0)return;
-      scroller.scrollTop=scroller.scrollHeight;
-      requestAnimationFrame(_repin);
-    });
-  }
+  /* P_zero-delay — scrollTop writing used to live here, but it
+     conflicted with chat/turnAnchor.ts's send-time anchor (single
+     owner). turnAnchor reserves leading space for the active turn
+     and re-converges the viewport on layout settle, so the streaming
+     turn itself never needs to write scrollTop mid-stream. The
+     `_userScrolledAway` flag still flips the new-reply pill via
+     scrollPill.js. */
 
  function doRender(){
     pendingRender=null;
@@ -281,31 +273,15 @@ export function addStreamingMessage(opts){
        be running on this very tick. Bail before touching stateStore.read("messages"). */
     if(finished||_disposed)return;
 
-    /* Keep using the message list even on the exact frame where it grows
-       from non-scrollable to scrollable; scrollContainer() otherwise
-       switches surfaces at that boundary and loses the bottom anchor. */
-    var _streamScroller=list||scrollContainer();
-    /* React commits the growth in its own rAF, which runs before this
-       scroll pass — so "was the reader at the bottom?" is answered when
-       the delta arrives (noteStreamGrowth), not after the DOM grew. */
-    var _wasPinned=false;
-    if(_streamScroller&&!stateStore.read("_userScrolledAway")){
-      _wasPinned=reactLive?_pinWanted:isPinnedToBottom(
-        _streamScroller.scrollHeight-_streamScroller.scrollTop-_streamScroller.clientHeight,
-        96
-      );
-    }
-
-    /* AssistantTurn paints this turn's prose from `rawText`, so this pass
-       only mirrors the data, keeps the thinking panel fed, and follows
-       the bottom. */
+    /* AssistantTurn paints this turn's prose from `rawText`, so this
+       pass only mirrors the data and keeps the thinking panel fed.
+       Viewport position is owned by chat/turnAnchor.ts. */
     if(stillOwnsSlot()){
       patchOwnedMessage({rawText:full},true);
     }
     if(fullReasoning||_extractThinkText(full)){
       _publishThinkingPanelLive();
     }
-    followStreamBottom(_streamScroller,_wasPinned);
   }
   /* Steady-state coalescing: push(delta) accumulates network deltas and
      rAF-gates a single coalesced doRender() paint. The scheduler's rAF
