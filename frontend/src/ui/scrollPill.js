@@ -28,6 +28,18 @@ function markUserScrollIntent(){
   lastUserScrollIntentAt = Date.now();
 }
 
+/* A layout compensation (chat/turnAnchor.ts retiring a spent answer
+   reserve) writes scrollTop upward while the visible content does not
+   move at all. Ignore the position listener for a beat so that
+   programmatic write is not misread as the reader scrolling away.
+   Wheel/touch/key handlers above still register real gestures. */
+let positionIntentSuppressedUntil = 0;
+
+export function suppressScrollPositionIntent(ms){
+  const duration = Number(ms);
+  positionIntentSuppressedUntil = Date.now() + (Number.isFinite(duration) && duration > 0 ? duration : 120);
+}
+
 export function showNewReplyPill(){
   const pill = document.getElementById("newReplyPill");
   if(pill) pill.classList.add("visible");
@@ -116,6 +128,13 @@ export function wireScrollPill(){
        followed by the scroll because wasPinned would already be
        false by the time the inset animation reached its target). */
     if(sc.dataset.autoScrolling === 'true') return;
+    if(Date.now() < positionIntentSuppressedUntil){
+      /* Programmatic layout compensation — keep the sampler in sync and
+         do not interpret the write as reader intent. */
+      lastScroller = sc;
+      lastScrollTop = sc.scrollTop;
+      return;
+    }
     const previousTop = sc===lastScroller ? lastScrollTop : null;
     lastScroller = sc;
     lastScrollTop = sc.scrollTop;

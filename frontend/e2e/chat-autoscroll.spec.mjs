@@ -300,3 +300,54 @@ test('sticky bottom resumes once the answer outgrows the prompt reserve', async 
   await page.evaluate(() => window.__finishStream());
   await page.waitForTimeout(200);
 });
+
+test('superseding a still-thinking turn keeps the send visually stable', async ({ page }) => {
+  await bootSendableChat(page);
+
+  /* First turn stays in its empty "thinking" state (no deltas pushed). */
+  await page.evaluate(() => window.submitChatMessage('First turn that stays in thinking'));
+  await expect.poll(() => page.evaluate(() => Boolean(
+    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-placeholder'),
+  ))).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true')).toBe(false);
+  await page.waitForTimeout(200);
+
+  const startTop = await page.evaluate(() => Math.round(document.getElementById('msgList').scrollTop));
+
+  /* Sample the scroller while the second send supersedes the empty turn.
+     Removing its reserve used to collapse the range and clamp scrollTop by
+     the reserve height (the send "flash"); the invisible stub keeps the
+     layout open until the new anchor glides past it. */
+  const framesPromise = page.evaluate(() => new Promise((resolve) => {
+    const list = document.getElementById('msgList');
+    const values = [];
+    const deadline = performance.now() + 1200;
+    const tick = () => {
+      values.push(Math.round(list.scrollTop));
+      if (performance.now() > deadline) { resolve(values); return; }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }));
+  await page.evaluate(() => window.submitChatMessage('Second turn supersedes the thinking one'));
+  const values = await framesPromise;
+
+  const minTop = Math.min(...values);
+  expect(startTop - minTop, JSON.stringify(values.slice(0, 20))).toBeLessThanOrEqual(150);
+
+  /* The new prompt lands at the viewport top and the spent stub is gone. */
+  await expect.poll(() => page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    if (list.dataset.turnAnchorSettling === 'true') return 9999;
+    const users = list.querySelectorAll('.msg.user');
+    const latest = users[users.length - 1];
+    if (!latest) return 9999;
+    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+  })).toBeLessThanOrEqual(24);
+  await expect.poll(() => page.evaluate(
+    () => document.querySelectorAll('#msgList [data-turn-stub]').length,
+  )).toBe(0);
+
+  await page.evaluate(() => window.__finishStream());
+  await page.waitForTimeout(200);
+});

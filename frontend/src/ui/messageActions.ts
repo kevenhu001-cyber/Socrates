@@ -94,6 +94,9 @@ export interface MessageEntry {
   _turnAnchorMode?: string;
   _turnViewportTarget?: number;
   _turnAnchorMarginTop?: number;
+  /** Superseded empty placeholder kept as an invisible layout stub until
+      the next turn's anchor glides past it (chat/turnAnchor.ts). */
+  _supersededStub?: boolean;
   _toolRunRev?: number;
 }
 
