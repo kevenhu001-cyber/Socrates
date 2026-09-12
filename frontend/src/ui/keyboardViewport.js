@@ -68,6 +68,11 @@ export const KEYBOARD_LIFT_MS = 220;
  * isolated jumps still use the fallback tween below. */
 export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 120;
 
+/* The composer has a compact one-row shape at rest and a two-row shape while
+ * the keyboard is active. Keep that shape on the same clock as the inset so
+ * the in-flow bar never changes height at a different time from its lift. */
+export const KEYBOARD_LAYOUT_PROGRESS_MS = KEYBOARD_LIFT_MS;
+
 export function isProgressiveKeyboardSample(
   lastSampleAt,
   sampleAt,
@@ -182,6 +187,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let targetInset = 0;
   let motionFrom = 0;
   let motionStart = 0;
+  let appliedLayoutProgress = 0;
+  let targetLayoutProgress = 0;
+  let layoutMotionFrom = 0;
+  let progressiveInsetMotion = false;
   let lastTargetAt = 0;
   let transitionDirection = 0;
   /* Reader position captured for the duration of a keyboard transition.
@@ -323,40 +332,83 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     anchorFrame = window.requestAnimationFrame(restoreTranscriptAnchor);
   };
 
-  /* One frame of the lift: write the current interpolated value and
-     re-anchor the transcript after the flex layout commits. */
-  const writeInsetFrame = (inset) => {
+  /* One frame of the lift: write the current interpolated inset and composer
+     shape together, then re-anchor the transcript after flex layout commits.
+     Keeping both writes here prevents the binary keyboard state from moving
+     the bar independently of the value that is actually lifting it. */
+  const writeInsetFrame = (inset, layoutProgress = appliedLayoutProgress) => {
     const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
-    if (roundedInset === appliedInset) return;
+    const normalizedProgress = Number.isFinite(layoutProgress)
+      ? Math.min(1, Math.max(0, layoutProgress))
+      : appliedLayoutProgress;
+    const progressChanged = Math.abs(normalizedProgress - appliedLayoutProgress) > 0.0005;
+    if (roundedInset === appliedInset && !progressChanged) return;
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
+    root.style.setProperty('--keyboard-layout-progress', String(normalizedProgress));
+    /* CSS cannot reliably multiply arbitrary custom-property numbers across
+     * all mobile engines. Publish the few endpoint-derived lengths alongside
+     * the normalized progress so the composer can follow this exact frame
+     * without starting a second CSS transition. */
+    root.style.setProperty('--keyboard-chat-height', `${56 + 54 * normalizedProgress}px`);
+    root.style.setProperty('--keyboard-chat-radius', `${28 - 4 * normalizedProgress}px`);
+    root.style.setProperty('--keyboard-chat-padding-bottom', `${4 * normalizedProgress}px`);
+    root.style.setProperty('--keyboard-bar-padding-bottom', `${10 - 2 * normalizedProgress}px`);
+    root.style.setProperty('--keyboard-chat-margin-bottom', `${6 * (1 - normalizedProgress)}px`);
+    root.style.setProperty('--keyboard-topic-height', `${64 + 56 * normalizedProgress}px`);
+    root.style.setProperty('--keyboard-topic-radius', `${28 - 4 * normalizedProgress}px`);
+    /* `data-keyboard-target-open` describes the native measurement and can
+     * update immediately. `data-keyboard-open` is the settled layout state;
+     * keeping it stable until the progress reaches an endpoint prevents the
+     * CSS composer mode from changing underneath an in-flight lift. */
+    if (normalizedProgress >= 0.999 && targetLayoutProgress > 0.5) {
+      root.dataset.keyboardOpen = 'true';
+    } else if (normalizedProgress <= 0.001 && targetLayoutProgress < 0.5) {
+      root.dataset.keyboardOpen = 'false';
+    }
     /* Raising the in-flow composer shrinks the transcript's flex viewport.
      * Re-anchor on the next frame, once the new height is measured. */
     if (transcriptAnchor) scheduleTranscriptRestore();
     appliedInset = roundedInset;
+    appliedLayoutProgress = normalizedProgress;
   };
 
   const stepMotion = (now) => {
     motionFrame = 0;
     const elapsed = now - motionStart;
     const t = KEYBOARD_LIFT_MS > 0 ? elapsed / KEYBOARD_LIFT_MS : 1;
+    const layoutT = KEYBOARD_LAYOUT_PROGRESS_MS > 0
+      ? elapsed / KEYBOARD_LAYOUT_PROGRESS_MS
+      : 1;
     if (t >= 1) {
-      writeInsetFrame(targetInset);
+      writeInsetFrame(targetInset, targetLayoutProgress);
+      progressiveInsetMotion = false;
       return;
     }
-    const value = motionFrom + (targetInset - motionFrom) * easeKeyboardLift(t);
-    writeInsetFrame(value);
+    const value = progressiveInsetMotion
+      ? targetInset
+      : motionFrom + (targetInset - motionFrom) * easeKeyboardLift(t);
+    const layoutValue = layoutMotionFrom
+      + (targetLayoutProgress - layoutMotionFrom) * easeKeyboardLift(layoutT);
+    writeInsetFrame(value, layoutValue);
     motionFrame = requestAnimationFrame(stepMotion);
   };
 
   const applyInset = (inset) => {
     const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+    const nextLayoutProgress = roundedTarget > 50 ? 1 : 0;
 
     /* Discrete layout states key off the settled measurement, not the
      * in-flight interpolated value, so they flip exactly once per
      * keyboard open/close. */
-    root.dataset.keyboardOpen = roundedTarget > 50 ? 'true' : 'false';
+    root.dataset.keyboardTargetOpen = roundedTarget > 50 ? 'true' : 'false';
 
-    if (roundedTarget === targetInset && motionFrame === 0 && appliedInset === roundedTarget) return;
+    if (
+      roundedTarget === targetInset
+      && nextLayoutProgress === targetLayoutProgress
+      && motionFrame === 0
+      && appliedInset === roundedTarget
+      && Math.abs(appliedLayoutProgress - nextLayoutProgress) < 0.0005
+    ) return;
 
     const now = (typeof performance !== 'undefined' && performance.now)
       ? performance.now()
@@ -365,6 +417,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const nextDirection = Math.sign(roundedTarget - currentInset);
     const targetChanged = roundedTarget !== targetInset;
     const sameDirection = nextDirection !== 0 && nextDirection === transitionDirection;
+    const directionChanged = nextDirection !== 0
+      && transitionDirection !== 0
+      && nextDirection !== transitionDirection;
     const progressive = targetChanged && sameDirection && (
       motionFrame !== 0
       || isProgressiveKeyboardSample(
@@ -374,7 +429,31 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         nextDirection,
       )
     );
+
+    /* A keyboard can reverse direction while its previous lift is still
+     * running (for example, a cancelled focus or a quick swipe). Reverse
+     * both timelines from their already-painted values instead of restarting
+     * either one from zero. */
+    if (directionChanged) {
+      if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
+      progressiveInsetMotion = false;
+      motionFrom = currentInset;
+      layoutMotionFrom = appliedLayoutProgress;
+      motionStart = now;
+      targetInset = roundedTarget;
+      targetLayoutProgress = nextLayoutProgress;
+      lastTargetAt = now;
+      transitionDirection = nextDirection;
+      if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
+        writeInsetFrame(roundedTarget, nextLayoutProgress);
+        return;
+      }
+      motionFrame = requestAnimationFrame(stepMotion);
+      return;
+    }
+
     targetInset = roundedTarget;
+    targetLayoutProgress = nextLayoutProgress;
     lastTargetAt = now;
 
     /* Once the browser is giving us the keyboard's real intermediate
@@ -385,8 +464,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      * inset and uses the discrete-jump fallback until a second sample proves
      * that a progressive stream exists. */
     if (progressive && !prefersReducedMotion()) {
-      if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      writeInsetFrame(roundedTarget);
+      progressiveInsetMotion = true;
+      writeInsetFrame(roundedTarget, appliedLayoutProgress);
+      if (appliedLayoutProgress !== targetLayoutProgress && !motionFrame) {
+        layoutMotionFrom = appliedLayoutProgress;
+        motionStart = now;
+        motionFrame = requestAnimationFrame(stepMotion);
+      }
       return;
     }
     if (nextDirection) transitionDirection = nextDirection;
@@ -397,11 +481,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      * interpolation. Reduced motion snaps. */
     if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      writeInsetFrame(roundedTarget);
+      progressiveInsetMotion = false;
+      writeInsetFrame(roundedTarget, nextLayoutProgress);
       return;
     }
     motionFrom = appliedInset < 0 ? 0 : appliedInset;
+    layoutMotionFrom = appliedLayoutProgress;
     motionStart = now;
+    progressiveInsetMotion = false;
     if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
   };
 
@@ -582,8 +669,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     clearTranscriptAnchor();
-    try { root.style.removeProperty('--keyboard-inset'); } catch (_) { /* detached root */ }
+    try {
+      root.style.removeProperty('--keyboard-inset');
+      root.style.removeProperty('--keyboard-layout-progress');
+      root.style.removeProperty('--keyboard-chat-height');
+      root.style.removeProperty('--keyboard-chat-radius');
+      root.style.removeProperty('--keyboard-chat-padding-bottom');
+      root.style.removeProperty('--keyboard-bar-padding-bottom');
+      root.style.removeProperty('--keyboard-chat-margin-bottom');
+      root.style.removeProperty('--keyboard-topic-height');
+      root.style.removeProperty('--keyboard-topic-radius');
+    } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
+    try { delete root.dataset.keyboardTargetOpen; } catch (_) { /* detached root */ }
     try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
     if (viewport) {
       viewport.removeEventListener('resize', schedule);

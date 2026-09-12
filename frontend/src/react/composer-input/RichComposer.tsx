@@ -252,10 +252,21 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       const isMultiline = wrap.classList.contains('composer-multiline');
       const wrapWidth = wrap.getBoundingClientRect().width;
       if (!isMultiline) {
+        /* The browser may have already let the editor's intrinsic height grow
+           before this synchronous update runs. Do not replace the compact
+           baseline with that expanded value: an explicit line break would
+           then measure as one line and never promote the shell to its second
+           row. Keep the smallest settled one-line measurement until the
+           layout genuinely returns to the compact shape. */
+        const measuredEditorHeight = editorDom.clientHeight;
+        const previousSingleLineHeight = collapsedMeasureRef.current?.singleLineHeight ?? 0;
+        const singleLineHeight = previousSingleLineHeight > 0
+          ? Math.min(measuredEditorHeight, previousSingleLineHeight)
+          : measuredEditorHeight;
         collapsedMeasureRef.current = {
           editorWidth: editorDom.getBoundingClientRect().width,
           wrapWidth,
-          singleLineHeight: editorDom.clientHeight,
+          singleLineHeight,
           editorStyle: [
             `box-sizing:${style.boxSizing}`,
             `padding:${style.padding}`,
@@ -312,8 +323,17 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
          more reliably than summing child rectangles (whose margins may
          collapse differently inside the off-screen probe). */
       const contentHeight = measureDom.scrollHeight;
+      /* During a ProseMirror transaction the intrinsic editor height can be
+         one layout pass behind the newly inserted break. The DOM structure is
+         already authoritative in that frame, so recognize a real break or a
+         second block directly instead of waiting for the stale scrollHeight
+         to catch up. Ignore ProseMirror's synthetic trailing break used by an
+         otherwise empty paragraph. */
+      const hasRenderedBreak = Boolean(
+        measureDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li'),
+      );
       measureHost?.remove();
-      const shouldExpand = contentHeight > singleLineHeight + 1;
+      const shouldExpand = hasRenderedBreak || contentHeight > singleLineHeight + 1;
       const classChanges = wrap.classList.contains('composer-multiline') !== shouldExpand;
       if (!shouldExpand && !classChanges) {
         /* Empty and one-line drafts are contractually fixed at the CSS

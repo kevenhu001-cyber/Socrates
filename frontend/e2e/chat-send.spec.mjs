@@ -82,6 +82,37 @@ test('mobile send places the submitted prompt and thinking state at the viewport
      translate here makes the freshly submitted prompt flash at a second,
      compositor-only position while its layout anchor is being measured. */
   expect(enteringTransform).toBe('none');
+  const sendFrames = await page.evaluate(() => new Promise((resolve) => {
+    const frames = [];
+    let count = 0;
+    const sample = () => {
+      const list = document.getElementById('msgList');
+      const users = list?.querySelectorAll('.msg.user');
+      const row = users?.[users.length - 1];
+      if (row) {
+        const listRect = list.getBoundingClientRect();
+        const rect = row.getBoundingClientRect();
+        const style = getComputedStyle(row);
+        frames.push({
+          offset: rect.top - listRect.top,
+          opacity: Number(style.opacity),
+          transform: style.transform,
+          display: style.display,
+          visibility: style.visibility,
+        });
+      }
+      if (++count < 24) requestAnimationFrame(sample);
+      else resolve(frames);
+    };
+    requestAnimationFrame(sample);
+  }));
+  expect(sendFrames.length).toBeGreaterThan(0);
+  expect(sendFrames.every((frame) =>
+    frame.opacity >= 0.99
+    && frame.transform === 'none'
+    && frame.display !== 'none'
+    && frame.visibility !== 'hidden',
+  )).toBe(true);
   await page.waitForFunction(() => Boolean(
     document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-placeholder'),
   ));

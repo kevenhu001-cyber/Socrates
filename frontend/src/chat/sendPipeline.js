@@ -62,9 +62,9 @@ function _tutorSocratic() {
   } catch (_) {}
   return null;
 }
-function _askChatTurn(text, pending) {
+function _askChatTurn(text, pending, precreatedCtl) {
   if (typeof window !== 'undefined' && typeof window.askChatTurn === 'function') {
-    return window.askChatTurn(text, pending);
+    return window.askChatTurn(text, pending, precreatedCtl || null);
   }
   return null;
 }
@@ -73,6 +73,10 @@ function _addStreamingMessage(opts) {
     return window.addStreamingMessage(opts);
   }
   throw new Error('addStreamingMessage bridge missing');
+}
+
+function _deepResearchOn() {
+  try { return !!window.deepResearchOn; } catch (_) { return false; }
 }
 
 export async function submitChatMessage(textOverride,opts){
@@ -121,8 +125,28 @@ export async function submitChatMessage(textOverride,opts){
   var immediateAttList=turnAttachments.slice(0,20).map(function(a){
     return Object.assign({},a);
   });
+  /* P_send-transaction — create the assistant placeholder in the same
+   * interaction task as the submitted user row. Model-content assembly may
+   * await image work, URL extraction, or another provider-side preparation;
+   * none of that is allowed to leave the visible prompt without its turn
+   * anchor. Keep the controller local and pass it explicitly to askChatTurn
+   * so two fast submits cannot overwrite a global hand-off slot. */
+  var precreatedChatCtl=null;
+  var precreatedRetry=null;
+  function precreateChatTurn() {
+    if (_appMode() !== "chat" || _deepResearchOn()) return;
+    try {
+      precreatedChatCtl=_addStreamingMessage({
+        onRetry:function(){
+          if (typeof precreatedRetry === "function") return precreatedRetry();
+          return _askChatTurn(text, textForModel);
+        },
+      });
+    } catch (_) { precreatedChatCtl=null; }
+  }
   if(isComposerSubmit){
     addMessage("user",text,null,null,immediateAttList);
+    precreateChatTurn();
     clearComposer("chat");updateSendBtn();
     /* React scrolls after its MessageList commit. Keep the two-frame
        fallback only for legacy/share surfaces where React does not own the
@@ -142,6 +166,7 @@ export async function submitChatMessage(textOverride,opts){
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
     addMessage("user",text,null,null,immediateAttList);
+    precreateChatTurn();
   }
   /* P_attachments — clear the pending chips after the message is
    * committed to the DOM. Render an empty strip so the UI updates. */
@@ -165,6 +190,7 @@ export async function submitChatMessage(textOverride,opts){
   }
   var chatContent=built.parts;
   var attList=built.attachmentList||immediateAttList;
+  precreatedRetry=function(){ return _askChatTurn(text,chatContent); };
   turnState.pendingChatContent=chatContent;
   turnState.pendingAttachments=attList;
 
@@ -181,9 +207,9 @@ export async function submitChatMessage(textOverride,opts){
        pickers.js: the EXTENSIONS array is module-scoped in pickers.js
        and is NOT visible here, so `typeof EXTENSIONS` was always
        "undefined" and this branch never fired (P_deep-research-fix). */
-    var deepResearchOn = false;
-    try{ deepResearchOn = !!window.deepResearchOn; }catch(_){}
+    var deepResearchOn = _deepResearchOn();
     if(deepResearchOn && text){
+      if(precreatedChatCtl){try{precreatedChatCtl.abort()}catch(_){} precreatedChatCtl=null;}
       if(typeof window.startDeepResearch === "function"){
         await window.startDeepResearch(text);
       }
@@ -193,7 +219,7 @@ export async function submitChatMessage(textOverride,opts){
        Just stream a reply and save. */
     if(_appMode()==="chat"){
       try{
-        await _askChatTurn(text,chatContent);
+        await _askChatTurn(text,chatContent,precreatedChatCtl);
       }catch(turnErr){
         /* P_turn-abort-quiet — session-expired / superseded aborts are
            expected (the gate / new turn already owns the UX). Anything
