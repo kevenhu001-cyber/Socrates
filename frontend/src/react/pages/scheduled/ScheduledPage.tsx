@@ -70,12 +70,19 @@ function LaptopIcon() {
   );
 }
 
-const RECOMMENDATIONS: ReadonlyArray<{ icon: ReactNode; title: string; description: string; prompt: string }> = [
-  { icon: <SunIcon />, title: 'Daily briefing', description: 'Summarize the updates I care about each morning.', prompt: 'Send me a concise daily briefing with the latest updates on my saved topics.' },
-  { icon: <InboxIcon />, title: 'Inbox check', description: 'Surface messages that need my attention.', prompt: 'Check my inbox and tell me which messages need a reply or follow-up.' },
-  { icon: <SearchIcon />, title: 'Weekly research pulse', description: 'Compare the latest work in a topic I follow.', prompt: 'Give me a weekly research briefing comparing the latest work on my chosen topic.' },
-  { icon: <RobotIcon />, title: 'AI research digest', description: 'Send the best new work every Friday.', prompt: 'Give me the best new AI research every Friday with a short explanation of why it matters.' },
-  { icon: <LaptopIcon />, title: 'Project status', description: 'Keep me posted on progress and blockers.', prompt: 'Give me a weekly progress brief on my active project and its next milestone.' },
+const RECOMMENDATIONS: ReadonlyArray<{
+  icon: ReactNode;
+  titleKey: string;
+  titleFallback: string;
+  descriptionKey: string;
+  descriptionFallback: string;
+  prompt: string;
+}> = [
+  { icon: <SunIcon />, titleKey: 'scheduled.template.daily', titleFallback: 'Daily briefing', descriptionKey: 'scheduled.template.dailyDesc', descriptionFallback: 'Summarize the updates I care about each morning.', prompt: 'Send me a concise daily briefing with the latest updates on my saved topics.' },
+  { icon: <InboxIcon />, titleKey: 'scheduled.template.inbox', titleFallback: 'Inbox check', descriptionKey: 'scheduled.template.inboxDesc', descriptionFallback: 'Surface messages that need my attention.', prompt: 'Check my inbox and tell me which messages need a reply or follow-up.' },
+  { icon: <SearchIcon />, titleKey: 'scheduled.template.research', titleFallback: 'Weekly research pulse', descriptionKey: 'scheduled.template.researchDesc', descriptionFallback: 'Compare the latest work in a topic I follow.', prompt: 'Give me a weekly research briefing comparing the latest work on my chosen topic.' },
+  { icon: <RobotIcon />, titleKey: 'scheduled.template.digest', titleFallback: 'AI research digest', descriptionKey: 'scheduled.template.digestDesc', descriptionFallback: 'Send the best new work every Friday.', prompt: 'Give me the best new AI research every Friday with a short explanation of why it matters.' },
+  { icon: <LaptopIcon />, titleKey: 'scheduled.template.project', titleFallback: 'Project status', descriptionKey: 'scheduled.template.projectDesc', descriptionFallback: 'Keep me posted on progress and blockers.', prompt: 'Give me a weekly progress brief on my active project and its next milestone.' },
 ];
 
 function i18n(key: string, fallback: string): string {
@@ -134,15 +141,15 @@ function ScheduledPage() {
   return (
     <div className="scheduled-directory">
       <div className="scheduled-directory-head">
-        <div>
+        <div className="scheduled-directory-heading">
           <span className="workspace-eyebrow">{i18n('scheduled.workspaceEyebrow', 'Workspace')}</span>
           <h1>{i18n('scheduled.title', 'Scheduled')}</h1>
-          <p>{i18n('scheduled.subtitle', 'Let Socrates plan follow-ups, reminders, and recurring updates for you.')}</p>
         </div>
         <button type="button" className={'scheduled-filter-button' + (activeOnly ? ' active' : '')} onClick={() => setActiveOnly((value) => !value)} aria-pressed={activeOnly}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h16l-6.5 8v5l-3 1v-6z" /></svg>
           {activeOnly ? i18n('scheduled.activeOnly', 'Active') : i18n('scheduled.allTasks', 'All tasks')}
         </button>
+        <p>{i18n('scheduled.subtitle', 'Let Socrates plan follow-ups, reminders, and recurring updates for you.')}</p>
       </div>
 
       <div className="scheduled-task-composer">
@@ -156,17 +163,24 @@ function ScheduledPage() {
       </div>
 
       <div className="scheduled-section-heading">
-        <span>{i18n('scheduled.recommendations', 'Suggestions')}</span>
+        <span className="scheduled-heading-label">
+          {i18n('scheduled.recommendations', 'Suggestions')}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        </span>
         <span>{i18n('scheduled.pickOne', 'Start with a template')}</span>
       </div>
       <div className="scheduled-recommendations">
-        {RECOMMENDATIONS.map((recommendation) => (
-          <button type="button" className="scheduled-recommendation" key={recommendation.title} onClick={() => dispatch.create(recommendation.prompt)}>
+        {RECOMMENDATIONS.map((recommendation) => {
+          const title = i18n(recommendation.titleKey, recommendation.titleFallback);
+          const description = i18n(recommendation.descriptionKey, recommendation.descriptionFallback);
+          return (
+          <button type="button" className="scheduled-recommendation" key={recommendation.titleKey} onClick={() => dispatch.create(recommendation.prompt)}>
             <span className="scheduled-recommendation-icon" aria-hidden="true">{recommendation.icon}</span>
-            <span className="scheduled-recommendation-copy"><strong>{recommendation.title}</strong><small>{recommendation.description}</small></span>
+            <span className="scheduled-recommendation-copy"><strong>{title}</strong><small>{description}</small></span>
             <span className="scheduled-recommendation-add" aria-hidden="true">+</span>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {visibleTasks.length === 0 ? (

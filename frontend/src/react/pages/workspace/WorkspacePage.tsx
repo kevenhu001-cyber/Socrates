@@ -35,6 +35,18 @@ function MoreIcon() {
   return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>;
 }
 
+function projectMeta(project: { description?: string; createdAt?: string | number; updatedAt?: string | number; created_at?: string | number; updated_at?: string | number }): string {
+  const rawDate = project.updatedAt || project.updated_at || project.createdAt || project.created_at;
+  if (rawDate) {
+    const date = new Date(rawDate);
+    if (!Number.isNaN(date.getTime())) {
+      const locale = document.documentElement.lang.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US';
+      return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date);
+    }
+  }
+  return project.description || '';
+}
+
 /* File-type glyphs for the Library thumbnail box. Resolution order is
    `kind` (from the files.kind column) first, then the filename extension,
    so records saved before `kind` existed still get the right icon. */
@@ -247,58 +259,83 @@ function LibraryView({ data, dispatch }: {
 /* ------------------------------------------------------------------ */
 
 function ProjectsView({ projects, dispatch }: {
-  projects: ReadonlyArray<{ id: string; name: string; description?: string; color?: string }>;
+  projects: ReadonlyArray<{ id: string; name: string; description?: string; color?: string; createdAt?: string | number; updatedAt?: string | number; created_at?: string | number; updated_at?: string | number; shared?: boolean; isShared?: boolean; visibility?: string }>;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
   const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<'all' | 'owned' | 'shared'>('all');
   const visibleProjects = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return projects;
-    return projects.filter((project) => [project.name, project.description].filter(Boolean).join(' ').toLowerCase().includes(needle));
-  }, [projects, query]);
+    const scoped = projects.filter((project) => {
+      if (scope === 'all') return true;
+      /* APIs may expose either `shared`/`isShared` or a visibility marker;
+         absent metadata stays in the owned bucket without inventing a
+         sharing state for a real project. */
+      const record = project as typeof project & { shared?: boolean; isShared?: boolean; visibility?: string };
+      const isShared = record.shared === true || record.isShared === true || record.visibility === 'shared';
+      return scope === 'shared' ? isShared : !isShared;
+    });
+    if (!needle) return scoped;
+    return scoped.filter((project) => [project.name, project.description].filter(Boolean).join(' ').toLowerCase().includes(needle));
+  }, [projects, query, scope]);
 
-  if (projects.length === 0) {
-    return (
-      <section className="workspace-surface projects-directory" aria-labelledby="projects-directory-title">
-        <WorkspacePageHeader title={i18n('sidebar.spaces.title', 'Projects')} description={i18n('projects.directoryDesc', 'Keep related chats, files, and instructions together.')} query={query} onQuery={setQuery} actionLabel={i18n('projects.create', 'Create project')} onAction={() => dispatch.createProject()} />
-        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><button className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</button></div>
-      </section>
-    );
-  }
+  const projectTabs = (
+    <div className="projects-filter-tabs" role="tablist" aria-label={i18n('projects.filter', 'Project filter')}>
+      <button type="button" role="tab" aria-selected={scope === 'all'} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>{i18n('projects.all', 'All')}</button>
+      <button type="button" role="tab" aria-selected={scope === 'owned'} className={scope === 'owned' ? 'active' : ''} onClick={() => setScope('owned')}>{i18n('projects.owned', 'Created by you')}</button>
+      <button type="button" role="tab" aria-selected={scope === 'shared'} className={scope === 'shared' ? 'active' : ''} onClick={() => setScope('shared')}>{i18n('projects.shared', 'Shared with you')}</button>
+    </div>
+  );
+
   return (
     <section className="workspace-surface projects-directory" aria-labelledby="projects-directory-title">
-      <WorkspacePageHeader title={i18n('sidebar.spaces.title', 'Projects')} description={i18n('projects.directoryDesc', 'Keep related chats, files, and instructions together.')} query={query} onQuery={setQuery} actionLabel={i18n('projects.create', 'Create project')} onAction={() => dispatch.createProject()} />
-      <div className="projects-list">
-      {visibleProjects.map((project) => {
-        const color = /^#[0-9a-f]{3,8}$/i.test(project.color || '') ? project.color! : 'hsl(var(--accent-000))';
-        return (
-          <div className="workspace-row project-row" key={project.id}>
-            <button className="project-main" onClick={() => dispatch.openProject(project.id)}>
-              <span className="project-icon" style={{ color }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 7.5h6l2-2h9v13h-17z" /></svg></span>
-              <span className="workspace-row-copy">
-                <strong>{project.name}</strong>
-                <span>{project.description || ''}</span>
-              </span>
-            </button>
-            <button className="workspace-row-action workspace-icon-action" aria-label={i18n('projects.edit', 'Edit')} title={i18n('projects.edit', 'Edit')} onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}><MoreIcon /></button>
-          </div>
-        );
-      })}
-      {visibleProjects.length === 0 ? <div className="workspace-empty"><strong>{i18n('projects.noMatch', 'No matching projects')}</strong><span>{i18n('projects.noMatchDesc', 'Try a different search.')}</span></div> : null}
-      </div>
+      <WorkspacePageHeader
+        title={i18n('sidebar.spaces.title', 'Projects')}
+        description={i18n('projects.directoryDesc', 'Keep related chats, files, and instructions together.')}
+        query={query}
+        onQuery={setQuery}
+        actionLabel={i18n('projects.new', 'New')}
+        onAction={() => dispatch.createProject()}
+        compactAction
+      />
+      {projectTabs}
+      {projects.length === 0 ? (
+        <div className="workspace-empty"><strong>{i18n('projects.empty', 'Make space for ongoing work')}</strong><span>{i18n('projects.emptyDesc', 'Projects keep related chats, files, and instructions together.')}</span><button className="workspace-primary" onClick={() => dispatch.createProject()}>{i18n('projects.create', 'Create project')}</button></div>
+      ) : (
+        <div className="projects-list">
+          <div className="projects-list-heading">{i18n('projects.name', 'Name')}</div>
+          {visibleProjects.map((project) => {
+            const color = /^#[0-9a-f]{3,8}$/i.test(project.color || '') ? project.color! : 'hsl(var(--accent-000))';
+            return (
+              <div className="workspace-row project-row" key={project.id}>
+                <button className="project-main" onClick={() => dispatch.openProject(project.id)}>
+                  <span className="project-icon" style={{ color }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 7.5h6l2-2h9v13h-17z" /></svg></span>
+                  <span className="workspace-row-copy">
+                    <strong>{project.name}</strong>
+                    <span>{projectMeta(project)}</span>
+                  </span>
+                </button>
+                <button className="workspace-row-action workspace-icon-action" aria-label={i18n('projects.edit', 'Edit')} title={i18n('projects.edit', 'Edit')} onClick={(e) => { e.stopPropagation(); dispatch.editProject(project.id); }}><MoreIcon /></button>
+              </div>
+            );
+          })}
+          {visibleProjects.length === 0 ? <div className="workspace-empty"><strong>{i18n('projects.noMatch', 'No matching projects')}</strong><span>{i18n('projects.noMatchDesc', 'Try a different search.')}</span></div> : null}
+        </div>
+      )}
     </section>
   );
 }
 
-function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, onAction }: {
-  title: string; description: string; query: string; onQuery: (value: string) => void; actionLabel: string; onAction: () => void;
+function WorkspacePageHeader({ title, description, query, onQuery, actionLabel, onAction, compactAction }: {
+  title: string; description: string; query: string; onQuery: (value: string) => void; actionLabel: string; onAction: () => void; compactAction?: boolean;
 }) {
+  const searchLabel = i18n('projects.search', i18n('common.search', 'Search'));
   return (
     <div className="workspace-page-head">
       <div><h1 id="projects-directory-title">{title}</h1><p>{description}</p></div>
       <div className="workspace-head-actions">
-        <label className="workspace-search-field"><SearchIcon /><input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={i18n('common.search', 'Search')} aria-label={i18n('common.search', 'Search')} /></label>
-        <button type="button" className="workspace-create-button" onClick={onAction}><PlusIcon /><span>{actionLabel}</span></button>
+        <label className="workspace-search-field"><SearchIcon /><input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
+        <button type="button" className={'workspace-create-button' + (compactAction ? ' projects-create-button' : '')} onClick={onAction}>{compactAction ? null : <PlusIcon />}<span>{actionLabel}</span></button>
       </div>
     </div>
   );
@@ -396,6 +433,18 @@ function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch
         </div>
         <div className="plugin-directory-tools">
           <label className="plugin-directory-search"><SearchIcon /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} /></label>
+          <button
+            type="button"
+            className="plugin-directory-add-btn"
+            aria-label={i18n('plugins.add', 'Add plugin')}
+            title={i18n('plugins.add', 'Add plugin')}
+            onClick={() => {
+              const openMarketplace = (window as Window & { openPluginMarketplace?: () => void }).openPluginMarketplace;
+              openMarketplace?.();
+            }}
+          >
+            <PlusIcon />
+          </button>
         </div>
       </div>
 
