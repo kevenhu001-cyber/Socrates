@@ -64,6 +64,10 @@ function position(el, trigger) {
   var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;
   var viewportWidth = viewport ? viewport.width : window.innerWidth;
   var mode = trigger.dataset ? trigger.dataset.composerMode : null;
+  /* The expanded card never grows past the viewport's vertical midline
+     (50vh). The list scrolls instead, so the greeting/composer above it
+     stays visible on every surface. */
+  var menuHeightCap = Math.max(120, (viewportBottom - viewportTop) / 2);
 
   /* Home (topic) composer on desktop: the expanded card always opens below
      the input and stretches toward the viewport bottom with an internal
@@ -74,7 +78,7 @@ function position(el, trigger) {
     var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
     var menuTop = r.bottom + 8;
     var room = viewportBottom - menuTop - 16;
-    el.style.maxHeight = Math.min(Math.max(room, 96), 560) + "px";
+    el.style.maxHeight = Math.min(Math.max(room, 96), 560, menuHeightCap) + "px";
     el.style.width = Math.max(280, Math.min(wrapRect.width || 620, viewportWidth - 16)) + "px";
     el.style.left = "0px";
     el.style.top = "0px";
@@ -86,7 +90,7 @@ function position(el, trigger) {
   }
 
   el.style.width = "";
-  el.style.maxHeight = Math.max(120, viewportBottom - viewportTop - 16) + "px";
+  el.style.maxHeight = menuHeightCap + "px";
   el.style.left = "0px";
   el.style.top = "0px";
   var width = el.offsetWidth || 260;
@@ -118,13 +122,13 @@ function position(el, trigger) {
     /* A short desktop viewport may not have room for the full directory.
        Prefer a scrollable menu below the composer so selected chips and the
        trigger never become an accidental hit-test target underneath it. */
-    el.style.maxHeight = belowSpace + "px";
+    el.style.maxHeight = Math.min(belowSpace, menuHeightCap) + "px";
     top = belowTop;
   } else if (aboveSpace >= 120) {
-    el.style.maxHeight = aboveSpace + "px";
+    el.style.maxHeight = Math.min(aboveSpace, menuHeightCap) + "px";
     top = r.top - aboveSpace - 8;
   } else {
-    el.style.maxHeight = Math.max(120, Math.max(belowSpace, aboveSpace)) + "px";
+    el.style.maxHeight = Math.min(Math.max(120, Math.max(belowSpace, aboveSpace)), menuHeightCap) + "px";
     top = belowSpace >= aboveSpace ? belowTop : viewportTop + 8;
   }
   top = Math.max(viewportTop + 8, Math.min(viewportBottom - (el.offsetHeight || height) - 8, top));

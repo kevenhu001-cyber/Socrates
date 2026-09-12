@@ -190,10 +190,9 @@ function ComposerPluginItem({
   );
 }
 
-/* Configured plugin catalog entries appear in the composer menu. The
-   reference surface shows the available app roster (including apps that have
-   not completed OAuth yet); selection still only changes composer context and
-   connection/manage actions remain in the Plugin Center. */
+/* Only connected plugins appear in the composer menu — the reference list is
+   a roster of the apps the user already configured, never a directory with
+   connect prompts (that stays in the Plugin Center). */
 function PluginItems({
   isOpen,
   mode,
@@ -222,10 +221,10 @@ function PluginItems({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  const availablePlugins = useMemo(() => {
+  const connectedPlugins = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return plugins.filter((plugin) => {
-      if (plugin.connectionStatus === 'unavailable') return false;
+      if (plugin.connectionStatus !== 'connected') return false;
       if (!normalized) return true;
       return [plugin.name, plugin.description, ...plugin.capabilities]
         .join(' ')
@@ -234,7 +233,7 @@ function PluginItems({
     });
   }, [plugins, query]);
 
-  if (availablePlugins.length === 0) return null;
+  if (connectedPlugins.length === 0) return null;
 
   const togglePlugin = (plugin: PluginCatalogEntry) => {
     if (!mode) return;
@@ -244,7 +243,7 @@ function PluginItems({
   return (
     <section className="composer-tools-plugins" aria-label="Plugins">
       <div className="composer-tools-plugin-list">
-        {availablePlugins.map((plugin) => (
+        {connectedPlugins.map((plugin) => (
           <ComposerPluginItem
             key={plugin.id}
             plugin={plugin}

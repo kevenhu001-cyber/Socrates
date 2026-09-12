@@ -5640,7 +5640,7 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   box-shadow:0 0 0 3px hsl(var(--accent-000)/.12);
 }
 @media(min-width:769px){
-  .composer-tools-menu{width:min(340px,calc(100vw - 24px));max-height:min(72vh,520px);overflow-y:auto}
+  .composer-tools-menu{width:min(340px,calc(100vw - 24px));max-height:min(50vh,520px);overflow-y:auto}
 }
 @media(max-width:768px){
   .composer-tools-heading{padding:3px 4px 8px;font-size:calc(14px * var(--app-font-scale,1))}
@@ -9243,7 +9243,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
    second navigation panel. */
 .composer-tools-menu{
   width:min(264px,calc(100vw - 16px));
-  max-height:min(62vh,440px);
+  max-height:min(50vh,440px);
   overflow-y:auto;
   overscroll-behavior:contain;
   padding:8px;

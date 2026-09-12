@@ -52,7 +52,9 @@ test('plus menu supports real connector search, multi-select, and removal', asyn
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  await expect(menu.locator('[data-composer-plugin]')).toHaveCount(3);
+  await expect(menu.locator('[data-composer-plugin]')).toHaveCount(2);
+  // Disconnected connectors stay out of the composer roster.
+  await expect(menu.locator('[data-composer-plugin="gmail"]')).toHaveCount(0);
 
   const search = menu.locator('.composer-tools-search input');
   await search.fill('notion');
