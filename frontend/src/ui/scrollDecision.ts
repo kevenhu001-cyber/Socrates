@@ -54,8 +54,9 @@ export interface KeyboardAnchorContext {
   userIntentAfterCapture: boolean;
   /**
    * Visual-viewport pan since capture (visualViewport.offsetTop delta).
-   * iOS Safari pans the visual viewport to reveal a focused composer; the
-   * transcript compensates by the same amount so the reader's content
+   * iOS Safari pans the visual viewport down to reveal a focused composer,
+   * which moves the transcript content up on screen; the transcript scrolls
+   * back by the same amount (scrollTop − panDelta) so the reader's content
    * stays under the same visual position.
    */
   panDelta?: number;
@@ -87,8 +88,11 @@ export function decideKeyboardAnchorAction(
     ? Math.max(0, context.maxScrollTop)
     : 0;
   const pan = Number.isFinite(context.panDelta) ? (context.panDelta as number) : 0;
+  /* `offsetTop` grows when the visual viewport pans down the layout, so the
+   * same scrollTop would render the content higher on screen. Subtract the
+   * pan to keep it visually still; adding it doubled the jump. */
   const captured = Number.isFinite(anchor.scrollTop)
-    ? Math.max(0, anchor.scrollTop + pan)
+    ? Math.max(0, anchor.scrollTop - pan)
     : 0;
   return { type: 'restore', top: Math.min(maxTop, captured) };
 }

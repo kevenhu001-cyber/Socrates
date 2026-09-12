@@ -131,13 +131,12 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* A grown (multiline) composer uses the 24px two-tier radius; the pill
-     applies only to the idle single-line shell. The control sizes
-     (36px send, 42px attach) are state-independent in the current layer. */
+  /* A grown (multiline) composer uses the 24px two-tier radius. The shared
+     landing/chat surface keeps 40px controls in every state. */
   expect(composed.wrapRadius).toBe(24);
   expect(composed.wrapBorder).not.toBe('0px');
-  expect(composed.sendSize).toBe(36);
-  expect(composed.attachSize).toBe(42);
+  expect(composed.sendSize).toBe(40);
+  expect(composed.attachSize).toBe(40);
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
@@ -166,7 +165,7 @@ test('desktop idle composer keeps its edge controls circular and optically align
   });
 
   expect(geometry.wrap?.height).toBe(52);
-  expect(geometry.wrap?.radius).toBe('26px');
+  expect(geometry.wrap?.radius).toBe('28px');
   expect(geometry.attach?.width).toBe(36);
   expect(geometry.attach?.height).toBe(36);
   expect(geometry.attach?.radius).toBe('50%');
@@ -238,8 +237,8 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(geometry.overflow).toBeLessThanOrEqual(0);
   expect(mobileComposer.focusedHeight).toBeGreaterThanOrEqual(initial.height + 24);
   expect(mobileComposer.fontSize).toBe(16);
-  expect(mobileComposer.sendSize).toBe(36);
-  expect(mobileComposer.attachSize).toBe(44);
+  expect(mobileComposer.sendSize).toBe(40);
+  expect(mobileComposer.attachSize).toBe(40);
   expect(mobileComposer.activeEditor).toBe(true);
 
   /* A soft wrap used to oscillate: expanding gives the editor a wider first

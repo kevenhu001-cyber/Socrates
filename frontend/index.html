@@ -84,6 +84,10 @@
 <link rel="stylesheet" href="/src/styles/chatgpt-v2.css">
 <link rel="stylesheet" href="/src/styles/ref-baseline.css">
 <link rel="stylesheet" href="/src/styles/mobile-parity.css">
+<!-- The conversation surface is intentionally last: it owns the shared
+     landing + in-session composition language without another cascade of
+     per-screen exceptions. -->
+<link rel="stylesheet" href="/src/styles/chat-surface.css">
 </head>
 <body>
 
@@ -602,11 +606,13 @@
                 <button type="button" class="effort-item" data-effort="low" role="option"><span data-i18n-key="effort.low">Low</span></button>
               </div>
             </div>
-            <!-- P_mic-dedup — the standalone mic button is gone: the white
-                 startBtn already doubles as the voice-dictation trigger
-                 whenever the composer is empty (legacyShellListeners routes
-                 the idle click to toggleSpeechInput), so a second mic only
-                 duplicated that affordance one slot to the left. -->
+            <!-- Keep the topic controls structurally identical to the
+                 in-session composer. The microphone is the explicit
+                 dictation entry point; the primary button keeps its
+                 voice/send state without moving the control row. -->
+            <button class="mobile-mic-btn" id="topicMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
+            </button>
             <button class="start-btn" id="startBtn" aria-label="Voice input" title="Voice input">
               <span id="startBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
             </button>
