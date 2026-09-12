@@ -49,19 +49,21 @@ function _addStreamingMessage(opts) {
   throw new Error('addStreamingMessage bridge missing');
 }
 
-export async function askChatTurn(userText,pendingOverride){
+export async function askChatTurn(userText,pendingOverride,precreatedController){
   publishThinkingTurnStart();
   /* startSession can create the first assistant placeholder before any
      network work so the transition never opens onto an empty transcript.
      Claim it before the normal "supersede previous turn" cleanup; otherwise
      that cleanup disposes the controller we are about to use. */
-  var precreatedCtl=null;
-  try{
-    if(typeof window!=="undefined"&&window.__socratesSyncCtl){
-      precreatedCtl=window.__socratesSyncCtl;
-      try{delete window.__socratesSyncCtl}catch(_){}
-    }
-  }catch(_){precreatedCtl=null}
+  var precreatedCtl=precreatedController||null;
+  if(!precreatedCtl){
+    try{
+      if(typeof window!=="undefined"&&window.__socratesSyncCtl){
+        precreatedCtl=window.__socratesSyncCtl;
+        try{delete window.__socratesSyncCtl}catch(_){}
+      }
+    }catch(_){precreatedCtl=null}
+  }
   /* Abort the previous in-flight chat stream, if any. Without this the
      old streamCtl stays in "正在思考…" until its own 45 s timer fires,
      which makes the UI feel frozen when the user fires a follow-up

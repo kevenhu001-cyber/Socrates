@@ -139,6 +139,64 @@ test('progressive viewport samples keep the composer attached to the rising keyb
   expect(Math.abs(samples[3] - desiredInsets[3]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
 });
 
+test('keyboard lift keeps composer geometry on the same continuous timeline', async ({ page }) => {
+  await seedChat(page, 8);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(80);
+
+  const appBottom = await page.evaluate(() => Math.round(
+    document.getElementById('appShell').getBoundingClientRect().bottom,
+  ));
+  const sampleMotion = (height) => page.evaluate((nextHeight) => new Promise((resolve) => {
+    const samples = [];
+    let count = 0;
+    window.__fakeViewport.__resize({ height: nextHeight });
+    const sample = () => {
+      const root = document.documentElement;
+      const wrap = document.getElementById('chatInputWrap');
+      const bar = document.getElementById('chatInputBar');
+      const rect = bar.getBoundingClientRect();
+      samples.push({
+        inset: Number.parseFloat(getComputedStyle(root).getPropertyValue('--keyboard-inset')) || 0,
+        progress: Number.parseFloat(getComputedStyle(root).getPropertyValue('--keyboard-layout-progress')) || 0,
+        height: wrap.getBoundingClientRect().height,
+        top: rect.top,
+        open: root.dataset.keyboardOpen,
+      });
+      if (++count < 24) requestAnimationFrame(sample);
+      else resolve(samples);
+    };
+    requestAnimationFrame(sample);
+  }), height);
+
+  const opening = await sampleMotion(appBottom - 240);
+  expect(opening.at(-1).open).toBe('true');
+  expect(opening.at(-1).progress).toBeGreaterThanOrEqual(0.99);
+  for (let index = 1; index < opening.length; index += 1) {
+    expect(opening[index].inset).toBeGreaterThanOrEqual(opening[index - 1].inset - 1);
+    expect(opening[index].progress).toBeGreaterThanOrEqual(opening[index - 1].progress - 0.01);
+    expect(opening[index].height).toBeGreaterThanOrEqual(opening[index - 1].height - 1);
+    expect(opening[index].top).toBeLessThanOrEqual(opening[index - 1].top + 2);
+  }
+  expect(Math.max(...opening.slice(1).map((frame, index) =>
+    frame.height - opening[index].height,
+  ))).toBeLessThan(18);
+
+  const closing = await sampleMotion(appBottom);
+  expect(closing.at(-1).open).toBe('false');
+  expect(closing.at(-1).progress).toBeLessThanOrEqual(0.01);
+  for (let index = 1; index < closing.length; index += 1) {
+    expect(closing[index].inset).toBeLessThanOrEqual(closing[index - 1].inset + 1);
+    expect(closing[index].progress).toBeLessThanOrEqual(closing[index - 1].progress + 0.01);
+    expect(closing[index].height).toBeLessThanOrEqual(closing[index - 1].height + 1);
+    expect(closing[index].top).toBeGreaterThanOrEqual(closing[index - 1].top - 2);
+  }
+  expect(Math.max(...closing.slice(1).map((frame, index) =>
+    closing[index].height - frame.height,
+  ))).toBeLessThan(18);
+});
+
 test('external keyboard inset keeps a history reader anchored instead of snapping to the bottom', async ({ page }) => {
   await seedChat(page);
   await page.evaluate(() => {
