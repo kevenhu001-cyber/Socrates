@@ -108,6 +108,62 @@ test('a new user gesture after capture makes the anchor inert', () => {
   assert.deepEqual(action, { type: 'none' });
 });
 
+test('a send-time viewport hold keeps the keyboard transition off the transcript', () => {
+  /* The send anchor owns the prompt's offset while it holds: re-anchoring a
+     pinned reader to the bottom here would slide the prompt down by the
+     whole viewport delta. */
+  assert.deepEqual(
+    decideKeyboardAnchorAction(
+      { scrollTop: 1200, pinned: true },
+      {
+        maxScrollTop: 1400,
+        scrolledAway: false,
+        userIntentAfterCapture: false,
+        viewportOwnerHeld: true,
+      },
+    ),
+    { type: 'none' },
+  );
+  /* A history reader is equally left alone — the hold keeps the prompt. */
+  assert.deepEqual(
+    decideKeyboardAnchorAction(
+      { scrollTop: 600, pinned: false },
+      {
+        maxScrollTop: 3703,
+        scrolledAway: true,
+        userIntentAfterCapture: false,
+        viewportOwnerHeld: true,
+      },
+    ),
+    { type: 'none' },
+  );
+});
+
+test('property: a held viewport owner always makes the anchor inert', () => {
+  fc.assert(
+    fc.property(
+      fc.double({ min: -2000, max: 5000, noNaN: true }),
+      fc.boolean(),
+      fc.boolean(),
+      fc.double({ min: -400, max: 400, noNaN: true }),
+      (captured, pinned, scrolledAway, panDelta) => {
+        const action = decideKeyboardAnchorAction(
+          { scrollTop: captured, pinned },
+          {
+            maxScrollTop: 4000,
+            scrolledAway,
+            userIntentAfterCapture: false,
+            panDelta,
+            viewportOwnerHeld: true,
+          },
+        );
+        assert.deepEqual(action, { type: 'none' });
+      },
+    ),
+    { numRuns: 200 },
+  );
+});
+
 test('a pinned reader who scrolls away is restored, not followed', () => {
   const action = decideKeyboardAnchorAction(
     { scrollTop: 1200, pinned: true },

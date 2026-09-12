@@ -12,6 +12,7 @@ globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 const {
   configureTurnAnchor,
   scheduleActiveTurnToTop,
+  turnAnchorReserve,
   turnRowFor,
 } = await import('../src/chat/turnAnchor.ts');
 
@@ -107,4 +108,17 @@ test('scheduleActiveTurnToTop positions a retry bubble synchronously', () => {
     restoreRaf();
     list.remove();
   }
+});
+
+test('turnAnchorReserve keeps the prompt at the top offset with the answer filling the rest', () => {
+  /* 800 px transcript, 81 px prompt, no list padding: the answer gets
+     everything the prompt does not use, minus the bottom gap. */
+  assert.equal(turnAnchorReserve(800, 81, 0), 695);
+  /* List padding below the transcript is air, not answer room. */
+  assert.equal(turnAnchorReserve(800, 81, 24), 671);
+  /* A short viewport cannot collapse the reserve below its floor. */
+  assert.equal(turnAnchorReserve(160, 81, 0), 120);
+  /* Non-finite geometry (a detached or hidden list) falls back to the floor. */
+  assert.equal(turnAnchorReserve(NaN, 81, 0), 120);
+  assert.equal(turnAnchorReserve(800, Number.POSITIVE_INFINITY, 0), 120);
 });

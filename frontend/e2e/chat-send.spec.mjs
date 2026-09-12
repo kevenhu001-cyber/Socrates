@@ -199,6 +199,108 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
   expect(await firstTurnOffset()).toBeLessThanOrEqual(40);
 });
 
+test('a sent prompt keeps its top offset across viewport changes', async ({ page }) => {
+  await mockAuthedApp(page);
+  /* Keep the turn pending so the anchored prompt + reserve stay measurable. */
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 8_000));
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
+  });
+  /* A short viewport stands in for the keyboard-open frame the send-time
+     anchor measures; growing it stands in for the keyboard/composer collapse
+     that used to let a stale reserve slide the prompt down. */
+  await page.setViewportSize({ width: 390, height: 600 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Viewport growth smoke' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.body.dataset.conversationActive = 'true';
+    for (let i = 0; i < 30; i += 1) {
+      window.addMessage(i % 2 ? 'assistant' : 'user', `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`);
+    }
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(30);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  });
+  await page.waitForTimeout(250);
+
+  await page.evaluate(() => window.submitChatMessage('Keep this prompt at the top'));
+
+  const promptOffset = () => page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const users = list.querySelectorAll('.msg.user');
+    const latest = users[users.length - 1];
+    if (!latest) return 9999;
+    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+  });
+  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
+
+  /* Sample the anchored prompt for the whole layout change. A reserve that
+     does not track the live transcript height lets the browser clamp
+     scrollTop, which lands the prompt hundreds of pixels lower in a single
+     frame; the hold has to correct the reserve inside the same frame the
+     viewport changes, so no sample may show a jump. */
+  const sampleFrames = () => page.evaluate(() => new Promise((resolve) => {
+    const list = document.getElementById('msgList');
+    const offsets = [];
+    const deadline = performance.now() + 600;
+    const tick = () => {
+      const users = list.querySelectorAll('.msg.user');
+      const latest = users[users.length - 1];
+      offsets.push(latest
+        ? Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top)
+        : null);
+      if (performance.now() > deadline) { resolve(offsets); return; }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }));
+
+  const assertStable = (name, offsets) => {
+    const samples = offsets.filter((value) => value != null);
+    expect(samples.length, name).toBeGreaterThan(0);
+    expect(Math.max(...samples), `${name}: ${JSON.stringify(samples)}`).toBeLessThanOrEqual(24);
+    for (let i = 1; i < samples.length; i += 1) {
+      expect(
+        Math.abs(samples[i] - samples[i - 1]),
+        `${name} jumped at sample ${i}: ${JSON.stringify(samples)}`,
+      ).toBeLessThanOrEqual(8);
+    }
+  };
+
+  /* The keyboard closing grows the transcript; the reserve must grow with it
+     instead of letting the browser clamp scrollTop under the anchor. */
+  const growFrames = await (async () => {
+    const sampling = sampleFrames();
+    await page.setViewportSize({ width: 390, height: 844 });
+    return sampling;
+  })();
+  assertStable('keyboard-close growth', growFrames);
+  expect(await promptOffset(), 'settled offset after the growth').toBeLessThanOrEqual(24);
+
+  /* Shrinking back must shrink the reserve without moving the prompt. */
+  const shrinkFrames = await (async () => {
+    const sampling = sampleFrames();
+    await page.setViewportSize({ width: 390, height: 600 });
+    return sampling;
+  })();
+  assertStable('keyboard-open shrink', shrinkFrames);
+  expect(await promptOffset(), 'settled offset after the shrink').toBeLessThanOrEqual(24);
+});
+
 test('retry replaces the failed answer and resumes at the visible error position', async ({ page }) => {
   await mockAuthedApp(page);
   let streamCalls = 0;

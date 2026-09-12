@@ -60,6 +60,14 @@ export interface KeyboardAnchorContext {
    * stays under the same visual position.
    */
   panDelta?: number;
+  /**
+   * A send-time turn anchor (chat/turnAnchor.ts) currently holds the
+   * submitted prompt at the top of the transcript. Its own reserve
+   * controller re-aligns on every layout change, so the keyboard
+   * transition must leave the transcript alone — a second writer snapping
+   * to the bottom would slide the prompt down by the viewport delta.
+   */
+  viewportOwnerHeld?: boolean;
 }
 
 export type KeyboardAnchorAction =
@@ -83,6 +91,9 @@ export function decideKeyboardAnchorAction(
   context: KeyboardAnchorContext,
 ): KeyboardAnchorAction {
   if (!anchor || context.userIntentAfterCapture) return { type: 'none' };
+  /* A send owns the transcript while its anchor holds the prompt at the
+     top; the send controller re-aligns on this same layout change. */
+  if (context.viewportOwnerHeld) return { type: 'none' };
   if (anchor.pinned && !context.scrolledAway) return { type: 'follow-bottom' };
   const maxTop = Number.isFinite(context.maxScrollTop)
     ? Math.max(0, context.maxScrollTop)
