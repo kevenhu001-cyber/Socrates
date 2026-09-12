@@ -480,6 +480,43 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   color: var(--conversation-text) !important;
 }
 
+/* P_message-usage — LobeHub-style assistant footer: model + speed on the
+   left, token totals on the right, quiet 12px secondary text. */
+#appShell#appShell .turn-usage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--conversation-text-muted) !important;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#appShell#appShell .turn-usage-left,
+#appShell#appShell .turn-usage-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+#appShell#appShell .turn-usage-model {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#appShell#appShell .turn-usage-speed,
+#appShell#appShell .turn-usage-token {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+#appShell#appShell .turn-usage-dot { opacity: .55; }
+
 #appShell#appShell .msg-toolbar,
 #appShell#appShell .message-toolbar,
 #appShell#appShell .msg-actions {

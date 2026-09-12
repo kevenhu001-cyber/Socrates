@@ -401,6 +401,14 @@ export async function loadSession(id){
            thinking pill was silently dropped on every session reload.
            Keep the snake_case fallback for any legacy payloads. */
         reasoningContent: m.reasoningContent || m.reasoning_content || null,
+        /* P_message-usage — restore the assistant footer from the
+           messages.model / messages.token_count columns. The model
+           column stores the display label; the token split is not
+           persisted, so a reloaded turn shows the total only. */
+        modelInfo: m.model ? { label: m.model, model: m.model } : null,
+        usage: (typeof m.tokenCount === "number" && m.tokenCount > 0)
+          ? { totalTokens: m.tokenCount }
+          : null,
         attachments: Array.isArray(m.attachments) ? m.attachments : [],
         toolCalls: Array.isArray(m.toolCalls) ? m.toolCalls.map(function(tc){
           return {
