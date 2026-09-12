@@ -6,7 +6,6 @@
  */
 import { stateStore } from '../state/store.js';
 import { hideNewReplyPill } from '../ui/scrollPill.js';
-import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { appendLocalMemory } from '../storage/localMemory.js';
 import { formatMsg } from '../render/markdown.js';
@@ -30,29 +29,12 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
     streamRetryViewport.clearPendingViewport();
     stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
     hideNewReplyPill();
-    /* The previous answer reserves viewport space so a short reply can stay
-       anchored below its prompt. Retire that reserve only when a new turn
-       begins; collapsing it earlier makes the completed page jump. */
-    for (var _ami = 0; _ami < stateStore.read('messages').length; _ami++) {
-      if (stateStore.read('messages')[_ami] && (
-        stateStore.read('messages')[_ami]._turnAnchorMinHeight ||
-        stateStore.read('messages')[_ami]._turnAnchorMarginTop
-      )) {
-        updateMessageSnapshot(stateStore.read('messages')[_ami], {
-          _turnAnchorMinHeight: undefined,
-          _turnAnchorMarginTop: undefined,
-          _turnAnchorMode: undefined,
-          _turnViewportTarget: undefined
-        }, true);
-      }
-    }
+    /* The previous answer's viewport reserve is retired by the send-time
+       anchor (chat/turnAnchor.ts) *after* it has glided past it. Clearing
+       it here collapsed the scroll range before the new turn's reserve was
+       stamped, so the browser clamped scrollTop and the transcript jumped
+       by the reserve height on the send frame. */
     try {
-      var _oldAnchors = document.querySelectorAll('#msgList .turn-viewport-anchor');
-      for (var _oai = 0; _oai < _oldAnchors.length; _oai++) {
-        _oldAnchors[_oai].classList.remove('turn-viewport-anchor');
-        _oldAnchors[_oai].style.minHeight = '';
-        _oldAnchors[_oai].style.marginTop = '';
-      }
       var _activeTurnList = document.getElementById('msgList');
       if (_activeTurnList) delete _activeTurnList.__socratesTurnViewportOwner;
     } catch (_) {}

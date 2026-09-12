@@ -21,7 +21,7 @@ import {
   updateMessageSnapshot,
 } from '../ui/messageSnapshot.js';
 import { createStreamScheduler } from '../render/streamScheduler.js';
-import { scheduleActiveTurnToTop } from './turnAnchor.ts';
+import { scheduleActiveTurnToTop, removeSupersededStub } from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.js';
 import { esc } from '../render/helpers.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
@@ -984,10 +984,20 @@ export function addStreamingMessage(opts){
         .trim();
       var hasPartial=!!(abortedMessage&&visibleStoppedRaw);
       if(abortedMessage&&!hasPartial&&abortedMessage.type==="streaming"){
-        stateStore.dispatch({
-          type:"session/remove-message-at",index:msgIdx,clientId:clientId
-        });
-        abortedMessage=null;
+        /* P_supersede-stable — removing the empty placeholder also removes
+           the turn's viewport reserve, collapsing the scroll range on the
+           send frame. Keep the entry as an invisible stub that still holds
+           its reserve; the new turn's anchor glides past it and retires it
+           off-screen (removeSupersededStub is the no-new-turn fallback). */
+        abortedMessage=patchOwnedMessage({
+          rawText:"",
+          html:'<span data-turn-stub="1"></span>',
+          type:"assistant",
+          _supersededStub:true
+        })||abortedMessage;
+        setTimeout(function(){
+          try{removeSupersededStub(clientId)}catch(_){/* already gone */}
+        },700);
       }
       /* Finalize the partial text before publishing the aborted state. A
          complete scaffold becomes interactive; an open scaffold stays on

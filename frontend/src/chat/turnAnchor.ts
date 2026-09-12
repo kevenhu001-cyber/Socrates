@@ -16,6 +16,7 @@ import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
 import { velocityScrollTo } from '../ui/scroll.js';
+import { suppressScrollPositionIntent } from '../ui/scrollPill.js';
 import type { MessageEntry } from '../ui/messageActions.ts';
 
 export interface TurnAnchorDeps {
@@ -61,6 +62,44 @@ export function turnRowFor(
 }
 
 /**
+ * Remove a superseded empty placeholder (kept as an invisible layout stub)
+ * once it is spent. Defers while a send anchor is gliding so the
+ * compensation write cannot cancel the motion; safe to call repeatedly.
+ */
+export function removeSupersededStub(clientId: string): void {
+  const list = typeof document !== 'undefined'
+    ? (document.getElementById('msgList') as TurnAnchorList | null)
+    : null;
+  if (!list) return;
+  if (list.dataset && list.dataset.turnAnchorSettling === 'true') {
+    setTimeout(() => removeSupersededStub(clientId), 300);
+    return;
+  }
+  const id = String(clientId || '');
+  if (!id) return;
+  const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
+  const row = list.querySelector(`.msg[data-client-id="${esc}"]`) as HTMLElement | null;
+  if (!row) return;
+  const users = list.querySelectorAll('.msg.user');
+  const ref = users.length ? (users[users.length - 1] as HTMLElement) : null;
+  const refTop = ref ? ref.getBoundingClientRect().top : null;
+  row.style.display = 'none';
+  if (ref && refTop != null) {
+    const drift = ref.getBoundingClientRect().top - refTop;
+    if (Math.abs(drift) > 0.5) {
+      suppressScrollPositionIntent(200);
+      list.scrollTop = Math.max(0, list.scrollTop + drift);
+    }
+  }
+  const messages = stateStore.read('messages') as MessageEntry[];
+  const index = messages.findIndex((entry) => entry && entry.clientId === id);
+  if (index >= 0) {
+    stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
+    publishReactChatRuntime({ type: 'state-synced', reason: 'superseded-stub-removed' });
+  }
+}
+
+/**
  * Reserve the new turn's leading space and converge the scroll so the
  * submitted prompt lands at the target offset. A React row takes its
  * reserve from the message entry (which survives the next commit),
@@ -95,6 +134,83 @@ export function scheduleActiveTurnToTop(
     const minHeight = parseFloat(mounted.style.minHeight) || 0;
     const marginTop = parseFloat(mounted.style.marginTop) || 0;
     return minHeight > 0 || marginTop > 0;
+  }
+  /* Retire spent viewport reserves from earlier turns only once they sit
+     completely above the visible transcript. Clearing them on the send
+     frame collapsed the scroll range before the new turn's reserve
+     existed, so the browser clamped scrollTop and the whole conversation
+     jumped by the reserve height (the send "flash"). Here the layout
+     shrink is compensated 1:1, so the visible content never moves. */
+  function retireReservesAboveViewport(): void {
+    if (!list) return;
+    const listRect = list.getBoundingClientRect();
+    const listBottom = listRect.bottom;
+    const rows = list.querySelectorAll('.turn-viewport-anchor');
+    /* A previous turn's bounded settle callback can fire after the next
+       send has already stamped its reserve. Never retire the newest
+       assistant row's reserve, whichever turn is asking. */
+    const stored = stateStore.read('messages') as MessageEntry[];
+    let latestAssistantId = '';
+    for (let i = stored.length - 1; i >= 0; i -= 1) {
+      if (stored[i] && stored[i].role === 'assistant') {
+        latestAssistantId = stored[i].clientId || '';
+        break;
+      }
+    }
+    /* Keep the newest prompt visually still across the collapse: measure
+       its viewport offset before and after and correct any drift (the
+       browser's clamp is already baked into the "after" measurement). */
+    const promptRows = list.querySelectorAll('.msg.user');
+    const promptRow = promptRows.length ? (promptRows[promptRows.length - 1] as HTMLElement) : null;
+    const promptTopBefore = promptRow ? promptRow.getBoundingClientRect().top : null;
+    const stubIds: string[] = [];
+    let cleared = 0;
+    for (let i = 0; i < rows.length; i += 1) {
+      const el = rows[i] as HTMLElement;
+      const id = el.dataset ? el.dataset.clientId : '';
+      if (clientId && id === clientId) continue;
+      if (latestAssistantId && id === latestAssistantId) continue;
+      /* A reserve that sits fully below the visible transcript belongs to
+         a newer turn; never touch it. Intersecting/above rows are spent. */
+      if (el.getBoundingClientRect().top >= listBottom) continue;
+      el.classList.remove('turn-viewport-anchor');
+      el.style.minHeight = '';
+      el.style.marginTop = '';
+      if (id) {
+        const entry = stored.find((candidate) => candidate && candidate.clientId === id);
+        if (entry && (entry._turnAnchorMinHeight || entry._turnAnchorMarginTop)) {
+          updateMessageSnapshot(entry, {
+            _turnAnchorMinHeight: undefined,
+            _turnAnchorMarginTop: undefined,
+            _turnAnchorMode: undefined,
+            _turnViewportTarget: undefined,
+          }, true);
+        }
+        if (entry && entry._supersededStub) {
+          /* A superseded empty placeholder held the layout open until this
+             point; hide the rest of its row now that it is spent. */
+          el.style.display = 'none';
+          stubIds.push(id);
+        }
+      }
+      cleared += 1;
+    }
+    if (!cleared) return;
+    if (promptRow && promptTopBefore != null) {
+      const drift = promptRow.getBoundingClientRect().top - promptTopBefore;
+      if (Math.abs(drift) > 0.5) {
+        suppressScrollPositionIntent(200);
+        list.scrollTop = Math.max(0, list.scrollTop + drift);
+      }
+    }
+    for (const id of stubIds) {
+      const messages = stateStore.read('messages') as MessageEntry[];
+      const index = messages.findIndex((candidate) => candidate && candidate.clientId === id);
+      if (index >= 0) {
+        stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
+      }
+    }
+    publishReactChatRuntime({ type: 'state-synced', reason: 'turn-reserve-retire' });
   }
   /* Reserve the row's leading space. A React row takes it from the message
      entry (MessageItem renders minHeight / .turn-viewport-anchor /
@@ -275,6 +391,7 @@ export function scheduleActiveTurnToTop(
     list.dataset.turnAnchorSettling = 'true';
     const releaseAnchor = () => {
       const done = () => {
+        retireReservesAboveViewport();
         if (list.dataset) delete list.dataset.turnAnchorSettling;
       };
       if (stateStore.read('_userScrolledAway')) { done(); return; }
