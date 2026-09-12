@@ -60,6 +60,28 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * rides the keyboard's own motion instead of snapping or lagging. */
 export const KEYBOARD_LIFT_MS = 220;
 
+/* Viewport implementations that expose the IME animation emit resize/scroll
+ * samples roughly once per frame. Once a second sample arrives in the same
+ * direction, follow the measured geometry directly: restarting a full
+ * KEYBOARD_LIFT_MS tween for every sample makes the composer trail the
+ * keyboard and then keep moving after the keyboard has stopped. Slower,
+ * isolated jumps still use the fallback tween below. */
+export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 120;
+
+export function isProgressiveKeyboardSample(
+  lastSampleAt,
+  sampleAt,
+  previousDirection,
+  nextDirection,
+) {
+  if (!Number.isFinite(lastSampleAt) || !Number.isFinite(sampleAt) || lastSampleAt <= 0) return false;
+  const gap = sampleAt - lastSampleAt;
+  return gap >= 0
+    && gap <= KEYBOARD_PROGRESSIVE_SAMPLE_MS
+    && nextDirection !== 0
+    && nextDirection === previousDirection;
+}
+
 /* Pure ease-out cubic, split out for unit tests. */
 export function easeKeyboardLift(t) {
   const x = Math.min(1, Math.max(0, Number(t) || 0));
@@ -160,6 +182,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let targetInset = 0;
   let motionFrom = 0;
   let motionStart = 0;
+  let lastTargetAt = 0;
+  let transitionDirection = 0;
   /* Reader position captured for the duration of a keyboard transition.
      The captured intent (bottom-follow vs history) is authoritative for
      the whole motion; per-frame geometry is not re-interpreted, so the
@@ -333,11 +357,43 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     root.dataset.keyboardOpen = roundedTarget > 50 ? 'true' : 'false';
 
     if (roundedTarget === targetInset && motionFrame === 0 && appliedInset === roundedTarget) return;
+
+    const now = (typeof performance !== 'undefined' && performance.now)
+      ? performance.now()
+      : Date.now();
+    const currentInset = appliedInset < 0 ? 0 : appliedInset;
+    const nextDirection = Math.sign(roundedTarget - currentInset);
+    const targetChanged = roundedTarget !== targetInset;
+    const sameDirection = nextDirection !== 0 && nextDirection === transitionDirection;
+    const progressive = targetChanged && sameDirection && (
+      motionFrame !== 0
+      || isProgressiveKeyboardSample(
+        lastTargetAt,
+        now,
+        transitionDirection,
+        nextDirection,
+      )
+    );
     targetInset = roundedTarget;
+    lastTargetAt = now;
+
+    /* Once the browser is giving us the keyboard's real intermediate
+     * geometry, that geometry is the animation timeline. Writing each sample
+     * directly keeps the composer attached to the rising keyboard instead of
+     * easing toward an increasingly stale point. The first sample of a new
+     * direction is still continuous: it begins from the currently applied
+     * inset and uses the discrete-jump fallback until a second sample proves
+     * that a progressive stream exists. */
+    if (progressive && !prefersReducedMotion()) {
+      if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
+      writeInsetFrame(roundedTarget);
+      return;
+    }
+    if (nextDirection) transitionDirection = nextDirection;
 
     /* Progressive viewports (iOS) deliver many small steps; a short glide
-     * between samples keeps the motion continuous there too. Discrete
-     * viewports (most Android builds) get the whole lift from the
+     * begins the motion, then subsequent samples become the timeline above.
+     * Discrete viewports (most Android builds) get the whole lift from the
      * interpolation. Reduced motion snaps. */
     if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
@@ -345,9 +401,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       return;
     }
     motionFrom = appliedInset < 0 ? 0 : appliedInset;
-    motionStart = (typeof performance !== 'undefined' && performance.now)
-      ? performance.now()
-      : Date.now();
+    motionStart = now;
     if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
   };
 

@@ -74,6 +74,14 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   await page.evaluate(() => window.submitChatMessage(
     'A focused mobile send should remain at the newest message.',
   ));
+  await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
+  const enteringTransform = await page.locator('#msgList .msg.user').last().evaluate(
+    (row) => getComputedStyle(row).transform,
+  );
+  /* Spatial movement belongs to turnAnchor's scroll glide. A per-row
+     translate here makes the freshly submitted prompt flash at a second,
+     compositor-only position while its layout anchor is being measured. */
+  expect(enteringTransform).toBe('none');
   await page.waitForFunction(() => Boolean(
     document.querySelector('#msgList .msg.assistant.turn-viewport-anchor .thinking-placeholder'),
   ));

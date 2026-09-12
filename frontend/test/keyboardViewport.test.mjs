@@ -6,6 +6,8 @@ import {
   measureKeyboardInset,
   isTrackedInputFocused,
   easeKeyboardLift,
+  isProgressiveKeyboardSample,
+  KEYBOARD_PROGRESSIVE_SAMPLE_MS,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
 
@@ -28,6 +30,18 @@ test('easeKeyboardLift is a clamped, monotonic ease-out curve', () => {
   }
   /* Ease-out: more than half the distance covered in the first quarter. */
   assert.ok(easeKeyboardLift(0.25) > 0.5);
+});
+
+test('continuous keyboard samples follow native geometry instead of restarting the tween', () => {
+  const start = 1_000;
+  assert.equal(isProgressiveKeyboardSample(start, start + 16, 1, 1), true);
+  assert.equal(
+    isProgressiveKeyboardSample(start, start + KEYBOARD_PROGRESSIVE_SAMPLE_MS, -1, -1),
+    true,
+  );
+  assert.equal(isProgressiveKeyboardSample(start, start + KEYBOARD_PROGRESSIVE_SAMPLE_MS + 1, 1, 1), false);
+  assert.equal(isProgressiveKeyboardSample(start, start + 16, 1, -1), false);
+  assert.equal(isProgressiveKeyboardSample(0, start + 16, 1, 1), false);
 });
 
 test('getKeyboardInset returns 0 for non-finite inputs', () => {

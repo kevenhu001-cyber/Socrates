@@ -109,6 +109,36 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
+test('progressive viewport samples keep the composer attached to the rising keyboard', async ({ page }) => {
+  await seedChat(page, 8);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(80);
+
+  const appBottom = await page.evaluate(() => Math.round(
+    document.getElementById('appShell').getBoundingClientRect().bottom,
+  ));
+  const desiredInsets = [60, 120, 180, 240];
+  const samples = [];
+  for (const desiredInset of desiredInsets) {
+    const height = appBottom - desiredInset;
+    await page.evaluate((nextHeight) => window.__fakeViewport.__resize({ height: nextHeight }), height);
+    /* Allow the resize coalescer and inset writer one frame each. Samples
+       remain closer than KEYBOARD_PROGRESSIVE_SAMPLE_MS, like a real IME. */
+    await page.waitForTimeout(40);
+    samples.push(await page.evaluate(() => parseFloat(
+      document.documentElement.style.getPropertyValue('--keyboard-inset'),
+    )));
+  }
+
+  expect(samples, JSON.stringify(samples)).toEqual([...samples].sort((a, b) => a - b));
+  /* From the second native sample onward, the measured inset itself owns
+     the timeline; the composer must not trail a freshly restarted tween. */
+  expect(Math.abs(samples[1] - desiredInsets[1]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
+  expect(Math.abs(samples[2] - desiredInsets[2]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
+  expect(Math.abs(samples[3] - desiredInsets[3]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
+});
+
 test('external keyboard inset keeps a history reader anchored instead of snapping to the bottom', async ({ page }) => {
   await seedChat(page);
   await page.evaluate(() => {
@@ -315,4 +345,3 @@ test('layout-viewport compression (Android resizes-content) follows pinned and a
   expect(restored.scrollTop).toBe(before.scrollTop);
   expect(restored.anchorText).toBe(before.anchorText);
 });
-
