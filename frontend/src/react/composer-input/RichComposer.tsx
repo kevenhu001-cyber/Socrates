@@ -247,6 +247,29 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
          browser will immediately invalidate on the next layout pass. */
       const hiddenAncestor = editorDom.closest('.chat-view.hidden, .topic-setup.hidden, .main-inner.hidden');
       if (hiddenAncestor) return;
+
+      /* A selected-plugin stack is its own first row.  The empty editor that
+         sits beneath it still reports a slightly taller intrinsic box on
+         desktop (because the grid row includes the chip row), which used to
+         make the measured-shape loop alternate `composer-multiline` on every
+         frame.  Apart from causing a visible wobble, that left chip remove
+         buttons perpetually "unstable" to pointer automation.  Let the
+         chip-specific CSS own the empty state; only a real editor draft is
+         allowed to opt into the multiline measurement below. */
+      const hasPluginChips = Boolean(wrap.querySelector('.composer-plugin-chips'));
+      const hasEditorText = Boolean((editorDom.textContent || '').replace(/\u200b/g, '').trim());
+      if (hasPluginChips && !hasEditorText) {
+        if (shapeAnimationRef.current) {
+          shapeAnimationRef.current.cancel();
+          shapeAnimationRef.current = null;
+        }
+        shapeAnimationCleanupRef.current?.();
+        shapeAnimationCleanupRef.current = null;
+        wrap.classList.remove('composer-multiline');
+        wrap.style.removeProperty('height');
+        shapeHeightRef.current = wrap.getBoundingClientRect().height;
+        return;
+      }
       const style = getComputedStyle(editorDom);
       const lineHeight = Number.parseFloat(style.lineHeight) || 24;
       const isMultiline = wrap.classList.contains('composer-multiline');

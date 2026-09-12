@@ -720,7 +720,7 @@
    with the functional React directory without showing duplicate chrome. */
 #libraryPanel[data-live-directory="true"] > :not(#libraryList):not(#libraryUploadInput),
 #spacesPanel[data-live-directory="true"] > :not(#spacesList),
-#pluginsPanel[data-live-directory="true"] > :not(#pluginsList) {
+#pluginsPanel[data-live-directory="true"] > :not(#pluginsList):not(.plugins-panel-tabs) {
   display: none !important;
 }
 

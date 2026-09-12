@@ -14,7 +14,7 @@ export interface WorkspaceSnapshot {
 }
 
 export interface LibraryItem { id: string; name?: string; title?: string; kind?: string; size?: number; uploadedAt?: string; updatedAt?: string; mimeType?: string; source?: string; }
-export interface ProjectItem { id: string; name: string; description?: string; color?: string; systemPrompt?: string; }
+export interface ProjectItem { id: string; name: string; description?: string; color?: string; systemPrompt?: string; createdAt?: string | number; updatedAt?: string | number; created_at?: string | number; updated_at?: string | number; shared?: boolean; isShared?: boolean; visibility?: string; }
 export interface PluginItem { id: string; name: string; description?: string; capabilities?: string[]; authType?: string; connection?: { status?: string; displayName?: string } | null; credentialInput?: { fields: Array<{ key: string; label: string; type?: string; required?: boolean; help?: string }> }; available?: boolean }
 export interface McpServerItem { key: string; name: string; description?: string; endpointHost?: string; enabled?: boolean; scope?: 'global' | 'project'; healthStatus?: string; lastError?: string | null; lastCheckedAt?: string | null; }
 

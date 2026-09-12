@@ -43,6 +43,28 @@ No actionable P0, P1, or P2 mismatches remain.
 - “Think deeper” toggled and persisted its active indicator.
 - No relevant console errors were observed by the visual regression spec.
 
+## Reference workspace expansion
+
+Scope: App content only (the Android status bar and Chrome address bar in the supplied references are intentionally excluded).
+
+| Surface | Viewport | Result | Checks |
+| --- | --- | --- | --- |
+| Home + composer | 390×756 | pass | black canvas, 168px mode pill, 104px composer, 40px controls, three dismissible quick actions |
+| Composer tools | 390×756 | pass | 252px floating menu above composer, Escape closes, tool rows remain keyboard reachable |
+| Plugin directory | 390×756 / 1440×900 | pass | local connector SVGs, installed strip, search/add controls, public/personal tabs, quiet list rows |
+| Projects | 390×756 / 1440×900 | pass | title/create pill, full-width search, all/owned/shared filters, project row and date |
+| Scheduled tasks | 390×756 / 1440×900 | pass | activity filter, 84px task composer, five recommendation rows, add affordances |
+| Active chat workbench | 1440×900 / 390×844 | pass | 52px desktop top bar, 26px idle pill, 24px multiline shell, focus growth without horizontal overflow |
+
+Verification run:
+
+- `npm run lint` (TypeScript check) — passed.
+- `npm run build` — passed; only existing Vite `use client`, circular chunk, and large-chunk warnings remain.
+- Focused Playwright: `reference-ui-visual.spec.mjs`, `mobile-home-visual.spec.mjs`, `mobile-composer-reference.spec.mjs`, `theme-system.spec.mjs`, `plugin-directory.spec.mjs` plus the full `chat-workbench.spec.mjs` — passed.
+- Screenshot fixtures are intercepted in Playwright only and write to `/tmp`; no generated image or `dist` output is committed.
+
+The external visual-analysis endpoint was unavailable during QA because DNS resolution returned `EAI_AGAIN`; measurements were therefore checked with the supplied references, local screenshots, and browser-computed geometry.
+
 ## Final result
 
 final result: passed
