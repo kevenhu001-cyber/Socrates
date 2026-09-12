@@ -32,6 +32,35 @@ export interface TurnAnchorList extends HTMLElement {
   __socratesTurnViewportOwner?: boolean;
 }
 
+/* The submitted prompt's own top offset inside the transcript viewport.
+   Shared by the send-time pass and the viewport hold below so both land
+   (and stay) on the same line. */
+export const TURN_ANCHOR_TOP_OFFSET = 12;
+
+/* The active turn never reserves less than this much answer room. */
+export const TURN_ANCHOR_MIN_RESERVE = 120;
+
+/* Air kept below the reserved answer room before the composer. */
+export const TURN_ANCHOR_BOTTOM_GAP = 24;
+
+/**
+ * Leading space the active answer needs so the submitted prompt can stay at
+ * TURN_ANCHOR_TOP_OFFSET while the answer fills the rest of the live
+ * transcript viewport. Recomputed on every viewport change, not just at send
+ * time: the keyboard and the composer both change the transcript's height
+ * after the send, and a stale reserve lets the scroll range shrink under the
+ * anchor, which slides the prompt down by the delta.
+ */
+export function turnAnchorReserve(
+  clientHeight: number,
+  promptHeight: number,
+  bottomPadding: number,
+): number {
+  const available = Number(clientHeight) - Number(promptHeight) - Number(bottomPadding);
+  if (!Number.isFinite(available)) return TURN_ANCHOR_MIN_RESERVE;
+  return Math.max(TURN_ANCHOR_MIN_RESERVE, Math.round(available - TURN_ANCHOR_BOTTOM_GAP));
+}
+
 let anchorDeps: TurnAnchorDeps = { isMsgListMounted: () => false };
 
 /** Provide the React-ownership reader owned by main.js. */
@@ -100,6 +129,200 @@ export function removeSupersededStub(clientId: string): void {
 }
 
 /**
+ * A send-time viewport hold: while it is active the submitted prompt owns
+ * the top of the transcript, and the active answer's reserve is kept matched
+ * to the live transcript height.
+ *
+ * A single send-time measurement is not enough. The transcript's viewport
+ * height keeps changing after the send — the virtual keyboard opens or
+ * closes, the composer grows or collapses, the window resizes — and because
+ * the scroll range is `scrollHeight - clientHeight`, a stale reserve lets the
+ * range shrink under the anchor and the browser clamps `scrollTop`, sliding
+ * the prompt down by the whole delta. Recomputing the reserve on every
+ * viewport change is what LobeHub's trailing spacer does.
+ *
+ * The correction is written in the same frame as the layout change:
+ * ResizeObserver callbacks run after layout and before paint, so growing or
+ * shrinking the reserve here is never visible as a jump — the reader sees
+ * the keyboard or composer move while the prompt stays put.
+ */
+interface TurnViewportHold {
+  list: TurnAnchorList;
+  /** The active answer's row, whichever renderer owns it. */
+  rowFor: () => HTMLElement | null;
+  /** The submitted prompt this hold keeps at the top offset. */
+  promptRow: HTMLElement;
+  clientId: string;
+  targetOffset: number;
+  observer: ResizeObserver | null;
+  /** Last `--keyboard-inset` this hold corrected for. */
+  keyboardInset: string;
+  /** Same-task correction listeners, removed on release. */
+  onViewportResize: (() => void) | null;
+  insetObserver: MutationObserver | null;
+}
+
+let viewportHold: TurnViewportHold | null = null;
+
+/**
+ * Release the active send-time viewport hold, if any. Safe to repeat, and
+ * called whenever a newer turn, a reader gesture, or a finished answer takes
+ * the transcript back over.
+ */
+export function releaseTurnViewportHold(): void {
+  const hold = viewportHold;
+  if (!hold) return;
+  viewportHold = null;
+  if (hold.observer) {
+    try { hold.observer.disconnect(); } catch (_) { /* detached list */ }
+  }
+  if (hold.onViewportResize) {
+    try { window.removeEventListener('resize', hold.onViewportResize); } catch (_) { /* no window */ }
+  }
+  if (hold.insetObserver) {
+    try { hold.insetObserver.disconnect(); } catch (_) { /* detached root */ }
+  }
+  /* keyboardViewport.js reads this flag to leave the transcript alone while
+     the send anchor owns it; clearing it hands the position back. */
+  if (hold.list.dataset) delete hold.list.dataset.turnAnchorHold;
+}
+
+function findAnchorEntry(clientId: string): MessageEntry | null {
+  if (!clientId) return null;
+  const stored = stateStore.read('messages') as MessageEntry[];
+  for (let i = stored.length - 1; i >= 0; i -= 1) {
+    if (stored[i] && stored[i].clientId === clientId) return stored[i];
+  }
+  return null;
+}
+
+function latestUserRow(list: HTMLElement): HTMLElement | null {
+  const users = list.querySelectorAll('.msg.user');
+  return users.length ? (users[users.length - 1] as HTMLElement) : null;
+}
+
+/** Converge the prompt back to its target offset without animating: the
+ *  caller has just changed the layout, so a straight write is invisible. */
+function alignPromptToOffset(
+  list: TurnAnchorList,
+  promptRow: HTMLElement,
+  targetOffset: number,
+): void {
+  const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+  const next = Math.max(0, Math.min(maxScroll, Math.round(promptRow.offsetTop - targetOffset)));
+  if (Math.abs(next - list.scrollTop) <= 0.5) return;
+  suppressScrollPositionIntent(200);
+  list.scrollTop = next;
+}
+
+function holdTurnViewport(): void {
+  const hold = viewportHold;
+  if (!hold) return;
+  const list = hold.list;
+  if (!list.isConnected || stateStore.read('_userScrolledAway')) {
+    releaseTurnViewportHold();
+    return;
+  }
+  const promptRow = hold.promptRow;
+  if (!promptRow.isConnected || latestUserRow(list) !== promptRow) {
+    /* The prompt was removed or a newer send replaced it as the anchor. */
+    releaseTurnViewportHold();
+    return;
+  }
+  const anchorRow = hold.rowFor();
+  const entry = findAnchorEntry(hold.clientId);
+  const reserve = entry ? Number(entry._turnAnchorMinHeight) || 0 : 0;
+  if (!anchorRow || !entry || reserve <= 0) {
+    releaseTurnViewportHold();
+    return;
+  }
+  /* The answer has outgrown the reserve: the row is content-sized now and
+     sticky-bottom owns the tail, so there is no layout left to hold open. */
+  if (anchorRow.getBoundingClientRect().height > reserve + 1) {
+    releaseTurnViewportHold();
+    return;
+  }
+  const styles = getComputedStyle(list);
+  const bottomPadding = parseFloat(styles.paddingBottom) || 0;
+  const nextReserve = turnAnchorReserve(
+    list.clientHeight,
+    promptRow.getBoundingClientRect().height,
+    bottomPadding,
+  );
+  if (Math.abs(nextReserve - reserve) >= 1) {
+    anchorRow.style.minHeight = nextReserve + 'px';
+    anchorRow.classList.add('turn-viewport-anchor');
+    /* Mirror the value onto the entry so React's next commit — and a
+       remount — repaint the same reserve instead of a stale one. */
+    updateMessageSnapshot(entry, { _turnAnchorMinHeight: nextReserve }, true);
+    publishReactChatRuntime({ type: 'tool-run-updated', messageId: hold.clientId });
+  }
+  alignPromptToOffset(list, promptRow, hold.targetOffset);
+}
+
+function startTurnViewportHold(
+  list: TurnAnchorList | null,
+  rowFor: () => HTMLElement | null,
+  clientId: string,
+  targetOffset: number,
+): void {
+  releaseTurnViewportHold();
+  if (!list || !clientId || typeof ResizeObserver !== 'function') return;
+  const promptRow = latestUserRow(list);
+  const anchorRow = rowFor();
+  if (!promptRow || !anchorRow) return;
+  const root = typeof document !== 'undefined' ? document.documentElement : null;
+  const hold: TurnViewportHold = {
+    list,
+    rowFor,
+    promptRow,
+    clientId,
+    targetOffset,
+    observer: null,
+    keyboardInset: readKeyboardInset(root),
+    onViewportResize: null,
+    insetObserver: null,
+  };
+  const observer = new ResizeObserver(function () { holdTurnViewport(); });
+  hold.observer = observer;
+  viewportHold = hold;
+  try { observer.observe(list, { box: 'border-box' }); }
+  catch (_) { try { observer.observe(list); } catch (_) { /* detached list */ } }
+  /* Watching the answer's own row is what retires the hold the moment the
+     answer outgrows its reserve and sticky-bottom resumes. */
+  try { observer.observe(anchorRow); } catch (_) { /* detached row */ }
+  /* Resize-observer deliveries for a viewport change land one frame after the
+     layout that revealed it, so the frame in between can paint the stale
+     reserve and clamp scrollTop. A discrete viewport resize (window, mobile
+     rotation, resize-content keyboard) is announced by `resize` before that
+     frame's paint, so correcting here keeps the change off screen. */
+  hold.onViewportResize = function () { holdTurnViewport(); };
+  try { window.addEventListener('resize', hold.onViewportResize); } catch (_) { /* no window */ }
+  /* The virtual keyboard is tweened into `--keyboard-inset` frame by frame.
+     A style mutation on the root is delivered as a microtask right after the
+     write that caused it — still inside the frame that will lay it out — so
+     the reserve can be corrected before that frame paints. */
+  if (root && typeof MutationObserver === 'function') {
+    hold.insetObserver = new MutationObserver(function () {
+      const inset = readKeyboardInset(root);
+      if (inset === hold.keyboardInset) return;
+      hold.keyboardInset = inset;
+      holdTurnViewport();
+    });
+    try {
+      hold.insetObserver.observe(root, { attributes: true, attributeFilter: ['style'] });
+    } catch (_) { hold.insetObserver = null; }
+  }
+  if (list.dataset) list.dataset.turnAnchorHold = 'true';
+  holdTurnViewport();
+}
+
+function readKeyboardInset(root: HTMLElement | null): string {
+  if (!root) return '';
+  try { return root.style.getPropertyValue('--keyboard-inset') || ''; } catch (_) { return ''; }
+}
+
+/**
  * Reserve the new turn's leading space and converge the scroll so the
  * submitted prompt lands at the target offset. A React row takes its
  * reserve from the message entry (which survives the next commit),
@@ -114,6 +337,9 @@ export function scheduleActiveTurnToTop(
   msgIdx: number,
   retryViewport: RetryViewportOffset | null,
 ): void {
+  /* A newer turn supersedes the previous send's viewport hold in the same
+     task that mounts this one, so the two never fight over scrollTop. */
+  releaseTurnViewportHold();
   let anchorMotionStarted = false;
   const messages = stateStore.read('messages') as MessageEntry[];
   let message: MessageEntry | null =
@@ -283,8 +509,8 @@ export function scheduleActiveTurnToTop(
     const styles = getComputedStyle(list);
     const bottomPadding = parseFloat(styles.paddingBottom) || 0;
     let anchor: Element | null = null;
-    let targetOffset = 12;
-    let reserve = 120;
+    let targetOffset = TURN_ANCHOR_TOP_OFFSET;
+    let reserve = TURN_ANCHOR_MIN_RESERVE;
     if (retryViewport) {
       /* Re-running the positioning pass must be idempotent. Clear the
          previous leading-space correction before measuring; otherwise the
@@ -301,7 +527,10 @@ export function scheduleActiveTurnToTop(
       }
       const maxOffset = Math.max(8, list.clientHeight - bottomPadding - 64);
       targetOffset = Math.max(8, Math.min(maxOffset, retryViewport.offset));
-      reserve = Math.max(120, Math.round(list.clientHeight - bottomPadding - targetOffset));
+      reserve = Math.max(
+        TURN_ANCHOR_MIN_RESERVE,
+        Math.round(list.clientHeight - bottomPadding - targetOffset),
+      );
       stampAnchor('retry', reserve, targetOffset);
       /* The retry row is a React commit away: the reserve is already on the
          entry so its first paint has the right height, and positionSoon
@@ -312,9 +541,10 @@ export function scheduleActiveTurnToTop(
       const users = list.querySelectorAll('.msg.user');
       anchor = users.length ? users[users.length - 1] : null;
       if (!anchor) return;
-      reserve = Math.max(
-        120,
-        Math.round(list.clientHeight - anchor.getBoundingClientRect().height - bottomPadding - 24),
+      reserve = turnAnchorReserve(
+        list.clientHeight,
+        anchor.getBoundingClientRect().height,
+        bottomPadding,
       );
       stampAnchor('turn', reserve, targetOffset);
     }
@@ -390,12 +620,19 @@ export function scheduleActiveTurnToTop(
        scroll alone until the motion and its convergence window finish. */
     list.dataset.turnAnchorSettling = 'true';
     const releaseAnchor = () => {
+      const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
       const done = () => {
         retireReservesAboveViewport();
         if (list.dataset) delete list.dataset.turnAnchorSettling;
       };
       if (stateStore.read('_userScrolledAway')) { done(); return; }
       stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+      /* The glide is over but the layout around the prompt is not settled:
+         the keyboard or the composer can still change the transcript's
+         height. The hold keeps the reserve matched to the live viewport
+         from the first of those changes, while the settle loop below
+         converges the offset itself. */
+      startTurnViewportHold(list, row, holdClientId, targetOffset);
       settleNormalTurnAnchor(targetOffset, Date.now() + 420, done);
     };
     velocityScrollTo(list, target, { smooth: true }).then(() => {

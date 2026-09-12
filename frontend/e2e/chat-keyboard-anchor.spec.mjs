@@ -303,8 +303,73 @@ test('visualViewport keyboard lift keeps a history reader anchored and never for
   expect(Math.abs(closed.anchorOffset - before.anchorOffset)).toBeLessThanOrEqual(1);
 });
 
-test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }) => {
-  await seedChat(page);
+test('a prompt sent with the keyboard open keeps its top offset when the keyboard closes', async ({ page }) => {
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 6_000));
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
+  });
+  await seedChat(page, 30);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(120);
+  /* Keyboard up: the transcript viewport shrinks under the prompt the send
+     is about to anchor, so the send-time reserve is measured short. */
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
+  await page.waitForTimeout(320);
+
+  await page.evaluate(() => window.submitChatMessage('Keep this prompt at the top'));
+
+  const promptOffset = () => page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const users = list.querySelectorAll('.msg-user, .msg.user');
+    const latest = users[users.length - 1];
+    if (!latest) return 9999;
+    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+  });
+  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
+
+  /* Sample the prompt for the whole close motion. Without a reserve that
+     tracks the growing transcript, the browser clamps scrollTop and the
+     prompt lands hundreds of pixels lower in one frame. */
+  const sampling = page.evaluate(() => new Promise((resolve) => {
+    const list = document.getElementById('msgList');
+    const offsets = [];
+    const deadline = performance.now() + 700;
+    const tick = () => {
+      const users = list.querySelectorAll('.msg-user, .msg.user');
+      const latest = users[users.length - 1];
+      offsets.push(latest
+        ? Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top)
+        : null);
+      if (performance.now() > deadline) { resolve(offsets); return; }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }));
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
+  const samples = (await sampling).filter((value) => value != null);
+
+  expect(samples.length).toBeGreaterThan(0);
+  expect(Math.max(...samples), JSON.stringify(samples)).toBeLessThanOrEqual(24);
+  for (let i = 1; i < samples.length; i += 1) {
+    expect(
+      Math.abs(samples[i] - samples[i - 1]),
+      `prompt jumped at sample ${i}: ${JSON.stringify(samples)}`,
+    ).toBeLessThanOrEqual(8);
+  }
+  /* The keyboard really closed, and the transcript still has content below
+     the anchored prompt rather than being scrolled to the bottom. */
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('0px');
+  expect((await transcriptState(page)).distanceFromBottom).toBeGreaterThan(0);
+});
+
+test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }) => {  await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;

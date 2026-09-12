@@ -295,6 +295,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const anchor = transcriptAnchor;
     if (!anchor || !anchor.list || anchor.list.isConnected === false) return;
     const list = anchor.list;
+    /* A fresh send owns the transcript offset while its anchor holds the
+       submitted prompt at the top (chat/turnAnchor.ts): that controller
+       re-aligns on every layout change, and snapping to the bottom here
+       would slide the prompt down by the whole viewport delta. Keep the
+       captured snapshot current instead, so the first unheld geometry
+       change compensates from the reader's real position. */
+    const viewportOwnerHeld = Boolean(list.dataset && list.dataset.turnAnchorHold === 'true');
     const action = decideKeyboardAnchorAction(
       { scrollTop: anchor.scrollTop, pinned: anchor.pinned },
       {
@@ -302,9 +309,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         scrolledAway: Boolean(window.stateStore.read('_userScrolledAway')),
         userIntentAfterCapture: getLastScrollIntentAt() > anchor.intentAt,
         panDelta: viewportOffsetTop() - anchor.offsetTop,
+        viewportOwnerHeld,
       },
     );
     if (action.type === 'none') {
+      if (viewportOwnerHeld && list.isConnected !== false) {
+        transcriptAnchor = captureTranscriptAnchor();
+        return;
+      }
       /* A live gesture owns the scroll: drop the stale anchor but watch
          for calm so the next keyboard change re-anchors from the new
          reader position. */
