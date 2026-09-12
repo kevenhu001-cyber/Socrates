@@ -3,6 +3,7 @@
  */
 
 import { stateStore } from '../state/store.js';
+import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 
 /* Detect a tool envelope in the model's response. Returns:
       null — not a tool call
@@ -135,7 +136,11 @@ function handleChatApiResult(
       stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
       ctl.abort();
       console.warn('[chat] stream returned no result with no error. result=', result, 'lastCallError=', lastCallError);
-      if ((window as any).addMessage) (window as any).addMessage('assistant', '(response interrupted — no content received)');
+      if ((window as any).addMessage) {
+        const clientId = (window as any).addMessage('assistant', '(response interrupted — no content received)');
+        const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
+        scheduleTurnToTopForMessage(list, clientId);
+      }
     }
   }
 }

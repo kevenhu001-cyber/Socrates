@@ -27,6 +27,7 @@ import { publishThinkingTurnStart } from '../ui/messageSnapshot.js';
 import { publishActiveWorkflowEvent, publishActiveWorkflowFinish, publishWorkspaceAgentEvent } from './toolCallbacks.js';
 import { clearPendingTurn, createChatTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
 import { addMessage } from './messages.js';
+import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
 
@@ -47,6 +48,13 @@ function _addStreamingMessage(opts) {
     return window.addStreamingMessage(opts);
   }
   throw new Error('addStreamingMessage bridge missing');
+}
+
+function _addAnchoredAssistant(text) {
+  var clientId=addMessage("assistant",text);
+  var list=typeof document!=="undefined"?document.getElementById("msgList"):null;
+  scheduleTurnToTopForMessage(list,clientId);
+  return clientId;
 }
 
 export async function askChatTurn(userText,pendingOverride,precreatedController){
@@ -87,7 +95,7 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
     var fallback=userText
       ?"You said: \""+userText+"\". I can't actually reply yet because no model is configured — open Settings and add a provider to enable Chat mode."
       :"I'm in Chat mode but no model is configured. Open Settings to add a provider, and I'll be able to talk about \""+stateStore.read("topic")+"\" for real.";
-    addMessage("assistant",fallback);
+    _addAnchoredAssistant(fallback);
     return;
   }
   /* Offline precheck — surface a clear "you're offline" message instead

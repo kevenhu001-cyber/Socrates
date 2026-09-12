@@ -13,6 +13,7 @@ import { appendClientContextMessages } from '../chat/promptSuffixes.ts';
 import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.js';
 import { addMessage as _addMessage } from '../chat/messages.js';
+import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.js';
 import { updateChatStats as _updateChatStatsDirect } from '../chat/stats.js';
 
@@ -120,6 +121,12 @@ function _addStreamingMessage(opts) {
 function _updateChatStats() {
   try { _updateChatStatsDirect(); } catch (_) {}
 }
+function _addAnchoredAssistant(text) {
+  var clientId=_addMessage("assistant",text);
+  var list=typeof document!=="undefined"?document.getElementById("msgList"):null;
+  scheduleTurnToTopForMessage(list,clientId);
+  return clientId;
+}
 
 export async function askNextQuestion(){
   var node=stateStore.read("kbNodes")[stateStore.read("currentNode")];
@@ -158,8 +165,7 @@ export async function askNextQuestion(){
   }
   /* fallback: mock or pre-stream API path */
   var q=await generateSocraticQuestion(node,stateStore.read("domain"));
-  _addMessage("assistant",q.text);
+  _addAnchoredAssistant(q.text);
   stateStore.dispatch({type:"state/batch",patch:{stuckCount:0,totalQ:stateStore.read("totalQ")+1}});
   _updateChatStats();
 }
-

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { JSDOM } from 'jsdom';
+import { stateStore } from '../src/state/store.js';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
@@ -11,7 +12,9 @@ globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 
 const {
   configureTurnAnchor,
+  releaseTurnViewportHold,
   scheduleActiveTurnToTop,
+  scheduleTurnToTopForMessage,
   turnAnchorReserve,
   turnRowFor,
 } = await import('../src/chat/turnAnchor.ts');
@@ -105,6 +108,47 @@ test('scheduleActiveTurnToTop positions a retry bubble synchronously', () => {
     }
     assert.equal(assistant.style.marginTop, '40px');
   } finally {
+    restoreRaf();
+    list.remove();
+  }
+});
+
+test('scheduleTurnToTopForMessage waits for a React row to mount by client id', async () => {
+  const list = makeList();
+  const queue = [];
+  const restoreRaf = stubRaf(queue);
+  const previousMessages = stateStore.read('messages');
+  try {
+    makeUser(list);
+    stateStore.dispatch({
+      type: 'state/set',
+      key: 'messages',
+      value: [
+        { clientId: 'react-user', role: 'user', rawText: 'hello', html: null },
+        { clientId: 'react-reply', role: 'assistant', rawText: 'reply', html: '<p>reply</p>' },
+      ],
+    });
+
+    /* The direct reply is in the authoritative store before React commits
+       its row. The first positioning pass must stay alive instead of
+       dereferencing a missing assistant node or giving up. */
+    scheduleTurnToTopForMessage(list, 'react-reply');
+    assert.ok(queue.length > 0);
+
+    const assistant = makeAssistant(list, 'react-reply');
+    queue.shift()();
+    await Promise.resolve();
+    for (let i = 0; i < 8 && queue.length; i += 1) {
+      const frame = queue.shift();
+      frame.length > 0 ? frame(0) : frame();
+    }
+
+    assert.ok(assistant.classList.contains('turn-viewport-anchor'));
+    assert.notEqual(assistant.style.minHeight, '');
+    assert.equal(list.__socratesTurnViewportOwner, true);
+  } finally {
+    releaseTurnViewportHold();
+    stateStore.dispatch({ type: 'state/set', key: 'messages', value: previousMessages });
     restoreRaf();
     list.remove();
   }

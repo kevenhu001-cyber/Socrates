@@ -32,8 +32,7 @@ import {
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
-import { scheduleScrollMainToBottom } from '../ui/scroll.js';
-import { isMsgListMounted } from '../react/message-list/MessageList.tsx';
+import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
 
 function _t(key, fallback) {
   try {
@@ -77,6 +76,16 @@ function _addStreamingMessage(opts) {
 
 function _deepResearchOn() {
   try { return !!window.deepResearchOn; } catch (_) { return false; }
+}
+
+/* Direct Tutor/Chat fallbacks still need the exact same send-time viewport
+   owner as streaming replies. `addMessage` publishes the entry first and
+   the anchor module then waits for the React row to commit by clientId. */
+function _addAnchoredAssistant(text, type, actions) {
+  var clientId = addMessage("assistant", text, type, actions);
+  var list = typeof document !== "undefined" ? document.getElementById("msgList") : null;
+  scheduleTurnToTopForMessage(list, clientId);
+  return clientId;
 }
 
 export async function submitChatMessage(textOverride,opts){
@@ -148,12 +157,6 @@ export async function submitChatMessage(textOverride,opts){
     addMessage("user",text,null,null,immediateAttList);
     precreateChatTurn();
     clearComposer("chat");updateSendBtn();
-    /* React scrolls after its MessageList commit. Keep the two-frame
-       fallback only for legacy/share surfaces where React does not own the
-       transcript, so send never has two independent scroll writers. */
-    if(!isMsgListMounted()){
-      scheduleScrollMainToBottom({force:true,smooth:true});
-    }
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
        visuals. Enter-send keeps the classic keep-typing flow by
@@ -359,7 +362,7 @@ export async function submitChatMessage(textOverride,opts){
       }
       updateKB();
       if(nextKbIdx<0){
-        addMessage("assistant","Nice work — you've explored all the key areas of "+stateStore.read("domain")+". Feel free to revisit any node on the left, or start a new topic.");
+        _addAnchoredAssistant("Nice work — you've explored all the key areas of "+stateStore.read("domain")+". Feel free to revisit any node on the left, or start a new topic.");
       }else{
         stateStore.dispatch({type:"state/batch",patch:{
           currentNode:nextKbIdx,
@@ -373,7 +376,7 @@ export async function submitChatMessage(textOverride,opts){
            no examples shown and no practice attempts. */
         var prevName=node.name;
         var nextName=stateStore.read("kbNodes")[nextKbIdx].name;
-        addMessage("assistant","Good depth on **"+prevName+"**. Let's move to the next area: **"+nextName+"**.");
+        _addAnchoredAssistant("Good depth on **"+prevName+"**. Let's move to the next area: **"+nextName+"**.");
         setTimeout(function(){askNextQuestion()},900);
       }
       saveCurrentSession();
@@ -417,11 +420,11 @@ export async function submitChatMessage(textOverride,opts){
             });
           }else{
             streamCtl.abort();
-            addMessage("assistant",_origGenerateFollowUp(text,node,stateStore.read("domain")));
+            _addAnchoredAssistant(_origGenerateFollowUp(text,node,stateStore.read("domain")));
           }
         }
       }else{
-        addMessage("assistant",_origGenerateFollowUp(text,node,stateStore.read("domain")));
+        _addAnchoredAssistant(_origGenerateFollowUp(text,node,stateStore.read("domain")));
       }
       /* U-M2 — only a substantive (or quiz-driven) answer proves the
          student isn't stuck. The old unconditional reset here meant
@@ -447,7 +450,7 @@ export async function submitChatMessage(textOverride,opts){
              &&typeof _tutorSocratic().showFourOptionDialog==="function"){
             try{_tutorSocratic().showFourOptionDialog(text)}catch(_){}
           }else{
-            addMessage("assistant","Let's try a different approach.","suggest",[
+            _addAnchoredAssistant("Let's try a different approach.","suggest",[
               {text:_t("tutor.explain"),action:"explain",primary:true},
               {text:_t("tutor.skip"),action:"skip"},
               {text:_t("tutor.thinkMore"),action:"retry"}
@@ -463,7 +466,7 @@ export async function submitChatMessage(textOverride,opts){
              &&typeof _tutorSocratic().showExplainPrompt==="function"){
             try{_tutorSocratic().showExplainPrompt()}catch(_){}
           }else{
-            addMessage("assistant","Let's try a different approach.","suggest",[
+            _addAnchoredAssistant("Let's try a different approach.","suggest",[
               {text:_t("tutor.explain"),action:"explain",primary:true},
               {text:_t("tutor.skip"),action:"skip"},
               {text:_t("tutor.thinkMore"),action:"retry"}
@@ -476,10 +479,10 @@ export async function submitChatMessage(textOverride,opts){
           stateStore.dispatch({type:"state/batch",patch:{
             stuckCheckRejected:(stateStore.read("stuckCheckRejected")||0)+1,stuckCount:0
           }});
-          addMessage("assistant",_t("tutor.takeTime"));
+          _addAnchoredAssistant(_t("tutor.takeTime"));
         }
       }else{
-        addMessage("assistant",_t("tutor.takeTime"));
+        _addAnchoredAssistant(_t("tutor.takeTime"));
       }
     }
     updateChatStats();

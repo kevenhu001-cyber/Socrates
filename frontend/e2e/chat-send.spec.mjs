@@ -71,9 +71,11 @@ test('mobile send places the submitted prompt and thinking state at the viewport
 
   const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
   await chatInput.focus();
-  await page.evaluate(() => window.submitChatMessage(
-    'A focused mobile send should remain at the newest message.',
-  ));
+  await chatInput.fill('A focused mobile send should remain at the newest message.');
+  /* Exercise the production button path: handleSendClick passes the blur
+     option into submitChatMessage, so mobile focus/keyboard collapse and the
+     turn anchor are tested in the same interaction. */
+  await page.locator('#sendBtn').click();
   await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
   const enteringTransform = await page.locator('#msgList .msg.user').last().evaluate(
     (row) => getComputedStyle(row).transform,
@@ -150,6 +152,86 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   expect(placement.userOffset, JSON.stringify(placement)).toBeLessThanOrEqual(24);
   expect(placement.thinkingVisible).toBe(true);
   expect(placement.anchored).toBe(true);
+});
+
+test('Tutor button send uses the same top anchor while the reply streams', async ({ page }) => {
+  await mockAuthedApp(page);
+  let releaseStream;
+  const streamGate = new Promise((resolve) => { releaseStream = resolve; });
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    await streamGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: {"choices":[{"delta":{"content":"A short Tutor follow-up."}}]}\n\ndata: [DONE]\n\n',
+    });
+  });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Tutor anchor smoke' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentNode', value: 0 });
+    window.stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: [
+      { name: 'A concept', status: 'fuzzy', questions: 1 },
+    ] });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.body.dataset.conversationActive = 'true';
+    window.appMode = 'tutor';
+
+    for (let i = 0; i < 24; i += 1) {
+      const role = i % 2 ? 'assistant' : 'user';
+      const text = `Tutor history ${i + 1}: ${'reasoning context '.repeat(10)}`;
+      /* Use the production append path so the React message-list runtime
+         receives the same publish event it gets in a real conversation. */
+      window.addMessage(role, text);
+    }
+  });
+  await expect(page.locator('#msgList .msg')).toHaveCount(24);
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.scrollTop = list.scrollHeight;
+    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  });
+
+  const chatInput = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await chatInput.fill('Tutor should glide my submitted answer to the top before following the response.');
+  await page.locator('#sendBtn').click();
+  try {
+    await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
+    await expect(page.locator('#msgList .msg.assistant .thinking-placeholder').last()).toBeVisible();
+    await expect.poll(() => page.evaluate(() => {
+      const list = document.getElementById('msgList');
+      const users = list.querySelectorAll('.msg.user');
+      const latest = users[users.length - 1];
+      if (!latest) return 9999;
+      return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+    }), { timeout: 5_000 }).toBeLessThanOrEqual(24);
+
+    const state = await page.evaluate(() => {
+      const list = document.getElementById('msgList');
+      const users = list.querySelectorAll('.msg.user');
+      const latest = users[users.length - 1];
+      return {
+        mode: window.appMode,
+        offset: Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top),
+        anchored: Boolean(list.querySelector('.msg.assistant.turn-viewport-anchor')),
+        away: window.stateStore.read('_userScrolledAway'),
+      };
+    });
+    expect(state.mode).toBe('tutor');
+    expect(state.offset).toBeGreaterThanOrEqual(-2);
+    expect(state.offset).toBeLessThanOrEqual(24);
+    expect(state.anchored).toBe(true);
+    expect(state.away).toBe(false);
+  } finally {
+    releaseStream();
+  }
 });
 
 test('mobile first turn stays at the transcript top when the viewport grows', async ({ page }) => {
