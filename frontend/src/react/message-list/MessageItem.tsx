@@ -2,7 +2,6 @@ import { memo, useLayoutEffect } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import { AssistantTurn } from '../tool-run/AssistantTurn';
-import { TurnUsage } from '../tool-run/TurnUsage';
 import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
 import { CanvasBlock } from '../canvas';
@@ -170,12 +169,6 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
       ) : (
         <div className="msg-body" dangerouslySetInnerHTML={{ __html: html }} />
       )}
-      {/* LobeHub-style footer: model + speed on the left, token totals on
-          the right. Rendering it here (not inside AssistantTurn) covers
-          both the declarative and the plain-HTML answer paths. */}
-      {!isLive && role === 'assistant' && (message.usage || message.modelInfo?.label) ? (
-        <TurnUsage usage={message.usage} modelInfo={message.modelInfo} />
-      ) : null}
       {/* While an answer is still arriving there is nothing to copy, branch
           from, or give feedback on; the toolbar appears at finish(). */}
       {isLive ? null : (
@@ -220,8 +213,6 @@ const MessageItem = memo(MessageItemBase, (prev, next) => {
     && a.canvasId === b.canvasId
     && a.restoredFromHistory === b.restoredFromHistory
     && a.attachments === b.attachments
-    && a.usage === b.usage
-    && a.modelInfo === b.modelInfo
     && a._liveStatus === b._liveStatus
     && a._turnAnchorMinHeight === b._turnAnchorMinHeight
     && a._turnAnchorMarginTop === b._turnAnchorMarginTop

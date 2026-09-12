@@ -594,14 +594,6 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * The streaming_text is cleared so the client knows the stream
    * completed normally (no partial content to recover). The client's
    * own saveCurrentSession() will persist the full message. */
-  /* Token totals ride to the client before [DONE] so the finalized
-     assistant message can render its usage footer without a second
-     request. Persisted alongside the message by the sessions route. */
-  emitter.event('usage', {
-    promptTokens,
-    completionTokens,
-    totalTokens: promptTokens + completionTokens,
-  });
   emitter.finish();
   if (req.userId) {
     recordUsage({

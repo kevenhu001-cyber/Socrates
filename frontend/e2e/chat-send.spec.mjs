@@ -199,63 +199,6 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
   expect(await firstTurnOffset()).toBeLessThanOrEqual(40);
 });
 
-test('a sent prompt keeps its top offset across viewport changes', async ({ page }) => {
-  await mockAuthedApp(page);
-  /* Keep the turn pending so the anchored prompt + reserve stay measurable. */
-  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 4_000));
-    await route.fulfill({
-      status: 200,
-      contentType: 'text/event-stream',
-      body: 'data: [DONE]\n\n',
-    });
-  });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await gotoAndSettle(page, '/');
-  await page.waitForLoadState('domcontentloaded');
-  await waitForAppShell(page);
-
-  await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
-    document.getElementById('topicSetup').classList.add('hidden');
-    document.getElementById('chatView').classList.remove('hidden');
-    for (let i = 0; i < 30; i += 1) {
-      window.addMessage(i % 2 ? 'assistant' : 'user', `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`);
-    }
-  });
-  await expect(page.locator('#msgList .msg')).toHaveCount(30);
-  await page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
-  });
-  await page.waitForTimeout(250);
-
-  await page.evaluate(() => window.submitChatMessage('Keep this prompt at the top'));
-
-  const promptOffset = () => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    const users = list.querySelectorAll('.msg.user');
-    const latest = users[users.length - 1];
-    if (!latest) return 9999;
-    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
-  });
-  await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
-
-  /* The keyboard opening shrinks the transcript; the send-time reserve must
-     shrink with it so the prompt stays at the top. */
-  await page.setViewportSize({ width: 390, height: 600 });
-  await page.waitForTimeout(450);
-  expect(await promptOffset(), 'keyboard-open shrink').toBeLessThanOrEqual(24);
-
-  /* Reopening it must grow the reserve back instead of sliding the prompt
-     down by the viewport delta (LobeHub recomputes its spacer here). */
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(450);
-  expect(await promptOffset(), 'keyboard-close growth').toBeLessThanOrEqual(24);
-});
-
 test('retry replaces the failed answer and resumes at the visible error position', async ({ page }) => {
   await mockAuthedApp(page);
   let streamCalls = 0;

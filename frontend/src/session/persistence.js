@@ -128,14 +128,6 @@ function doSave(){
        * images. Without this, toolCalls are silently dropped at save
        * time and never restored on reload. */
       toolCalls:Array.isArray(m.toolCalls)?m.toolCalls.slice(0,20):[],
-      /* P_message-usage — model label + turn token total for the
-       * assistant footer. They reuse the sessions route's existing
-       * messages.model / messages.token_count columns, so no migration
-       * is required. */
-      model:(m.modelInfo&&(m.modelInfo.label||m.modelInfo.model))||null,
-      tokenCount:(m.usage&&Number.isFinite(Number(m.usage.totalTokens)))
-        ?Number(m.usage.totalTokens)
-        :null,
     };
   });
   var sessionId=stateStore.read("currentSessionId")||generateId();
