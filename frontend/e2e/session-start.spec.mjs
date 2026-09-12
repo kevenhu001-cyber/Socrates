@@ -103,40 +103,13 @@ for (const [name, viewport] of [
     await expect(page.locator('#msgList .msg.assistant .msg-body').first()).toBeVisible();
     const after = await composerSignature(page, '#chatInputWrap');
 
-    /* Landing and in-session composers share the compact pill skin: the
-       landing shell hands off to the chat pill on send. Pin both skins
-       explicitly — the border tint differs by focus state, so only
-       the surface, the radii and the heights are contractual here. */
+    /* The topic composer is the visual baseline. The first in-session
+       composer must inherit its complete outer geometry during the handoff,
+       not only its surface color. */
     expect(after.background).toBe(before.background);
-    if (name === 'mobile') {
-      expect(before.radius).toBe('28px');
-      expect(after.radius).toBe('28px');
-      expect(before.height).toBe(56);
-      expect(after.height).toBe(56);
-    } else {
-      expect(before.radius).toBe('28px');
-      expect(after.radius).toBe('999px');
-      expect(before.height).toBe(52);
-      expect(after.height).toBe(54);
-    }
-    const widths = await page.evaluate(() => {
-      const wrap = document.querySelector('#chatInputWrap');
-      const body = document.querySelector('#msgList .msg.assistant .msg-body');
-      return {
-        composer: Math.round(wrap.getBoundingClientRect().width),
-        text: Math.round(body.getBoundingClientRect().width),
-      };
-    });
-    if (name === 'mobile') {
-      /* The mobile composer sits inset (page margins) inside the wider
-         transcript column; it must never overflow it. */
-      expect(widths.composer).toBeLessThanOrEqual(widths.text);
-    } else {
-      /* The desktop pill sits inset by the bar's 16px gutters, so it reads
-         32px narrower than the transcript column; it must never overflow. */
-      expect(widths.composer).toBeLessThanOrEqual(widths.text);
-      expect(widths.text - widths.composer).toBeLessThanOrEqual(33);
-    }
+    expect(after.width).toBe(before.width);
+    expect(after.height).toBe(before.height);
+    expect(after.radius).toBe(before.radius);
     await expect(page.locator('#chatComposerRoot .rich-composer-editor'))
       .toHaveAttribute('aria-label', 'Ask Socrates...');
   });

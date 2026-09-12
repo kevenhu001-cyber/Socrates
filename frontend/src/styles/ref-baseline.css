@@ -1832,7 +1832,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 /* --------------------------------------------------------------------------
-   Final override: desktop chat composer matches the ChatGPT reference pill
+   Final override: desktop chat composer matches the topic composer pill
    (second screenshot): one compact row — plus / editor / effort / mic /
    send — on a fully rounded surface. Earlier layers left a 68px wrap with
    a 66px editor row, 42px attach hit area, and zero column gaps, which
@@ -1846,7 +1846,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     height: 52px !important;
     min-height: 52px !important;
     padding: 0 6px !important;
-    border-radius: 26px !important;
+    border-radius: 28px !important;
   }
 
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
@@ -1947,13 +1947,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     padding: 13px 4px !important;
   }
 
-  /* Give the pill gutters against the viewport edge so it reads as a
-     floating capsule rather than a full-bleed bar. The legacy fade painted
-     a gray veil over the black page; the reference floats the pill on the
-     bare canvas, so the bar itself stays transparent. */
+  /* Keep the active chat shell on the same content-column edge as the topic
+     composer. The bar remains transparent; only its vertical padding is
+     reserved for the safe area and keyboard inset. */
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
     #appShell#appShell #chatInputBar {
-    padding-inline: 16px !important;
+    padding-inline: 0 !important;
     background: transparent !important;
   }
 
