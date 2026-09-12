@@ -2,6 +2,64 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+test('mobile landing and conversation retain one composer geometry', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page, { lang: 'zh' });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const topic = page.locator('#topicInputWrap');
+  await expect(page.locator('#topicTitle')).toBeVisible();
+  await expect(topic.locator('#topicMobileMicBtn')).toBeVisible();
+
+  const measure = async (wrapSelector, controls) => page.evaluate(({ wrapSelector: selector, controls: ids }) => {
+    const rect = (target) => {
+      const box = document.querySelector(target)?.getBoundingClientRect();
+      const controlStyle = document.querySelector(target) ? getComputedStyle(document.querySelector(target)) : null;
+      return box ? {
+        left: Math.round(box.left),
+        width: Math.round(box.width),
+        height: Math.round(box.height),
+        background: controlStyle?.backgroundColor,
+      } : null;
+    };
+    const style = document.querySelector(selector) ? getComputedStyle(document.querySelector(selector)) : null;
+    return {
+      wrap: rect(selector),
+      radius: style?.borderRadius,
+      background: style?.backgroundColor,
+      controls: ids.map(rect),
+    };
+  }, { wrapSelector, controls });
+
+  const landing = await measure('#topicInputWrap', [
+    '#topicComposerToolsBtn', '#topicMobileMicBtn', '#startBtn',
+  ]);
+  expect(landing.wrap?.height).toBeGreaterThanOrEqual(100);
+  expect(landing.radius).toBe('28px');
+  expect(landing.controls.every((control) => control?.width === 40 && control?.height === 40 && control.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
+  expect((landing.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
+  await page.screenshot({ path: '/tmp/socrates-mobile-unified-landing.png', fullPage: true });
+
+  await page.evaluate(() => {
+    document.getElementById('topicSetup')?.classList.add('hidden');
+    document.getElementById('mainInner')?.classList.add('hidden');
+    document.getElementById('chatView')?.classList.remove('hidden');
+    document.body.dataset.conversationActive = 'true';
+  });
+  await expect(page.locator('#chatInputWrap')).toBeVisible();
+
+  const conversation = await measure('#chatInputWrap', [
+    '#chatComposerToolsBtn', '#chatMobileMicBtn', '#sendBtn',
+  ]);
+  expect(conversation.wrap).toEqual(landing.wrap);
+  expect(conversation.radius).toBe(landing.radius);
+  expect(conversation.background).toBe(landing.background);
+  expect(conversation.controls.every((control) => control?.width === 40 && control?.height === 40 && control.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
+  expect((conversation.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
+  await page.screenshot({ path: '/tmp/socrates-mobile-unified-composer.png', fullPage: true });
+});
+
 /* This visual regression deliberately uses mockAuthedApp: browser coverage
    must exercise the post-login shell without depending on a real account. */
 test('mobile composer keeps model selector and reference controls discoverable', async ({ page }) => {
@@ -39,8 +97,8 @@ test('mobile composer keeps model selector and reference controls discoverable',
      conversation is active, on all viewports. */
   await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
-  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'true');
-  await expect(composer.locator('#sendBtn .icon-arrow')).toHaveCount(1);
+  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'false');
+  await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(1);
   /* Mobile parity shows the reasoning-level pill at rest. */
   await expect(effort).toBeVisible();
 

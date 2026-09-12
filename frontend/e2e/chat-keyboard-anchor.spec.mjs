@@ -73,6 +73,23 @@ async function seedChat(page, count = 40) {
   await page.waitForTimeout(250);
 }
 
+/* Visual offset of one specific row: its position inside the list minus the
+   visual-viewport pan. Keeping this constant is what "the reader's content
+   stays under the same visual position" means. */
+async function rowVisualOffset(page, needle) {
+  return page.evaluate((text) => {
+    const list = document.getElementById('msgList');
+    const row = [...list.querySelectorAll(':scope > .msg')]
+      .find((el) => el.textContent.startsWith(text));
+    if (!row) return null;
+    return Math.round(
+      row.getBoundingClientRect().top
+      - list.getBoundingClientRect().top
+      - (window.visualViewport?.offsetTop || 0),
+    );
+  }, needle);
+}
+
 async function transcriptState(page) {
   return page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -95,6 +112,7 @@ async function transcriptState(page) {
       anchorOffset,
       anchorText,
       inset: getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset').trim(),
+      viewportOffsetTop: Math.round(window.visualViewport?.offsetTop || 0),
       away: Boolean(window.stateStore.read('_userScrolledAway')),
     };
   });
@@ -159,7 +177,6 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
       const rect = bar.getBoundingClientRect();
       samples.push({
         inset: Number.parseFloat(getComputedStyle(root).getPropertyValue('--keyboard-inset')) || 0,
-        progress: Number.parseFloat(getComputedStyle(root).getPropertyValue('--keyboard-layout-progress')) || 0,
         height: wrap.getBoundingClientRect().height,
         top: rect.top,
         open: root.dataset.keyboardOpen,
@@ -172,10 +189,8 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
 
   const opening = await sampleMotion(appBottom - 240);
   expect(opening.at(-1).open).toBe('true');
-  expect(opening.at(-1).progress).toBeGreaterThanOrEqual(0.99);
   for (let index = 1; index < opening.length; index += 1) {
     expect(opening[index].inset).toBeGreaterThanOrEqual(opening[index - 1].inset - 1);
-    expect(opening[index].progress).toBeGreaterThanOrEqual(opening[index - 1].progress - 0.01);
     expect(opening[index].height).toBeGreaterThanOrEqual(opening[index - 1].height - 1);
     expect(opening[index].top).toBeLessThanOrEqual(opening[index - 1].top + 2);
   }
@@ -185,10 +200,8 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
 
   const closing = await sampleMotion(appBottom);
   expect(closing.at(-1).open).toBe('false');
-  expect(closing.at(-1).progress).toBeLessThanOrEqual(0.01);
   for (let index = 1; index < closing.length; index += 1) {
     expect(closing[index].inset).toBeLessThanOrEqual(closing[index - 1].inset + 1);
-    expect(closing[index].progress).toBeLessThanOrEqual(closing[index - 1].progress + 0.01);
     expect(closing[index].height).toBeLessThanOrEqual(closing[index - 1].height + 1);
     expect(closing[index].top).toBeGreaterThanOrEqual(closing[index - 1].top - 2);
   }
@@ -335,23 +348,28 @@ test('visual viewport pan compensates a history reader and returns on un-pan', a
   await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
   await page.waitForTimeout(500);
   const settled = await transcriptState(page);
+  const anchoredRow = settled.anchorText;
+  const settledVisual = await rowVisualOffset(page, anchoredRow);
 
   /* iOS pans the visual viewport down while the keyboard is up. The
      composer lift target is unchanged (offsetTop is included in the
      measurement), but the transcript must compensate the pan so the
-     reader's content stays under the same visual position. */
+     reader's content stays under the same visual position: scrollTop moves
+     opposite to offsetTop, not with it. The topmost visible row may change
+     because the cut line moves inside the previous row, so the assertion is
+     on the tracked row's visual offset, not on the first intersecting row. */
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 410, offsetTop: 100 }));
   await page.waitForTimeout(420);
   const panned = await transcriptState(page);
   expect(panned.away).toBe(true);
-  expect(panned.scrollTop).toBe(settled.scrollTop + 100);
-  expect(panned.anchorText).toBe(settled.anchorText);
+  expect(panned.scrollTop).toBe(settled.scrollTop - 100);
+  expect(await rowVisualOffset(page, anchoredRow)).toBe(settledVisual);
 
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510, offsetTop: 0 }));
   await page.waitForTimeout(420);
   const unpanned = await transcriptState(page);
   expect(unpanned.scrollTop).toBe(settled.scrollTop);
-  expect(unpanned.anchorText).toBe(settled.anchorText);
+  expect(await rowVisualOffset(page, anchoredRow)).toBe(settledVisual);
   expect(unpanned.distanceFromBottom).toBeGreaterThan(64);
 });
 

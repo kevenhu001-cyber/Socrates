@@ -2055,19 +2055,17 @@ function applyI18n(){
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
   if(sb){
-    var separateMobileVoice=typeof window.matchMedia==="function"&&window.matchMedia("(max-width:768px)").matches;
-    var startLabel=sb.classList.contains("active")||separateMobileVoice?t("chat.send"):t("voice.input");
+    var startLabel=sb.classList.contains("active")?t("chat.send"):t("voice.input");
     sb.setAttribute("aria-label",startLabel);
     sb.setAttribute("title",startLabel);
-    sb.setAttribute("aria-disabled",!sb.classList.contains("active")&&separateMobileVoice?"true":"false");
+    sb.setAttribute("aria-disabled","false");
   }
   var sendBtn=document.getElementById("sendBtn");
   if(sendBtn&&!sendBtn.classList.contains("chat-stop")&&!sendBtn.classList.contains("agent-stop")){
-    var separateMobileVoice=typeof window.matchMedia==="function"&&window.matchMedia("(max-width:768px)").matches;
-    var sendLabel=sendBtn.classList.contains("active")||separateMobileVoice?t("chat.send"):t("voice.input");
+    var sendLabel=sendBtn.classList.contains("active")?t("chat.send"):t("voice.input");
     sendBtn.setAttribute("aria-label",sendLabel);
     sendBtn.setAttribute("title",sendLabel);
-    sendBtn.setAttribute("aria-disabled",!sendBtn.classList.contains("active")&&separateMobileVoice?"true":"false");
+    sendBtn.setAttribute("aria-disabled","false");
   }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");

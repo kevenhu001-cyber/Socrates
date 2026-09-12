@@ -1,0 +1,624 @@
+/* ===========================================================================
+ * Unified conversation surface
+ *
+ * The landing composer and the in-session composer deliberately share this
+ * final stylesheet.  Older theme layers still own unrelated workspace and
+ * sidebar UI, but chat geometry, controls, messages and menus have exactly
+ * one visual owner from here down.
+ * ======================================================================== */
+
+:root {
+  --conversation-page: #000;
+  --conversation-surface: #212121;
+  --conversation-control: #303030;
+  --conversation-control-hover: #3a3a3a;
+  --conversation-border: rgb(255 255 255 / 10%);
+  --conversation-text: #f5f5f5;
+  --conversation-text-muted: #a9a9a9;
+  --conversation-user: #2c2c2c;
+  --conversation-radius: 28px;
+  --conversation-control-size: 40px;
+  --conversation-content-width: 768px;
+  --conversation-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+[data-mode="light"] {
+  --conversation-page: #fff;
+  --conversation-surface: #f2f2f2;
+  --conversation-control: #e5e5e5;
+  --conversation-control-hover: #d9d9d9;
+  --conversation-border: rgb(0 0 0 / 10%);
+  --conversation-text: #171717;
+  --conversation-text-muted: #717171;
+  --conversation-user: #e9e9e9;
+}
+
+body,
+#appShell#appShell,
+#appShell#appShell .main,
+#appShell#appShell .main-bg,
+#appShell#appShell .main-content {
+  background: var(--conversation-page) !important;
+  color: var(--conversation-text);
+}
+
+#appShell#appShell .top-bar {
+  min-height: 56px !important;
+  padding: 8px 16px !important;
+  background: var(--conversation-page) !important;
+  border-bottom: 0 !important;
+}
+
+#appShell#appShell .top-mode-tabs {
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 2px !important;
+  border: 1px solid var(--conversation-border) !important;
+  border-radius: 999px !important;
+  background: var(--conversation-surface) !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell .top-mode-tabs .app-mode-toggle {
+  min-width: 82px !important;
+  height: 34px !important;
+  padding: 0 15px !important;
+  border-radius: 999px !important;
+  color: var(--conversation-text-muted) !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+#appShell#appShell .top-mode-tabs .app-mode-toggle.active {
+  background: var(--conversation-control) !important;
+  color: var(--conversation-text) !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell #sidebarOpenBtn,
+#appShell#appShell #mobileIncognitoBtn,
+#appShell#appShell #findBtn,
+#appShell#appShell #shareBtn {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: var(--conversation-text-secondary, var(--conversation-text-muted)) !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell #sidebarOpenBtn:hover,
+#appShell#appShell #mobileIncognitoBtn:hover,
+#appShell#appShell #findBtn:hover,
+#appShell#appShell #shareBtn:hover {
+  background: var(--conversation-control) !important;
+  color: var(--conversation-text) !important;
+}
+
+/* Landing ---------------------------------------------------------------- */
+
+#appShell#appShell #topicSetup {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100dvh - 56px) !important;
+  padding: 0 24px calc(112px + var(--conversation-safe-bottom)) !important;
+  background: var(--conversation-page) !important;
+}
+
+#appShell#appShell #topicSetup .topic-title.greeting {
+  position: static !important;
+  display: block !important;
+  max-width: min(100%, 620px);
+  margin: 0 auto 28px !important;
+  color: var(--conversation-text) !important;
+  font-family: var(--cg-font) !important;
+  font-size: clamp(28px, 3.2vw, 42px) !important;
+  font-weight: 400 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.04em !important;
+  text-align: center !important;
+}
+
+#appShell#appShell #topicSetup .topic-sub,
+#appShell#appShell #topicSetup .mobile-starter-prompts,
+#appShell#appShell #topicSetup .cg-history,
+#appShell#appShell #topicSetup .home-suggestions-wrap,
+#appShell#appShell #topicSetup .home-quick-actions,
+#appShell#appShell #topicDisclaimer {
+  display: none !important;
+}
+
+/* The static markup uses two different footer wrappers. Flattening only the
+ * wrappers makes their real controls identical grid children. */
+#appShell#appShell #topicInputWrap .topic-footer,
+#appShell#appShell #topicInputWrap .footer-left-group,
+#appShell#appShell #chatInputWrap .chat-composer-body,
+#appShell#appShell #chatInputWrap .chat-input-footer,
+#appShell#appShell #chatInputWrap .footer-left-group {
+  display: contents !important;
+}
+
+/* Recording is a content state of the same composer surface. Keep the card
+ * anchored and sized consistently while replacing its inner controls. */
+#appShell#appShell #topicInputWrap.voice-recording-active,
+#appShell#appShell #chatInputWrap.voice-recording-active {
+  display: flex !important;
+  align-items: center !important;
+  width: min(100%, var(--conversation-content-width)) !important;
+  max-width: var(--conversation-content-width) !important;
+  min-height: 104px !important;
+  margin: 0 auto !important;
+  padding: 10px !important;
+  border: 1px solid var(--conversation-border) !important;
+  border-radius: var(--conversation-radius) !important;
+  background: var(--conversation-surface) !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell #topicInputWrap.voice-recording-active > :not(.voice-recording-bar),
+#appShell#appShell #chatInputWrap.voice-recording-active > :not(.voice-recording-bar) {
+  display: none !important;
+}
+
+#appShell#appShell .voice-recording-bar {
+  color: var(--conversation-text) !important;
+}
+
+/* Shared composer -------------------------------------------------------- */
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active),
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) {
+  display: grid !important;
+  grid-template-columns: var(--conversation-control-size) minmax(0, 1fr) auto var(--conversation-control-size) var(--conversation-control-size) !important;
+  grid-template-rows: auto minmax(42px, auto) var(--conversation-control-size) !important;
+  column-gap: 8px !important;
+  row-gap: 0 !important;
+  box-sizing: border-box !important;
+  width: min(100%, var(--conversation-content-width)) !important;
+  max-width: var(--conversation-content-width) !important;
+  min-height: 104px !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  padding: 10px !important;
+  border: 1px solid var(--conversation-border) !important;
+  border-radius: var(--conversation-radius) !important;
+  background: var(--conversation-surface) !important;
+  color: var(--conversation-text) !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  transition: border-radius 180ms ease, border-color 180ms ease, background-color 180ms ease !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) {
+  position: static !important;
+  top: auto !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: rgb(255 255 255 / 23%) !important;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 8%) !important;
+}
+
+[data-mode="light"] #appShell#appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+[data-mode="light"] #appShell#appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: rgb(0 0 0 / 20%) !important;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 7%) !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) .attachment-chips,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) .attachment-chips {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  margin: 0 0 6px !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) .composer-editor-root,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer,
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer > div,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer > div {
+  min-width: 0 !important;
+  height: 100% !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer .tiptap,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer-editor,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+  min-height: 42px !important;
+  max-height: 220px !important;
+  padding: 8px 4px 5px !important;
+  color: var(--conversation-text) !important;
+  font-family: var(--cg-font) !important;
+  font-size: 17px !important;
+  line-height: 24px !important;
+  text-align: left !important;
+  overflow-y: auto !important;
+}
+
+#appShell#appShell .rich-composer-editor p.is-editor-empty:first-child::before {
+  color: var(--conversation-text-muted) !important;
+  font-style: normal !important;
+}
+
+/* A genuinely wrapped draft may grow; focus and button state may not. */
+#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+  grid-template-rows: auto minmax(72px, auto) var(--conversation-control-size) !important;
+  min-height: 136px !important;
+  height: auto !important;
+  max-height: none !important;
+  border-radius: 24px !important;
+}
+
+#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root {
+  min-height: 72px !important;
+}
+
+#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor,
+#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor,
+#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+  min-height: 72px !important;
+}
+
+#appShell#appShell #topicComposerToolsBtn,
+#appShell#appShell #chatComposerToolsBtn,
+#appShell#appShell #topicMobileMicBtn,
+#appShell#appShell #chatMobileMicBtn,
+#appShell#appShell #startBtn,
+#appShell#appShell #sendBtn {
+  align-self: center !important;
+  justify-self: center !important;
+  width: var(--conversation-control-size) !important;
+  min-width: var(--conversation-control-size) !important;
+  height: var(--conversation-control-size) !important;
+  min-height: var(--conversation-control-size) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell #topicComposerToolsBtn,
+#appShell#appShell #chatComposerToolsBtn {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  background: var(--conversation-control) !important;
+  color: var(--conversation-text) !important;
+}
+
+#appShell#appShell .effort-picker {
+  display: inline-flex !important;
+  grid-column: 3 !important;
+  grid-row: 3 !important;
+  align-self: center !important;
+  justify-self: end !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+#appShell#appShell .effort-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: var(--conversation-control-size) !important;
+  min-height: var(--conversation-control-size) !important;
+  padding: 0 13px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: var(--conversation-control) !important;
+  color: var(--conversation-text) !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell .effort-trigger .effort-glyph { display: none !important; }
+#appShell#appShell .effort-trigger .effort-label { color: inherit !important; font-size: 15px !important; }
+#appShell#appShell .effort-trigger .effort-caret { width: 16px !important; height: 16px !important; }
+
+#appShell#appShell #topicMobileMicBtn,
+#appShell#appShell #chatMobileMicBtn {
+  display: inline-flex !important;
+  grid-column: 4 !important;
+  grid-row: 3 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--conversation-control) !important;
+  color: var(--conversation-text) !important;
+}
+
+/* Legacy topic rules predate the dedicated microphone and still target the
+ * primary action as column four. Scope these placements to each actual
+ * composer so both mobile surfaces retain five independent control slots. */
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) #topicMobileMicBtn,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) #chatMobileMicBtn {
+  grid-column: 4 !important;
+  grid-row: 3 !important;
+}
+
+#appShell#appShell #startBtn,
+#appShell#appShell #sendBtn {
+  display: inline-flex !important;
+  grid-column: 5 !important;
+  grid-row: 3 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--conversation-text) !important;
+  color: var(--conversation-page) !important;
+  opacity: 1 !important;
+}
+
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) #sendBtn {
+  grid-column: 5 !important;
+  grid-row: 3 !important;
+}
+
+/* Match the legacy mobile selector exactly so the primary control keeps its
+ * dedicated fifth column when voice controls are visible. */
+#appShell#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:not(.voice-recording-active),
+#appShell#appShell #chatInputWrap:not(.voice-recording-active) #sendBtn:not(.voice-recording-active) {
+  grid-column: 5 !important;
+  grid-row: 3 !important;
+}
+
+#appShell#appShell #topicComposerToolsBtn:hover,
+#appShell#appShell #chatComposerToolsBtn:hover,
+#appShell#appShell #topicMobileMicBtn:hover,
+#appShell#appShell #chatMobileMicBtn:hover,
+#appShell#appShell .effort-trigger:hover {
+  background: var(--conversation-control-hover) !important;
+  color: var(--conversation-text) !important;
+}
+
+#appShell#appShell #startBtn:hover,
+#appShell#appShell #sendBtn:hover {
+  filter: brightness(.91);
+}
+
+#appShell#appShell #topicComposerToolsBtn svg,
+#appShell#appShell #chatComposerToolsBtn svg,
+#appShell#appShell #topicMobileMicBtn svg,
+#appShell#appShell #chatMobileMicBtn svg,
+#appShell#appShell #startBtn svg,
+#appShell#appShell #sendBtn svg {
+  width: 21px !important;
+  height: 21px !important;
+}
+
+#appShell#appShell #startBtn.is-listening,
+#appShell#appShell #sendBtn.is-listening,
+#appShell#appShell #topicMobileMicBtn.is-listening,
+#appShell#appShell #chatMobileMicBtn.is-listening {
+  background: #0a66c2 !important;
+  color: #fff !important;
+}
+
+#appShell#appShell .composer-plugin-chips {
+  display: flex !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  min-height: 30px !important;
+  padding: 0 0 5px !important;
+  overflow-x: auto !important;
+}
+
+#appShell#appShell .composer-plugin-chip {
+  flex: 0 0 auto !important;
+  min-height: 30px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #064d9e !important;
+  color: #9bcbff !important;
+}
+
+#appShell#appShell .composer-plugin-chip-remove { color: inherit !important; }
+
+/* Tools stay tied to the composer rather than turning into a separate page. */
+body #composerToolsMenu {
+  border: 1px solid var(--conversation-border) !important;
+  border-radius: 20px !important;
+  background: var(--conversation-control) !important;
+  color: var(--conversation-text) !important;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 40%) !important;
+}
+
+body #composerToolsMenu .composer-tools-item,
+body #composerToolsMenu .composer-tools-plugin-item {
+  border-radius: 12px !important;
+}
+
+body #composerToolsMenu .composer-tools-item:hover,
+body #composerToolsMenu .composer-tools-plugin-item:hover {
+  background: var(--conversation-control-hover) !important;
+}
+
+/* Conversation ----------------------------------------------------------- */
+
+#appShell#appShell #chatView,
+#appShell#appShell #msgList {
+  background: var(--conversation-page) !important;
+}
+
+#appShell#appShell #chatInputBar {
+  /* .chat-view already supplies the conversation column. Adding a second
+     horizontal inset here was the last reason the in-session card was 28px
+     narrower than the landing card. */
+  padding: 0 0 var(--conversation-safe-bottom) !important;
+  background: transparent !important;
+}
+
+#appShell#appShell .msg-list {
+  color: var(--conversation-text) !important;
+}
+
+#appShell#appShell .msg.user .msg-body {
+  max-width: min(86%, 620px) !important;
+  padding: 11px 16px !important;
+  border: 0 !important;
+  border-radius: 22px !important;
+  background: var(--conversation-user) !important;
+  color: var(--conversation-text) !important;
+  box-shadow: none !important;
+}
+
+#appShell#appShell .msg.assistant .msg-body {
+  color: var(--conversation-text) !important;
+}
+
+#appShell#appShell .msg-toolbar,
+#appShell#appShell .message-toolbar,
+#appShell#appShell .msg-actions {
+  color: var(--conversation-text-muted) !important;
+}
+
+#appShell#appShell .disclaimer {
+  color: var(--conversation-text-muted) !important;
+  background: var(--conversation-page) !important;
+}
+
+@media (min-width: 769px) {
+  #appShell#appShell #topicSetup {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) {
+    width: min(100%, var(--conversation-content-width)) !important;
+  }
+
+  #appShell#appShell #chatInputBar {
+    padding-bottom: 20px !important;
+  }
+
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) {
+    width: min(100%, var(--conversation-content-width)) !important;
+  }
+
+  /* Keep the wider layout compact, while retaining the same 28px surface
+   * token used by the mobile card and landing composer. */
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
+    #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    border-radius: var(--conversation-radius) !important;
+  }
+
+  /* Wide screens use the same controls in one compact, horizontal row. */
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline),
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) {
+    grid-template-rows: minmax(40px, 1fr) !important;
+    grid-template-columns: var(--conversation-control-size) minmax(0, 1fr) auto var(--conversation-control-size) var(--conversation-control-size) !important;
+    min-height: 52px !important;
+    padding: 6px 10px !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-height: 0 !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer-editor,
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer .tiptap,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer-editor,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer[data-surface="chat"] .tiptap {
+    min-height: 0 !important;
+    height: 40px !important;
+    padding: 8px 4px !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) #topicComposerToolsBtn,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) #chatComposerToolsBtn {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-picker,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-picker {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) #topicMobileMicBtn,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) #chatMobileMicBtn {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) #startBtn,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) #sendBtn {
+    grid-column: 5 !important;
+    grid-row: 1 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell#appShell .top-bar {
+    min-height: 56px !important;
+    padding: 8px 10px !important;
+  }
+
+  #appShell#appShell #topicSetup {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    min-height: calc(100dvh - 56px) !important;
+    padding: 0 16px var(--conversation-safe-bottom) !important;
+  }
+
+  #appShell#appShell #topicSetup .topic-title.greeting {
+    position: absolute !important;
+    top: 39% !important;
+    left: 16px !important;
+    right: 16px !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: translateY(-50%) !important;
+    font-size: clamp(30px, 8vw, 38px) !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active),
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 104px !important;
+  }
+
+  #appShell#appShell #chatInputBar {
+    /* The lifted chat view is 4px wider than the landing main-inner on the
+       phone shell. Constrain the bar itself so both cards share the same
+       visible 16px viewport gutter. */
+    width: calc(100% - 4px) !important;
+    margin-inline: auto !important;
+    padding: 0 0 var(--conversation-safe-bottom) !important;
+  }
+
+  /* Keep the transcript comfortable above the persistent input surface. */
+  #appShell#appShell #msgList {
+    padding-inline: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell#appShell #topicInputWrap,
+  #appShell#appShell #chatInputWrap { transition: none !important; }
+}

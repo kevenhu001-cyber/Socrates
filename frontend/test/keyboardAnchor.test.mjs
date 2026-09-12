@@ -41,7 +41,9 @@ test('history reader restores the captured offset (not the bottom)', () => {
   assert.deepEqual(action, { type: 'restore', top: 600 });
 });
 
-test('visual viewport pan shifts the restore target to keep content visually stable', () => {
+test('visual viewport pan moves the restore target opposite so content stays visually stable', () => {
+  /* offsetTop +120 moves the content 120 px up on screen; scrolling the
+     transcript 120 px back down (scrollTop − 120) keeps it in place. */
   const action = decideKeyboardAnchorAction(
     { scrollTop: 600, pinned: false },
     {
@@ -51,10 +53,10 @@ test('visual viewport pan shifts the restore target to keep content visually sta
       panDelta: 120,
     },
   );
-  assert.deepEqual(action, { type: 'restore', top: 720 });
+  assert.deepEqual(action, { type: 'restore', top: 480 });
 });
 
-test('positive pan is clamped to the scrollable range and negative pan floors at zero', () => {
+test('the pan-corrected target is clamped to the scrollable range and floors at zero', () => {
   assert.deepEqual(
     decideKeyboardAnchorAction(
       { scrollTop: 3600, pinned: false },
@@ -62,7 +64,7 @@ test('positive pan is clamped to the scrollable range and negative pan floors at
         maxScrollTop: 3703,
         scrolledAway: true,
         userIntentAfterCapture: false,
-        panDelta: 300,
+        panDelta: -300,
       },
     ),
     { type: 'restore', top: 3703 },
@@ -74,7 +76,7 @@ test('positive pan is clamped to the scrollable range and negative pan floors at
         maxScrollTop: 3703,
         scrolledAway: true,
         userIntentAfterCapture: false,
-        panDelta: -120,
+        panDelta: 120,
       },
     ),
     { type: 'restore', top: 0 },
@@ -132,7 +134,7 @@ test('missing or non-finite anchor input is a no-op / clamped to zero', () => {
   );
 });
 
-test('property: restore never exceeds the range and never passes capture + pan', () => {
+test('property: restore never exceeds the range and never passes the pan-corrected capture', () => {
   fc.assert(
     fc.property(
       fc.double({ min: -2000, max: 5000, noNaN: true }),
@@ -147,7 +149,7 @@ test('property: restore never exceeds the range and never passes capture + pan',
         if (action.type !== 'restore') return;
         assert.ok(action.top >= 0);
         assert.ok(action.top <= maxScrollTop);
-        assert.ok(action.top <= Math.max(0, captured + panDelta));
+        assert.ok(action.top <= Math.max(0, captured - panDelta));
       },
     ),
     { numRuns: 200 },

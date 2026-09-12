@@ -38,13 +38,10 @@ export function mountLegacyShellListeners(actions) {
     actions.startSession();
   });
   click('sendBtn', () => {
-    /* Same empty-composer voice routing for the chat send button, matching
-       the legacy data-action="handleSendClick" behavior. */
+    /* The shared primary control is voice input while empty and send while a
+       draft exists. This is identical on the landing and conversation
+       surfaces, so moving between them never changes the control contract. */
     const button = byId('sendBtn');
-    if (button && !button.classList.contains('active')
-        && window.matchMedia?.('(max-width: 768px)').matches) {
-      return;
-    }
     if (button && !button.classList.contains('active')
         && !button.classList.contains('chat-stop')
         && !button.classList.contains('agent-stop')
@@ -54,8 +51,9 @@ export function mountLegacyShellListeners(actions) {
     }
     actions.sendMessage();
   });
-  /* P_mic-dedup — topicMobileMicBtn listener removed with the button; the
-     idle startBtn click above covers voice input for the topic surface. */
+  click('topicMobileMicBtn', () => {
+    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('topic');
+  });
   click('chatMobileMicBtn', () => {
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('chat');
   });
