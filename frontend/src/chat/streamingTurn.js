@@ -7,7 +7,6 @@
  * It never paints message content itself.
  */
 import { stateStore } from '../state/store.js';
-import { getActiveProvider } from '../pickers.js';
 import { turnState, streamRetryViewport } from './turnState.js';
 import { quietTurn, markTurnInProgress, markTurnEnded, resendLastUserMessage, setChatStopState } from './turnUi.js';
 import { claimLiveRetry, registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.js';
@@ -85,32 +84,16 @@ export function addStreamingMessage(opts){
      is the rendered view, not the source. */
   var clientId="msg-"+generateId();
   div.dataset.clientId=clientId;
-  /* P_message-usage — carry the active model onto the live entry so the
-     finalized turn's usage footer can name it. addMessage() does the
-     same for non-streaming assistant rows. */
-  var _modelInfo=null;
-  try{
-    var _mp=getActiveProvider();
-    if(_mp)_modelInfo={label:_mp.label||_mp.model||'',model:_mp.model||''};
-  }catch(_){}
   var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
     clientId:clientId,
     role:"assistant",
     rawText:"",
     html:null,
     type:"streaming",
-    actions:null,
-    modelInfo:_modelInfo
+    actions:null
   }});
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   var full="";
-  /* P_message-usage — turn timing for the finalized usage footer:
-     startedAt is stamped before any network work, firstTokenAt when the
-     first content delta lands (TTFT), and the usage event supplies the
-     server's token totals right before [DONE]. */
-  var startedAt=Date.now();
-  var firstTokenAt=0;
-  var turnUsage=null;
   /* P_reasoning-persist — accumulate reasoning_content deltas so we
      can save them to stateStore.read("messages") at finish() and include them in
      the session-save payload. Without this, chain-of-thought text
@@ -469,21 +452,6 @@ export function addStreamingMessage(opts){
     recordToolApproval:toolRuntime.recordToolApproval,
     recordAgentStep:toolRuntime.recordAgentStep,
     recordAgentPlan:toolRuntime.recordAgentPlan,
-    /* P_message-usage — token totals from the backend `usage` frame.
-       Held in the closure until finish() merges them into the finalized
-       entry with the client-measured turn duration. */
-    recordUsage:function(u){
-      if(!u||typeof u!=="object")return;
-      var promptTokens=Number(u.promptTokens)||0;
-      var completionTokens=Number(u.completionTokens)||0;
-      var totalTokens=Number(u.totalTokens)||(promptTokens+completionTokens);
-      if(!promptTokens&&!completionTokens&&!totalTokens)return;
-      turnUsage={
-        promptTokens:promptTokens,
-        completionTokens:completionTokens,
-        totalTokens:totalTokens
-      };
-    },
     append:function(delta){
       /* P_session-stream-dispose — primary entry-point guard. The
          stream.js reader keeps draining already-buffered SSE chunks
@@ -502,7 +470,6 @@ export function addStreamingMessage(opts){
       var wasFirst=firstDelta;
       if(wasFirst){
         firstDelta=false;
-        if(!firstTokenAt)firstTokenAt=Date.now();
         /* First delta arrived — stop the elapsed counter. */
         if(_elapsedTick)clearInterval(_elapsedTick);
         /* The waiting line is retired with the first real content. */
@@ -683,16 +650,6 @@ export function addStreamingMessage(opts){
             html:finalHtml,rawText:full,type:"assistant",
             reasoningContent:fullReasoning||null,outputMode:_om
           };
-          if(turnUsage){
-            var _endedAt=Date.now();
-            _finalPatch.usage={
-              promptTokens:turnUsage.promptTokens,
-              completionTokens:turnUsage.completionTokens,
-              totalTokens:turnUsage.totalTokens,
-              durationMs:Math.max(0,_endedAt-startedAt),
-              ttftMs:firstTokenAt?Math.max(0,firstTokenAt-startedAt):null
-            };
-          }
           if(_om==='canvas'){
             _finalPatch.canvasId=stateStore.read("_canvasPendingId")||('canvas-'+Math.random().toString(36).slice(2,10));
             _finalPatch._extensionIcon=(window._activeTemplate&&window._activeTemplate.icon)||'';

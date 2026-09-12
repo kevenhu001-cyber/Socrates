@@ -138,11 +138,6 @@ const SessionPayloadSchema = z.object({
        * whole session save with a 400. */
       steps: z.array(z.any()).max(60).optional(),
     })).max(20).optional(),
-    /* P_message-usage — model label + total tokens for the finalized
-       assistant footer. Reuses the existing messages.model /
-       messages.token_count columns, so no migration is required. */
-    model: z.string().max(300).optional().nullable(),
-    tokenCount: z.number().int().nonnegative().max(100_000_000).optional().nullable(),
   })).max(1000).optional(),
   kbNodes: z.array(z.any()).max(5000).optional(),
   mistakes: z.array(z.any()).max(1000).optional(),
@@ -525,8 +520,6 @@ router.post('/', writeLimiter, async (req, res, next) => {
             sources: m.sources || null,
             clientId: m.clientId || null,
             reasoningContent: m.reasoningContent || null,
-            model: m.model || null,
-            tokenCount: typeof m.tokenCount === 'number' ? m.tokenCount : null,
             attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
             /* P_tool-history — persist the tool-calls log so reload
              * re-renders the cards. Normalise to plain values so the
@@ -635,8 +628,6 @@ router.post('/', writeLimiter, async (req, res, next) => {
               type: sql`EXCLUDED.type`,
               sources: sql`EXCLUDED.sources`,
               reasoningContent: sql`EXCLUDED.reasoning_content`,
-              model: sql`EXCLUDED.model`,
-              tokenCount: sql`EXCLUDED.token_count`,
               attachments: sql`EXCLUDED.attachments`,
               toolCalls: sql`EXCLUDED.tool_calls`,
               createdAt: sql`EXCLUDED.created_at`,

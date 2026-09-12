@@ -307,11 +307,6 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(!d)return;
       if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
     },
-    /* P_message-usage — token totals for the finalized assistant
-       message footer (model label already rides on modelInfo). */
-    onUsage:function(u){
-      if(u&&typeof ctl.recordUsage==="function")ctl.recordUsage(u);
-    },
     turnId:_turnId,
   });
   handleChatApiResult(result,ctl,userText,retryTurn);
