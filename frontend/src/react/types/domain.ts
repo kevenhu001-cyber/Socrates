@@ -142,6 +142,19 @@ export interface LegacyChatMessage {
     size?: number;
   }>;
   modelInfo?: { label?: string; model?: string } | null;
+  /**
+   * P_message-usage — server token totals (from the `usage` SSE frame)
+   * plus client-measured turn timing, rendered as the assistant footer.
+   * `totalTokens` is persisted through the existing messages.token_count
+   * column so a reloaded session keeps the token figure.
+   */
+  usage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+    durationMs?: number;
+    ttftMs?: number | null;
+  } | null;
   toolCalls?: ReadonlyArray<ToolCall>;
   restoredFromHistory?: boolean;
   /* P_canvas-mode — ExtensionDefinition.outputMode carried onto the

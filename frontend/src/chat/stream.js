@@ -351,6 +351,15 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             }
             return;
           }
+          /* P_message-usage — the backend emits the turn's token totals
+             right before [DONE]; the caller stores them on the finalized
+             assistant message for the usage footer. */
+          if(evName==="usage"){
+            if(opts&&typeof opts.onUsage==="function"&&dataParts.length){
+              try{opts.onUsage(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("usage",e)}
+            }
+            return;
+          }
           if(dataParts.length===0)return;
           var payload=dataParts.join("\n");
           if(!payload||payload==="[DONE]")return;
