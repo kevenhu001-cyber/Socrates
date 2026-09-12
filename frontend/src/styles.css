@@ -1841,14 +1841,22 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
 }
 
 .msg-list{display:flex;flex-direction:column;gap:12px;flex:1;overflow-anchor:none}
-.msg{animation:msgIn .3s var(--ease-out);padding:6px 0}
+.msg{animation:msgIn .22s var(--ease-out);padding:6px 0}
 .msg.turn-viewport-anchor{box-sizing:border-box}
 /* Keep transcript geometry exact. Height-estimated content-visibility made
    long/off-screen answers replace their 150px estimate only when scrolled
    into view, which changed scrollHeight mid-gesture and could strand the
    reader above the real final line. */
 .msg-list>.msg{content-visibility:visible}
-@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* The send-time turn anchor already moves the transcript as one continuous
+   unit. A second translate animation on each newly mounted row used a
+   compositor-only coordinate system while turnAnchor measured layout
+   coordinates, exposing the prompt at one position for a frame before the
+   scroll glide took ownership. Keep the gentle reveal, but leave all spatial
+   motion to the single scroll owner so a new prompt never flashes or appears
+   to teleport. Starting partially visible also avoids a blank frame between
+   clearing the composer and painting the submitted bubble. */
+@keyframes msgIn{from{opacity:.45}to{opacity:1}}
 /* User bubbles right-align. The toolbar lives BELOW the bubble
  * (flex-direction:column + align-items:flex-end), not next to it on
  * the right edge. This keeps the bubble flush-right while putting
