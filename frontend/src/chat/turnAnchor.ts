@@ -91,6 +91,32 @@ export function turnRowFor(
 }
 
 /**
+ * Start the same send-time anchor for a finalized assistant message whose row
+ * is created by `addMessage` instead of `addStreamingMessage`.
+ *
+ * React may not have committed the row when the direct reply is appended, so
+ * resolve the authoritative message by client id and let
+ * `scheduleActiveTurnToTop` keep retrying until the real row is mounted.
+ * Keeping this lookup here also means direct Tutor/Chat fallbacks cannot
+ * accidentally create a second scroll implementation.
+ */
+export function scheduleTurnToTopForMessage(
+  list: TurnAnchorList | null,
+  clientId: string | null | undefined,
+  retryViewport: RetryViewportOffset | null = null,
+): void {
+  if (!list) return;
+  const id = String(clientId || '');
+  if (!id) return;
+  const messages = stateStore.read('messages') as MessageEntry[];
+  const msgIdx = messages.findIndex((entry) =>
+    Boolean(entry && entry.clientId === id && entry.role === 'assistant'),
+  );
+  if (msgIdx < 0) return;
+  scheduleActiveTurnToTop(list, turnRowFor(list, null, id), msgIdx, retryViewport);
+}
+
+/**
  * Remove a superseded empty placeholder (kept as an invisible layout stub)
  * once it is spent. Defers while a send anchor is gliding so the
  * compensation write cannot cancel the motion; safe to call repeatedly.
@@ -484,7 +510,7 @@ export function scheduleActiveTurnToTop(
     if (!list || stateStore.read('_userScrolledAway')) { finish(); return; }
     /* Stop once this turn's row is gone — the loop only promises to hold the
        prompt still while the composer's layout settles. */
-    if (!assistant!.isConnected && !row()) { finish(); return; }
+    if ((!assistant || !assistant.isConnected) && !row()) { finish(); return; }
     const users = list.querySelectorAll && list.querySelectorAll('.msg.user');
     const anchor = users && users.length ? users[users.length - 1] : null;
     if (!anchor || !anchor.isConnected) { finish(); return; }

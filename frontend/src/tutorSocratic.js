@@ -1,4 +1,5 @@
 import { stateStore } from './state/store.js';
+import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 
 /* =====================================================================
  * tutorSocratic.js
@@ -184,7 +185,9 @@ import { stateStore } from './state/store.js';
       { text: ti('tutor.explain', currentLang() === 'zh' ? '讲解一下' : 'Explain'), action: 'explain', primary: true },
       { text: ti('tutor.explainKeepTrying', currentLang() === 'zh' ? '再想想' : 'Keep trying'), action: 'retry' }
     ];
-    window.addMessage('assistant', msg, 'suggest', actions);
+    var clientId = window.addMessage('assistant', msg, 'suggest', actions);
+    var list = document.getElementById('msgList');
+    scheduleTurnToTopForMessage(list, clientId);
   }
 
   /* ----------------------------------------------------------------
@@ -210,7 +213,9 @@ import { stateStore } from './state/store.js';
       { text: ti('tutor.fourOptionMistake',  currentLang() === 'zh' ? '加入错题本' : 'Add to mistakes'), action: 'mistake' },
       { text: ti('tutor.fourOptionSkip',     currentLang() === 'zh' ? '跳过' : 'Skip'),          action: 'skip' }
     ];
-    window.addMessage('assistant', msg, 'suggest', actions);
+    var clientId = window.addMessage('assistant', msg, 'suggest', actions);
+    var list = document.getElementById('msgList');
+    scheduleTurnToTopForMessage(list, clientId);
     try {
       stateStore.dispatch({
         type: 'state/set',
