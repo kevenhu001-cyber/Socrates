@@ -207,11 +207,13 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   expect(sheetBox).not.toBeNull();
   // Floating-card geometry at the 390px reference width: inset from the
   // left edge and lifted above the composer instead of a bottom sheet.
-  expect(sheetBox.x).toBeGreaterThanOrEqual(6);
-  expect(sheetBox.x).toBeLessThanOrEqual(12);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(260);
-  expect(sheetBox.width).toBeLessThanOrEqual(290);
+  expect(sheetBox.x).toBeGreaterThanOrEqual(12);
+  expect(sheetBox.x).toBeLessThanOrEqual(20);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(240);
+  expect(sheetBox.width).toBeLessThanOrEqual(260);
   expect(sheetBox.y + sheetBox.height).toBeLessThan(820);
+  // The expanded card never grows past the viewport's vertical midline.
+  expect(sheetBox.height).toBeLessThanOrEqual(844 / 2);
   // The open-state class still owns dismissal state, but the card paints
   // no full-screen scrim behind itself.
   await expect(page.locator('body')).toHaveClass(/composer-tools-open/);

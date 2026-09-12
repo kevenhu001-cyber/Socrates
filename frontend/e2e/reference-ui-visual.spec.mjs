@@ -91,6 +91,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const toolsBox = await toolsMenu.boundingBox();
   expect(toolsBox?.width).toBeGreaterThanOrEqual(240);
   expect(toolsBox?.width).toBeLessThanOrEqual(260);
+  expect(toolsBox?.height).toBeLessThanOrEqual(756 / 2);
+  const toolsBackground = await toolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(toolsBackground).not.toBe('rgba(0, 0, 0, 0)');
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-tools-390x756.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(toolsMenu).toBeHidden();
@@ -117,6 +120,18 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(page.locator('#topicSetup')).toBeVisible();
   await page.waitForTimeout(250);
   await page.screenshot({ path: '/tmp/socrates-reference-desktop-home-1440x900.png', fullPage: true });
+
+  await page.locator('#topicComposerToolsBtn').click();
+  const desktopToolsMenu = page.locator('#composerToolsMenu');
+  await expect(desktopToolsMenu).toBeVisible();
+  const desktopToolsBox = await desktopToolsMenu.boundingBox();
+  expect(desktopToolsBox?.height).toBeLessThanOrEqual(900 / 2);
+  const desktopToolsBackground = await desktopToolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
+  expect(desktopToolsBackground).not.toBe('rgba(0, 0, 0, 0)');
+  await page.screenshot({ path: '/tmp/socrates-reference-desktop-tools-1440x900.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await expect(desktopToolsMenu).toBeHidden();
+
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-desktop-plugins-1440x900.png', fullPage: true });

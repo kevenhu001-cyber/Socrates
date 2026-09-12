@@ -2338,7 +2338,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   body #composerToolsMenu:not(.hidden) {
     border: 1px solid var(--cg-border) !important;
     border-radius: 16px !important;
-    background: var(--ref-menu) !important;
+    /* `--ref-menu` is declared on #appShell, but the menu is a body child;
+       fall back to the opaque surface token so it never paints transparent. */
+    background: var(--ref-menu, var(--cg-surface)) !important;
     box-shadow: 0 18px 48px rgb(0 0 0 / 32%) !important;
   }
 }
