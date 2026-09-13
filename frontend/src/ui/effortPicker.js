@@ -10,9 +10,9 @@ import { pickActiveProviderById } from '../pickers.js';
  *     opens Settings.
  *   - 思维强度 (Reasoning effort): 高 / 中 / 低.
  *
- * The trigger stays compact on desktop. On a focused phone composer it also
- * surfaces the active model name next to the effort word, matching the
- * two-line mobile composer in the reference UI.
+ * The trigger stays compact everywhere: it shows only the effort word
+ * (高 / 中 / Low…); the active model name rides on the tooltip /
+ * aria-label and heads the Models section once the menu opens.
  *
  * Menu positioning uses position:fixed computed from the trigger's
  * bounding rect on open. The composer wrap has overflow:hidden +
@@ -78,12 +78,12 @@ function _activeModelLabel() {
 }
 
 function _triggerLabel(v) {
-  var effort = _labelFor(v);
-  /* Mobile parity: the pill shows only the reasoning level, like the
-     chatgpt.com mobile composer. Desktop keeps the model + level. */
-  if (window.innerWidth <= 768) return effort;
-  var model = _activeModelLabel();
-  return model ? model + " " + effort : effort;
+  /* The pill shows only the reasoning level on every viewport, like the
+     chatgpt.com mobile composer. The model name lives in the trigger's
+     tooltip / aria-label and in the menu's Models section — painting it
+     permanently cost ~90px of composer width and read as noise next to
+     the input text. */
+  return _labelFor(v);
 }
 
 function _esc(s) {
@@ -248,11 +248,16 @@ export function syncEffortUI() {
     picker.setAttribute("data-effort", v);
     var displayLabel = _triggerLabel(v);
     var modelLabel = _activeModelLabel();
+    /* The visible pill is level-only; the full "model · level" stays on
+       the tooltip and aria-label so the info is one hover away and
+       screen readers still announce it. */
+    var fullLabel = modelLabel ? modelLabel + " · " + displayLabel : displayLabel;
     var label = picker.querySelector(".effort-label");
     if (label) label.textContent = displayLabel;
     var trigger = picker.querySelector(".effort-trigger");
     if (trigger) {
-      trigger.setAttribute("aria-label", displayLabel);
+      trigger.setAttribute("aria-label", fullLabel);
+      trigger.setAttribute("title", fullLabel);
       trigger.setAttribute("data-model-label", modelLabel);
     }
     var menu = picker.querySelector(".effort-menu");
