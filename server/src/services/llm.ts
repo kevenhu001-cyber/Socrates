@@ -5,20 +5,17 @@
  * Supports: any OpenAI-compatible API (OpenAI, Anthropic via proxy, MiniMax, etc.)
  */
 
-/* LLM streaming budgets — both deadlines are DISABLED unless the operator
- * opts in through the environment.
- *
- * A reasoning model may legitimately think for minutes, and the browser no
- * longer applies any deadline of its own, so the server must not cut a
- * healthy response either.
+/* LLM streaming budgets.
  *
  * LLM_TOTAL_TIMEOUT_MS — hard ceiling on the entire upstream request.
  *   0 (default) = no ceiling; set it when a deployment needs a hard cap so
- *   a stuck upstream cannot hold a worker forever.
+ *   a stuck upstream cannot hold a worker forever. Kept off by default
+ *   because a reasoning model may legitimately think for minutes.
  *
  * LLM_SILENCE_TIMEOUT_MS — aborts the upstream fetch when NO bytes arrive
- *   for this many ms, measured from the first chunk onwards. 0 (default) =
- *   disabled; set it to catch genuinely dead connections. */
+ *   for this many ms. Defaults to 120 s: a live reasoning stream emits
+ *   deltas continuously, so 2 min of total silence means a dead
+ *   connection, not deep thought. Set to 0 to disable. */
 function readTimeoutEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw == null || raw === '') return fallback;
@@ -26,7 +23,7 @@ function readTimeoutEnv(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 const LLM_TOTAL_TIMEOUT_MS = readTimeoutEnv('LLM_TOTAL_TIMEOUT_MS', 0);
-const LLM_SILENCE_TIMEOUT_MS = readTimeoutEnv('LLM_SILENCE_TIMEOUT_MS', 0);
+const LLM_SILENCE_TIMEOUT_MS = readTimeoutEnv('LLM_SILENCE_TIMEOUT_MS', 120000);
 
 /** Aborts when any of the given signals aborts; never aborts on its own. */
 function combineSignals(...candidates: Array<AbortSignal | null | undefined>): AbortSignal {

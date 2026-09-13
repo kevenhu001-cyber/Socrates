@@ -5,6 +5,13 @@ import { encrypt, decrypt, encryptionKey } from '../lib/crypto.js';
 
 type ApiKeyRow = typeof apiKeys.$inferSelect;
 
+/* Masked preview — suffix only. The previous prefix hint (first 8
+   chars) exposed the most identifying part of the secret
+   (e.g. `sk-ant-…`) to anyone reading the DB or logs. */
+function keyHintFor(key: string): string {
+  return '...' + key.slice(-4);
+}
+
 /**
  * Get the active API key/provider for a user.
  * Returns { url, model, keyPlaintext, keyHint } or null.
@@ -97,7 +104,7 @@ export async function seedBuiltInProvider() {
        * LLM choice to anyone with access to the systemd journal.
        * The "Updated" line below is enough to confirm the seed ran. */
       const upd = await db.update(apiKeys)
-        .set({ keyCiphertext, keyHint: apiKey.slice(0, 8), url, model, isMultimodal: true })
+        .set({ keyCiphertext, keyHint: keyHintFor(apiKey), url, model, isMultimodal: true })
         .where(eq(apiKeys.id, existing.id))
         .returning({ id: apiKeys.id });
       console.log('[seed] Updated built-in Beagle provider (id=' + (upd[0] && upd[0].id) + ')');
@@ -115,7 +122,7 @@ export async function seedBuiltInProvider() {
         url,
         model,
         keyCiphertext,
-        keyHint: apiKey.slice(0, 8),
+        keyHint: keyHintFor(apiKey),
         isBuiltIn: true,
         isActive: true,
         /* P_attachments-multimodal — built-in Beagle is a vision
@@ -200,7 +207,7 @@ export async function createApiKey(userId: string, { label, url, model, key, isM
   isMultimodal?: boolean;
 }) {
   const keyCiphertext = key ? encrypt(key, encryptionKey()) : null;
-  const keyHint = key ? key.slice(0, 8) : null;
+  const keyHint = key ? keyHintFor(key) : null;
 
   const db = getDb();
   const [result] = await db.insert(apiKeys).values({

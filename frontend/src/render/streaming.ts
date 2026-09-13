@@ -29,6 +29,7 @@ function countOccurrences(s: string, needle: string): number {
 export function isStableMarkdownPrefix(text: string): boolean {
   const s = String(text || '');
   if (countOccurrences(s, '```') % 2 !== 0) return false;
+  if (countOccurrences(s, '~~~') % 2 !== 0) return false;
   if (countOccurrences(s, '$$') % 2 !== 0) return false;
   if (countOccurrences(s, '\\[') !== countOccurrences(s, '\\]')) return false;
   /* No '<' means no <think> and no scaffold tags, so the remaining checks

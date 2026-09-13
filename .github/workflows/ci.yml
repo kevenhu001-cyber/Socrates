@@ -88,3 +88,20 @@ jobs:
 
       - name: Unit tests
         run: node scripts/run-tests.mjs
+
+  shared:
+    name: Shared packages & Rust protocol
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # socrates-protocol holds the ToolRun phase state machine whose
+      # TypeScript twin lives in packages/core. Its unit tests never
+      # ran in CI before; no wasm target needed for this crate.
+      # (A root `tsc -p tsconfig.json` gate is deferred: packages/core
+      # uses `.ts`-suffixed imports that need allowImportingTsExtensions,
+      # so it is red on main independent of any change.)
+      - name: Rust protocol tests
+        run: cargo test -p socrates-protocol
+        working-directory: tools-rust
