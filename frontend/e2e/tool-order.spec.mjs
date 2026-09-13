@@ -1,11 +1,12 @@
-// e2e/tool-order.spec.mjs — P_tool-order-strict / P_tool-order-defer.
+// e2e/tool-order.spec.mjs — P_tool-order-paragraph / P_tool-order-defer.
 //
-// A tool row runs strictly in order and never interrupts a finished sentence:
-//   1. (live) a tool_use that lands mid-sentence mounts NOTHING until the
-//      sentence completes — the TurnStatus tool-running line covers the gap —
-//      then mounts exactly once, behind the period;
-//   2. (finalized) a persisted offset behind "原因有三：" advances to the next
-//      real period: colons/semicolons never anchor a row.
+// A tool row belongs to the paragraph during which it fired:
+//   1. (live) a tool_use that lands mid-paragraph mounts NOTHING until the
+//      paragraph completes — the TurnStatus tool-running line covers the
+//      gap — then mounts exactly once, behind the paragraph (a finished
+//      sentence alone is not enough);
+//   2. (finalized) a persisted offset behind "原因有三：" advances past its
+//      paragraph: colons/semicolons never anchor a row.
 import { expect, test } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -64,11 +65,11 @@ async function startControllableStream(page) {
   return page.locator('.msg.assistant').last().locator('.msg-body');
 }
 
-test('a live row waits for its sentence, then mounts once behind the period', async ({ page }) => {
+test('a live row waits for its paragraph, then mounts once behind it', async ({ page }) => {
   const body = await startControllableStream(page);
 
   /* The <think> tail buffer holds back up to 7 chars per frame, so the
-     preamble goes out in two frames: what matters is that the sentence
+     preamble goes out in two frames: what matters is that the paragraph
      is still unfinished when tool_use lands. */
   await page.evaluate(() => {
     window.__pushText('我先来查一下北京今天');
@@ -81,15 +82,17 @@ test('a live row waits for its sentence, then mounts once behind the period', as
      then is "no row" a meaningful assertion (otherwise we might just be
      faster than the render pass). */
   await expect(body.locator('.thinking-status-label')).toContainText('Tool running');
-  /* The sentence is unfinished: no row may mount (and therefore nothing
-     can jump when punctuation arrives). */
+  /* The paragraph is unfinished: no row may mount (and therefore nothing
+     can jump when punctuation arrives). A finished sentence alone must
+     NOT mount it either — only a completed paragraph does. */
+  await expect(body.locator('.tool-inline')).toHaveCount(0);
+  await page.evaluate(() => window.__pushText('情况。后来出太阳了'));
   await expect(body.locator('.tool-inline')).toHaveCount(0);
 
-  await page.evaluate(() => window.__pushText('情况。'));
-  /* The <think> tail buffer holds back ~7 chars, so the period only
-     reaches rawText once further text arrives — push enough that the
-     first period flushes through, then exactly one row must mount. */
-  await page.evaluate(() => window.__pushText('后来出太阳了！查到了。今天很暖和。'));
+  /* Complete the paragraph: the <think> tail buffer holds back ~7 chars,
+     so push enough that the blank line flushes through, then exactly one
+     row must mount behind the paragraph. */
+  await page.evaluate(() => window.__pushText('！查到了。今天很暖和。\n\n第二段讲讲结果。'));
   const row = body.locator('.tool-inline[data-tcid="live-search"]');
   await expect(row).toHaveCount(1);
 
@@ -99,7 +102,7 @@ test('a live row waits for its sentence, then mounts once behind the period', as
   });
   await expect(row).toHaveAttribute('data-state', 'done');
 
-  /* Strict order: the prose holding the sentence precedes the row, and the
+  /* Strict order: the prose holding the paragraph precedes the row, and the
      post-tool prose follows it — nothing above jumped below the row. */
   const order = await body.evaluate((el) => {
     const out = [];
@@ -122,13 +125,13 @@ test('a live row waits for its sentence, then mounts once behind the period', as
   const rowIdx = order.findIndex((s) => s === 'row:live-search');
   expect(rowIdx).toBeGreaterThan(-1);
   expect(order.slice(0, rowIdx).join('\n')).toContain('我先来查一下北京今天的天气情况。');
-  expect(order.slice(rowIdx + 1).join('\n')).toContain('出太阳');
+  expect(order.slice(rowIdx + 1).join('\n')).toContain('第二段讲讲结果');
 });
 
 /* ── finalized colon order ─────────────────────────────────────────── */
 
 const COLON_SESSION_ID = '99999999-9999-4999-8999-999999999999';
-const COLON_RAW = '原因有三：第一。第二。尾巴。';
+const COLON_RAW = '原因有三：第一。\n\n第二。尾巴。';
 
 async function loadColonFixture(page) {
   await mockAuthedApp(page);
@@ -178,7 +181,7 @@ async function loadColonFixture(page) {
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
 
-test('a colon never anchors a row: it advances to the next real period', async ({ page }) => {
+test('a colon never anchors a row: it advances past its paragraph', async ({ page }) => {
   const body = await loadColonFixture(page);
   const order = await body.evaluate((el) => {
     const out = [];
@@ -196,8 +199,8 @@ test('a colon never anchors a row: it advances to the next real period', async (
     }
     return out;
   });
-  /* A lone call gets no aggregate header: the row sits behind 第一。,
-     not behind the colon. */
+  /* A lone call gets no aggregate header: the row sits behind the whole
+     first paragraph — never behind the colon that fired it. */
   expect(order).toEqual([
     'text:原因有三：第一。',
     'row:c1',

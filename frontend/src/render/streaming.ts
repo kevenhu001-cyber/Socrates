@@ -77,8 +77,9 @@ export interface StreamingSplit {
  * span snap FORWARD to the end of the enclosing block (never backward —
  * already-painted text must not move).
  *
- * Shared by the write path (findInlineToolBoundary) and the read path
- * (react/tool-run buildTurnLayout) so both agree on the final position.
+ * Shared by the write path (the raw fire position, already paragraph-
+ * aware via toolRowAnchorOffset) and the read path (react/tool-run
+ * buildTurnLayout) so both agree on the final position.
  */
 export function snapToolOffsetOutOfBlock(text: string, offset: number): number {
   const full = String(text || '');
@@ -132,76 +133,46 @@ export function snapToolOffsetOutOfBlock(text: string, offset: number): number {
 }
 
 /**
- * Pick a stable insertion offset for an inline tool row.
+ * P_tool-order-paragraph — a tool row belongs to the paragraph during
+ * which it fired, never in the middle of it and never before it. The
+ * model routinely calls the tool mid-paragraph and only writes the
+ * framing sentence ("我来搜索一下…") afterwards; parking the row at the
+ * last COMPLETED paragraph (the old sentence-level rule) stranded it
+ * BEFORE its own paragraph, which reads as obviously misplaced.
  *
- * Tool-use events can arrive while the model is still streaming a short
- * preamble. Mounting the row at the raw character offset can split a
- * finished sentence in half, so prefer the latest completed paragraph or
- * sentence boundary inside the current segment.
+ * Pure helpers over (text, offset), shared by the write path (the raw
+ * fire position recorded by streamingTurn) and the read path
+ * (react/tool-run buildTurnLayout) so both agree on the final position:
  *
- * P_tool-order-strict — a row may only follow a REAL sentence ending
- * (CJK / Latin terminators, or a newline). Colons and semicolons
- * (：；:;) do NOT end a sentence: "原因有三：" promises a continuation,
- * and parking a row there reads as interrupting the AI mid-thought.
- * The row waits for the period / newline instead (see the live
- * deferred-mount in react/tool-run).
- *
- * When the current segment holds no completed boundary at all, anchor at
- * the END of the streamed text rather than rewinding to segmentStart.
- * See the comment at that branch — rewinding is what made tool rows pile
- * up at the top of a bubble.
+ * - isParagraphStart: offset 0 or right after a blank line. A tool that
+ *   fired exactly here already follows a finished block — stay.
+ * - paragraphEndAfter: the end of the blank-line run terminating the
+ *   enclosing paragraph, or EOF for the trailing paragraph.
+ * - toolRowAnchorOffset: stay at a clean start, otherwise advance to the
+ *   paragraph end. Callers still run the result through
+ *   snapToolOffsetOutOfBlock (code/table atomicity) afterwards.
  */
-export function findInlineToolBoundary(text: string, segmentStart = 0): number {
+export function isParagraphStart(text: string, offset: number): boolean {
   const full = String(text || '');
-  const start = Math.max(0, Math.min(full.length, Number(segmentStart) || 0));
-  if (start >= full.length) return full.length;
+  const off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
+  if (off <= 0) return true;
+  return /(?:\r?\n){2}$/.test(full.slice(0, off));
+}
 
-  const segment = full.slice(start);
-  const paragraphMatch = /[\r\n]{2,}/g;
-  let match: RegExpExecArray | null;
-  let paragraphEnd = -1;
-  while ((match = paragraphMatch.exec(segment))) paragraphEnd = match.index + match[0].length;
-  if (paragraphEnd > 0) return snapToolOffsetOutOfBlock(full, start + paragraphEnd);
-
-  // A sentence terminator is safe only when followed by whitespace or the
-  // end of the currently available text. This avoids treating decimal dots
-  // or punctuation inside identifiers as sentence boundaries.
-  // P_tool-order-strict — colons/semicolons are NOT terminators (see above).
-  const sentenceMatch = /[。！？!?\.](?=\s|$)/g;
-  let sentenceEnd = -1;
-  while ((match = sentenceMatch.exec(segment))) sentenceEnd = match.index + match[0].length;
-  if (sentenceEnd > 0) {
-    let end = sentenceEnd;
-    while (end < segment.length && /\s/.test(segment.charAt(end))) end += 1;
-    return snapToolOffsetOutOfBlock(full, start + end);
-  }
-
-  const newline = Math.max(segment.lastIndexOf('\n'), segment.lastIndexOf('\r'));
-  if (newline >= 0) return snapToolOffsetOutOfBlock(full, start + newline + 1);
-
-  /* No completed boundary anywhere in this segment: the model paused
-     part-way through a sentence to call the tool.
-
-     This branch used to `return start`, rewinding the anchor to the top
-     of the segment — and that is precisely what made tool rows collect
-     at the top of an assistant bubble. Every tool in a turn that had not
-     yet emitted a sentence terminator resolved to the SAME offset, so:
-
-       • each new row was spliced in before prose that was already
-         painted, and the visible text jumped down underneath a growing
-         stack of rows (the "unstable" feel), and
-       • on reload, the HTML rebuilder that used to re-splice rows from
-         stored offsets sorted several rows onto one identical offset and
-         emitted them back-to-back at the top with the whole answer below
-         them.
-
-     Anchoring at the end of what has streamed so far fixes all of that:
-     already-painted text never moves, consecutive tools get strictly
-     increasing offsets so each row stays where it fired, and the only
-     text a row can now interrupt is an UNFINISHED fragment — never a
-     complete sentence, which is the constraint that actually matters to
-     the reader. */
+export function paragraphEndAfter(text: string, offset: number): number {
+  const full = String(text || '');
+  const off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
+  const rest = full.slice(off);
+  const m = /(\r?\n){2,}/.exec(rest);
+  if (m && typeof m.index === 'number') return off + m.index + m[0].length;
   return full.length;
+}
+
+export function toolRowAnchorOffset(text: string, offset: number): number {
+  const full = String(text || '');
+  const off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
+  if (isParagraphStart(full, off)) return off;
+  return paragraphEndAfter(full, off);
 }
 
 /* Keep completed Markdown blocks in a stable DOM region and return only the

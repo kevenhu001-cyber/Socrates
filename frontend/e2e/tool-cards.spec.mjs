@@ -84,14 +84,14 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
 });
 
-test('tool activity lands at the call site without splitting a sentence', async ({ page }) => {
+test('tool activity lands behind its paragraph without splitting it', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
-      'data: {"choices":[{"delta":{"content":"先说明结论。 然后继续检查这个模块"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"先说明结论。\\n\\n然后继续检查这个模块"}}]}\n\n',
       'event: tool_use\ndata: [{"id":"boundary-search","name":"web_search","input":{"query":"module"}}]\n\n',
       'event: tool_result\ndata: {"id":"boundary-search","ok":true,"status":"completed","output":"found"}\n\n',
-      'data: {"choices":[{"delta":{"content":"的实现细节，再给出修复方案。"}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"的实现细节。\\n\\n再给出修复方案。"}}]}\n\n',
       'data: [DONE]\n\n',
     ].join('');
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
@@ -137,13 +137,14 @@ test('tool activity lands at the call site without splitting a sentence', async 
       prose: (clone?.textContent || '').replace(/\s+/g, ' ').trim(),
     };
   });
-  // The completed first sentence stays before the row; the unfinished
-  // sentence that was streaming when the tool fired continues below it —
-  // intact, not split across the row.
+  // Both finished paragraphs stay before the row; the paragraph that was
+  // streaming when the tool fired completes above it too — intact, not
+  // split across the row — and only the next paragraph follows it.
   expect(layout.beforeText).toContain('先说明结论。');
-  expect(layout.beforeText).not.toContain('然后');
-  expect(layout.afterText).toContain('然后继续检查这个模块的实现细节，再给出修复方案。');
-  expect(layout.prose).toContain('先说明结论。 然后继续检查这个模块的实现细节，再给出修复方案。');
+  expect(layout.beforeText).toContain('然后继续检查这个模块的实现细节。');
+  expect(layout.beforeText).not.toContain('再给出');
+  expect(layout.afterText).toContain('再给出修复方案。');
+  expect(layout.prose).toContain('先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。');
 });
 
 test('live chat shows a Searching label while the model is searching', async ({ page }) => {

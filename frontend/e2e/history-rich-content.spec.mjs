@@ -149,9 +149,9 @@ test('tool calls with textOffset restore as inline rows with the chart in place'
 
 const SENTENCE_SESSION_ID = '44444444-4444-4444-8444-444444444444';
 
-test('restored edit tools wait for the complete sentence and use one compact summary', async ({ page }) => {
+test('restored edit tools wait for the complete paragraph and use one compact summary', async ({ page }) => {
   await mockAuthedApp(page);
-  const rawText = '我先查一下相关资料。代码验证。';
+  const rawText = '我先查一下相关资料。这是第一段。\n\n代码验证。尾巴。';
   const textOffset = '我先查一下'.length;
   await page.route(new RegExp('/api/(?:v2/)?sessions/' + SENTENCE_SESSION_ID + '(?:\\?.*)?$'), async (route) => {
     await route.fulfill({
@@ -159,8 +159,8 @@ test('restored edit tools wait for the complete sentence and use one compact sum
       contentType: 'application/json',
       body: JSON.stringify({
         id: SENTENCE_SESSION_ID,
-        topic: 'Sentence-safe tools',
-        title: 'Sentence-safe tools',
+        topic: 'Paragraph-safe tools',
+        title: 'Paragraph-safe tools',
         domain: 'code',
         mode: 'chat',
         kind: 'chat',
@@ -189,14 +189,14 @@ test('restored edit tools wait for the complete sentence and use one compact sum
   await page.evaluate((id) => window.loadSession(id), SENTENCE_SESSION_ID);
 
   const body = page.locator('#msgList .msg.assistant .msg-body');
-  await expect(body.locator('.tool-run-prose').first()).toHaveText('我先查一下相关资料。');
+  await expect(body.locator('.tool-run-prose').first()).toHaveText('我先查一下相关资料。这是第一段。');
   await expect(body.locator('.tool-run-summary')).toContainText('Edited moe.py, router_v2.py');
   await expect(body.locator('.tool-inline-file-summary')).toHaveCount(0);
   const flow = await body.locator(':scope > *').evaluateAll((nodes) => nodes.map((node) => ({
     className: node.className,
     text: node.textContent.trim(),
   })));
-  expect(flow[0].text).toBe('我先查一下相关资料。');
+  expect(flow[0].text).toBe('我先查一下相关资料。这是第一段。');
   expect(flow[1].className).toContain('tool-run-group');
-  expect(flow[2].text).toBe('代码验证。');
+  expect(flow[2].text).toBe('代码验证。尾巴。');
 });

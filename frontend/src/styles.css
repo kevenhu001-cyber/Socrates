@@ -4420,9 +4420,9 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
    the assistant's tool calls read like inline footnotes, not a
    competing dashboard.
 
-   Layout rule (don't break sentences): `findInlineToolBoundary` in
-   render/streaming.ts already places the row at the latest completed
-   sentence or paragraph. The label itself is single-line
+   Layout rule (don't break paragraphs): `toolRowAnchorOffset` in
+   render/streaming.ts places the row after the paragraph in progress
+   when the tool fired mid-paragraph. The label itself is single-line
    `white-space: nowrap` with `text-overflow: ellipsis` so a long
    command path or filename is truncated with a trailing … rather
    than wrapping and breaking visual rhythm with the surrounding prose. */

@@ -13,7 +13,7 @@
  */
 
 import { toolCategory } from '../../render/toolCategory.js';
-import { snapToolOffsetOutOfBlock } from '../../render/streaming.js';
+import { isParagraphStart, snapToolOffsetOutOfBlock, toolRowAnchorOffset } from '../../render/streaming.js';
 import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.js';
 import { isTerminalToolPhase, summarizeToolRuns, type ToolRun } from '../../chat/toolRunState.js';
 import {
@@ -263,6 +263,19 @@ export function sortableToolCalls(
 }
 
 /**
+ * P_tool-order-mount — may a row mount at `offset` right now? A paragraph
+ * start is always safe (the block before it is finished — this also covers
+ * headings and other unterminated blocks that no sentence test accepts).
+ * Otherwise the row must sit behind a real sentence ending (CJK/Latin
+ * terminators, or a newline); colons/semicolons do NOT count. The EOF
+ * branch mirrors the same lookahead: a trailing '.' counts, "3.14" can't.
+ */
+export function isRowMountableAt(rawText: string, offset: number): boolean {
+  if (isParagraphStart(rawText, offset)) return true;
+  return isSentenceCompleteAt(rawText, offset);
+}
+
+/**
  * P_tool-order-strict — is the prose at `offset` a finished sentence?
  * A tool row may only mount behind a REAL ending (CJK/Latin terminator
  * or newline). Colons/semicolons do not count: "原因有三：" promises a
@@ -294,39 +307,40 @@ export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
  * nothing but whitespace between them collapse into one aggregate, and the
  * first piece of real prose breaks the run. That matches how the model
  * actually works — a burst of reads/writes before it has anything to say —
- * while keeping a tool row adjacent to the sentence that introduced it.
+ * while keeping a tool row behind the paragraph that introduced it.
  *
  * `inlineThink` keeps `<think>…</think>` inside the text segments instead of
  * cutting them out. A live turn wants that: the streaming renderer turns an
  * open think tag into the same collapsible "思考中" block the legacy pipeline
  * painted, and only the finalized pass strips scratch work for good.
  *
- * P_tool-order-defer — with `deferOpenSentence` (live turns only), a tool
- * whose sentence has not finished yet is LEFT OUT of the layout entirely:
+ * P_tool-order-defer — with `deferOpenParagraph` (live turns only), a tool
+ * whose paragraph has not finished yet is LEFT OUT of the layout entirely:
  * its data stays in toolCalls[] and the turn status line keeps showing
- * "running", but no row mounts until the sentence completes. The row then
- * mounts exactly once, at its final position — it never visibly jumps.
+ * "running", but no row mounts until the paragraph completes. The row then
+ * mounts exactly once, at its final position — it never visibly jumps and
+ * never lands before the paragraph that triggered it.
  * Finalized turns pass no defer flag, so nothing can starve.
  */
 export function buildTurnLayout(
   rawText: string,
   toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
-  opts?: { inlineThink?: boolean; deferOpenSentence?: boolean },
+  opts?: { inlineThink?: boolean; deferOpenParagraph?: boolean },
 ): TurnSegment[] {
   const raw = String(rawText || '');
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
-  const defer = opts?.deferOpenSentence === true;
+  const defer = opts?.deferOpenParagraph === true;
   const calls = sortableToolCalls(raw, toolCalls).filter((call) => {
     if (!defer) return true;
-    /* Approvals need a human decision: never hide them behind a sentence. */
+    /* Approvals need a human decision: never hide them behind prose. */
     if (call.approval && call.approval.approvalId) return true;
-    /* P_tool-order-defer — mount only behind a finished sentence. */
+    /* P_tool-order-defer — mount only behind a finished paragraph. */
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const visual = snapToolOffsetOutOfBlock(
       raw,
-      sentenceSafeToolOffset(raw, persistedOffset, true),
+      toolRowAnchorOffset(raw, persistedOffset),
     );
-    return isSentenceCompleteAt(raw, visual);
+    return isRowMountableAt(raw, visual);
   });
   const segments: TurnSegment[] = [];
 
@@ -348,11 +362,15 @@ export function buildTurnLayout(
   let prev = 0;
   for (const call of calls) {
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
+    /* Paragraph-atomic placement (P_tool-order-paragraph): a mid-paragraph
+       fire position advances past that paragraph's end; a clean paragraph
+       start stays. snapToolOffsetOutOfBlock then keeps code/table spans
+       atomic. `prev` keeps same-paragraph bursts in order. */
     const offset = Math.max(
       prev,
       snapToolOffsetOutOfBlock(
         raw,
-        sentenceSafeToolOffset(raw, persistedOffset, opts?.deferOpenSentence === true),
+        toolRowAnchorOffset(raw, persistedOffset),
       ),
     );
     pushProse(prev, offset);
@@ -362,41 +380,6 @@ export function buildTurnLayout(
   pushProse(prev, raw.length);
 
   return foldConsecutiveRuns(segments);
-}
-
-/**
- * A provider can emit a tool event before the text chunk containing the rest
- * of its introductory sentence. The persisted offset is still useful, but
- * rendering at it would split prose in two (especially visible in Chinese,
- * where there is no separating space). Move that visual boundary to the next
- * sentence ending on the same line. During a live turn, keep an unfinished
- * sentence ahead of the tool until its punctuation arrives.
- */
-function sentenceSafeToolOffset(raw: string, offset: number, deferOpenSentence: boolean): number {
-  if (offset <= 0 || offset >= raw.length) return offset;
-
-  const before = raw.slice(0, offset);
-  const trimmedBefore = before.trimEnd();
-  const next = raw[offset] || '';
-  const closesSentence = /(?:[。！？!?]|\.)(?:["'”’」』）)\]}]*)$/u.test(trimmedBefore);
-  if (/\n|\r/u.test(next) || closesSentence) return offset;
-
-  const lineEndMatch = raw.slice(offset).match(/[\r\n]/u);
-  const searchEnd = lineEndMatch ? offset + (lineEndMatch.index || 0) : raw.length;
-  for (let index = offset; index < searchEnd; index += 1) {
-    const char = raw[index];
-    const nextChar = raw[index + 1] || '';
-    const isCjkEnding = /[。！？!?]/u.test(char);
-    const isEnglishPeriod = char === '.' && (!nextChar || /[\s"'”’）)\]}]/u.test(nextChar));
-    if (!isCjkEnding && !isEnglishPeriod) continue;
-
-    let end = index + 1;
-    while (end < raw.length && /["'”’」』）)\]}]/u.test(raw[end])) end += 1;
-    while (end < raw.length && /[\t ]/u.test(raw[end])) end += 1;
-    return end;
-  }
-
-  return deferOpenSentence ? raw.length : offset;
 }
 
 function appendText(out: TurnSegment[], text: string, start: number, end: number): void {
