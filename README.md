@@ -4,7 +4,6 @@
 
 <br/>
 
-[![Repo visibility](https://img.shields.io/badge/visibility-private-7a6c4d?style=flat-square)](#-repository-visibility)
 [![App status](https://img.shields.io/badge/app-online-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![Backend](https://img.shields.io/badge/backend-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
 [![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
