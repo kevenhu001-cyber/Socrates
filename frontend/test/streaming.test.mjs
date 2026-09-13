@@ -262,6 +262,49 @@ test('compact inline math rejects lowercase prose words', () => {
   });
 });
 
+/* Function calls carry internal whitespace (`u(x, y)`), which the compact
+   guard rejected, so parameter formulas stayed raw. They must render in
+   both passes while spaced prose and currency keep their text. */
+test('spaced function-call inline math renders in both renderers', () => {
+  withKatex(() => {
+    const progressive = renderProgressive('设 $u(x, y)$ 和 $v(x, y)$ 连续');
+    assert.match(progressive, /class="katex/);
+    assert.doesNotMatch(progressive, /\$u\(x, y\)\$/);
+    assert.doesNotMatch(progressive, /\$v\(x, y\)\$/);
+
+    /* Mid-stream open call renders live instead of flashing raw dollars. */
+    const live = renderProgressive('设 $u(x, y');
+    assert.match(live, /class="katex/);
+    assert.doesNotMatch(live, /\$u\(x, y/);
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('由 $u(x, y)$ 与 $v(x, y)$ 连续');
+      assert.match(final, /class="katex/);
+      assert.doesNotMatch(final, /\$u\(x, y\)\$/);
+      assert.doesNotMatch(final, /\$v\(x, y\)\$/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
+test('spaced prose and currency stay literal', () => {
+  withKatex(() => {
+    /* A digit or a word detached from the paren is not a call. */
+    assert.doesNotMatch(renderProgressive('It costs $5 (approx) today'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('paid in $USD (about'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('the $US to $EU rate'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('so $Thus (see note)$ it is'), /class="katex/);
+  });
+});
+
 test('stripMarkdown keeps currency but removes real formulas', () => {
   const currency = stripMarkdown('价格是 $5 到 $10');
   assert.match(currency, /\$5/);
@@ -273,6 +316,9 @@ test('stripMarkdown keeps currency but removes real formulas', () => {
 
   const symbol = stripMarkdown('设 $D$ 为区域');
   assert.doesNotMatch(symbol, /\$D\$/);
+
+  const call = stripMarkdown('设 $u(x, y)$ 连续');
+  assert.doesNotMatch(call, /u\(x, y\)/);
 });
 
 /* The detached auto-render host must receive sanitized markup: setting
