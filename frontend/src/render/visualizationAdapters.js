@@ -273,6 +273,14 @@ async function mountWhiteboard(spec, stage) {
   return { handled: true, chart: null, cleanup() { root.unmount(); } };
 }
 
+/**
+ * Unified adapter contract — every branch returns
+ *   { handled: boolean, chart: { dispatchAction, getDataURL } | null, cleanup(): void }
+ * `cleanup` releases every resource the adapter created (ResizeObserver, RAF,
+ * OrbitControls, WebGL context, tldraw root, message listeners) and is invoked
+ * through `disposeCard`, which guards against double disposal. The React host
+ * only ever calls mount / dispose; it never inspects which library ran.
+ */
 export async function mountSpecializedVisualization(spec, stage, helpers) {
   if (spec.template === 'function' || spec.template === 'paper_chart') return mountPlotly(spec, stage, helpers);
   if (STRUCTURE_TEMPLATES.has(spec.template)) return mountMermaid(spec, stage);
