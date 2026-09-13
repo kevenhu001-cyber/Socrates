@@ -41,7 +41,7 @@ import { openCmdKResult } from '../ui/cmdK.js';
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from '../ui/dangerConfirms.js';
 import { processPendingMermaid, processPendingViz } from '../render/viz.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
-import { mountVisualization } from '../render/visualization.js';
+import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/visualization.js';
 import { appendInlineArtifact } from '../ui/toolCards.js';
 import { formatMsgProgressive } from '../render/markdown.js';
 import { stripCitationMarkers } from '../render/helpers.js';
@@ -238,6 +238,16 @@ window.__socratesLegacy = {
     mountVisualization: function (spec, host, options) {
       return typeof mountVisualization === 'function'
         ? mountVisualization(spec, host, options) : null;
+    },
+    /* React host teardown: dispose every card (and its renderer resources)
+       in the host when the owning component unmounts or remounts. */
+    disposeVisualizations: function (host) {
+      if (typeof disposeVisualizations === 'function') disposeVisualizations(host);
+    },
+    /* Teardown for one card React captured from mountVisualization's return
+       value — survives a host the legacy pipeline emptied first. */
+    disposeVisualization: function (card) {
+      if (typeof disposeVisualization === 'function') disposeVisualization(card);
     },
     appendInlineArtifact: function (fileId, mimeType, outEl, displayName) {
       if (typeof appendInlineArtifact === 'function') {

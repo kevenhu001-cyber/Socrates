@@ -30,6 +30,7 @@ export {
   toolRunGroupView,
   toolRunStateOf,
   toolRunView,
+  visualizationSpecKey,
   type ApprovalView,
   type DetailSection,
   type TechSection,

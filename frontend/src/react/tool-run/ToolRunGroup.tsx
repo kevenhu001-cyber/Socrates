@@ -15,11 +15,11 @@
  *    invisible.
  *
  * The third rule this file owns: tool OUTPUT is not tool STATUS. Charts and
- * saved files render outside `.tool-run-list`, which is the only thing the
- * summary toggle controls — collapsing a run may hide its arguments and
+ * saved files render beside the rows region, while the summary toggle only
+ * controls `.tool-run-list` — collapsing a run may hide its arguments and
  * stdout, never its result.
  */
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
 import { formatSeconds } from './labels.js';
@@ -64,89 +64,95 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
   // Hooks first: the single-member shortcut below must not make one conditional.
   const elapsedMs = useElapsed(startedAt, inFlight && !!startedAt);
 
-  /* A run of one is just a row — no aggregate header. */
-  if (!showsHeader) {
-    const single = segment.members.concat(segment.running);
-    return (
-      <>
-        {single.map((call) => (
-          <Fragment key={call.id}>
-            <ToolRunRow
-              view={toolRunView(call)}
-              startedAt={runStartedAt(call)}
-              messageId={messageId}
-              readOnly={readOnly}
-            />
-            <ToolRunAttachments call={call} />
-          </Fragment>
-        ))}
-      </>
-    );
-  }
-
   const meta = view.meta.slice();
   if (inFlight) {
     const elapsed = formatSeconds(elapsedMs);
     if (elapsed) meta.push(elapsed);
   }
 
-  return (
-    <section
-      className={`tool-run-group${open ? ' open' : ''}`}
-      data-state={CSS_STATE[view.state]}
-      data-category={view.category}
-    >
-      <button
-        type="button"
-        className="tool-run-summary"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span className="tool-run-summary-dot" aria-hidden="true" />
-        <span className={`tool-run-summary-label${inFlight ? ' shimmer-text' : ''}`}>
-          {view.headerLabel}
-        </span>
-        {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
-        <span
-          className="tool-run-summary-chev"
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
-        />
-      </button>
+  /* Tool OUTPUTS render as a sibling of the rows region, in the group's own
+     fragment — never inside the subtree whose shape changes when a run crosses
+     two settled members. A host inside that subtree would be remounted (and its
+     renderer torn down and rebuilt) exactly when the last call settles. The
+     toggle below owns status only: a chart or a saved file stays on screen
+     while the run is collapsed. */
+  const outputs = groupOutputCalls(segment).map((call) => (
+    <ToolRunAttachments key={`output-${call.id}`} call={call} />
+  ));
 
-      <div className="tool-run-list" hidden={!open}>
-        {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
-        {segment.members.map((call, index) => (
+  /* A run of one is just a row — no aggregate header. */
+  if (!showsHeader) {
+    const single = segment.members.concat(segment.running);
+    return (
+      <>
+        {single.map((call) => (
           <ToolRunRow
             key={call.id}
-            view={view.members[index]}
+            view={toolRunView(call)}
+            startedAt={runStartedAt(call)}
+            messageId={messageId}
+            readOnly={readOnly}
+          />
+        ))}
+        {outputs}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <section
+        className={`tool-run-group${open ? ' open' : ''}`}
+        data-state={CSS_STATE[view.state]}
+        data-category={view.category}
+      >
+        <button
+          type="button"
+          className="tool-run-summary"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span className="tool-run-summary-dot" aria-hidden="true" />
+          <span className={`tool-run-summary-label${inFlight ? ' shimmer-text' : ''}`}>
+            {view.headerLabel}
+          </span>
+          {meta.length ? <span className="tool-run-summary-meta">{meta.join(' · ')}</span> : null}
+          <span
+            className="tool-run-summary-chev"
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: STROKE_ICONS.chevronDown }}
+          />
+        </button>
+
+        <div className="tool-run-list" hidden={!open}>
+          {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
+          {segment.members.map((call, index) => (
+            <ToolRunRow
+              key={call.id}
+              view={view.members[index]}
+              startedAt={runStartedAt(call)}
+              messageId={messageId}
+              readOnly={readOnly}
+              nested
+            />
+          ))}
+        </div>
+
+        {/* Live lines stay outside the collapsed aggregate. */}
+        {segment.running.map((call, index) => (
+          <ToolRunRow
+            key={call.id}
+            view={view.running[index]}
             startedAt={runStartedAt(call)}
             messageId={messageId}
             readOnly={readOnly}
             nested
           />
         ))}
-      </div>
+      </section>
 
-      {/* Live lines stay outside the collapsed aggregate. */}
-      {segment.running.map((call, index) => (
-        <ToolRunRow
-          key={call.id}
-          view={view.running[index]}
-          startedAt={runStartedAt(call)}
-          messageId={messageId}
-          readOnly={readOnly}
-          nested
-        />
-      ))}
-
-      {/* Tool OUTPUTS, rendered from the same call list the rows use. The
-          toggle above owns status only: a chart or a saved file stays on
-          screen while the run is collapsed. */}
-      {groupOutputCalls(segment).map((call) => (
-        <ToolRunAttachments key={`output-${call.id}`} call={call} />
-      ))}
-    </section>
+      {outputs}
+    </>
   );
 }
 

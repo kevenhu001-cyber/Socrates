@@ -22,6 +22,7 @@ import {
   stripLegacyToolHtml,
   toolRunStateOf,
   toolRunView,
+  visualizationSpecKey,
 } from '../src/react/tool-run/toolRunModel.ts';
 import { toolRunGroupLabel, toolRunLabel } from '../src/react/tool-run/labels.ts';
 
@@ -485,6 +486,23 @@ test('a group hands every call to the output renderer, settled or in flight', ()
   ]).find((s) => s.kind === 'group');
   assert.deepEqual(groupOutputCalls(group).map((c) => c.id), ['settled', 'live']);
   assert.deepEqual(groupOutputCalls(group), group.members.concat(group.running));
+});
+
+test('visualization specs compare by content, so a settle does not remount the chart', () => {
+  const a = {
+    version: 1,
+    template: 'function',
+    payload: { functions: [{ expression: 'x^2', label: 'y' }], xLabel: 'x', yLabel: 'y' },
+  };
+  const reordered = {
+    payload: { yLabel: 'y', xLabel: 'x', functions: [{ label: 'y', expression: 'x^2' }] },
+    template: 'function',
+    version: 1,
+  };
+  assert.equal(visualizationSpecKey(a), visualizationSpecKey(reordered), 'key order is irrelevant');
+  assert.notEqual(visualizationSpecKey(a), visualizationSpecKey({ ...a, title: 'different' }));
+  assert.equal(visualizationSpecKey(null), '');
+  assert.equal(visualizationSpecKey(undefined), '');
 });
 
 test('a single settled call renders as a bare row, not a collapsed header', () => {

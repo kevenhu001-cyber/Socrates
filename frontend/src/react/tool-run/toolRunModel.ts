@@ -439,6 +439,39 @@ export function groupOutputCalls(
   return segment.members.concat(segment.running);
 }
 
+/* Sorted-key serialization: the same spec can arrive as two distinct objects
+ * (the streamed arguments and the normalized result), and key order is not
+ * guaranteed to match, so JSON.stringify alone would report a change. */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return '[' + value.map(stableStringify).join(',') + ']';
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return '{' + Object.keys(record).sort()
+      .map((key) => JSON.stringify(key) + ':' + stableStringify(record[key]))
+      .join(',') + '}';
+  }
+  const encoded = JSON.stringify(value);
+  return encoded === undefined ? 'null' : encoded;
+}
+
+/**
+ * A content-stable identity for a visualization spec.
+ *
+ * `ToolRunAttachments` keys its mount effect on this instead of the spec
+ * object: the live runtime replaces `call.input` with the normalized result
+ * spec when the tool finishes, so an identity-based dependency remounted a
+ * byte-identical chart on every settle. Content equality keeps one mount per
+ * output while still remounting when the spec really changes.
+ */
+export function visualizationSpecKey(spec: unknown): string {
+  if (!spec || typeof spec !== 'object') return '';
+  try {
+    return stableStringify(spec);
+  } catch (_) {
+    return '';
+  }
+}
+
 function groupState(
   members: ToolCallRecord[],
   running: ToolCallRecord[],

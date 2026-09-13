@@ -167,8 +167,20 @@ export interface LegacyPostRender {
   mountVisualization?(
     spec: Record<string, unknown>,
     host: HTMLElement,
-    options?: { toolCallId?: string },
+    options?: { toolCallId?: string; signal?: AbortSignal },
   ): unknown;
+  /**
+   * Dispose every visualization card in a host. A React host calls this from
+   * its effect cleanup so a chart's ECharts instance, ResizeObserver, RAF loop
+   * or WebGL context is released when the component unmounts or remounts.
+   */
+  disposeVisualizations?(host: HTMLElement): void;
+  /**
+   * Dispose one card React captured from `mountVisualization`'s return value.
+   * The host-based variant is not enough when legacy DOM work empties the host
+   * before React's cleanup runs; the tracked element is the remaining handle.
+   */
+  disposeVisualization?(card: unknown): void;
   appendInlineArtifact?(
     fileId: string,
     mimeType?: string,
