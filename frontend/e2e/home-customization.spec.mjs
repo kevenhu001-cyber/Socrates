@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('IP time zone drives the personalized greeting', async ({ page }) => {
+test('landing greeting stays one static line regardless of the hour', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-08-30T01:00:00Z'));
   await mockAuthedApp(page, {
     user: {
@@ -15,7 +15,9 @@ test('IP time zone drives the personalized greeting', async ({ page }) => {
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  await expect(page.locator('#topicTitle')).toHaveText('Good morning, Jiacheng!');
+  /* ChatGPT parity: no time-of-day, no name — the same short line at any
+     hour, in the ambient locale (en here). */
+  await expect(page.locator('#topicTitle')).toHaveText('Ready when you are');
 });
 
 test('display settings change theme, text scale, and content width', async ({ page }) => {
