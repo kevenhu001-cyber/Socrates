@@ -37,6 +37,50 @@ test('Plugins is a direct sidebar destination', async ({ page }) => {
      no connected apps, so the landing view lists every plugin. */
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await expect(page.locator('.plugin-directory-row')).toHaveCount(5);
+  /* The static 插件 / 技能 switch was removed from the shell header. */
+  await expect(page.locator('#pluginsPanel .plugins-panel-tabs')).toHaveCount(0);
+});
+
+test('workspace destinations replace the chat landing instead of stacking under it', async ({ page }) => {
+  /* Regression: the forced `#topicSetup { display:flex !important }` landing
+     rules used to outrank `.hidden`, so selecting a sidebar page left the
+     greeting/composer on screen and pushed the panel below the fold. */
+  for (const [navId, panelId] of [['navPlugins', '#pluginsPanel'], ['navProjects', '#spacesPanel']]) {
+    await page.locator(`#${navId}`).click();
+    await expect(page.locator(`#${navId}`)).toHaveClass(/active/);
+    await expect(page.locator(panelId)).toBeInViewport();
+    await expect(page.locator('#topicSetup')).toBeHidden();
+    await expect(page.locator('#chatView')).toBeHidden();
+  }
+});
+
+test('phone workspace destinations hide the landing too', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.openNav('plugins'));
+  await expect(page.locator('#pluginsPanel')).toBeInViewport();
+  await expect(page.locator('#topicSetup')).toBeHidden();
+});
+
+test('desktop share control renders its svg, not the text label', async ({ page }) => {
+  /* Regression: the text label used to stay visible on desktop and the
+     flex container squeezed the 14px glyph to width 0, so the button
+     read as bare "Share" text instead of the icon. */
+  await page.evaluate(() => {
+    document.body.dataset.conversationActive = 'true';
+    document.getElementById('shareBtn')?.classList.remove('hidden');
+  });
+  const share = await page.locator('#shareBtn').evaluate((el) => {
+    const svg = el.querySelector('svg');
+    const label = el.querySelector('.share-btn-label');
+    return {
+      svgWidth: svg ? svg.getBoundingClientRect().width : 0,
+      svgHeight: svg ? svg.getBoundingClientRect().height : 0,
+      labelDisplay: label ? getComputedStyle(label).display : null,
+    };
+  });
+  expect(share.svgWidth).toBeGreaterThan(0);
+  expect(share.svgHeight).toBeGreaterThan(0);
+  expect(share.labelDisplay).toBe('none');
 });
 
 test('Exam is a direct sidebar destination', async ({ page }) => {

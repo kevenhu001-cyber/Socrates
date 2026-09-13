@@ -647,43 +647,6 @@ body.workspace-active #appShell .main-page {
   }
 }
 
-#appShell .plugins-top-tabs {
-  display: flex;
-  justify-content: center;
-  padding: 12px 0 24px;
-}
-
-#appShell .plugins-top-tabs .pill {
-  display: inline-flex;
-  border-radius: 9999px;
-  background: var(--cg-surface-raised);
-  padding: 3px;
-  gap: 2px;
-}
-
-[data-mode="light"] #appShell .plugins-top-tabs .pill {
-  background: #f3f4f6;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-#appShell .plugins-top-tabs .pill button {
-  border: none;
-  border-radius: 9999px;
-  padding: 6px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  background: transparent;
-  color: var(--cg-text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-[data-mode="light"] #appShell .plugins-top-tabs .pill button.active {
-  background: #ffffff;
-  color: #111827;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
 #appShell .plugin-directory-tools {
   display: flex !important;
   align-items: center !important;
@@ -1141,20 +1104,9 @@ body.workspace-active #appShell .main-page {
     display: none !important;
   }
 
-  #appShell .plugins-panel-tabs,
-  #appShell .plugins-top-tabs {
-    position: fixed !important;
-    z-index: 6 !important;
-    top: 6px !important;
-    left: calc(50% + 130px) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: translateX(-50%) !important;
-  }
-
   /* The React directory mounts inside #pluginsPanel, whose scroll container
-     would otherwise clip the fixed top tabs at y=6. Keep the page scroll on
-     the list itself so the tabs remain in the reference top-bar position. */
+     would otherwise clip fixed page chrome. Keep the page scroll on the
+     list itself so workspace content stays in the reference top position. */
   body.workspace-active:has(#pluginsPanel:not(.hidden)) #appShell #mainContent,
   #appShell #pluginsPanel[data-live-directory="true"] {
     overflow: visible !important;
@@ -1168,23 +1120,6 @@ body.workspace-active #appShell .main-page {
   #appShell #pluginsPanel[data-live-directory="true"] #pluginsList {
     max-height: 100% !important;
     overflow-y: auto !important;
-  }
-
-  #appShell .plugins-panel-tabs .pill,
-  #appShell .plugins-top-tabs .pill {
-    height: 32px !important;
-    padding: 3px !important;
-    gap: 2px !important;
-  }
-
-  #appShell .plugins-panel-tabs .pill button,
-  #appShell .plugins-top-tabs .pill button {
-    height: 26px !important;
-    min-width: 68px !important;
-    padding: 0 15px !important;
-    border-radius: 999px !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
   }
 
   #appShell .workspace-page-head,
@@ -2421,80 +2356,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     grid-column: 4 !important;
     grid-row: 2 !important;
   }
-}
-
-/* The live React directory owns the plugin heading, search field, installed
-   strip and rows.  Keep the shell's functional 插件 / 技能 switch mounted as
-   the one shared page-level control, so it remains visible without bringing
-   back the legacy placeholder cards. */
-#appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: fixed !important;
-  z-index: 30 !important;
-  top: 6px !important;
-  left: calc(50% + 130px) !important;
-  width: auto !important;
-  height: 40px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transform: translateX(-50%) !important;
-  pointer-events: auto !important;
-}
-
-#appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs .pill {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 2px !important;
-  width: 220px !important;
-  height: 40px !important;
-  padding: 2px !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  background: var(--cg-surface-raised) !important;
-}
-
-#appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs .pill button {
-  flex: 1 1 0 !important;
-  min-width: 0 !important;
-  height: 36px !important;
-  padding: 0 12px !important;
-  border: 0 !important;
-  border-radius: 999px !important;
-  color: var(--cg-text-muted) !important;
-  background: transparent !important;
-  font-family: var(--cg-font) !important;
-  font-size: 15px !important;
-  font-weight: 400 !important;
-}
-
-#appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs .pill button.active {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface) !important;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 24%) !important;
-}
-
-@media (max-width: 768px) {
-  #appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs {
-    top: 8px !important;
-    left: 50% !important;
-  }
-
-  #appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs .pill {
-    width: 168px !important;
-    min-width: 168px !important;
-    height: 40px !important;
-  }
-}
-
-[data-mode="light"] #appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs .pill {
-  background: #f1f1ef !important;
-}
-
-[data-mode="light"] #appShell #pluginsPanel[data-live-directory="true"] > .plugins-panel-tabs .pill button.active {
-  color: #1f1f1f !important;
-  background: #fff !important;
 }
 
 /* The reference directory is a quiet list on the black canvas; only the

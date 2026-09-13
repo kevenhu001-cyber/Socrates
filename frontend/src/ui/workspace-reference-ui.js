@@ -3,7 +3,7 @@
  *
  * Interactivity for the reference-styled workspace pages:
  *  - Spaces panel: filter pills, search-input filter, hide React duplicate chrome
- *  - Plugins panel: top tabs (插件 / 技能), scope tabs (公开 / 个人),
+ *  - Plugins panel: scope tabs (公开 / 个人),
  *                   add-button forwards to the marketplace opener.
  *                   (Static directory cards were removed: the live React
  *                   directory owns all plugin content and OpenConnector
@@ -61,11 +61,6 @@ function setupSpacesFilters() {
 }
 
 function setupPluginsTabs() {
-  var topGroup = document.querySelector('#pluginsPanel .plugins-panel-tabs .pill');
-  if (topGroup) {
-    bindRowToggle(topGroup.querySelectorAll('button'));
-    topGroup.dataset.group = 'plugins-top';
-  }
   var scopeGroup = document.querySelector('#pluginsPanel .plugins-scope-tabs');
   if (scopeGroup) {
     bindRowToggle(scopeGroup.querySelectorAll('button'));
