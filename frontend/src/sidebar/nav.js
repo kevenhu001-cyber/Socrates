@@ -740,7 +740,7 @@ function openCredentialDialog(connector) {
       body = { values: values };
     }
     try {
-      var result = await api("/api/project-connectors/" + encodeURIComponent(id) + "/connect", { method: "POST", body: body });
+      var result = await api("/api/project-connectors/" + encodeURIComponent(connector.id) + "/connect", { method: "POST", body: body });
       if (!result || result.status !== "connected") throw new Error((result && result.error) || "Could not connect.");
       closeWorkspaceDialog(); renderPlugins(); toast(connector.name + " connected");
     } catch (err) {
