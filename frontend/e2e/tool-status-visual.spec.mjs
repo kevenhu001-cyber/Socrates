@@ -101,3 +101,77 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-mounted.png' });
 });
+
+test('cursor trails the whole turn, below a tool row mounted last', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const encoder = new TextEncoder();
+    const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    let ref = null;
+    window.fetch = (input, init) => {
+      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      if (!url.includes('/chat/stream')) return nativeFetch(input, init);
+      const stream = new ReadableStream({
+        start(controller) { ref = controller; },
+      });
+      window.__pushText = (content) => {
+        ref.enqueue(encoder.encode(
+          `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`,
+        ));
+      };
+      window.__pushToolUse = () => {
+        ref.enqueue(encoder.encode(frame('tool_use', [
+          { id: 'w-tail', name: 'Write', input: { file_path: 'tail.txt', content: 'hello' } },
+        ])));
+      };
+      return Promise.resolve(new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }));
+    };
+  });
+  await mockAuthedApp(page, { lang: 'zh' });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    const sessionId = '77777777-7777-4777-8777-777777777777';
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
+    window.stateStore.dispatch({
+      type: 'state/set', key: 'messages',
+      value: [{ clientId: 'user-tail', role: 'user', rawText: '写文件', html: null }],
+    });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    window.__tailPromise = window.askChatTurn('写文件');
+  });
+
+  const bubble = page.locator('.msg.assistant').last().locator('.msg-body');
+  // Finished first paragraph, then the tool fires at the end with nothing
+  // after it yet: the row mounts last, stream stays open. The 7 trailing
+  // chars are deliberate: the stream scanner holds back up to 7 chars per
+  // frame for split <think> tags, so the blank line only reaches rawText
+  // once further bytes arrive — while the stream stays open those bytes
+  // never render (nothing follows the row in the layout).
+  await page.evaluate(() => window.__pushText('我先尝试获取那一节。\n\nabcdefg'));
+  await page.evaluate(() => window.__pushToolUse());
+  const row = bubble.locator('.tool-inline[data-tcid="w-tail"]');
+  await expect(row).toHaveCount(1);
+
+  // Exactly one cursor, and it sits BELOW the row — never stranded
+  // between the prose and the tool call.
+  const cursor = bubble.locator('.stream-cursor');
+  await expect(cursor).toHaveCount(1);
+  const boxes = await page.evaluate(() => {
+    const rowEl = document.querySelector('.tool-inline[data-tcid="w-tail"]');
+    const cursorEl = document.querySelector('.msg.assistant .msg-body > .stream-cursor');
+    if (!rowEl || !cursorEl) return null;
+    const r = rowEl.getBoundingClientRect();
+    const c = cursorEl.getBoundingClientRect();
+    return { rowBottom: r.bottom, cursorTop: c.top };
+  });
+  expect(boxes).not.toBeNull();
+  expect(boxes.cursorTop).toBeGreaterThanOrEqual(boxes.rowBottom - 2);
+  await page.waitForTimeout(400);
+  await bubble.screenshot({ path: 'test-results/tool-status-cursor-below-row.png' });
+});
