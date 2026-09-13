@@ -13,6 +13,11 @@
  *  - an in-flight call renders *outside* the collapsed header, because hiding
  *    the live line behind a toggle is how the streaming command preview became
  *    invisible.
+ *
+ * The third rule this file owns: tool OUTPUT is not tool STATUS. Charts and
+ * saved files render outside `.tool-run-list`, which is the only thing the
+ * summary toggle controls — collapsing a run may hide its arguments and
+ * stdout, never its result.
  */
 import { Fragment, useMemo, useState } from 'react';
 
@@ -20,6 +25,7 @@ import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
 import { formatSeconds } from './labels.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import {
+  groupOutputCalls,
   groupViewOf,
   runStartedAt,
   toolRunView,
@@ -111,31 +117,34 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
       <div className="tool-run-list" hidden={!open}>
         {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
         {segment.members.map((call, index) => (
-          <Fragment key={call.id}>
-            <ToolRunRow
-              view={view.members[index]}
-              startedAt={runStartedAt(call)}
-              messageId={messageId}
-              readOnly={readOnly}
-              nested
-            />
-            <ToolRunAttachments call={call} />
-          </Fragment>
-        ))}
-      </div>
-
-      {/* Live lines stay outside the collapsed aggregate. */}
-      {segment.running.map((call, index) => (
-        <Fragment key={call.id}>
           <ToolRunRow
-            view={view.running[index]}
+            key={call.id}
+            view={view.members[index]}
             startedAt={runStartedAt(call)}
             messageId={messageId}
             readOnly={readOnly}
             nested
           />
-          <ToolRunAttachments call={call} />
-        </Fragment>
+        ))}
+      </div>
+
+      {/* Live lines stay outside the collapsed aggregate. */}
+      {segment.running.map((call, index) => (
+        <ToolRunRow
+          key={call.id}
+          view={view.running[index]}
+          startedAt={runStartedAt(call)}
+          messageId={messageId}
+          readOnly={readOnly}
+          nested
+        />
+      ))}
+
+      {/* Tool OUTPUTS, rendered from the same call list the rows use. The
+          toggle above owns status only: a chart or a saved file stays on
+          screen while the run is collapsed. */}
+      {groupOutputCalls(segment).map((call) => (
+        <ToolRunAttachments key={`output-${call.id}`} call={call} />
       ))}
     </section>
   );
