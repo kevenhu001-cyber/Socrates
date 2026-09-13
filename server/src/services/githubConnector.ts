@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { deriveEncryptionKey, encrypt } from '../lib/crypto.js';
+import { deriveEncryptionKey, encrypt, sessionSecret } from '../lib/crypto.js';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
@@ -41,8 +41,8 @@ interface GithubConnection {
 }
 
 function base64Url(value: string) { return Buffer.from(value).toString('base64url'); }
-function stateSecret() { return process.env.CONNECTOR_STATE_SECRET || process.env.SESSION_SECRET || 'local-development-only'; }
-function encryptionKey() { return deriveEncryptionKey(process.env.SESSION_SECRET || 'local-development-only'); }
+function stateSecret() { return process.env.CONNECTOR_STATE_SECRET || sessionSecret(); }
+function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
 function timingSafeMatch(left: unknown, right: unknown) {
   const a = Buffer.from(String(left || ''));
   const b = Buffer.from(String(right || ''));

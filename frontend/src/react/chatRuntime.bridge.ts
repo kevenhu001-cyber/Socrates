@@ -198,12 +198,26 @@ function commit(event: ChatRuntimeEvent): void {
   listeners.forEach((listener) => listener());
 }
 
+function cancelFrame(handle: number): void {
+  if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
+    window.cancelAnimationFrame(handle);
+  }
+}
+
+function requestFrame(cb: () => void): number {
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    return window.requestAnimationFrame(cb);
+  }
+  // JSDOM / Node test fallback — commit on next macrotask.
+  return setTimeout(cb, 0) as unknown as number;
+}
+
 function flushPendingDelta(): void {
   if (!pendingDelta) return;
   const event = pendingDelta;
   pendingDelta = null;
   if (pendingDeltaFrame) {
-    window.cancelAnimationFrame(pendingDeltaFrame);
+    cancelFrame(pendingDeltaFrame);
     pendingDeltaFrame = 0;
   }
   commit(event);
@@ -211,7 +225,7 @@ function flushPendingDelta(): void {
 
 function scheduleFrame(): void {
   if (pendingDeltaFrame) return;
-  pendingDeltaFrame = window.requestAnimationFrame(() => {
+  pendingDeltaFrame = requestFrame(() => {
     pendingDeltaFrame = 0;
     flushPendingDelta();
     flushPendingToolRuns();

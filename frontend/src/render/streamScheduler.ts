@@ -26,27 +26,34 @@ export function createStreamScheduler(
   let acc = '';
   let lastPaint = 0;
   let scheduled = false;
+  let generation = 0;
 
-  function tick() {
-    scheduled = false;
-    const interval = getStreamRenderInterval(acc.length);
-    if (now() - lastPaint >= interval) {
-      lastPaint = now();
-      paint(acc);                 // one coalesced DOM write per due tick
-    } else {
-      schedule();                 // not due yet; re-check next frame
-    }
+  function tick(captured: number) {
+    return () => {
+      // A frame queued before dispose() is stale — drop it so a turn
+      // torn down by session-switch never paints into the new container.
+      // Pushes after dispose schedule with the fresh generation.
+      if (captured !== generation) return;
+      scheduled = false;
+      const interval = getStreamRenderInterval(acc.length);
+      if (now() - lastPaint >= interval) {
+        lastPaint = now();
+        paint(acc);                 // one coalesced DOM write per due tick
+      } else {
+        schedule();                 // not due yet; re-check next frame
+      }
+    };
   }
 
   function schedule() {
     if (scheduled) return;
     scheduled = true;
-    raf(tick);
+    raf(tick(generation));
   }
 
   return {
     push(delta: string) { acc += delta; schedule(); },
     flushNow() { lastPaint = now(); paint(acc); },
-    dispose() { scheduled = false; },
+    dispose() { generation += 1; scheduled = false; },
   };
 }

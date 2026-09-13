@@ -1,4 +1,4 @@
-import { decrypt, deriveEncryptionKey, encrypt } from '../lib/crypto.js';
+import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../lib/crypto.js';
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2026-03-11';
@@ -28,7 +28,7 @@ interface NotionConnection {
   refreshTokenCiphertext: string | null;
 }
 
-function encryptionKey() { return deriveEncryptionKey(process.env.SESSION_SECRET || 'local-development-only'); }
+function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
 function basicAuthorization() {
   return `Basic ${Buffer.from(`${process.env.CONNECTOR_NOTION_CLIENT_ID}:${process.env.CONNECTOR_NOTION_CLIENT_SECRET}`).toString('base64')}`;
 }

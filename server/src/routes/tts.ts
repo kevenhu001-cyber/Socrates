@@ -90,7 +90,7 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
 
     /* Tier 1 — in-process LRU. Same as before; covers same-process
        repeat reads (most common case). */
-    const cacheKey = ttsCacheKey(req.userId!, input, voice, format);
+    const cacheKey = ttsCacheKey(req.userId!, input, voice, format, lang);
     const cached = ttsCache.get(cacheKey);
     if (cached) {
       res.writeHead(200, {

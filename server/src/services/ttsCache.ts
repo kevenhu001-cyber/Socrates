@@ -6,8 +6,9 @@
  * synthesis boundary keyed by the exact request, which fixes the same
  * cost problem transparently for the client).
  *
- * Key: SHA-256(userId + text + voice + format) — per-user isolation, so
- * one user can never serve audio into another user's response.
+ * Key: SHA-256(userId + text + voice + format + lang) — per-user isolation, so
+ * one user can never serve audio into another user's response, and the
+ * same text in a different language never serves the wrong audio.
  *
  * Eviction: byte-budgeted (default 32 MB) LRU + per-entry TTL. The byte
  * budget matters because a 20 KB text can synthesize into megabytes of
@@ -32,8 +33,8 @@ export interface TtsCacheOptions {
   now?: () => number;
 }
 
-export function ttsCacheKey(userId: string, text: string, voice: string, format: string): string {
-  return createHash('sha256').update(`${userId}\u0000${text}\u0000${voice}\u0000${format}`).digest('hex');
+export function ttsCacheKey(userId: string, text: string, voice: string, format: string, lang: string = ''): string {
+  return createHash('sha256').update(`${userId}\u0000${text}\u0000${voice}\u0000${format}\u0000${lang}`).digest('hex');
 }
 
 export class TtsCache {

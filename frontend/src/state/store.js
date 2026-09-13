@@ -220,8 +220,10 @@ var stateStore = (function () {
 })();
 
 function resetState() {
+  // resetBridges() resets every namespace, including session
+  // (session/reset restores currentSessionId to null). No legacy
+  // window-level setter is needed here.
   stateStore.dispatch({ type: 'state/reset' });
-  try { if (typeof setCurrentSessionId === 'function') setCurrentSessionId(null); } catch (_) {}
 }
 
 if (typeof window !== 'undefined') {

@@ -185,7 +185,7 @@ router.post('/mobile/login-with-code', codeLoginLimiter, audit('login:mobile-cod
   } catch (err) { next(err); }
 });
 
-router.get('/mobile/verify', async (req, res, next) => {
+router.get('/mobile/verify', authLimiter, async (req, res, next) => {
   try {
     const result = await authService.verifyEmailMobile(req.query.token as string);
     const tokens = await authService.createMobileTokenPair(result.user.id);
@@ -193,7 +193,7 @@ router.get('/mobile/verify', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/mobile/logout', async (req, res, next) => {
+router.post('/mobile/logout', authLimiter, async (req, res, next) => {
   try {
     await authService.logoutMobile(req.body?.refreshToken);
     return res.json({ ok: true });
@@ -222,7 +222,7 @@ router.get('/mobile/web-session/consume', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/mobile/oauth/exchange', async (req, res, next) => {
+router.post('/mobile/oauth/exchange', authLimiter, async (req, res, next) => {
   try {
     const tokens = await authService.exchangeMobileOAuthToken(req.body?.exchangeToken);
     return res.json(tokens);
