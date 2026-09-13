@@ -417,6 +417,11 @@ export async function loadSession(id){
                inline layout and charts survive a reload round-trip. */
             textOffset: typeof tc.textOffset === "number" ? tc.textOffset : undefined,
             visualization: (tc.visualization && tc.visualization.version === 1) ? tc.visualization : undefined,
+            /* PR4 protocol — carry the normalized output list when the writer
+               emitted it. `toolOutputsOf` validates each entry and falls back
+               to the legacy fields when the payload is empty/malformed, so an
+               old or partial record still renders. */
+            outputs: Array.isArray(tc.outputs) ? tc.outputs : undefined,
             /* P_declarative-tool-run — and keep the terminal fields. The
                declarative renderer derives a row's state from them, so a
                dropped status/durationMs made every restored call look like it

@@ -7,6 +7,11 @@
  * own disappears the next time that subtree re-renders, so the declarative
  * path renders the host itself and asks the legacy mounters to fill it.
  *
+ * Which outputs to mount comes from `attachmentOutputsOf` — the ToolOutput
+ * protocol, never the legacy `visualization` / `artifacts` fields directly.
+ * Old calls get the same list synthesized by the compat adapter, so this
+ * component cannot tell (and must not care) which writer shape it is reading.
+ *
  * Both mounters dedup by id (`[data-visualization-id]` within the host,
  * `[data-artifact-id]` document-wide), which is why the history-recovery pass
  * can hand the same host a second mount without drawing it twice.
@@ -20,23 +25,11 @@
 import { useEffect, useRef } from 'react';
 
 import { getLegacyActions } from '../legacy/gateway.js';
-import { visualizationSpecKey, type ToolCallRecord } from './toolRunModel';
-
-/** Same rule the legacy recovery pass uses: a v1 spec, from either field. */
-export function visualizationSpecOf(
-  call: ToolCallRecord | null | undefined,
-): Record<string, unknown> | null {
-  if (!call) return null;
-  const persisted = call.visualization;
-  if (persisted && typeof persisted === 'object' && persisted.version === 1) {
-    return persisted as unknown as Record<string, unknown>;
-  }
-  if (call.name === 'render_visualization' && call.input && typeof call.input === 'object') {
-    const input = call.input as Record<string, unknown>;
-    if (input.version === 1) return input;
-  }
-  return null;
-}
+import {
+  attachmentOutputsOf,
+  visualizationSpecKey,
+  type ToolCallRecord,
+} from './toolRunModel';
 
 export interface ToolRunAttachmentsProps {
   call: ToolCallRecord;
@@ -44,9 +37,11 @@ export interface ToolRunAttachmentsProps {
 
 export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const spec = visualizationSpecOf(call);
-  const artifacts = Array.isArray(call.artifacts) ? call.artifacts : [];
-  const artifactKey = artifacts.map((a) => a.id).join(',');
+  const outputs = attachmentOutputsOf(call);
+  const specOutput = outputs.find((output) => output.kind === 'visualization') || null;
+  const spec = specOutput ? specOutput.spec : null;
+  const artifacts = outputs.filter((output) => output.kind === 'artifact');
+  const artifactKey = artifacts.map((output) => output.fileId).join(',');
   /* Content identity, not object identity: the runtime swaps `call.input` for
      the normalized result spec on settle, and an identity dependency would
      dispose + remount a byte-identical chart right as the answer finishes. */
@@ -88,13 +83,13 @@ export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
         } catch (_) { /* malformed spec — leave the row standing */ }
       }
       for (const artifact of artifacts) {
-        if (!artifact || !artifact.id) continue;
+        if (!artifact.fileId) continue;
         try {
           pr.appendInlineArtifact?.(
-            artifact.id,
-            artifact.mimeType,
+            artifact.fileId,
+            artifact.mimeType ?? undefined,
             host,
-            artifact.name,
+            artifact.name ?? undefined,
           );
         } catch (_) { /* artifact gone server-side */ }
       }

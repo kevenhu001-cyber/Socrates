@@ -14,12 +14,13 @@ export { ToolRunDetail } from './ToolRunDetail';
 export { ToolRunApproval } from './ToolRunApproval';
 export { ToolRunAgentSteps } from './ToolRunAgentSteps';
 export { TurnStatus } from './TurnStatus';
-export { ToolRunAttachments, visualizationSpecOf } from './ToolRunAttachments';
+export { ToolRunAttachments } from './ToolRunAttachments';
 export { mountAssistantTurn, releaseAssistantTurns } from './mountTurn';
 export { useElapsed } from './useElapsed';
 export {
   buildTurnLayout,
   approvalViewOf,
+  attachmentOutputsOf,
   groupOutputCalls,
   groupShowsHeader,
   groupViewOf,
@@ -27,17 +28,24 @@ export {
   runStartedAt,
   sortableToolCalls,
   stripLegacyToolHtml,
+  toolOutputsOf,
   toolRunGroupView,
   toolRunStateOf,
   toolRunView,
   visualizationSpecKey,
+  visualizationSpecOf,
   type ApprovalView,
+  type ArtifactOutput,
   type DetailSection,
   type TechSection,
+  type TextOutput,
   type ToolCallRecord,
+  type ToolOutput,
   type ToolRunGroupView,
   type ToolRunState,
   type ToolRunView,
+  type ToolTextStream,
   type TurnSegment,
+  type VisualizationOutput,
 } from './toolRunModel';
 export { formatSeconds, translate, tf } from './labels';
