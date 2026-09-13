@@ -46,13 +46,8 @@ var I18N={
     "topic.model":"Model",
     "topic.extensions":"Extensions",
     /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
-    "greeting.chat":"Welcome back, {name}!",
-    "greeting.chat.morning":"Good morning, {name}!",
-    "greeting.chat.afternoon":"Good afternoon, {name}!",
-    "greeting.chat.evening":"Good evening, {name}!",
-    "greeting.chat.late":"Up late, {name}?",
-    "greeting.tutor":"Let's explore, {name}.",
-    "greeting.guest":"Guest",
+    "greeting.chat":"Ready when you are",
+    "greeting.tutor":"Let's explore.",
     /* Composer "+" menu. The five mobile rows were briefly hardcoded to
        Chinese inside ComposerToolsMenu.tsx; the copy belongs here so both
        locales stay in sync. */
@@ -1011,13 +1006,8 @@ var I18N={
     /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
        left holding the English strings when the landing was redesigned, so
        the zh locale rendered a half-English sidebar. */
-    "greeting.chat":"你好，{name}。准备好开始了吗？",
-    "greeting.chat.morning":"早上好，{name}。准备好开始了吗？",
-    "greeting.chat.afternoon":"下午好，{name}。准备好开始了吗？",
-    "greeting.chat.evening":"晚上好，{name}。准备好开始了吗？",
-    "greeting.chat.late":"夜深了，{name}。准备好开始了吗？",
-    "greeting.tutor":"来一起探索吧，{name}。",
-    "greeting.guest":"访客",
+    "greeting.chat":"准备好了，随时开始",
+    "greeting.tutor":"来一起探索吧",
     /* Composer "+" menu. */
     "composer.tools.heading":"添加到对话",
     "composer.tools.headingHint":"更多工具",

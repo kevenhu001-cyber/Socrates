@@ -52,11 +52,11 @@ test('landing greeting has no leading logo and keeps the western Plus Jakarta Sa
   await page.evaluate(() => window.setLang('zh'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
 
-  /* The greeting is time-aware; this assertion only has to prove that a
-     localized greeting rendered so the CJK font fallback is measured against
-     real Chinese glyphs. */
+  /* The greeting is a single static line; this assertion only has to
+     prove that a localized greeting rendered so the CJK font fallback
+     is measured against real Chinese glyphs. */
   const greeting = page.locator('#topicTitle');
-  await expect(greeting).toContainText(/欢迎回来|早上好|下午好|晚上好|夜深了/);
+  await expect(greeting).toHaveText('准备好了，随时开始');
   const zhStyle = await greeting.evaluate((el) => ({
     fontFamily: getComputedStyle(el).fontFamily,
     paddingLeft: getComputedStyle(el).paddingLeft,
