@@ -117,12 +117,12 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   // points cannot be trapped behind stale object identity.
   const segments: TurnSegment[] = buildTurnLayout(rawText, calls, {
     inlineThink: isLive,
-    deferOpenSentence: isLive,
+    deferOpenParagraph: isLive,
   });
   const { settled, tail } = useProseRenderer(isLive);
   const growingIndex = isLive ? lastTextIndex(segments) : -1;
   /* P_tool-order-defer — the tool-running line is the stand-in for rows
-     still deferred behind an unfinished sentence. Once the real row
+     still deferred behind an unfinished paragraph. Once the real row
      mounts, the line retires so the two never appear together. */
   const hasMountedRow = segments.some(
     (segment) => segment.kind === 'tool' || segment.kind === 'group',

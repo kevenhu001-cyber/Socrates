@@ -25,7 +25,6 @@ import { scheduleActiveTurnToTop, removeSupersededStub } from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.js';
 import { esc } from '../render/helpers.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
-import { findInlineToolBoundary } from '../render/streaming.js';
 import { formatMsgProgressive } from '../render/markdown.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { appendLocalMemory } from '../storage/localMemory.js';
@@ -331,7 +330,7 @@ export function addStreamingMessage(opts){
   /* A status line never overwrites a failure or a retry notice, and the
      waiting dot gives up as soon as the turn has real content.
      P_tool-order-defer — tool-running is busy too: while a tool row is
-     deferred behind an unfinished sentence, thinking/waiting stamps must
+     deferred behind an unfinished paragraph, thinking/waiting stamps must
      not overwrite its line (the row itself isn't mounted yet, so this
      line is the only visible proof of work). */
   function statusIsBusy(){
@@ -390,13 +389,17 @@ export function addStreamingMessage(opts){
       return msgIdx>=0?(stateStore.read("messages")[msgIdx]||null):null;
     },
     /* P_declarative-tool-run — a tool_use landed: record where in `full` the
-       answer was, and let the renderer draw the row from that offset.
-       `findInlineToolBoundary` rewinds to the last completed paragraph so a
-       call that fires mid-sentence never splits it, and segBase always
-       advances, which is what keeps two calls firing in the same instant from
-       claiming the same offset (buildTurnLayout would drop the duplicate row). */
+       answer was (the RAW fire position — end of what has streamed so far),
+       and let the renderer derive the row position from that offset.
+       P_tool-order-paragraph places the row after the paragraph in progress
+       (a framing sentence the model writes AFTER the call stays above the
+       row); rewinding here to the last completed paragraph is what used to
+       strand rows BEFORE their own paragraph. segBase always advances,
+       which is what keeps two calls firing in the same instant from
+       claiming the same offset (buildTurnLayout would drop the duplicate
+       row). */
     onInlineTool:function(entry,_row){
-      var _roff=findInlineToolBoundary(full,segBase);
+      var _roff=full.length;
       if(_roff<segBase)_roff=segBase;
       segBase=_roff;
       inlineToolRows.push({id:entry.id,name:entry.name,offset:_roff});
@@ -408,7 +411,7 @@ export function addStreamingMessage(opts){
     },
     onToolActivity:function(){
       /* P_tool-order-defer — the row may be deferred behind an unfinished
-         sentence (it mounts once the sentence completes). Until then this
+         paragraph (it mounts once the paragraph completes). Until then this
          status line is the only visible proof of work; AssistantTurn hides
          it again the moment the real row mounts, so the two never appear
          together. Never overwrite a failure or retry notice. */

@@ -2,12 +2,12 @@
 // (mobile-width) viewport, zh locale.
 //
 // Repro for the reported "ugly tool UI": the model streams a preamble with
-// NO sentence terminator, then fires tool_use. The row is deferred behind
-// the unfinished sentence (P_tool-order-defer), so the ONLY visible proof
+// NO paragraph break, then fires tool_use. The row is deferred behind
+// the unfinished paragraph (P_tool-order-defer), so the ONLY visible proof
 // of work is the TurnStatus tool-running line. Pins that state to one clean
 // trailer (no orphaned stream cursor, daylight between prose and status),
-// then completes the sentence and pins the handoff (row mounts once,
-// status retires, cursor returns).
+// then completes the paragraph and pins the handoff (row mounts once,
+// behind the paragraph, status retires, cursor returns).
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -90,9 +90,9 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await page.waitForTimeout(400);
   await bubble.screenshot({ path: 'test-results/tool-status-deferred.png' });
 
-  // Completing the sentence mounts the row exactly once, retires the
+  // Completing the paragraph mounts the row exactly once, retires the
   // status line, and hands the liveness signal back to the cursor.
-  await page.evaluate(() => window.__pushText('容。文件已经写好，你可以看了。再见。'));
+  await page.evaluate(() => window.__pushText('容。文件已经写好。\n\n你可以看了。'));
   const row = bubble.locator('.tool-inline[data-tcid="w-defer"]');
   await expect(row).toHaveCount(1);
   await expect(bubble.locator('.thinking-status')).toHaveCount(0);

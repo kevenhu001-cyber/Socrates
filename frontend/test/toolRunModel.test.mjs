@@ -105,19 +105,19 @@ test('a call at offset 0 still gets its row instead of an empty lead segment', (
   assert.deepEqual(layout.map((s) => s.kind), ['group', 'text']);
 });
 
-test('moves a mid-sentence tool boundary to the end of a complete Chinese sentence', () => {
-  const text = '我先查一下相关资料。后续说明。';
+test('moves a mid-paragraph tool boundary past its paragraph', () => {
+  const text = '我先查一下相关资料。这是第一段。\n\n后续说明。';
   const layout = buildTurnLayout(text, [
     call({ id: 'search', textOffset: '我先查一下'.length, output: 'ok', durationMs: 3 }),
   ]);
   assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group', 'text']);
-  assert.equal(layout[0].text, '我先查一下相关资料。');
+  assert.equal(layout[0].text, '我先查一下相关资料。这是第一段。\n\n');
   assert.equal(layout[1].members[0].id, 'search');
   assert.equal(layout[2].text, '后续说明。');
 });
 
-test('keeps consecutive calls together after normalizing the sentence boundary', () => {
-  const text = '我先查一下相关资料。结论如下。';
+test('keeps consecutive calls together after normalizing the paragraph boundary', () => {
+  const text = '我先查一下相关资料。这是第一段。\n\n结论如下。';
   const offset = '我先查一下'.length;
   const layout = buildTurnLayout(text, [
     call({ id: 'search', textOffset: offset, output: 'ok', durationMs: 3 }),
@@ -127,31 +127,35 @@ test('keeps consecutive calls together after normalizing the sentence boundary',
   assert.equal(layout[1].members.length, 2);
 });
 
-test('defers a tool row behind a live unfinished sentence (P_tool-order-defer)', () => {
+test('defers a tool row behind a live unfinished paragraph (P_tool-order-defer)', () => {
   const text = '我先查一下相关资料';
   const calls = [
     call({ id: 'search', textOffset: '我先查一下'.length, _run: { phase: 'running' } }),
   ];
-  /* Sentence unfinished: the row stays unmounted (the TurnStatus
+  /* Paragraph unfinished: the row stays unmounted (the TurnStatus
      tool-running line covers the activity) so it can never split
-     the sentence or jump when punctuation arrives. */
-  const deferred = buildTurnLayout(text, calls, { inlineThink: true, deferOpenSentence: true });
+     the paragraph or jump when punctuation arrives — a finished
+     sentence alone is NOT enough. */
+  const deferred = buildTurnLayout(text, calls, { inlineThink: true, deferOpenParagraph: true });
   assert.deepEqual(deferred.map((segment) => segment.kind), ['text']);
   assert.equal(deferred[0].text, text);
-  /* Sentence completed: the row mounts exactly once, behind the period. */
-  const done = buildTurnLayout(text + '。', calls, { inlineThink: true, deferOpenSentence: true });
-  assert.deepEqual(done.map((segment) => segment.kind), ['text', 'group']);
-  assert.equal(done[0].text, text + '。');
+  const sentenceDone = buildTurnLayout(text + '。后续没写完', calls, { inlineThink: true, deferOpenParagraph: true });
+  assert.deepEqual(sentenceDone.map((segment) => segment.kind), ['text']);
+  /* Paragraph completed: the row mounts exactly once, behind it. */
+  const done = buildTurnLayout(text + '。这是第一段。\n\n新段落。', calls, { inlineThink: true, deferOpenParagraph: true });
+  assert.deepEqual(done.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.equal(done[0].text, text + '。这是第一段。\n\n');
+  assert.equal(done[2].text, '新段落。');
 });
 
-test('keeps a tool boundary after sentence punctuation and its closing quote', () => {
+test('keeps a tool boundary after its paragraph even past closing quotes', () => {
   const sentence = '我说：“先查资料。”';
-  const layout = buildTurnLayout(sentence + '继续。', [
+  const layout = buildTurnLayout(sentence + '继续。\n\n尾巴。', [
     call({ id: 'search', textOffset: sentence.length, output: 'ok', durationMs: 3 }),
   ]);
-  assert.equal(layout[0].text, sentence);
+  assert.equal(layout[0].text, sentence + '继续。\n\n');
   assert.equal(layout[1].kind, 'group');
-  assert.equal(layout[2].text, '继续。');
+  assert.equal(layout[2].text, '尾巴。');
 });
 
 /* ── thinking ────────────────────────────────────────────────────────── */

@@ -36,8 +36,8 @@ export interface ToolCall {
    * (react/tool-run) reads all of them, so they are part of the contract:
    *
    *  - `textOffset` — index into the assistant `rawText` where this call
-   *    fired. `findInlineToolBoundary` guarantees these are strictly
-   *    increasing per turn; persisted via sessions.ts.
+   *    fired. `segBase` in the streaming controller guarantees these are
+   *    strictly increasing per turn; persisted via sessions.ts.
    *  - `_run` — live, client-only run record from chat/toolRunState.ts.
    *  - `errorCode` / `retryable` / `userMessage` / `detail` / `stderr` —
    *    structured failure surface from the backend.
@@ -187,7 +187,7 @@ export interface LegacyChatMessage {
  * broken, and AssistantTurn keeps drawing it.
  *
  * `tool-running` = a tool call is executing but its row is deferred behind
- * an unfinished sentence (P_tool-order-defer). AssistantTurn hides this
+ * an unfinished paragraph (P_tool-order-defer). AssistantTurn hides this
  * line as soon as the real row mounts, so the two never appear together.
  */
 export interface LiveTurnStatus {

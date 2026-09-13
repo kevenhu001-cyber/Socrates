@@ -1,11 +1,16 @@
 /**
- * Unit tests for P_tool-order-strict / P_tool-order-defer / P_tool-order-block:
- * tool rows run strictly in order and never interrupt a finished sentence.
+ * Unit tests for P_tool-order-paragraph / P_tool-order-defer /
+ * P_tool-order-block: tool rows are paragraph-atomic and run strictly
+ * in order.
  *
- * - Colons/semicolons (：；:;) do NOT end a sentence: a row waits for a real
- *   period or newline instead of parking behind "原因有三：".
- * - A live row whose sentence has not finished stays unmounted (deferred);
- *   it mounts exactly once, behind the completed sentence.
+ * - A tool that fires mid-paragraph advances past that paragraph's end;
+ *   a framing sentence written AFTER the call ("我来搜索一下…") stays
+ *   above the row. Parking at the last completed paragraph stranded the
+ *   row BEFORE its own paragraph.
+ * - A tool that fires exactly at a paragraph start (or turn start) stays:
+ *   it already follows a finished block.
+ * - A live row whose paragraph has not finished stays unmounted
+ *   (deferred); it mounts exactly once, behind the completed paragraph.
  * - Offsets inside fenced code blocks or table rows snap forward out of the
  *   block instead of splitting it.
  */
@@ -13,11 +18,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  findInlineToolBoundary,
+  isParagraphStart,
+  paragraphEndAfter,
   snapToolOffsetOutOfBlock,
+  toolRowAnchorOffset,
 } from '../src/render/streaming.ts';
 import {
   buildTurnLayout,
+  isRowMountableAt,
   isSentenceCompleteAt,
 } from '../src/react/tool-run/toolRunModel.ts';
 
@@ -25,28 +33,37 @@ function call(over) {
   return { id: 'a', name: 'web_search', input: { query: 'q' }, textOffset: 0, ...over };
 }
 
-/* ── write path: findInlineToolBoundary ─────────────────────────────── */
+/* ── paragraph rule: isParagraphStart / paragraphEndAfter ──────────── */
 
-test('colon and semicolon do not anchor a tool row', () => {
-  const fragment = '原因有三：补充说明还没写完';
-  assert.equal(findInlineToolBoundary(fragment), fragment.length);
-
-  const mixed = '原因有三：第一。第二。';
-  assert.equal(findInlineToolBoundary(mixed), mixed.length);
-
-  const latin = 'Steps: one; two. done';
-  assert.equal(findInlineToolBoundary(latin), 'Steps: one; two. '.length);
+test('a paragraph start stays, anything mid-paragraph advances', () => {
+  assert.equal(isParagraphStart('anything', 0), true);
+  assert.equal(isParagraphStart('导语。\n\n第二段。', '导语。\n\n'.length), true);
+  assert.equal(isParagraphStart('导语。\n\n第二段。', 2), false);
+  /* A single newline is a soft break inside the same paragraph. */
+  assert.equal(isParagraphStart('AB\nCD\n\nEF', 3), false);
 });
 
-test('tool rows still anchor behind real sentence endings', () => {
-  assert.equal(findInlineToolBoundary('先说明结论。 然后继续分析'), '先说明结论。 '.length);
-  assert.equal(findInlineToolBoundary('First paragraph.\n\nSecond part here'), 'First paragraph.\n\n'.length);
+test('paragraphEndAfter stops after the blank run, or at EOF', () => {
+  assert.equal(paragraphEndAfter('A\n\nB\n\nC', 1), 3);
+  assert.equal(paragraphEndAfter('导语。\n\n我来搜索X', 5), '导语。\n\n我来搜索X'.length);
+});
+
+/* ── anchor: toolRowAnchorOffset ─────────────────────────────────────── */
+
+test('a mid-paragraph fire position advances past its paragraph', () => {
+  const raw = '导语。\n\n我来搜索一下X的原因。结果如下。\n\n尾巴。';
+  assert.equal(toolRowAnchorOffset(raw, '导语。\n\n'.length + 2), '导语。\n\n我来搜索一下X的原因。结果如下。\n\n'.length);
+});
+
+test('a fire position at a clean paragraph start stays put', () => {
+  assert.equal(toolRowAnchorOffset('导语。\n\n第二段。', '导语。\n\n'.length), '导语。\n\n'.length);
+  assert.equal(toolRowAnchorOffset('第一段。\n\n第二段。', 0), 0);
 });
 
 test('offsets stay strictly increasing across consecutive tools', () => {
-  const first = findInlineToolBoundary('让我查一下');
-  const second = findInlineToolBoundary('让我查一下，再看看别的地方', first);
-  assert.ok(second > first, `expected ${second} > ${first}`);
+  const first = toolRowAnchorOffset('让我查一下', 0);
+  const second = toolRowAnchorOffset('让我查一下，再看看别的地方', first);
+  assert.ok(second >= first, `expected ${second} >= ${first}`);
 });
 
 /* ── block awareness: snapToolOffsetOutOfBlock ───────────────────────── */
@@ -87,29 +104,40 @@ test('isSentenceCompleteAt accepts only real endings', () => {
   assert.equal(isSentenceCompleteAt('anything', 0), true);
 });
 
-/* ── read path: buildTurnLayout with deferOpenSentence ───────────────── */
+/* ── read path: buildTurnLayout with deferOpenParagraph ───────────────── */
 
-test('live layout withholds rows until their sentence completes', () => {
+test('live layout withholds rows until their paragraph completes', () => {
   const calls = [call({ id: 's', textOffset: '我先查一下'.length })];
-  const live = { inlineThink: true, deferOpenSentence: true };
+  const live = { inlineThink: true, deferOpenParagraph: true };
 
   const pending = buildTurnLayout('我先查一下相关资料', calls, live);
   assert.deepEqual(pending.map((s) => s.kind), ['text']);
 
-  const ready = buildTurnLayout('我先查一下相关资料。后续。', calls, live);
+  /* A finished sentence is NOT enough: the row waits for the paragraph —
+     the sentence below is done but the paragraph runs on. */
+  const sentenceDone = buildTurnLayout('我先查一下相关资料。后续没写完', calls, live);
+  assert.deepEqual(sentenceDone.map((s) => s.kind), ['text']);
+
+  const ready = buildTurnLayout('我先查一下相关资料。这是第一段。\n\n后续。', calls, live);
   assert.deepEqual(ready.map((s) => s.kind), ['text', 'group', 'text']);
-  assert.equal(ready[0].text, '我先查一下相关资料。');
+  assert.equal(ready[0].text, '我先查一下相关资料。这是第一段。\n\n');
   assert.equal(ready[2].text, '后续。');
 });
 
-test('approval rows mount immediately even mid-sentence', () => {
+test('mount gate accepts paragraph starts that no sentence test would', () => {
+  /* A heading ends with no terminator, yet the block after it is finished. */
+  assert.equal(isRowMountableAt('## 标题\n\n正文', '## 标题\n\n'.length), true);
+  assert.equal(isRowMountableAt('我先查一下相关资料', 2), false);
+});
+
+test('approval rows mount immediately even mid-paragraph', () => {
   const calls = [call({
     id: 's',
     textOffset: '我先查一下'.length,
     approval: { approvalId: 'ap1', runId: 'r1', status: 'pending' },
   })];
   const layout = buildTurnLayout(
-    '我先查一下相关资料', calls, { inlineThink: true, deferOpenSentence: true },
+    '我先查一下相关资料', calls, { inlineThink: true, deferOpenParagraph: true },
   );
   assert.ok(layout.some((s) => s.kind === 'group' || s.kind === 'tool'));
 });
@@ -119,7 +147,9 @@ test('finalized layout mounts every row (nothing starves)', () => {
     call({ id: 's', textOffset: 2, output: 'ok', durationMs: 1 }),
     call({ id: 'f', name: 'web_fetch', textOffset: 2, output: 'ok', durationMs: 1 }),
   ];
+  /* Single trailing paragraph: both rows land behind it, grouped. */
   const layout = buildTurnLayout('原因有三：还没写完', calls);
-  assert.deepEqual(layout.map((s) => s.kind), ['text', 'group', 'text']);
+  assert.deepEqual(layout.map((s) => s.kind), ['text', 'group']);
+  assert.equal(layout[0].text, '原因有三：还没写完');
   assert.equal(layout[1].members.map((m) => m.id).join(','), 's,f');
 });
