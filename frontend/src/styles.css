@@ -3364,6 +3364,12 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 @keyframes thinking-elapsed-in{to{opacity:1}}
 .thinking-dot[data-mode="chat"],
 .thinking-status[data-mode="tool"]{color:hsl(var(--text-300))}
+/* P_tool-status-gap — the deferred tool-running line trails the prose it
+   belongs to (the row itself is still parked behind the unfinished
+   sentence). With margin:0 it touched the last paragraph, which on narrow
+   screens read as one cramped block. The trailer always sits after content,
+   so a small top gap is safe everywhere it renders. */
+.msg-body > .thinking-status{margin-top:6px}
 .thinking-dot .loading{width:14px;height:14px}
 /* P_thinking-clickable — the "Thinking…" pill and placeholder open the
    right-side thinking panel. They keep the live indicator look but gain
