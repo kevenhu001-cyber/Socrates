@@ -488,6 +488,14 @@ function neutralizeKatexErrors(html: string): string {
        and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math. */
 const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
 
+/* Function calls are the common inline formula that carries internal
+   whitespace (`u(x, y)`, `f(x, y, z)`, `sin(x, y)`). The callee must
+   be attached to the opening paren and at most four ASCII letters long,
+   so prose inside dollars (`$5 (approx)`, `paid in $USD (about`) stays
+   literal. Whitespace inside the argument list is fine. */
+const SPACED_MATH_CHARS_RE = /^[A-Za-z0-9\s\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
+const SPACED_CALL_RE = /^[A-Za-z][A-Za-z0-9]{0,3}\(/;
+
 function _isCompactMathToken(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
   /* Non-letter characters (digits, parens, operators) mark real math. */
@@ -500,20 +508,27 @@ function _looksLikeInlineMath(s: string): boolean {
   const trimmed = String(s).trim();
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
-  return !/\s/.test(trimmed) && /[A-Za-z]/.test(trimmed) && _isCompactMathToken(trimmed);
+  if (!/[A-Za-z]/.test(trimmed)) return false;
+  if (!/\s/.test(trimmed)) return _isCompactMathToken(trimmed);
+  return SPACED_CALL_RE.test(trimmed)
+    && SPACED_MATH_CHARS_RE.test(trimmed)
+    && trimmed.indexOf(')') > 0;
 }
 
 /* A formula whose closing `$` has not arrived yet. Multi-letter words
    after a stray `$` are almost always prose (`paid in $USD`), so only
    single symbols and punctuation-carrying tokens render live; `$AB`
    waits one token for its closing `$` and then renders through the
-   closed pass. */
+   closed pass. An open function call (`$u(x, y`) renders live because
+   the attached callee+paren is already unambiguous. */
 function _looksLikeInlineMathTail(s: string): boolean {
   if (_looksLikeLatex(s)) return true;
   const trimmed = String(s).trim();
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
-  if (/\s/.test(trimmed)) return false;
+  if (/\s/.test(trimmed)) {
+    return SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed);
+  }
   if (!/[A-Za-z]/.test(trimmed) || !COMPACT_MATH_RE.test(trimmed)) return false;
   return /[^A-Za-z]/.test(trimmed) || trimmed.length === 1;
 }
