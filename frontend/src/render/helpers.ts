@@ -304,6 +304,33 @@ export function _autoWrapBareBracketMath(s: string): string {
   return s;
 }
 
+/* Weak models frequently omit the space after an ATX heading marker
+   (`##标题`, `##**标题**`, `###一、…`). CommonMark requires that space,
+   so marked renders the line as literal prose and the heading markers
+   leak into the answer. Re-insert the space. Fenced code is skipped so
+   `#include`-style lines and shell comments are never touched; a digit
+   directly after the run also bails (`#1`, `#2`) because those read as
+   prose enumerations far more often than as headings. Idempotent, so it
+   is safe to run on every streaming frame. */
+export function fixHeadingMarkers(s: string): string {
+  const lines = String(s).split('\n');
+  let inFence = false;
+  let fenceChar = '';
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const fence = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
+    if (fence) {
+      const ch = fence[1].charAt(0);
+      if (!inFence) { inFence = true; fenceChar = ch; }
+      else if (ch === fenceChar) { inFence = false; fenceChar = ''; }
+      continue;
+    }
+    if (inFence) continue;
+    lines[i] = line.replace(/^([ \t]{0,3})(#{1,6})(?=[^\s#\d])/, '$1$2 ');
+  }
+  return lines.join('\n');
+}
+
 /* Detect and fix a GFM table separator row.
    See the comment in preprocessMarkdown for the full description.
    Idempotent. */

@@ -474,14 +474,68 @@ function neutralizeKatexErrors(html: string): string {
 }
 
 /* Inline math is often written with no explicit operator: `x^2`,
-   `a_i`, `\alpha`. The shared _looksLikeLatex heuristic only fires on
-   commands or operator+letter pairs, which would leave a half-typed
-   `$x^2` as raw text. Broaden the check slightly for the streaming
-   "unclosed at end" case only — `^`/`_`/braces are rare in prose and
-   still guard "$5"-style amounts. */
-function _looksLikeLatexStreamingTail(s: string): boolean {
+   `a_i`, `\alpha`, or a bare symbol like `D`. The shared _looksLikeLatex
+   heuristic only fires on commands or operator+letter pairs, which left
+   simple formulas such as `$D$`, `$x$` or `$P(x,y)$` as raw text.
+   Broaden the check for the inline cases:
+     • explicit LaTeX syntax (`^`, `_`, braces, brackets) still counts;
+     • a compact, whitespace-free token counts once it carries an ASCII
+       letter. Bare alphabetic runs must be a single symbol (`D`, `x`)
+       or ALL CAPS (`AB`, `ABC` — point/segment labels); lowercase words
+       (`only`, `home`) stay literal, so currency amounts (`$5`,
+       `$1,000`) and prose fragments (`$5 and`) keep their text.
+       Known cosmetic trade-off: uppercase acronyms (`$US$`, `$OK$`)
+       and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math. */
+const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
+
+function _isCompactMathToken(trimmed: string): boolean {
+  if (!COMPACT_MATH_RE.test(trimmed)) return false;
+  /* Non-letter characters (digits, parens, operators) mark real math. */
+  if (/[^A-Za-z]/.test(trimmed)) return true;
+  return trimmed.length === 1 || /^[A-Z]+$/.test(trimmed);
+}
+
+function _looksLikeInlineMath(s: string): boolean {
   if (_looksLikeLatex(s)) return true;
-  return /[\\^_{}]/.test(s);
+  const trimmed = String(s).trim();
+  if (!trimmed) return false;
+  if (/[\\^_{}[\]]/.test(trimmed)) return true;
+  return !/\s/.test(trimmed) && /[A-Za-z]/.test(trimmed) && _isCompactMathToken(trimmed);
+}
+
+/* A formula whose closing `$` has not arrived yet. Multi-letter words
+   after a stray `$` are almost always prose (`paid in $USD`), so only
+   single symbols and punctuation-carrying tokens render live; `$AB`
+   waits one token for its closing `$` and then renders through the
+   closed pass. */
+function _looksLikeInlineMathTail(s: string): boolean {
+  if (_looksLikeLatex(s)) return true;
+  const trimmed = String(s).trim();
+  if (!trimmed) return false;
+  if (/[\\^_{}[\]]/.test(trimmed)) return true;
+  if (/\s/.test(trimmed)) return false;
+  if (!/[A-Za-z]/.test(trimmed) || !COMPACT_MATH_RE.test(trimmed)) return false;
+  return /[^A-Za-z]/.test(trimmed) || trimmed.length === 1;
+}
+
+/* Inline code spans are opaque: a `$D$` or `\alpha` behind backticks is
+   literal code, not a formula. preprocessMarkdown restores the spans
+   before returning, so stash them across the KaTeX passes and put them
+   back before marked parses (restoring later would leave the backticks
+   as visible text instead of letting marked build <code>). */
+function _stashInlineCode(source: string): { text: string; restore: (s: string) => string } {
+  const stash: string[] = [];
+  const text = source.replace(/`[^`\n]+`/g, function (m) {
+    const id = stash.length;
+    stash.push(m);
+    return '\x01CODE' + id + '\x01';
+  });
+  return {
+    text,
+    restore: (s: string) => s.replace(/\x01CODE(\d+)\x01/g, function (_m, id: string) {
+      return stash[Number(id)];
+    }),
+  };
 }
 
 /* Render math for a possibly-unfinished stream frame. Returns the KaTeX
@@ -546,9 +600,27 @@ declare global {
   }
 }
 
+/* Recursion guard — scaffolds and <think> blocks re-enter the renderer
+   with their inner content, and weak models can nest those arbitrarily.
+   Past the cap the payload degrades to escaped text instead of blowing
+   the stack. The counter is synchronous and try/finally-balanced, so it
+   cannot leak across calls. */
+const MAX_RENDER_DEPTH = 8;
+let _renderDepth = 0;
+
 export function formatMsgProgressive(t: string | null | undefined): string {
   if (!t) return '';
-  let s = preprocessMarkdownForStreaming(String(t));
+  if (_renderDepth >= MAX_RENDER_DEPTH) return '<p>' + escHTML(String(t)) + '</p>';
+  _renderDepth += 1;
+  try {
+    return _formatMsgProgressive(String(t));
+  } finally {
+    _renderDepth -= 1;
+  }
+}
+
+function _formatMsgProgressive(t: string): string {
+  let s = preprocessMarkdownForStreaming(t);
   if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
   if (!s) return '';
 
@@ -688,6 +760,8 @@ export function formatMsgProgressive(t: string | null | undefined): string {
   });
 
   const katex = getKatex();
+  const inlineCodeGuard = _stashInlineCode(s);
+  s = inlineCodeGuard.text;
 
   if (typeof katex !== 'undefined') {
     /* Closed display math. */
@@ -709,19 +783,22 @@ export function formatMsgProgressive(t: string | null | undefined): string {
     /* Closed inline math. Guard with the LaTeX heuristic so ordinary
        "$5"-style amounts keep their literal text. */
     s = s.replace(/\$(.+?)\$/g, function (m, math: string) {
-      if (!_looksLikeLatexStreamingTail(String(math).trim())) return m;
+      if (!_looksLikeInlineMath(String(math).trim())) return m;
       const html = renderStreamMath(math, false, false);
       return html === null ? m : save(html);
     });
     /* Inline math still arriving: the closing `$` has not appeared.
-       Only engage when the fragment actually looks like LaTeX, so
-       ordinary "$5"-style amounts keep their literal text. */
+       Only engage when the fragment looks like a live symbol or real
+       LaTeX, so ordinary "$5"-style amounts and a trailing prose word
+       ("... $5$ only") keep their literal text. */
     s = s.replace(/\$([^\n$]+)$/g, function (m, math: string) {
-      if (!_looksLikeLatexStreamingTail(math.trim())) return m;
+      if (!_looksLikeInlineMathTail(math.trim())) return m;
       const html = renderStreamMath(math, false, true);
       return html === null ? m : save(html);
     });
   }
+
+  s = inlineCodeGuard.restore(s);
 
   let html: string;
   const marked = getMarked();
@@ -742,6 +819,17 @@ export function formatMsgProgressive(t: string | null | undefined): string {
 }
 
 export function formatMsg(t: string | null | undefined): string {
+  if (!t) return '';
+  if (_renderDepth >= MAX_RENDER_DEPTH) return '<p>' + escHTML(String(t)) + '</p>';
+  _renderDepth += 1;
+  try {
+    return _formatMsg(String(t));
+  } finally {
+    _renderDepth -= 1;
+  }
+}
+
+function _formatMsg(t: string): string {
   const marked = getMarked();
   const katex = getKatex();
   /* Markdown and math are independent capabilities. If KaTeX is missing
@@ -817,7 +905,7 @@ export function formatMsg(t: string | null | undefined): string {
         catch { return save('<pre>' + esc('$$' + math + '$$') + '</pre>'); }
       });
       txt = txt.replace(/\$(.+?)\$/g, function (m, math: string) {
-        if (!_looksLikeLatexStreamingTail(String(math).trim())) return m;
+        if (!_looksLikeInlineMath(String(math).trim())) return m;
         try { return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS })); }
         catch { return save('<code>' + esc('$' + math + '$') + '</code>'); }
       });
@@ -890,6 +978,9 @@ export function formatMsg(t: string | null | undefined): string {
     return save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
   });
 
+  const inlineCodeGuard = _stashInlineCode(procT);
+  procT = inlineCodeGuard.text;
+
   if (typeof katex !== 'undefined') {
     procT = procT.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, false);
@@ -905,11 +996,13 @@ export function formatMsg(t: string | null | undefined): string {
     });
 
     procT = procT.replace(/\$([\s\S]+?)\$/g, function (m, math: string) {
-      if (!_looksLikeLatexStreamingTail(String(math).trim())) return m;
+      if (!_looksLikeInlineMath(String(math).trim())) return m;
       const html = renderStreamMath(math, false, false);
       return html === null ? m : save(html);
     });
   }
+
+  procT = inlineCodeGuard.restore(procT);
 
   let html = marked.parse(procT, { breaks: true, gfm: true });
   html = sanitizeUrls(html);
@@ -921,7 +1014,13 @@ export function formatMsg(t: string | null | undefined): string {
      && typeof document !== 'undefined') {
     try {
       const _arHost = document.createElement('div');
-      _arHost.innerHTML = html;
+      /* Sanitize BEFORE the detached host parses the markup. Setting
+         innerHTML starts resource loads and fires their error handlers
+         even when the node is not in the document, so an
+         `<img onerror=…>` payload would run against the live page
+         before the final sanitize pass. The final sanitize below still
+         runs (idempotent) to cover this pass's own output. */
+      _arHost.innerHTML = sanitizeHtml(html);
       window.renderMathInElement(_arHost, {
         delimiters: [
           { left: '$$', right: '$$', display: true },
@@ -931,7 +1030,9 @@ export function formatMsg(t: string | null | undefined): string {
         ],
         throwOnError: false,
         macros: KATEX_MACROS,
-        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+        /* `annotation` carries the raw TeX inside KaTeX's MathML and must
+           never be re-scanned for delimiters. */
+        ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'annotation'],
       });
       html = _arHost.innerHTML;
     } catch (_arErr) {
@@ -1044,11 +1145,20 @@ function addCopyToHeader(header: Element): void {
   header.appendChild(makeCodeCopyButton(pre as HTMLElement));
 }
 
+const COPY_HEADER_SELECTOR =
+  '.msg-body .code-block-header, .think-content .code-block-header';
+
 /* Scan a mounted subtree for code-block headers and wire copy controls.
    Skips headers inside tool cards / viz / exec artifacts, matching the
-   scope of the header pass in main.js. */
+   scope of the header pass in main.js. The root itself is checked too:
+   `wireCodeBlockHeaders` inserts the header node directly, and
+   querySelectorAll never includes its own root. */
 function wireCodeBlockCopy(root: ParentNode): void {
-  const headers = root.querySelectorAll('.msg-body .code-block-header, .think-content .code-block-header');
+  const headers: Element[] = [];
+  const rootEl = root as Element;
+  if (typeof rootEl.matches === 'function' && rootEl.matches(COPY_HEADER_SELECTOR)) headers.push(rootEl);
+  const found = root.querySelectorAll(COPY_HEADER_SELECTOR);
+  for (let i = 0; i < found.length; i++) headers.push(found[i]);
   for (let i = 0; i < headers.length; i++) {
     const header = headers[i];
     if (header.closest('.exec-artifact') || header.closest('.agent-tool-card') || header.closest('.viz')) continue;
@@ -1061,26 +1171,30 @@ let _codeCopyInstalled = false;
 /* Install a one-shot MutationObserver so copy controls appear on code-block
    headers as soon as they are mounted (the header itself is added by
    `wireCodeBlockHeaders` after the markdown HTML is inserted, so we react to
-   its insertion rather than emit the header ourselves). */
+   its insertion rather than emit the header ourselves). Only the added
+   subtrees are scanned: streaming appends text nodes every frame, and a
+   document-wide querySelectorAll on each of those would be needless work. */
 export function installCodeBlockCopy(): void {
   if (_codeCopyInstalled) return;
   if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
   _codeCopyInstalled = true;
 
-  const scan = () => {
-    try { wireCodeBlockCopy(document); } catch (_) { /* ignore */ }
-  };
-
   const observer = new MutationObserver(function (mutations) {
     for (let i = 0; i < mutations.length; i++) {
-      if (mutations[i].addedNodes && mutations[i].addedNodes.length) { scan(); return; }
+      const added = mutations[i].addedNodes;
+      if (!added || !added.length) continue;
+      for (let j = 0; j < added.length; j++) {
+        const node = added[j];
+        if (node.nodeType !== 1) continue; /* element nodes only */
+        try { wireCodeBlockCopy(node as Element); } catch (_) { /* ignore */ }
+      }
     }
   });
 
   const start = () => {
     if (!document.body) return;
     observer.observe(document.body, { childList: true, subtree: true });
-    scan();
+    try { wireCodeBlockCopy(document); } catch (_) { /* ignore */ }
   };
 
   if (document.body) start();
@@ -1103,8 +1217,12 @@ export function stripMarkdown(s: string | null | undefined): string {
     .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')
     .replace(/```[\s\S]*?```/g, '')
     .replace(/~~~[\s\S]*?~~~/g, '')
-    .replace(/\$\$[^$]*\$\$/g, '')
-    .replace(/\$[^$]*\$/g, '')
+    .replace(/\$\$([^$]*)\$\$/g, function (m, inner: string) {
+      return _looksLikeInlineMath(inner.trim()) ? '' : m;
+    })
+    .replace(/\$([^$]*)\$/g, function (m, inner: string) {
+      return _looksLikeInlineMath(inner.trim()) ? '' : m;
+    })
     .replace(/`[^`]*`/g, '')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')

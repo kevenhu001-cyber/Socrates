@@ -8,7 +8,7 @@ import {
   isStableMarkdownPrefix,
   splitStreamingMarkdown,
 } from '../src/render/streaming.js';
-import { formatMsg, formatMsgProgressive as renderProgressive } from '../src/render/markdown.js';
+import { formatMsg, formatMsgProgressive as renderProgressive, stripMarkdown } from '../src/render/markdown.js';
 import { stripChatArtifacts } from '../src/util/stripChatArtifacts.js';
 
 /* Load the vendored KaTeX UMD into a bare VM context and hand it back,
@@ -35,6 +35,11 @@ function withKatex(fn) {
     if (previousKatex === undefined) delete globalThis.katex;
     else globalThis.katex = previousKatex;
   }
+}
+
+function restoreGlobal(name, descriptor) {
+  if (descriptor === undefined) delete globalThis[name];
+  else Object.defineProperty(globalThis, name, descriptor);
 }
 
 test('stream cadence adapts to response length', () => {
@@ -154,6 +159,199 @@ test('unclosed inline math renders live, while $5-style amounts stay plain text'
     assert.match(closed, /class="katex/);
     assert.doesNotMatch(closed, /\$x\^2 = 4\$/);
   });
+});
+
+/* Simple symbol formulas carry no LaTeX command and no operator, so the
+   old _looksLikeLatex guard left `$D$`, `$x$` and `$P(x,y)$` as raw
+   dollar text. They must render while currency-looking fragments stay
+   literal. */
+test('bare-symbol inline math renders in both renderers', () => {
+  withKatex(() => {
+    const progressive = renderProgressive('设 $D$ 为平面上的有界闭区域');
+    assert.match(progressive, /class="katex/);
+    assert.doesNotMatch(progressive, /\$D\$/);
+
+    const parameters = renderProgressive('若 $P(x,y)$ 与 $Q(x,y)$ 在 $D$ 上连续');
+    assert.match(parameters, /class="katex/);
+    assert.doesNotMatch(parameters, /\$P\(x,y\)\$/);
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('设 $D$ 为平面，$\\partial D$ 为曲线');
+      assert.match(final, /class="katex/);
+      assert.doesNotMatch(final, /\$D\$/);
+      assert.doesNotMatch(final, /\$\\partial D\$/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
+test('currency amounts stay literal after the bare-symbol widening', () => {
+  withKatex(() => {
+    const single = renderProgressive('It costs $5 today');
+    assert.doesNotMatch(single, /class="katex/);
+    assert.match(single, /\$5/);
+
+    const grouped = renderProgressive('Between $5 and $10 later');
+    assert.doesNotMatch(grouped, /class="katex/);
+    assert.match(grouped, /\$5/);
+    assert.match(grouped, /\$10/);
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('Pay $1,000.50 or $5+ tax');
+      assert.doesNotMatch(final, /class="katex/);
+      assert.match(final, /\$1,000\.50/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
+test('math-looking text inside inline code stays literal', () => {
+  withKatex(() => {
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const progressive = renderProgressive('use `$D$` and $D$');
+      assert.match(progressive, /<code>\$D\$<\/code>/);
+      assert.match(progressive, /class="katex/);
+
+      const final = formatMsg('use `$x$` here');
+      assert.match(final, /<code>\$x\$<\/code>/);
+      assert.doesNotMatch(final, /class="katex/);
+
+      const command = formatMsg('the token `\\partial D` is code');
+      assert.match(command, /<code>\\partial D<\/code>/);
+      assert.doesNotMatch(command, /class="katex/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
+/* Lowercase multi-letter words after a stray `$` are prose, not math;
+   point/segment labels (all caps) and punctuated expressions still
+   render. */
+test('compact inline math rejects lowercase prose words', () => {
+  withKatex(() => {
+    assert.doesNotMatch(renderProgressive('only $only$ word'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('home $home$ dir'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('amount $5$ only'), /class="katex/);
+
+    assert.match(renderProgressive('segment $AB$ and $ABC$'), /class="katex/);
+    assert.match(renderProgressive('call $f(x)$ now'), /class="katex/);
+  });
+});
+
+test('stripMarkdown keeps currency but removes real formulas', () => {
+  const currency = stripMarkdown('价格是 $5 到 $10');
+  assert.match(currency, /\$5/);
+  assert.match(currency, /\$10/);
+
+  const formula = stripMarkdown('求解 $x^2$ 的值');
+  assert.doesNotMatch(formula, /x\^2/);
+  assert.match(formula, /求解/);
+
+  const symbol = stripMarkdown('设 $D$ 为区域');
+  assert.doesNotMatch(symbol, /\$D\$/);
+});
+
+/* The detached auto-render host must receive sanitized markup: setting
+   innerHTML starts resource loads (and their error handlers) even when
+   the node is outside the document. */
+test('auto-render host receives sanitized HTML', () => {
+  const savedMarked = globalThis.marked;
+  const savedWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const savedDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const savedPurify = Object.getOwnPropertyDescriptor(globalThis, 'DOMPurify');
+  let hostHtml = '';
+  let autoRenderCalls = 0;
+  globalThis.marked = marked;
+  globalThis.DOMPurify = {
+    sanitize(html) { return String(html).replace(/\son\w+\s*=\s*"[^"]*"/g, ''); },
+  };
+  globalThis.document = { createElement() { return { innerHTML: '' }; } };
+  globalThis.window = {
+    renderMathInElement(el) { autoRenderCalls += 1; hostHtml = el.innerHTML; },
+  };
+  try {
+    const html = formatMsg('<img src=x onerror="window.__xss=1"> plain prose');
+    assert.equal(autoRenderCalls, 1);
+    assert.doesNotMatch(hostHtml, /onerror/i);
+    assert.doesNotMatch(html, /onerror/i);
+  } finally {
+    if (savedMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = savedMarked;
+    restoreGlobal('window', savedWindow);
+    restoreGlobal('document', savedDocument);
+    restoreGlobal('DOMPurify', savedPurify);
+  }
+});
+
+/* Pathologically nested scaffolds must degrade to escaped text rather
+   than re-entering the renderer without bound. */
+test('deeply nested scaffolds are depth-capped', () => {
+  const depth = 64;
+  const source = '<key-point>'.repeat(depth) + 'core' + '</key-point>'.repeat(depth);
+  let html = '';
+  assert.doesNotThrow(() => { html = renderProgressive(source); });
+  assert.match(html, /core/);
+});
+
+/* Weak models drop the space after ATX markers (`##标题`, `##**标题**`),
+   which CommonMark renders as literal prose. The preprocessor restores
+   the space without touching fenced code. */
+test('heading markers missing a space are repaired', () => {
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    assert.match(formatMsg('##两种常见说法'), /<h2>两种常见说法<\/h2>/);
+    assert.match(formatMsg('##**两种常见说法**'), /<h2><strong>两种常见说法<\/strong><\/h2>/);
+    assert.match(formatMsg('###一、格林公式'), /<h3>一、格林公式<\/h3>/);
+    assert.match(formatMsg('#### 1.1 定理陈述'), /<h4>1\.1 定理陈述<\/h4>/);
+    /* A hash followed by a digit is prose, not a heading. */
+    assert.match(formatMsg('#1 candidate'), /#1 candidate/);
+    assert.doesNotMatch(formatMsg('#1 candidate'), /<h1>/);
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
+});
+
+test('heading repair never rewrites fenced or inline code', () => {
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    const fenced = formatMsg('```c\n#include <stdio.h>\n##comment\n```');
+    assert.match(fenced, /#include/);
+    assert.match(fenced, /##comment/);
+    assert.doesNotMatch(fenced, /# include/);
+
+    const inline = formatMsg('use `#include` here');
+    assert.match(inline, /#include/);
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
 });
 
 test('math stays as raw source when KaTeX has not loaded yet', () => {

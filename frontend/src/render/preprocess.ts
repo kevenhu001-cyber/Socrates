@@ -5,7 +5,7 @@
    skips non-idempotent rules.
    Both imported by render/markdown.js. */
 
-import { _autoWrapBareBracketMath, fixMarkdownTableSeparators } from './helpers.js';
+import { _autoWrapBareBracketMath, fixHeadingMarkers, fixMarkdownTableSeparators } from './helpers.js';
 
 /* Pre-process raw assistant output to compensate for common
    formatting sloppiness in weak / small models. Returns a string
@@ -36,6 +36,8 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 
   s = _protectFences(s);
   s = _protectInlineCode(s);
+
+  s = fixHeadingMarkers(s);
 
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
     return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
@@ -167,6 +169,8 @@ export function preprocessMarkdownForStreaming(t: string | null | undefined): st
     return _stash('```' + lang + '\n' + body + '```');
   });
   s = s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
+
+  s = fixHeadingMarkers(s);
 
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
     return _stash('\\[' + m.slice(2, -2).trim() + '\\]');
