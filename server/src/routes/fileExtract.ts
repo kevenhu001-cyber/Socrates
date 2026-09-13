@@ -125,11 +125,11 @@ router.post('/extract', requireAuth, writeLimiter, (req, res, next) => {
       let extractResult: { text: string; meta: Record<string, unknown> };
       try {
         if (mime === 'application/pdf') {
-          /* PDF keeps the existing pdf-parse path — it's the historical
-             code and we don't want to refactor it today. */
+          /* PDF keeps the existing pdf-parse path — it takes a Buffer
+             (not a path); files.ts preview uses the same convention. */
           const mod = await import('pdf-parse');
           const pdfParse = mod.default || mod;
-          const result = await pdfParse((req as any).file.path);
+          const result = await pdfParse(await fs.readFile((req as any).file.path));
           extractResult = {
             text: String((result && result.text) || ''),
             meta: { pageCount: result && result.numpages ? Number(result.numpages) : 0 },

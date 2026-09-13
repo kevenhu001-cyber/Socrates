@@ -1,9 +1,9 @@
-import { decrypt, deriveEncryptionKey, encrypt } from '../lib/crypto.js';
+import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../lib/crypto.js';
 
 const ZOTERO_API = 'https://api.zotero.org';
 const ZOTERO_API_VERSION = '3';
 
-function encryptionKey() { return deriveEncryptionKey(process.env.SESSION_SECRET || 'local-development-only'); }
+function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
 
 export class ZoteroConnectorError extends Error {
   code: string;

@@ -1,4 +1,4 @@
-import { decrypt, deriveEncryptionKey, encrypt } from '../lib/crypto.js';
+import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../lib/crypto.js';
 
 const GITEE = 'https://gitee.com';
 const GITEE_SCOPES = 'user_info projects issues pull_requests';
@@ -28,7 +28,7 @@ interface GiteeConnection {
   refreshTokenCiphertext?: string | null;
 }
 
-function encryptionKey() { return deriveEncryptionKey(process.env.SESSION_SECRET || 'local-development-only'); }
+function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
 
 export function giteeIsConfigured() {
   return Boolean(process.env.CONNECTOR_GITEE_CLIENT_ID && process.env.CONNECTOR_GITEE_CLIENT_SECRET);

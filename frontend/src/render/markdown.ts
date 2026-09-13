@@ -537,19 +537,27 @@ export function formatMsgProgressive(t: string | null | undefined): string {
   if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
   if (!s) return '';
 
+  /* Nonce placeholders — a literal "XVIZBLOCK0X" in user text must never
+     be replaced with viz HTML. The token is random per call so attacker
+     text cannot guess it. */
+  const nonce = Math.random().toString(36).slice(2, 10);
+  const blockPrefix = '§SCRTB' + nonce;
+  const vizPrefix = '§SCRTV' + nonce;
+  const blockRe = new RegExp(blockPrefix + '(\\d+)§', 'g');
+  const vizRe = new RegExp(vizPrefix + '(\\d+)§', 'g');
   const blocks: string[] = [];
   let pid = 0;
   function save(html: string): string {
     const id = pid++;
     blocks.push(html);
-    return 'XBLOCK' + id + 'X';
+    return blockPrefix + id + '§';
   }
   const vizBlocks: string[] = [];
   let vizPid = 0;
   function saveViz(html: string): string {
     const id = vizPid++;
     vizBlocks.push(html);
-    return 'XVIZBLOCK' + id + 'X';
+    return vizPrefix + id + '§';
   }
 
   s = s.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
@@ -683,10 +691,12 @@ export function formatMsgProgressive(t: string | null | undefined): string {
   }
 
   if (typeof katex !== 'undefined') {
-    /* Closed inline math. */
-    s = s.replace(/\$(.+?)\$/g, function (_, math: string) {
+    /* Closed inline math. Guard with the LaTeX heuristic so ordinary
+       "$5"-style amounts keep their literal text. */
+    s = s.replace(/\$(.+?)\$/g, function (m, math: string) {
+      if (!_looksLikeLatexStreamingTail(String(math).trim())) return m;
       const html = renderStreamMath(math, false, false);
-      return html === null ? _ : save(html);
+      return html === null ? m : save(html);
     });
     /* Inline math still arriving: the closing `$` has not appeared.
        Only engage when the fragment actually looks like LaTeX, so
@@ -706,12 +716,12 @@ export function formatMsgProgressive(t: string | null | undefined): string {
     html = '<p>' + escHTML(s).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
   }
 
-  html = html.replace(/XBLOCK(\d+)X/g, function (_, id: string) {
+  html = html.replace(blockRe, function (_, id: string) {
     return blocks[parseInt(id)];
   });
 
   const sanitized = sanitizeHtml(html);
-  return sanitized.replace(/XVIZBLOCK(\d+)X/g, function (_, id: string) {
+  return sanitized.replace(vizRe, function (_, id: string) {
     return vizBlocks[parseInt(id)];
   });
 }
@@ -747,18 +757,23 @@ export function formatMsg(t: string | null | undefined): string {
     return fallbackHtml.replace(/XVIZFALLBACK(\d+)X/g, function (_, id: string) { return fallbackViz[parseInt(id, 10)] || ''; });
   }
   const blocks: string[] = [];
+  const msgNonce = Math.random().toString(36).slice(2, 10);
+  const msgBlockPrefix = '§SCRTB' + msgNonce;
+  const msgVizPrefix = '§SCRTV' + msgNonce;
+  const msgBlockRe = new RegExp(msgBlockPrefix + '(\\d+)§', 'g');
+  const msgVizRe = new RegExp(msgVizPrefix + '(\\d+)§', 'g');
   let pid = 0;
   function save(html: string): string {
     const id = pid++;
     blocks.push(html);
-    return 'XBLOCK' + id + 'X';
+    return msgBlockPrefix + id + '§';
   }
   const vizBlocks: string[] = [];
   let vizPid = 0;
   function saveViz(html: string): string {
     const id = vizPid++;
     vizBlocks.push(html);
-    return 'XVIZBLOCK' + id + 'X';
+    return msgVizPrefix + id + '§';
   }
 
   let procT = String(t ?? '');
@@ -786,7 +801,8 @@ export function formatMsg(t: string | null | undefined): string {
         try { return save(katex.renderToString(math.trim(), { displayMode: true, throwOnError: false, macros: KATEX_MACROS })); }
         catch { return save('<pre>' + esc('$$' + math + '$$') + '</pre>'); }
       });
-      txt = txt.replace(/\$(.+?)\$/g, function (_, math: string) {
+      txt = txt.replace(/\$(.+?)\$/g, function (m, math: string) {
+        if (!_looksLikeLatexStreamingTail(String(math).trim())) return m;
         try { return save(katex.renderToString(math.trim(), { displayMode: false, throwOnError: false, macros: KATEX_MACROS })); }
         catch { return save('<code>' + esc('$' + math + '$') + '</code>'); }
       });
@@ -873,15 +889,16 @@ export function formatMsg(t: string | null | undefined): string {
       return html === null ? _ : save(html);
     });
 
-    procT = procT.replace(/\$([\s\S]+?)\$/g, function (_, math: string) {
+    procT = procT.replace(/\$([\s\S]+?)\$/g, function (m, math: string) {
+      if (!_looksLikeLatexStreamingTail(String(math).trim())) return m;
       const html = renderStreamMath(math, false, false);
-      return html === null ? _ : save(html);
+      return html === null ? m : save(html);
     });
   }
 
   let html = marked.parse(procT, { breaks: true, gfm: true });
   html = sanitizeUrls(html);
-  html = html.replace(/XBLOCK(\d+)X/g, function (_, id: string) {
+  html = html.replace(msgBlockRe, function (_, id: string) {
     return blocks[parseInt(id)];
   });
 
@@ -908,7 +925,7 @@ export function formatMsg(t: string | null | undefined): string {
   }
 
   const sanitized = sanitizeHtml(html);
-  return sanitized.replace(/XVIZBLOCK(\d+)X/g, function (_, id: string) {
+  return sanitized.replace(msgVizRe, function (_, id: string) {
     return vizBlocks[parseInt(id)];
   });
 }

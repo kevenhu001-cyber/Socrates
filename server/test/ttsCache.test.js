@@ -4,11 +4,13 @@ import test from 'node:test';
 import { TtsCache, ttsCacheKey } from '../src/services/ttsCache.ts';
 
 test('cache keys isolate per user and per request shape', () => {
-  const a = ttsCacheKey('user-1', 'hello', 'alloy', 'mp3');
-  const b = ttsCacheKey('user-2', 'hello', 'alloy', 'mp3');
-  const c = ttsCacheKey('user-1', 'hello', 'alloy', 'mp3');
+  const a = ttsCacheKey('user-1', 'hello', 'alloy', 'mp3', 'en');
+  const b = ttsCacheKey('user-2', 'hello', 'alloy', 'mp3', 'en');
+  const c = ttsCacheKey('user-1', 'hello', 'alloy', 'mp3', 'en');
+  const d = ttsCacheKey('user-1', 'hello', 'alloy', 'mp3', 'zh');
   assert.notEqual(a, b, 'different users never share audio');
   assert.equal(a, c);
+  assert.notEqual(a, d, 'different languages never share audio');
 });
 
 test('repeat reads hit the cache without re-synthesis, LRU + byte budget evict', () => {

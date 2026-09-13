@@ -72,7 +72,7 @@ async function pruneExpired() {
 export async function checkLockout(email: string, _threshold: number = THRESHOLD) {
   if (!email) return;
   // Lazy prune — runs once per call but is cheap.
-  pruneExpired();
+  await pruneExpired();
   const db = getDb();
   const key = email.toLowerCase();
   const [rec] = await db.select().from(loginFailures)

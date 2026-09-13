@@ -1,4 +1,4 @@
-import { decrypt, deriveEncryptionKey, encrypt } from '../lib/crypto.js';
+import { decrypt, deriveEncryptionKey, encrypt, sessionSecret } from '../lib/crypto.js';
 
 const FEISHU_API = 'https://open.feishu.cn/open-apis';
 const FEISHU_AUTHORIZE = 'https://accounts.feishu.cn/open-apis/authen/v1/authorize';
@@ -18,7 +18,7 @@ interface FeishuUser {
   avatar_url?: string;
 }
 
-function encryptionKey() { return deriveEncryptionKey(process.env.SESSION_SECRET || 'local-development-only'); }
+function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
 
 export function feishuIsConfigured() {
   return Boolean(process.env.CONNECTOR_FEISHU_APP_ID && process.env.CONNECTOR_FEISHU_APP_SECRET);
