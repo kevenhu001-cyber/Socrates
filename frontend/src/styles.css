@@ -4716,6 +4716,10 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    fired instead of piling up at the bubble bottom. */
 .tool-inline-attachments{margin:8px 0}
 .tool-inline-attachments:empty{display:none}
+/* One output failed to render: the fallback stays inside the output slot so
+   the rest of the turn is untouched, and Retry re-mounts only this renderer. */
+.tool-output-error{display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 10px;border:1px solid hsl(var(--border-200));border-radius:8px;color:hsl(var(--text-300));font-size:calc(12px * var(--app-font-scale,1))}
+.tool-output-error button{border:0;background:transparent;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:0}
 
 /* P_tool_live_card — the live streaming bubble hosts a single
    `.tool-inline-live-slot` near the bottom. While the model is
