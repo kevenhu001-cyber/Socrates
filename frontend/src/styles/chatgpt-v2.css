@@ -104,20 +104,6 @@
     margin-inline: auto;
     padding: 60px 0 72px;
   }
-  #appShell .plugins-panel-tabs {
-    position: fixed;
-    z-index: 5;
-    top: 5px;
-    margin: 0;
-    transform: translateX(-50%);
-  }
-  #appShell .plugins-panel-tabs .pill { padding: 2px; }
-  #appShell .plugins-panel-tabs .pill button {
-    min-width: 68px;
-    height: 30px;
-    padding-inline: 13px;
-    font-size: 12px;
-  }
 }
 
 #appShell .sidebar-logo .cg-sidebar-caret,
@@ -408,10 +394,6 @@
   padding-top: 22px;
 }
 
-#appShell .plugins-panel-tabs {
-  left: calc(50% + 123px);
-}
-
 #appShell .spaces-panel-head,
 #appShell .library-panel-head,
 #appShell .plugins-panel-head {
@@ -473,15 +455,6 @@
   height: 16px;
 }
 
-#appShell .plugins-panel-tabs .pill {
-  display: inline-flex;
-  gap: 2px;
-  border: 1px solid var(--cgv-border-strong);
-  border-radius: 999px;
-  background: var(--cg-surface);
-}
-
-#appShell .plugins-panel-tabs .pill button,
 #appShell .plugins-scope-tabs button {
   border: 0;
   border-radius: 999px;
@@ -489,7 +462,6 @@
   background: transparent;
 }
 
-#appShell .plugins-panel-tabs .pill button.active,
 #appShell .plugins-scope-tabs button.active {
   color: var(--cgv-text);
   background: var(--cg-surface-hover);
@@ -720,7 +692,7 @@
    with the functional React directory without showing duplicate chrome. */
 #libraryPanel[data-live-directory="true"] > :not(#libraryList):not(#libraryUploadInput),
 #spacesPanel[data-live-directory="true"] > :not(#spacesList),
-#pluginsPanel[data-live-directory="true"] > :not(#pluginsList):not(.plugins-panel-tabs) {
+#pluginsPanel[data-live-directory="true"] > :not(#pluginsList) {
   display: none !important;
 }
 
@@ -906,13 +878,6 @@ html[data-mode="light"] #appShell {
    by the `chatgpt-send-idle` block at the top of this layer; the
    active state keeps its accent fill for in-session send buttons. */
 
-#appShell .plugins-panel-tabs .pill,
-#appShell .plugins-scope-tabs button.active,
-#appShell .spaces-panel-filters button.active {
-  background: var(--cg-surface) !important;
-}
-
-#appShell .plugins-panel-tabs .pill button.active,
 #appShell .plugins-scope-tabs button.active,
 #appShell .spaces-panel-filters button.active {
   color: var(--cg-text) !important;

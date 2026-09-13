@@ -107,6 +107,15 @@ body,
   background: var(--conversation-page) !important;
 }
 
+/* `.hidden` must win over the forced landing flex layout in the two
+   media blocks below. hideChatAndTopic() adds the class when a sidebar
+   destination (plugins, projects, …) takes over the main pane; without
+   this override the `#appShell#appShell #topicSetup` !important rules
+   keep the chat landing visible and push the selected page below it. */
+#appShell#appShell #topicSetup.hidden {
+  display: none !important;
+}
+
 #appShell#appShell #topicSetup .topic-title.greeting {
   position: static !important;
   display: block !important;
