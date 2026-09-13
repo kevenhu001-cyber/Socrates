@@ -150,8 +150,14 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           /* Still arriving: everything up to the last blank line is settled
              markdown (parsed once, held in the cache) and only the open block
              is re-parsed. When splitStreamingMarkdown refuses the cut — an
-             unclosed fence or formula — the whole segment is the tail. */
+             unclosed fence or formula — the whole segment is the tail.
+             The cursor marks the typing frontier; while the live status
+             line is showing (e.g. a tool row deferred behind an unfinished
+             sentence) the spinner already carries the "alive" signal, and
+             the tail's block markup would push the dot onto its own line
+             next to the spinner — a stray bullet. Hide it there. */
           const split = splitStreamingMarkdown(segment.text);
+          const showCursor = !showStatus;
           return (
             <Fragment key={`text-${segment.start}-${index}`}>
               {split.prefix ? (
@@ -162,7 +168,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
               ) : null}
               <div className="tool-run-prose is-live">
                 <span dangerouslySetInnerHTML={tail(split.tail)} />
-                <StreamCursor />
+                {showCursor ? <StreamCursor /> : null}
               </div>
             </Fragment>
           );
