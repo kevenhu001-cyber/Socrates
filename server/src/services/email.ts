@@ -78,22 +78,32 @@ export async function sendEmail({ to, subject, text, html }: {
    ──────────────────────────────────────────────
    Elegant monochrome transactional style.
 
-   Palette (strict greyscale; no accent color, no card):
+   Palette (strict greyscale; no accent color, no card).
+   Values mirror the lobehub tokens used by the live app
+   (frontend/src/styles/themes.css `[data-mode="light"]`
+   --lobe-* block) so the email reads as the same product:
+
      page bg     #ffffff
-     ink         #111111  (headings, button)
-     body        #4a4a4a  (paragraphs)
-     muted       #8a8a8a  (secondary)
-     hairline    #ececec  (1px rules)
+     ink         #080808  (headings, button)
+     body        #666666  (paragraphs)
+     muted       #999999  (footer, helper text)
+     hairline    #e3e3e3  (1px rules)
+     code-bg     #fafafa  (login-code block)
 
    Typography:
-     wordmark    Inter 17 / 600, tight tracking
-     heading     Inter 26 / 600, tight tracking, -0.02em
-     body        Inter 15 / 400, line-height 1.6, color #4a4a4a
-     micro       Inter 12 / 400, color #8a8a8a, used for footer + helper
+     wordmark    Inter 17 / 600, -0.025em
+     heading     Inter 26 / 600, -0.02em (line-height 1.25)
+     body        Inter 15 / 400, line-height 1.6, color #666666
+     micro       Inter 12 / 400, line-height 1.5, color #999999
+     code        JetBrains Mono 32 / 500, 0.4em tracking
 
-   Single-column 540px stack. Generous vertical rhythm. No card,
-   no shadows, no icons, no badges — only typography, white
-   space, and a single hairline divider near the bottom.
+   Geometry (matches `--lobe-radius` = 8px):
+     logo        28 px, 8 px corner
+     button      11 px 24 px padding, 8 px corner, height ~36 px
+
+   Single-column 540 px stack. Generous vertical rhythm.
+   No card, no shadows, no icons, no badges — only
+   typography, white space, and a single hairline divider.
    ────────────────────────────────────────────── */
 function shell({ preheader, title, body }: { preheader?: string; title: string; body: string }) {
   const pre = preheader || '';
@@ -105,10 +115,10 @@ function shell({ preheader, title, body }: { preheader?: string; title: string; 
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>${title}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
 </style>
 </head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility">
+<body style="margin:0;padding:0;background:#ffffff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#080808;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility">
 <span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden">${pre}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
   <tr>
@@ -118,8 +128,8 @@ function shell({ preheader, title, body }: { preheader?: string; title: string; 
         <!-- Brand — logo mark + wordmark, tight left-aligned. -->
         <tr>
           <td align="left" style="padding:0 0 56px">
-            <img src="https://app.topodrive.top/logo.png" alt="Socrates" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:7px" />
-            <div style="margin-top:12px;font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#111;line-height:20px">
+            <img src="https://app.topodrive.top/logo.png" alt="Socrates" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:8px" />
+            <div style="margin-top:12px;font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#080808;line-height:20px">
               Socrates
             </div>
           </td>
@@ -127,7 +137,7 @@ function shell({ preheader, title, body }: { preheader?: string; title: string; 
 
         <!-- Body slot -->
         <tr>
-          <td style="font-size:15px;line-height:1.6;color:#4a4a4a">
+          <td style="font-size:15px;line-height:1.6;color:#666666">
             ${body}
           </td>
         </tr>
@@ -135,9 +145,9 @@ function shell({ preheader, title, body }: { preheader?: string; title: string; 
         <!-- Hairline + footer -->
         <tr>
           <td style="padding:48px 0 0">
-            <div style="height:1px;background:#ececec;line-height:1px;font-size:1px">&nbsp;</div>
-            <div style="padding-top:20px;font-size:12px;line-height:1.5;color:#8a8a8a;letter-spacing:-0.005em">
-              <a href="https://topodrive.top" style="color:#8a8a8a;text-decoration:none">Socrates</a> · an AI tutor that asks questions to help you think.
+            <div style="height:1px;background:#e3e3e3;line-height:1px;font-size:1px">&nbsp;</div>
+            <div style="padding-top:20px;font-size:12px;line-height:1.5;color:#999999;letter-spacing:-0.005em">
+              <a href="https://topodrive.top" style="color:#999999;text-decoration:none">Socrates</a> · an AI tutor that asks questions to help you think.
             </div>
           </td>
         </tr>
@@ -150,12 +160,15 @@ function shell({ preheader, title, body }: { preheader?: string; title: string; 
 </html>`;
 }
 
-/* Primary button. Solid ink, white label, 8 px radius, weight 500. */
+/* Primary button. Solid ink, white label, 8 px radius, weight 500.
+ * Sized to match the lobehub `--lobe-control` (36 px tall): 11 px
+ * vertical padding around a 14 px label gives ~36 px rendered height
+ * in clients that honour line-height. */
 function ctaButton(label: string, href: string) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:32px 0 8px">
     <tr>
-      <td align="center" bgcolor="#111111" style="border-radius:8px">
-        <a href="${href}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em">${label}</a>
+      <td align="center" bgcolor="#080808" style="border-radius:8px">
+        <a href="${href}" target="_blank" style="display:inline-block;padding:11px 24px;font-family:'Inter',-apple-system,sans-serif;font-size:14px;line-height:1.4;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.005em;border-radius:8px">${label}</a>
       </td>
     </tr>
   </table>`;
@@ -163,16 +176,16 @@ function ctaButton(label: string, href: string) {
 
 /* Hairline-divider helper — pure 1 px rule, no decoration. */
 function hairline() {
-  return `<div style="height:1px;background:#ececec;line-height:1px;font-size:1px;margin:24px 0">&nbsp;</div>`;
+  return `<div style="height:1px;background:#e3e3e3;line-height:1px;font-size:1px;margin:24px 0">&nbsp;</div>`;
 }
 
 /* Fallback URL — quiet, monospaced, sits below the button. */
 function fallbackLink(link: string) {
-  return `<p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#8a8a8a;word-break:break-all">
+  return `<p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:#999999;word-break:break-all">
     Or paste this link into your browser:
   </p>
-  <p style="margin:4px 0 0;font-family:'SF Mono',Menlo,Consolas,ui-monospace,monospace;font-size:12px;line-height:1.6;color:#4a4a4a;word-break:break-all">
-    <a href="${link}" style="color:#4a4a4a;text-decoration:underline;text-decoration-color:#ececec">${link}</a>
+  <p style="margin:4px 0 0;font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,ui-monospace,monospace;font-size:12px;line-height:1.6;color:#666666;word-break:break-all">
+    <a href="${link}" style="color:#666666;text-decoration:underline;text-decoration-color:#e3e3e3">${link}</a>
   </p>`;
 }
 
@@ -189,15 +202,15 @@ export async function sendVerificationEmail(email: string, token: string) {
   const link = `${baseUrl}?token=${token}`;
 
   const body = `
-    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
       Verify your email
     </h1>
-    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#666666">
       Welcome to Socrates. Confirm this address to activate your account and save sessions across devices.
     </p>
     ${ctaButton('Verify email', link)}
     ${fallbackLink(link)}
-    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
       This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
     </p>
   `;
@@ -235,15 +248,15 @@ export async function sendPasswordResetEmail(email: string, token: string) {
   const link = `${baseUrl}/reset-password?reset_token=${token}`;
 
   const body = `
-    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
       Reset your password
     </h1>
-    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
-      Someone — hopefully you — asked to reset the password for <strong style="color:#111;font-weight:500">${email}</strong>. Click below to choose a new one.
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#666666">
+      Someone — hopefully you — asked to reset the password for <strong style="color:#080808;font-weight:500">${email}</strong>. Click below to choose a new one.
     </p>
     ${ctaButton('Choose a new password', link)}
     ${fallbackLink(link)}
-    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
       This link expires in 1 hour. If you didn't request a reset, you can safely ignore this email — your account is still secure.
     </p>
   `;
@@ -271,20 +284,22 @@ export async function sendPasswordResetEmail(email: string, token: string) {
  */
 export async function sendLoginCode(email: string, code: string) {
   const body = `
-    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
       Your login code
     </h1>
-    <p style="margin:0 0 32px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
-      Enter this code on the sign-in screen to access <strong style="color:#111;font-weight:500">${email}</strong>.
+    <p style="margin:0 0 28px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#666666">
+      Enter this code on the sign-in screen to access <strong style="color:#080808;font-weight:500">${email}</strong>.
     </p>
 
-    <!-- Code rendered in a wide-tracked monospace block. No chip /
-         box decoration — typography does the work. -->
-    <div style="font-family:'SF Mono',Menlo,Consolas,ui-monospace,monospace;font-size:32px;font-weight:500;color:#111;letter-spacing:0.4em;line-height:1.4">
+    <!-- Code rendered in a wide-tracked monospace block. JetBrains
+         Mono (matches the app's --lobe code font) on a quiet hairline
+         band — the only place we add a faint fill, to keep the code
+         readable at 32 px without visually shouting. -->
+    <div style="display:inline-block;padding:18px 22px;border:1px solid #e3e3e3;border-radius:8px;background:#fafafa;font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,ui-monospace,monospace;font-size:32px;font-weight:500;color:#080808;letter-spacing:0.4em;line-height:1.2">
       ${code}
     </div>
 
-    <p style="margin:40px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
       This code expires in 10 minutes. For your security, never share it with anyone.
     </p>
   `;
@@ -317,16 +332,16 @@ export async function sendLoginCode(email: string, code: string) {
  */
 export async function sendDuplicateRegistrationEmail(email: string) {
   const body = `
-    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
       New registration attempt
     </h1>
-    <p style="margin:0 0 12px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
-      Someone — possibly you — just tried to create a Socrates account using <strong style="color:#111;font-weight:500">${email}</strong>. The address is already registered, so no new account was created.
+    <p style="margin:0 0 12px;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#666666">
+      Someone — possibly you — just tried to create a Socrates account using <strong style="color:#080808;font-weight:500">${email}</strong>. The address is already registered, so no new account was created.
     </p>
-    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#4a4a4a">
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.6;color:#666666">
       If this was you trying to sign back in, use the sign-in screen or request a password reset from the auth page. If this wasn't you, you can safely ignore this email — your account is still secure.
     </p>
-    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+    <p style="margin:32px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
       You're receiving this because your email is on a Socrates account.
     </p>
   `;
@@ -356,18 +371,18 @@ export async function sendDuplicateRegistrationEmail(email: string) {
  * `confirmUrl` is the public status host link the subscriber clicks.
  */
 export async function sendStatusSubscriptionEmail(email: string, confirmUrl: string) {
-  const wordmark = 'Topodrive <span style="font-weight:400;color:#8a8a8a">Status</span>';
+  const wordmark = 'Topodrive <span style="font-weight:400;color:#999999">Status</span>';
 
   const body = `
-    <h1 style="margin:0 0 14px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#111;line-height:1.25;letter-spacing:-0.02em">
+    <h1 style="margin:0 0 14px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
       Almost there — confirm your subscription
     </h1>
-    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.65;color:#4a4a4a">
-      Thanks for subscribing to <strong style="color:#111;font-weight:500">Topodrive Status</strong> updates. We'll email you the moment a service goes down or recovers — no noise, only when it matters.
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.65;color:#666666">
+      Thanks for subscribing to <strong style="color:#080808;font-weight:500">Topodrive Status</strong> updates. We'll email you the moment a service goes down or recovers — no noise, only when it matters.
     </p>
     ${ctaButton('Confirm subscription', confirmUrl)}
     ${fallbackLink(confirmUrl)}
-    <p style="margin:36px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#8a8a8a">
+    <p style="margin:36px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
       This confirmation link expires in 7 days. If you didn't request this subscription, you can safely ignore this email — nothing has been set up yet.
     </p>
   `;
@@ -393,7 +408,8 @@ export async function sendStatusSubscriptionEmail(email: string, confirmUrl: str
 
 /* Status-site email layout — mirrors the Socrates shell's monochrome
  * discipline but carries the Topodrive Status wordmark and links back
- * to the status page rather than the app. */
+ * to the status page rather than the app. Palette matches the
+ * Socrates shell exactly. */
 function statusShell({ preheader, title, wordmark, body }: {
   preheader?: string;
   title: string;
@@ -412,7 +428,7 @@ function statusShell({ preheader, title, wordmark, body }: {
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 </style>
 </head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility">
+<body style="margin:0;padding:0;background:#ffffff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#080808;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility">
 <span style="display:none!important;opacity:0;color:transparent;height:0;width:0;overflow:hidden">${pre}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff">
   <tr>
@@ -421,24 +437,24 @@ function statusShell({ preheader, title, wordmark, body }: {
 
         <tr>
           <td align="left" style="padding:0 0 56px">
-            <img src="https://app.topodrive.top/logo.png" alt="Topodrive Status" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:7px" />
-            <div style="margin-top:12px;font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#111;line-height:20px">
+            <img src="https://app.topodrive.top/logo.png" alt="Topodrive Status" width="28" height="28" style="display:block;width:28px;height:28px;border:0;border-radius:8px" />
+            <div style="margin-top:12px;font-family:'Inter',-apple-system,sans-serif;font-size:17px;font-weight:600;letter-spacing:-0.025em;color:#080808;line-height:20px">
               ${wordmark}
             </div>
           </td>
         </tr>
 
         <tr>
-          <td style="font-size:15px;line-height:1.6;color:#4a4a4a">
+          <td style="font-size:15px;line-height:1.6;color:#666666">
             ${body}
           </td>
         </tr>
 
         <tr>
           <td style="padding:48px 0 0">
-            <div style="height:1px;background:#ececec;line-height:1px;font-size:1px">&nbsp;</div>
-            <div style="padding-top:20px;font-size:12px;line-height:1.5;color:#8a8a8a;letter-spacing:-0.005em">
-              <a href="https://status.topodrive.top" style="color:#8a8a8a;text-decoration:none">Topodrive Status</a> · real-time service health for Topodrive.
+            <div style="height:1px;background:#e3e3e3;line-height:1px;font-size:1px">&nbsp;</div>
+            <div style="padding-top:20px;font-size:12px;line-height:1.5;color:#999999;letter-spacing:-0.005em">
+              <a href="https://status.topodrive.top" style="color:#999999;text-decoration:none">Topodrive Status</a> · real-time service health for Topodrive.
             </div>
           </td>
         </tr>
