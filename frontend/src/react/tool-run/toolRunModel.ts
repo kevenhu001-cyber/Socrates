@@ -99,6 +99,43 @@ export type TurnSegment =
     state: ToolRunState;
   };
 
+/** The kind of text a tool produced. */
+export type ToolTextStream = 'stdout' | 'stderr' | 'result';
+
+export interface BaseToolOutput {
+  /**
+   * Stable identity: `${toolCallId}:${kind}:${discriminator}` — never a DOM id
+   * or a random value, so live, history and share address the same output.
+   */
+  id: string;
+  toolCallId: string;
+}
+
+export interface VisualizationOutput extends BaseToolOutput {
+  kind: 'visualization';
+  spec: Record<string, unknown>;
+}
+
+export interface ArtifactOutput extends BaseToolOutput {
+  kind: 'artifact';
+  fileId: string;
+  mimeType: string | null;
+  name: string | null;
+}
+
+export interface TextOutput extends BaseToolOutput {
+  kind: 'text';
+  stream: ToolTextStream;
+  text: string;
+}
+
+/**
+ * What a tool produced, in one protocol. The UI reads this instead of
+ * guessing from `visualization` / `artifacts` / `output` fields: the runtime
+ * owns normalization, the renderer only dispatches on `kind`.
+ */
+export type ToolOutput = VisualizationOutput | ArtifactOutput | TextOutput;
+
 /** The persisted + live shape of a message.toolCalls[] entry. */
 export interface ToolCallRecord extends ToolCallLike {
   id: string;
@@ -113,6 +150,12 @@ export interface ToolCallRecord extends ToolCallLike {
   errorCode?: string | null;
   retryable?: boolean;
   visualization?: Record<string, unknown> | null;
+  /**
+   * Normalized outputs, when the writer emits the protocol. Absent on every
+   * message saved before it existed; `toolOutputsOf` synthesizes the same
+   * list from the legacy fields in that case.
+   */
+  outputs?: ToolOutput[];
   _run?: { phase?: string; durationMs?: number; startedAt?: number; endedAt?: number };
   _cancelled?: boolean;
   _liveOutput?: string;
@@ -130,6 +173,163 @@ export interface ToolCallRecord extends ToolCallLike {
   steps?: AgentStepData[];
   plan?: AgentPlanData | null;
   runId?: string;
+}
+
+/* ── tool output protocol ──────────────────────────────────────────────── */
+
+/**
+ * The v1 visualization spec a call carries, from whichever field the writer
+ * used: `visualization` (the runtime's normalized result) or, while the call
+ * is still streaming, the `render_visualization` arguments themselves.
+ */
+export function visualizationSpecOf(
+  call: ToolCallRecord | null | undefined,
+): Record<string, unknown> | null {
+  if (!call) return null;
+  const persisted = call.visualization;
+  if (persisted && typeof persisted === 'object' && persisted.version === 1) {
+    return persisted as unknown as Record<string, unknown>;
+  }
+  if (call.name === 'render_visualization' && call.input && typeof call.input === 'object') {
+    const input = call.input as Record<string, unknown>;
+    if (input.version === 1) return input;
+  }
+  return null;
+}
+
+function outputId(toolCallId: string, kind: ToolOutput['kind'], discriminator: string): string {
+  return `${toolCallId}:${kind}:${discriminator}`;
+}
+
+/** Validate one persisted protocol entry into a ToolOutput, or drop it. */
+function normalizeToolOutput(toolCallId: string, value: unknown): ToolOutput | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  if (record.kind === 'visualization') {
+    const spec = record.spec;
+    if (!spec || typeof spec !== 'object') return null;
+    if ((spec as { version?: unknown }).version !== 1) return null;
+    return {
+      id: outputId(toolCallId, 'visualization', '0'),
+      toolCallId,
+      kind: 'visualization',
+      spec: spec as Record<string, unknown>,
+    };
+  }
+  if (record.kind === 'artifact') {
+    const fileId = typeof record.fileId === 'string' ? record.fileId : '';
+    if (!fileId) return null;
+    return {
+      id: outputId(toolCallId, 'artifact', fileId),
+      toolCallId,
+      kind: 'artifact',
+      fileId,
+      mimeType: typeof record.mimeType === 'string' ? record.mimeType : null,
+      name: typeof record.name === 'string' ? record.name : null,
+    };
+  }
+  if (record.kind === 'text') {
+    const text = typeof record.text === 'string' ? record.text : '';
+    if (!text) return null;
+    const stream: ToolTextStream = record.stream === 'stdout' || record.stream === 'stderr'
+      ? record.stream
+      : 'result';
+    return { id: outputId(toolCallId, 'text', stream), toolCallId, kind: 'text', stream, text };
+  }
+  return null;
+}
+
+function normalizePersistedOutputs(toolCallId: string, value: unknown): ToolOutput[] {
+  if (!Array.isArray(value)) return [];
+  const out: ToolOutput[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    const output = normalizeToolOutput(toolCallId, item);
+    if (!output || seen.has(output.id)) continue;
+    seen.add(output.id);
+    out.push(output);
+  }
+  return out;
+}
+
+/**
+ * Synthesize the protocol from a call saved before it existed. Order is fixed
+ * and testable: visualization, artifacts, result text, stderr text.
+ */
+function legacyToolOutputs(call: ToolCallRecord): ToolOutput[] {
+  const toolCallId = String(call.id || '');
+  const out: ToolOutput[] = [];
+  const spec = visualizationSpecOf(call);
+  if (spec) {
+    out.push({
+      id: outputId(toolCallId, 'visualization', '0'),
+      toolCallId,
+      kind: 'visualization',
+      spec,
+    });
+  }
+  const artifacts = Array.isArray(call.artifacts) ? call.artifacts : [];
+  const seen = new Set<string>();
+  for (const artifact of artifacts) {
+    const fileId = artifact && typeof artifact.id === 'string' ? artifact.id : '';
+    if (!fileId || seen.has(fileId)) continue;
+    seen.add(fileId);
+    out.push({
+      id: outputId(toolCallId, 'artifact', fileId),
+      toolCallId,
+      kind: 'artifact',
+      fileId,
+      mimeType: typeof artifact.mimeType === 'string' ? artifact.mimeType : null,
+      name: typeof artifact.name === 'string' ? artifact.name : null,
+    });
+  }
+  if (typeof call.output === 'string' && call.output) {
+    out.push({
+      id: outputId(toolCallId, 'text', 'result'),
+      toolCallId,
+      kind: 'text',
+      stream: 'result',
+      text: call.output,
+    });
+  }
+  if (typeof call.stderr === 'string' && call.stderr) {
+    out.push({
+      id: outputId(toolCallId, 'text', 'stderr'),
+      toolCallId,
+      kind: 'text',
+      stream: 'stderr',
+      text: call.stderr,
+    });
+  }
+  return out;
+}
+
+/**
+ * The outputs of one call, in the protocol. A call that already carries
+ * `outputs[]` (the writer's normalized shape) uses it verbatim — malformed
+ * entries and duplicate ids are dropped; every older call gets the same list
+ * synthesized from `visualization` / `artifacts` / `output` / `stderr`.
+ *
+ * This is the read boundary: UI components must not branch on the legacy
+ * fields themselves, or live and history can disagree about what a call
+ * produced.
+ */
+export function toolOutputsOf(call: ToolCallRecord | null | undefined): ToolOutput[] {
+  if (!call) return [];
+  const toolCallId = String(call.id || '');
+  const persisted = normalizePersistedOutputs(toolCallId, call.outputs);
+  if (persisted.length) return persisted;
+  return legacyToolOutputs(call);
+}
+
+/** The outputs an attachment host renders: charts and saved files. */
+export function attachmentOutputsOf(
+  call: ToolCallRecord | null | undefined,
+): Array<VisualizationOutput | ArtifactOutput> {
+  return toolOutputsOf(call).filter(
+    (output): output is VisualizationOutput | ArtifactOutput =>
+      output.kind === 'visualization' || output.kind === 'artifact',
+  );
 }
 
 /** The approval prompt as the row needs it: copy plus the decision list. */

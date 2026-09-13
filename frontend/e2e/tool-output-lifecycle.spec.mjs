@@ -360,6 +360,48 @@ test('history restore reuses the declarative host instead of mounting a second c
   expect(probe.disposeCalls).toEqual([]);
 });
 
+test('a call persisted with the outputs protocol renders the same', async ({ page }) => {
+  /* The writer will eventually persist `outputs[]` instead of the legacy
+     `visualization` / `artifacts` fields. Inputs stay legacy-free on purpose
+     so only the protocol path can produce the card. */
+  const protocolSpec = vizSpec('Probe protocol');
+  const code = {
+    id: 'code-proto',
+    name: 'code_interpreter',
+    input: { code: 'plot()' },
+    output: 'saved',
+    durationMs: 10,
+    status: 'completed',
+    textOffset: 0,
+    outputs: [
+      { kind: 'artifact', fileId: 'file-proto', mimeType: 'image/png', name: 'proto.png' },
+      { kind: 'text', stream: 'stdout', text: 'done' },
+    ],
+  };
+  const viz = {
+    id: 'viz-proto',
+    name: 'render_visualization',
+    input: { note: 'protocol only' },
+    output: 'Visualization ready',
+    durationMs: 10,
+    status: 'completed',
+    textOffset: 0,
+    outputs: [{ kind: 'visualization', spec: protocolSpec }],
+  };
+  const body = await openAssistantFixture(page, [
+    userMessage(),
+    assistantMessage([code, viz]),
+  ]);
+
+  const card = body.locator('.visualization-card');
+  await expect(card).toHaveCount(1);
+  await expect(card).toContainText('Probe protocol');
+  await expect(body.locator('.exec-artifact-image')).toBeVisible();
+
+  const probe = await readVizProbe(page);
+  expect(probe.created.map((m) => m.cardId)).toEqual(['viz-proto']);
+});
+
 /* ── real renderer cases ──────────────────────────────────────────────── */
 
 test('a collapsed run with a real chart does not overflow a 390px viewport', async ({ page }) => {
