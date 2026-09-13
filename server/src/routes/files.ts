@@ -10,6 +10,7 @@ import multer from 'multer';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import { extractText as extractDocumentText } from '../services/fileParsers/index.js';
 
 import os from 'node:os';
@@ -191,13 +192,28 @@ async function readHead(storagePath: string, maxBytes: number): Promise<Buffer> 
 }
 
 /**
+ * Stream the on-disk upload through SHA-256 without buffering the
+ * whole file. A 25 MB upload × concurrent requests used to spike
+ * memory; streaming keeps it flat.
+ */
+function hashFileStreaming(storagePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = createReadStream(storagePath);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('error', reject);
+  });
+}
+
+/**
  * Compute the user's current storage footprint so the upload
  * endpoint can reject new files that would push them over quota.
  * Done as a single SUM aggregate rather than scanning rows.
  */
-async function getUserStorageBytes(userId: string) {
-  const db = getDb();
-  const [row] = await db.select({ total: sql`COALESCE(SUM(${files.size}), 0)` })
+async function getUserStorageBytes(userId: string, tx?: unknown) {
+  const db = tx ?? getDb();
+  const [row] = await (db as ReturnType<typeof getDb>).select({ total: sql`COALESCE(SUM(${files.size}), 0)` })
     .from(files)
     .where(eq(files.userId, userId));
   return Number(row?.total) || 0;
@@ -218,28 +234,45 @@ router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => 
     if (!(req as any).file) throw new BadRequest('No file provided');
 
     const file = (req as any).file;
-    const sha256 = crypto.createHash('sha256').update(await fs.readFile(file.path)).digest('hex');
+    const sha256 = await hashFileStreaming(file.path);
 
     const db = getDb();
-    const usedBytes = await getUserStorageBytes(req.userId!);
-    if (usedBytes + file.size > USER_QUOTA_BYTES) {
-      // Roll back the upload so the on-disk file doesn't accumulate.
-      await fs.unlink(file.path).catch(() => {});
-      throw new PayloadTooLarge(
-        `Storage quota exceeded. You have used ${usedBytes} bytes; this upload would exceed the ${USER_QUOTA_BYTES}-byte limit.`
-      );
+    let record;
+    try {
+      record = await db.transaction(async (tx) => {
+        /* Serialize concurrent uploads from the same user so two
+           simultaneous SUM checks cannot both pass before either
+           INSERT lands. Advisory lock is transaction-scoped. */
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.userId!}))`);
+        const usedBytes = await getUserStorageBytes(req.userId!, tx);
+        if (usedBytes + file.size > USER_QUOTA_BYTES) {
+          throw new PayloadTooLarge(
+            `Storage quota exceeded. You have used ${usedBytes} bytes; this upload would exceed the ${USER_QUOTA_BYTES}-byte limit.`
+          );
+        }
+        const [row] = await tx.insert(files).values({
+          userId: req.userId!,
+          name: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          kind: mimeKind(file.mimetype),
+          sha256,
+          storagePath: file.path,
+          sessionId: req.body.sessionId || null,
+        }).returning();
+        return row;
+      });
+    } catch (err) {
+      // Roll back the on-disk file if the quota check or insert failed.
+      if (err instanceof PayloadTooLarge) {
+        await fs.unlink(file.path).catch(() => {});
+      }
+      throw err;
     }
-
-    const [record] = await db.insert(files).values({
-      userId: req.userId!,
-      name: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      kind: mimeKind(file.mimetype),
-      sha256,
-      storagePath: file.path,
-      sessionId: req.body.sessionId || null,
-    }).returning();
+    if (!record) {
+      await fs.unlink(file.path).catch(() => {});
+      throw new PayloadTooLarge('Storage quota exceeded.');
+    }
 
     return res.status(201).json({
       id: record.id, name: record.name, mimeType: record.mimeType,

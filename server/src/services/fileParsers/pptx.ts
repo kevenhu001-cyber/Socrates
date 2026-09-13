@@ -18,6 +18,11 @@ import { parseStringPromise } from 'xml2js';
 
 const SLIDE_PATH = /^ppt\/slides\/slide(\d+)\.xml$/i;
 
+/* Same output budget as xlsx — stop materializing slides once the
+   cap is hit so a huge deck cannot blow memory before truncation. */
+const MAX_OUTPUT_CHARS = 200 * 1024;
+const MAX_SLIDES = 200;
+
 function collectTextRuns(node: unknown, out: string[]): void {
   if (!node) return;
   if (Array.isArray(node)) {
@@ -71,7 +76,13 @@ export async function extract(filepath: string) {
   slides.sort((a, b) => a.n - b.n);
 
   const parts = [];
-  for (const slide of slides) {
+  let outChars = 0;
+  let truncated = slides.length > MAX_SLIDES;
+  for (const slide of slides.slice(0, MAX_SLIDES)) {
+    if (outChars >= MAX_OUTPUT_CHARS) {
+      truncated = true;
+      break;
+    }
     let xml;
     try {
       xml = await zip.files[slide.name].async('string');
@@ -99,12 +110,21 @@ export async function extract(filepath: string) {
       .map((s) => String(s).trim())
       .filter(Boolean)
       .join('\n');
-    parts.push(`### Slide ${slide.n}\n${body}\n`);
+    const chunk = `### Slide ${slide.n}\n${body}\n`;
+    if (outChars + chunk.length > MAX_OUTPUT_CHARS) {
+      const room = MAX_OUTPUT_CHARS - outChars;
+      if (room > 0) parts.push(chunk.slice(0, room));
+      outChars = MAX_OUTPUT_CHARS;
+      truncated = true;
+      break;
+    }
+    parts.push(chunk);
+    outChars += chunk.length;
   }
 
   return {
     text: parts.join('\n').replace(/\r\n/g, '\n'),
-    truncated: false,
+    truncated,
     meta: { slideCount: slides.length },
   };
 }

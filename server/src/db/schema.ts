@@ -366,7 +366,7 @@ export const files = pgTable('files', {
   sha256: text('sha256').notNull(),
   storagePath: text('storage_path').notNull(),
   thumbnailPath: text('thumbnail_path'),
-  sessionId: uuid('session_id'),
+  sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
   /* P_code_interpreter — null for user uploads; set for files produced by the
      code-interpreter tool (PNG charts, CSV exports, etc). ON DELETE CASCADE
      so reaping an execution row drops its artifacts too. */

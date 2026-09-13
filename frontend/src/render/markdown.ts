@@ -360,14 +360,29 @@ export function formatTickSlice(full: string, len: number): string {
 }
 
 const _streamingVizIds = new Map<string, string>();
+const MAX_STREAMING_VIZ_IDS = 200;
+function _hashContent(content: string): string {
+  let h = 5381;
+  for (let i = 0; i < content.length; i += 1) {
+    h = ((h << 5) + h + content.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
 function _streamingFingerprint(lang: string, content: string): string {
-  return (lang || '') + '\x00' + String(content || '').slice(0, 50);
+  const c = String(content || '');
+  return (lang || '') + '\x00' + c.length + '\x00' + _hashContent(c);
 }
 function _getStreamingVizId(lang: string, content: string): string {
   const key = _streamingFingerprint(lang, content);
   let id = _streamingVizIds.get(key);
   if (!id) {
     id = 'viz-card-stream-' + key.replace(/[^\w]/g, '_');
+    // Bound the map: long sessions with many unique code prefixes
+    // must not grow it without limit. Map preserves insertion order.
+    if (_streamingVizIds.size >= MAX_STREAMING_VIZ_IDS) {
+      const oldest = _streamingVizIds.keys().next().value;
+      if (oldest !== undefined) _streamingVizIds.delete(oldest);
+    }
     _streamingVizIds.set(key, id);
   }
   return id;
