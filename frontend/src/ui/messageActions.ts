@@ -239,8 +239,9 @@ export function restorePersistedMessageExtras(
        output (chart / image artifacts) right after its row so the
        restored layout matches the live streaming layout. */
     let inlineRow: Element | null = null;
+    let sel = '';
     try {
-      const sel =
+      sel =
         typeof CSS !== 'undefined' && CSS.escape
           ? CSS.escape(String(tc.id || ''))
           : String(tc.id || '').replace(/[^a-zA-Z0-9_-]/g, '');
@@ -253,8 +254,24 @@ export function restorePersistedMessageExtras(
          restored row only adds a gap to the layout. */
       const hasArtifacts = Array.isArray(tc.artifacts) && tc.artifacts.length > 0;
       if (!vizSpec && !hasArtifacts) continue;
-      let host = inlineRow.nextElementSibling;
-      if (!host || !host.classList || !host.classList.contains('tool-inline-attachments')) {
+      /* The declarative renderer keeps outputs OUTSIDE the collapsible row
+         list, so adjacency no longer finds its host; locate it by anchor
+         anywhere in the body first. Without this the legacy pass creates a
+         second host beside the row and mounts the chart twice — one visible,
+         one hidden with the collapsed status. */
+      let host: Element | null = null;
+      try {
+        host = body.querySelector(
+          '.tool-inline-attachments[data-tool-anchor="' + sel + '"]',
+        );
+      } catch {}
+      if (!host) {
+        const next = inlineRow.nextElementSibling;
+        if (next && next.classList && next.classList.contains('tool-inline-attachments')) {
+          host = next;
+        }
+      }
+      if (!host) {
         host = document.createElement('div');
         host.className = 'tool-inline-attachments';
         host.setAttribute('data-tool-anchor', String(tc.id || ''));

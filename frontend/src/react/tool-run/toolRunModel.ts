@@ -427,6 +427,18 @@ export function groupShowsHeader(segment: Extract<TurnSegment, { kind: 'group' }
   return segment.members.length >= 2;
 }
 
+/**
+ * Every call in a group whose non-text outputs (charts, saved files) must stay
+ * visible even when the group is collapsed. Tool STATUS may hide behind the
+ * aggregate toggle; tool OUTPUT never does. Row order and output order come
+ * from this one list so the two can never disagree.
+ */
+export function groupOutputCalls(
+  segment: Extract<TurnSegment, { kind: 'group' }>,
+): ToolCallRecord[] {
+  return segment.members.concat(segment.running);
+}
+
 function groupState(
   members: ToolCallRecord[],
   running: ToolCallRecord[],

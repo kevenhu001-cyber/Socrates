@@ -14,6 +14,7 @@ import {
   detailText,
   extractCodePreview,
   findThinkRanges,
+  groupOutputCalls,
   groupViewOf,
   hasTurnStructure,
   normalizeSources,
@@ -472,6 +473,18 @@ test('a running call is reported separately from the settled members', () => {
   assert.equal(group.running.length, 1);
   assert.equal(group.state, 'running');
   assert.equal(groupViewOf(group).showsHeader, true);
+});
+
+test('a group hands every call to the output renderer, settled or in flight', () => {
+  /* Tool status may collapse; tool output never does. The renderer draws the
+     visible outputs from this one list, so the collapse toggle cannot gate
+     them and the order matches the rows. */
+  const group = buildTurnLayout('work\n\n', [
+    call({ id: 'settled', textOffset: 5, output: 'ok', durationMs: 3 }),
+    call({ id: 'live', name: 'render_visualization', textOffset: 5, _run: { phase: 'running' } }),
+  ]).find((s) => s.kind === 'group');
+  assert.deepEqual(groupOutputCalls(group).map((c) => c.id), ['settled', 'live']);
+  assert.deepEqual(groupOutputCalls(group), group.members.concat(group.running));
 });
 
 test('a single settled call renders as a bare row, not a collapsed header', () => {
