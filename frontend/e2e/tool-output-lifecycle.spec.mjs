@@ -152,10 +152,12 @@ test('a settled visualization under a collapsed tool run stays on screen', async
   await expect(group.locator('.tool-run-summary')).toHaveCount(1);
   await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
 
-  const card = group.locator('.visualization-card');
+  const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
   await expect(card).toContainText('Probe parabola');
-  // The chart is not buried inside the collapsed state panel.
+  // The chart is not buried inside the collapsed state panel (nor inside the
+  // section whose shape changes as members settle).
+  await expect(group.locator('.visualization-card')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
@@ -187,8 +189,10 @@ test('a code artifact and a visualization from one run both render outside the c
 
   const group = body.locator('.tool-run-group');
   await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
-  await expect(group.locator('.visualization-card')).toBeVisible();
-  await expect(group.locator('.exec-artifact-image')).toBeVisible();
+  await expect(body.locator('.visualization-card')).toBeVisible();
+  await expect(body.locator('.exec-artifact-image')).toBeVisible();
+  await expect(group.locator('.visualization-card')).toHaveCount(0);
+  await expect(group.locator('.exec-artifact')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .exec-artifact')).toHaveCount(0);
 });
@@ -291,9 +295,18 @@ test('a visualization stays visible across the running → result transition', a
   await expect(group).toHaveCount(1);
   await expect(group.locator('.tool-run-summary')).toHaveCount(1);
   await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
-  await expect(group.locator('.visualization-card')).toBeVisible();
+  await expect(message.locator('.visualization-card')).toBeVisible();
+  await expect(group.locator('.visualization-card')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
   await expect(message.locator('.visualization-card')).toHaveCount(1);
+
+  /* The settle must not have torn the running renderer down and rebuilt it:
+     the host survives the single-member → aggregate shape change, and the
+     content-stable spec identity keeps the effect from re-running. */
+  const probe = await readVizProbe(page);
+  expect(probe.created.map((m) => m.cardId)).toEqual(['viz-1']);
+  expect(probe.removed).toEqual([]);
+  expect(probe.disposeCalls).toEqual([]);
 
   await page.evaluate(() => { window.__outText('All done.'); window.__outFinish(); });
 });
@@ -326,6 +339,7 @@ test('expanding and collapsing a run ten times never remounts its chart', async 
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
   expect(probe.removed).toEqual([]);
+  expect(probe.disposeCalls).toEqual([]);
 });
 
 test('history restore reuses the declarative host instead of mounting a second card', async ({ page }) => {
@@ -343,6 +357,7 @@ test('history restore reuses the declarative host instead of mounting a second c
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
   expect(probe.removed).toEqual([]);
+  expect(probe.disposeCalls).toEqual([]);
 });
 
 /* ── real renderer cases ──────────────────────────────────────────────── */
@@ -385,4 +400,85 @@ test('a broken spec falls back alone and does not take the turn down', async ({ 
   await expect(good).toBeVisible();
   await expect(good.locator('svg path')).not.toHaveCount(0);
   await expect(body.locator('.tool-run-prose')).toContainText('Lead paragraph.');
+});
+
+/* ── teardown and renderer retry ──────────────────────────────────────── */
+
+const SECOND_SESSION_ID = '99999999-9999-4999-8999-999999999999';
+
+test('switching sessions disposes the mounted renderer', async ({ page }) => {
+  const body = await openAssistantFixture(page, [
+    userMessage(),
+    assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe dispose')]),
+  ]);
+  await expect(body.locator('.visualization-card')).toHaveCount(1);
+
+  await page.route(
+    new RegExp('/api/(?:v2/)?sessions/' + SECOND_SESSION_ID + '(?:\\?.*)?$'),
+    (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: SECOND_SESSION_ID,
+        topic: 'Empty',
+        title: 'Empty',
+        domain: 'math',
+        mode: 'chat',
+        kind: 'chat',
+        phase: 'chat',
+        messages: [],
+        kbNodes: [],
+        mistakes: [],
+      }),
+    }),
+  );
+  await page.evaluate((id) => window.loadSession(id), SECOND_SESSION_ID);
+
+  await expect(page.locator('#msgList .visualization-card')).toHaveCount(0);
+  await expect.poll(async () => {
+    const probe = await readVizProbe(page);
+    return probe.disposedCards.some((card) => card.cardId === 'viz-1')
+      || probe.disposeCalls.some((call) => call.cardIds.includes('viz-1'));
+  }).toBe(true);
+});
+
+test('a failed GeoGebra load is retried locally instead of replaying the rejection', async ({ page }) => {
+  let scriptRequests = 0;
+  await page.route('**/deployggb.js', (route) => {
+    scriptRequests += 1;
+    return route.abort();
+  });
+  const geoSpec = {
+    version: 1,
+    template: 'math_construction',
+    title: 'Geo probe',
+    caption: 'A construction',
+    accessibilitySummary: 'A right triangle construction.',
+    payload: { appName: 'geometry', commands: ['A=(0,0)', 'B=(2,0)'] },
+  };
+  const geo = {
+    id: 'geo-1',
+    name: 'render_visualization',
+    input: geoSpec,
+    output: 'Visualization ready',
+    visualization: geoSpec,
+    durationMs: 10,
+    status: 'completed',
+    textOffset: 0,
+  };
+  const body = await openAssistantFixture(page, [
+    userMessage(),
+    assistantMessage([geo]),
+  ], { probe: false });
+
+  const fallback = body.locator('.visualization-fallback');
+  await expect(fallback).toBeVisible();
+  expect(scriptRequests).toBe(1);
+
+  /* The card's own Retry must re-request the CDN script. Before the cache
+     reset it replayed the cached rejection, so the request count stayed 1
+     and the button could never recover. */
+  await fallback.locator('button').click();
+  await expect.poll(() => scriptRequests, { timeout: 10_000 }).toBe(2);
+  await expect(body.locator('.visualization-fallback')).toBeVisible();
 });

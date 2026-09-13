@@ -14,11 +14,44 @@ var visualCounter = 0;
  * on the first mount so this module stays side-effect-free when unused. */
 var _liveCharts = [];
 var _themeObserver = null;
-/* P_viz-mount-dedup — in-memory Set of card IDs currently being
- * mounted. Guards against concurrent mountVisualization calls that
- * pass the DOM check (querySelector returns null) before the first
- * call's host.appendChild() runs. Cleared after appendChild. */
-var _mountingCards = new Map();
+/* P_viz-mount-dedup — per-host map of card IDs currently being mounted.
+ * Guards against concurrent mountVisualization calls that pass the DOM
+ * check (querySelector returns null) before the first call's
+ * host.appendChild() runs. Cleared after appendChild. Keyed on the host
+ * because the same output id can legitimately mount into two hosts (a
+ * React host and a history-recovery host); a document-wide key would hand
+ * the second host a card that lives in the first. */
+var _mountingCards = new WeakMap();
+
+function _mountingFor(host) {
+  var map = _mountingCards.get(host);
+  if (!map) { map = new Map(); _mountingCards.set(host, map); }
+  return map;
+}
+
+/* Run a card's renderer cleanup exactly once. Never touches the DOM: legacy
+ * callers (messageListDom, share) dispose cards that React may still own, and
+ * removing those nodes behind React's back would crash its next commit. */
+function cleanupCard(card) {
+  if (!card || card._visualizationDisposed) return;
+  card._visualizationDisposed = true;
+  var cleanup = card._visualizationCleanup;
+  card._visualizationCleanup = null;
+  if (typeof cleanup === 'function') {
+    try { cleanup(); } catch (_) {}
+  }
+}
+
+function removeCard(card) {
+  if (card && card.parentNode) card.parentNode.removeChild(card);
+}
+
+/* Full teardown for cards this module itself owns: cleanup, then detach. Used
+ * by abort, remount and React's tracked-card dispose. */
+function disposeCard(card) {
+  cleanupCard(card);
+  removeCard(card);
+}
 
 async function loadEcharts() {
   if (!echartsPromise) {
@@ -419,17 +452,12 @@ function remountVisualization(spec, host, options, currentCard) {
   var opts = Object.assign({}, options || {});
   var newCardId = (opts.toolCallId || ('visual-' + Date.now())) + '-r' + Math.random().toString(36).slice(2, 6);
   opts.toolCallId = newCardId;
-  /* Remove ALL cards with the same visualization spec title — they
-     are stale duplicates from a previous attempt. This is broader
-     than matching just `currentCard` because the previous attempt
-     may have produced partial siblings. Also call cleanup on each
-     removed card so extension message listeners don't leak. */
+  /* Remove every stale card in this host, not just `currentCard`: a failed
+     attempt can leave partial siblings, and disposing through the one
+     guarded teardown keeps extension listeners from leaking. */
   if (currentCard && currentCard.parentNode) {
     var siblings = currentCard.parentNode.querySelectorAll('.visualization-card');
-    siblings.forEach(function (el) {
-      if (el._visualizationCleanup) { try { el._visualizationCleanup(); } catch (_) {} }
-      el.remove();
-    });
+    siblings.forEach(function (el) { disposeCard(el); });
   }
   return mountVisualization(spec, host, opts);
 }
@@ -514,20 +542,26 @@ export async function mountVisualization(spec, host, options) {
   options = options || {};
   _ensureThemeWatcher();
   var cardId = options.toolCallId || ('visual-' + (++visualCounter));
-  // Synchronous dedup: check DOM first, then in-memory set to guard
-  // against concurrent calls that yield the event loop between the
+  /* A mounted card whose React host is being torn down aborts the mount
+     through this signal; every await below re-checks it and disposes the
+     half-built card instead of attaching a renderer nobody can see. */
+  var isCancelled = function () { return !!(options.signal && options.signal.aborted); };
+  // Synchronous dedup: check DOM first, then the per-host in-memory map to
+  // guard against concurrent calls that yield the event loop between the
   // DOM check and host.appendChild.
-  if (host.querySelector('[data-visualization-id="' + cardId + '"]')) return host.querySelector('[data-visualization-id="' + cardId + '"]');
-  if (_mountingCards.has(cardId)) {
-    // Another call is already mounting this card. Wait for it.
-    return _mountingCards.get(cardId);
+  var existing = host.querySelector('[data-visualization-id="' + cardId + '"]');
+  if (existing) return existing;
+  var mounting = _mountingFor(host);
+  if (mounting.has(cardId)) {
+    // Another call is already mounting this card for the same host.
+    return mounting.get(cardId);
   }
   var card = document.createElement('section');
   card.className = 'visualization-card'; card.dataset.visualizationId = cardId;
   card.setAttribute('aria-label', spec.title + '. ' + spec.accessibilitySummary);
-  // Register in the in-memory set BEFORE any async yield so concurrent
+  // Register in the in-memory map BEFORE any async yield so concurrent
   // calls with the same cardId see it.
-  _mountingCards.set(cardId, card);
+  mounting.set(cardId, card);
   var chartTemplates = ['line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap', 'radar', 'boxplot'];
   var extension = ['svg_illustration', 'interactive_simulation'].includes(spec.template);
   /* P_viz-actions-i18n — the four action buttons used to be
@@ -540,7 +574,7 @@ export async function mountVisualization(spec, host, options) {
   var actionFullscreen = vizT('viz.action.fullscreen', 'Fullscreen');
   card.innerHTML = '<header class="visualization-header"><div><h3>' + esc(spec.title) + '</h3>' + (spec.caption ? '<p class="visualization-caption">' + esc(spec.caption) + '</p>' : '') + '</div><div class="visualization-actions"><button type="button" data-viz-action="table" aria-expanded="false" aria-label="' + esc(actionTable) + '" title="' + esc(actionTable) + '">' + esc(actionTable) + '</button><button type="button" data-viz-action="reset" aria-label="' + esc(actionReset) + '" title="' + esc(actionReset) + '">' + esc(actionReset) + '</button><button type="button" data-viz-action="download" aria-label="' + esc(actionDownload) + '" title="' + esc(actionDownload) + '">' + esc(actionDownload) + '</button><button type="button" data-viz-action="fullscreen" aria-label="' + esc(actionFullscreen) + '" title="' + esc(actionFullscreen) + '">' + esc(actionFullscreen) + '</button></div></header><div class="visualization-summary sr-only">' + esc(spec.accessibilitySummary) + '</div><div class="visualization-stage"></div><div class="visualization-data" hidden>' + renderTable(spec) + '</div>';
   host.appendChild(card);
-  _mountingCards.delete(cardId);
+  mounting.delete(cardId);
   try { if (typeof renderMathInElement === 'function') renderMathInElement(card, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] }); } catch (_) {}
   var stage = card.querySelector('.visualization-stage'), chart = null, liveEntry = null;
   try {
@@ -549,6 +583,11 @@ export async function mountVisualization(spec, host, options) {
       var specialized = await mountSpecializedVisualization(spec, stage, {
         sampleFunction: sampleFunction,
       });
+      /* Register cleanup before any cancellation check so a torn-down mount
+         releases whatever the adapter already created (RAF, observers,
+         controls, WebGL context). */
+      card._visualizationCleanup = specialized.cleanup || function () {};
+      if (isCancelled()) { disposeCard(card); return null; }
       chart = specialized.chart || null;
       card.dataset.visualizationRenderer = spec.template === 'function' || spec.template === 'paper_chart'
         ? 'plotly'
@@ -559,10 +598,10 @@ export async function mountVisualization(spec, host, options) {
             : spec.template === 'whiteboard'
               ? 'tldraw'
               : 'mermaid';
-      card._visualizationCleanup = specialized.cleanup || function () {};
     } else if (chartTemplates.includes(spec.template)) {
       await whenFontsReady('Noto Sans SC');
       var echarts = await loadEcharts();
+      if (isCancelled()) { disposeCard(card); return null; }
       var useCanvas = spec.template === 'heatmap' || (spec.payload.series || []).some(function (series) { return series.data && series.data.length > 1200; });
       chart = echarts.init(stage, null, { renderer: useCanvas ? 'canvas' : 'svg' });
       var chartOpts = optionForChart(spec, palette());
@@ -571,6 +610,11 @@ export async function mountVisualization(spec, host, options) {
         stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button></div>';
         stage.querySelector('button').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
         chart = null;
+      } else if (isCancelled()) {
+        chart.dispose();
+        chart = null;
+        disposeCard(card);
+        return null;
       } else {
         chart.setOption(chartOpts, { notMerge: true });
         liveEntry = { chart: chart, spec: spec };
@@ -628,8 +672,12 @@ export async function mountVisualization(spec, host, options) {
     } else {
       stage.innerHTML = renderStructure(spec);
     }
+    if (isCancelled()) { disposeCard(card); return null; }
     bindCard(card, spec, chart);
   } catch (error) {
+    /* A cancelled mount must not paint a fallback into a host React has
+       already abandoned; dispose and let the caller's teardown stay final. */
+    if (isCancelled()) { disposeCard(card); return null; }
     stage.innerHTML = '<div class="visualization-fallback"><strong>视觉内容暂未渲染</strong><p>' + esc(spec.accessibilitySummary) + '</p><button type="button">' + esc(vizT('viz.action.retry', 'Retry locally')) + '</button></div>';
     stage.querySelector('button').addEventListener('click', function () { remountVisualization(spec, host, options, card); });
     console.warn('[visualization] render failed', error);
@@ -639,7 +687,15 @@ export async function mountVisualization(spec, host, options) {
 
 export function disposeVisualizations(host) {
   if (!host) return;
-  host.querySelectorAll('.visualization-card').forEach(function (card) { if (card._visualizationCleanup) card._visualizationCleanup(); });
+  host.querySelectorAll('.visualization-card').forEach(function (card) { cleanupCard(card); });
+}
+
+/* Full dispose for one card React tracked from the mount return value.
+ * Needed when the host itself was emptied by legacy DOM work before React's
+ * effect cleanup ran: the card reference is the only handle left, and this is
+ * the one place a React-owned card may be detached. */
+export function disposeVisualization(card) {
+  disposeCard(card);
 }
 
 /* Re-apply the current theme palette to every live ECharts instance and

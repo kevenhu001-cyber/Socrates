@@ -198,9 +198,23 @@ function loadGeoGebra() {
     const script = document.createElement('script');
     script.src = 'https://www.geogebra.org/apps/deployggb.js';
     script.async = true;
-    script.onload = () => resolve(window.GGBApplet);
-    script.onerror = () => reject(new Error('GeoGebra failed to load'));
+    script.onload = () => {
+      if (window.GGBApplet) {
+        resolve(window.GGBApplet);
+      } else {
+        script.remove();
+        reject(new Error('GeoGebra loaded without GGBApplet'));
+      }
+    };
+    script.onerror = () => { script.remove(); reject(new Error('GeoGebra failed to load')); };
     document.head.appendChild(script);
+  }).catch((error) => {
+    /* P_viz-geogebra-retry — a failed CDN load used to poison this cache
+       forever (`||=` keeps the rejected promise), so the card's local Retry
+       replayed the same rejection instead of re-requesting the script.
+       Drop the cache so the next attempt starts a fresh load. */
+    geogebraPromise = undefined;
+    throw error;
   });
   return geogebraPromise;
 }
