@@ -93,12 +93,16 @@ export function buildAssistantHtml(rawText: unknown): string {
     .replace(/<think>[\s\S]*?<\/think>/gi, '')
     .replace(/<think>[\s\S]*$/gi, '');
   /* Chat mode: strip a trailing "Sources: …" block the model
-     occasionally writes. */
+     occasionally writes. The rule must never blank the whole bubble:
+     a short answer can legitimately START with such a marker
+     (e.g. "来源：意大利语…"), and deleting it reads as the head of
+     the answer being swallowed. */
   if (appMode === 'chat') {
-    text = text.replace(
+    const stripped = text.replace(
       /(?:^|\n)\s*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)\s*[:：][\s\S]*$/i,
       '',
     );
+    if (stripped.trim()) text = stripped;
   }
   /* P_strip-citations — the answer body carries no [1]/[2] search-citation
      markers. Sources stay in the search tool card; the models add inline

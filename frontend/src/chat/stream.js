@@ -465,26 +465,18 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                   }
                   thinkBuf="";
                   thinkOpen=false;
-                  /* Everything after </think> is normal content. */
+                  /* Everything after </think> is normal content. A second
+                     <think> can open in the same chunk (back-to-back
+                     thinking blocks). When it does, reprocess the whole
+                     remainder through the not-in-think branch BEFORE
+                     emitting anything: emitting the head first and
+                     reprocessing after would emit the head twice and
+                     scramble the order (reads as swallowed/garbled
+                     first chars). Checking `after` itself also catches
+                     a tag straddling the 7-char hold boundary. */
                   var after=probe2.slice(closeIdx+"</think>".length);
-                  /* Keep a 7-char tail in case <think> starts again
-                     in the same chunk (unusual but possible). */
-                  var keepLen=Math.min(after.length,7);
-                  thinkTail=after.slice(after.length-keepLen);
-                  var bodyStr=after.slice(0,after.length-keepLen);
-                  if(bodyStr.length>0){
-                    full+=bodyStr;
-                    try{if(onDelta){onDelta(bodyStr,full)}}catch(deltaErr){
-                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-                    }
-                  }
-                  /* Check whether the remaining tail also opens a
-                     new think block. If so, loop again. Otherwise
-                     break. */
-                  if(thinkTail.indexOf("<think>")!==-1||bodyStr.indexOf("<think>")!==-1){
-                    /* Re-enter the outer if-block by appending tail+body
-                       to a fresh probe. Simpler: just keep going. */
-                    var remaining=thinkTail+bodyStr;
+                  if(after.indexOf("<think>")!==-1){
+                    var remaining=after;
                     thinkTail="";
                     if(remaining.length>0){
                       /* Recurse into the "not in think" branch. */
@@ -515,6 +507,18 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
                         closeIdx=probe2.indexOf("</think>");
                         continue;
                       }
+                    }
+                    break;
+                  }
+                  /* Keep a 7-char tail in case <think> opens at the
+                     start of the next chunk. */
+                  var keepLen=Math.min(after.length,7);
+                  thinkTail=after.slice(after.length-keepLen);
+                  var bodyStr=after.slice(0,after.length-keepLen);
+                  if(bodyStr.length>0){
+                    full+=bodyStr;
+                    try{if(onDelta){onDelta(bodyStr,full)}}catch(deltaErr){
+                      console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
                     }
                   }
                   break;

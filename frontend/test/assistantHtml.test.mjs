@@ -43,6 +43,22 @@ test('chat mode strips a trailing Sources block, tutor mode keeps it', () => {
   }
 });
 
+test('chat mode keeps an answer that STARTS with a sources-like marker', () => {
+  /* The trailing-Sources rule must never blank the whole bubble: a short
+     answer can legitimately open with such a marker (e.g. an etymology
+     reply "来源：意大利语…"), and deleting it reads as the head of the
+     answer being swallowed. */
+  setAppMode('chat');
+  try {
+    const html = buildAssistantHtml('来源：意大利语 quarantina，意为四十。');
+    assert.match(html, /意大利语/);
+    const ref = buildAssistantHtml('参考：详见上文第二段分析。');
+    assert.match(ref, /上文第二段/);
+  } finally {
+    setAppMode('chat');
+  }
+});
+
 test('first quiz becomes a slot, extra quizzes degrade to text', () => {
   const quiz = '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
   const html = buildAssistantHtml(`${quiz} mid ${quiz}`);
