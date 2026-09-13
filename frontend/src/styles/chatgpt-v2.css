@@ -215,10 +215,16 @@
 
 #appShell #navExam,
 #appShell #navSkills,
-#appShell .recents-filter-chips,
-#appShell .sidebar-header #newChatBtn,
 #appShell #apiSettingsBtn {
   display: none !important;
+}
+
+/* The desktop reference task list has no tag-filter chip row; phones keep it
+   (the compact sidebar is where the chips are reachable). */
+@media (min-width: 769px) {
+  #appShell .recents-filter-chips {
+    display: none !important;
+  }
 }
 
 #appShell .sidebar-inner {
