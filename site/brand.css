@@ -14,16 +14,16 @@
  * language while leaving those hooks and component names intact.
  */
 :root {
-  --site-paper: #000000;
-  --site-paper-soft: #0a0a0b;
-  --site-paper-strong: #131316;
-  --site-sand: #1a1a1e;
-  --site-ink: #f5f5f4;
-  --site-ink-soft: #a3a3a8;
-  --site-ink-muted: #6e6e75;
-  --site-line: #232328;
-  --site-black: #000000;
-  --site-clay: #e5e5e5;
+  --site-paper: #f4f1e9;
+  --site-paper-soft: #faf9f5;
+  --site-paper-strong: #eee8dc;
+  --site-sand: #e5dbc9;
+  --site-ink: #171716;
+  --site-ink-soft: #56534e;
+  --site-ink-muted: #77716a;
+  --site-line: #d9d0c3;
+  --site-black: #171716;
+  --site-clay: #9a5a3b;
   /* Latin UI sans — Geist is the product's default. Inter is a visual
      sibling that most readers already have, so it's a safe fallback. The
      system stacks after Inter are deliberately limited so CJK characters
@@ -48,34 +48,34 @@
   --site-shadow: none;
 
   /* HSL aliases retained for the functional pages' inline styles. */
-  --bg-000: 0 0% 0%;
-  --bg-100: 240 4% 5%;
-  --bg-200: 240 4% 8%;
-  --bg-300: 240 3% 14%;
-  --bg-400: 0 0% 96%;
-  --neu-bg: 240 4% 5%;
-  --neu-bg-deep: 240 4% 8%;
-  --neu-bg-darker: 240 3% 12%;
-  --neu-surface: 240 4% 7%;
-  --neu-line: 240 4% 20%;
-  --neu-line-soft: 240 4% 14%;
-  --neu-line-strong: 0 0% 92%;
-  --text-000: 0 0% 96%;
-  --text-100: 0 0% 88%;
-  --text-200: 240 3% 66%;
-  --text-300: 240 3% 52%;
-  --text-400: 240 3% 46%;
-  --text-500: 240 3% 40%;
-  --accent-000: 0 0% 96%;
-  --accent-100: 0 0% 84%;
-  --accent-200: 240 3% 62%;
-  --accent-soft: 240 3% 52%;
-  --accent-900: 240 5% 5%;
-  --border-100: 240 4% 20%;
-  --border-300: 240 4% 20%;
-  --brand-000: 0 0% 96%;
-  --brand-100: 0 0% 96%;
-  --oncolor-100: 0 0% 4%;
+  --bg-000: 0 0% 100%;
+  --bg-100: 40 24% 98%;
+  --bg-200: 38 25% 95%;
+  --bg-300: 35 17% 90%;
+  --bg-400: 30 8% 9%;
+  --neu-bg: 40 24% 98%;
+  --neu-bg-deep: 38 25% 95%;
+  --neu-bg-darker: 35 17% 90%;
+  --neu-surface: 0 0% 100%;
+  --neu-line: 34 18% 78%;
+  --neu-line-soft: 34 18% 86%;
+  --neu-line-strong: 30 8% 9%;
+  --text-000: 30 8% 9%;
+  --text-100: 30 8% 14%;
+  --text-200: 30 6% 29%;
+  --text-300: 30 5% 43%;
+  --text-400: 30 4% 49%;
+  --text-500: 30 4% 56%;
+  --accent-000: 30 8% 9%;
+  --accent-100: 30 7% 18%;
+  --accent-200: 30 5% 33%;
+  --accent-soft: 30 5% 43%;
+  --accent-900: 40 24% 98%;
+  --border-100: 34 18% 78%;
+  --border-300: 34 18% 78%;
+  --brand-000: 30 8% 9%;
+  --brand-100: 30 8% 9%;
+  --oncolor-100: 40 24% 98%;
   /* --font-sans / --font-serif / --font-mono are canonical in fonts.css.
      Do NOT redefine them here (a previous alias created a resolution cycle). */
   --font-display: var(--font-sans);
@@ -85,18 +85,18 @@
   --mk-bg-deep: var(--site-paper-strong);
   --mk-surface: var(--site-paper-soft);
   --mk-surface-2: var(--site-paper-strong);
-  --mk-line: rgba(255, 255, 255, .14);
-  --mk-line-soft: rgba(255, 255, 255, .08);
-  --mk-line-strong: rgba(255, 255, 255, .28);
+  --mk-line: rgba(23, 23, 22, .14);
+  --mk-line-soft: rgba(23, 23, 22, .08);
+  --mk-line-strong: rgba(23, 23, 22, .28);
   --mk-text: var(--site-ink);
-  --mk-text-90: rgba(255, 255, 255, .90);
-  --mk-text-70: rgba(255, 255, 255, .70);
-  --mk-text-60: rgba(255, 255, 255, .60);
-  --mk-text-50: rgba(255, 255, 255, .50);
-  --mk-text-40: rgba(255, 255, 255, .40);
-  --mk-text-30: rgba(255, 255, 255, .30);
+  --mk-text-90: rgba(23, 23, 22, .90);
+  --mk-text-70: rgba(23, 23, 22, .70);
+  --mk-text-60: rgba(23, 23, 22, .60);
+  --mk-text-50: rgba(23, 23, 22, .50);
+  --mk-text-40: rgba(23, 23, 22, .40);
+  --mk-text-30: rgba(23, 23, 22, .30);
   --mk-sunset: var(--site-clay);
-  --mk-sunset-border: rgba(255, 255, 255, .42);
+  --mk-sunset-border: rgba(154, 90, 59, .42);
   --mk-sans: var(--site-sans-latin);
   --mk-mono: var(--site-mono);
 }
@@ -169,7 +169,7 @@ body.ed-site .ed-nav-links a:hover,
 body.ed-site .ed-nav-links a[aria-current="page"],
 body.ed-site .ed-header-language:hover { color: var(--site-ink); }
 body.ed-site .ed-button { color: var(--site-paper); background: var(--site-ink); border-color: var(--site-ink); }
-body.ed-site .ed-button:hover { color: #000; background: #d8d8de; border-color: #d8d8de; }
+body.ed-site .ed-button:hover { color: #fff; background: #000; border-color: #000; }
 body.ed-site .ed-button-quiet {
   background: transparent;
   color: var(--site-ink);
@@ -330,7 +330,7 @@ body.mk-page .mk-rail { border-color: var(--site-line); }
 body.mk-page .mk-tag,
 body.mk-page .mk-compatibility-chip { color: var(--site-ink-soft); border-color: var(--site-line); background: transparent; }
 body.mk-page .mk-footer { color: var(--site-paper); background: var(--site-black); border-top: 0; }
-body.mk-page .mk-footer a { color: rgba(255, 255, 255, .72); }
+body.mk-page .mk-footer a { color: rgba(244, 241, 233, .72); }
 body.mk-page .mk-footer a:hover { color: #fff; }
 html:lang(zh) body.mk-page .mk-display,
 html:lang(zh) body.mk-page .mk-title,
@@ -436,7 +436,7 @@ body:not(.ed-site):not(.mk-page) footer {
   border-top: 0;
 }
 body:not(.ed-site):not(.mk-page) footer .footer-inner { width: min(1272px, calc(100% - 64px)); }
-body:not(.ed-site):not(.mk-page) footer a { color: rgba(255, 255, 255, .72); }
+body:not(.ed-site):not(.mk-page) footer a { color: rgba(244, 241, 233, .72); }
 body:not(.ed-site):not(.mk-page) footer a:hover { color: #fff; }
 html:lang(zh) body:not(.ed-site):not(.mk-page) .page-header h1,
 html:lang(zh) body:not(.ed-site):not(.mk-page) h1,
@@ -1242,7 +1242,7 @@ html:lang(zh) body.legal-page:not(.ed-site):not(.mk-page) .legal-section li {
 
 /* Footer account column — added by locale.js on non-app pages so visitors
    have a clear path to /account without scrolling past the marketing nav. */
-.ed-footer-account a { color: rgba(255, 255, 255, .78); }
+.ed-footer-account a { color: rgba(244, 241, 233, .78); }
 
 @media (max-width: 980px) {
   body.ed-site .ed-product-block {
@@ -1476,10 +1476,10 @@ body.legal-page .page > nav .nav-links .lang-switch {
 :root {
   --sv-ease: cubic-bezier(.16, 1, .3, 1);
   --sv-speed: .35s;
-  --sv-clay: #d4d4d8;
-  --sv-clay-bright: #ffffff;
-  --sv-glow-clay: rgba(255, 255, 255, .07);
-  --sv-glow-sand: rgba(255, 255, 255, .05);
+  --sv-clay: #9a5a3b;
+  --sv-clay-bright: #b86a45;
+  --sv-glow-clay: rgba(184, 106, 69, .15);
+  --sv-glow-sand: rgba(210, 192, 162, .40);
   --sv-shadow-sm: none;
   --sv-shadow-md: none;
   --sv-shadow-lg: none;
@@ -1490,7 +1490,7 @@ html { scrollbar-gutter: stable; }
 
 /* Warm clay selection instead of pure ink. */
 body.ed-site::selection,
-body.ed-site ::selection { background: rgba(255, 255, 255, .92); color: #000; }
+body.ed-site ::selection { background: rgba(184, 106, 69, .9); color: #fff; }
 
 /* Anchored headings clear the sticky header. */
 body.ed-site [id] { scroll-margin-top: 108px; }
@@ -1548,10 +1548,10 @@ body.ed-site .ed-year-rule::after {
 
 /* ── C. Header: glass on scroll, animated nav underlines ──────────────── */
 body.ed-site .ed-header.is-scrolled {
-  background: rgba(0, 0, 0, .72);
+  background: rgba(244, 241, 233, .8);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
-  border-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, .26) 18%, rgba(255, 255, 255, .26) 82%, transparent) 1;
+  border-image: linear-gradient(90deg, transparent, rgba(23, 23, 22, .26) 18%, rgba(23, 23, 22, .26) 82%, transparent) 1;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   body.ed-site .ed-header.is-scrolled { background: var(--site-paper); }
@@ -1646,13 +1646,13 @@ body.ed-site .ed-news-hero::before {
   background:
     radial-gradient(46% 54% at 26% 34%, var(--sv-glow-clay), transparent 70%),
     radial-gradient(40% 48% at 74% 24%, var(--sv-glow-sand), transparent 72%),
-    radial-gradient(30% 36% at 56% 62%, rgba(255, 255, 255, .07), transparent 70%);
+    radial-gradient(30% 36% at 56% 62%, rgba(154, 90, 59, .07), transparent 70%);
   pointer-events: none;
 }
 
 /* The home stage reads as a physical object on the paper. */
 body.ed-site .ed-home-stage {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .05);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .05);
 }
 body.ed-site .ed-stage-index a { position: relative; }
 body.ed-site .ed-stage-index a::after {
@@ -1693,7 +1693,7 @@ body.ed-site .ed-course-band,
 body.ed-site .ed-featured { box-shadow: none; }
 body.ed-site .ed-price-card { box-shadow: none; }
 body.ed-site .ed-price-card.is-featured {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .85);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .85);
 }
 
 /* Imagery breathes inside its card on hover. */
@@ -1705,7 +1705,7 @@ body.ed-site .ed-featured:hover .ed-featured-media img { transform: scale(1.045)
 /* Large media objects carry the same depth language. */
 body.ed-site .ed-showcase-media { box-shadow: none; }
 body.ed-site .ed-policy-visual img,
-body.ed-site .ed-learning-object img { box-shadow: 0 0 0 1px rgba(255, 255, 255, .07); }
+body.ed-site .ed-learning-object img { box-shadow: 0 0 0 1px rgba(23, 23, 22, .07); }
 body.ed-site .ed-news-split figure { box-shadow: none; }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1718,7 +1718,7 @@ body.ed-site .ed-news-split figure { box-shadow: none; }
   }
   body.ed-site .ed-price-card.is-featured:hover {
     transform: translateY(-4px);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, .85);
+    box-shadow: 0 0 0 1px rgba(23, 23, 22, .85);
   }
 }
 
@@ -1731,7 +1731,7 @@ body.ed-site .ed-news-item {
 }
 body.ed-site .ed-ledger-row { transition: background-color .2s ease; }
 body.ed-site .ed-ledger-row:hover {
-  background: linear-gradient(90deg, rgba(255, 255, 255, .05), transparent 55%);
+  background: linear-gradient(90deg, rgba(184, 106, 69, .05), transparent 55%);
 }
 body.ed-site .ed-team-grid h2 { transition: color .18s ease; }
 body.ed-site .ed-team-grid article:hover h2 { color: var(--sv-clay); }
@@ -1748,7 +1748,7 @@ body.ed-site .ed-product-block::before {
   bottom: 28px;
   width: 2px;
   border-radius: 2px;
-  background: linear-gradient(180deg, var(--sv-clay-bright), rgba(255, 255, 255, 0));
+  background: linear-gradient(180deg, var(--sv-clay-bright), rgba(184, 106, 69, 0));
   transform: scaleY(0);
   transform-origin: top center;
   transition: transform .35s var(--sv-ease);
@@ -1774,12 +1774,11 @@ body.ed-site .ed-filter-bar button {
     box-shadow .18s ease;
 }
 body.ed-site .ed-filter-bar button:hover {
-  border-color: rgba(255, 255, 255, .4);
+  border-color: rgba(23, 23, 22, .4);
 }
 body.ed-site .ed-filter-bar button.is-active {
-  background: linear-gradient(180deg, #ffffff, #d9d9de);
-  border-color: #ffffff;
-  color: #000;
+  background: linear-gradient(180deg, #2c2925, var(--site-ink));
+  border-color: var(--site-ink);
 }
 body.ed-site .ed-search-field input {
   border-radius: 12px;
@@ -1791,14 +1790,14 @@ body.ed-site .ed-search-field input {
 body.ed-site .ed-search-field input:focus {
   border-color: var(--sv-clay);
   background: #fff;
-  outline: 2px solid rgba(255, 255, 255, .40);
+  outline: 2px solid rgba(184, 106, 69, .40);
   outline-offset: 1px;
 }
 body.ed-site .ed-pill,
 body.ed-site .ed-thread {
   transition: border-color .18s ease, color .18s ease;
 }
-body.ed-site .ed-pill:hover { border-color: rgba(255, 255, 255, .35); }
+body.ed-site .ed-pill:hover { border-color: rgba(23, 23, 22, .35); }
 
 /* ── I. Dark surfaces & footer ────────────────────────────────────────── */
 body.ed-site .ed-black-band,
@@ -1927,7 +1926,7 @@ body.ed-site .ed-news-hero::before {
   font-weight: 500;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .52);
+  color: rgba(23, 23, 22, .52);
 }
 html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spacing: .3em; }
 .ed-marquee-track {
@@ -1951,7 +1950,7 @@ html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spa
   justify-content: center;
   height: clamp(22px, 2.6vw, 32px);
   width: clamp(96px, 11vw, 150px);
-  color: rgba(255, 255, 255, .58);
+  color: rgba(23, 23, 22, .58);
   transition: color .35s ease;
 }
 .ed-logo-item:hover { color: var(--site-black); }
@@ -2013,14 +2012,14 @@ body.ed-site main select {
   transition: border-color .18s ease, background-color .18s ease;
 }
 body.ed-site main input::placeholder,
-body.ed-site main textarea::placeholder { color: rgba(255, 255, 255, .38); opacity: 1; }
+body.ed-site main textarea::placeholder { color: rgba(23, 23, 22, .38); opacity: 1; }
 body.ed-site main input:focus,
 body.ed-site main textarea:focus,
 body.ed-site main select:focus {
   outline: none;
   border-color: var(--sv-clay-bright);
   background: #fff;
-  outline: 2px solid rgba(255, 255, 255, .40);
+  outline: 2px solid rgba(184, 106, 69, .40);
   outline-offset: 1px;
 }
 /* The seamless three-part card field keeps its own chrome. */
@@ -2048,7 +2047,7 @@ body.ed-site main .ed-field > label {
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .62);
+  color: rgba(23, 23, 22, .62);
 }
 
 /* ── L2. Pull quotes — Anthropic's serif editorial voice ──────────────── */
@@ -2060,7 +2059,7 @@ body.ed-site main blockquote {
   font-size: clamp(19px, 2vw, 24px);
   font-style: italic;
   line-height: 1.5;
-  color: rgba(255, 255, 255, .82);
+  color: rgba(23, 23, 22, .82);
 }
 html:lang(zh) body.ed-site main blockquote { font-family: var(--site-serif-cjk); }
 
@@ -2090,8 +2089,8 @@ body.ed-site main th {
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .55);
-  border-bottom: 1px solid rgba(255, 255, 255, .28);
+  color: rgba(23, 23, 22, .55);
+  border-bottom: 1px solid rgba(23, 23, 22, .28);
 }
 body.ed-site main td {
   padding: 12px 14px;
@@ -2099,7 +2098,7 @@ body.ed-site main td {
   border-bottom: 1px solid var(--site-line);
 }
 body.ed-site main tbody tr { transition: background-color .15s ease; }
-body.ed-site main tbody tr:hover { background-color: rgba(255, 255, 255, .05); }
+body.ed-site main tbody tr:hover { background-color: rgba(184, 106, 69, .05); }
 
 /* ── L5. Keyboard focus — Material-crisp rings for every interactive ──── */
 body.ed-site :focus-visible {
@@ -2113,7 +2112,7 @@ body.ed-site main figcaption {
   font-family: var(--ed-mono, monospace);
   font-size: 11.5px;
   letter-spacing: .04em;
-  color: rgba(255, 255, 255, .55);
+  color: rgba(23, 23, 22, .55);
 }
 
 /* ── L7. In-prose links — Google's crafted underline, clay on hover ───── */
@@ -2122,7 +2121,7 @@ body.ed-site main li a:not(.ed-button) {
   color: inherit;
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  text-decoration-color: rgba(255, 255, 255, .45);
+  text-decoration-color: rgba(184, 106, 69, .45);
   text-underline-offset: 3px;
   transition: color .18s ease, text-decoration-color .18s ease;
 }
@@ -2178,7 +2177,7 @@ body.ed-site .ed-home-hero .ed-hero-sub {
   margin-top: 18px;
   font-size: clamp(17px, 1.3vw, 20px);
   line-height: 1.55;
-  color: rgba(255, 255, 255, .78);
+  color: rgba(26, 25, 24, .78);
 }
 @media (min-width: 981px) {
   body.ed-site .ed-home-hero .ed-hero-grid {
@@ -2199,28 +2198,28 @@ body.ed-site .ed-home-hero .ed-hero-actions {
 }
 /* Primary — Anthropic charcoal pill. */
 body.ed-site .ed-home-hero .ed-button {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #000000;
+  background: #191919;
+  border-color: #191919;
+  color: #f5f3ee;
   font-weight: 500;
   border-radius: 999px;
 }
 @media (hover: hover) and (pointer: fine) {
   body.ed-site .ed-home-hero .ed-button:hover {
-    background: #d8d8de;
-    border-color: #d8d8de;
+    background: #000000;
+    border-color: #000000;
     transform: translateY(-1px);
   }
 }
 /* Secondary — quiet outline pill. */
 body.ed-site .ed-home-hero .ed-button-ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .25);
+  border: 1px solid rgba(25, 25, 25, .25);
   color: #1a1918;
 }
 body.ed-site .ed-home-hero .ed-button-ghost:hover {
-  background: rgba(255, 255, 255, .05);
-  border-color: rgba(255, 255, 255, .5);
+  background: rgba(25, 25, 25, .05);
+  border-color: rgba(25, 25, 25, .5);
 }
 /* Announcement tag — hairline pill with a book-cloth pulse dot. */
 body.ed-site .ed-home-hero .ed-hero-flag {
@@ -2229,21 +2228,21 @@ body.ed-site .ed-home-hero .ed-hero-flag {
   gap: 8px;
   margin: 0 0 22px;
   padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, .16);
+  border: 1px solid rgba(25, 25, 25, .16);
   border-radius: 999px;
   font-family: var(--ed-mono, monospace);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .62);
+  color: rgba(26, 25, 24, .62);
 }
 html:lang(zh) body.ed-site .ed-home-hero .ed-hero-flag { letter-spacing: .26em; }
 body.ed-site .ed-home-hero .ed-hero-flag span {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ffffff;
+  background: #c15f3c;
   animation: sv-flag-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sv-flag-pulse {
@@ -2254,7 +2253,7 @@ body.ed-site .ed-home-hero .ed-hero-flag span {
 /* ── M3. The stage — a quiet rounded panel on the paper ───────────────── */
 body.ed-site .ed-home-stage {
   border-radius: 18px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .09);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .09);
 }
 body.ed-site .ed-home-hero .ed-stage-index a { color: rgba(255, 255, 255, .6); }
 body.ed-site .ed-home-hero .ed-stage-index a:hover { color: #ffffff; }
@@ -2266,11 +2265,11 @@ body.ed-site .ed-home-hero .ed-stage-caption { color: rgba(255, 255, 255, .38); 
 body.ed-site .ed-home-hero + .ed-marquee {
   margin-top: 0;
   background: transparent;
-  border-top-color: rgba(255, 255, 255, .1);
-  border-bottom-color: rgba(255, 255, 255, .14);
+  border-top-color: rgba(23, 23, 22, .1);
+  border-bottom-color: rgba(23, 23, 22, .14);
 }
-body.ed-site .ed-home-hero + .ed-marquee .ed-marquee-title { color: rgba(255, 255, 255, .5); }
-body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item { color: rgba(255, 255, 255, .68); }
+body.ed-site .ed-home-hero + .ed-marquee .ed-marquee-title { color: rgba(26, 25, 24, .5); }
+body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item { color: rgba(26, 25, 24, .68); }
 body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item:hover { color: #14130f; }
 
 /* ── M5. Header dark skin retired ─────────────────────────────────────── */
@@ -2349,9 +2348,9 @@ body.ed-site .ed-home-hero::before {
   height: clamp(420px, 48vw, 720px);
   transform: translateX(-50%);
   background:
-    radial-gradient(44% 52% at 24% 32%, rgba(255, 255, 255, .13), transparent 70%),
-    radial-gradient(38% 46% at 76% 22%, rgba(255, 255, 255, .05), transparent 72%),
-    radial-gradient(34% 40% at 52% 66%, rgba(255, 255, 255, .06), transparent 70%);
+    radial-gradient(44% 52% at 24% 32%, rgba(184, 106, 69, .13), transparent 70%),
+    radial-gradient(38% 46% at 76% 22%, rgba(23, 23, 22, .05), transparent 72%),
+    radial-gradient(34% 40% at 52% 66%, rgba(184, 106, 69, .06), transparent 70%);
   animation: sv-drift 20s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -2359,7 +2358,7 @@ body.ed-site .ed-home-hero::before {
 /* ── P1. Home stage: deeper product-surface frame + glass chips ───────── */
 body.ed-site .ed-home-stage {
   border-radius: 18px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .06);
 }
 
 /* Soft vignette + top light so the artwork sits inside a physical panel. */
@@ -2369,7 +2368,7 @@ body.ed-site .ed-home-stage::after {
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(180deg, transparent 62%, rgba(0, 0, 0, .42) 100%),
+    linear-gradient(180deg, transparent 62%, rgba(23, 23, 22, .42) 100%),
     radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%);
   pointer-events: none;
 }
@@ -2402,7 +2401,7 @@ body.ed-site .ed-inline-feature img,
 body.ed-site .ed-policy-visual img,
 body.ed-site .ed-learning-object img {
   border-radius: 12px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .07);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .07);
 }
 
 body.ed-site .ed-publication-side img,
@@ -2418,7 +2417,7 @@ body.ed-site .ed-article-hero-media:hover,
 body.ed-site .ed-black-band-media:hover,
 body.ed-site .ed-showcase-media:hover,
 body.ed-site .ed-publication-side:hover {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .35);
+  box-shadow: 0 0 0 1px rgba(184, 106, 69, .35);
 }
 
 body.ed-site .ed-article-hero-media:hover img,
@@ -2440,18 +2439,18 @@ body.ed-site .ed-price-card,
 body.ed-site .ed-contact-card,
 body.ed-site .ed-course-card,
 body.ed-site .ed-featured {
-  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(255, 255, 255, .08), transparent 44%);
+  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(184, 106, 69, .08), transparent 44%);
 }
 body.ed-site .ed-black-band,
 body.ed-site .ed-inline-feature {
-  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(255, 255, 255, .10), transparent 46%);
+  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(184, 106, 69, .10), transparent 46%);
 }
 
 /* ── P4. Essay/publication rows: wash sweep on hover ──────────────────── */
 body.ed-site .ed-essay-row,
 body.ed-site .ed-publication-row {
   border-radius: 10px;
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, .07), transparent 65%);
+  background-image: linear-gradient(90deg, rgba(184, 106, 69, .07), transparent 65%);
   background-size: 0% 100%;
   background-repeat: no-repeat;
   background-position: left center;
@@ -2569,7 +2568,7 @@ body.ed-site .ed-result-row b {
 body.ed-site .ed-result-track {
   height: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .08);
+  background: rgba(23, 23, 22, .08);
   overflow: hidden;
 }
 body.ed-site .ed-result-track i {
@@ -2577,7 +2576,7 @@ body.ed-site .ed-result-track i {
   height: 100%;
   width: var(--w, 50%);
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--sv-clay), #ffffff);
+  background: linear-gradient(90deg, var(--sv-clay), #d97b56);
   transform-origin: left;
   animation: edResultGrow 1s var(--sv-ease) .25s both;
 }
@@ -2666,7 +2665,7 @@ body.ed-site .ed-stat-value {
 body.ed-site .ed-stat-suffix {
   font-variant-numeric: tabular-nums;
 }
-body.ed-site .ed-stat.is-animating .ed-stat-value { color: var(--sv-clay, #ffffff); }
+body.ed-site .ed-stat.is-animating .ed-stat-value { color: var(--sv-clay, #b86a45); }
 body.ed-site .ed-stat.is-done .ed-stat-value { color: inherit; }
 
 /* ── P10. Paragraph wave reveal ────────────────────────────────────────── */
@@ -2727,7 +2726,7 @@ body.ed-site .ed-svg-bar .ed-bar-value {
   font-variant-numeric: tabular-nums;
 }
 body.ed-site .ed-svg-bar .ed-bar-track {
-  fill: rgba(255, 255, 255, .08);
+  fill: rgba(23, 23, 22, .08);
 }
 body.ed-site .ed-svg-bar .ed-bar-fill {
   fill: url(#edBarGrad);
@@ -2762,10 +2761,10 @@ body.ed-site .ed-timeline-step {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--sv-clay, #ffffff);
+  border: 1px solid var(--sv-clay, #b86a45);
   border-radius: 999px;
   background: var(--ed-paper, #f4f1e9);
-  color: var(--sv-clay, #ffffff);
+  color: var(--sv-clay, #b86a45);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .04em;
@@ -2801,8 +2800,8 @@ body.ed-site .ed-author-avatar {
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: var(--sv-clay, #ffffff);
-  color: #000;
+  background: var(--sv-clay, #b86a45);
+  color: #fff;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .04em;
@@ -2851,7 +2850,7 @@ body.ed-site .ed-chat-head-dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--sv-clay, #ffffff);
+  background: var(--sv-clay, #b86a45);
   box-shadow: none;
 }
 body.ed-site .ed-chat-thread {
@@ -2913,7 +2912,7 @@ body.ed-site .ed-mini-demo {
   width: 168px;
   height: 112px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #141417 0%, #000000 100%);
+  background: linear-gradient(180deg, #faf9f5 0%, #f4f1e9 100%);
   border: 1px solid var(--ed-line, #d9d0c3);
   overflow: hidden;
   flex: 0 0 auto;
@@ -2977,8 +2976,8 @@ body.ed-site .ed-mini-card::after {
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--sv-clay, #ffffff);
-  color: #000;
+  background: var(--sv-clay, #b86a45);
+  color: #fff;
   border-radius: 10px;
   transform: rotateY(180deg);
   backface-visibility: hidden;
@@ -2994,8 +2993,8 @@ body.ed-site .ed-mini-card-back {
 }
 body.ed-site .ed-mini-card-front { background: var(--ed-paper, #f4f1e9); border: 1px solid var(--ed-line, #d9d0c3); }
 body.ed-site .ed-mini-card-back {
-  background: var(--sv-clay, #ffffff);
-  color: #000;
+  background: var(--sv-clay, #b86a45);
+  color: #fff;
   transform: rotateY(180deg);
 }
 body.ed-site .ed-mini-node {
@@ -3003,7 +3002,7 @@ body.ed-site .ed-mini-node {
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: var(--sv-clay, #ffffff);
+  background: var(--sv-clay, #b86a45);
   box-shadow: none;
   opacity: 0;
   transform: scale(.5);
@@ -3023,7 +3022,7 @@ body.ed-site .ed-mini-pulse {
   top: 50%; left: 50%;
   width: 32px; height: 32px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .35);
+  background: rgba(184, 106, 69, .35);
   transform: translate(-50%, -50%) scale(.5);
   opacity: 0;
   animation: edMiniPulse 2.2s ease-out infinite;
@@ -3043,7 +3042,7 @@ body.ed-site .ed-coming-next {
   margin: 1.8em 0 0;
   padding: 18px 22px;
   border: 1px solid var(--ed-line, #d9d0c3);
-  border-left: 2px solid var(--sv-clay, #ffffff);
+  border-left: 2px solid var(--sv-clay, #b86a45);
   border-radius: 0 14px 14px 0;
   background: var(--ed-paper-soft, #faf9f5);
 }
@@ -3080,12 +3079,12 @@ body.ed-site .ed-related-chip::before {
   content: "";
   width: 5px; height: 5px;
   border-radius: 999px;
-  background: var(--sv-clay, #ffffff);
+  background: var(--sv-clay, #b86a45);
   opacity: .55;
 }
 body.ed-site .ed-related-chip:hover {
   color: var(--ed-ink, #171716);
-  border-color: var(--sv-clay, #ffffff);
+  border-color: var(--sv-clay, #b86a45);
   background: var(--ed-paper-soft, #faf9f5);
 }
 
@@ -3164,7 +3163,7 @@ body.ed-site .ed-path-node {
   width: 14px; height: 14px;
   border-radius: 999px;
   background: var(--ed-paper, #f4f1e9);
-  border: 1.5px solid var(--sv-clay, #ffffff);
+  border: 1.5px solid var(--sv-clay, #b86a45);
   margin: 0 auto 14px;
   position: relative;
 }
@@ -3173,7 +3172,7 @@ body.ed-site .ed-path-node::after {
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  background: var(--sv-clay, #ffffff);
+  background: var(--sv-clay, #b86a45);
   transform: scale(0);
   transition: transform .5s var(--sv-ease);
 }
@@ -3440,7 +3439,7 @@ body.ed-site .ed-footer-column h2 {
   font-weight: 600;
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .55);
+  color: rgba(244, 241, 233, .55);
 }
 body.ed-site .ed-footer-column a {
   display: block;
@@ -3453,16 +3452,16 @@ body.ed-site .ed-footer-brand p {
   max-width: 36ch;
   font-size: 14px;
   line-height: 1.55;
-  color: rgba(255, 255, 255, .68);
+  color: rgba(244, 241, 233, .68);
 }
 body.ed-site .ed-footer-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 18px 0 28px;
-  border-top: 1px solid rgba(255, 255, 255, .12);
+  border-top: 1px solid rgba(244, 241, 233, .12);
   font-size: 12.5px;
-  color: rgba(255, 255, 255, .52);
+  color: rgba(244, 241, 233, .52);
 }
 body.ed-site .ed-footer-bottom > span + span { margin-left: 0; }
 @media (max-width: 820px) {
@@ -3603,7 +3602,7 @@ body.ed-site main table th {
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--site-ink-muted);
-  border-bottom: 1px solid rgba(255, 255, 255, .28);
+  border-bottom: 1px solid rgba(23, 23, 22, .28);
 }
 
 /* ── R9. Misc cleanup ─────────────────────────────────────────────────── */
@@ -3673,7 +3672,7 @@ body.ed-site .ed-method-note .ed-method-label {
   padding: 4px 8px;
   border: 1px solid var(--sv-clay);
   border-radius: 999px;
-  background: rgba(255, 255, 255, .08);
+  background: rgba(184, 106, 69, .08);
 }
 
 /* Article foot nav cards. */
@@ -3745,7 +3744,7 @@ body.ed-site .ed-stage-index {
 }
 
 /* ── R10. Subtle consistency: hairlines between sections, footer links ─ */
-body.ed-site .ed-section-line { border-color: rgba(255, 255, 255, .12); }
+body.ed-site .ed-section-line { border-color: rgba(23, 23, 22, .12); }
 body.ed-site .ed-hero-actions .ed-button-ghost { background: transparent; }
 
 /* Article hero aside: gap between media and byline. */
@@ -3765,7 +3764,7 @@ body.ed-site .ed-reference-links a {
   margin-right: 12px;
   color: var(--site-ink);
   text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, .35);
+  text-decoration-color: rgba(184, 106, 69, .35);
   text-underline-offset: 3px;
 }
 body.ed-site .ed-reference-links a:hover { color: var(--sv-clay-bright); text-decoration-color: currentColor; }
@@ -3836,23 +3835,23 @@ body.ed-site .ed-footer-social a {
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, .18);
-  color: rgba(255, 255, 255, .72);
+  border: 1px solid rgba(244, 241, 233, .18);
+  color: rgba(244, 241, 233, .72);
 }
 body.ed-site .ed-footer-social a svg { width: 16px; height: 16px; }
-body.ed-site .ed-footer-social a:hover { color: #fff; border-color: rgba(255, 255, 255, .42); }
+body.ed-site .ed-footer-social a:hover { color: #fff; border-color: rgba(244, 241, 233, .42); }
 body.ed-site .ed-footer-lang {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-top: 18px;
   padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, .18);
+  border: 1px solid rgba(244, 241, 233, .18);
   border-radius: 999px;
   font-size: 12.5px;
-  color: rgba(255, 255, 255, .72);
+  color: rgba(244, 241, 233, .72);
 }
-body.ed-site .ed-footer-lang:hover { color: #fff; border-color: rgba(255, 255, 255, .42); }
+body.ed-site .ed-footer-lang:hover { color: #fff; border-color: rgba(244, 241, 233, .42); }
 
 /* Essay rows: a little more breathing room between rows. */
 body.ed-site .ed-essay-list { display: grid; gap: 4px; }
@@ -3964,11 +3963,11 @@ body.ed-site .ed-pill::before {
 }
 
 /* Pill color tones per category — match the editorial design. */
-body.ed-site .ed-pill[data-cat="Memory"]::before { background: #ffffff; }
-body.ed-site .ed-pill[data-cat="Explanation"]::before { background: #b8b8c0; }
-body.ed-site .ed-pill[data-cat="Practice"]::before { background: #8a8a92; }
-body.ed-site .ed-pill[data-cat="Knowledge mapping"]::before { background: #5e5e66; }
-body.ed-site .ed-pill[data-cat="Tutoring"]::before { background: #d4d4d8; }
+body.ed-site .ed-pill[data-cat="Memory"]::before { background: #b86a45; }
+body.ed-site .ed-pill[data-cat="Explanation"]::before { background: #5e8d6b; }
+body.ed-site .ed-pill[data-cat="Practice"]::before { background: #6b6db8; }
+body.ed-site .ed-pill[data-cat="Knowledge mapping"]::before { background: #c89442; }
+body.ed-site .ed-pill[data-cat="Tutoring"]::before { background: #b86a8a; }
 
 /* Showcase entries (research index). */
 body.ed-site .ed-showcase-rail { display: grid; gap: 6px; }
@@ -4085,8 +4084,8 @@ body.ed-site .ed-ledger-row > span:last-child {
 /* Hero flag & eyebrow: keep on light paper. */
 body.ed-site .ed-home-hero .ed-hero-flag {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .18);
-  color: rgba(255, 255, 255, .66);
+  border: 1px solid rgba(25, 25, 25, .18);
+  color: rgba(26, 25, 24, .66);
 }
 
 /* Network copy in stage: better line-length. */
@@ -4103,9 +4102,9 @@ body.ed-site .ed-inline-feature h2 {
   color: var(--ed-paper, #f4f1e9);
 }
 html:lang(zh) body.ed-site .ed-inline-feature h2 { font-family: var(--site-serif-cjk); }
-body.ed-site .ed-inline-feature p { color: rgba(255, 255, 255, .74); line-height: 1.6; }
-body.ed-site .ed-inline-feature .ed-kicker { color: rgba(255, 255, 255, .55); }
-body.ed-site .ed-inline-feature .ed-link { color: rgba(255, 255, 255, .85); }
+body.ed-site .ed-inline-feature p { color: rgba(244, 241, 233, .74); line-height: 1.6; }
+body.ed-site .ed-inline-feature .ed-kicker { color: rgba(244, 241, 233, .55); }
+body.ed-site .ed-inline-feature .ed-link { color: rgba(244, 241, 233, .85); }
 
 /* Black-band heading uses serif. */
 body.ed-site .ed-black-band h2,
@@ -4119,7 +4118,7 @@ body.ed-site .ed-black-band .ed-black-band-copy h2 {
 }
 html:lang(zh) body.ed-site .ed-black-band h2,
 html:lang(zh) body.ed-site .ed-black-band .ed-black-band-copy h2 { font-family: var(--site-serif-cjk); }
-body.ed-site .ed-black-band p { color: rgba(255, 255, 255, .74); line-height: 1.6; }
+body.ed-site .ed-black-band p { color: rgba(244, 241, 233, .74); line-height: 1.6; }
 
 /* Statement title copy block. */
 body.ed-site .ed-home-statement {
@@ -4168,7 +4167,7 @@ html:lang(zh) body.ed-site .ed-reference-title { font-family: var(--site-serif-c
 /* Hero neon for home page bottom buttons: keep equal weight. */
 body.ed-site .ed-hero-actions .ed-button-ghost {
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, .25);
+  border: 1px solid rgba(23, 23, 22, .25);
   color: var(--site-ink);
 }
 
@@ -4242,20 +4241,20 @@ body.ed-site .ed-footer-column a:hover { color: #fff; text-decoration: underline
    paragraph cadence, and predictable responsive spacing.
    ========================================================================= */
 :root {
-  --sf-paper: #000000;
-  --sf-paper-deep: #131316;
-  --sf-ink: #f5f5f4;
-  --sf-ink-soft: #a3a3a8;
-  --sf-line: rgba(255, 255, 255, .14);
-  --sf-card: rgba(255, 255, 255, .04);
-  --sf-accent: #d4d4d8;
+  --sf-paper: #f7f4ee;
+  --sf-paper-deep: #efe8dd;
+  --sf-ink: #151311;
+  --sf-ink-soft: #4f4942;
+  --sf-line: rgba(21, 19, 17, .14);
+  --sf-card: rgba(255, 255, 255, .46);
+  --sf-accent: #9b5f41;
 }
 
 body.ed-site {
   color: var(--sf-ink);
   background:
-    radial-gradient(1200px 540px at 14% -12%, rgba(255, 255, 255, .05), transparent 68%),
-    radial-gradient(1040px 500px at 86% -18%, rgba(255, 255, 255, .04), transparent 72%),
+    radial-gradient(1200px 540px at 14% -12%, rgba(168, 129, 102, .10), transparent 68%),
+    radial-gradient(1040px 500px at 86% -18%, rgba(148, 167, 190, .08), transparent 72%),
     var(--sf-paper);
   line-height: 1.6;
   letter-spacing: -.009em;
@@ -4322,7 +4321,7 @@ body.ed-site .ed-inline-feature p { max-width: 56ch; }
 body.ed-site .ed-kicker,
 body.ed-site .ed-meta,
 body.ed-site .ed-row-meta {
-  color: rgba(255, 255, 255, .62);
+  color: rgba(21, 19, 17, .62);
   letter-spacing: .05em;
 }
 
@@ -4334,19 +4333,19 @@ body.ed-site .ed-link {
   border-radius: 10px;
 }
 body.ed-site .ed-button {
-  background: linear-gradient(180deg, #ffffff, #e8e8ec);
-  border-color: #ffffff;
+  background: linear-gradient(180deg, #25211d, #171512);
+  border-color: #1d1a17;
 }
 body.ed-site .ed-button:hover {
-  background: linear-gradient(180deg, #dcdce1, #cfcfd5);
-  border-color: #dcdce1;
+  background: linear-gradient(180deg, #2b2622, #191613);
+  border-color: #171512;
 }
 body.ed-site .ed-button-quiet {
   border-color: var(--sf-line);
   background: rgba(255, 255, 255, .36);
 }
 body.ed-site .ed-button-quiet:hover {
-  border-color: rgba(255, 255, 255, .3);
+  border-color: rgba(21, 19, 17, .3);
   background: rgba(255, 255, 255, .58);
 }
 
@@ -4365,7 +4364,7 @@ body.ed-site .ed-story-card {
 
 body.ed-site .ed-black-band,
 body.ed-site .ed-inline-feature {
-  border: 1px solid rgba(255, 255, 255, .14);
+  border: 1px solid rgba(244, 241, 233, .14);
 }
 
 body.ed-site .ed-product-block,
@@ -4431,21 +4430,21 @@ body.ed-site .ed-publication-side img {
    Final shared layer for every English and Chinese marketing surface.
    ========================================================================= */
 :root {
-  --site-paper: #000000;
-  --site-paper-soft: #0a0a0b;
-  --site-paper-strong: #131316;
-  --site-ink: #f5f5f4;
-  --site-ink-soft: #a3a3a8;
-  --site-ink-muted: #6e6e75;
-  --site-line: #232328;
-  --site-black: #000000;
-  --site-clay: #e5e5e5;
-  --site-shadow: none;
+  --site-paper: #f5f2ea;
+  --site-paper-soft: #faf8f3;
+  --site-paper-strong: #e9e1d4;
+  --site-ink: #171614;
+  --site-ink-soft: #504b45;
+  --site-ink-muted: #706a62;
+  --site-line: #d6cec1;
+  --site-black: #171715;
+  --site-clay: #a35f3f;
+  --site-shadow: 0 18px 46px rgba(30, 25, 20, .07);
   --sf-paper: var(--site-paper);
   --sf-paper-deep: var(--site-paper-strong);
   --sf-ink: var(--site-ink);
   --sf-ink-soft: var(--site-ink-soft);
-  --sf-line: rgba(255, 255, 255, .14);
+  --sf-line: rgba(23, 22, 20, .14);
   --sf-card: rgba(255, 255, 255, .30);
   --sf-accent: var(--site-clay);
 }
@@ -4466,7 +4465,7 @@ html:lang(zh) body.ed-site {
 body.ed-site .ed-shell { width: min(1312px, calc(100% - 64px)); }
 body.ed-site .ed-header {
   padding: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(23, 22, 20, .08);
   background: rgba(245, 242, 234, .96);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -4578,7 +4577,7 @@ body.ed-site .ed-button {
   background: var(--site-black);
   box-shadow: none;
 }
-body.ed-site .ed-button:hover { color: #000; border-color: #d8d8de; background: #d8d8de; }
+body.ed-site .ed-button:hover { color: #fff; border-color: #000; background: #000; }
 body.ed-site .ed-button-quiet,
 body.ed-site .ed-hero-actions .ed-button-ghost { background: transparent; }
 body.ed-site .ed-hero-actions { gap: 10px; }
@@ -4619,7 +4618,7 @@ body.ed-site .ed-contact-card,
 body.ed-site .ed-course-card,
 body.ed-site .ed-featured,
 body.ed-site .ed-story-card {
-  border-color: rgba(255, 255, 255, .14);
+  border-color: rgba(23, 22, 20, .14);
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -4747,18 +4746,18 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
 
 /* ── Z1. Tokens ───────────────────────────────────────────────────────── */
 :root {
-  --an-paper: #000000;          /* deep space */
-  --an-paper-soft: #0a0a0b;
-  --an-paper-deep: #131316;
-  --an-ink: #f5f5f4;            /* starlight white */
-  --an-ink-soft: #a3a3a8;
-  --an-ink-muted: #6e6e75;
-  --an-line: rgba(255, 255, 255, .14);
-  --an-line-strong: rgba(255, 255, 255, .26);
-  --an-black: #000000;
-  --an-clay: #d4d4d8;           /* moonlight silver */
-  --an-clay-bright: #ffffff;
-  --an-paper-text: #f5f5f4;
+  --an-paper: #f0eee6;          /* Anthropic ivory */
+  --an-paper-soft: #faf9f5;
+  --an-paper-deep: #e6e1d3;
+  --an-ink: #191919;            /* Anthropic slate */
+  --an-ink-soft: #40403e;
+  --an-ink-muted: #6e6b64;
+  --an-line: rgba(25, 25, 25, .14);
+  --an-line-strong: rgba(25, 25, 25, .26);
+  --an-black: #141413;
+  --an-clay: #c15f3c;           /* direction-board terracotta */
+  --an-clay-bright: #d97757;    /* Anthropic crail */
+  --an-paper-text: #f5f3ec;
   --an-serif: var(--font-serif);
   --an-sans: var(--font-sans);
   --an-mono: var(--font-mono);
@@ -4773,7 +4772,7 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
   --site-ink: var(--an-ink);
   --site-ink-soft: var(--an-ink-soft);
   --site-ink-muted: var(--an-ink-muted);
-  --site-line: #232328;
+  --site-line: #d8d2c4;
   --site-black: var(--an-black);
   --site-clay: var(--an-clay);
   --sf-paper: var(--an-paper);
@@ -4789,9 +4788,9 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
   --ed-ink: var(--an-ink);
   --ed-ink-soft: var(--an-ink-soft);
   --ed-ink-muted: var(--an-ink-muted);
-  --ed-line: #232328;
+  --ed-line: #d8d2c4;
   --ed-black: var(--an-black);
-  --ed-black-soft: #0f0f12;
+  --ed-black-soft: #1d1c1a;
   --ed-clay: var(--an-clay);
   --ed-clay-warm: var(--an-clay-bright);
   --ed-serif: var(--an-serif);
@@ -4937,12 +4936,12 @@ body.ed-site .ed-hero-actions .ed-button-ghost {
   line-height: 1;
 }
 body.ed-site .ed-button {
-  color: #000;
+  color: var(--an-paper-text);
   background: var(--an-ink);
   border-color: var(--an-ink);
   box-shadow: none;
 }
-body.ed-site .ed-button:hover { color: #000; background: #d8d8de; border-color: #d8d8de; }
+body.ed-site .ed-button:hover { color: #fff; background: #000; border-color: #000; }
 body.ed-site .ed-button-quiet,
 body.ed-site .ed-hero-actions .ed-button-ghost {
   color: var(--an-ink);
@@ -4952,11 +4951,11 @@ body.ed-site .ed-hero-actions .ed-button-ghost {
 body.ed-site .ed-button-quiet:hover,
 body.ed-site .ed-hero-actions .ed-button-ghost:hover {
   color: var(--an-ink);
-  background: rgba(255, 255, 255, .05);
-  border-color: rgba(255, 255, 255, .45);
+  background: rgba(25, 25, 25, .05);
+  border-color: rgba(25, 25, 25, .45);
 }
 body.ed-site .ed-price-card.is-featured .ed-button {
-  color: #000;
+  color: var(--an-ink);
   background: var(--an-paper-text);
   border-color: var(--an-paper-text);
 }
@@ -4967,11 +4966,11 @@ body.ed-site .ed-link {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
-  text-decoration-color: rgba(255, 255, 255, .3);
+  text-decoration-color: rgba(25, 25, 25, .3);
   transition: color .15s ease, text-decoration-color .15s ease;
 }
 body.ed-site .ed-link:hover { color: var(--an-clay); text-decoration-color: currentColor; }
-body.ed-site .ed-link-light { color: var(--an-paper-text); text-decoration-color: rgba(255, 255, 255, .35); }
+body.ed-site .ed-link-light { color: var(--an-paper-text); text-decoration-color: rgba(245, 243, 236, .35); }
 body.ed-site .ed-link-light:hover { color: var(--an-clay-bright); }
 
 /* ── Z5. Home hero ────────────────────────────────────────────────────── */
@@ -5035,14 +5034,14 @@ body.ed-site .ed-marquee-title {
   text-transform: uppercase;
   color: var(--an-ink-muted);
 }
-body.ed-site .ed-logo-item { color: rgba(255, 255, 255, .55); }
+body.ed-site .ed-logo-item { color: rgba(25, 25, 25, .55); }
 body.ed-site .ed-logo-item:hover { color: var(--an-ink); }
 
 /* Home stage panel. */
 body.ed-site .ed-home-stage {
   margin-top: clamp(56px, 6.5vw, 96px);
   border-radius: var(--an-band-radius);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+  box-shadow: 0 0 0 1px rgba(25, 25, 25, .08);
   overflow: hidden;
 }
 body.ed-site .ed-home-stage img { border-radius: 0; aspect-ratio: 16 / 8.4; }
@@ -5109,7 +5108,7 @@ body.ed-site .ed-inline-feature {
   border-radius: var(--an-band-radius);
   background: var(--an-black);
   border: 0;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+  box-shadow: 0 0 0 1px rgba(25, 25, 25, .06);
   background-image: none;
 }
 body.ed-site .ed-black-band-copy { padding: clamp(36px, 4.5vw, 68px); }
@@ -5126,12 +5125,12 @@ body.ed-site .ed-black-band-copy h2 {
 body.ed-site .ed-black-band-copy p {
   max-width: 38ch;
   margin: 22px 0 0;
-  color: rgba(255, 255, 255, .68);
+  color: rgba(245, 243, 236, .68);
   font-size: 15.5px;
   line-height: 1.65;
 }
 body.ed-site .ed-black-band .ed-kicker,
-body.ed-site .ed-inline-feature .ed-kicker { color: rgba(255, 255, 255, .52); }
+body.ed-site .ed-inline-feature .ed-kicker { color: rgba(245, 243, 236, .52); }
 body.ed-site .ed-black-band .ed-kicker::before,
 body.ed-site .ed-inline-feature .ed-kicker::before { background: var(--an-clay-bright); }
 body.ed-site .ed-black-band-copy .ed-link,
@@ -5140,7 +5139,7 @@ body.ed-site .ed-inline-feature .ed-link {
   text-decoration-color: rgba(217, 119, 87, .4);
 }
 body.ed-site .ed-black-band-copy .ed-link:hover,
-body.ed-site .ed-inline-feature .ed-link:hover { color: #ffffff; text-decoration-color: currentColor; }
+body.ed-site .ed-inline-feature .ed-link:hover { color: #e88a63; text-decoration-color: currentColor; }
 body.ed-site .ed-black-band-media img { border-radius: 0; }
 body.ed-site .ed-inline-feature { padding: clamp(28px, 4vw, 56px); }
 body.ed-site .ed-inline-feature > img { border-radius: var(--an-media-radius); aspect-ratio: 4 / 4.4; max-height: 620px; }
@@ -5154,7 +5153,7 @@ body.ed-site .ed-inline-feature h2 {
   letter-spacing: -.022em;
   color: var(--an-paper-text);
 }
-body.ed-site .ed-inline-feature p { color: rgba(255, 255, 255, .68); font-size: 15.5px; line-height: 1.65; }
+body.ed-site .ed-inline-feature p { color: rgba(245, 243, 236, .68); font-size: 15.5px; line-height: 1.65; }
 
 /* ── Z9. Product blocks ───────────────────────────────────────────────── */
 body.ed-site .ed-product-grid { gap: 0; }
@@ -5306,7 +5305,7 @@ body.ed-site .ed-chat-demo {
 }
 body.ed-site .ed-chat-head { font-family: var(--an-mono); font-size: 10.5px; letter-spacing: .1em; }
 body.ed-site .ed-chat-bubble { font-size: 14.5px; line-height: 1.6; }
-body.ed-site .ed-chat-bubble.user { background: var(--an-ink); color: #000; }
+body.ed-site .ed-chat-bubble.user { background: var(--an-ink); color: var(--an-paper-text); }
 body.ed-site .ed-chat-bubble.tutor { background: #fffdf8; border: 1px solid var(--an-line); }
 
 /* ── Z15. Marquee ─────────────────────────────────────────────────────── */
@@ -5330,7 +5329,7 @@ body.ed-site .ed-footer .ed-brand img { background: rgba(255, 255, 255, .08); }
 body.ed-site .ed-footer-brand p {
   max-width: 26ch;
   margin: 18px 0 0;
-  color: rgba(255, 255, 255, .6);
+  color: rgba(245, 243, 236, .6);
   font-family: var(--an-sans);
   font-size: 14px;
   line-height: 1.6;
@@ -5338,10 +5337,10 @@ body.ed-site .ed-footer-brand p {
 body.ed-site .ed-footer-social { gap: 8px; margin-top: 24px; }
 body.ed-site .ed-footer-social a {
   width: 34px; height: 34px;
-  border-color: rgba(255, 255, 255, .18);
-  color: rgba(255, 255, 255, .72);
+  border-color: rgba(245, 243, 236, .18);
+  color: rgba(245, 243, 236, .72);
 }
-body.ed-site .ed-footer-social a:hover { color: #fff; border-color: rgba(255, 255, 255, .4); background: rgba(255, 255, 255, .06); }
+body.ed-site .ed-footer-social a:hover { color: #fff; border-color: rgba(245, 243, 236, .4); background: rgba(255, 255, 255, .06); }
 body.ed-site .ed-footer-column { gap: 2px; }
 body.ed-site .ed-footer-column h2 {
   margin: 0 0 14px;
@@ -5350,19 +5349,19 @@ body.ed-site .ed-footer-column h2 {
   font-weight: 500;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .44);
+  color: rgba(245, 243, 236, .44);
 }
-body.ed-site .ed-footer-column a { padding: 5px 0; color: rgba(255, 255, 255, .76); font-size: 13.5px; }
+body.ed-site .ed-footer-column a { padding: 5px 0; color: rgba(245, 243, 236, .76); font-size: 13.5px; }
 body.ed-site .ed-footer-column a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
 body.ed-site .ed-footer-bottom {
   margin-top: 0;
   padding: 22px 0 0;
-  border-top: 1px solid rgba(255, 255, 255, .12);
+  border-top: 1px solid rgba(245, 243, 236, .12);
   font-family: var(--an-mono);
   font-size: 10.5px;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .42);
+  color: rgba(245, 243, 236, .42);
 }
 
 /* ── Z17. CJK mirrors ─────────────────────────────────────────────────── */
@@ -5470,7 +5469,7 @@ html:lang(zh) body.ed-site .ed-essay-row .ed-essay-title { font-family: var(--fo
   body.ed-site .ed-home-stage { margin-top: 40px; border-radius: 16px; --ed-stage-inset: 30px; }
   body.ed-site .ed-home-stage img { aspect-ratio: 4 / 3.4; }
   body.ed-site .ed-home-stage .ed-stage-caption { color: rgba(255, 255, 255, .82); bottom: clamp(30px, 6vw, 40px); font-size: 12px; left: clamp(18px, 5vw, 30px); }
-  body.ed-site .ed-home-stage::after { background: linear-gradient(180deg, transparent 68%, rgba(0, 0, 0, .32) 100%), radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%); }
+  body.ed-site .ed-home-stage::after { background: linear-gradient(180deg, transparent 68%, rgba(23, 23, 22, .32) 100%), radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%); }
   body.ed-site .ed-page-hero { padding: 52px 0 36px; }
   body.ed-site .ed-section { padding: 52px 0; }
   body.ed-site .ed-section-tight { padding: 40px 0; }
@@ -5594,7 +5593,7 @@ html:lang(zh) body.ed-site .ed-essay-row .ed-essay-title { font-family: var(--fo
     width: 100%;
     aspect-ratio: 4 / 3;
     border-radius: 16px;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+    box-shadow: 0 0 0 1px rgba(25, 25, 25, .08);
   }
   body.ed-site .ed-stage-index { display: none; }
   body.ed-site .ed-stage-caption {
@@ -5720,15 +5719,15 @@ body.ed-site .ed-price-card {
 }
 body.ed-site .ed-price-card.is-featured {
   color: var(--an-paper-text);
-  border-color: rgba(255, 255, 255, .30);
+  border-color: var(--an-black);
   background: var(--an-black);
   box-shadow: none;
 }
 body.ed-site .ed-price-card.is-featured p,
-body.ed-site .ed-price-card.is-featured ul { color: rgba(255, 255, 255, .7); }
+body.ed-site .ed-price-card.is-featured ul { color: rgba(245, 243, 236, .7); }
 body.ed-site .ed-price-card.is-featured h2 { color: var(--an-paper-text); }
 body.ed-site .ed-price-card.is-featured .ed-price { color: var(--an-paper-text); }
-body.ed-site .ed-price-card.is-featured .ed-kicker { color: rgba(255, 255, 255, .52); }
+body.ed-site .ed-price-card.is-featured .ed-kicker { color: rgba(245, 243, 236, .52); }
 body.ed-site .ed-price-card.is-featured .ed-kicker::before { background: var(--an-clay-bright); }
 body.ed-site .ed-price-card h2 {
   font-family: var(--an-serif);
@@ -5872,10 +5871,10 @@ body.ed-site .ed-button-dark {
   align-items: center;
   gap: 10px;
   padding: 13px 26px;
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--site-ink);
   border: 1px solid var(--site-ink);
-  color: #000;
+  color: #faf9f5;
   font-family: var(--font-sans);
   font-size: 15.5px;
   font-weight: 600;
@@ -5883,7 +5882,7 @@ body.ed-site .ed-button-dark {
   text-decoration: none;
   transition: background-color .18s ease, transform .18s var(--sv-ease);
 }
-body.ed-site .ed-button-dark:hover { background: #d8d8de; border-color: #d8d8de; transform: translateY(-1px); }
+body.ed-site .ed-button-dark:hover { background: #33302b; transform: translateY(-1px); }
 body.ed-site .ed-button-dark svg { width: 15px; height: 15px; }
 
 /* ── RR2. Full-width hero media card ───────────────────────────────────── */
@@ -5892,8 +5891,8 @@ body.ed-site .ed-report-hero-card {
   position: relative;
   overflow: hidden;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, .12);
-  background: var(--report-tint, #8a8a92);
+  border: 1px solid rgba(23, 23, 22, .12);
+  background: var(--report-tint, #7d8b6f);
   aspect-ratio: 16 / 8;
   display: grid;
   place-items: center;
@@ -5928,14 +5927,14 @@ body.ed-site .ed-article p a,
 body.ed-site .ed-article li a {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, .45);
+  text-decoration-color: rgba(154, 90, 59, .45);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   transition: color .15s ease, text-decoration-color .15s ease;
 }
 body.ed-site .ed-article p a:hover,
 body.ed-site .ed-article li a:hover {
-  color: var(--sv-clay, #d4d4d8);
+  color: var(--sv-clay, #9a5a3b);
   text-decoration-color: currentColor;
 }
 
@@ -5980,7 +5979,7 @@ body.ed-site .ed-key-takeaways li::before {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--sv-clay, #d4d4d8);
+  background: var(--sv-clay, #9a5a3b);
 }
 body.ed-site .ed-key-takeaways li strong { color: var(--site-ink); font-weight: 600; }
 
@@ -6001,7 +6000,7 @@ body.ed-site .ed-pull-quote::before {
   width: 44px;
   height: 2px;
   margin: 0 auto 24px;
-  background: var(--sv-clay, #d4d4d8);
+  background: var(--sv-clay, #9a5a3b);
 }
 body.ed-site .ed-pull-quote cite {
   display: block;
@@ -6056,7 +6055,7 @@ body.ed-site .ed-data-table td.num {
   color: var(--site-ink);
   white-space: nowrap;
 }
-body.ed-site .ed-data-table td.hl { color: var(--sv-clay, #d4d4d8); font-weight: 600; }
+body.ed-site .ed-data-table td.hl { color: var(--sv-clay, #9a5a3b); font-weight: 600; }
 
 /* ── RR7. Chart frame (line charts, distributions) ─────────────────────── */
 body.ed-site .ed-chart-frame {
@@ -6101,11 +6100,11 @@ body.ed-site .ed-chart-legend i {
 body.ed-site .ed-chart-legend i.is-dotted { border-top-style: dotted; }
 body.ed-site .ed-chart-legend i.is-dashed { border-top-style: dashed; }
 body.ed-site .ed-chart-axis {
-  stroke: rgba(255, 255, 255, .18);
+  stroke: rgba(23, 23, 22, .18);
   stroke-width: 1;
 }
 body.ed-site .ed-chart-grid {
-  stroke: rgba(255, 255, 255, .07);
+  stroke: rgba(23, 23, 22, .07);
   stroke-width: 1;
 }
 body.ed-site .ed-chart-tick text {
@@ -6131,7 +6130,7 @@ body.ed-site .ed-chart-anno {
 body.ed-site .ed-figure { margin: 2.6em 0; }
 body.ed-site .ed-figure .ed-figure-caption { margin-top: 14px; }
 body.ed-site .ed-figure .ed-fig-no {
-  color: var(--sv-clay, #d4d4d8);
+  color: var(--sv-clay, #9a5a3b);
   font-weight: 600;
 }
 
@@ -6158,8 +6157,8 @@ body.ed-site .ed-author-card .ed-author-avatar {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--sv-clay, #d4d4d8);
-  color: #000;
+  background: var(--sv-clay, #9a5a3b);
+  color: #faf9f5;
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: .04em;
@@ -6384,185 +6383,3 @@ body.ed-site .ed-article hr:has(+ p.ed-method-note) { display: none; }
 body.ed-site .ed-timeline-step { display: none !important; }
 body.ed-site .ed-timeline-row { grid-template-columns: 1fr; }
 /* ── END Research cleanup pass 2 ── */
-
-/* ==========================================================================
-   COSMOS. Deep-space layer — black/white/gray universe theme.
-   Starfield, moon, and ChatGPT/xAI-style chrome. Appended last: it wins.
-   ========================================================================== */
-
-/* ── C1. Page body: deep-space black with a faint zenith glow ────────── */
-html { background: #000; }
-body.ed-site {
-  background:
-    radial-gradient(1080px 620px at 82% -14%, rgba(255, 255, 255, .05), transparent 62%),
-    #000;
-}
-
-/* ── C2. Header: black glass, xAI-style ──────────────────────────────── */
-body.ed-site .ed-header {
-  background: rgba(0, 0, 0, .72);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
-}
-body.ed-site .ed-brand img { background: rgba(255, 255, 255, .08); }
-
-/* ── C3. Starfield — revives the dormant .ed-hero-nebula node.
-   Three depth layers: element (far), ::before (mid), ::after (near).
-   Tiles are pure radial-gradient stars; twinkle and drift stay subtle. ─ */
-body.ed-site .ed-home-hero .ed-hero-nebula,
-body.ed-site .ed-hero-nebula {
-  display: block;
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 18px 42px, rgba(255, 255, 255, .55), transparent 64%),
-    radial-gradient(1px 1px at 96px 154px, rgba(255, 255, 255, .40), transparent 64%),
-    radial-gradient(1px 1px at 168px 66px, rgba(255, 255, 255, .62), transparent 64%),
-    radial-gradient(1.5px 1.5px at 248px 196px, rgba(255, 255, 255, .50), transparent 64%),
-    radial-gradient(1px 1px at 316px 88px, rgba(255, 255, 255, .38), transparent 64%),
-    radial-gradient(1px 1px at 388px 244px, rgba(255, 255, 255, .56), transparent 64%),
-    radial-gradient(1.5px 1.5px at 66px 306px, rgba(255, 255, 255, .44), transparent 64%),
-    radial-gradient(1px 1px at 212px 352px, rgba(255, 255, 255, .58), transparent 64%),
-    radial-gradient(1px 1px at 342px 380px, rgba(255, 255, 255, .36), transparent 64%),
-    radial-gradient(1px 1px at 122px 236px, rgba(255, 255, 255, .48), transparent 64%);
-  background-size: 460px 460px;
-  background-repeat: repeat;
-  animation: cosmos-twinkle 9s ease-in-out infinite;
-  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 97%);
-  mask-image: linear-gradient(180deg, #000 60%, transparent 97%);
-}
-body.ed-site .ed-home-hero .ed-hero-nebula::before {
-  content: "";
-  position: absolute;
-  inset: -40px;
-  background-image:
-    radial-gradient(1.5px 1.5px at 44px 30px, rgba(255, 255, 255, .80), transparent 66%),
-    radial-gradient(1.5px 1.5px at 142px 116px, rgba(255, 255, 255, .62), transparent 66%),
-    radial-gradient(2px 2px at 88px 208px, rgba(255, 255, 255, .72), transparent 66%),
-    radial-gradient(1.5px 1.5px at 232px 72px, rgba(255, 255, 255, .58), transparent 66%),
-    radial-gradient(1.5px 1.5px at 286px 174px, rgba(255, 255, 255, .84), transparent 66%),
-    radial-gradient(2px 2px at 26px 288px, rgba(255, 255, 255, .66), transparent 66%),
-    radial-gradient(1.5px 1.5px at 178px 296px, rgba(255, 255, 255, .76), transparent 66%);
-  background-size: 320px 320px;
-  background-repeat: repeat;
-  animation: cosmos-drift 210s linear infinite, cosmos-twinkle 6.5s ease-in-out infinite;
-}
-body.ed-site .ed-home-hero .ed-hero-nebula::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(2px 2px at 32px 18px, #fff, transparent 68%),
-    radial-gradient(2.5px 2.5px at 124px 92px, rgba(255, 255, 255, .92), transparent 68%),
-    radial-gradient(2px 2px at 208px 44px, rgba(255, 255, 255, .88), transparent 68%);
-  background-size: 240px 240px;
-  background-repeat: repeat;
-  animation: cosmos-twinkle 4.8s ease-in-out infinite;
-}
-@keyframes cosmos-twinkle {
-  0%, 100% { opacity: .58; }
-  50%      { opacity: 1; }
-}
-@keyframes cosmos-drift {
-  from { background-position: 0 0; }
-  to   { background-position: -320px 320px; }
-}
-
-/* ── C4. Moon — replaces the retired warm drift glow (P0) ─────────────── */
-body.ed-site .ed-home-hero::before {
-  content: "";
-  display: block;
-  position: absolute;
-  z-index: -1;
-  top: clamp(30px, 4.5vw, 76px);
-  right: clamp(16px, 6vw, 118px);
-  left: auto;
-  width: clamp(112px, 12vw, 188px);
-  height: auto;
-  aspect-ratio: 1;
-  transform: none;
-  border-radius: 50%;
-  background:
-    radial-gradient(13% 13% at 36% 30%, rgba(116, 116, 122, .45), transparent 63%),
-    radial-gradient(9% 9% at 62% 52%, rgba(116, 116, 122, .38), transparent 63%),
-    radial-gradient(7% 7% at 44% 66%, rgba(116, 116, 122, .34), transparent 63%),
-    radial-gradient(6% 6% at 71% 29%, rgba(116, 116, 122, .30), transparent 63%),
-    radial-gradient(8% 8% at 27% 57%, rgba(116, 116, 122, .27), transparent 63%),
-    radial-gradient(circle at 34% 30%, #fbfbfb 0%, #dedde2 42%, #a9a9b0 68%, #7f7f88 88%, #66666e 100%);
-  box-shadow:
-    0 0 42px rgba(255, 255, 255, .13),
-    0 0 128px rgba(255, 255, 255, .06),
-    inset -16px -12px 38px rgba(0, 0, 0, .46);
-  animation: cosmos-moon 26s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-@keyframes cosmos-moon {
-  from { transform: translateY(-6px); }
-  to   { transform: translateY(10px); }
-}
-
-/* ── C5. Horizon glow at the hero floor ───────────────────────────────── */
-body.ed-site .ed-home-hero::after {
-  content: "";
-  display: block;
-  position: absolute;
-  z-index: -1;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 240px;
-  background: radial-gradient(62% 100% at 50% 100%, rgba(255, 255, 255, .05), transparent 72%);
-  pointer-events: none;
-}
-
-/* ── C6. ChatGPT/xAI chrome: white pill buttons, mono kickers ─────────── */
-body.ed-site .ed-button { border-radius: 999px; font-weight: 600; }
-body.ed-site .ed-button-quiet,
-body.ed-site .ed-hero-actions .ed-button-ghost { border-radius: 999px; }
-
-body.ed-site .ed-kicker {
-  font-family: var(--site-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: var(--site-ink-muted);
-}
-html:lang(zh) body.ed-site .ed-kicker { letter-spacing: .3em; }
-
-/* ── C7. Footer: hairline card with a sparse static star dust ─────────── */
-body.ed-site .ed-footer-frame {
-  background:
-    radial-gradient(1px 1px at 8% 22%, rgba(255, 255, 255, .42), transparent 64%),
-    radial-gradient(1.5px 1.5px at 22% 64%, rgba(255, 255, 255, .30), transparent 64%),
-    radial-gradient(1px 1px at 41% 38%, rgba(255, 255, 255, .48), transparent 64%),
-    radial-gradient(1px 1px at 57% 76%, rgba(255, 255, 255, .26), transparent 64%),
-    radial-gradient(1.5px 1.5px at 70% 18%, rgba(255, 255, 255, .44), transparent 64%),
-    radial-gradient(1px 1px at 84% 56%, rgba(255, 255, 255, .34), transparent 64%),
-    radial-gradient(2px 2px at 93% 26%, rgba(255, 255, 255, .40), transparent 64%),
-    radial-gradient(1px 1px at 32% 86%, rgba(255, 255, 255, .24), transparent 64%),
-    #000;
-  border: 1px solid rgba(255, 255, 255, .10);
-}
-
-/* ── C8. Mobile: keep the moon clear of the headline ──────────────────── */
-@media (max-width: 620px) {
-  body.ed-site .ed-home-hero::before {
-    width: 88px;
-    top: 14px;
-    right: 12px;
-    opacity: .92;
-  }
-}
-
-/* ── C9. Motion safety ────────────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  body.ed-site .ed-home-hero .ed-hero-nebula,
-  body.ed-site .ed-home-hero .ed-hero-nebula::before,
-  body.ed-site .ed-home-hero .ed-hero-nebula::after,
-  body.ed-site .ed-home-hero::before { animation: none !important; }
-}
-/* ── END COSMOS ───────────────────────────────────────────────────────── */
