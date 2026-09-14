@@ -95,7 +95,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await expect(mobileComposer.locator('.rich-composer-toolbar')).toBeHidden();
   await expect(mobileComposer.locator('.effort-picker')).toBeHidden();
   const collapsedBox = await mobileComposer.boundingBox();
-  expect(collapsedBox?.height).toBeLessThanOrEqual(66);
+  /* The in-session mobile composer matches the landing (topic) card: a
+     two-row surface (~104px) that only grows for a wrapped draft. */
+  expect(collapsedBox?.height).toBeLessThanOrEqual(112);
   const collapsedGeometry = await page.evaluate(() => {
     const rect = (selector) => {
       const el = document.querySelector(selector);
@@ -112,9 +114,10 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
-  expect(collapsedGeometry.bodyDisplay).toBe('grid');
-  expect(collapsedGeometry.left?.right ?? 0).toBeLessThanOrEqual((collapsedGeometry.editor?.left ?? 0) + 1);
-  expect(collapsedGeometry.editor?.right ?? 0).toBeLessThanOrEqual((collapsedGeometry.send?.left ?? 0) + 1);
+  /* Two-row mobile card: the editor owns the first row and the attach rail
+     sits under it, left of the primary action. */
+  expect(['grid', 'contents']).toContain(collapsedGeometry.bodyDisplay);
+  expect(collapsedGeometry.editor?.bottom ?? 0).toBeLessThanOrEqual((collapsedGeometry.send?.top ?? 0) + 1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
 
   await mobileEditor.click();
@@ -131,12 +134,13 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   // compact but readable editor column at the 390px reference width.
   expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(120);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
-  expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(66);
+  /* Focus reveals the reasoning control without leaving the two-row card. */
+  expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(112);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await expect(mobileComposer.locator('.effort-picker')).toBeHidden();
-  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(66);
+  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
 });

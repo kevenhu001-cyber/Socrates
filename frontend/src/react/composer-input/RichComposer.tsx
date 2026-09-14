@@ -356,7 +356,13 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         measureDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li'),
       );
       measureHost?.remove();
-      const shouldExpand = hasRenderedBreak || contentHeight > singleLineHeight + 1;
+      /* P_composer-empty-baseline — an EMPTY editor measures at least its
+         CSS min-height, which is taller than one line of text (the mobile
+         chat surface pins 64px). Treating that as a wrapped draft expanded
+         the shell on load. Only real text may opt into the multiline shape;
+         a rendered break already proves content. */
+      const shouldExpand = hasRenderedBreak
+        || (hasEditorText && contentHeight > singleLineHeight + 1);
       const classChanges = wrap.classList.contains('composer-multiline') !== shouldExpand;
       if (!shouldExpand && !classChanges) {
         /* Empty and one-line drafts are contractually fixed at the CSS

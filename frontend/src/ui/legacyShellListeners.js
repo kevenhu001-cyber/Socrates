@@ -51,9 +51,6 @@ export function mountLegacyShellListeners(actions) {
     }
     actions.sendMessage();
   });
-  click('topicMobileMicBtn', () => {
-    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('topic');
-  });
   click('chatMobileMicBtn', () => {
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('chat');
   });
