@@ -479,13 +479,17 @@ function neutralizeKatexErrors(html: string): string {
    simple formulas such as `$D$`, `$x$` or `$P(x,y)$` as raw text.
    Broaden the check for the inline cases:
      • explicit LaTeX syntax (`^`, `_`, braces, brackets) still counts;
-     • a compact, whitespace-free token counts once it carries an ASCII
-       letter. Bare alphabetic runs must be a single symbol (`D`, `x`)
-       or ALL CAPS (`AB`, `ABC` — point/segment labels); lowercase words
-       (`only`, `home`) stay literal, so currency amounts (`$5`,
-       `$1,000`) and prose fragments (`$5 and`) keep their text.
-       Known cosmetic trade-off: uppercase acronyms (`$US$`, `$OK$`)
-       and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math. */
+     • a compact, whitespace-free token counts once it carries a digit,
+       operator or other non-letter (`1`, `x^2`, `P(x,y)`);
+     • bare alphabetic runs count when they are a single symbol (`x`),
+       a short identifier/operator name (`fg`, `log`, `xyz`), or ALL
+       CAPS (`AB`, `ABC` — point/segment labels). Longer lowercase
+       words (`only`, `home`) stay literal, so prose fragments keep
+       their text.
+       Known cosmetic trade-off: uppercase acronyms (`$US$`, `$OK$`),
+       punctuated tokens (`$N/A$`, `$P(x,y)$`) and digits (`$5$`) render
+       as math. Currency amounts normally appear unpaired (`$5`, `$5+`)
+       or span text (`$5 and $10`), so those still keep their text. */
 const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
 
 /* Function calls are the common inline formula that carries internal
@@ -496,11 +500,15 @@ const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
 const SPACED_MATH_CHARS_RE = /^[A-Za-z0-9\s\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
 const SPACED_CALL_RE = /^[A-Za-z][A-Za-z0-9]{0,3}\(/;
 
+/* A log-family function detached from its argument by whitespace
+   (`log n`, `Log x`, `ln x`) is still math even without the parens. */
+const BARE_LOG_FN_HEAD_RE = /^(?:log|Log|ln|Ln|lg|Lg)(?:\s|\()/;
+
 function _isCompactMathToken(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
   /* Non-letter characters (digits, parens, operators) mark real math. */
   if (/[^A-Za-z]/.test(trimmed)) return true;
-  return trimmed.length === 1 || /^[A-Z]+$/.test(trimmed);
+  return trimmed.length <= 3 || /^[A-Z]+$/.test(trimmed);
 }
 
 function _looksLikeInlineMath(s: string): boolean {
@@ -508,8 +516,8 @@ function _looksLikeInlineMath(s: string): boolean {
   const trimmed = String(s).trim();
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
-  if (!/[A-Za-z]/.test(trimmed)) return false;
   if (!/\s/.test(trimmed)) return _isCompactMathToken(trimmed);
+  if (BARE_LOG_FN_HEAD_RE.test(trimmed)) return SPACED_MATH_CHARS_RE.test(trimmed);
   return SPACED_CALL_RE.test(trimmed)
     && SPACED_MATH_CHARS_RE.test(trimmed)
     && trimmed.indexOf(')') > 0;
@@ -517,16 +525,18 @@ function _looksLikeInlineMath(s: string): boolean {
 
 /* A formula whose closing `$` has not arrived yet. Multi-letter words
    after a stray `$` are almost always prose (`paid in $USD`), so only
-   single symbols and punctuation-carrying tokens render live; `$AB`
-   waits one token for its closing `$` and then renders through the
-   closed pass. An open function call (`$u(x, y`) renders live because
-   the attached callee+paren is already unambiguous. */
+   single symbols, punctuation-carrying tokens and log-family heads
+   (`$log x`) render live; `$AB` waits one token for its closing `$` and
+   then renders through the closed pass. An open function call
+   (`$u(x, y`) renders live because the attached callee+paren is already
+   unambiguous. */
 function _looksLikeInlineMathTail(s: string): boolean {
   if (_looksLikeLatex(s)) return true;
   const trimmed = String(s).trim();
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
   if (/\s/.test(trimmed)) {
+    if (BARE_LOG_FN_HEAD_RE.test(trimmed)) return SPACED_MATH_CHARS_RE.test(trimmed);
     return SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed);
   }
   if (!/[A-Za-z]/.test(trimmed) || !COMPACT_MATH_RE.test(trimmed)) return false;
@@ -553,6 +563,22 @@ function _stashInlineCode(source: string): { text: string; restore: (s: string) 
   };
 }
 
+/* Models often write `log`, `Log`, `ln` or `lg` without the leading
+   backslash. KaTeX then typesets each letter as an italic variable
+   (`l·o·g`), which reads as a product instead of the upright operator
+   that `\log`/`\ln` produce. Promote the bare token to \operatorname
+   so `$log(x)$`, `$Log n$` and `$log_2$` read correctly. The
+   lookarounds leave escaped commands (`\log`) and macro arguments
+   (`\mathrm{log}`) untouched, and never fire inside longer words
+   (`blog`, `Logo`, `logic`). */
+const BARE_LOG_FN_RE = /(^|[^\\A-Za-z{])(log|Log|ln|Ln|lg|Lg)(?![A-Za-z])/g;
+
+function normalizeBareLogFunctions(src: string): string {
+  return src.replace(BARE_LOG_FN_RE, function (_m, lead: string, name: string) {
+    return lead + '\\operatorname{' + name + '}';
+  });
+}
+
 /* Render math for a possibly-unfinished stream frame. Returns the KaTeX
    HTML, or null when KaTeX is not available yet (the caller keeps the
    raw source so the one-shot re-render can fix it up later). */
@@ -568,7 +594,7 @@ function renderStreamMath(math: string, displayMode: boolean, unclosed: boolean)
   const render = (source: string, tolerant: boolean): string =>
     katex.renderToString(source, tolerant ? { ...opts, throwOnError: false } : opts);
 
-  let source = String(math).trim();
+  let source = normalizeBareLogFunctions(String(math).trim());
   /* Complete, valid math — the common case — renders in one pass. */
   try {
     return render(source, false);

@@ -249,16 +249,50 @@ test('math-looking text inside inline code stays literal', () => {
 });
 
 /* Lowercase multi-letter words after a stray `$` are prose, not math;
-   point/segment labels (all caps) and punctuated expressions still
-   render. */
+   digits, short identifiers/operators and all-caps labels still render.
+   Point/segment labels (all caps) and punctuated expressions render too. */
 test('compact inline math rejects lowercase prose words', () => {
   withKatex(() => {
     assert.doesNotMatch(renderProgressive('only $only$ word'), /class="katex/);
     assert.doesNotMatch(renderProgressive('home $home$ dir'), /class="katex/);
-    assert.doesNotMatch(renderProgressive('amount $5$ only'), /class="katex/);
+
+    assert.match(renderProgressive('amount $5$ only'), /class="katex/);
+    assert.match(renderProgressive('index $1$ of them'), /class="katex/);
+    assert.match(renderProgressive('map $fg$ notation'), /class="katex/);
 
     assert.match(renderProgressive('segment $AB$ and $ABC$'), /class="katex/);
     assert.match(renderProgressive('call $f(x)$ now'), /class="katex/);
+  });
+});
+
+/* Bare `log`/`Log` (no backslash) used to typeset as italic letters
+   (`l·o·g`); it must render as the upright operator, and `\Log` must not
+   fail as an undefined control sequence. */
+test('log-family functions render upright, including \\Log', () => {
+  withKatex(() => {
+    const bare = renderProgressive('复杂度 $log(n)$ 与 $Log n$');
+    assert.match(bare, /class="katex/);
+    assert.doesNotMatch(bare, /katex-error/);
+    assert.doesNotMatch(bare, /\$log/);
+    assert.doesNotMatch(bare, /\$Log/);
+    assert.match(bare, /class="mop"/);
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('半衰期 $\\Log x$ 与 $\\log_2 x$');
+      assert.match(final, /class="katex/);
+      assert.doesNotMatch(final, /katex-error/);
+      assert.doesNotMatch(final, /math-stream-pending/);
+      assert.match(final, /class="mop"/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
   });
 });
 

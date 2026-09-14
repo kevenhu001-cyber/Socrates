@@ -46,6 +46,14 @@ function installFakeVisualViewport(page) {
       __resize({ height, offsetTop = 0 }) {
         fake.height = height;
         fake.offsetTop = offsetTop;
+        /* Chromium's test viewport cannot move its real visual viewport. Model
+           the native focus-reveal pan on the shell so the production
+           controller can distinguish an applied pan from a stale offsetTop. */
+        const shell = document.getElementById('appShell');
+        if (shell) {
+          if (offsetTop) shell.style.transform = `translate3d(0,${-offsetTop}px,0)`;
+          else shell.style.removeProperty('transform');
+        }
         fake.dispatchEvent(new Event('resize'));
       },
     };
@@ -73,20 +81,16 @@ async function seedChat(page, count = 40) {
   await page.waitForTimeout(250);
 }
 
-/* Visual offset of one specific row: its position inside the list minus the
-   visual-viewport pan. Keeping this constant is what "the reader's content
-   stays under the same visual position" means. */
+/* Screen position of one specific row. In a real browser this is already
+   relative to the visual viewport; the fake viewport models the native pan by
+   translating #appShell in __resize(). */
 async function rowVisualOffset(page, needle) {
   return page.evaluate((text) => {
     const list = document.getElementById('msgList');
     const row = [...list.querySelectorAll(':scope > .msg')]
       .find((el) => el.textContent.startsWith(text));
     if (!row) return null;
-    return Math.round(
-      row.getBoundingClientRect().top
-      - list.getBoundingClientRect().top
-      - (window.visualViewport?.offsetTop || 0),
-    );
+    return Math.round(row.getBoundingClientRect().top);
   }, needle);
 }
 
@@ -112,10 +116,19 @@ async function transcriptState(page) {
       anchorOffset,
       anchorText,
       inset: getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset').trim(),
+      vvPan: document.documentElement.style.getPropertyValue('--vv-pan').trim(),
       viewportOffsetTop: Math.round(window.visualViewport?.offsetTop || 0),
       away: Boolean(window.stateStore.read('_userScrolledAway')),
     };
   });
+}
+
+/* Screen position of a shell element in the simulated visual viewport. */
+async function shellScreenTop(page, selector) {
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    return Math.round(el.getBoundingClientRect().top);
+  }, selector);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -141,9 +154,10 @@ test('progressive viewport samples keep the composer attached to the rising keyb
   for (const desiredInset of desiredInsets) {
     const height = appBottom - desiredInset;
     await page.evaluate((nextHeight) => window.__fakeViewport.__resize({ height: nextHeight }), height);
-    /* Allow the resize coalescer and inset writer one frame each. Samples
-       remain closer than KEYBOARD_PROGRESSIVE_SAMPLE_MS, like a real IME. */
-    await page.waitForTimeout(40);
+    /* Allow the resize coalescer and inset writer one frame each. The short
+       wait models a per-frame IME stream, so consecutive samples stay well
+       inside KEYBOARD_PROGRESSIVE_SAMPLE_MS even with test-runner overhead. */
+    await page.waitForTimeout(24);
     samples.push(await page.evaluate(() => parseFloat(
       document.documentElement.style.getPropertyValue('--keyboard-inset'),
     )));
@@ -155,6 +169,38 @@ test('progressive viewport samples keep the composer attached to the rising keyb
   expect(Math.abs(samples[1] - desiredInsets[1]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
   expect(Math.abs(samples[2] - desiredInsets[2]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
   expect(Math.abs(samples[3] - desiredInsets[3]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
+});
+
+test('two coarse viewport samples glide the composer instead of teleporting it', async ({ page }) => {
+  await seedChat(page, 8);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(80);
+
+  const appBottom = await page.evaluate(() => Math.round(
+    document.getElementById('appShell').getBoundingClientRect().bottom,
+  ));
+  const frames = await page.evaluate((bottom) => new Promise((resolve) => {
+    const samples = [];
+    let count = 0;
+    /* Android-style coarse reporting: one step, then the final height after
+       the progressive-sampling window has closed, while the first tween is
+       still running. The retarget must stay on an interpolated timeline. */
+    window.__fakeViewport.__resize({ height: bottom - 100 });
+    window.setTimeout(() => window.__fakeViewport.__resize({ height: bottom - 300 }), 160);
+    const sample = () => {
+      samples.push(Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+      ) || 0);
+      if (++count < 45) requestAnimationFrame(sample);
+      else resolve(samples);
+    };
+    requestAnimationFrame(sample);
+  }), appBottom);
+
+  const jumps = frames.slice(1).map((value, index) => value - frames[index]);
+  expect(Math.max(...jumps), JSON.stringify(frames)).toBeLessThanOrEqual(60);
+  expect(Math.abs(frames[frames.length - 1] - 300)).toBeLessThanOrEqual(1);
 });
 
 test('keyboard lift keeps composer geometry on the same continuous timeline', async ({ page }) => {
@@ -396,7 +442,7 @@ test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }
   expect(state.distanceFromBottom).toBeGreaterThan(64);
 });
 
-test('visual viewport pan compensates a history reader and returns on un-pan', async ({ page }) => {
+test('visual viewport pan is isolated to chat content while the chrome stays put', async ({ page }) => {
   await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -415,26 +461,35 @@ test('visual viewport pan compensates a history reader and returns on un-pan', a
   const settled = await transcriptState(page);
   const anchoredRow = settled.anchorText;
   const settledVisual = await rowVisualOffset(page, anchoredRow);
+  expect(await shellScreenTop(page, '#appShell')).toBe(0);
 
-  /* iOS pans the visual viewport down while the keyboard is up. The
-     composer lift target is unchanged (offsetTop is included in the
-     measurement), but the transcript must compensate the pan so the
-     reader's content stays under the same visual position: scrollTop moves
-     opposite to offsetTop, not with it. The topmost visible row may change
-     because the cut line moves inside the previous row, so the assertion is
-     on the tracked row's visual offset, not on the first intersecting row. */
+  /* iOS Safari / Chrome Android pan the visual viewport down to reveal the
+     focused composer. Only the top bar counter-translates that observed pan;
+     the shell and chat layer follow the browser pan, while the keyboard
+     inset remains the actual covered distance (shell bottom − visual bottom).
+     The history reader's scroll range is unchanged, so no per-frame
+     scrollTop correction is needed. */
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 410, offsetTop: 100 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
   await page.waitForTimeout(420);
   const panned = await transcriptState(page);
   expect(panned.away).toBe(true);
-  expect(panned.scrollTop).toBe(settled.scrollTop - 100);
-  expect(await rowVisualOffset(page, anchoredRow)).toBe(settledVisual);
+  expect(panned.viewportOffsetTop).toBe(100);
+  expect(panned.vvPan).toBe('100px');
+  expect(panned.scrollTop).toBe(settled.scrollTop);
+  expect(await rowVisualOffset(page, anchoredRow)).toBe(settledVisual - 100);
+  expect(await shellScreenTop(page, '#appShell')).toBe(-100);
+  expect(await shellScreenTop(page, '.top-bar')).toBe(0);
+  expect(panned.distanceFromBottom).toBeGreaterThan(64);
 
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510, offsetTop: 0 }));
+  await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
   await page.waitForTimeout(420);
   const unpanned = await transcriptState(page);
+  expect(unpanned.vvPan).toBe('0px');
   expect(unpanned.scrollTop).toBe(settled.scrollTop);
   expect(await rowVisualOffset(page, anchoredRow)).toBe(settledVisual);
+  expect(await shellScreenTop(page, '#appShell')).toBe(0);
   expect(unpanned.distanceFromBottom).toBeGreaterThan(64);
 });
 

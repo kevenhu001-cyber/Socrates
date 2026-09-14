@@ -13,10 +13,10 @@
   gap: 7px;
   padding: 14px 16px;
   border-radius: 10px;
-  background: #f7f4ee;
-  border: 1px solid var(--ed-line, #d9d0c3);
+  background: #0c0c0f;
+  border: 1px solid var(--ed-line, #232328);
   box-shadow: none;
-  color: var(--ed-ink, #171716);
+  color: var(--ed-ink, #f5f5f4);
   font-family: var(--ed-sans, inherit);
   font-size: 13px;
   line-height: 1.45;
@@ -66,9 +66,9 @@
   color: var(--ed-paper, #f4f1e9);
 }
 .socrates-cookie-consent-btn.primary:hover {
-  background: #000;
-  border-color: #000;
-  color: #fff;
+  background: #d8d8de;
+  border-color: #d8d8de;
+  color: #000;
 }
 .socrates-cookie-consent-link {
   position: absolute;

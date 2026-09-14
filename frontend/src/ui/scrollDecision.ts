@@ -53,14 +53,6 @@ export interface KeyboardAnchorContext {
   /** Whether a newer wheel/touch/key gesture arrived after capture. */
   userIntentAfterCapture: boolean;
   /**
-   * Visual-viewport pan since capture (visualViewport.offsetTop delta).
-   * iOS Safari pans the visual viewport down to reveal a focused composer,
-   * which moves the transcript content up on screen; the transcript scrolls
-   * back by the same amount (scrollTop − panDelta) so the reader's content
-   * stays under the same visual position.
-   */
-  panDelta?: number;
-  /**
    * A send-time turn anchor (chat/turnAnchor.ts) currently holds the
    * submitted prompt at the top of the transcript. Its own reserve
    * controller re-aligns on every layout change, so the keyboard
@@ -81,9 +73,8 @@ export type KeyboardAnchorAction =
  *  - `follow-bottom` — the reader was following the latest answer and has
  *    not scrolled away; keep the newest content above the composer.
  *  - `restore` — the reader was inspecting history; return to the exact
- *    offset captured before the layout change, shifted by any visual
- *    viewport pan and clamped to the new range, without ever forcing the
- *    bottom.
+ *    offset captured before the layout change, clamped to the new range,
+ *    without ever forcing the bottom.
  *  - `none` — a newer user gesture owns the scroll now; touch nothing.
  */
 export function decideKeyboardAnchorAction(
@@ -98,12 +89,8 @@ export function decideKeyboardAnchorAction(
   const maxTop = Number.isFinite(context.maxScrollTop)
     ? Math.max(0, context.maxScrollTop)
     : 0;
-  const pan = Number.isFinite(context.panDelta) ? (context.panDelta as number) : 0;
-  /* `offsetTop` grows when the visual viewport pans down the layout, so the
-   * same scrollTop would render the content higher on screen. Subtract the
-   * pan to keep it visually still; adding it doubled the jump. */
   const captured = Number.isFinite(anchor.scrollTop)
-    ? Math.max(0, anchor.scrollTop - pan)
+    ? Math.max(0, anchor.scrollTop)
     : 0;
   return { type: 'restore', top: Math.min(maxTop, captured) };
 }

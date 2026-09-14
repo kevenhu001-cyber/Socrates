@@ -486,7 +486,7 @@
     var link = document.createElement("link");
     link.id = "socrates-consent-css";
     link.rel = "stylesheet";
-    link.href = "/consent.css?cb=20260824";
+    link.href = "/consent.css?cb=20260914";
     document.head.appendChild(link);
   }
 
