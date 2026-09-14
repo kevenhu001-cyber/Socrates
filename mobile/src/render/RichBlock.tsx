@@ -72,10 +72,6 @@ export const KATEX_MACROS: Record<string, string> = {
   '\\st': '\\text{ s.t. }',
   '\\suchthat': '\\text{ s.t. }',
   '\\iff': '\\Leftrightarrow',
-  '\\exp': '\\operatorname{exp}',
-  '\\ln': '\\operatorname{ln}',
-  '\\log': '\\operatorname{log}',
-  '\\Log': '\\operatorname{Log}',
 };
 
 export interface RichBlockProps {
