@@ -33,10 +33,9 @@ import { getLastScrollIntentAt } from './scrollPill.js';
  *   - stuck 100vh:   appBottom stuck at full height  → inset = keyboard height
  *
  * This module writes one CSS custom property (--keyboard-inset) plus a
- * data-keyboard-open flag. In chat mode the property translates the
- * transcript+composer layer as one compositor operation; it does not resize
- * the flex column on every animation frame. The composer's own geometry is
- * still owned by chat-surface.css.
+ * data-keyboard-open flag. The composer's geometry never morphs with the
+ * keyboard — chat-surface.css owns its shape, and this module only
+ * publishes how much of the app the keyboard covers.
  * Browsers differ in how they report the keyboard's travel: some emit
  * many progressive samples (the composer can follow them 1:1), others
  * a single discrete jump once the keyboard is up. A short ease-out
@@ -64,13 +63,12 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 export const KEYBOARD_LIFT_MS = 220;
 
 /* Viewport implementations that expose the IME animation emit resize/scroll
- * samples roughly once per frame. Once two samples land inside this window
- * in the same direction, follow the measured geometry directly: restarting
- * a full KEYBOARD_LIFT_MS tween for every sample makes the composer trail
- * the keyboard and then keep moving after the keyboard has stopped. Coarser
- * samples (Androids that report only a start/end step) stay on the
- * interpolated timeline below. */
-export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 80;
+ * samples roughly once per frame. Once a second sample arrives in the same
+ * direction, follow the measured geometry directly: restarting a full
+ * KEYBOARD_LIFT_MS tween for every sample makes the composer trail the
+ * keyboard and then keep moving after the keyboard has stopped. Slower,
+ * isolated jumps still use the fallback tween below. */
+export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 120;
 
 export function isProgressiveKeyboardSample(
   lastSampleAt,
@@ -224,10 +222,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
    *
    *   - bottom-follow: the latest answer is kept flush above the composer
    *     (snap, not a second animation that would amplify the lift);
-   *   - history: the reader's content stays at the same visual position when
-   *     a real layout resize changes the scroll range; a visual-viewport
-   *     keyboard lift itself is a separate compositor move and does not
-   *     write scrollTop every frame.
+   *   - history: the reader's content stays at the same visual position —
+   *     a visualViewport pan is compensated in scrollTop and the captured
+   *     offset is clamped to the new range, never forced to the bottom.
    *
    * Any wheel/touch/key gesture after the capture abandons the anchor —
    * a live gesture always wins — and the anchor is re-captured once the
@@ -246,102 +243,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     return Number.isFinite(value) ? value : 0;
   };
 
-  /* ── Visual-viewport pan cancellation ────────────────────────────────
-   * When the layout viewport keeps its height (iOS Safari, Chrome/Edge
-   * Android resizes-visual), the browser pans the visual viewport down to
-   * reveal the focused composer. That pan is intentionally allowed to move
-   * the conversation layer; only the top bar mirrors it in CSS so the chrome
-   * stays at the visual top. Applying the counter-transform to #appShell
-   * would move the header and can make the browser's focus-reveal pass chase
-   * our own transform, which presents as a flicker or an intermittent lift.
-   * The pan is driven by the browser and viewport events can be coarse, so a
-   * bounded rAF window keeps the header correction frame-accurate while a
-   * keyboard transition is live. */
-
-  let appliedPan = -1;
-  let panFrame = 0;
-  let panDeadline = 0;
-  let shellTopBaseline = null;
-  let panSessionActive = false;
-
-  const appShellElement = () => container
-    || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
-    || root;
-
-  const appShellTop = () => {
-    const appEl = appShellElement();
-    try {
-      const top = appEl && typeof appEl.getBoundingClientRect === 'function'
-        ? appEl.getBoundingClientRect().top
-        : 0;
-      return Number.isFinite(top) ? top : 0;
-    } catch (_) { return 0; }
-  };
-
-  const syncViewportPan = () => {
-    const scale = viewport ? Number(viewport.scale) : 1;
-    /* A pinch-zoomed viewport is the reader's own pan; never fight it. */
-    const zoomed = Number.isFinite(scale) && Math.abs(scale - 1) > 0.05;
-    /* Do not pin the header during ordinary visual-viewport scrolling. The
-     * offset is keyboard-related only while the tracked editor is focused or
-     * the keyboard lift is still settling. This also prevents a stale
-     * offsetTop from shifting the landing header after a blur. */
-    const keyboardSession = isInputFocused()
-      || targetInset > 0
-      || appliedInset > 0
-      || motionFrame !== 0;
-    const currentShellTop = appShellTop();
-    const reportedPan = Math.max(0, Math.round(viewportOffsetTop()));
-    /* offsetTop describes the visual viewport, but some WebViews expose it
-       before the document has actually moved on screen. Use the shell's
-       observed displacement as the source for the header correction; this
-       makes a reported-but-not-applied offset a harmless no-op instead of a
-       visible downward jump. Refresh the baseline whenever no keyboard
-       session is active so rotation and normal layout changes are harmless. */
-    if (keyboardSession) {
-      panSessionActive = true;
-    } else if (reportedPan <= 0) {
-      /* Keep correcting a closing browser pan until it actually returns to
-         zero; otherwise blur can expose one frame of header movement. */
-      panSessionActive = false;
-      shellTopBaseline = currentShellTop;
-    }
-    if (!Number.isFinite(shellTopBaseline)) shellTopBaseline = currentShellTop;
-    const observedPan = Math.max(0, Math.round(shellTopBaseline - currentShellTop));
-    const pan = (!viewport || zoomed || !panSessionActive || reportedPan <= 0)
-      ? 0
-      : Math.min(reportedPan, observedPan);
-    if (pan === appliedPan) return;
-    appliedPan = pan;
-    try {
-      root.style.setProperty('--vv-pan', `${pan}px`);
-      root.dataset.vvPan = pan > 0 ? 'true' : 'false';
-    } catch (_) { /* detached root */ }
-  };
-
-  const panLoop = (now) => {
-    panFrame = 0;
-    syncViewportPan();
-    const active = appliedPan > 0
-      || targetInset > 0
-      || appliedInset > 0
-      || motionFrame !== 0
-      || isInputFocused();
-    if (active && now < panDeadline) {
-      panFrame = window.requestAnimationFrame(panLoop);
-    }
-  };
-
-  const ensurePanTracking = () => {
-    const now = (typeof performance !== 'undefined' && performance.now)
-      ? performance.now()
-      : Date.now();
-    panDeadline = now + 900;
-    if (!panFrame && typeof window.requestAnimationFrame === 'function') {
-      panFrame = window.requestAnimationFrame(panLoop);
-    }
-  };
-
   const captureTranscriptAnchor = () => {
     const list = transcriptList();
     if (!list || typeof list.getBoundingClientRect !== 'function') return null;
@@ -350,6 +251,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     return {
       list,
       scrollTop: Number(list.scrollTop) || 0,
+      offsetTop: viewportOffsetTop(),
       pinned: !scrolledAway && distance <= KEYBOARD_PIN_SLACK,
       intentAt: getLastScrollIntentAt(),
     };
@@ -400,15 +302,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        captured snapshot current instead, so the first unheld geometry
        change compensates from the reader's real position. */
     const viewportOwnerHeld = Boolean(list.dataset && list.dataset.turnAnchorHold === 'true');
-    /* No panDelta: the shell counter-translates the visual-viewport pan
-       (--vv-pan), so panned content is already visually still and a second
-       scrollTop compensation here would double the movement. */
     const action = decideKeyboardAnchorAction(
       { scrollTop: anchor.scrollTop, pinned: anchor.pinned },
       {
         maxScrollTop: list.scrollHeight - list.clientHeight,
         scrolledAway: Boolean(window.stateStore.read('_userScrolledAway')),
         userIntentAfterCapture: getLastScrollIntentAt() > anchor.intentAt,
+        panDelta: viewportOffsetTop() - anchor.offsetTop,
         viewportOwnerHeld,
       },
     );
@@ -438,17 +338,15 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     anchorFrame = window.requestAnimationFrame(restoreTranscriptAnchor);
   };
 
-  /* One frame of the lift: write the current interpolated inset. Chat mode
-     consumes it as a compositor transform, so the transcript's scroll range
-     is unchanged and this hot path must not write scrollTop as a side effect.
-     Resize-mode keyboards still trigger the normal viewport update path,
-     which performs one anchor correction after their layout commit. */
+  /* One frame of the lift: write the current interpolated inset. Raising the
+     in-flow composer shrinks the transcript's flex viewport, so re-anchor on
+     the next frame, once the new height is measured. */
   const writeInsetFrame = (inset) => {
-    const nextInset = Number.isFinite(inset) ? Math.max(0, inset) : 0;
-    const normalizedInset = Math.round(nextInset * 100) / 100;
-    if (Math.abs(normalizedInset - appliedInset) < 0.01) return;
-    root.style.setProperty('--keyboard-inset', `${normalizedInset}px`);
-    appliedInset = normalizedInset;
+    const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+    if (roundedInset === appliedInset) return;
+    root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
+    if (transcriptAnchor) scheduleTranscriptRestore();
+    appliedInset = roundedInset;
   };
 
   const stepMotion = (now) => {
@@ -488,22 +386,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const currentInset = appliedInset < 0 ? 0 : appliedInset;
     const nextDirection = Math.sign(roundedTarget - currentInset);
     const targetChanged = roundedTarget !== targetInset;
-
-    /* A duplicate sample while the lift is in flight must not refresh the
-     * cadence clock: a later real sample would otherwise look denser than
-     * it is and be mistaken for a frame-by-frame stream. */
-    if (!targetChanged && motionFrame !== 0) return;
-
     const sameDirection = nextDirection !== 0 && nextDirection === transitionDirection;
     const directionChanged = nextDirection !== 0
       && transitionDirection !== 0
       && nextDirection !== transitionDirection;
-    /* Direct-follow is only for a genuinely frame-by-frame stream. A coarse
-     * retarget (Android reporting the final height in a second step) must
-     * keep the interpolated lift; following it raw would teleport the
-     * composer to the keyboard's end position. */
-    const progressive = targetChanged && sameDirection
-      && isProgressiveKeyboardSample(lastTargetAt, now, transitionDirection, nextDirection);
+    const progressive = targetChanged && sameDirection && (
+      motionFrame !== 0
+      || isProgressiveKeyboardSample(
+        lastTargetAt,
+        now,
+        transitionDirection,
+        nextDirection,
+      )
+    );
 
     /* A keyboard can reverse direction while its previous lift is still
      * running (for example, a cancelled focus or a quick swipe). Reverse
@@ -552,37 +447,26 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       writeInsetFrame(roundedTarget);
       return;
     }
-    /* Restart from the value already on screen on a fresh timeline. A late
-     * coarse sample otherwise compresses the whole remaining distance into
-     * the few milliseconds left of the previous tween and looks like a
-     * teleport. */
-    motionFrom = currentInset;
+    motionFrom = appliedInset < 0 ? 0 : appliedInset;
     motionStart = now;
     progressiveInsetMotion = false;
-    if (motionFrame) cancelAnimationFrame(motionFrame);
-    motionFrame = requestAnimationFrame(stepMotion);
+    if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
   };
 
-  /* Bottom edge of the app shell in layout-viewport coordinates. On mobile,
-     getBoundingClientRect() can be reported relative to the panned visual
-     viewport, so its bottom is temporarily smaller by offsetTop. The layout
-     viewport height remains the stable baseline; taking the greatest visible
-     candidate also preserves the stuck-100vh fallback when innerHeight has
-     already shrunk but the shell has not. */
+  /* Bottom edge of the app shell in client coordinates. Falls back to
+     innerHeight when the shell is missing, hidden, or not laid out yet
+     (rect.bottom = 0 — the composer cannot be focused then anyway). */
   const appShellBottom = () => {
     const appEl = container
       || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
       || root;
-    let rectBottom = 0;
     try {
       if (appEl && typeof appEl.getBoundingClientRect === 'function') {
         const bottom = appEl.getBoundingClientRect().bottom;
-        if (Number.isFinite(bottom) && bottom > 0) rectBottom = bottom;
+        if (Number.isFinite(bottom) && bottom > 0) return bottom;
       }
     } catch (_) { /* detached node — use the fallback */ }
-    const innerHeight = Number(window.innerHeight) || 0;
-    const rootHeight = Number(root && root.clientHeight) || 0;
-    return Math.max(rectBottom, innerHeight, rootHeight);
+    return window.innerHeight || 0;
   };
 
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
@@ -674,21 +558,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
-    /* Cancel the browser's focus-reveal pan before measuring: the shell
-       transform is part of the app-shell bottom edge, so the same frame
-       must both write the pan and measure with it applied. */
-    syncViewportPan();
     applyInset(stableMeasuredInset(focused));
     applyTopicComposerFocused(focused);
-    if (focused || appliedPan > 0 || appliedInset > 0 || motionFrame !== 0) {
-      ensurePanTracking();
-    }
     if (focused) scheduleTopicEnsure();
     /* Anchoring follows the whole keyboard session: focus happens before
        the first geometry change, so capturing here covers layout-resize
        keyboards (Android/Capacitor, --keyboard-inset stays 0) as well as
-       overlay keyboards. The compositor-only lift does not need a new
-       scrollTop correction on every visualViewport sample. */
+       overlay keyboards. Every visualViewport resize/pan re-applies the
+       captured reader position after the layout commit. */
     if (focused || transcriptAnchor) {
       beginTranscriptAnchor();
       scheduleTranscriptRestore();
@@ -726,18 +603,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 150);
   };
 
-  /* The pan write is synchronous so the shell cancels the browser's pan in
-     the same frame; the rAF-coalesced update below still owns the inset. */
-  const onViewportChange = () => {
-    syncViewportPan();
-    ensurePanTracking();
-    schedule();
-  };
-
   if (viewport) {
     // iOS Safari can pan the visual viewport without a paired resize event.
-    viewport.addEventListener('resize', onViewportChange);
-    viewport.addEventListener('scroll', onViewportChange);
+    viewport.addEventListener('resize', schedule);
+    viewport.addEventListener('scroll', schedule);
   }
   window.addEventListener('resize', schedule);
   /* focusout on document catches focus moving to ANY element (not just
@@ -759,19 +628,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (motionFrame) window.cancelAnimationFrame(motionFrame);
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
-    if (panFrame) window.cancelAnimationFrame(panFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     clearTranscriptAnchor();
     try {
       root.style.removeProperty('--keyboard-inset');
-      root.style.removeProperty('--vv-pan');
     } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
     try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
-    try { delete root.dataset.vvPan; } catch (_) { /* detached root */ }
     if (viewport) {
-      viewport.removeEventListener('resize', onViewportChange);
-      viewport.removeEventListener('scroll', onViewportChange);
+      viewport.removeEventListener('resize', schedule);
+      viewport.removeEventListener('scroll', schedule);
     }
     window.removeEventListener('resize', schedule);
     document.removeEventListener('focusin', onFocusIn);

@@ -198,9 +198,6 @@ export const KATEX_MACROS: Record<string, string> = {
   '\\exp': '\\operatorname{exp}',
   '\\ln': '\\operatorname{ln}',
   '\\log': '\\operatorname{log}',
-  /* Capitalized variant: KaTeX has no native `\Log`, so a model writing
-     `\Log` (or `\Log_2`) would otherwise fail to parse. */
-  '\\Log': '\\operatorname{Log}',
   /* ── Dirac / linear-algebra shorthands ──
      Quantum mechanics and group/representation-theory students ask
      for these constantly; defining them locally avoids a fork of
