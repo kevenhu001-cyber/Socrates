@@ -41,48 +41,6 @@ test('history reader restores the captured offset (not the bottom)', () => {
   assert.deepEqual(action, { type: 'restore', top: 600 });
 });
 
-test('visual viewport pan moves the restore target opposite so content stays visually stable', () => {
-  /* offsetTop +120 moves the content 120 px up on screen; scrolling the
-     transcript 120 px back down (scrollTop − 120) keeps it in place. */
-  const action = decideKeyboardAnchorAction(
-    { scrollTop: 600, pinned: false },
-    {
-      maxScrollTop: 3703,
-      scrolledAway: true,
-      userIntentAfterCapture: false,
-      panDelta: 120,
-    },
-  );
-  assert.deepEqual(action, { type: 'restore', top: 480 });
-});
-
-test('the pan-corrected target is clamped to the scrollable range and floors at zero', () => {
-  assert.deepEqual(
-    decideKeyboardAnchorAction(
-      { scrollTop: 3600, pinned: false },
-      {
-        maxScrollTop: 3703,
-        scrolledAway: true,
-        userIntentAfterCapture: false,
-        panDelta: -300,
-      },
-    ),
-    { type: 'restore', top: 3703 },
-  );
-  assert.deepEqual(
-    decideKeyboardAnchorAction(
-      { scrollTop: 40, pinned: false },
-      {
-        maxScrollTop: 3703,
-        scrolledAway: true,
-        userIntentAfterCapture: false,
-        panDelta: 120,
-      },
-    ),
-    { type: 'restore', top: 0 },
-  );
-});
-
 test('restore clamps to the current scrollable range', () => {
   assert.deepEqual(
     decideKeyboardAnchorAction(
@@ -145,15 +103,13 @@ test('property: a held viewport owner always makes the anchor inert', () => {
       fc.double({ min: -2000, max: 5000, noNaN: true }),
       fc.boolean(),
       fc.boolean(),
-      fc.double({ min: -400, max: 400, noNaN: true }),
-      (captured, pinned, scrolledAway, panDelta) => {
+      (captured, pinned, scrolledAway) => {
         const action = decideKeyboardAnchorAction(
           { scrollTop: captured, pinned },
           {
             maxScrollTop: 4000,
             scrolledAway,
             userIntentAfterCapture: false,
-            panDelta,
             viewportOwnerHeld: true,
           },
         );
@@ -190,22 +146,21 @@ test('missing or non-finite anchor input is a no-op / clamped to zero', () => {
   );
 });
 
-test('property: restore never exceeds the range and never passes the pan-corrected capture', () => {
+test('property: restore never exceeds the range and never passes the captured offset', () => {
   fc.assert(
     fc.property(
       fc.double({ min: -2000, max: 5000, noNaN: true }),
       fc.double({ min: 0, max: 5000, noNaN: true }),
-      fc.double({ min: -400, max: 400, noNaN: true }),
-      (captured, maxScrollTop, panDelta) => {
+      (captured, maxScrollTop) => {
         const action = decideKeyboardAnchorAction(
           { scrollTop: captured, pinned: false },
-          { maxScrollTop, scrolledAway: true, userIntentAfterCapture: false, panDelta },
+          { maxScrollTop, scrolledAway: true, userIntentAfterCapture: false },
         );
         assert.equal(action.type, 'restore');
         if (action.type !== 'restore') return;
         assert.ok(action.top >= 0);
         assert.ok(action.top <= maxScrollTop);
-        assert.ok(action.top <= Math.max(0, captured - panDelta));
+        assert.ok(action.top <= Math.max(0, captured));
       },
     ),
     { numRuns: 200 },

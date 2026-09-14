@@ -13,16 +13,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="../editorial.css?cb=20260825">
-  <link rel="stylesheet" href="../brand.css?cb=20260825g">
-  <link rel="stylesheet" href="../account.css?cb=20260825d">
+  <link rel="stylesheet" href="../editorial.css?cb=20260914">
+  <link rel="stylesheet" href="../brand.css?cb=20260914">
+  <link rel="stylesheet" href="../account.css?cb=20260914">
   <script src="../locale.js?cb=20260910"></script>
   <link rel="canonical" href="https://topodrive.top/zh/checkout">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/zh/checkout.md" title="Markdown twin of this page">
   <style>
     .ed-checkout-shell { display: grid; gap: 28px; max-width: 720px; margin: 0 auto; }
     .ed-card-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0; padding: 4px 14px; border: 1px solid var(--ed-line); border-radius: 12px; background: var(--ed-paper); transition: border-color .18s var(--ed-ease), box-shadow .18s var(--ed-ease); }
-    .ed-card-input:focus-within { border-color: var(--ed-clay); box-shadow: 0 0 0 3px rgba(154, 90, 59, .15); }
+    .ed-card-input:focus-within { border-color: var(--ed-clay); box-shadow: 0 0 0 3px rgba(255, 255, 255, .15); }
     .ed-card-input.is-err { border-color: var(--ed-clay); }
     .ed-card-input.is-ok { border-color: #6e8155; }
     .ed-card-input-row { display: grid; grid-template-columns: minmax(0, 1fr) 92px 76px; gap: 8px; align-items: center; padding: 8px 0; }
@@ -51,16 +51,16 @@
     .ed-pay-card { width: 100%; max-width: 380px; padding: 38px 32px 30px; background: var(--ed-paper); border: 1px solid var(--ed-line); border-radius: var(--ed-radius-md); text-align: center; box-shadow: 0 24px 60px rgba(23, 23, 22, .25); animation: edModalUp .22s var(--ed-ease); }
     .ed-pay-icon { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 50%; background: var(--ed-sand); display: inline-flex; align-items: center; justify-content: center; transition: background .3s var(--ed-ease); }
     .ed-pay-icon.is-success { background: rgba(110, 129, 85, .15); color: #6e8155; }
-    .ed-pay-icon.is-fail { background: rgba(154, 90, 59, .15); color: var(--ed-clay); }
+    .ed-pay-icon.is-fail { background: rgba(255, 255, 255, .15); color: var(--ed-clay); }
     .ed-pay-spinner { color: var(--ed-clay); animation: edSpin .8s linear infinite; }
     .ed-pay-steps { display: grid; gap: 8px; margin-top: 18px; text-align: left; }
     .ed-pay-step { display: grid; grid-template-columns: 10px minmax(0, 1fr); align-items: center; gap: 10px; color: var(--ed-ink-muted); font-size: 13px; transition: color .35s var(--ed-ease); }
     .ed-pay-step.is-active { color: var(--ed-ink); }
     .ed-pay-step.is-done { color: #6e8155; }
     .ed-pay-step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ed-ink-muted); opacity: .4; transition: opacity .35s var(--ed-ease), background .35s var(--ed-ease), box-shadow .35s var(--ed-ease); }
-    .ed-pay-step.is-active .ed-pay-step-dot { background: var(--ed-clay); opacity: 1; box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); animation: edPulse 1.2s var(--ed-ease) infinite; }
+    .ed-pay-step.is-active .ed-pay-step-dot { background: var(--ed-clay); opacity: 1; box-shadow: 0 0 0 4px rgba(255, 255, 255, .2); animation: edPulse 1.2s var(--ed-ease) infinite; }
     .ed-pay-step.is-done .ed-pay-step-dot { background: #6e8155; opacity: 1; }
-    @keyframes edPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(154, 90, 59, .2); } 50% { box-shadow: 0 0 0 8px rgba(154, 90, 59, .05); } }
+    @keyframes edPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(255, 255, 255, .2); } 50% { box-shadow: 0 0 0 8px rgba(255, 255, 255, .05); } }
     @keyframes edSpin { to { transform: rotate(360deg); } }
     .ed-field-msg { min-height: 18px; line-height: 1.4; font-size: 12.5px; transition: color .15s var(--ed-ease); margin: 4px 0 0; }
     .ed-field-msg.is-ok { color: #6e8155; }

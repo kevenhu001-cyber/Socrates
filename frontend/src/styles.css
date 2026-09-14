@@ -169,9 +169,19 @@ body[data-conversation-active="true"] #mobileMode{display:none!important}
 @supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}}
 .app{display:flex;height:100vh;height:100dvh;
   /* The dynamic viewport is allowed to follow the browser's native resize.
-     keyboardViewport.js adds only the measured overlay inset when a browser
-     keeps the layout viewport unchanged. */
+     keyboardViewport.js publishes the overlay inset; chat mode consumes it
+     as a compositor-only lift on #mainContent. */
   overflow:hidden;overscroll-behavior:none;position:relative}
+/* P_kb-pan — a mobile browser may pan the visual viewport to reveal the
+   focused composer (iOS Safari, Chrome/Edge Android resizes-visual). Keep
+   the chrome at the visual top by counter-translating only the top bar.
+   Translating #appShell here also moves the header and creates a feedback
+   loop with the browser's focus-reveal pass, which is the source of the
+   intermittent jump/jitter this surface used to show. */
+html[data-vv-pan="true"] #appShell .top-bar{
+  transform:translate3d(0,var(--vv-pan,0px),0);
+  will-change:transform;
+}
 /* UI-align: translucent sidebar surface (open-webui desktop look).
    Mobile keeps a solid background — see the 768px override below. */
 .sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000)/0.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),border-color .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}
@@ -1489,10 +1499,10 @@ true) but the dropdown never shows — see commit history. */
 
    The fix here is to put `.chat-input-bar` back into the flex column flow
    so flex-shrink on the list makes room for whatever height the composer
-   naturally takes. Keyboard avoidance is now handled by `padding-bottom`
-   on `.chat-view` itself — the entire chat (list + bar) is pushed up by the
-   keyboard's inset, rather than having the bar float above a manually-sized
-   reserve. No measurement, no race, no overlap. */
+   naturally takes. Keyboard avoidance is handled by a compositor-only
+   transform on `#mainContent` — the entire chat (list + bar) is pushed up by
+   the keyboard's inset without changing the list's scroll range each frame.
+   No measurement, no race, no overlap. */
 /* chat-view is a direct child of .main-content (lifted out of
    .main-inner so the transcript scrollbar can pin to the right edge
    of the main pane). It hosts only the floating find bar + the
@@ -1516,16 +1526,12 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* --keyboard-inset is the keyboard geometry from keyboardViewport.js.
-     The module glides the value toward each measurement over one short
-     ease-out rAF sequence, so the bar follows it 1:1 — no CSS transition
-     here, which would layer a second easing on top and make the composer
-     lag behind (or flash ahead of) the keyboard. */
+  /* Keyboard geometry is applied to #mainContent as a compositor-only
+     translation near the end of this stylesheet. Keeping this wrapper's
+     padding at zero means keyboard motion cannot repeatedly change the flex
+     height of #msgList and fight its scroll anchoring. */
   margin-top:0;
-  /* keyboard avoidance: shift the composer up by the virtual
-     keyboard inset on mobile. Padding is the layout reserve, so the
-     composer and transcript move as one continuous flow. */
-  padding-bottom:var(--keyboard-inset, 0px);
+  padding-bottom:0;
 }
 
 /* P_composer-anim-no-fr — when the engine does not interpolate fr
@@ -1583,6 +1589,10 @@ true) but the dropdown never shows — see commit history. */
   overscroll-behavior-y:contain;
   touch-action:pan-y;
   scroll-padding-bottom:12px;
+  /* keyboardViewport and the send-time anchor own scroll position during
+     deliberate motion. Disable the browser's independent scroll anchoring so
+     it cannot apply a second correction while the content layer is lifted. */
+  overflow-anchor:none;
   /* Smooth scroll is disabled by default. JS uses the browser-native
      Element.scrollTo({behavior:'smooth'}) pipeline (see
      ui/scroll.js#smoothScrollToBottom) when the reader needs to be
@@ -2052,13 +2062,12 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
      composer off-screen and the focus-driven height growth on mobile
      (`.chat-input-wrap.composer-focused` jumps min-height
      54→116) cannot race ahead of the last visible message. Keyboard
-     avoidance is handled by `padding-bottom` on `.chat-view` instead. */
+     avoidance is handled by the `#mainContent` compositor lift instead. */
   position:relative;
   left:auto;
   right:auto;
   /* (see P_chat-reserve above — `bottom` removed because the bar
-     no longer floats; keyboard inset is applied to `.chat-view`'s
-     `padding-bottom` instead.) */
+     no longer floats; keyboard inset is applied to the parent chat layer.) */
   bottom:auto;
   z-index:10;
   background:transparent;
@@ -12025,6 +12034,19 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 
 /* Keyboard geometry: chat-surface.css owns the composer shape at rest and
-   while the keyboard is up. keyboardViewport.js publishes only the
-   `--keyboard-inset` value consumed by .chat-view; there is deliberately no
-   per-frame composer morph layer here. */
+   while the keyboard is up. keyboardViewport.js publishes the
+   `--keyboard-inset` value consumed by the chat-layer transform below; there
+   is deliberately no per-frame composer morph layer here. */
+
+/* P_kb-content-lift — keep the transcript and its composer in one visual
+   layer. The keyboard inset is animated by keyboardViewport.js, and this
+   compositor-only transform moves that layer without changing the flex
+   viewport or scroll range on every frame. The top bar is a sibling outside
+   #mainContent, so it remains stationary while the AI output and input rise
+   together. The :has() guard leaves the topic landing surface untouched; its
+   composer has its own local visibility check in keyboardViewport.js. */
+#mainContent:has(> #chatView:not(.hidden)){
+  transform:translate3d(0,calc(0px - var(--keyboard-inset,0px)),0);
+  will-change:transform;
+  backface-visibility:hidden;
+}

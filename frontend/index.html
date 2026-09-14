@@ -2,13 +2,17 @@
 <html lang="en" data-theme="socrates" data-mode="dark">
 <head>
 <meta charset="UTF-8">
-<!-- interactive-widget=resizes-content: on Chrome/Edge Android 108+ the
-     virtual keyboard resizes the layout viewport itself, so the app's
-     `height:100dvh` shell avoids the keyboard natively (compositor-synced,
-     no JS measurement race). Browsers that ignore the key (iOS Safari,
-     older Android) keep the overlay behaviour, which keyboardViewport.js
-     handles via --keyboard-inset. -->
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<!-- interactive-widget=resizes-visual: the virtual keyboard shrinks only the
+     visual viewport on Chrome/Edge Android 108+, leaving the layout viewport
+     (and `height:100dvh` shell) at full height. keyboardViewport.js lifts the
+     in-flow composer with --keyboard-inset and owns the rise animation, so
+     the input rides the keyboard the same way it does on iOS. Opting into
+     resizes-content instead hands the occlusion to the browser, which
+     shrinks the layout viewport in a single step — the composer teleports
+     and the rise animation is lost. Browsers that ignore the key (older
+     Android, resize-mode WebViews) keep their default and the measured path
+     still normalizes them. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-visual">
 <title>Socrates</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <script>
