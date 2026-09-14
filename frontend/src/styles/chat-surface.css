@@ -626,6 +626,24 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 }
 
+/* The chat input bar carries both the class and the id; the id-scoped legacy
+   rule (transparent) outranks the class gradient, so target the id. */
+@media (max-width: 768px) {
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell#appShell #chatInputBar.chat-input-bar {
+    background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
+  }
+}
+
+/* Sidebar surface: the socrates dark theme token resolves to pure black in an
+   older layer, which reads as a hole next to the #212121 page. Keep the rail
+   one step off the page in both modes. */
+[data-mode="dark"] #appShell#appShell .sidebar {
+  background: #171717 !important;
+}
+[data-mode="light"] #appShell#appShell .sidebar {
+  background: #f7f7f5 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #appShell#appShell #topicInputWrap,
   #appShell#appShell #chatInputWrap { transition: none !important; }
@@ -641,15 +659,41 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
  * a specificity step, not a second element.
  * ======================================================================== */
 
+/* A focused/grown in-session composer keeps 40px controls; this rule ties the
+   per-state 36px/42px/44px overrides on specificity (including the
+   .chat-input-footer variant the mobile rail uses) and wins by sheet order.
+   Applies at every width, so it sits outside the desktop media block. */
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-focused:not(.voice-recording-active) #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-focused:not(.voice-recording-active) #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-focused:not(.voice-recording-active) #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-focused:not(.voice-recording-active) .chat-input-footer #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-input-footer #chatMobileMicBtn {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+}
+
 /* Desktop: the landing composer is the same 52px one-row pill as the chat
    composer, and a grown (multiline) chat composer keeps 40px controls while
    the idle rail stays 36px. */
 @media (min-width: 769px) {
+  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
+    margin: 0 auto 22px !important;
+  }
+
   #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) {
     height: 52px !important;
     min-height: 52px !important;
     max-height: 52px !important;
-    margin: 22px auto 0 !important;
+    margin: 0 auto !important;
     padding: 0 8px !important;
     border-radius: 28px !important;
     grid-template-columns: 36px minmax(0, 1fr) auto 36px !important;
@@ -675,16 +719,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     line-height: 24px !important;
   }
 
-  #appShell#appShell #chatInputWrap.composer-focused #sendBtn,
-  #appShell#appShell #chatInputWrap.composer-focused #chatComposerToolsBtn,
-  #appShell#appShell #chatInputWrap.composer-focused #chatMobileMicBtn,
-  #appShell#appShell #topicInputWrap.composer-focused #startBtn {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-  }
-
   /* Desktop keeps the hard color for the page so the conversation surface is
      not a pure-black band; phones stay on the #000 canvas. */
   :root { --conversation-page: #212121; }
@@ -694,7 +728,9 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 /* Mobile: the add-content menu is a 16px floating card, the chat reasoning
    pill only appears with focus, and the header utilities are 44px. */
 @media (max-width: 768px) {
-  #appShell#appShell #composerToolsMenu {
+  /* The add-content menu is portaled to <body>, outside #appShell, so the
+     id is doubled to step over `body #composerToolsMenu`. */
+  body #composerToolsMenu#composerToolsMenu {
     border-radius: 16px !important;
   }
 
