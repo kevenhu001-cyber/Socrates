@@ -100,3 +100,37 @@ export function easeOutQuint(t) {
   if (t >= 1) return 1;
   return 1 - Math.pow(1 - t, 5);
 }
+
+/* ease-in-out for the keyboard lift (legacy): a gentle start keeps the
+ * composer attached to a keyboard that is itself accelerating — a hot
+ * ease-out (quint) covers ~40% of the distance in the first 10% of the
+ * duration, which reads as a teleport rather than a glide. The curve
+ * peaks mid-way and lands soft. */
+export function easeInOutQuad(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+/* ease-out cubic: kept as a generic primitive — not used by the keyboard
+ * lift itself, which uses easeInOutCubic below. */
+export function easeOutCubic(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/* ease-in-out cubic for the keyboard lift. The first motion frame
+ * (~16ms into the glide) covers ≈0.14% of distance — on a 260px
+ * keyboard that's ≈0.4px of inset, which sits inside the chat-input-bar
+ * + chat-view resting margins (8 + 6 = 14px) and so lands as zero
+ * visible lift. Frame 2 (~33ms) is ≈2.75px visible. The lift stays
+ * sub-perceptual for the first 3 frames and then accelerates smoothly,
+ * which reads as one continuous start with no first-frame snap. The
+ * curve also lands soft at the top, matching the platform IME's own
+ * fast-out-slow-in profile. */
+export function easeInOutCubic(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}

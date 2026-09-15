@@ -5,7 +5,7 @@
 import { onKatexReady } from '../vendor/lazy.js';
 import { stateStore } from '../state/store.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from './viz.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from './viz.js';
 import { wireCodeBlockHeaders } from './postRender.js';
 import { safeHljsLang } from './helpers.js';
 
@@ -29,8 +29,12 @@ export function rerenderMathAfterKatex() {
     window.__socratesMathRenderRev=(window.__socratesMathRenderRev||0)+1;
     var rev=window.__socratesMathRenderRev;
     var msgs=Array.isArray(stateStore.read("messages"))?stateStore.read("messages"):[];
-    var changed=false;
-    for(var mi=0;mi<msgs.length;mi++){
+    /* Collect first, render in slices: re-rendering every math message in
+       one pass is a main-thread long task AND makes every formula on the
+       page flip in the same frame. Newest first — that is the answer the
+       reader is most likely looking at. */
+    var targets=[];
+    for(var mi=msgs.length-1;mi>=0;mi--){
       var m=msgs[mi];
       if(!m||m.role!=="assistant"||typeof m.rawText!=="string")continue;
       if(!/\$|\\\(/.test(m.rawText))continue;
@@ -38,30 +42,53 @@ export function rerenderMathAfterKatex() {
          katex-ready bump is already correct — touching it again (e.g. a
          second onKatexReady after a vendor retry) would only churn its DOM. */
       if(m._katexRenderedRev===rev)continue;
-      var html=_renderAssistantHtml(m.rawText);
-      /* React's MessageItem memo skips re-renders when the entry object
-         reference is unchanged (the legacy finish() path relies on the
-         entry being mounted fresh). Replacing the object with a shallow
-         copy carrying the new html is what makes the katex-ready repaint
-         actually land in the React message list. */
-      stateStore.dispatch({
-        type:"session/update-message",index:mi,clientId:m.clientId,
-        patch:{html:html,_katexRenderedRev:rev}
-      });
-      changed=true;
-      var id=m.clientId||m.id||"";
-      if(!id)continue;
-      var escId=typeof CSS!=="undefined"&&CSS.escape?CSS.escape(id):String(id).replace(/["\\]/g,"\\$&");
-      var node=list.querySelector('[data-client-id="'+escId+'"] .msg-body');
-      if(node&&!node.closest('[data-react-owned]')){
-        node.innerHTML=html;
-        try{processPendingMermaid()}catch(_){}
-        try{processPendingViz()}catch(_){}
-        try{processPendingVizActions()}catch(_){}
-        try{wireCodeBlockHeaders(node)}catch(_){}
-      }
+      targets.push({index:mi,clientId:m.clientId});
     }
-    if(changed)publishReactChatRuntime({type:"state-synced",reason:"katex-ready"});
+    if(!targets.length)return;
+    var raf=typeof requestAnimationFrame==="function"
+      ?requestAnimationFrame
+      :function(cb){return setTimeout(cb,0)};
+    var ti=0;
+    var repaintSlice=function(){
+      var changed=false;
+      /* Two messages per frame keeps each slice well under a frame budget
+         even on heavy formula pages; the rest lands on following frames. */
+      for(var n=0;n<2&&ti<targets.length;n++,ti++){
+        var t=targets[ti];
+        var live=stateStore.read("messages")[t.index];
+        /* Guard against a session swap between slices: only repaint the
+           slot while it still holds the same message object identity. */
+        if(!live||live.clientId!==t.clientId||live.role!=="assistant")continue;
+        if(live._katexRenderedRev===rev)continue;
+        var html;
+        try{html=_renderAssistantHtml(live.rawText)}catch(_){continue}
+        /* React's MessageItem memo skips re-renders when the entry object
+           reference is unchanged (the legacy finish() path relies on the
+           entry being mounted fresh). Replacing the object with a shallow
+           copy carrying the new html is what makes the katex-ready repaint
+           actually land in the React message list. */
+        stateStore.dispatch({
+          type:"session/update-message",index:t.index,clientId:t.clientId,
+          patch:{html:html,_katexRenderedRev:rev}
+        });
+        changed=true;
+        var id=live.clientId||live.id||"";
+        if(!id)continue;
+        var escId=typeof CSS!=="undefined"&&CSS.escape?CSS.escape(id):String(id).replace(/["\\]/g,"\\$&");
+        var node=list.querySelector('[data-client-id="'+escId+'"] .msg-body');
+        if(node&&!node.closest('[data-react-owned]')){
+          node.innerHTML=html;
+          try{reclaimVizCards(node)}catch(_){}
+          try{processPendingMermaid()}catch(_){}
+          try{processPendingViz()}catch(_){}
+          try{processPendingVizActions()}catch(_){}
+          try{wireCodeBlockHeaders(node)}catch(_){}
+        }
+      }
+      if(changed)publishReactChatRuntime({type:"state-synced",reason:"katex-ready"});
+      if(ti<targets.length)raf(repaintSlice);
+    };
+    repaintSlice();
   }catch(_){}
 }
 

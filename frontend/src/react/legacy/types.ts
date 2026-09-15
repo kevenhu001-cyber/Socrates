@@ -150,6 +150,13 @@ export interface LegacyScheduled {
 export interface LegacyPostRender {
   processPendingMermaid(root?: HTMLElement): void;
   processPendingViz?(root?: HTMLElement): void;
+  /**
+   * Adopt already-rendered viz/mermaid card elements for fresh placeholders
+   * carrying the same content-derived id. Runs before the process* passes so
+   * an innerHTML rewrite (finish swap, history re-render) does not reload
+   * iframes or re-render diagrams that were already painted.
+   */
+  reclaimVizCards?(root: HTMLElement): void;
   processPendingVizActions(root?: HTMLElement): void;
   wireCodeBlockHeaders(root: HTMLElement): void;
   wireMsgBodyImages(root: HTMLElement): void;

@@ -860,16 +860,16 @@ function _formatMsg(t: string): string {
       return 'XVIZFALLBACK' + id + 'X';
     }
     let raw = preprocessMarkdown(t);
-    raw = raw.replace(/```(?:viz|html|svg)\s*\n?([\s\S]*?)```/gi, function (_, content: string) {
+    raw = raw.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/gi, function (_, lang: string, content: string) {
       const trimmed = content.trim();
-      return trimmed ? saveFallbackViz(renderViz(trimmed)) : '';
+      return trimmed ? saveFallbackViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
     });
     raw = raw.replace(/```plot\s*\n?([\s\S]*?)```/gi, function (_, content: string) {
       const trimmed = content.trim();
-      return trimmed ? saveFallbackViz(renderPlot(trimmed)) : '';
+      return trimmed ? saveFallbackViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
     });
-    raw = raw.replace(/```(?:viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function () {
-      return saveFallbackViz(renderVizLoading({ streaming: true }));
+    raw = raw.replace(/```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, function (_, lang: string, body: string) {
+      return saveFallbackViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang, String(body || '').trim()) }));
     });
     const fallbackHtml = '<p>' + esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g, function (_, _l: string, c: string) { return '<pre><code>' + esc(c.trim()) + '</code></pre>'; }).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
     return fallbackHtml.replace(/XVIZFALLBACK(\d+)X/g, function (_, id: string) { return fallbackViz[parseInt(id, 10)] || ''; });
@@ -955,26 +955,30 @@ function _formatMsg(t: string): string {
 
   procT = procT.replace(/```mermaid\s*\n?([\s\S]*?)```/g, function (_, code: string) {
     const trimmed = code.trim();
-    return trimmed ? saveViz(renderMermaid(trimmed)) : '';
+    /* Content-derived ids match the ids the streaming pass assigned, so a
+       finish/history re-render reuses the same card element (see
+       reclaimVizCards) instead of reloading the iframe/diagram. */
+    return trimmed ? saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
   });
-  procT = procT.replace(/```mermaid\s*\n?([\s\S]*?)$/g, function () {
-    return saveViz(renderVizLoading());
+  procT = procT.replace(/```mermaid\s*\n?([\s\S]*?)$/g, function (_, body: string) {
+    return saveViz(renderVizLoading({ stableId: _getStreamingVizId('mermaid', String(body || '').trim()) }));
   });
 
-  procT = procT.replace(/```(?:viz|html|svg)\s*\n?([\s\S]*?)```/g, function (_, json: string) {
+  procT = procT.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/g, function (_, lang: string, json: string) {
     const trimmed = json.trim();
-    return trimmed ? saveViz(renderViz(trimmed)) : '';
+    /* Same key derivation as the streaming pass (lang || 'html'). */
+    return trimmed ? saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
   });
-  procT = procT.replace(/```(?:viz|html|svg)\s*\n?([\s\S]*?)$/g, function () {
-    return saveViz(renderVizLoading());
+  procT = procT.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)$/g, function (_, lang: string, body: string) {
+    return saveViz(renderVizLoading({ stableId: _getStreamingVizId(lang, String(body || '').trim()) }));
   });
 
   procT = procT.replace(/```plot\s*\n?([\s\S]*?)```/g, function (_, spec: string) {
     const trimmed = spec.trim();
-    return trimmed ? saveViz(renderPlot(trimmed)) : '';
+    return trimmed ? saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
   });
-  procT = procT.replace(/```plot\s*\n?([\s\S]*?)$/g, function () {
-    return saveViz(renderVizLoading());
+  procT = procT.replace(/```plot\s*\n?([\s\S]*?)$/g, function (_, body: string) {
+    return saveViz(renderVizLoading({ stableId: _getStreamingVizId('plot', String(body || '').trim()) }));
   });
 
   procT = procT.replace(/```(\w*)\n?([\s\S]*?)```/g, function (_, lang: string, code: string) {
@@ -986,7 +990,7 @@ function _formatMsg(t: string): string {
       /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
     );
     if (isHtmlLang || (looksLikeHtml && (trimmed.length > 20 || hasSvgTag))) {
-      return saveViz(renderViz(trimmed));
+      return saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
     }
     const hljsLang = safeHljsLang(lang);
     const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';

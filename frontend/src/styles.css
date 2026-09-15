@@ -24,35 +24,19 @@
 @import "@fontsource/noto-sans-sc/600.css";
 
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
-/* Single timeline shared by every keyboard-driven surface motion.
-   Same curve (.22,1,.36,1) and 340ms duration across:
-     - .chat-view padding-bottom lift (keyboard rise)
-     - .chat-input-wrap focus expansion (composer-multiline / grid rows)
-     - transcript scroll anchor follow
-   Velocity planning stays in keyboardViewport.js for progressive iOS
-   samples — the CSS transition is the visible motion, the JS plan is
-   only the per-sample target. --composer-motion-duration and
-   --composer-motion-ease are kept as aliases so the dozens of existing
-   callers (chat-input-wrap / topic-input-wrap / rich-composer) keep
-   compiling without rename. */
+/* Shared timing tokens for composer focus expansion. Keyboard avoidance is
+   deliberately not part of this CSS timeline: keyboardViewport.js owns the
+   inset animation frame by frame so a browser resize cannot drop the input
+   straight onto its final position. --composer-motion-duration and
+   --composer-motion-ease remain aliases for the existing composer rules. */
 :root{
   --chat-motion-duration:.34s;
   --chat-motion-ease:cubic-bezier(.22,1,.36,1);
   --composer-motion-duration:var(--chat-motion-duration);
   --composer-motion-ease:var(--chat-motion-ease);
 }
-/* Register --keyboard-inset so browsers that support @property
-   (Chrome 85+, Safari 16.4+, Firefox 128+) interpolate it natively.
-   The custom property then drives a single CSS transition on
-   .chat-view's padding-bottom, which is the visible lift. Engines
-   without @property still see computed-value transitions on the
-   padding-bottom property itself, so they fall back to a CSS-only
-   smoothing layer (rather than snapping between JS-driven frames). */
-@property --keyboard-inset{
-  syntax:'<length>';
-  inherits:true;
-  initial-value:0px;
-}
+/* Keyboard inset motion is driven by keyboardViewport.js; the browser only
+   consumes the interpolated value below. */
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
 [data-theme=socrates][data-mode=dark]{--bg-000:0 0% 5%;--bg-100:0 0% 13%;--bg-200:0 0% 16%;--bg-300:0 0% 21%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:0 0% 100%;--accent-100:0 0% 88%;--accent-900:0 0% 20%;--brand-000:0 0% 88%;--brand-100:0 0% 100%;--oncolor-100:0 0% 8%;--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
@@ -67,6 +51,14 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none}
 /* ─── View Transition — cross-browser consistent ── */
 ::view-transition-old(root){animation:.3s ease-out vt-fade-out;z-index:1}
 ::view-transition-new(root){animation:.3s ease-out vt-fade-in;z-index:2}
+/* Scoped single-element swaps (withElementSwapTransition): while the html
+   element carries .vt-scoped-swap, the root snapshot must NOT cross-fade —
+   only the named element (a message row finishing its stream) morphs.
+   The group rule also shrinks the default UA morph duration so the
+   collapse of streaming-only chrome reads as a quick settle, not a wipe. */
+html.vt-scoped-swap::view-transition-old(root),
+html.vt-scoped-swap::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-timing-function:var(--ease-out,ease-out)}
 @keyframes vt-fade-out{from{opacity:1}to{opacity:0}}
 @keyframes vt-fade-in{from{opacity:0}to{opacity:1}}
 :root{--surface-page:var(--bg-100);--surface-raised:var(--bg-200);--surface-overlay:var(--bg-000);--surface-hover:var(--bg-300);--surface-input:var(--bg-000);--text-primary:var(--text-100);--text-secondary:var(--text-400);--text-tertiary:var(--text-500);--border-default:var(--border-300);--border-subtle:var(--border-300);--accent:var(--accent-000);--accent-bg:var(--accent-900);--font-scale:var(--app-font-scale,1);--app-sidebar-width:16.25rem;/* 260px — default until sidebarResize.js restores the stored width */--sidebar-width:var(--app-sidebar-width,18rem);--sidebar-font-scale:calc(var(--app-font-scale,1) * 0.92)}
@@ -1552,23 +1544,34 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* --keyboard-inset is the keyboard geometry from keyboardViewport.js.
-     The CSS transitions below (custom-property + padding-bottom + margin-bottom)
-     are the visible motion; the JS module only writes the per-sample target
-     and lets the browser interpolate it on the same timeline as the composer
-     focus expansion. The redundant padding-bottom transition is the fallback
-     for engines that ignore @property — they still see a CSS-only smoothing
-     between JS-driven frame writes. */
+  /* --keyboard-inset is already interpolated by keyboardViewport.js. Keep a
+     small transition for legacy/external style writes, but the controller
+     disables it for a focused keyboard session so no browser transition is
+     layered over the explicit rAF compensation. */
   margin-top:0;
-  /* keyboard avoidance: shift the composer up by the virtual
-     keyboard inset on mobile. Padding is the layout reserve, so the
-     composer and transcript move as one continuous flow. */
-  padding-bottom:var(--keyboard-inset, 0px);
+  /* Keyboard avoidance: consume the resting bottom clearances on the same
+     timeline as the lift. The input bar gives back up to 8px of its safe
+     area and chat-view gives back its 6px breathing margin; if those values
+     change before the lift has covered them, the composer would otherwise
+     move downward on the first frames. The first two terms below absorb
+     those clearances, and only the remaining inset moves the composer up.
+     The final displacement is still inset - 14px on the usual phone shell,
+     while the visible motion starts at zero and never reverses. */
+  --keyboard-safe-clearance:max(0px, calc(var(--conversation-safe-bottom, 16px) - 8px));
+  --keyboard-rest-clearance:calc(6px + var(--keyboard-safe-clearance));
+  padding-bottom:calc(
+    min(var(--keyboard-inset, 0px), 6px) +
+    min(var(--keyboard-inset, 0px), var(--keyboard-safe-clearance)) +
+    max(0px, calc(var(--keyboard-inset, 0px) - var(--keyboard-rest-clearance)))
+  );
   transition:
-    --keyboard-inset var(--chat-motion-duration) var(--chat-motion-ease),
     padding-bottom var(--chat-motion-duration) var(--chat-motion-ease),
     margin-bottom var(--chat-motion-duration) var(--chat-motion-ease);
   will-change:padding-bottom, margin-bottom;
+}
+
+:root[data-keyboard-motion="manual"] .chat-view{
+  transition:none !important;
 }
 
 /* P_composer-anim-no-fr — when the engine does not interpolate fr
@@ -2172,6 +2175,14 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 .attachment-chip-spinner{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:hsl(var(--accent-000)/0.08);flex-shrink:0}
 .attachment-chip-progress-bar{width:calc(100% - 20px);height:3px;background:hsl(var(--bg-300));border-radius:2px;overflow:hidden;margin:2px 10px 0;order:99;flex-basis:calc(100% - 20px);flex-shrink:0;box-sizing:content-box}
 .attachment-chip-progress-fill{height:100%;background:hsl(var(--accent-000));border-radius:2px;transition:width .12s ease;will-change:width}
+/* P_file-attachments — chip row inside a sent user bubble. Reuses the
+   composer chip look; durable-file chips are links so the raw upload is
+   one click away (opens in a new tab, authorized by the session). */
+.msg-attachment-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.msg-attachment-chips .attachment-chip{max-width:260px}
+a.attachment-chip-link{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .15s ease,background-color .15s ease}
+a.attachment-chip-link:hover{border-color:hsl(var(--accent-000)/0.45);background:hsl(var(--bg-300))}
+a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 /* Drag-over visual — the wrap gets a subtle accent border when the
    user drags files over the input. */
 .chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
@@ -2956,7 +2967,13 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
 /* Markdown rendered content */
 .msg-body h1{font-size:1.4em;font-weight:500;color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
 .msg-body h2{font-size:1.2em;font-weight:500;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
-.msg-body h3{font-size:1.05em;font-weight:500;color:hsl(var(--text-100));margin:12px 0 4px;line-height:1.3}
+/* P_h3-cjk-contrast — the previous 1.05em + weight 500 + --text-100 was
+   visually indistinguishable from body text in CJK runs (Chinese chars
+   look almost identical at 1.05em vs 1em, and `--text-100` matches body
+   colour on the dark canvas). Bumping to 1.18em + weight 600 +
+   `--text-000` makes `### 标题` read as a heading without changing the
+   h1/h2/h4–h6 hierarchy. */
+.msg-body h3{font-size:1.18em;font-weight:600;color:hsl(var(--text-000));letter-spacing:-0.005em;margin:14px 0 6px;line-height:1.3}
 .msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:500;color:hsl(var(--text-100));margin:10px 0 4px}
 .msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0 10px}
 .msg-body li{margin-bottom:3px}
@@ -5070,11 +5087,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     display:grid;grid-template-columns:auto minmax(0,1fr) auto;
     grid-template-rows:minmax(42px,auto);column-gap:2px;align-items:center;
     contain:none;
-    /* grid-template-rows rides the same shared timeline as the chat-view
-       keyboard lift (--chat-motion-duration/-ease) so the composer expansion
-       and the keyboard rise move as one motion. Engines without fr
-       interpolation snap the row to its final value; the min-height
-       transition in `.composer-anim-no-fr` below covers that branch. */
+    /* Keep the focus expansion on the composer's shared motion timeline.
+       Keyboard avoidance has its own JS-owned timeline on .chat-view;
+       engines without fr interpolation use the min-height branch below. */
     transition:
       flex-basis var(--chat-motion-duration) var(--chat-motion-ease),
       width var(--chat-motion-duration) var(--chat-motion-ease),
@@ -8055,9 +8070,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   margin:1.35em 0 .5em;
   color:hsl(var(--workbench-text));
   font-family:var(--font-sans);
-  font-weight:620;
+  font-weight:600;
   line-height:1.3;
-  letter-spacing:-.025em;
+  /* P_h3-cjk-spacing — the previous -.025em was tuned for Latin headings
+     and is 5× tighter than the base .msg-body h3 rule (-0.005em). On CJK
+     text (e.g. "### 方法 1：特征方程法") that tightness removes ~0.7px per
+     glyph at 28px and the characters read as cramped/overlapping. -0.005em
+     matches the base rule and is the widest spacing that still looks like
+     a deliberate heading tightening on Latin text. */
+  letter-spacing:-0.005em;
 }
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h1:first-child,
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h2:first-child,
@@ -8066,7 +8087,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 }
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h1{font-size:1.36em}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h2{font-size:1.2em}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h3{font-size:1.08em}
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body h3{font-size:1.18em}
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body ul,
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .msg-body ol{
   margin:.6em 0 .8em;

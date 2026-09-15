@@ -6,8 +6,9 @@ import {
   measureKeyboardInset,
   isTrackedInputFocused,
   isProgressiveKeyboardSample,
-  detectKeyboardInsetAnimationSupport,
+  isFrameSizedKeyboardStep,
   KEYBOARD_PROGRESSIVE_SAMPLE_MS,
+  KEYBOARD_TRACK_STEP_PX,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
 
@@ -29,6 +30,19 @@ test('continuous keyboard samples follow native geometry instead of restarting t
   assert.equal(isProgressiveKeyboardSample(start, start + KEYBOARD_PROGRESSIVE_SAMPLE_MS + 1, 1, 1), false);
   assert.equal(isProgressiveKeyboardSample(start, start + 16, 1, -1), false);
   assert.equal(isProgressiveKeyboardSample(0, start + 16, 1, 1), false);
+});
+
+test('frame-sized measured steps are tracked directly, larger jumps are not', () => {
+  /* A real per-frame IME stream moves ≤ ~70px between samples even on a
+     30fps WebView; those steps may be written straight through. */
+  assert.equal(isFrameSizedKeyboardStep(60, 120), true);
+  assert.equal(isFrameSizedKeyboardStep(120, 120 + KEYBOARD_TRACK_STEP_PX), true);
+  /* A jump beyond the frame budget means the browser skipped reports —
+     it must take the eased glide instead of teleporting the composer. */
+  assert.equal(isFrameSizedKeyboardStep(30, 30 + KEYBOARD_TRACK_STEP_PX + 1), false);
+  assert.equal(isFrameSizedKeyboardStep(0, 300), false);
+  assert.equal(isFrameSizedKeyboardStep(NaN, 100), false);
+  assert.equal(isFrameSizedKeyboardStep(100, Infinity), false);
 });
 
 test('getKeyboardInset returns 0 for non-finite inputs', () => {
@@ -100,31 +114,4 @@ test('isTrackedInputFocused survives detached/custom-element throws', () => {
   const active = {};
   /* must not propagate the throw */
   assert.equal(isTrackedInputFocused([evil], active), false);
-});
-
-/* P_css-keyboard-motion — detectKeyboardInsetAnimationSupport is called
-   once at module init; its return value decides whether the JS path
-   keeps writing per-frame eased values or stops at the target and lets
-   the CSS @property transition interpolate. The probe must never throw
-   (it has to be safe to call in environments where CSS.registerProperty
-   does not exist or the runtime has already declared --keyboard-inset). */
-test('detectKeyboardInsetAnimationSupport returns a boolean without throwing', () => {
-  const result = detectKeyboardInsetAnimationSupport();
-  assert.equal(typeof result, 'boolean');
-});
-
-test('detectKeyboardInsetAnimationSupport is idempotent on repeated calls', () => {
-  const first = detectKeyboardInsetAnimationSupport();
-  const second = detectKeyboardInsetAnimationSupport();
-  assert.equal(typeof first, 'boolean');
-  assert.equal(typeof second, 'boolean');
-  /* Both calls must agree; the second call exercises the "already
-     registered" catch branch on engines that supported the first. */
-  if (first) {
-    /* A browser that supports @property stays supported across calls. */
-    assert.equal(second, true);
-  } else {
-    /* A browser without @property stays without it; no false positives. */
-    assert.equal(second, false);
-  }
 });

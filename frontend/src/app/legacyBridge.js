@@ -39,7 +39,7 @@ import { toggleAPI, clearSettings, saveSettings } from '../ui/settings.js';
 import { toggleExtensionByKey } from '../pickers.js';
 import { openCmdKResult } from '../ui/cmdK.js';
 import { confirmClearCache, confirmClearSettings, confirmDeleteAccount } from '../ui/dangerConfirms.js';
-import { processPendingMermaid, processPendingViz } from '../render/viz.js';
+import { processPendingMermaid, processPendingViz, reclaimVizCards } from '../render/viz.js';
 import { wireCodeBlockHeaders, wireMsgBodyImages } from '../render/postRender.js';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/visualization.js';
 import { appendInlineArtifact } from '../ui/toolCards.js';
@@ -227,6 +227,7 @@ window.__socratesLegacy = {
   postRender: {
     processPendingMermaid: processPendingMermaid,
     processPendingViz: processPendingViz,
+    reclaimVizCards: reclaimVizCards,
     processPendingVizActions: window.processPendingVizActions,
     wireCodeBlockHeaders: wireCodeBlockHeaders,
     wireMsgBodyImages: wireMsgBodyImages,

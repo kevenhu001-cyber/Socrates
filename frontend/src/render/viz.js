@@ -34,6 +34,56 @@ var _pendingMermaid = [];
 var _pendingViz = [];
 import { ensureMermaid } from '../vendor/lazy.js';
 
+/* P_viz-keepalive — cards that finished rendering (viz-ready handshake or a
+   completed mermaid render) are registered here so a later innerHTML rewrite
+   of the surrounding message can adopt the LIVE element instead of letting
+   the fresh placeholder's iframe reload / diagram re-render. Reinserting a
+   same-task detached iframe preserves its document (the HTML "magic move"
+   rule), so the adopt path is flash-free; where a browser still reloads,
+   the card simply re-handshakes like before. Keyed by the content-derived
+   stable id, so the same card reclaimed across stream→finish and across
+   history re-renders is always the same payload. */
+var _liveVizCards = new Map();
+var LIVE_VIZ_CARDS_MAX = 80;
+
+function _rememberLiveVizCard(id, el) {
+  if (!id || !el) return;
+  if (_liveVizCards.has(id)) _liveVizCards.delete(id);
+  _liveVizCards.set(id, el);
+  while (_liveVizCards.size > LIVE_VIZ_CARDS_MAX) {
+    var oldest = _liveVizCards.keys().next().value;
+    if (oldest === undefined) break;
+    _liveVizCards.delete(oldest);
+  }
+}
+
+function _dropPendingVizId(id) {
+  _pendingViz = _pendingViz.filter(function (item) { return item.id !== id; });
+  _pendingMermaid = _pendingMermaid.filter(function (item) { return item.id !== id; });
+}
+
+/**
+ * Swap freshly-parsed `data-viz-state="loading"` placeholders inside `root`
+ * for the already-rendered card element bearing the same id. Run BEFORE
+ * processPendingViz/processPendingMermaid so the reclaimed cards are skipped
+ * by the handshake/render passes. No-op for ids never rendered before.
+ */
+export function reclaimVizCards(root) {
+  if (!root || typeof root.querySelectorAll !== 'function' || !_liveVizCards.size) return;
+  var fresh = root.querySelectorAll('.viz[id][data-viz-state="loading"]');
+  for (var i = 0; i < fresh.length; i++) {
+    var card = fresh[i];
+    var cached = _liveVizCards.get(card.id);
+    /* Only adopt a detached element — a still-connected twin belongs to a
+       different message that happens to share the same content hash. */
+    if (!cached || cached === card || cached.isConnected) continue;
+    try {
+      card.replaceWith(cached);
+      _dropPendingVizId(card.id);
+    } catch (_) { /* leave the placeholder to render normally */ }
+  }
+}
+
 export var VIZ_ICON_RENDER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
 export var VIZ_ICON_RELOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
 export var VIZ_ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
@@ -135,10 +185,21 @@ function validMermaid(code) {
   catch (_) { return false; }
 }
 
+/* P_mermaid-parse-cache — during streaming the same stableId is re-rendered
+   every painted frame, and each call used to pay a synchronous
+   mermaid.parse. The id is derived from the content hash, so a known-good
+   id never needs re-validating. */
+var _mermaidChecked = Object.create(null);
+
 export function renderMermaid(code, opts) {
   opts = opts || {};
-  if (typeof mermaid !== "undefined" && !validMermaid(code)) {
-    return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
+  var stableId = opts.stableId;
+  if (typeof mermaid !== "undefined" && !(stableId && _mermaidChecked[stableId] === 'ok')) {
+    var ok = validMermaid(code);
+    if (stableId) _mermaidChecked[stableId] = ok ? 'ok' : 'bad';
+    if (!ok) {
+      return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
+    }
   }
   /* P_viz-stable-id — accept opts.stableId so a streaming fence
      keeps the same card id across rAF ticks. Without this the
@@ -146,7 +207,11 @@ export function renderMermaid(code, opts) {
      viz-card-N every tick, blowing away the previous iframe and
      orphaning the postMessage handshake. */
   var id = opts.stableId || "mermaid-card-" + (++_vizId);
-  _pendingMermaid.push({ id: id, code: code });
+  /* Same id ⇒ same code (the stable id is a content hash), so a repeat
+     push only duplicates queue work. */
+  if (!_pendingMermaid.some(function (item) { return item.id === id; })) {
+    _pendingMermaid.push({ id: id, code: code });
+  }
   queueVizActions(id);
   if (typeof mermaid === "undefined") ensureMermaid();
   return '<div class="viz" id="' + id + '" data-viz-state="loading">' +
@@ -169,6 +234,7 @@ function renderMermaidFallback(item) {
   if (!body) return;
   body.innerHTML = '<pre><code class="language-mermaid">' + esc(item.code) + '</code></pre>';
   el.setAttribute('data-viz-state', 'ready');
+  _rememberLiveVizCard(item.id, el);
 }
 
 export function processPendingMermaid() {
@@ -185,6 +251,10 @@ export function processPendingMermaid() {
   var pending = _pendingMermaid;
   _pendingMermaid = [];
   pending.forEach(function (item) {
+    var liveEl = document.getElementById(item.id);
+    /* A card reclaimed from the live-card registry is already rendered —
+       re-rendering it would flash its SVG away and back. */
+    if (liveEl && liveEl.getAttribute('data-viz-state') !== 'loading') return;
     if (!validMermaid(item.code)) {
       var el = document.getElementById(item.id);
       if (!el) return;
@@ -206,6 +276,7 @@ export function processPendingMermaid() {
           if (!body) return;
           body.innerHTML = result.svg;
           el.setAttribute('data-viz-state', 'ready');
+          _rememberLiveVizCard(item.id, el);
           if (result.bindFunctions) result.bindFunctions(body);
           var svg = body.querySelector('svg');
           if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
@@ -219,6 +290,7 @@ export function processPendingMermaid() {
           var src = esc(item.code || '');
           body.innerHTML = vizErrorHtml(msg, src);
           el.setAttribute('data-viz-state', 'error');
+          _rememberLiveVizCard(item.id, el);
         })
         .then(function () {
           delete _mermaidInFlight[item.id];
@@ -232,6 +304,7 @@ export function processPendingMermaid() {
       var src = esc(item.code || '');
       body.innerHTML = vizErrorHtml(msg, src);
       el.setAttribute('data-viz-state', 'error');
+      _rememberLiveVizCard(item.id, el);
       delete _mermaidInFlight[item.id];
     }
   });
@@ -328,7 +401,9 @@ export function renderViz(htmlStr, opts) {
     '" sandbox="allow-scripts" title="Canvas" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:160px">' +
     '</iframe>';
-  _pendingViz.push({ id: id });
+  if (!_pendingViz.some(function (item) { return item.id === id; })) {
+    _pendingViz.push({ id: id });
+  }
   queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="loading" data-title="' + esc(title) + '">' +
     vizActions(id, true) +
@@ -486,7 +561,9 @@ export function renderPlot(spec, opts) {
     '" sandbox="allow-scripts" title="Plot of ' + esc(parsed.expr) + '" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:340px">' +
     '</iframe>';
-  _pendingViz.push({ id: id });
+  if (!_pendingViz.some(function (item) { return item.id === id; })) {
+    _pendingViz.push({ id: id });
+  }
   queueVizActions(id);
   return '<div class="viz" id="' + id + '" data-viz-state="loading" data-title="' + esc(title) + '">' +
     vizActions(id, true) +
@@ -521,6 +598,10 @@ export function processPendingViz(root) {
   pending.forEach(function (item) {
     var el = document.getElementById(item.id);
     if (!el) return;
+    /* A card adopted from the live registry already completed its
+       handshake — re-registering would slap a loading handshake + 5s
+       max-timer onto a fully rendered iframe. */
+    if (el.getAttribute('data-viz-state') !== 'loading') return;
     var iframe = el.querySelector('iframe');
     if (!iframe) return;
     var existing = _pendingReady[item.id];
@@ -569,6 +650,7 @@ export function processPendingViz(root) {
         if (!card.isConnected) return;
         if (!iframeIsBlank(iframe)) {
           card.setAttribute('data-viz-state', 'ready');
+          _rememberLiveVizCard(item.id, card);
           _hideLoading(card);
           clearTimeout(entry.maxTimer);
           delete _pendingReady[item.id];
@@ -592,6 +674,7 @@ export function processPendingViz(root) {
           // self-binds; there is no global data-action scan anymore.
           _bindAction(banner.querySelector('.viz-error-btn'));
         }
+        _rememberLiveVizCard(item.id, card);
         _hideLoading(card);
         clearTimeout(entry.maxTimer);
         delete _pendingReady[item.id];
@@ -645,6 +728,7 @@ function _markReady(id) {
     return;
   }
   card.setAttribute('data-viz-state', 'ready');
+  _rememberLiveVizCard(id, card);
   // If the iframe posted a height, adopt it so the card doesn't
   // show a fixed min-height when the content is shorter/longer.
   if (entry.lastHeight && entry.lastHeight > 16) {
@@ -668,6 +752,7 @@ function _markError(id, message) {
   if (!card) { delete _pendingReady[id]; delete _vizCards[id]; return; }
   if (card.getAttribute('data-viz-state') === 'error') return;
   card.setAttribute('data-viz-state', 'error');
+  _rememberLiveVizCard(id, card);
   _hideLoading(card);
   var body = card.querySelector('.viz-body');
   if (body) {

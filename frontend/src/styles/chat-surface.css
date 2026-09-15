@@ -197,7 +197,15 @@ body,
   color: var(--conversation-text) !important;
   box-shadow: none !important;
   overflow: visible !important;
-  transition: border-color 180ms ease, background-color 180ms ease !important;
+  /* P_kb-shape-anim — include min-height so the data-keyboard-open
+     shape change (one-row → two-row, 104→110px) eases in alongside
+     the --keyboard-inset rise instead of popping in one frame.
+     grid-template-rows can't be interpolated (3 rows → 2 rows), so
+     the row reflow is still instant, but the min-height transition
+     covers the visible height delta. The --keyboard-inset rise is
+     owned by keyboardViewport.js (frame-by-frame writes to .chat-view
+     / #topicSetup padding-bottom), not by this transition. */
+  transition: border-color 180ms ease, background-color 180ms ease, min-height 200ms cubic-bezier(.22,1,.36,1) !important;
 }
 
 #appShell#appShell #topicInputWrap:not(.voice-recording-active) {
@@ -593,18 +601,52 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     flex-direction: column !important;
     justify-content: flex-end !important;
     min-height: calc(100dvh - 56px) !important;
-    padding: 0 16px var(--conversation-safe-bottom) !important;
+    /* P_topic-kb-avoid — consume the animated --keyboard-inset so the
+       landing composer rises smoothly with the rAF-interpolated value
+       instead of jumping to its target via an instant scroll. The
+       shell freeze (keyboardViewport.js) keeps the layout viewport at
+       its pre-keyboard height, so --keyboard-inset is the exact number
+       of CSS pixels the keyboard covers. max() collapses to the resting
+       safe-area when no keyboard is open. No CSS transition is set
+       here: keyboardViewport.js writes --keyboard-inset frame-by-frame,
+       and a transition would lag behind those writes by one frame. */
+    padding: 0 16px max(var(--conversation-safe-bottom), var(--keyboard-inset, 0px)) !important;
   }
 
   #appShell#appShell #topicSetup .topic-title.greeting {
+    /* P_greeting-mobile-center — keep the composer in its bottom action
+       band, but position the greeting independently in the live landing
+       viewport. A static flex item inherits the bottom justification and
+       drifts when the mobile browser changes its URL-bar/dvh height. The
+       absolute box uses the topic surface's actual height and its own
+       translateY, so its line box sits at a fixed proportion of the
+       surface without moving the composer or the rest of the landing
+       content. 42% of the surface lands the line just above the optical
+       centre (~45% of the viewport), matching the reference hero. Full-
+       width inset + text-align center also avoids the sub-pixel asymmetry
+       caused by a nested 16px content inset. */
     position: absolute !important;
-    top: 39% !important;
-    left: 16px !important;
-    right: 16px !important;
+    inset-inline: 0 !important;
+    top: 42% !important;
+    bottom: auto !important;
+    transform: translateY(-50%) !important;
+    align-self: auto !important;
+    width: auto !important;
     max-width: none !important;
     margin: 0 !important;
-    transform: translateY(-50%) !important;
-    font-size: clamp(28px, 8vw, 30px) !important;
+    text-align: center !important;
+    font-size: clamp(26px, 7.5vw, 30px) !important;
+    /* P_greeting-optical-center — negative letter-spacing adds a
+       trailing -0.01em after the last character that is included in
+       the layout width but not visible, so text-align:center centers
+       a box ~0.01em narrower than the visible text and the optical
+       centre lands ~0.005em right of the geometric centre. On a
+       29px mobile hero that is ~0.15px — sub-pixel on desktop but
+       ~0.5 device px on a 3× DPR phone, where CJK glyphs make the
+       asymmetry more legible. text-indent shifts the first (only)
+       line left by half the trailing space, pulling the optical
+       centre back onto the geometric centre. */
+    text-indent: -0.005em !important;
   }
 
   #appShell#appShell #topicInputWrap:not(.voice-recording-active),
@@ -700,7 +742,7 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
     margin: 0 auto !important;
     padding: 0 8px !important;
     border-radius: 28px !important;
-    grid-template-columns: 36px minmax(0, 1fr) auto 36px !important;
+    grid-template-columns: 36px minmax(0, 1fr) auto 36px 36px !important;
     grid-template-rows: 52px !important;
     align-items: center !important;
   }
@@ -729,8 +771,9 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
   [data-mode="light"] { --conversation-page: #fff; }
 }
 
-/* Mobile: the add-content menu is a 16px floating card, the chat reasoning
-   pill only appears with focus, and the header utilities are 44px. */
+/* Mobile: the add-content menu is a 16px floating card, the reasoning
+   pill stays visible at rest like the reference "高⌄" affordance, and the
+   header utilities are 44px. */
 @media (max-width: 768px) {
   /* The add-content menu is portaled to <body>, outside #appShell, so the
      id is doubled to step over `body #composerToolsMenu`. */
@@ -738,8 +781,41 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
     border-radius: 16px !important;
   }
 
-  #appShell#appShell #chatInputWrap:not(.composer-focused) .effort-picker {
-    display: none !important;
+  /* A legacy ≤480px rule still hides the caret; the reference pill shows
+     the level label plus a chevron on every phone width. Scoped to the
+     wrap ids so it also beats the focused/multiline caret-hiding layer. */
+  #appShell#appShell #topicInputWrap .effort-trigger .effort-caret,
+  #appShell#appShell #chatInputWrap .effort-trigger .effort-caret {
+    display: block !important;
+  }
+
+  /* Selected tools/plugins render as a blue pill in the controls row,
+     immediately right of "+", matching the mobile reference. Flattening
+     the two editor wrappers (display:contents) turns the chip strip and
+     the editor host into direct grid items of the composer card, so the
+     strip lands in the spare 1fr track of the controls row and the card
+     keeps its compact resting height instead of growing a third tier. */
+  #appShell#appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .composer-editor-root,
+  #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .composer-editor-root,
+  #appShell#appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .rich-composer,
+  #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .rich-composer {
+    display: contents !important;
+  }
+
+  #appShell#appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .rich-composer > div:not(.composer-plugin-chips),
+  #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .rich-composer > div:not(.composer-plugin-chips) {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    min-width: 0 !important;
+  }
+
+  #appShell#appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .composer-plugin-chips,
+  #appShell#appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) .composer-plugin-chips {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    align-self: center !important;
+    min-height: 0 !important;
+    padding: 0 !important;
   }
 
   #appShell#appShell #findBtn,

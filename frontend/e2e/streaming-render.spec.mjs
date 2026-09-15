@@ -171,6 +171,56 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
   expect(Math.abs(afterFinishTop - beforeFinishTop)).toBeLessThanOrEqual(2);
 });
 
+/* P_h3-cjk-contrast — an `### 标题` heading must read as a heading in
+   Chinese, not as body text. The previous .msg-body h3 (font-size 1.05em,
+   weight 500, --text-100) was visually indistinguishable from <p> in
+   dark mode on Chinese characters. Bumping to 1.18em + weight 600 +
+   --text-000 makes the heading stand out. The DOM tag is rendered by
+   formatMsg (covered by streaming.test.mjs); this test guards the
+   visual contrast instead. */
+test('markdown h3 heading is visually distinct from body text', async ({ page }) => {
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+  });
+  await page.evaluate(() => {
+    window.addMessage?.('assistant',
+      '我们用两种方法求解这个问题：\n\n' +
+      '### 方法 1：特征方程法\n\n' +
+      '建立特征方程 $r^2 - 2r + 1 = 0$，\n\n' +
+      '可以解出 $r = 1$ 是二重根。',
+    );
+  });
+  await expect(page.locator('#msgList .msg.assistant .msg-body h3')).toHaveCount(1);
+  const metrics = await page.evaluate(() => {
+    const body = document.querySelector('#msgList .msg.assistant .msg-body');
+    const heading = body?.querySelector('h3');
+    const paragraph = body?.querySelector('p');
+    if (!heading || !paragraph) return null;
+    const h = getComputedStyle(heading);
+    const p = getComputedStyle(paragraph);
+    return {
+      headingSize: parseFloat(h.fontSize),
+      headingWeight: parseInt(h.fontWeight, 10),
+      headingColor: h.color,
+      bodySize: parseFloat(p.fontSize),
+      bodyColor: p.color,
+      headingText: heading.textContent,
+    };
+  });
+  expect(metrics).not.toBeNull();
+  expect(metrics.headingText).toContain('方法 1：特征方程法');
+  /* Heading must be at least 10% larger than the body text in em units.
+     The previous 1.05em failed this — Chinese characters at that delta
+     read as the same line of text. */
+  expect(metrics.headingSize).toBeGreaterThanOrEqual(metrics.bodySize * 1.1);
+  /* Heading weight must be heavier than the body's (typically 400).
+     600 vs 400 is a clear, perceptible bump; 500 vs 400 was barely
+     distinguishable on CJK glyphs. */
+  expect(metrics.headingWeight).toBeGreaterThanOrEqual(600);
+});
+
 /* P_anchor-finish — when the reader is looking at the top of the streaming
    answer when finish() lands, the handoff must keep them on the same row
    instead of snapping to distance-from-bottom zero — which is the "jumped
@@ -178,7 +228,7 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
    what used to fail here: the finalized turn is a different height than the
    streaming one (the running row folds into its group, the status line
    retires), so "preserve distance-from-bottom" produced scrollTop=0 every
-   time. The row-anchor restore avoids this by tracking which row was at the
+   time. the row-anchor restore avoids this by tracking which row was at the
    scroller's viewport top. */
 test('finish preserves mid-message scroll position (row anchor)', async ({ page }) => {
   await prepareDelayedStream(page, { delay: 80 });

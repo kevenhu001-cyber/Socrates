@@ -309,9 +309,12 @@ export function _autoWrapBareBracketMath(s: string): string {
    so marked renders the line as literal prose and the heading markers
    leak into the answer. Re-insert the space. Fenced code is skipped so
    `#include`-style lines and shell comments are never touched; a digit
-   directly after the run also bails (`#1`, `#2`) because those read as
-   prose enumerations far more often than as headings. Idempotent, so it
-   is safe to run on every streaming frame. */
+   directly after a 1–2 `#` run also bails (`#1`, `#2`) because those
+   read as prose enumerations far more often than as headings. 3+ `#`
+   followed by a digit (e.g. `###1. 方法`, `###1、特征方程法`) is almost
+   always a heading with a missing space — `###1` as a reference is
+   vanishingly rare — so the space is inserted there too. Idempotent,
+   so it is safe to run on every streaming frame. */
 export function fixHeadingMarkers(s: string): string {
   const lines = String(s).split('\n');
   let inFence = false;
@@ -326,7 +329,12 @@ export function fixHeadingMarkers(s: string): string {
       continue;
     }
     if (inFence) continue;
-    lines[i] = line.replace(/^([ \t]{0,3})(#{1,6})(?=[^\s#\d])/, '$1$2 ');
+    /* Two passes: first the 1–2 `#` case that bails on digits (preserves
+       `#1`/`#2` as prose), then the 3–6 `#` case that allows digits (fixes
+       `###1. 方法` → `### 1. 方法`). Both are idempotent. */
+    lines[i] = line
+      .replace(/^([ \t]{0,3})(#{1,2})(?=[^\s#\d])/, '$1$2 ')
+      .replace(/^([ \t]{0,3})(#{3,6})(?=[^\s#])/, '$1$2 ');
   }
   return lines.join('\n');
 }

@@ -93,7 +93,8 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const mobileComposer = page.locator('#chatInputWrap');
   const mobileEditor = page.locator('#chatComposerRoot .rich-composer-editor');
   await expect(mobileComposer.locator('.rich-composer-toolbar')).toBeHidden();
-  await expect(mobileComposer.locator('.effort-picker')).toBeHidden();
+  /* The reference keeps the reasoning-effort pill visible at rest. */
+  await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
   const collapsedBox = await mobileComposer.boundingBox();
   /* The in-session mobile composer matches the landing (topic) card: a
      two-row surface (~104px) that only grows for a wrapped draft. */
@@ -123,24 +124,25 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await mobileEditor.click();
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
   // Focus is a state cue, not a layout jump. The same compact row stays in
-  // place until the editor actually becomes multiline.
+  // place until the editor actually becomes multiline. The effort pill is
+  // already visible at rest, matching the reference.
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
   const focusedEditorBox = await page.locator('#chatComposerRoot').boundingBox();
-  /* The focused state restores the reasoning control, so the editor is
-     intentionally narrower than the outer pill while every control remains
-     on the same row. */
-  // The mobile rail exposes the reasoning control on focus, leaving a
+  /* The effort pill is already visible at rest, so focus only narrows the
+     editor column while every control stays on the same row. */
+  // The mobile rail keeps the reasoning control exposed, leaving a
   // compact but readable editor column at the 390px reference width.
   expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(120);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
-  /* Focus reveals the reasoning control without leaving the two-row card. */
+  /* Focus must not push the card out of its two-row height. */
   expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(112);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
-  await expect(mobileComposer.locator('.effort-picker')).toBeHidden();
+  /* Blur does not re-hide the pill — the reference shows it at rest. */
+  await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
   await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
 });
