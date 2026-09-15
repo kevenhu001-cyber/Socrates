@@ -1,25 +1,23 @@
-/* Socrates editorial marketing system — warm paper, ink, and research objects.
+/* Socrates editorial marketing system — lunar monochrome (dark).
    Editorial.css is the older of the two style layers (brand.css is loaded
-   last and overrides it). We keep the variables here only for backwards
-   compatibility with the legacy selectors that still live below. The
-   actual visible typography — display serif, CJK stack, legal layout,
-   product-block scale — is owned by brand.css. */
+   last and overrides it). Tokens below are dark-first so every page renders
+   deep-space even before brand.css wins the cascade. */
 :root {
-  --ed-paper: #f4f1e9;
-  --ed-paper-strong: #eee8dc;
-  --ed-paper-soft: #faf9f5;
-  --ed-sand: #e5dbc9;
-  --ed-sand-deep: #d9cdb9;
-  --ed-ink: #171716;
-  --ed-ink-soft: #56534e;
-  --ed-ink-muted: #77716a;
-  --ed-line: #d9d0c3;
-  --ed-line-dark: rgba(255, 255, 255, .17);
-  --ed-black: #171716;
-  --ed-black-soft: #22201d;
-  --ed-clay: #9a5a3b;
-  --ed-clay-warm: #b86a45;
-  --ed-clay-soft: rgba(154, 90, 59, .12);
+  --ed-paper: #0a0a0c;
+  --ed-paper-strong: #050507;
+  --ed-paper-soft: #111114;
+  --ed-sand: #1a1a1e;
+  --ed-sand-deep: #222226;
+  --ed-ink: #f4f4f6;
+  --ed-ink-soft: rgba(244, 244, 246, .72);
+  --ed-ink-muted: rgba(244, 244, 246, .50);
+  --ed-line: rgba(255, 255, 255, .10);
+  --ed-line-dark: rgba(255, 255, 255, .10);
+  --ed-black: #000000;
+  --ed-black-soft: #0a0a0c;
+  --ed-clay: #e8e8ee;
+  --ed-clay-warm: #c8c8d2;
+  --ed-clay-soft: rgba(232, 232, 238, .12);
   /* Legacy aliases — kept so selectors that still reference --ed-serif
      and --ed-sans below don't crash, but brand.css wins on the visible
      surface. We deliberately removed "Segoe UI" and the system CJK
@@ -67,14 +65,14 @@ body.ed-menu-open { overflow: hidden; }
 body.ed-site::-webkit-scrollbar { width: 12px; height: 12px; }
 body.ed-site::-webkit-scrollbar-track { background: var(--ed-paper); }
 body.ed-site::-webkit-scrollbar-thumb {
-  background: rgba(23, 23, 22, .18);
+  background: rgba(255, 255, 255, .16);
   border: 3px solid var(--ed-paper);
   border-radius: 999px;
   transition: background .2s var(--ed-ease);
 }
 body.ed-site::-webkit-scrollbar-thumb:hover { background: var(--ed-clay); }
 /* Firefox thin scrollbar */
-body.ed-site { scrollbar-width: thin; scrollbar-color: rgba(23, 23, 22, .22) var(--ed-paper); }
+body.ed-site { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .18) var(--ed-paper); }
 
 /* Smooth focus ring — anthropic-style outline-offset so it never clips
    the rounded button corners. */
@@ -423,7 +421,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   color: inherit;
   transition: border-color .15s ease, background .15s ease;
 }
-.ed-portal:hover { background: var(--ed-paper-strong); border-color: rgba(23, 23, 22, .22); }
+.ed-portal:hover { background: var(--ed-paper-strong); border-color: rgba(255, 255, 255, .20); }
 .ed-portal h3 { margin: 14px 0 10px; font-family: var(--ed-serif); font-size: 22px; font-weight: 400; letter-spacing: -.012em; transition: color .15s ease; }
 .ed-portal:hover h3 { color: var(--ed-clay); }
 .ed-portal p { max-width: 24ch; margin: 0; color: var(--ed-ink-soft); font-family: var(--ed-serif); font-size: 17px; line-height: 1.4; }
@@ -459,7 +457,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-story-card p { margin: 0; color: var(--ed-ink-soft); font-size: 15px; line-height: 1.58; }
 .ed-story-card.dark p { color: rgba(244, 241, 233, .66); }
 .ed-card-meta { display: grid; gap: 10px; margin-top: auto; padding-top: 26px; }
-.ed-card-meta div { display: flex; justify-content: space-between; gap: 14px; padding-top: 10px; border-top: 1px solid rgba(23, 23, 22, .12); color: var(--ed-ink-soft); font-size: 12px; }
+.ed-card-meta div { display: flex; justify-content: space-between; gap: 14px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .10); color: var(--ed-ink-soft); font-size: 12px; }
 .ed-story-card.dark .ed-card-meta div { border-top-color: var(--ed-line-dark); color: rgba(244, 241, 233, .62); }
 
 /* Lists and publication routes */
@@ -483,6 +481,13 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-inline-feature img { width: 100%; aspect-ratio: 1.32; object-fit: cover; border-radius: 12px; }
 .ed-inline-feature h2 { margin: 14px 0 18px; color: var(--ed-paper); font-family: var(--ed-serif); font-size: clamp(30px, 3.4vw, 48px); font-weight: 400; line-height: 1.04; letter-spacing: -.022em; }
 .ed-inline-feature p { max-width: 33ch; margin: 0; color: rgba(244, 241, 233, .72); font-size: 16px; line-height: 1.6; }
+
+/* Real product captures */
+.ed-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 56px; }
+.ed-shot { margin: 0; }
+.ed-shot-lead { grid-column: 1 / -1; }
+.ed-shot img { display: block; width: 100%; aspect-ratio: 1.6; object-fit: cover; border: 1px solid var(--ed-line); border-radius: var(--ed-radius-sm); background: var(--ed-black-soft); }
+.ed-shot figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; color: var(--ed-ink-muted); font-family: var(--ed-mono); font-size: 10px; letter-spacing: .06em; line-height: 1.55; text-transform: uppercase; }
 
 /* Research, principles, learning, and news reference routes */
 .ed-reference-hero { padding: clamp(72px, 9vw, 128px) 0 clamp(48px, 6vw, 88px); }
@@ -535,8 +540,8 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-course-intro p { max-width: 34ch; margin: 25px 0 0; font-family: var(--ed-serif); font-size: 20px; line-height: 1.35; letter-spacing: -.028em; }
 .ed-course-intro .ed-button-quiet { margin-top: 32px; border-color: var(--ed-ink-muted); }
 .ed-course-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.ed-course-card { display: flex; min-height: 300px; flex-direction: column; justify-content: space-between; padding: 25px; border-radius: 17px; background: rgba(255, 255, 255, .24); color: var(--ed-ink); transition: transform .18s var(--ed-ease), background .18s var(--ed-ease); }
-.ed-course-card:hover { background: rgba(255, 255, 255, .46); transform: translateY(-3px); }
+.ed-course-card { display: flex; min-height: 300px; flex-direction: column; justify-content: space-between; padding: 25px; border-radius: 17px; background: rgba(255, 255, 255, .04); color: var(--ed-ink); transition: transform .18s var(--ed-ease), background .18s var(--ed-ease); }
+.ed-course-card:hover { background: rgba(255, 255, 255, .07); transform: translateY(-3px); }
 .ed-course-card span { font-size: 14px; font-weight: 500; }
 .ed-course-card h3 { max-width: 10ch; margin: 22px 0 auto; font-size: clamp(28px, 2.6vw, 42px); font-weight: 500; letter-spacing: -.065em; line-height: .96; }
 .ed-course-card svg { align-self: flex-end; width: 28px; height: 28px; margin-top: 26px; }
@@ -927,6 +932,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   .ed-publication-row .ed-link { justify-self: start; }
   .ed-inline-feature { grid-template-columns: 1fr; padding: 22px; border-radius: 12px; }
   .ed-inline-feature h2 { font-size: clamp(24px, 6.2vw, 30px); }
+  .ed-shots { grid-template-columns: 1fr; }
   .ed-product-block { grid-template-columns: 1fr; gap: 10px; padding: 22px 0; }
   .ed-product-block h2 { font-size: clamp(24px, 6.2vw, 30px); }
   .ed-product-block p { grid-column: 1; font-size: 15px; }
@@ -1145,7 +1151,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   transition: border-color .18s var(--ed-ease), background .18s var(--ed-ease);
 }
 .ed-search-field input::placeholder { color: var(--ed-ink-muted); }
-.ed-search-field input:focus { border-color: var(--ed-ink); background: #fff; }
+.ed-search-field input:focus { border-color: var(--ed-ink); background: #111114; }
 .ed-research-publications > .ed-filter-bar { margin-top: 34px; }
 .ed-research-publications > .ed-publication-list { margin-top: 28px; }
 .ed-publication-row { color: inherit; text-decoration: none; transition: color .15s ease; }
