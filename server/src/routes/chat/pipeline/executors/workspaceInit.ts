@@ -63,12 +63,17 @@ export const executeInitializeWorkspace: ToolExecutor = async (
         diskBytes: info.snapshot.diskBytes,
         diskLimitBytes: info.snapshot.diskLimitBytes,
       },
-      sandbox: {
+      policy: {
+        /* Stored policy labels, not an OS-level sandbox: isolation today is
+         * the dedicated workspace dir plus the agent's allowlisted process
+         * environment. Do not promise the model more containment than that. */
         mode: info.policy.sandbox,
         approvalPolicy: info.policy.approvalPolicy,
         workingDirectory: '/workspace',
       },
-      capabilities: ['files.read', 'files.write', 'shell.run', 'search', 'mcp'],
+      /* Mirrors the Pi toolset exactly: read, bash, edit, write with
+       * --no-extensions. No web search or MCP inside the workspace. */
+      capabilities: ['files.read', 'files.write', 'files.edit', 'shell.run'],
       note: 'The server owns the real workspace path. Use workspace_agent to run commands, edit files, and inspect the tree.',
     });
     const result: ToolResult = {

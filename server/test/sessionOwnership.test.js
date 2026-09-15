@@ -94,3 +94,39 @@ test('tool dispatch serializes registry-marked calls but keeps independent tools
   assert.deepEqual(await task, ['one', 'two', 'three']);
   assert.deepEqual(events, ['one:start', 'two:start', 'two:end', 'one:end', 'three:start', 'three:end']);
 });
+
+test('tool dispatch uses named serial lanes: shared lane serializes, separate lanes run concurrently', async () => {
+  /* code_interpreter ('code' lane) must not wait behind workspace_agent
+     ('workspace' lane); but initialize_workspace shares 'workspace' and
+     must wait behind an in-flight agent run. */
+  const calls = [
+    { name: 'workspace_agent', id: 'agent' },
+    { name: 'code_interpreter', id: 'code' },
+    { name: 'initialize_workspace', id: 'init' },
+  ];
+  const registry = {
+    get(name) {
+      if (name === 'workspace_agent' || name === 'initialize_workspace') return { sessionSerial: 'workspace' };
+      if (name === 'code_interpreter') return { sessionSerial: 'code' };
+      return { sessionSerial: false };
+    },
+  };
+  const events = [];
+  let releaseAgent;
+  const agentGate = new Promise((resolve) => { releaseAgent = resolve; });
+  const task = dispatchToolCalls(calls, (call) => call.name, registry, async (call) => {
+    events.push(`${call.id}:start`);
+    if (call.id === 'agent') await agentGate;
+    events.push(`${call.id}:end`);
+    return call.id;
+  });
+
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  /* agent is gated, code runs concurrently, init waits on the shared lane. */
+  assert.deepEqual(events, ['agent:start', 'code:start', 'code:end']);
+  releaseAgent();
+  assert.deepEqual(await task, ['agent', 'code', 'init']);
+  assert.deepEqual(events, ['agent:start', 'code:start', 'code:end', 'agent:end', 'init:start', 'init:end']);
+});

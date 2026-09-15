@@ -69,13 +69,14 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
      * example call; the card gets the same detail so a user can see
      * exactly what was wrong. */
     if (entry.rejection) {
-      const { code, retryable, hint } = entry.rejection;
+      const { code, retryable, hint, fieldErrors } = entry.rejection;
       const feedback = buildToolErrorFeedback({
         toolName,
         schema: deps.schemaForTool(toolName),
         errorCode: code,
         retryable,
         hint: hint || null,
+        fieldErrors: fieldErrors || null,
         availableTools: activeToolNames,
       });
       if (code === 'invalid_tool_arguments') {

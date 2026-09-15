@@ -327,6 +327,43 @@ describe('streamChatCompletion: tool_calls', () => {
   });
 });
 
+describe('streamChatCompletion: first-byte timeout', () => {
+  test('errors when the provider accepts the POST but never emits a byte', async () => {
+    /* The silence watchdog is deliberately armed only after the first
+       chunk (reasoning models think for a while); without a separate
+       first-byte budget a silent upstream would hold the request
+       forever. LLM_FIRST_BYTE_TIMEOUT_MS is read per call, so the
+       test can shrink it via env. */
+    const prev = process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
+    process.env.LLM_FIRST_BYTE_TIMEOUT_MS = '50';
+    try {
+      globalThis.fetch = mock.fn(async (_url, init) => new Response(
+        new ReadableStream({
+          start(controller) {
+            /* Honour the caller's abort: the stream stays silent forever
+               until the first-byte timer fires, then errors the reader. */
+            init.signal.addEventListener('abort', () => {
+              const err = new Error('aborted');
+              err.name = 'AbortError';
+              controller.error(err);
+            });
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+      ));
+      const errors = [];
+      await streamChatCompletion(
+        BASE_OPTS, () => {}, () => {}, (err) => errors.push(err),
+      );
+      assert.equal(errors.length, 1);
+      assert.match(errors[0].message, /no response bytes/i);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_FIRST_BYTE_TIMEOUT_MS;
+      else process.env.LLM_FIRST_BYTE_TIMEOUT_MS = prev;
+    }
+  });
+});
+
 describe('tool-call compatibility helpers', () => {
   test('accepts common OpenAI-compatible tool finish reasons', () => {
     assert.equal(isToolFinishReason('tool_calls'), true);

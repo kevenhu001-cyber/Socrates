@@ -46,7 +46,7 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
   try {
     const db = getDb();
     const rows = await db.select().from(connectorConnections)
-      .where(eq(connectorConnections.userId, userId));
+      .where(and(eq(connectorConnections.userId, userId), eq(connectorConnections.status, 'connected')));
     for (const row of rows) {
       connectorConnectionsByProvider[row.provider] = row;
     }
@@ -95,8 +95,12 @@ export async function createStreamToolContext(req: Request & { userId?: string }
   }
 
   /* Side-effecting tools never accept a fuzzy name match: acting on a
-   * guess is worse than returning a correction to the model. */
-  const FUZZY_SAFE = (name: string) => name !== 'code_interpreter' && name !== 'workspace_agent' && name !== 'initialize_workspace';
+   * guess is worse than returning a correction to the model. The caller
+   * applies this to the RESOLVED name — gating on the requested string
+   * would let a near-miss spelling (`code_interprete`) slide into the
+   * sandbox anyway. `pure` is the registry's side-effect flag and it
+   * fails closed: unknown or unmarked names are not fuzzy-safe. */
+  const FUZZY_SAFE = (name: string) => toolRegistry.get(name)?.pure === true;
 
   return {
     toolPolicy,

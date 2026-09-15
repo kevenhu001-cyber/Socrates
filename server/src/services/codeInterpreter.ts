@@ -37,6 +37,7 @@ import { publish, subscribe as pubsubSubscribe, getStatus as pubsubStatus } from
 import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';
 import { isUuid } from '../lib/validate.js';
 import { createSessionExecutionLock } from './sessionExecutionLock.js';
+import { MAX_TOOL_ARGUMENT_CHARS } from './toolCallSafety.js';
 
 /* ─── Execution progress pub/sub ───
  * P_pubsub — replaces the in-process EventEmitter so SSE clients on
@@ -106,6 +107,12 @@ const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '1048
    schema already caps message content at 200 KB; we mirror that for
    the tool's own code argument. */
 const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
+/* The transport layer rejects tool-call arguments above
+ * MAX_TOOL_ARGUMENT_CHARS (80 KB) before this executor ever sees them, so
+ * the advertised schema must not promise more — a model writing to the
+ * documented limit would otherwise be turned away as malformed. ~8 KB of
+ * headroom covers JSON escaping of the code string plus sibling fields. */
+const ADVERTISED_MAX_CODE_CHARS = Math.min(MAX_CODE_CHARS, MAX_TOOL_ARGUMENT_CHARS - 8192);
 const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
   || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : path.join(os.tmpdir(), 'socrates-exec'));
 
@@ -167,10 +174,10 @@ export const CODE_INTERPRETER_TOOL = {
       '- **No top-level `return value`.** `return` with a value is only valid inside a function. If you want a final result, print it.\n' +
       '- **No `break`/`continue` outside loops.** If you need early exit, use `return` inside a function or `sys.exit(N)` at the top level.\n' +
       '- **Indentation must form valid compound statements.** Every `def`, `for`, `if`, `try`, `with`, `while`, `class` needs a properly indented body. Empty bodies need `pass` or `...`.\n' +
-      '- **Never call `input()`.** There is no stdin — it blocks until the 30s timeout. Pass data as a literal, read from a file in `/artifacts`, or generate it inline.\n' +
+      `- **Never call \`input()\`.** There is no stdin — it blocks until the ${DEFAULT_TIMEOUT_MS / 1000}s timeout. Pass data as a literal, read from a file in \`/artifacts\`, or generate it inline.\n` +
       '- **Never call `plt.show()`.** matplotlib is pinned to `Agg` (no GUI). Use `plt.savefig("name.png", ...)` and the file will be returned as an artifact.\n' +
       '- **Never use `pip install`.** This is WASM; no `subprocess`, no network. Use `import micropip; micropip.install("pkg")` at the top of the run. Pyodide ships numpy, pandas, matplotlib, seaborn pre-installed.\n' +
-      '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the model only gets 4 tool iterations per turn.\n\n' +
+      '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the per-turn tool-call budget (stated in the native-tool contract) is finite.\n\n' +
       '## When to call\n' +
       '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
       '- Complex computation, user-file analysis, data preprocessing, or explicitly requested CSV/PNG exports. For ordinary inline charts and function graphs, use render_visualization instead.\n' +
@@ -182,7 +189,7 @@ export const CODE_INTERPRETER_TOOL = {
       `## Limits\n` +
       `- Timeout: ${DEFAULT_TIMEOUT_MS / 1000}s default. Worker is killed if exceeded → status returns \`timeout\`.\n` +
       `- stdout / stderr capped at ${MAX_OUTPUT_BYTES / 1024} KB each per stream; exceeding it returns \`output_limit_exceeded\`.\n` +
-      `- Source capped at ${MAX_CODE_CHARS / 1024} KB; oversized source returns \`code_too_large\` before any execution.\n` +
+      `- Source capped at ${Math.floor(ADVERTISED_MAX_CODE_CHARS / 1024)} KB; oversized source returns \`code_too_large\` or \`invalid_tool_arguments\` before any execution. Split long programs into multiple calls.\n` +
       '- No subprocess, no network fetch from Python, no host filesystem access.\n\n' +
       '## Filesystem\n' +
       '- cwd is `/artifacts`, mapped to a session-scoped scratch dir that persists across every code call in this conversation.\n' +
@@ -215,8 +222,8 @@ export const CODE_INTERPRETER_TOOL = {
         },
           code: {
             type: 'string',
-            description: 'Python source code to execute. Files written to disk (matplotlib.savefig, open(..., "w"), pandas.to_csv) persist across every code call in this conversation — the scratch dir is session-scoped.',
-            maxLength: 200000,
+            description: `Python source code to execute (max ${Math.floor(ADVERTISED_MAX_CODE_CHARS / 1024)} KB — split longer programs into multiple calls). Files written to disk (matplotlib.savefig, open(..., "w"), pandas.to_csv) persist across every code call in this conversation — the scratch dir is session-scoped.`,
+            maxLength: ADVERTISED_MAX_CODE_CHARS,
           },
       },
       required: ['code'],

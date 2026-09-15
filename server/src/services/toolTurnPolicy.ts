@@ -192,12 +192,22 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
  * Used for the duplicate-call guard, so `{"a":1,"b":2}` and `{"b":2,"a":1}`
  * are recognised as the same call. Falls back to the raw string form when a
  * value cannot be serialized.
+ *
+ * The key is bounded but NOT a bare prefix: large argument objects
+ * (code bodies up to 80 KB, agent tasks up to 20 KB) that differ only
+ * past the 4 KB mark would otherwise collide and get wrongly rejected
+ * as duplicates. Length plus a head/tail sample keeps the key short
+ * while still distinguishing tail edits.
  */
 export function hashToolArguments(value: unknown): string {
   try {
-    return stableStringify(value).slice(0, 4096);
+    const serialized = stableStringify(value);
+    return serialized.length <= 4096
+      ? serialized
+      : `${serialized.length}:${serialized.slice(0, 3584)}…${serialized.slice(-512)}`;
   } catch {
-    return String(value).slice(0, 4096);
+    const raw = String(value);
+    return raw.length <= 4096 ? raw : `${raw.length}:${raw.slice(0, 3584)}…${raw.slice(-512)}`;
   }
 }
 

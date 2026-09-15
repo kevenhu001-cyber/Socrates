@@ -74,7 +74,7 @@ export interface PreparedCall {
   toolName: string;
   registryEntry: ReturnType<ReturnType<typeof import('../../../services/toolRegistry.js').createToolRegistry>['get']> | null;
   args: Record<string, any>;
-  rejection: { code: string; retryable: boolean; hint?: string } | null;
+  rejection: { code: string; retryable: boolean; hint?: string; fieldErrors?: string } | null;
 }
 
 /** Per-request pipeline context handed to every stage. */

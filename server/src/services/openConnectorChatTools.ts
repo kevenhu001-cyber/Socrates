@@ -2344,11 +2344,17 @@ export async function executeOpenConnectorTool(
   if (!spec || !connection || connection.status !== 'connected') {
     return { status: 'failed', errorCode: 'app_not_connected', error: 'The required app is not connected.', userMessage: 'Connect this app in Plugin Center first.' };
   }
+  /* Prefer the connectionName persisted on the authenticated row: in
+   * OOMOL-cloud mode rows carry 'socrates', in sidecar mode the
+   * per-user namespaced name. Deriving it from userId would silently
+   * target the wrong sidecar connection for cloud-provisioned rows. */
+  const connectionName = (typeof connection.connectionName === 'string' && connection.connectionName)
+    || connectionNameForUser(userId);
   try {
     const data = await executeSidecarAction({
       actionId: spec.actionId,
       input: validated.args,
-      connectionName: connectionNameForUser(userId),
+      connectionName,
     });
     const output = JSON.stringify(data);
     return {
