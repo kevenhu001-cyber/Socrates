@@ -27,6 +27,7 @@ import {
   repairToolArguments,
   resolveToolName,
   sanitizeToolCallForProtocol,
+  validateToolArguments,
 } from '../../../services/toolCallSafety.js';
 import { hashToolArguments } from '../../../services/toolTurnPolicy.js';
 import { dispatchToolCalls } from '../../../services/toolDispatch.js';
@@ -283,6 +284,10 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   /* Kept structurally loose to match the legacy `finalMessages` shape that
      appendNativeToolContract / prependCodeInterpreterPrompt accept. */
   let workingMessages: any[] = finalMessages as any[];
+  /* Calls that exceeded the per-iteration cap on the previous hop and were
+   * dropped without executing — surfaced in the contract so the model
+   * knows they never ran (they are not echoed upstream either). */
+  let lastDroppedCalls = 0;
 
   for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
     const toolsAllowed = toolPolicy.toolsAllowed(iter);
@@ -308,6 +313,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           limits: toolsAllowed ? toolPolicy.snapshot() : null,
           disabledTools: toolPolicy.disabledTools(),
           examples: toolExamples,
+          droppedCalls: lastDroppedCalls,
         },
       ),
       activeToolNames,
@@ -444,11 +450,29 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
      * one canonical argument object. Anything that cannot be explained
      * becomes a structured rejection carrying the tool's schema and a
      * copy-ready example. */
+    /* Count the calls the per-iteration cap just dropped so the next
+       * contract appendix can tell the model they never ran. */
+    const droppedCalls = Math.max(0, toolCallsThisTurn.length - boundedToolCalls.length);
+    lastDroppedCalls = droppedCalls;
+    if (droppedCalls > 0) {
+      console.warn('[chat/stream] dropped tool calls over per-iteration cap', JSON.stringify({
+        dropped: droppedCalls, cap: toolPolicy.maxCallsPerIteration,
+      }));
+    }
+
     const prepared: PreparedCall[] = boundedToolCalls.map((call) => {
       const requestedName = call.function?.name || '';
-      const resolved = resolveToolName(requestedName, toolNames, {
-        allowFuzzy: FUZZY_SAFE(requestedName),
-      });
+      /* Fuzzy matching is always attempted, then gated on the RESOLVED
+       * target: a near-miss name that lands on a side-effecting tool
+       * (code_interpreter, workspace_agent, initialize_workspace) must
+       * fail closed as unknown_tool, not execute on a guess. The old
+       * code gated on the requested name, which let `code_interprete`
+       * slide straight into the sandbox. */
+      const resolved = resolveToolName(requestedName, toolNames, { allowFuzzy: true });
+      if (resolved.name && resolved.match === 'fuzzy' && !FUZZY_SAFE(resolved.name)) {
+        resolved.name = null;
+        resolved.match = 'none';
+      }
       const toolName = resolved.name || requestedName;
       if (resolved.name && resolved.match !== 'exact') {
         console.info('[tool-resolve]', JSON.stringify({
@@ -482,12 +506,24 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           code: 'invalid_tool_arguments',
           retryable: toolPolicy.remainingRetries(resolved.name) > 1,
         };
-      } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
-        rejection = {
-          code: 'duplicate_tool_call',
-          retryable: true,
-          hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
-        };
+      } else {
+        /* Repair coerced the shape; now enforce the declared contract
+         * (required fields, bounds, enums) so a malformed call gets the
+         * correction package instead of a wasted execution. */
+        const validation = validateToolArguments(args, schema);
+        if (!validation.ok) {
+          rejection = {
+            code: 'invalid_tool_arguments',
+            retryable: toolPolicy.remainingRetries(resolved.name) > 1,
+            fieldErrors: validation.fieldErrors.join('; '),
+          };
+        } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
+          rejection = {
+            code: 'duplicate_tool_call',
+            retryable: true,
+            hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
+          };
+        }
       }
       if (resolved.name && !rejection) {
         toolPolicy.registerCall(resolved.name, hashToolArguments(args));

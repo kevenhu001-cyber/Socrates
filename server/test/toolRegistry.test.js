@@ -4,13 +4,21 @@ import { createToolRegistry } from '../src/services/toolRegistry.js';
 
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });
-  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', 'workspace_agent', 'initialize_workspace', 'render_visualization', 'web_search', 'web_fetch', 'create_plan', 'create_spec', 'arxiv_search']);
+  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', 'workspace_agent', 'initialize_workspace', 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'create_plan', 'create_spec', 'arxiv_search']);
   const tutor = createToolRegistry({ codeInterpreterToolDef: null, mode: 'tutor' });
-  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), ['workspace_agent', 'initialize_workspace', 'render_visualization', 'web_search', 'web_fetch', 'create_plan', 'create_spec', 'arxiv_search']);
-  assert.equal(chat.get('code_interpreter').sessionSerial, true);
-  assert.equal(chat.get('workspace_agent').sessionSerial, true);
-  assert.equal(chat.get('initialize_workspace').sessionSerial, true);
+  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), ['workspace_agent', 'initialize_workspace', 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'create_plan', 'create_spec', 'arxiv_search']);
+  /* sessionSerial carries the lane name: workspace tools share 'workspace'
+     (a reset must not overlap an agent run); code_interpreter's scratch
+     dir is an independent 'code' lane. */
+  assert.equal(chat.get('code_interpreter').sessionSerial, 'code');
+  assert.equal(chat.get('workspace_agent').sessionSerial, 'workspace');
+  assert.equal(chat.get('initialize_workspace').sessionSerial, 'workspace');
   assert.equal(chat.get('initialize_workspace').pure, false);
   assert.equal(tutor.get('workspace_agent').pure, false);
   assert.equal(chat.get('render_visualization').pure, true);
+  /* read_attachment is pure (no side effects) and unserialized — the
+     model may page several files in parallel within one turn. */
+  assert.equal(chat.get('read_attachment').pure, true);
+  assert.equal(chat.get('read_attachment').sessionSerial, false);
+  assert.equal(tutor.get('read_attachment').enabled, true);
 });

@@ -15,7 +15,17 @@
  * LLM_SILENCE_TIMEOUT_MS — aborts the upstream fetch when NO bytes arrive
  *   for this many ms. Defaults to 120 s: a live reasoning stream emits
  *   deltas continuously, so 2 min of total silence means a dead
- *   connection, not deep thought. Set to 0 to disable. */
+ *   connection, not deep thought. Set to 0 to disable. The watchdog is
+ *   deliberately armed only AFTER the first chunk (see P_silence_fix
+ *   below), so it does not bound the initial thinking latency.
+ *
+ * LLM_FIRST_BYTE_TIMEOUT_MS — bounds the wait for the FIRST byte,
+ *   covering both the POST and the initial thinking burst. Defaults to
+ *   180 s, comfortably above the 60–120 s that reasoning models
+ *   (DeepSeek R1, QwQ, MiniMax reasoning variants) routinely take
+ *   before their first token. Without it, a provider that accepts the
+ *   socket but never emits a byte holds the request forever when
+ *   LLM_TOTAL_TIMEOUT_MS is 0. Set to 0 to disable. */
 function readTimeoutEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw == null || raw === '') return fallback;
@@ -24,6 +34,11 @@ function readTimeoutEnv(name: string, fallback: number): number {
 }
 const LLM_TOTAL_TIMEOUT_MS = readTimeoutEnv('LLM_TOTAL_TIMEOUT_MS', 0);
 const LLM_SILENCE_TIMEOUT_MS = readTimeoutEnv('LLM_SILENCE_TIMEOUT_MS', 120000);
+/* Read per call rather than cached at module load, so a deployment can
+ * tune the budget without restarting the process. */
+function llmFirstByteTimeoutMs(): number {
+  return readTimeoutEnv('LLM_FIRST_BYTE_TIMEOUT_MS', 180000);
+}
 
 /** Aborts when any of the given signals aborts; never aborts on its own. */
 function combineSignals(...candidates: Array<AbortSignal | null | undefined>): AbortSignal {
@@ -223,10 +238,23 @@ export async function streamChatCompletion(
       try { silenceController.abort('silence-timeout'); } catch { /* ignore */ }
     }, LLM_SILENCE_TIMEOUT_MS);
   };
+  /* The first-byte budget covers the POST + initial thinking latency,
+   * where the silence watchdog is intentionally not armed. A separate
+   * controller keeps the abort classifiable as "provider never
+   * responded" rather than a mid-stream stall. */
+  const firstByteMs = llmFirstByteTimeoutMs();
+  const firstByteController = new AbortController();
+  let firstByteTimer: ReturnType<typeof setTimeout> | null = null;
+  if (firstByteMs > 0) {
+    firstByteTimer = setTimeout(() => {
+      try { firstByteController.abort('first-byte-timeout'); } catch { /* ignore */ }
+    }, firstByteMs);
+  }
   const mergedSignal = combineSignals(
     signal,
     totalSignal,
     LLM_SILENCE_TIMEOUT_MS > 0 ? silenceController.signal : null,
+    firstByteMs > 0 ? firstByteController.signal : null,
   );
 
   try {
@@ -387,11 +415,13 @@ export async function streamChatCompletion(
       const { done, value } = await reader.read();
       if (done) break;
       /* P_silence_fix — arm the watchdog on the first real chunk
-         (not before). This gives reasoning models unlimited time
-         for the initial thinking burst. After the first chunk, the
-         watchdog guards against genuine mid-stream stalls. */
+         (not before). The initial thinking burst is bounded by the
+         first-byte timer instead, which is cleared here. After the
+         first chunk, the watchdog guards against genuine mid-stream
+         stalls. */
       if (!_firstChunkArrived) {
         _firstChunkArrived = true;
+        if (firstByteTimer) { clearTimeout(firstByteTimer); firstByteTimer = null; }
         armSilenceTimer();
       } else {
         /* Reset the silence timer: we just got bytes, the connection
@@ -486,6 +516,7 @@ export async function streamChatCompletion(
     }
 
     if (silenceTimer) clearTimeout(silenceTimer);
+    if (firstByteTimer) clearTimeout(firstByteTimer);
 
     /* P_tool_stream_finalize — emit a final tool_call_delta so the
        client gets the last few bytes that were throttled out by
@@ -516,13 +547,16 @@ export async function streamChatCompletion(
     onDone({ finishReason });
   } catch (err) {
     if (silenceTimer) clearTimeout(silenceTimer);
+    if (firstByteTimer) clearTimeout(firstByteTimer);
     if ((err as Error).name === 'AbortError') {
       // Distinguish user-initiated abort (client disconnect) from the
       // optional server-side deadlines. The user signal fires on
-      // disconnect; LLM_TOTAL_TIMEOUT_MS / LLM_SILENCE_TIMEOUT_MS only
-      // exist when the operator configured them.
+      // disconnect; LLM_TOTAL_TIMEOUT_MS / LLM_SILENCE_TIMEOUT_MS /
+      // LLM_FIRST_BYTE_TIMEOUT_MS only exist when configured on.
       if (signal && signal.aborted) {
         onDone({ finishReason: null }); // Client disconnected — clean close
+      } else if (firstByteController.signal.aborted) {
+        onError(new Error(`LLM request timed out: no response bytes for ${firstByteMs / 1000} s`));
       } else if (silenceController.signal.aborted) {
         onError(new Error(`LLM stream stalled: no data for ${LLM_SILENCE_TIMEOUT_MS / 1000} s`));
       } else if (LLM_TOTAL_TIMEOUT_MS > 0) {
@@ -535,6 +569,13 @@ export async function streamChatCompletion(
     } else {
       onError(err as Error);
     }
+  } finally {
+    /* The early-error returns above (`!response.ok`, empty body, aborted
+     * signal) skip both clear sites; a live first-byte timer would pin the
+     * event loop for its full duration. This is the single guaranteed
+     * cleanup point for every exit path. */
+    if (silenceTimer) clearTimeout(silenceTimer);
+    if (firstByteTimer) clearTimeout(firstByteTimer);
   }
 }
 

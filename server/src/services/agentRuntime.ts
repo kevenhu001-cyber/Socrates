@@ -57,7 +57,7 @@ export const WORKSPACE_AGENT_TOOL = {
   function: {
     name: 'workspace_agent',
     description:
-      'Runs the Socrates project workspace agent powered by the Pi coding agent (read, bash, edit, write tools). Select it automatically when the user asks to create, edit, review, or inspect project files, implement/fix/refactor code, run commands or tests, explore a repository, perform an experiment, use project workspace context, or continue work across turns—even when only one file is involved. Do not wait for a manual Agent mode or worker start. Keep ordinary explanations, short calculations, and simple web research in native tools. The server owns the workspace, sandbox, and resource limits. Call initialize_workspace first when the user wants an explicit workspace or a clean slate. After it finishes, summarize the result and mention any generated files or artifacts.',
+      'Runs the Socrates project workspace agent powered by the Pi coding agent (read, bash, edit, write tools — no web search or MCP inside the workspace). Select it automatically when the user asks to create, edit, review, or inspect project files, implement/fix/refactor code, run commands or tests, explore a repository, perform an experiment, use project workspace context, or continue work across turns—even when only one file is involved. Do not wait for a manual Agent mode or worker start. Keep ordinary explanations, short calculations, and simple web research in native tools. The server owns the workspace directory, its process environment, and resource limits; commands run autonomously without an approval step. Call initialize_workspace first when the user wants an explicit workspace or a clean slate. After it finishes, summarize the result and mention any generated files or artifacts.',
     parameters: {
       type: 'object',
       properties: {
@@ -70,7 +70,7 @@ export const WORKSPACE_AGENT_TOOL = {
         mode: {
           type: 'string',
           enum: ['inspect', 'implement', 'experiment'],
-          description: 'Optional intent hint. The server still applies its fixed sandbox and approval policy.',
+          description: 'Optional intent hint. The server applies its fixed execution policy regardless.',
         },
       },
       required: ['task'],
@@ -93,7 +93,7 @@ export const INITIALIZE_WORKSPACE_TOOL = {
   function: {
     name: 'initialize_workspace',
     description:
-      'Initializes (or resets) the sandboxed workspace for this conversation and sets its resource limits before doing multi-step agent work. Call this once before the first workspace_agent task when the user asks for coding, file, or command work, and call it with reset=true when the user wants a clean workspace. Limits are clamped to the server-supported range and the storage cap is enforced before every agent turn. The server owns the workspace location, sandbox, and approval policy.',
+      'Initializes (or resets) the server-owned workspace for this conversation and sets its resource limits before doing multi-step agent work. Call this once before the first workspace_agent task when the user asks for coding, file, or command work, and call it with reset=true when the user wants a clean workspace. Limits are clamped to the server-supported range and the storage cap is enforced before every agent turn. The server owns the workspace location and execution policy; there is no interactive approval step.',
     parameters: {
       type: 'object',
       properties: {

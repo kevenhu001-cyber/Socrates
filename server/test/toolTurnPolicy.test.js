@@ -72,6 +72,21 @@ test('hashToolArguments ignores key order but not values', () => {
   assert.equal(typeof hashToolArguments(undefined), 'string');
 });
 
+test('hashToolArguments distinguishes large payloads that differ only in the tail', () => {
+  /* Regression: a bare 4 KB prefix used to classify two distinct large
+     code bodies as duplicates because the difference sat past the cut. */
+  const head = 'x'.repeat(8000);
+  assert.notEqual(
+    hashToolArguments({ code: `${head}return 1` }),
+    hashToolArguments({ code: `${head}return 2` }),
+  );
+  // Identical large payloads must still collapse to the same key.
+  const big = { code: `${head}return 1` };
+  assert.equal(hashToolArguments(big), hashToolArguments({ ...big }));
+  // Key stays bounded even for 80 KB arguments.
+  assert.ok(hashToolArguments(big).length < big.code.length);
+});
+
 test('the absolute call ceiling stops tools even with iterations left', () => {
   const policy = createToolTurnPolicy({ maxTotalCalls: 2 });
   policy.registerCall('web_search', 'a');

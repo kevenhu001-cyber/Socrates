@@ -20,8 +20,22 @@ export const executeWebSearch: ToolExecutor = async (
   const { emitter, req } = ctx;
   let result: ToolResult;
 
-  const searchQuery = args.query || '';
-  const searchCount = Math.min(args.count || 10, 12);
+  const searchQuery = String(args.query || '').trim();
+  /* Schema declares minimum:1, but argument validation is best-effort —
+     don't fan out an empty query across every engine. */
+  if (!searchQuery) {
+    result = { status: 'failed', error: 'missing_query', errorCode: 'invalid_query', retryable: true };
+    emitter.event('tool_result', {
+      id: call.id, ok: false, status: 'failed', output: '',
+      error: 'missing_query', errorCode: 'invalid_query', retryable: true,
+      userMessage: '搜索关键词为空。', detail: 'Provide a non-empty `query` string.',
+    });
+    return { result };
+  }
+  const requestedCount = Number(args.count);
+  const searchCount = Number.isFinite(requestedCount)
+    ? Math.min(12, Math.max(1, Math.trunc(requestedCount)))
+    : 10;
   let searchResults: SearchResult[] | null = null;
   let searchError: WebSearchError | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -34,7 +48,11 @@ export const executeWebSearch: ToolExecutor = async (
       break;
     } catch (err) {
       searchError = err as WebSearchError;
+      /* Retry only a first-attempt error the engine marked transient.
+         Falling through without `break` used to retry `retryable:false`
+         failures too — doubling the cost of hard failures. */
       if (attempt === 0 && err && (err as WebSearchError).retryable !== false) continue;
+      break;
     }
   }
 

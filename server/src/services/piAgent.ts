@@ -13,7 +13,7 @@
  * small vocabulary the chat runtime already understands.
  */
 
-import { spawn, type ChildProcessByStdio } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcessByStdio } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +31,18 @@ const PI_BIN_CANDIDATES = [
   '/usr/bin/pi',
 ];
 
+/* Environment variables the Pi subprocess may inherit. Everything else —
+ * database DSNs, sidecar/admin tokens, session secrets, LLM keys — stays
+ * out of the agent's environment so a bash step cannot leak them. Extend
+ * at deploy time with PI_AGENT_ENV_ALLOWLIST="FOO,BAR". */
+const PI_ENV_ALLOWLIST = [
+  'PATH', 'HOME', 'USER', 'LOGNAME', 'SHELL',
+  'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'TMPDIR',
+  'NODE_ENV', 'VOLTA_HOME',
+  'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY',
+  'http_proxy', 'https_proxy', 'no_proxy',
+];
+
 export function resolvePiAgentBin(): string | null {
   const configured = String(process.env.PI_AGENT_BIN || '').trim();
   if (configured) {
@@ -43,7 +55,23 @@ export function resolvePiAgentBin(): string | null {
   return 'pi';
 }
 
-export const PI_AGENT_ENABLED = process.env.PI_AGENT_ENABLED !== 'false' && !!resolvePiAgentBin();
+/* A resolvable path is not a runnable binary: package-manager shims
+ * (Volta/asdf shims for an uninstalled package) pass existsSync but die on
+ * execution, which used to leave the workspace_agent tool advertised yet
+ * guaranteed to fail. Probe once at module load and cache the verdict. An
+ * operator-set PI_AGENT_BIN is trusted without probing — they asserted it. */
+function probePiBin(bin: string | null): boolean {
+  if (!bin) return false;
+  if (String(process.env.PI_AGENT_BIN || '').trim()) return true;
+  try {
+    const result = spawnSync(bin, ['--version'], { stdio: 'ignore', timeout: 5_000 });
+    return !result.error && result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
+export const PI_AGENT_ENABLED = process.env.PI_AGENT_ENABLED !== 'false' && probePiBin(resolvePiAgentBin());
 
 export interface PiAgentLimits {
   maxMemoryMb?: number;
@@ -196,15 +224,26 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
     if (thinking) args.push('--thinking', thinking);
     args.push(input.task);
 
-    const env: NodeJS.ProcessEnv = { ...process.env, PI_OFFLINE: '0' };
+    /* The agent's bash tool runs with exactly this environment, so it must
+     * NOT inherit process.env: the server environment carries DATABASE_URL,
+     * sidecar admin tokens, session secrets, and API keys that an `env` or
+     * `printenv` call would otherwise copy into model context and the chat.
+     * Only innocuous runtime variables cross the boundary; operators can
+     * extend the list via PI_AGENT_ENV_ALLOWLIST (comma-separated names). */
+    const env: NodeJS.ProcessEnv = { PI_OFFLINE: '0' };
+    const extraEnv = String(process.env.PI_AGENT_ENV_ALLOWLIST || '')
+      .split(',').map((name) => name.trim()).filter(Boolean);
+    for (const key of [...PI_ENV_ALLOWLIST, ...extraEnv]) {
+      const value = process.env[key];
+      if (value !== undefined) env[key] = value;
+    }
     if (userProvider) {
       env.PI_RUN_BASE_URL = userProvider.baseUrl;
       env.PI_RUN_MODEL_ID = userProvider.model;
       if (userProvider.apiKey) env.PI_RUN_API_KEY = userProvider.apiKey;
     }
     if (Number.isFinite(memoryMb) && memoryMb > 0) {
-      const flags = `--max-old-space-size=${Math.trunc(memoryMb)}`;
-      env.NODE_OPTIONS = env.NODE_OPTIONS ? `${env.NODE_OPTIONS} ${flags}` : flags;
+      env.NODE_OPTIONS = `--max-old-space-size=${Math.trunc(memoryMb)}`;
     }
 
     let child: ChildProcessByStdio<null, Readable, Readable>;

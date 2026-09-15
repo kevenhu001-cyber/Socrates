@@ -1,4 +1,7 @@
-const MAX_TOOL_ARGUMENT_CHARS = 80_000;
+/* Advertised tool schemas must never promise a larger payload than this
+ * transport cap accepts — a model that follows the schema would otherwise
+ * be rejected as `invalid_tool_arguments` for a compliant call. */
+export const MAX_TOOL_ARGUMENT_CHARS = 80_000;
 const MAX_TOOL_RESULT_CHARS = 60_000;
 
 export interface NormalizedToolCall {
@@ -481,14 +484,16 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
   webfetch: 'web_fetch', fetch: 'web_fetch', fetch_url: 'web_fetch',
   open_url: 'web_fetch', read_url: 'web_fetch', browse: 'web_fetch',
   url_fetch: 'web_fetch', http_get: 'web_fetch',
-  // python sandbox
+  // python sandbox (WASM-confined, so alias recovery is acceptable here)
   python: 'code_interpreter', run_python: 'code_interpreter', python_exec: 'code_interpreter',
   exec_python: 'code_interpreter', run_code: 'code_interpreter', execute_code: 'code_interpreter',
   code: 'code_interpreter', repl: 'code_interpreter',
-  // workspace agent
-  bash: 'workspace_agent', shell: 'workspace_agent', terminal: 'workspace_agent',
-  run_command: 'workspace_agent', execute_command: 'workspace_agent',
-    agent: 'workspace_agent', workspace: 'workspace_agent',
+  /* workspace_agent deliberately has NO aliases: generic shell names
+   * (`bash`, `shell`, `terminal`, `run_command`, …) are exactly what a
+   * model hallucinates when it wants to run a command directly, and
+   * mapping that guess onto a real host-side agent turns a benign
+   * hallucination into an execution. Those calls get the standard
+   * unknown_tool correction instead. */
   // planning
   plan: 'create_plan', make_plan: 'create_plan', todo: 'create_plan', todo_write: 'create_plan',
   update_plan: 'create_plan', spec: 'create_spec', requirements: 'create_spec',
@@ -573,6 +578,139 @@ export function resolveToolName(
     if (best && !ambiguous) return result(best.name, 'fuzzy');
   }
   return result(null, 'none');
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Post-repair schema validation
+
+   `repairToolArguments` coerces shapes; it does not enforce the contract.
+   Connector tools re-validate before crossing to a third party, but the
+   native tools used to run on whatever the repair produced — an empty
+   `web_search` query or a missing required field only surfaced as a wasted
+   execution. This validator checks the repaired object against the tool's
+   own JSON Schema: required fields, declared primitive types, string and
+   numeric bounds, enum membership, and array item counts. It is shallow
+   (bounded depth) on purpose — strict nested validation still belongs to
+   the executor's own schema library.
+   ──────────────────────────────────────────────────────────────────── */
+
+const VALIDATION_MAX_DEPTH = 3;
+const VALIDATION_MAX_ERRORS = 8;
+
+function schemaTypes(schema: JsonSchemaNode): string[] {
+  if (Array.isArray(schema.type)) return schema.type;
+  return typeof schema.type === 'string' ? [schema.type] : [];
+}
+
+function jsonTypeOf(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  if (typeof value === 'object') return 'object';
+  return typeof value;
+}
+
+function validateValueAgainstSchema(
+  value: unknown,
+  schema: JsonSchemaNode,
+  path: string,
+  depth: number,
+  errors: string[],
+): void {
+  if (errors.length >= VALIDATION_MAX_ERRORS || depth > VALIDATION_MAX_DEPTH) return;
+
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
+    const matched = schema.enum.some((option) => {
+      try { return JSON.stringify(option) === JSON.stringify(value); } catch { return option === value; }
+    });
+    if (!matched) {
+      errors.push(`${path || 'value'}: must be one of ${schema.enum.map((o) => JSON.stringify(o)).join(' | ')}`);
+      return;
+    }
+  }
+
+  const types = schemaTypes(schema);
+  const actualType = jsonTypeOf(value);
+  /* `integer` is a JSON Schema refinement of number: a numeric value is
+     type-compatible but must still be integral (checked below). */
+  const typeOk = types.includes(actualType)
+    || (actualType === 'number' && types.includes('integer'));
+  if (types.length > 0 && !typeOk) {
+    /* The common null-vs-optional case is not an error: optional fields
+       may legitimately arrive as null on OpenAI-compatible providers. */
+    if (!(value === null && !schema.required)) {
+      errors.push(`${path || 'value'}: expected ${types.join('|')}, got ${actualType}`);
+    }
+    return;
+  }
+  if (types.includes('integer') && typeof value === 'number' && !Number.isInteger(value)) {
+    errors.push(`${path}: must be an integer`);
+    return;
+  }
+
+  if (typeof value === 'string' && types.includes('string')) {
+    const min = typeof schema.minLength === 'number' ? schema.minLength : null;
+    const max = typeof schema.maxLength === 'number' ? schema.maxLength : null;
+    if (min !== null && value.length < min) errors.push(`${path}: must be at least ${min} characters`);
+    if (max !== null && value.length > max) errors.push(`${path}: must be at most ${max} characters`);
+  }
+  if (typeof value === 'number' && (types.includes('number') || types.includes('integer'))) {
+    const min = typeof schema.minimum === 'number' ? schema.minimum : null;
+    const max = typeof schema.maximum === 'number' ? schema.maximum : null;
+    if (!Number.isFinite(value)) errors.push(`${path}: must be a finite number`);
+    if (min !== null && value < min) errors.push(`${path}: must be >= ${min}`);
+    if (max !== null && value > max) errors.push(`${path}: must be <= ${max}`);
+  }
+  if (Array.isArray(value) && types.includes('array')) {
+    const min = typeof schema.minItems === 'number' ? schema.minItems : null;
+    const max = typeof schema.maxItems === 'number' ? schema.maxItems : null;
+    if (min !== null && value.length < min) errors.push(`${path}: must have at least ${min} items`);
+    if (max !== null && value.length > max) errors.push(`${path}: must have at most ${max} items`);
+    if (schema.items) {
+      value.forEach((item, index) => validateValueAgainstSchema(item, schema.items as JsonSchemaNode, `${path}[${index}]`, depth + 1, errors));
+    }
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value) && schema.properties) {
+    validateObjectAgainstSchema(value as Record<string, unknown>, schema, path, depth + 1, errors);
+  }
+}
+
+function validateObjectAgainstSchema(
+  value: Record<string, unknown>,
+  schema: JsonSchemaNode,
+  path: string,
+  depth: number,
+  errors: string[],
+): void {
+  if (errors.length >= VALIDATION_MAX_ERRORS || depth > VALIDATION_MAX_DEPTH) return;
+  const properties = schema.properties || {};
+  const required = Array.isArray(schema.required) ? schema.required : [];
+  for (const key of required) {
+    if (value[key] === undefined || value[key] === null) {
+      errors.push(`${path ? `${path}.` : ''}${key}: missing required field`);
+      if (errors.length >= VALIDATION_MAX_ERRORS) return;
+    }
+  }
+  for (const [key, item] of Object.entries(value)) {
+    const propertySchema = properties[key];
+    if (!propertySchema) continue; // unknown keys were already handled by repair
+    validateValueAgainstSchema(item, propertySchema, path ? `${path}.${key}` : key, depth, errors);
+    if (errors.length >= VALIDATION_MAX_ERRORS) return;
+  }
+}
+
+/**
+ * Validate a repaired argument object against the tool's declared
+ * `parameters` schema. Returns `{ ok: true }` or field-level errors that
+ * the correction package can hand straight back to the model.
+ */
+export function validateToolArguments(
+  value: Record<string, unknown>,
+  schema: JsonSchemaNode | null | undefined,
+): { ok: boolean; fieldErrors: string[] } {
+  if (!schema || !schema.properties) return { ok: true, fieldErrors: [] };
+  const errors: string[] = [];
+  validateObjectAgainstSchema(value, schema, '', 0, errors);
+  return { ok: errors.length === 0, fieldErrors: errors };
 }
 
 /** Bounded Levenshtein distance; returns 3 once the budget is exceeded. */
