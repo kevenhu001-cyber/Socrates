@@ -84,7 +84,12 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
 
   const after = await composer.boundingBox();
   expect(after).not.toBeNull();
-  expect(Math.round(settledBefore.y - after.y)).toBe(300);
+  /* The bar's top edge rises by the inset minus the resting safe-area
+     padding the keyboard consumes (16px -> 8px optical floor): the card
+     keeps an 8px gap above the keyboard instead of covering it. The 6px
+     breathing margin on .chat-view is already 0 here because the seeded
+     messages set data-conversation-active. */
+  expect(Math.round(settledBefore.y - after.y)).toBe(300 - 8);
   const geometry = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
@@ -159,7 +164,10 @@ test('mobile composer follows a keyboard inset continuously without a position f
   for (let index = 1; index < samples.length; index += 1) {
     expect(samples[index]).toBeLessThanOrEqual(samples[index - 1] + 1);
   }
-  expect(Math.round(start.y - samples[samples.length - 1])).toBe(260);
+  /* Same consumption as above, plus the 6px .chat-view breathing margin:
+     no messages were seeded, so data-conversation-active is off and the
+     resting margin collapses into the lift as well (260 - 8 - 6). */
+  expect(Math.round(start.y - samples[samples.length - 1])).toBe(246);
 });
 
 test('a second input line expands the mobile composer and keeps the latest message unobscured', async ({ page }) => {

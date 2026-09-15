@@ -465,8 +465,11 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 #appShell#appShell #chatInputBar {
   /* .chat-view already supplies the conversation column. Adding a second
      horizontal inset here was the last reason the in-session card was 28px
-     narrower than the landing card. */
-  padding: 0 0 var(--conversation-safe-bottom) !important;
+     narrower than the landing card.
+     The resting safe-area bottom is consumed by the rising
+     --keyboard-inset on the same continuous timeline, down to an 8px
+     optical gap — no layout pop when data-keyboard-open flips. */
+  padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
   background: transparent !important;
 }
 
@@ -614,10 +617,11 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   #appShell#appShell #chatInputBar {
     /* The lifted chat view is 4px wider than the landing main-inner on the
        phone shell. Constrain the bar itself so both cards share the same
-       visible 16px viewport gutter. */
+       visible 16px viewport gutter. Same continuous keyboard gap as the
+       base rule above. */
     width: calc(100% - 4px) !important;
     margin-inline: auto !important;
-    padding: 0 0 var(--conversation-safe-bottom) !important;
+    padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
   }
 
   /* Keep the transcript comfortable above the persistent input surface. */

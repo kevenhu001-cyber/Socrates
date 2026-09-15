@@ -1,6 +1,7 @@
 import { smoothScrollToBottom } from './scroll.js';
 import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from './scrollDecision.ts';
 import { getLastScrollIntentAt } from './scrollPill.js';
+import { planMotionForUser, easeOutQuint } from './motion.js';
 
 /*
  * Keep chat controls above mobile virtual keyboards.
@@ -38,16 +39,20 @@ import { getLastScrollIntentAt } from './scrollPill.js';
  * publishes how much of the app the keyboard covers.
  * Browsers differ in how they report the keyboard's travel: some emit
  * many progressive samples (the composer can follow them 1:1), others
- * a single discrete jump once the keyboard is up. A short ease-out
- * glide toward the latest measurement — owned here, nowhere else in
- * CSS or JS — turns both shapes into one smooth, continuous lift and
- * prevents the composer from snapping ahead of the keyboard or
- * flashing between intermediate positions.
+ * a single discrete jump once the keyboard is up. A short glide toward
+ * the latest measurement — velocity-planned and eased like every other
+ * chat motion (ui/motion.js), owned here, nowhere else in CSS or JS —
+ * turns both shapes into one smooth, continuous lift and prevents the
+ * composer from snapping ahead of the keyboard or flashing between
+ * intermediate positions.
  *
  * The same controller anchors the transcript across the lift: a reader
  * following the bottom stays on the newest content, while a reader
  * inspecting history keeps their exact offset (visualViewport-driven
- * compensation, never a forced scroll to the bottom).
+ * compensation, never a forced scroll to the bottom). The correction is
+ * written inside the same frame that publishes a new inset — or inside
+ * the resize/pan event itself — so the painted transcript never trails
+ * the composer by a frame.
  */
 
 /* Android/iOS WebViews can expose a 0–1px visual viewport for a transient
@@ -56,17 +61,19 @@ import { getLastScrollIntentAt } from './scrollPill.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
-/* Duration of the composer lift when the measured inset arrives as a
- * discrete jump (Android overlay keyboards report the final size in one
- * event). Kept close to the platform keyboard animation so the input
- * rides the keyboard's own motion instead of snapping or lagging. */
-export const KEYBOARD_LIFT_MS = 220;
+/* When the measured inset arrives as a discrete jump (most Android
+ * overlay keyboards report the final size in one event), the lift's
+ * duration is velocity-planned by planMotionForUser so a small nudge
+ * snaps quickly while a full-height keyboard lands inside the platform's
+ * own animation window. easeOutQuint is the JS mirror of the project's
+ * shared cubic-bezier(.22,1,.36,1) — the same curve the composer's CSS
+ * focus transition runs, so the two overlapping motions read as one. */
 
 /* Viewport implementations that expose the IME animation emit resize/scroll
  * samples roughly once per frame. Once a second sample arrives in the same
  * direction, follow the measured geometry directly: restarting a full
- * KEYBOARD_LIFT_MS tween for every sample makes the composer trail the
- * keyboard and then keep moving after the keyboard has stopped. Slower,
+ * tween for every sample makes the composer trail the keyboard and then
+ * keep moving after the keyboard has stopped. Slower,
  * isolated jumps still use the fallback tween below. */
 export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 120;
 
@@ -82,12 +89,6 @@ export function isProgressiveKeyboardSample(
     && gap <= KEYBOARD_PROGRESSIVE_SAMPLE_MS
     && nextDirection !== 0
     && nextDirection === previousDirection;
-}
-
-/* Pure ease-out cubic, split out for unit tests. */
-export function easeKeyboardLift(t) {
-  const x = Math.min(1, Math.max(0, Number(t) || 0));
-  return 1 - (1 - x) * (1 - x) * (1 - x);
 }
 
 export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0) {
@@ -180,10 +181,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
   /* Interpolation state: the measured inset is the motion target; the
-     value exposed to CSS glides toward it over KEYBOARD_LIFT_MS. */
+     value exposed to CSS glides toward it over a velocity-planned
+     duration (planMotionForUser). */
   let targetInset = 0;
   let motionFrom = 0;
   let motionStart = 0;
+  let motionDuration = 0;
   let progressiveInsetMotion = false;
   let lastTargetAt = 0;
   let transitionDirection = 0;
@@ -338,21 +341,34 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     anchorFrame = window.requestAnimationFrame(restoreTranscriptAnchor);
   };
 
-  /* One frame of the lift: write the current interpolated inset. Raising the
-     in-flow composer shrinks the transcript's flex viewport, so re-anchor on
-     the next frame, once the new height is measured. */
+  /* One frame of the lift: write the current interpolated inset, then
+     re-anchor in this same frame. Raising the in-flow composer shrinks
+     the transcript's flex viewport; reading the list's metrics right
+     after the write forces that layout synchronously, so the scroll
+     correction paints together with the new padding instead of trailing
+     the composer by one frame. The ResizeObserver path in scroll.js and
+     the scheduled restore stay as fallbacks — both decisions are
+     idempotent. */
   const writeInsetFrame = (inset) => {
     const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
     if (roundedInset === appliedInset) return;
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-    if (transcriptAnchor) scheduleTranscriptRestore();
     appliedInset = roundedInset;
+    const anchorList = transcriptAnchor && transcriptAnchor.list;
+    /* See onViewportGeometry: while a send anchor owns the transcript the
+       restore can only decide 'none', and forcing layout here races the
+       turn anchor's own inset-mutation correction. Skip the same-frame
+       pass; the rAF fallback still recaptures the reader's position. */
+    if (transcriptAnchor && !(anchorList && anchorList.dataset && anchorList.dataset.turnAnchorHold === 'true')) {
+      if (anchorFrame) { cancelAnimationFrame(anchorFrame); anchorFrame = 0; }
+      restoreTranscriptAnchor();
+    }
   };
 
   const stepMotion = (now) => {
     motionFrame = 0;
     const elapsed = now - motionStart;
-    const t = KEYBOARD_LIFT_MS > 0 ? elapsed / KEYBOARD_LIFT_MS : 1;
+    const t = motionDuration > 0 ? elapsed / motionDuration : 1;
     if (t >= 1) {
       writeInsetFrame(targetInset);
       progressiveInsetMotion = false;
@@ -360,7 +376,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     }
     const value = progressiveInsetMotion
       ? targetInset
-      : motionFrom + (targetInset - motionFrom) * easeKeyboardLift(t);
+      : motionFrom + (targetInset - motionFrom) * easeOutQuint(t);
     writeInsetFrame(value);
     motionFrame = requestAnimationFrame(stepMotion);
   };
@@ -403,16 +419,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* A keyboard can reverse direction while its previous lift is still
      * running (for example, a cancelled focus or a quick swipe). Reverse
      * the timeline from its already-painted value instead of restarting
-     * from zero. */
+     * from zero. planMotionForUser already collapses to a 0-duration snap
+     * under prefers-reduced-motion and for sub-perceptual distances. */
     if (directionChanged) {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
       progressiveInsetMotion = false;
       motionFrom = currentInset;
       motionStart = now;
+      motionDuration = planMotionForUser(Math.abs(roundedTarget - currentInset)).duration;
       targetInset = roundedTarget;
       lastTargetAt = now;
       transitionDirection = nextDirection;
-      if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
+      if (motionDuration <= 0 || typeof window.requestAnimationFrame !== 'function') {
         writeInsetFrame(roundedTarget);
         return;
       }
@@ -440,15 +458,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* Progressive viewports (iOS) deliver many small steps; a short glide
      * begins the motion, then subsequent samples become the timeline above.
      * Discrete viewports (most Android builds) get the whole lift from the
-     * interpolation. Reduced motion snaps. */
-    if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
+     * interpolation — velocity-planned so a 40px nudge and a 400px keyboard
+     * share one perceived speed. Reduced-motion plans snap to the target. */
+    const liftPlan = planMotionForUser(Math.abs(roundedTarget - currentInset));
+    if (liftPlan.snap || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
       progressiveInsetMotion = false;
       writeInsetFrame(roundedTarget);
       return;
     }
-    motionFrom = appliedInset < 0 ? 0 : appliedInset;
+    motionFrom = currentInset;
     motionStart = now;
+    motionDuration = liftPlan.duration;
     progressiveInsetMotion = false;
     if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
   };
@@ -558,14 +579,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
+    /* Anchoring follows the whole keyboard session: focus happens before
+       the first geometry change, so capturing covers layout-resize
+       keyboards (Android/Capacitor, --keyboard-inset stays 0) as well as
+       overlay keyboards. The capture must precede applyInset: a written
+       inset re-anchors in the same frame, and that correction needs the
+       reader's pre-write intent, not a post-write snapshot. */
+    if (focused) beginTranscriptAnchor();
     applyInset(stableMeasuredInset(focused));
     applyTopicComposerFocused(focused);
     if (focused) scheduleTopicEnsure();
-    /* Anchoring follows the whole keyboard session: focus happens before
-       the first geometry change, so capturing here covers layout-resize
-       keyboards (Android/Capacitor, --keyboard-inset stays 0) as well as
-       overlay keyboards. Every visualViewport resize/pan re-applies the
-       captured reader position after the layout commit. */
+    /* Every visualViewport resize/pan re-applies the captured reader
+       position after the layout commit — a deferred fallback for the
+       same-frame corrections in writeInsetFrame and onViewportGeometry. */
     if (focused || transcriptAnchor) {
       beginTranscriptAnchor();
       scheduleTranscriptRestore();
@@ -603,12 +629,45 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 150);
   };
 
+  /* Resize and pan events are dispatched before the frame that paints
+     them. A pure pan changes no layout (so no observer fires), and a
+     resize-mode keyboard changes the layout without touching
+     --keyboard-inset at all — in both cases waiting for the coalesced
+     rAF would leave the transcript one frame behind the compositor's
+     own motion. Re-applying the captured anchor inside the event keeps
+     the correction on the same frame; the rAF'd update() then re-checks
+     focus and geometry as the fallback. */
+  const onViewportGeometry = () => {
+    schedule();
+    if (!transcriptAnchor) return;
+    /* While a send-time turn anchor holds the transcript (dataset flag),
+       the only possible decision is 'none' — but the decision path still
+       forces a synchronous layout inside the resize/pan event, which races
+       the send anchor's own same-frame correction and lets the browser
+       paint a clamped scrollTop for a frame. Leave the event-time pass to
+       the turn anchor; the rAF'd update() re-applies the anchor anyway. */
+    const anchorList = transcriptAnchor.list;
+    if (anchorList && anchorList.dataset && anchorList.dataset.turnAnchorHold === 'true') return;
+    if (anchorFrame) { cancelAnimationFrame(anchorFrame); anchorFrame = 0; }
+    restoreTranscriptAnchor();
+  };
+
   if (viewport) {
     // iOS Safari can pan the visual viewport without a paired resize event.
-    viewport.addEventListener('resize', schedule);
-    viewport.addEventListener('scroll', schedule);
+    viewport.addEventListener('resize', onViewportGeometry);
+    viewport.addEventListener('scroll', onViewportGeometry);
   }
-  window.addEventListener('resize', schedule);
+  window.addEventListener('resize', onViewportGeometry);
+  /* Chromium's VirtualKeyboard API reports the IME animation even while
+     the layout viewport already resizes. overlaysContent stays off —
+     enabling it would switch Chrome to overlay mode and leave every
+     untracked input (settings, exam fields) uncovered — so only the
+     event timing is used, as an extra per-frame sampling trigger into
+     the same update() pipeline. Absent on other engines. */
+  const virtualKeyboard = (typeof navigator !== 'undefined' && navigator.virtualKeyboard) || null;
+  if (virtualKeyboard && typeof virtualKeyboard.addEventListener === 'function') {
+    virtualKeyboard.addEventListener('geometrychange', schedule);
+  }
   /* focusout on document catches focus moving to ANY element (not just
      input.blur). This is the path that fires when the user dismisses
      the keyboard by tapping a message or the page background, where
@@ -636,10 +695,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
     try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
     if (viewport) {
-      viewport.removeEventListener('resize', schedule);
-      viewport.removeEventListener('scroll', schedule);
+      viewport.removeEventListener('resize', onViewportGeometry);
+      viewport.removeEventListener('scroll', onViewportGeometry);
     }
-    window.removeEventListener('resize', schedule);
+    window.removeEventListener('resize', onViewportGeometry);
+    if (virtualKeyboard && typeof virtualKeyboard.removeEventListener === 'function') {
+      virtualKeyboard.removeEventListener('geometrychange', schedule);
+    }
     document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('focusout', onBlur);
     document.removeEventListener('visibilitychange', schedule);

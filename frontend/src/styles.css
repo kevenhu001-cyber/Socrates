@@ -972,7 +972,10 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   opacity:0;
   transform:translateY(8px) scale(.96);
   pointer-events:none;
-  transition:opacity .22s cubic-bezier(.4,0,.2,1),transform .26s cubic-bezier(.16,1,.3,1),bottom 0.3s var(--ease-out),box-shadow .2s cubic-bezier(.4,0,.2,1),filter .2s ease;
+  /* No `bottom` transition: the value embeds --keyboard-inset, which
+     keyboardViewport.js already eases — a second easing on top would make
+     the pill trail the composer for the whole lift. */
+  transition:opacity .22s cubic-bezier(.4,0,.2,1),transform .26s cubic-bezier(.16,1,.3,1),box-shadow .2s cubic-bezier(.4,0,.2,1),filter .2s ease;
   z-index:30;
 }
 .new-reply-pill.visible{
@@ -1506,8 +1509,12 @@ true) but the dropdown never shows — see commit history. */
      lines up with the centred message text. */
   max-width:calc(58rem * var(--app-width-scale, 1));
   /* P_input-lift — keep a small breathing gap below the chat composer so
-     the input sits ~6px above the bottom edge on desktop and mobile. */
-  margin:0 auto 6px;
+     the input sits ~6px above the bottom edge on desktop and mobile.
+     The rising --keyboard-inset consumes the gap on the same continuous
+     timeline, so the composer settles flush against the keyboard with no
+     layout pop when data-keyboard-open flips. */
+  margin:0 auto;
+  margin-bottom:max(0px, calc(6px - var(--keyboard-inset, 0px)));
   display:flex;
   flex-direction:column;
   gap:4px;
@@ -1517,10 +1524,10 @@ true) but the dropdown never shows — see commit history. */
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
   /* --keyboard-inset is the keyboard geometry from keyboardViewport.js.
-     The module glides the value toward each measurement over one short
-     ease-out rAF sequence, so the bar follows it 1:1 — no CSS transition
-     here, which would layer a second easing on top and make the composer
-     lag behind (or flash ahead of) the keyboard. */
+     The module glides the value toward each measurement over one
+     velocity-planned rAF sequence, so the bar follows it 1:1 — no CSS
+     transition here, which would layer a second easing on top and make
+     the composer lag behind (or flash ahead of) the keyboard. */
   margin-top:0;
   /* keyboard avoidance: shift the composer up by the virtual
      keyboard inset on mobile. Padding is the layout reserve, so the
@@ -11670,16 +11677,11 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
 
   /* P_kb-gap — while the keyboard is up it already covers the
-     home-indicator strip, so the resting safe-area/24px padding would
-     leave a visible hole between the composer and the keyboard. Keep a
-     tight 8px optical gap and drop the wrapper's resting margin. */
-  :root[data-keyboard-open="true"] #appShell #chatInputBar,
-  :root[data-keyboard-open="true"] body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar{
-    padding-bottom:8px!important;
-  }
-  :root[data-keyboard-open="true"] .chat-view{
-    margin-bottom:0!important;
-  }
+     home-indicator strip. The resting safe-area padding on #chatInputBar
+     and the 6px breathing margin on .chat-view are now consumed by the
+     rising --keyboard-inset on one continuous timeline (see
+     chat-surface.css and .chat-view above), so the composer settles to
+     its 8px optical gap without a layout pop at this boolean flip. */
 
   /* Surface the actual model/effort text on the selector. The bars and caret
      are retained inside the popup, but the closed mobile control reads like
