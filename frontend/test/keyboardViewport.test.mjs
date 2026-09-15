@@ -6,6 +6,7 @@ import {
   measureKeyboardInset,
   isTrackedInputFocused,
   isProgressiveKeyboardSample,
+  detectKeyboardInsetAnimationSupport,
   KEYBOARD_PROGRESSIVE_SAMPLE_MS,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
@@ -99,4 +100,31 @@ test('isTrackedInputFocused survives detached/custom-element throws', () => {
   const active = {};
   /* must not propagate the throw */
   assert.equal(isTrackedInputFocused([evil], active), false);
+});
+
+/* P_css-keyboard-motion — detectKeyboardInsetAnimationSupport is called
+   once at module init; its return value decides whether the JS path
+   keeps writing per-frame eased values or stops at the target and lets
+   the CSS @property transition interpolate. The probe must never throw
+   (it has to be safe to call in environments where CSS.registerProperty
+   does not exist or the runtime has already declared --keyboard-inset). */
+test('detectKeyboardInsetAnimationSupport returns a boolean without throwing', () => {
+  const result = detectKeyboardInsetAnimationSupport();
+  assert.equal(typeof result, 'boolean');
+});
+
+test('detectKeyboardInsetAnimationSupport is idempotent on repeated calls', () => {
+  const first = detectKeyboardInsetAnimationSupport();
+  const second = detectKeyboardInsetAnimationSupport();
+  assert.equal(typeof first, 'boolean');
+  assert.equal(typeof second, 'boolean');
+  /* Both calls must agree; the second call exercises the "already
+     registered" catch branch on engines that supported the first. */
+  if (first) {
+    /* A browser that supports @property stays supported across calls. */
+    assert.equal(second, true);
+  } else {
+    /* A browser without @property stays without it; no false positives. */
+    assert.equal(second, false);
+  }
 });

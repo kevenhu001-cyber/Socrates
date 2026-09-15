@@ -616,12 +616,12 @@
           </div>
         </div>
 
-        <div class="home-suggestions-wrap" id="homeSuggestionsWrap"></div>
-
-        <!-- Reference landing shortcuts. Each row delegates to an existing
-             composer extension, so this is a real entry point rather than a
-             decorative copy of the reference page. The AI-backed suggestions
-             block above takes precedence whenever it has a valid response. -->
+        <!-- Landing shortcuts: each row delegates to an existing composer
+             extension, so this is a real entry point rather than a decorative
+             copy of the reference page. The previous AI-backed heuristic
+             suggestions block (id="homeSuggestionsWrap") was removed — those
+             chips read as noise on mobile and were the most-skipped UI on the
+             landing surface. -->
         <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions">
           <button type="button" class="home-quick-action" data-home-action="upload">
             <span class="home-quick-action-icon" aria-hidden="true">

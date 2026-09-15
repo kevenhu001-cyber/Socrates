@@ -24,6 +24,35 @@
 @import "@fontsource/noto-sans-sc/600.css";
 
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
+/* Single timeline shared by every keyboard-driven surface motion.
+   Same curve (.22,1,.36,1) and 340ms duration across:
+     - .chat-view padding-bottom lift (keyboard rise)
+     - .chat-input-wrap focus expansion (composer-multiline / grid rows)
+     - transcript scroll anchor follow
+   Velocity planning stays in keyboardViewport.js for progressive iOS
+   samples — the CSS transition is the visible motion, the JS plan is
+   only the per-sample target. --composer-motion-duration and
+   --composer-motion-ease are kept as aliases so the dozens of existing
+   callers (chat-input-wrap / topic-input-wrap / rich-composer) keep
+   compiling without rename. */
+:root{
+  --chat-motion-duration:.34s;
+  --chat-motion-ease:cubic-bezier(.22,1,.36,1);
+  --composer-motion-duration:var(--chat-motion-duration);
+  --composer-motion-ease:var(--chat-motion-ease);
+}
+/* Register --keyboard-inset so browsers that support @property
+   (Chrome 85+, Safari 16.4+, Firefox 128+) interpolate it natively.
+   The custom property then drives a single CSS transition on
+   .chat-view's padding-bottom, which is the visible lift. Engines
+   without @property still see computed-value transitions on the
+   padding-bottom property itself, so they fall back to a CSS-only
+   smoothing layer (rather than snapping between JS-driven frames). */
+@property --keyboard-inset{
+  syntax:'<length>';
+  inherits:true;
+  initial-value:0px;
+}
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
 [data-theme=socrates][data-mode=dark]{--bg-000:0 0% 5%;--bg-100:0 0% 13%;--bg-200:0 0% 16%;--bg-300:0 0% 21%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:0 0% 100%;--accent-100:0 0% 88%;--accent-900:0 0% 20%;--brand-000:0 0% 88%;--brand-100:0 0% 100%;--oncolor-100:0 0% 8%;--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
@@ -1524,15 +1553,22 @@ true) but the dropdown never shows — see commit history. */
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
   /* --keyboard-inset is the keyboard geometry from keyboardViewport.js.
-     The module glides the value toward each measurement over one
-     velocity-planned rAF sequence, so the bar follows it 1:1 — no CSS
-     transition here, which would layer a second easing on top and make
-     the composer lag behind (or flash ahead of) the keyboard. */
+     The CSS transitions below (custom-property + padding-bottom + margin-bottom)
+     are the visible motion; the JS module only writes the per-sample target
+     and lets the browser interpolate it on the same timeline as the composer
+     focus expansion. The redundant padding-bottom transition is the fallback
+     for engines that ignore @property — they still see a CSS-only smoothing
+     between JS-driven frame writes. */
   margin-top:0;
   /* keyboard avoidance: shift the composer up by the virtual
      keyboard inset on mobile. Padding is the layout reserve, so the
      composer and transcript move as one continuous flow. */
   padding-bottom:var(--keyboard-inset, 0px);
+  transition:
+    --keyboard-inset var(--chat-motion-duration) var(--chat-motion-ease),
+    padding-bottom var(--chat-motion-duration) var(--chat-motion-ease),
+    margin-bottom var(--chat-motion-duration) var(--chat-motion-ease);
+  will-change:padding-bottom, margin-bottom;
 }
 
 /* P_composer-anim-no-fr — when the engine does not interpolate fr
@@ -5034,7 +5070,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     display:grid;grid-template-columns:auto minmax(0,1fr) auto;
     grid-template-rows:minmax(42px,auto);column-gap:2px;align-items:center;
     contain:none;
-    transition:flex-basis var(--composer-motion-duration) var(--composer-motion-ease),width var(--composer-motion-duration) var(--composer-motion-ease);
+    /* grid-template-rows rides the same shared timeline as the chat-view
+       keyboard lift (--chat-motion-duration/-ease) so the composer expansion
+       and the keyboard rise move as one motion. Engines without fr
+       interpolation snap the row to its final value; the min-height
+       transition in `.composer-anim-no-fr` below covers that branch. */
+    transition:
+      flex-basis var(--chat-motion-duration) var(--chat-motion-ease),
+      width var(--chat-motion-duration) var(--chat-motion-ease),
+      grid-template-rows var(--chat-motion-duration) var(--chat-motion-ease);
   }
   .chat-input-wrap .composer-editor-root{
     order:initial;grid-column:2;grid-row:1;flex:none;width:100%;min-width:0;
