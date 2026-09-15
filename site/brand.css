@@ -14,16 +14,16 @@
  * language while leaving those hooks and component names intact.
  */
 :root {
-  --site-paper: #0a0a0c;
-  --site-paper-soft: #111114;
-  --site-paper-strong: #050507;
-  --site-sand: #1a1a1e;
-  --site-ink: #f4f4f6;
-  --site-ink-soft: rgba(244, 244, 246, .72);
-  --site-ink-muted: rgba(244, 244, 246, .50);
-  --site-line: rgba(255, 255, 255, .10);
-  --site-black: #000000;
-  --site-clay: #e8e8ee;
+  --site-paper: #f4f1e9;
+  --site-paper-soft: #faf9f5;
+  --site-paper-strong: #eee8dc;
+  --site-sand: #e5dbc9;
+  --site-ink: #171716;
+  --site-ink-soft: #56534e;
+  --site-ink-muted: #77716a;
+  --site-line: #d9d0c3;
+  --site-black: #171716;
+  --site-clay: #9a5a3b;
   /* Latin UI sans — Geist is the product's default. Inter is a visual
      sibling that most readers already have, so it's a safe fallback. The
      system stacks after Inter are deliberately limited so CJK characters
@@ -38,12 +38,12 @@
      Spectral or Source Serif. Geist is intentionally NOT in this stack:
      it reads as "UI sans" and loses the quiet differentiation we want
      between the marketing display and the body copy. */
-  --site-serif-latin: var(--font-sans);
+  --site-serif-latin: var(--font-serif);
   /* CJK editorial serif — the Latin families (Newsreader …) are listed
      FIRST so embedded English inside a Chinese page matches the
      English-interface serif; CJK glyphs fall through to Noto Serif SC
      (Google Fonts), with Songti SC kept only as a local fallback. */
-  --site-serif-cjk: var(--font-sans);
+  --site-serif-cjk: var(--font-serif);
   --site-mono: var(--font-mono);
   --site-shadow: none;
 
@@ -85,18 +85,18 @@
   --mk-bg-deep: var(--site-paper-strong);
   --mk-surface: var(--site-paper-soft);
   --mk-surface-2: var(--site-paper-strong);
-  --mk-line: rgba(255, 255, 255, .10);
-  --mk-line-soft: rgba(255, 255, 255, .06);
-  --mk-line-strong: rgba(255, 255, 255, .20);
+  --mk-line: rgba(23, 23, 22, .14);
+  --mk-line-soft: rgba(23, 23, 22, .08);
+  --mk-line-strong: rgba(23, 23, 22, .28);
   --mk-text: var(--site-ink);
-  --mk-text-90: rgba(244, 244, 246, .90);
-  --mk-text-70: rgba(244, 244, 246, .70);
-  --mk-text-60: rgba(244, 244, 246, .60);
-  --mk-text-50: rgba(244, 244, 246, .50);
-  --mk-text-40: rgba(244, 244, 246, .40);
-  --mk-text-30: rgba(244, 244, 246, .30);
+  --mk-text-90: rgba(23, 23, 22, .90);
+  --mk-text-70: rgba(23, 23, 22, .70);
+  --mk-text-60: rgba(23, 23, 22, .60);
+  --mk-text-50: rgba(23, 23, 22, .50);
+  --mk-text-40: rgba(23, 23, 22, .40);
+  --mk-text-30: rgba(23, 23, 22, .30);
   --mk-sunset: var(--site-clay);
-  --mk-sunset-border: rgba(232, 232, 238, .42);
+  --mk-sunset-border: rgba(154, 90, 59, .42);
   --mk-sans: var(--site-sans-latin);
   --mk-mono: var(--site-mono);
 }
@@ -1476,10 +1476,10 @@ body.legal-page .page > nav .nav-links .lang-switch {
 :root {
   --sv-ease: cubic-bezier(.16, 1, .3, 1);
   --sv-speed: .35s;
-  --sv-clay: #e8e8ee;
-  --sv-clay-bright: #c8c8d2;
-  --sv-glow-clay: rgba(200, 205, 225, .14);
-  --sv-glow-sand: rgba(120, 135, 175, .10);
+  --sv-clay: #9a5a3b;
+  --sv-clay-bright: #b86a45;
+  --sv-glow-clay: rgba(184, 106, 69, .15);
+  --sv-glow-sand: rgba(210, 192, 162, .40);
   --sv-shadow-sm: none;
   --sv-shadow-md: none;
   --sv-shadow-lg: none;
@@ -1488,9 +1488,9 @@ body.legal-page .page > nav .nav-links .lang-switch {
 
 html { scrollbar-gutter: stable; }
 
-/* Silver moonlight selection on dark. */
+/* Warm clay selection instead of pure ink. */
 body.ed-site::selection,
-body.ed-site ::selection { background: rgba(232, 232, 238, .85); color: #0a0a0c; }
+body.ed-site ::selection { background: rgba(184, 106, 69, .9); color: #fff; }
 
 /* Anchored headings clear the sticky header. */
 body.ed-site [id] { scroll-margin-top: 108px; }
@@ -1551,7 +1551,7 @@ body.ed-site .ed-header.is-scrolled {
   background: rgba(244, 241, 233, .8);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
-  border-image: linear-gradient(90deg, transparent, rgba(244, 244, 246, .26) 18%, rgba(244, 244, 246, .26) 82%, transparent) 1;
+  border-image: linear-gradient(90deg, transparent, rgba(23, 23, 22, .26) 18%, rgba(23, 23, 22, .26) 82%, transparent) 1;
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   body.ed-site .ed-header.is-scrolled { background: var(--site-paper); }
@@ -1610,7 +1610,7 @@ body.ed-site .ed-button-quiet:active {
   transform: translateY(0) scale(.985);
   transition-duration: .08s;
 }
-body.ed-site .ed-button-quiet:hover { background: rgba(255, 255, 255, .06); }
+body.ed-site .ed-button-quiet:hover { background: #fff; }
 
 @media (hover: hover) and (pointer: fine) {
   body.ed-site .ed-button:hover {
@@ -1646,13 +1646,13 @@ body.ed-site .ed-news-hero::before {
   background:
     radial-gradient(46% 54% at 26% 34%, var(--sv-glow-clay), transparent 70%),
     radial-gradient(40% 48% at 74% 24%, var(--sv-glow-sand), transparent 72%),
-    radial-gradient(30% 36% at 56% 62%, rgba(200, 205, 225, .07), transparent 70%);
+    radial-gradient(30% 36% at 56% 62%, rgba(154, 90, 59, .07), transparent 70%);
   pointer-events: none;
 }
 
 /* The home stage reads as a physical object on the paper. */
 body.ed-site .ed-home-stage {
-  box-shadow: 0 0 0 1px rgba(244, 244, 246, .05);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .05);
 }
 body.ed-site .ed-stage-index a { position: relative; }
 body.ed-site .ed-stage-index a::after {
@@ -1693,7 +1693,7 @@ body.ed-site .ed-course-band,
 body.ed-site .ed-featured { box-shadow: none; }
 body.ed-site .ed-price-card { box-shadow: none; }
 body.ed-site .ed-price-card.is-featured {
-  box-shadow: 0 0 0 1px rgba(244, 244, 246, .85);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .85);
 }
 
 /* Imagery breathes inside its card on hover. */
@@ -1705,7 +1705,7 @@ body.ed-site .ed-featured:hover .ed-featured-media img { transform: scale(1.045)
 /* Large media objects carry the same depth language. */
 body.ed-site .ed-showcase-media { box-shadow: none; }
 body.ed-site .ed-policy-visual img,
-body.ed-site .ed-learning-object img { box-shadow: 0 0 0 1px rgba(244, 244, 246, .07); }
+body.ed-site .ed-learning-object img { box-shadow: 0 0 0 1px rgba(23, 23, 22, .07); }
 body.ed-site .ed-news-split figure { box-shadow: none; }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1718,7 +1718,7 @@ body.ed-site .ed-news-split figure { box-shadow: none; }
   }
   body.ed-site .ed-price-card.is-featured:hover {
     transform: translateY(-4px);
-    box-shadow: 0 0 0 1px rgba(244, 244, 246, .85);
+    box-shadow: 0 0 0 1px rgba(23, 23, 22, .85);
   }
 }
 
@@ -1731,7 +1731,7 @@ body.ed-site .ed-news-item {
 }
 body.ed-site .ed-ledger-row { transition: background-color .2s ease; }
 body.ed-site .ed-ledger-row:hover {
-  background: linear-gradient(90deg, rgba(200, 205, 225, .05), transparent 55%);
+  background: linear-gradient(90deg, rgba(184, 106, 69, .05), transparent 55%);
 }
 body.ed-site .ed-team-grid h2 { transition: color .18s ease; }
 body.ed-site .ed-team-grid article:hover h2 { color: var(--sv-clay); }
@@ -1748,7 +1748,7 @@ body.ed-site .ed-product-block::before {
   bottom: 28px;
   width: 2px;
   border-radius: 2px;
-  background: linear-gradient(180deg, var(--sv-clay-bright), rgba(200, 205, 225, 0));
+  background: linear-gradient(180deg, var(--sv-clay-bright), rgba(184, 106, 69, 0));
   transform: scaleY(0);
   transform-origin: top center;
   transition: transform .35s var(--sv-ease);
@@ -1774,7 +1774,7 @@ body.ed-site .ed-filter-bar button {
     box-shadow .18s ease;
 }
 body.ed-site .ed-filter-bar button:hover {
-  border-color: rgba(244, 244, 246, .4);
+  border-color: rgba(23, 23, 22, .4);
 }
 body.ed-site .ed-filter-bar button.is-active {
   background: linear-gradient(180deg, #2c2925, var(--site-ink));
@@ -1789,15 +1789,15 @@ body.ed-site .ed-search-field input {
 }
 body.ed-site .ed-search-field input:focus {
   border-color: var(--sv-clay);
-  background: #111114;
-  outline: 2px solid rgba(232, 232, 238, .40);
+  background: #fff;
+  outline: 2px solid rgba(184, 106, 69, .40);
   outline-offset: 1px;
 }
 body.ed-site .ed-pill,
 body.ed-site .ed-thread {
   transition: border-color .18s ease, color .18s ease;
 }
-body.ed-site .ed-pill:hover { border-color: rgba(244, 244, 246, .35); }
+body.ed-site .ed-pill:hover { border-color: rgba(23, 23, 22, .35); }
 
 /* ── I. Dark surfaces & footer ────────────────────────────────────────── */
 body.ed-site .ed-black-band,
@@ -1926,7 +1926,7 @@ body.ed-site .ed-news-hero::before {
   font-weight: 500;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(244, 244, 246, .52);
+  color: rgba(23, 23, 22, .52);
 }
 html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spacing: .3em; }
 .ed-marquee-track {
@@ -1950,7 +1950,7 @@ html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spa
   justify-content: center;
   height: clamp(22px, 2.6vw, 32px);
   width: clamp(96px, 11vw, 150px);
-  color: rgba(244, 244, 246, .58);
+  color: rgba(23, 23, 22, .58);
   transition: color .35s ease;
 }
 .ed-logo-item:hover { color: var(--site-black); }
@@ -2005,21 +2005,21 @@ body.ed-site main select {
   padding: 11px 14px;
   font: inherit;
   font-size: 15px;
-  color: #f4f4f6;
-  background: #111114;
+  color: var(--site-black);
+  background: #fffdf8;
   border: 1px solid var(--site-line);
   border-radius: 10px;
   transition: border-color .18s ease, background-color .18s ease;
 }
 body.ed-site main input::placeholder,
-body.ed-site main textarea::placeholder { color: rgba(244, 244, 246, .38); opacity: 1; }
+body.ed-site main textarea::placeholder { color: rgba(23, 23, 22, .38); opacity: 1; }
 body.ed-site main input:focus,
 body.ed-site main textarea:focus,
 body.ed-site main select:focus {
   outline: none;
   border-color: var(--sv-clay-bright);
-  background: #16161a;
-  outline: 2px solid rgba(232, 232, 238, .40);
+  background: #fff;
+  outline: 2px solid rgba(184, 106, 69, .40);
   outline-offset: 1px;
 }
 /* The seamless three-part card field keeps its own chrome. */
@@ -2047,7 +2047,7 @@ body.ed-site main .ed-field > label {
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: rgba(244, 244, 246, .62);
+  color: rgba(23, 23, 22, .62);
 }
 
 /* ── L2. Pull quotes — Anthropic's serif editorial voice ──────────────── */
@@ -2059,7 +2059,7 @@ body.ed-site main blockquote {
   font-size: clamp(19px, 2vw, 24px);
   font-style: italic;
   line-height: 1.5;
-  color: rgba(244, 244, 246, .82);
+  color: rgba(23, 23, 22, .82);
 }
 html:lang(zh) body.ed-site main blockquote { font-family: var(--site-serif-cjk); }
 
@@ -2089,8 +2089,8 @@ body.ed-site main th {
   font-weight: 600;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: rgba(244, 244, 246, .55);
-  border-bottom: 1px solid rgba(244, 244, 246, .28);
+  color: rgba(23, 23, 22, .55);
+  border-bottom: 1px solid rgba(23, 23, 22, .28);
 }
 body.ed-site main td {
   padding: 12px 14px;
@@ -2098,7 +2098,7 @@ body.ed-site main td {
   border-bottom: 1px solid var(--site-line);
 }
 body.ed-site main tbody tr { transition: background-color .15s ease; }
-body.ed-site main tbody tr:hover { background-color: rgba(200, 205, 225, .05); }
+body.ed-site main tbody tr:hover { background-color: rgba(184, 106, 69, .05); }
 
 /* ── L5. Keyboard focus — Material-crisp rings for every interactive ──── */
 body.ed-site :focus-visible {
@@ -2112,7 +2112,7 @@ body.ed-site main figcaption {
   font-family: var(--ed-mono, monospace);
   font-size: 11.5px;
   letter-spacing: .04em;
-  color: rgba(244, 244, 246, .55);
+  color: rgba(23, 23, 22, .55);
 }
 
 /* ── L7. In-prose links — Google's crafted underline, clay on hover ───── */
@@ -2121,7 +2121,7 @@ body.ed-site main li a:not(.ed-button) {
   color: inherit;
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  text-decoration-color: rgba(200, 205, 225, .45);
+  text-decoration-color: rgba(184, 106, 69, .45);
   text-underline-offset: 3px;
   transition: color .18s ease, text-decoration-color .18s ease;
 }
@@ -2196,11 +2196,11 @@ body.ed-site .ed-home-hero .ed-hero-actions {
   gap: 12px;
   margin-top: 26px;
 }
-/* Primary — lunar light pill on dark. */
+/* Primary — Anthropic charcoal pill. */
 body.ed-site .ed-home-hero .ed-button {
-  background: #f4f4f6;
-  border-color: #f4f4f6;
-  color: #0a0a0c;
+  background: #191919;
+  border-color: #191919;
+  color: #f5f3ee;
   font-weight: 500;
   border-radius: 999px;
 }
@@ -2214,12 +2214,12 @@ body.ed-site .ed-home-hero .ed-button {
 /* Secondary — quiet outline pill. */
 body.ed-site .ed-home-hero .ed-button-ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .25);
+  border: 1px solid rgba(25, 25, 25, .25);
   color: #1a1918;
 }
 body.ed-site .ed-home-hero .ed-button-ghost:hover {
-  background: rgba(255, 255, 255, .05);
-  border-color: rgba(255, 255, 255, .5);
+  background: rgba(25, 25, 25, .05);
+  border-color: rgba(25, 25, 25, .5);
 }
 /* Announcement tag — hairline pill with a book-cloth pulse dot. */
 body.ed-site .ed-home-hero .ed-hero-flag {
@@ -2228,7 +2228,7 @@ body.ed-site .ed-home-hero .ed-hero-flag {
   gap: 8px;
   margin: 0 0 22px;
   padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, .16);
+  border: 1px solid rgba(25, 25, 25, .16);
   border-radius: 999px;
   font-family: var(--ed-mono, monospace);
   font-size: 11px;
@@ -2242,7 +2242,7 @@ body.ed-site .ed-home-hero .ed-hero-flag span {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e8e8ee;
+  background: #c15f3c;
   animation: sv-flag-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sv-flag-pulse {
@@ -2253,7 +2253,7 @@ body.ed-site .ed-home-hero .ed-hero-flag span {
 /* ── M3. The stage — a quiet rounded panel on the paper ───────────────── */
 body.ed-site .ed-home-stage {
   border-radius: 18px;
-  box-shadow: 0 0 0 1px rgba(244, 244, 246, .09);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .09);
 }
 body.ed-site .ed-home-hero .ed-stage-index a { color: rgba(255, 255, 255, .6); }
 body.ed-site .ed-home-hero .ed-stage-index a:hover { color: #ffffff; }
@@ -2265,8 +2265,8 @@ body.ed-site .ed-home-hero .ed-stage-caption { color: rgba(255, 255, 255, .38); 
 body.ed-site .ed-home-hero + .ed-marquee {
   margin-top: 0;
   background: transparent;
-  border-top-color: rgba(244, 244, 246, .1);
-  border-bottom-color: rgba(244, 244, 246, .14);
+  border-top-color: rgba(23, 23, 22, .1);
+  border-bottom-color: rgba(23, 23, 22, .14);
 }
 body.ed-site .ed-home-hero + .ed-marquee .ed-marquee-title { color: rgba(26, 25, 24, .5); }
 body.ed-site .ed-home-hero + .ed-marquee .ed-logo-item { color: rgba(26, 25, 24, .68); }
@@ -2348,9 +2348,9 @@ body.ed-site .ed-home-hero::before {
   height: clamp(420px, 48vw, 720px);
   transform: translateX(-50%);
   background:
-    radial-gradient(44% 52% at 24% 32%, rgba(200, 205, 225, .13), transparent 70%),
-    radial-gradient(38% 46% at 76% 22%, rgba(244, 244, 246, .05), transparent 72%),
-    radial-gradient(34% 40% at 52% 66%, rgba(200, 205, 225, .06), transparent 70%);
+    radial-gradient(44% 52% at 24% 32%, rgba(184, 106, 69, .13), transparent 70%),
+    radial-gradient(38% 46% at 76% 22%, rgba(23, 23, 22, .05), transparent 72%),
+    radial-gradient(34% 40% at 52% 66%, rgba(184, 106, 69, .06), transparent 70%);
   animation: sv-drift 20s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -2358,7 +2358,7 @@ body.ed-site .ed-home-hero::before {
 /* ── P1. Home stage: deeper product-surface frame + glass chips ───────── */
 body.ed-site .ed-home-stage {
   border-radius: 18px;
-  box-shadow: 0 0 0 1px rgba(244, 244, 246, .06);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .06);
 }
 
 /* Soft vignette + top light so the artwork sits inside a physical panel. */
@@ -2368,7 +2368,7 @@ body.ed-site .ed-home-stage::after {
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(180deg, transparent 62%, rgba(244, 244, 246, .42) 100%),
+    linear-gradient(180deg, transparent 62%, rgba(23, 23, 22, .42) 100%),
     radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%);
   pointer-events: none;
 }
@@ -2401,7 +2401,7 @@ body.ed-site .ed-inline-feature img,
 body.ed-site .ed-policy-visual img,
 body.ed-site .ed-learning-object img {
   border-radius: 12px;
-  box-shadow: 0 0 0 1px rgba(244, 244, 246, .07);
+  box-shadow: 0 0 0 1px rgba(23, 23, 22, .07);
 }
 
 body.ed-site .ed-publication-side img,
@@ -2417,7 +2417,7 @@ body.ed-site .ed-article-hero-media:hover,
 body.ed-site .ed-black-band-media:hover,
 body.ed-site .ed-showcase-media:hover,
 body.ed-site .ed-publication-side:hover {
-  box-shadow: 0 0 0 1px rgba(200, 205, 225, .35);
+  box-shadow: 0 0 0 1px rgba(184, 106, 69, .35);
 }
 
 body.ed-site .ed-article-hero-media:hover img,
@@ -2439,18 +2439,18 @@ body.ed-site .ed-price-card,
 body.ed-site .ed-contact-card,
 body.ed-site .ed-course-card,
 body.ed-site .ed-featured {
-  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(200, 205, 225, .08), transparent 44%);
+  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(184, 106, 69, .08), transparent 44%);
 }
 body.ed-site .ed-black-band,
 body.ed-site .ed-inline-feature {
-  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(200, 205, 225, .10), transparent 46%);
+  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(184, 106, 69, .10), transparent 46%);
 }
 
 /* ── P4. Essay/publication rows: wash sweep on hover ──────────────────── */
 body.ed-site .ed-essay-row,
 body.ed-site .ed-publication-row {
   border-radius: 10px;
-  background-image: linear-gradient(90deg, rgba(200, 205, 225, .07), transparent 65%);
+  background-image: linear-gradient(90deg, rgba(184, 106, 69, .07), transparent 65%);
   background-size: 0% 100%;
   background-repeat: no-repeat;
   background-position: left center;
@@ -2568,7 +2568,7 @@ body.ed-site .ed-result-row b {
 body.ed-site .ed-result-track {
   height: 6px;
   border-radius: 999px;
-  background: rgba(244, 244, 246, .08);
+  background: rgba(23, 23, 22, .08);
   overflow: hidden;
 }
 body.ed-site .ed-result-track i {
@@ -2576,7 +2576,7 @@ body.ed-site .ed-result-track i {
   height: 100%;
   width: var(--w, 50%);
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--sv-clay), #c8c8d2);
+  background: linear-gradient(90deg, var(--sv-clay), #d97b56);
   transform-origin: left;
   animation: edResultGrow 1s var(--sv-ease) .25s both;
 }
@@ -2665,7 +2665,7 @@ body.ed-site .ed-stat-value {
 body.ed-site .ed-stat-suffix {
   font-variant-numeric: tabular-nums;
 }
-body.ed-site .ed-stat.is-animating .ed-stat-value { color: var(--sv-clay, #e8e8ee); }
+body.ed-site .ed-stat.is-animating .ed-stat-value { color: var(--sv-clay, #b86a45); }
 body.ed-site .ed-stat.is-done .ed-stat-value { color: inherit; }
 
 /* ── P10. Paragraph wave reveal ────────────────────────────────────────── */
@@ -2696,9 +2696,9 @@ body.ed-site .ed-svg-bar {
 body.ed-site .ed-svg-bar-wrap {
   margin: 2em 0;
   padding: 22px;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-radius: 14px;
-  background: var(--ed-paper-soft, #111114);
+  background: var(--ed-paper-soft, #faf9f5);
 }
 body.ed-site .ed-figure-caption {
   margin: 10px 0 0;
@@ -2720,13 +2720,13 @@ body.ed-site .ed-svg-bar .ed-bar-label {
   font-weight: 500;
 }
 body.ed-site .ed-svg-bar .ed-bar-value {
-  fill: var(--ed-ink, #f4f4f6);
+  fill: var(--ed-ink, #171716);
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 body.ed-site .ed-svg-bar .ed-bar-track {
-  fill: rgba(244, 244, 246, .08);
+  fill: rgba(23, 23, 22, .08);
 }
 body.ed-site .ed-svg-bar .ed-bar-fill {
   fill: url(#edBarGrad);
@@ -2740,9 +2740,9 @@ body.ed-site .ed-svg-bar .ed-bar-fill {
 body.ed-site .ed-timeline {
   margin: 1.6em 0;
   padding: 18px 0 8px;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-radius: 14px;
-  background: var(--ed-paper-soft, #111114);
+  background: var(--ed-paper-soft, #faf9f5);
   font-family: var(--ed-sans, sans-serif);
 }
 body.ed-site .ed-timeline-row {
@@ -2753,7 +2753,7 @@ body.ed-site .ed-timeline-row {
   padding: 10px 22px;
 }
 body.ed-site .ed-timeline-row + .ed-timeline-row {
-  border-top: 1px dashed var(--ed-line, rgba(255, 255, 255, .10));
+  border-top: 1px dashed var(--ed-line, #d9d0c3);
 }
 body.ed-site .ed-timeline-step {
   display: inline-flex;
@@ -2761,10 +2761,10 @@ body.ed-site .ed-timeline-step {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--sv-clay, #e8e8ee);
+  border: 1px solid var(--sv-clay, #b86a45);
   border-radius: 999px;
-  background: var(--ed-paper, #0a0a0c);
-  color: var(--sv-clay, #e8e8ee);
+  background: var(--ed-paper, #f4f1e9);
+  color: var(--sv-clay, #b86a45);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .04em;
@@ -2772,7 +2772,7 @@ body.ed-site .ed-timeline-step {
 body.ed-site .ed-timeline-row strong {
   display: block;
   font-size: 14px;
-  color: var(--ed-ink, #f4f4f6);
+  color: var(--ed-ink, #171716);
   font-weight: 600;
 }
 body.ed-site .ed-timeline-row span {
@@ -2789,9 +2789,9 @@ body.ed-site .ed-author {
   align-items: center;
   gap: 12px;
   padding: 10px 14px 10px 10px;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-radius: 999px;
-  background: var(--ed-paper-soft, #111114);
+  background: var(--ed-paper-soft, #faf9f5);
 }
 body.ed-site .ed-author-avatar {
   display: inline-flex;
@@ -2800,7 +2800,7 @@ body.ed-site .ed-author-avatar {
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -2814,7 +2814,7 @@ body.ed-site .ed-author-meta {
 body.ed-site .ed-author-meta strong {
   font-size: 14px;
   font-weight: 600;
-  color: var(--ed-ink, #f4f4f6);
+  color: var(--ed-ink, #171716);
 }
 body.ed-site .ed-author-meta span {
   font-size: 12px;
@@ -2828,9 +2828,9 @@ body.ed-site .ed-author-meta span {
 body.ed-site .ed-chat-demo {
   margin: 56px auto 0;
   padding: 28px;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-radius: 22px;
-  background: var(--ed-paper-soft, #111114);
+  background: var(--ed-paper-soft, #faf9f5);
   box-shadow: none;
 }
 body.ed-site .ed-chat-head {
@@ -2839,7 +2839,7 @@ body.ed-site .ed-chat-head {
   gap: 10px;
   padding-bottom: 16px;
   margin-bottom: 18px;
-  border-bottom: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border-bottom: 1px solid var(--ed-line, #d9d0c3);
   font-family: var(--ed-mono, monospace);
   font-size: 11px;
   letter-spacing: .06em;
@@ -2850,7 +2850,7 @@ body.ed-site .ed-chat-head-dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   box-shadow: none;
 }
 body.ed-site .ed-chat-thread {
@@ -2873,15 +2873,15 @@ body.ed-site .ed-chat-thread.is-visible .ed-chat-bubble {
 }
 body.ed-site .ed-chat-bubble.user {
   justify-self: end;
-  background: var(--ed-ink, #f4f4f6);
-  color: var(--ed-paper, #0a0a0c);
+  background: var(--ed-ink, #171716);
+  color: var(--ed-paper, #f4f1e9);
   border-bottom-right-radius: 4px;
 }
 body.ed-site .ed-chat-bubble.tutor {
   justify-self: start;
-  background: var(--ed-paper-strong, #050507);
-  color: var(--ed-ink, #f4f4f6);
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  background: var(--ed-paper-strong, #eee8dc);
+  color: var(--ed-ink, #171716);
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-bottom-left-radius: 4px;
 }
 body.ed-site .ed-chat-bubble:nth-child(1) { --d: 0ms; }
@@ -2912,8 +2912,8 @@ body.ed-site .ed-mini-demo {
   width: 168px;
   height: 112px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #111114 0%, #050507 100%);
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  background: linear-gradient(180deg, #faf9f5 0%, #f4f1e9 100%);
+  border: 1px solid var(--ed-line, #d9d0c3);
   overflow: hidden;
   flex: 0 0 auto;
 }
@@ -2938,16 +2938,16 @@ body.ed-site .ed-mini-demo.is-visible .ed-mini-bubble-b {
 body.ed-site .ed-mini-bubble-a {
   top: 18px; left: 14px;
   max-width: 70%;
-  background: var(--ed-paper-strong, #050507);
-  color: var(--ed-ink, #f4f4f6);
+  background: var(--ed-paper-strong, #eee8dc);
+  color: var(--ed-ink, #171716);
   border-bottom-left-radius: 2px;
   --d: 0ms;
 }
 body.ed-site .ed-mini-bubble-b {
   right: 14px; bottom: 16px;
   max-width: 70%;
-  background: var(--ed-ink, #f4f4f6);
-  color: var(--ed-paper, #0a0a0c);
+  background: var(--ed-ink, #171716);
+  color: var(--ed-paper, #f4f1e9);
   border-bottom-right-radius: 2px;
   --d: 280ms;
 }
@@ -2956,12 +2956,12 @@ body.ed-site .ed-mini-card {
   inset: 22px 28px 22px 28px;
   display: grid;
   place-items: center;
-  background: var(--ed-paper, #0a0a0c);
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  background: var(--ed-paper, #f4f1e9);
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--ed-ink, #f4f4f6);
+  color: var(--ed-ink, #171716);
   transform: rotateY(180deg);
   transform-style: preserve-3d;
   transition: transform .8s var(--sv-ease);
@@ -2976,7 +2976,7 @@ body.ed-site .ed-mini-card::after {
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   color: #fff;
   border-radius: 10px;
   transform: rotateY(180deg);
@@ -2991,9 +2991,9 @@ body.ed-site .ed-mini-card-back {
   backface-visibility: hidden;
   border-radius: 10px;
 }
-body.ed-site .ed-mini-card-front { background: var(--ed-paper, #0a0a0c); border: 1px solid var(--ed-line, rgba(255, 255, 255, .10)); }
+body.ed-site .ed-mini-card-front { background: var(--ed-paper, #f4f1e9); border: 1px solid var(--ed-line, #d9d0c3); }
 body.ed-site .ed-mini-card-back {
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   color: #fff;
   transform: rotateY(180deg);
 }
@@ -3002,7 +3002,7 @@ body.ed-site .ed-mini-node {
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   box-shadow: none;
   opacity: 0;
   transform: scale(.5);
@@ -3022,7 +3022,7 @@ body.ed-site .ed-mini-pulse {
   top: 50%; left: 50%;
   width: 32px; height: 32px;
   border-radius: 999px;
-  background: rgba(200, 205, 225, .35);
+  background: rgba(184, 106, 69, .35);
   transform: translate(-50%, -50%) scale(.5);
   opacity: 0;
   animation: edMiniPulse 2.2s ease-out infinite;
@@ -3041,10 +3041,10 @@ body.ed-site .ed-product-block:hover .ed-mini-pulse {
 body.ed-site .ed-coming-next {
   margin: 1.8em 0 0;
   padding: 18px 22px;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
-  border-left: 2px solid var(--sv-clay, #e8e8ee);
+  border: 1px solid var(--ed-line, #d9d0c3);
+  border-left: 2px solid var(--sv-clay, #b86a45);
   border-radius: 0 14px 14px 0;
-  background: var(--ed-paper-soft, #111114);
+  background: var(--ed-paper-soft, #faf9f5);
 }
 body.ed-site .ed-coming-next .ed-kicker { margin: 0 0 6px; }
 body.ed-site .ed-coming-next h3 {
@@ -3052,7 +3052,7 @@ body.ed-site .ed-coming-next h3 {
   font-size: 19px;
   font-weight: 600;
   letter-spacing: -.01em;
-  color: var(--ed-ink, #f4f4f6);
+  color: var(--ed-ink, #171716);
 }
 body.ed-site .ed-coming-next p { margin: 0; font-size: 15px; color: var(--ed-ink-soft, #56534e); }
 body.ed-site .ed-related {
@@ -3067,8 +3067,8 @@ body.ed-site .ed-related-chip {
   gap: 6px;
   padding: 7px 12px;
   border-radius: 999px;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
-  background: var(--ed-paper, #0a0a0c);
+  border: 1px solid var(--ed-line, #d9d0c3);
+  background: var(--ed-paper, #f4f1e9);
   color: var(--ed-ink-soft, #56534e);
   font-size: 12px;
   font-weight: 500;
@@ -3079,13 +3079,13 @@ body.ed-site .ed-related-chip::before {
   content: "";
   width: 5px; height: 5px;
   border-radius: 999px;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   opacity: .55;
 }
 body.ed-site .ed-related-chip:hover {
-  color: var(--ed-ink, #f4f4f6);
-  border-color: var(--sv-clay, #e8e8ee);
-  background: var(--ed-paper-soft, #111114);
+  color: var(--ed-ink, #171716);
+  border-color: var(--sv-clay, #b86a45);
+  background: var(--ed-paper-soft, #faf9f5);
 }
 
 /* ── P17. Research hero stats strip ────────────────────────────────────── */
@@ -3094,14 +3094,14 @@ body.ed-site .ed-stats-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  border: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border: 1px solid var(--ed-line, #d9d0c3);
   border-radius: 16px;
-  background: var(--ed-paper-soft, #111114);
+  background: var(--ed-paper-soft, #faf9f5);
   overflow: hidden;
 }
 body.ed-site .ed-stats-strip > div {
   padding: 18px 22px;
-  border-right: 1px solid var(--ed-line, rgba(255, 255, 255, .10));
+  border-right: 1px solid var(--ed-line, #d9d0c3);
 }
 body.ed-site .ed-stats-strip > div:last-child { border-right: 0; }
 body.ed-site .ed-stats-strip p {
@@ -3116,13 +3116,13 @@ body.ed-site .ed-stats-strip b {
   display: block;
   font-size: clamp(22px, 2.4vw, 30px);
   font-weight: 600;
-  color: var(--ed-ink, #f4f4f6);
+  color: var(--ed-ink, #171716);
   letter-spacing: -.012em;
   font-variant-numeric: tabular-nums;
 }
 @media (max-width: 720px) {
   body.ed-site .ed-stats-strip { grid-template-columns: 1fr; }
-  body.ed-site .ed-stats-strip > div { border-right: 0; border-bottom: 1px solid var(--ed-line, rgba(255, 255, 255, .10)); }
+  body.ed-site .ed-stats-strip > div { border-right: 0; border-bottom: 1px solid var(--ed-line, #d9d0c3); }
   body.ed-site .ed-stats-strip > div:last-child { border-bottom: 0; }
 }
 
@@ -3150,7 +3150,7 @@ body.ed-site .ed-path-timeline::before {
   left: 6%;
   right: 6%;
   height: 1px;
-  background: var(--ed-line, rgba(255, 255, 255, .10));
+  background: var(--ed-line, #d9d0c3);
   z-index: 0;
 }
 body.ed-site .ed-path-step {
@@ -3162,8 +3162,8 @@ body.ed-site .ed-path-step {
 body.ed-site .ed-path-node {
   width: 14px; height: 14px;
   border-radius: 999px;
-  background: var(--ed-paper, #0a0a0c);
-  border: 1.5px solid var(--sv-clay, #e8e8ee);
+  background: var(--ed-paper, #f4f1e9);
+  border: 1.5px solid var(--sv-clay, #b86a45);
   margin: 0 auto 14px;
   position: relative;
 }
@@ -3172,7 +3172,7 @@ body.ed-site .ed-path-node::after {
   position: absolute;
   inset: -3px;
   border-radius: inherit;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #b86a45);
   transform: scale(0);
   transition: transform .5s var(--sv-ease);
 }
@@ -3186,7 +3186,7 @@ body.ed-site .ed-path-step strong {
   display: block;
   font-size: 15px;
   font-weight: 600;
-  color: var(--ed-ink, #f4f4f6);
+  color: var(--ed-ink, #171716);
   letter-spacing: -.005em;
 }
 body.ed-site .ed-path-step span {
@@ -3329,7 +3329,7 @@ body.ed-site .ed-black-band-copy .ed-button { margin-top: 6px; }
 
 /* ── R3. Images: universal radius + lazy defaults + stable aspect ──────── */
 body.ed-site img {
-  background: var(--site-paper-strong, #050507);
+  background: var(--site-paper-strong, #eee8dc);
 }
 body.ed-site main img {
   border-radius: 14px;
@@ -3602,7 +3602,7 @@ body.ed-site main table th {
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--site-ink-muted);
-  border-bottom: 1px solid rgba(244, 244, 246, .28);
+  border-bottom: 1px solid rgba(23, 23, 22, .28);
 }
 
 /* ── R9. Misc cleanup ─────────────────────────────────────────────────── */
@@ -3672,7 +3672,7 @@ body.ed-site .ed-method-note .ed-method-label {
   padding: 4px 8px;
   border: 1px solid var(--sv-clay);
   border-radius: 999px;
-  background: rgba(200, 205, 225, .08);
+  background: rgba(184, 106, 69, .08);
 }
 
 /* Article foot nav cards. */
@@ -3744,7 +3744,7 @@ body.ed-site .ed-stage-index {
 }
 
 /* ── R10. Subtle consistency: hairlines between sections, footer links ─ */
-body.ed-site .ed-section-line { border-color: rgba(244, 244, 246, .12); }
+body.ed-site .ed-section-line { border-color: rgba(23, 23, 22, .12); }
 body.ed-site .ed-hero-actions .ed-button-ghost { background: transparent; }
 
 /* Article hero aside: gap between media and byline. */
@@ -3764,7 +3764,7 @@ body.ed-site .ed-reference-links a {
   margin-right: 12px;
   color: var(--site-ink);
   text-decoration: underline;
-  text-decoration-color: rgba(200, 205, 225, .35);
+  text-decoration-color: rgba(184, 106, 69, .35);
   text-underline-offset: 3px;
 }
 body.ed-site .ed-reference-links a:hover { color: var(--sv-clay-bright); text-decoration-color: currentColor; }
@@ -3797,7 +3797,7 @@ body.ed-site .ed-search-field {
   min-width: 220px;
   transition: border-color .18s ease, background .18s ease;
 }
-body.ed-site .ed-search-field:focus-within { border-color: var(--sv-clay-bright); background: #111114; }
+body.ed-site .ed-search-field:focus-within { border-color: var(--sv-clay-bright); background: #fff; }
 body.ed-site .ed-search-field input {
   flex: 1;
   border: 0;
@@ -3963,7 +3963,7 @@ body.ed-site .ed-pill::before {
 }
 
 /* Pill color tones per category — match the editorial design. */
-body.ed-site .ed-pill[data-cat="Memory"]::before { background: #e8e8ee; }
+body.ed-site .ed-pill[data-cat="Memory"]::before { background: #b86a45; }
 body.ed-site .ed-pill[data-cat="Explanation"]::before { background: #5e8d6b; }
 body.ed-site .ed-pill[data-cat="Practice"]::before { background: #6b6db8; }
 body.ed-site .ed-pill[data-cat="Knowledge mapping"]::before { background: #c89442; }
@@ -4084,7 +4084,7 @@ body.ed-site .ed-ledger-row > span:last-child {
 /* Hero flag & eyebrow: keep on light paper. */
 body.ed-site .ed-home-hero .ed-hero-flag {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, .18);
+  border: 1px solid rgba(25, 25, 25, .18);
   color: rgba(26, 25, 24, .66);
 }
 
@@ -4099,7 +4099,7 @@ body.ed-site .ed-inline-feature h2 {
   font-weight: 500;
   letter-spacing: -.014em;
   line-height: 1.18;
-  color: var(--ed-paper, #0a0a0c);
+  color: var(--ed-paper, #f4f1e9);
 }
 html:lang(zh) body.ed-site .ed-inline-feature h2 { font-family: var(--site-serif-cjk); }
 body.ed-site .ed-inline-feature p { color: rgba(244, 241, 233, .74); line-height: 1.6; }
@@ -4167,7 +4167,7 @@ html:lang(zh) body.ed-site .ed-reference-title { font-family: var(--site-serif-c
 /* Hero neon for home page bottom buttons: keep equal weight. */
 body.ed-site .ed-hero-actions .ed-button-ghost {
   border-radius: 999px;
-  border: 1px solid rgba(244, 244, 246, .25);
+  border: 1px solid rgba(23, 23, 22, .25);
   color: var(--site-ink);
 }
 
@@ -4241,20 +4241,20 @@ body.ed-site .ed-footer-column a:hover { color: #fff; text-decoration: underline
    paragraph cadence, and predictable responsive spacing.
    ========================================================================= */
 :root {
-  --sf-paper: #0a0a0c;
-  --sf-paper-deep: #050507;
-  --sf-ink: #f4f4f6;
-  --sf-ink-soft: rgba(244, 244, 246, .72);
-  --sf-line: rgba(255, 255, 255, .10);
-  --sf-card: rgba(255, 255, 255, .04);
-  --sf-accent: #e8e8ee;
+  --sf-paper: #f7f4ee;
+  --sf-paper-deep: #efe8dd;
+  --sf-ink: #151311;
+  --sf-ink-soft: #4f4942;
+  --sf-line: rgba(21, 19, 17, .14);
+  --sf-card: rgba(255, 255, 255, .46);
+  --sf-accent: #9b5f41;
 }
 
 body.ed-site {
   color: var(--sf-ink);
   background:
-    radial-gradient(1200px 540px at 14% -12%, rgba(120, 135, 180, .10), transparent 68%),
-    radial-gradient(1040px 500px at 86% -18%, rgba(180, 185, 205, .06), transparent 72%),
+    radial-gradient(1200px 540px at 14% -12%, rgba(168, 129, 102, .10), transparent 68%),
+    radial-gradient(1040px 500px at 86% -18%, rgba(148, 167, 190, .08), transparent 72%),
     var(--sf-paper);
   line-height: 1.6;
   letter-spacing: -.009em;
@@ -4321,7 +4321,7 @@ body.ed-site .ed-inline-feature p { max-width: 56ch; }
 body.ed-site .ed-kicker,
 body.ed-site .ed-meta,
 body.ed-site .ed-row-meta {
-  color: rgba(244, 244, 246, .62);
+  color: rgba(21, 19, 17, .62);
   letter-spacing: .05em;
 }
 
@@ -4342,11 +4342,11 @@ body.ed-site .ed-button:hover {
 }
 body.ed-site .ed-button-quiet {
   border-color: var(--sf-line);
-  background: rgba(255, 255, 255, .04);
+  background: rgba(255, 255, 255, .36);
 }
 body.ed-site .ed-button-quiet:hover {
-  border-color: rgba(255, 255, 255, .20);
-  background: rgba(255, 255, 255, .07);
+  border-color: rgba(21, 19, 17, .3);
+  background: rgba(255, 255, 255, .58);
 }
 
 body.ed-site .ed-portal,
@@ -4430,22 +4430,22 @@ body.ed-site .ed-publication-side img {
    Final shared layer for every English and Chinese marketing surface.
    ========================================================================= */
 :root {
-  --site-paper: #0a0a0c;
-  --site-paper-soft: #111114;
-  --site-paper-strong: #050507;
-  --site-ink: #f4f4f6;
-  --site-ink-soft: rgba(244, 244, 246, .72);
-  --site-ink-muted: rgba(244, 244, 246, .50);
-  --site-line: rgba(255, 255, 255, .10);
-  --site-black: #000000;
-  --site-clay: #e8e8ee;
-  --site-shadow: none;
+  --site-paper: #f5f2ea;
+  --site-paper-soft: #faf8f3;
+  --site-paper-strong: #e9e1d4;
+  --site-ink: #171614;
+  --site-ink-soft: #504b45;
+  --site-ink-muted: #706a62;
+  --site-line: #d6cec1;
+  --site-black: #171715;
+  --site-clay: #a35f3f;
+  --site-shadow: 0 18px 46px rgba(30, 25, 20, .07);
   --sf-paper: var(--site-paper);
   --sf-paper-deep: var(--site-paper-strong);
   --sf-ink: var(--site-ink);
   --sf-ink-soft: var(--site-ink-soft);
-  --sf-line: rgba(255, 255, 255, .10);
-  --sf-card: rgba(255, 255, 255, .04);
+  --sf-line: rgba(23, 22, 20, .14);
+  --sf-card: rgba(255, 255, 255, .30);
   --sf-accent: var(--site-clay);
 }
 
@@ -4465,7 +4465,7 @@ html:lang(zh) body.ed-site {
 body.ed-site .ed-shell { width: min(1312px, calc(100% - 64px)); }
 body.ed-site .ed-header {
   padding: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  border-bottom: 1px solid rgba(23, 22, 20, .08);
   background: rgba(245, 242, 234, .96);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -4618,7 +4618,7 @@ body.ed-site .ed-contact-card,
 body.ed-site .ed-course-card,
 body.ed-site .ed-featured,
 body.ed-site .ed-story-card {
-  border-color: rgba(255, 255, 255, .14);
+  border-color: rgba(23, 22, 20, .14);
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -4634,7 +4634,7 @@ body.ed-site .ed-product-block h2 {
   letter-spacing: -.02em;
 }
 html:lang(zh) body.ed-site .ed-product-block h2 { font-family: var(--site-serif-cjk); line-height: 1.4; }
-body.ed-site .ed-stats-strip { border-radius: 10px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .10); }
+body.ed-site .ed-stats-strip { border-radius: 10px; background: rgba(255,255,255,.28); }
 body.ed-site .ed-ledger-row { padding: 13px 0; }
 
 body.ed-site .ed-footer { padding: 0 0 24px; }
@@ -4746,18 +4746,18 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
 
 /* ── Z1. Tokens ───────────────────────────────────────────────────────── */
 :root {
-  --an-paper: #0a0a0c;          /* lunar deep space */
-  --an-paper-soft: #111114;
-  --an-paper-deep: #050507;
-  --an-ink: #f4f4f6;            /* near-white ink */
-  --an-ink-soft: rgba(244, 244, 246, .72);
-  --an-ink-muted: rgba(244, 244, 246, .50);
-  --an-line: rgba(255, 255, 255, .10);
-  --an-line-strong: rgba(255, 255, 255, .20);
-  --an-black: #000000;
-  --an-clay: #e8e8ee;           /* silver moonlight */
-  --an-clay-bright: #c8c8d2;    /* cool silver */
-  --an-paper-text: #0a0a0c;
+  --an-paper: #f0eee6;          /* Anthropic ivory */
+  --an-paper-soft: #faf9f5;
+  --an-paper-deep: #e6e1d3;
+  --an-ink: #191919;            /* Anthropic slate */
+  --an-ink-soft: #40403e;
+  --an-ink-muted: #6e6b64;
+  --an-line: rgba(25, 25, 25, .14);
+  --an-line-strong: rgba(25, 25, 25, .26);
+  --an-black: #141413;
+  --an-clay: #c15f3c;           /* direction-board terracotta */
+  --an-clay-bright: #d97757;    /* Anthropic crail */
+  --an-paper-text: #f5f3ec;
   --an-serif: var(--font-serif);
   --an-sans: var(--font-sans);
   --an-mono: var(--font-mono);
@@ -4772,7 +4772,7 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
   --site-ink: var(--an-ink);
   --site-ink-soft: var(--an-ink-soft);
   --site-ink-muted: var(--an-ink-muted);
-  --site-line: rgba(255, 255, 255, .10);
+  --site-line: #d8d2c4;
   --site-black: var(--an-black);
   --site-clay: var(--an-clay);
   --sf-paper: var(--an-paper);
@@ -4788,7 +4788,7 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
   --ed-ink: var(--an-ink);
   --ed-ink-soft: var(--an-ink-soft);
   --ed-ink-muted: var(--an-ink-muted);
-  --ed-line: rgba(255, 255, 255, .10);
+  --ed-line: #d8d2c4;
   --ed-black: var(--an-black);
   --ed-black-soft: #1d1c1a;
   --ed-clay: var(--an-clay);
@@ -4951,8 +4951,8 @@ body.ed-site .ed-hero-actions .ed-button-ghost {
 body.ed-site .ed-button-quiet:hover,
 body.ed-site .ed-hero-actions .ed-button-ghost:hover {
   color: var(--an-ink);
-  background: rgba(255, 255, 255, .05);
-  border-color: rgba(255, 255, 255, .45);
+  background: rgba(25, 25, 25, .05);
+  border-color: rgba(25, 25, 25, .45);
 }
 body.ed-site .ed-price-card.is-featured .ed-button {
   color: var(--an-ink);
@@ -4966,7 +4966,7 @@ body.ed-site .ed-link {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
-  text-decoration-color: rgba(255, 255, 255, .3);
+  text-decoration-color: rgba(25, 25, 25, .3);
   transition: color .15s ease, text-decoration-color .15s ease;
 }
 body.ed-site .ed-link:hover { color: var(--an-clay); text-decoration-color: currentColor; }
@@ -5034,14 +5034,14 @@ body.ed-site .ed-marquee-title {
   text-transform: uppercase;
   color: var(--an-ink-muted);
 }
-body.ed-site .ed-logo-item { color: rgba(255, 255, 255, .55); }
+body.ed-site .ed-logo-item { color: rgba(25, 25, 25, .55); }
 body.ed-site .ed-logo-item:hover { color: var(--an-ink); }
 
 /* Home stage panel. */
 body.ed-site .ed-home-stage {
   margin-top: clamp(56px, 6.5vw, 96px);
   border-radius: var(--an-band-radius);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+  box-shadow: 0 0 0 1px rgba(25, 25, 25, .08);
   overflow: hidden;
 }
 body.ed-site .ed-home-stage img { border-radius: 0; aspect-ratio: 16 / 8.4; }
@@ -5108,7 +5108,7 @@ body.ed-site .ed-inline-feature {
   border-radius: var(--an-band-radius);
   background: var(--an-black);
   border: 0;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .06);
+  box-shadow: 0 0 0 1px rgba(25, 25, 25, .06);
   background-image: none;
 }
 body.ed-site .ed-black-band-copy { padding: clamp(36px, 4.5vw, 68px); }
@@ -5136,10 +5136,10 @@ body.ed-site .ed-inline-feature .ed-kicker::before { background: var(--an-clay-b
 body.ed-site .ed-black-band-copy .ed-link,
 body.ed-site .ed-inline-feature .ed-link {
   color: var(--an-clay-bright);
-  text-decoration-color: rgba(232, 232, 238, .4);
+  text-decoration-color: rgba(217, 119, 87, .4);
 }
 body.ed-site .ed-black-band-copy .ed-link:hover,
-body.ed-site .ed-inline-feature .ed-link:hover { color: #fff; text-decoration-color: currentColor; }
+body.ed-site .ed-inline-feature .ed-link:hover { color: #e88a63; text-decoration-color: currentColor; }
 body.ed-site .ed-black-band-media img { border-radius: 0; }
 body.ed-site .ed-inline-feature { padding: clamp(28px, 4vw, 56px); }
 body.ed-site .ed-inline-feature > img { border-radius: var(--an-media-radius); aspect-ratio: 4 / 4.4; max-height: 620px; }
@@ -5306,7 +5306,7 @@ body.ed-site .ed-chat-demo {
 body.ed-site .ed-chat-head { font-family: var(--an-mono); font-size: 10.5px; letter-spacing: .1em; }
 body.ed-site .ed-chat-bubble { font-size: 14.5px; line-height: 1.6; }
 body.ed-site .ed-chat-bubble.user { background: var(--an-ink); color: var(--an-paper-text); }
-body.ed-site .ed-chat-bubble.tutor { background: #111114; border: 1px solid var(--an-line); }
+body.ed-site .ed-chat-bubble.tutor { background: #fffdf8; border: 1px solid var(--an-line); }
 
 /* ── Z15. Marquee ─────────────────────────────────────────────────────── */
 .ed-marquee { border-top: 1px solid var(--an-line); border-bottom: 1px solid var(--an-line); }
@@ -5469,7 +5469,7 @@ html:lang(zh) body.ed-site .ed-essay-row .ed-essay-title { font-family: var(--fo
   body.ed-site .ed-home-stage { margin-top: 40px; border-radius: 16px; --ed-stage-inset: 30px; }
   body.ed-site .ed-home-stage img { aspect-ratio: 4 / 3.4; }
   body.ed-site .ed-home-stage .ed-stage-caption { color: rgba(255, 255, 255, .82); bottom: clamp(30px, 6vw, 40px); font-size: 12px; left: clamp(18px, 5vw, 30px); }
-  body.ed-site .ed-home-stage::after { background: linear-gradient(180deg, transparent 68%, rgba(244, 244, 246, .32) 100%), radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%); }
+  body.ed-site .ed-home-stage::after { background: linear-gradient(180deg, transparent 68%, rgba(23, 23, 22, .32) 100%), radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, .07), transparent 58%); }
   body.ed-site .ed-page-hero { padding: 52px 0 36px; }
   body.ed-site .ed-section { padding: 52px 0; }
   body.ed-site .ed-section-tight { padding: 40px 0; }
@@ -5593,7 +5593,7 @@ html:lang(zh) body.ed-site .ed-essay-row .ed-essay-title { font-family: var(--fo
     width: 100%;
     aspect-ratio: 4 / 3;
     border-radius: 16px;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+    box-shadow: 0 0 0 1px rgba(25, 25, 25, .08);
   }
   body.ed-site .ed-stage-index { display: none; }
   body.ed-site .ed-stage-caption {
@@ -5874,7 +5874,7 @@ body.ed-site .ed-button-dark {
   border-radius: 12px;
   background: var(--site-ink);
   border: 1px solid var(--site-ink);
-  color: #0a0a0c;
+  color: #faf9f5;
   font-family: var(--font-sans);
   font-size: 15.5px;
   font-weight: 600;
@@ -5882,7 +5882,7 @@ body.ed-site .ed-button-dark {
   text-decoration: none;
   transition: background-color .18s ease, transform .18s var(--sv-ease);
 }
-body.ed-site .ed-button-dark:hover { background: #2a2a30; transform: translateY(-1px); }
+body.ed-site .ed-button-dark:hover { background: #33302b; transform: translateY(-1px); }
 body.ed-site .ed-button-dark svg { width: 15px; height: 15px; }
 
 /* ── RR2. Full-width hero media card ───────────────────────────────────── */
@@ -5891,7 +5891,7 @@ body.ed-site .ed-report-hero-card {
   position: relative;
   overflow: hidden;
   border-radius: 24px;
-  border: 1px solid rgba(244, 244, 246, .12);
+  border: 1px solid rgba(23, 23, 22, .12);
   background: var(--report-tint, #7d8b6f);
   aspect-ratio: 16 / 8;
   display: grid;
@@ -5927,14 +5927,14 @@ body.ed-site .ed-article p a,
 body.ed-site .ed-article li a {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: rgba(200, 205, 225, .45);
+  text-decoration-color: rgba(154, 90, 59, .45);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
   transition: color .15s ease, text-decoration-color .15s ease;
 }
 body.ed-site .ed-article p a:hover,
 body.ed-site .ed-article li a:hover {
-  color: var(--sv-clay, #e8e8ee);
+  color: var(--sv-clay, #9a5a3b);
   text-decoration-color: currentColor;
 }
 
@@ -5979,7 +5979,7 @@ body.ed-site .ed-key-takeaways li::before {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #9a5a3b);
 }
 body.ed-site .ed-key-takeaways li strong { color: var(--site-ink); font-weight: 600; }
 
@@ -6000,7 +6000,7 @@ body.ed-site .ed-pull-quote::before {
   width: 44px;
   height: 2px;
   margin: 0 auto 24px;
-  background: var(--sv-clay, #e8e8ee);
+  background: var(--sv-clay, #9a5a3b);
 }
 body.ed-site .ed-pull-quote cite {
   display: block;
@@ -6055,7 +6055,7 @@ body.ed-site .ed-data-table td.num {
   color: var(--site-ink);
   white-space: nowrap;
 }
-body.ed-site .ed-data-table td.hl { color: var(--sv-clay, #e8e8ee); font-weight: 600; }
+body.ed-site .ed-data-table td.hl { color: var(--sv-clay, #9a5a3b); font-weight: 600; }
 
 /* ── RR7. Chart frame (line charts, distributions) ─────────────────────── */
 body.ed-site .ed-chart-frame {
@@ -6100,11 +6100,11 @@ body.ed-site .ed-chart-legend i {
 body.ed-site .ed-chart-legend i.is-dotted { border-top-style: dotted; }
 body.ed-site .ed-chart-legend i.is-dashed { border-top-style: dashed; }
 body.ed-site .ed-chart-axis {
-  stroke: rgba(244, 244, 246, .18);
+  stroke: rgba(23, 23, 22, .18);
   stroke-width: 1;
 }
 body.ed-site .ed-chart-grid {
-  stroke: rgba(244, 244, 246, .07);
+  stroke: rgba(23, 23, 22, .07);
   stroke-width: 1;
 }
 body.ed-site .ed-chart-tick text {
@@ -6130,7 +6130,7 @@ body.ed-site .ed-chart-anno {
 body.ed-site .ed-figure { margin: 2.6em 0; }
 body.ed-site .ed-figure .ed-figure-caption { margin-top: 14px; }
 body.ed-site .ed-figure .ed-fig-no {
-  color: var(--sv-clay, #e8e8ee);
+  color: var(--sv-clay, #9a5a3b);
   font-weight: 600;
 }
 
@@ -6157,8 +6157,8 @@ body.ed-site .ed-author-card .ed-author-avatar {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--sv-clay, #e8e8ee);
-  color: #0a0a0c;
+  background: var(--sv-clay, #9a5a3b);
+  color: #faf9f5;
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: .04em;
@@ -6383,1341 +6383,3 @@ body.ed-site .ed-article hr:has(+ p.ed-method-note) { display: none; }
 body.ed-site .ed-timeline-step { display: none !important; }
 body.ed-site .ed-timeline-row { grid-template-columns: 1fr; }
 /* ── END Research cleanup pass 2 ── */
-
-/* ═══════════════════════════════════════════════════════════════════════
-   2026-09-14 · LUNAR MONOCHROME — black / white / gray cosmic theme
-   Replaces the warm-paper editorial palette with a deep-space monochrome
-   system inspired by Vercel / x.ai: near-black surfaces, near-white ink,
-   a silver lunar accent, and a quiet moonlight hero. Token-level override
-   so every page that loads brand.css inherits the new identity without
-   touching markup. Appended last → wins over all earlier layers.
-   ═══════════════════════════════════════════════════════════════════════ */
-
-/* ── L0. Lunar palette tokens ─────────────────────────────────────────── */
-:root {
-  /* Page surfaces — deep space, layered for depth. */
-  --ed-paper: #0a0a0c;
-  --ed-paper-soft: #111114;
-  --ed-paper-strong: #050507;
-  --ed-sand: #1a1a1e;
-  --ed-sand-deep: #222226;
-  /* Ink — inverted to near-white so dark-on-light components become
-     light-on-dark without rewriting each rule. */
-  --ed-ink: #f4f4f6;
-  --ed-ink-soft: rgba(244, 244, 246, .72);
-  --ed-ink-muted: rgba(244, 244, 246, .50);
-  --ed-line: rgba(255, 255, 255, .10);
-  --ed-line-dark: rgba(0, 0, 0, .24);
-  --ed-black: #000000;
-  --ed-black-soft: #0a0a0c;
-  /* Accent — silver moonlight replaces warm clay. */
-  --ed-clay: #e8e8ee;
-  --ed-clay-warm: #c8c8d2;
-  --ed-clay-soft: rgba(232, 232, 238, .12);
-
-  --site-paper: #0a0a0c;
-  --site-paper-soft: #111114;
-  --site-paper-strong: #050507;
-  --site-sand: #1a1a1e;
-  --site-ink: #f4f4f6;
-  --site-ink-soft: rgba(244, 244, 246, .72);
-  --site-ink-muted: rgba(244, 244, 246, .50);
-  --site-line: rgba(255, 255, 255, .10);
-  --site-black: #000000;
-  --site-clay: #e8e8ee;
-
-  --sf-paper: #0a0a0c;
-  --sf-paper-deep: #050507;
-  --sf-ink: #f4f4f6;
-  --sf-ink-soft: rgba(244, 244, 246, .72);
-  --sf-line: rgba(255, 255, 255, .10);
-  --sf-card: rgba(255, 255, 255, .04);
-  --sf-accent: #e8e8ee;
-
-  /* Marketing aliases — flip to a light-on-dark alpha stack. */
-  --mk-bg: #0a0a0c;
-  --mk-bg-deep: #050507;
-  --mk-surface: #111114;
-  --mk-surface-2: #16161a;
-  --mk-line: rgba(255, 255, 255, .10);
-  --mk-line-soft: rgba(255, 255, 255, .06);
-  --mk-line-strong: rgba(255, 255, 255, .20);
-  --mk-text: #f4f4f6;
-  --mk-text-90: rgba(244, 244, 246, .90);
-  --mk-text-70: rgba(244, 244, 246, .70);
-  --mk-text-60: rgba(244, 244, 246, .60);
-  --mk-text-50: rgba(244, 244, 246, .50);
-  --mk-text-40: rgba(244, 244, 246, .40);
-  --mk-text-30: rgba(244, 244, 246, .30);
-  --mk-sunset: #e8e8ee;
-  --mk-sunset-border: rgba(232, 232, 238, .42);
-
-  /* HSL aliases for functional pages — invert to dark surfaces + light text. */
-  --bg-000: 240 6% 4%;
-  --bg-100: 240 6% 6%;
-  --bg-200: 240 6% 8%;
-  --bg-300: 240 6% 12%;
-  --bg-400: 240 6% 92%;
-  --neu-bg: 240 6% 6%;
-  --neu-bg-deep: 240 6% 8%;
-  --neu-bg-darker: 240 6% 12%;
-  --neu-surface: 240 6% 10%;
-  --neu-line: 240 6% 22%;
-  --neu-line-soft: 240 6% 16%;
-  --neu-line-strong: 240 6% 92%;
-  --text-000: 240 6% 96%;
-  --text-100: 240 6% 90%;
-  --text-200: 240 6% 76%;
-  --text-300: 240 6% 62%;
-  --text-400: 240 6% 54%;
-  --text-500: 240 6% 48%;
-  --accent-000: 240 6% 92%;
-  --accent-100: 240 6% 82%;
-  --accent-200: 240 6% 70%;
-  --accent-soft: 240 6% 62%;
-  --accent-900: 240 6% 4%;
-  --border-100: 240 6% 22%;
-  --border-300: 240 6% 22%;
-  --brand-000: 240 6% 92%;
-  --brand-100: 240 6% 92%;
-  --oncolor-100: 240 6% 4%;
-
-  /* Hero glow tokens — cool moonlight. */
-  --sv-glow-clay: rgba(200, 205, 225, .14);
-  --sv-glow-sand: rgba(120, 135, 175, .10);
-  --sv-clay: #e8e8ee;
-  --sv-clay-bright: #c8c8d2;
-
-  /* ── Anthropic-style token system (110+ usages) — invert to dark ── */
-  --an-paper: #0a0a0c;
-  --an-paper-soft: #111114;
-  --an-paper-deep: #050507;
-  --an-ink: #f4f4f6;
-  --an-ink-soft: rgba(244, 244, 246, .72);
-  --an-ink-muted: rgba(244, 244, 246, .50);
-  --an-line: rgba(255, 255, 255, .10);
-  --an-line-strong: rgba(255, 255, 255, .20);
-  --an-black: #000;
-  --an-clay: #e8e8ee;
-  --an-clay-bright: #c8c8d2;
-  --an-paper-text: #0a0a0c;
-}
-
-/* ── L1. Body canvas — deep space with a cool cosmic wash ─────────────── */
-body.ed-site {
-  color: var(--ed-ink);
-  background:
-    radial-gradient(1400px 640px at 12% -12%, rgba(120, 135, 180, .10), transparent 64%),
-    radial-gradient(1200px 560px at 88% -18%, rgba(180, 185, 205, .05), transparent 70%),
-    #050507;
-  background-attachment: fixed;
-}
-html:lang(zh) body.ed-site { letter-spacing: .008em; }
-
-/* Scrollbar — light thumb on dark track. */
-body.ed-site::-webkit-scrollbar-track { background: #0a0a0c; }
-body.ed-site::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, .16);
-  border: 3px solid #0a0a0c;
-}
-body.ed-site::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .30); }
-body.ed-site { scrollbar-color: rgba(255, 255, 255, .18) #0a0a0c; }
-
-/* Selection — silver moonlight. */
-body.ed-site::selection,
-body.ed-site ::selection { background: rgba(232, 232, 238, .85); color: #0a0a0c; }
-body.ed-site ::-moz-selection { background: rgba(232, 232, 238, .85); color: #0a0a0c; }
-
-/* Focus ring — silver, still visible on dark. */
-:focus-visible { outline-color: var(--ed-clay); }
-
-/* ── L2. Header — dark glass with light nav ──────────────────────────── */
-body.ed-site .ed-header { background: rgba(10, 10, 12, .72); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); }
-body.ed-site .ed-header.is-scrolled { border-bottom-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-brand { color: #f4f4f6; }
-body.ed-site .ed-nav-links a,
-body.ed-site .ed-header-language { color: rgba(244, 244, 246, .66); }
-body.ed-site .ed-nav-links a:hover,
-body.ed-site .ed-nav-links a[aria-current="page"],
-body.ed-site .ed-header-language:hover { color: #fff; }
-body.ed-site .ed-nav-links a[aria-current="page"] { box-shadow: inset 0 -1px 0 #fff; }
-body.ed-site .ed-menu-toggle { color: #f4f4f6; }
-body.ed-site .ed-menu-toggle:hover { background: rgba(255, 255, 255, .06); }
-
-/* ── L3. Buttons — Vercel/x.ai: light primary, ghost quiet ───────────── */
-body.ed-site .ed-button {
-  color: #0a0a0c;
-  background: #f4f4f6;
-  border-color: #f4f4f6;
-}
-body.ed-site .ed-button:hover { color: #000; background: #fff; border-color: #fff; }
-body.ed-site .ed-button:active { background: #e8e8ee; border-color: #e8e8ee; }
-body.ed-site .ed-button-quiet {
-  color: #f4f4f6;
-  background: transparent;
-  border-color: rgba(255, 255, 255, .18);
-}
-body.ed-site .ed-button-quiet:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, .42);
-  background: rgba(255, 255, 255, .05);
-}
-body.ed-site .ed-button-quiet:active { background: rgba(255, 255, 255, .08); }
-
-/* ── L4. Home hero — moonlight + starfield ────────────────────────────── */
-body.ed-site .ed-home-hero {
-  background: transparent;
-  color: #f4f4f6;
-}
-/* Repurpose the drifting glow as a slow moonlight wash (cool, not warm). */
-body.ed-site .ed-home-hero::before {
-  background:
-    radial-gradient(44% 52% at 24% 32%, rgba(200, 205, 225, .12), transparent 70%),
-    radial-gradient(38% 46% at 76% 22%, rgba(120, 135, 175, .08), transparent 72%),
-    radial-gradient(34% 40% at 52% 66%, rgba(200, 205, 225, .05), transparent 70%);
-}
-
-/* Re-enable the nebula node (already in markup, was display:none) as the
-   cosmic layer: a soft moon disc bleeding off the top-right plus a quiet
-   scattered starfield. Grand, off-canvas, low-opacity. */
-body.ed-site .ed-home-hero .ed-hero-nebula {
-  display: block;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    /* stars — small points, listed first so they sit on top */
-    radial-gradient(1.4px 1.4px at 8% 22%, rgba(255,255,255,.85), transparent 60%),
-    radial-gradient(1px 1px at 17% 48%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1.6px 1.6px at 23% 14%, rgba(255,255,255,.70), transparent 60%),
-    radial-gradient(1px 1px at 31% 64%, rgba(255,255,255,.45), transparent 60%),
-    radial-gradient(1.2px 1.2px at 39% 30%, rgba(255,255,255,.60), transparent 60%),
-    radial-gradient(1px 1px at 46% 12%, rgba(255,255,255,.50), transparent 60%),
-    radial-gradient(1.5px 1.5px at 54% 56%, rgba(255,255,255,.65), transparent 60%),
-    radial-gradient(1px 1px at 61% 24%, rgba(255,255,255,.40), transparent 60%),
-    radial-gradient(1.3px 1.3px at 68% 70%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1px 1px at 74% 38%, rgba(255,255,255,.45), transparent 60%),
-    radial-gradient(1.6px 1.6px at 83% 60%, rgba(255,255,255,.70), transparent 60%),
-    radial-gradient(1px 1px at 90% 30%, rgba(255,255,255,.50), transparent 60%),
-    radial-gradient(1.2px 1.2px at 95% 14%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1px 1px at 14% 76%, rgba(255,255,255,.40), transparent 60%),
-    radial-gradient(1.4px 1.4px at 44% 82%, rgba(255,255,255,.50), transparent 60%),
-    /* a couple of brighter stars with a faint halo */
-    radial-gradient(2px 2px at 27% 18%, rgba(255,255,255,.95), transparent 70%),
-    radial-gradient(2px 2px at 71% 44%, rgba(255,255,255,.90), transparent 70%),
-    /* moon — soft silver disc, upper-right, partially off-canvas for grandeur */
-    radial-gradient(46% 46% at 84% 6%, rgba(232, 234, 245, .22), rgba(190, 195, 215, .08) 46%, transparent 70%),
-    radial-gradient(34% 34% at 84% 4%, rgba(245, 246, 252, .30), transparent 60%),
-    /* distant cool nebula wash, lower-left */
-    radial-gradient(50% 40% at 16% 88%, rgba(110, 125, 170, .07), transparent 72%);
-  background-repeat: no-repeat;
-  animation: lunar-twinkle 9s ease-in-out infinite alternate;
-}
-@keyframes lunar-twinkle {
-  0%   { opacity: .85; }
-  100% { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  body.ed-site .ed-home-hero .ed-hero-nebula { animation: none; }
-}
-
-/* Hero copy sits above the cosmic layer. */
-body.ed-site .ed-home-hero .ed-hero-grid,
-body.ed-site .ed-home-hero .ed-home-stage { position: relative; z-index: 1; }
-
-/* Hero headline — light, tight. */
-body.ed-site .ed-home-hero .ed-display { color: #f4f4f6; }
-body.ed-site .ed-home-hero .ed-hero-sub { color: rgba(244, 244, 246, .72); }
-
-/* Hero "New" flag — light pill on dark. */
-body.ed-site .ed-home-hero .ed-hero-flag {
-  border-color: rgba(255, 255, 255, .18);
-  color: rgba(244, 244, 246, .72);
-  background: rgba(255, 255, 255, .03);
-}
-body.ed-site .ed-home-hero .ed-hero-flag span { background: #e8e8ee; }
-
-/* Hero primary button stays light-on-dark (override the dark #191919 hero rule). */
-body.ed-site .ed-home-hero .ed-button {
-  background: #f4f4f6;
-  border-color: #f4f4f6;
-  color: #0a0a0c;
-}
-body.ed-site .ed-home-hero .ed-button:hover { background: #fff; border-color: #fff; color: #000; }
-body.ed-site .ed-home-hero .ed-button-ghost {
-  color: #f4f4f6;
-  background: transparent;
-  border-color: rgba(255, 255, 255, .20);
-}
-body.ed-site .ed-home-hero .ed-button-ghost:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, .45);
-  background: rgba(255, 255, 255, .05);
-}
-
-/* ── L5. Home stage — physical panel on the void ─────────────────────── */
-body.ed-site .ed-home-stage {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 24px 60px -28px rgba(0, 0, 0, .8);
-  background: #050507;
-}
-body.ed-site .ed-home-stage .ed-stage-index a { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-home-stage .ed-stage-index a:hover { color: #fff; }
-body.ed-site .ed-home-stage .ed-network-copy h2 { color: #f4f4f6; }
-body.ed-site .ed-home-stage .ed-network-copy p { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-stage-caption { color: rgba(244, 244, 246, .56); }
-
-/* ── L6. Chat demo — light user bubble, dark tutor bubble ─────────────── */
-body.ed-site .ed-chat-head { color: rgba(244, 244, 246, .56); border-bottom-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-chat-head-dot { background: #e8e8ee; }
-body.ed-site .ed-chat-bubble.user { background: #f4f4f6; color: #0a0a0c; }
-body.ed-site .ed-chat-bubble.tutor {
-  background: #111114;
-  color: #f4f4f6;
-  border-color: rgba(255, 255, 255, .10);
-}
-
-/* ── L7. Stats strip, kickers, essay rows ─────────────────────────────── */
-body.ed-site .ed-stats-strip { border-top-color: rgba(255, 255, 255, .10); border-bottom-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-stats-strip p { color: rgba(244, 244, 246, .60); }
-body.ed-site .ed-stats-strip b { color: #f4f4f6; }
-body.ed-site .ed-stat.is-animating .ed-stat-value { color: #fff; }
-
-body.ed-site .ed-kicker { color: rgba(244, 244, 246, .62); }
-body.ed-site .ed-kicker::before { background: #e8e8ee; }
-
-body.ed-site .ed-statement-title { color: #f4f4f6; }
-body.ed-site .ed-copy-serif { color: rgba(244, 244, 246, .82); }
-body.ed-site .ed-copy { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-link { color: #f4f4f6; }
-body.ed-site .ed-link:hover { color: #fff; }
-
-body.ed-site .ed-essay-row { border-top-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-essay-row .ed-essay-date,
-body.ed-site .ed-essay-row .ed-essay-tag { color: rgba(244, 244, 246, .50); }
-body.ed-site .ed-essay-row .ed-essay-title { color: #f4f4f6; }
-body.ed-site .ed-essay-row:hover .ed-essay-title { color: #fff; }
-body.ed-site .ed-essay-row,
-body.ed-site .ed-publication-row {
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, .05), transparent 60%);
-}
-
-/* ── L8. Section dividers ─────────────────────────────────────────────── */
-body.ed-site .ed-section-line { border-top-color: rgba(255, 255, 255, .10); }
-
-/* ── L9. Inputs — dark fields ─────────────────────────────────────────── */
-body.ed-site main input,
-body.ed-site main textarea {
-  background: #111114;
-  color: #f4f4f6;
-  border-color: rgba(255, 255, 255, .14);
-}
-body.ed-site main input::placeholder,
-body.ed-site main textarea::placeholder { color: rgba(244, 244, 246, .40); }
-body.ed-site main input:focus,
-body.ed-site main textarea:focus {
-  border-color: #e8e8ee;
-  background: #16161a;
-  outline: 2px solid rgba(232, 232, 238, .40);
-  outline-offset: 1px;
-}
-
-/* ── L10. Footer — keep it the deepest black, light text ─────────────── */
-body.ed-site .ed-footer { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-footer-frame { background: #000; border-color: rgba(255, 255, 255, .08); }
-body.ed-site .ed-footer .ed-brand,
-body.ed-site .ed-footer-brand p { color: rgba(244, 244, 246, .82); }
-body.ed-site .ed-footer-column h2 { color: rgba(244, 244, 246, .60); }
-body.ed-site .ed-footer-column a { color: rgba(244, 244, 246, .60); }
-body.ed-site .ed-footer-column a:hover { color: #fff; }
-body.ed-site .ed-footer-bottom { color: rgba(244, 244, 246, .50); border-top-color: rgba(255, 255, 255, .08); }
-body.ed-site .ed-footer-account a { color: rgba(244, 244, 246, .72); }
-
-/* ── L11. Cards, surfaces, price cards, ledgers ───────────────────────── */
-body.ed-site .ed-contact-card,
-body.ed-site .ed-course-card,
-body.ed-site .ed-featured {
-  background-color: #111114;
-  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(200, 205, 225, .06), transparent 44%);
-  border-color: rgba(255, 255, 255, .10);
-}
-body.ed-site .ed-black-band,
-body.ed-site .ed-inline-feature {
-  background-color: #050507;
-  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(200, 205, 225, .07), transparent 46%);
-}
-body.ed-site .ed-price-card.is-featured { box-shadow: 0 0 0 1px rgba(255, 255, 255, .55); }
-body.ed-site .ed-policy-visual img,
-body.ed-site .ed-learning-object img { box-shadow: 0 0 0 1px rgba(255, 255, 255, .10); }
-body.ed-site .ed-ledger-row:hover { background: linear-gradient(90deg, rgba(200, 205, 225, .06), transparent 55%); }
-body.ed-site .ed-filter-bar button { border-color: rgba(255, 255, 255, .14); }
-body.ed-site .ed-filter-bar button:hover { border-color: rgba(255, 255, 255, .40); }
-body.ed-site .ed-filter-bar button.is-active { border-color: #e8e8ee; background: rgba(255, 255, 255, .04); outline: 2px solid rgba(232, 232, 238, .40); }
-body.ed-site .ed-pill { border-color: rgba(255, 255, 255, .14); }
-body.ed-site .ed-pill:hover { border-color: rgba(255, 255, 255, .35); }
-
-/* ── L12. Article / research surfaces ─────────────────────────────────── */
-body.ed-site .ed-article h2,
-body.ed-site .ed-article h3 { color: #f4f4f6 !important; }
-body.ed-site .ed-article-toc { background: #111114; border-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-timeline-row { border-top-color: rgba(255, 255, 255, .10); }
-body.ed-site table.ed-data-table th,
-body.ed-site table.ed-data-table td { border-bottom-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-figure-caption,
-body.ed-site .ed-fig-no { color: rgba(244, 244, 246, .50); }
-body.ed-site .ed-result-head span { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-bar-fill { fill: #f4f4f6 !important; }
-body.ed-site .ed-result-track i { background: #f4f4f6 !important; }
-body.ed-site main tbody tr:hover { background-color: rgba(200, 205, 225, .05); }
-
-/* ── L13. Mobile menu panel — dark ────────────────────────────────────── */
-@media (max-width: 980px) {
-  body.ed-site .ed-nav-links {
-    background: #0a0a0c;
-    border-color: rgba(255, 255, 255, .10);
-  }
-}
-
-/* ═══ L14. Hardcoded color fixes — brand.css + editorial.css ════════ */
-/* These rules override hardcoded hex values in earlier layers that
-   don't use CSS variables, so the variable overrides above can't reach
-   them. Each selector matches the exact rule in the source file. */
-
-/* brand.css:1613 — button-quiet hover was #fff */
-body.ed-site .ed-button-quiet:hover { background: rgba(255, 255, 255, .06); }
-
-/* brand.css:1792 — filter button active was #fff */
-body.ed-site .ed-filter-bar button.is-active { background: rgba(255, 255, 255, .04); }
-
-/* brand.css:2009,2021 + editorial.css:1148 — inputs were #fffdf8 / #fff */
-body.ed-site main input,
-body.ed-site main textarea,
-body.ed-site .ed-search-field input:focus {
-  background: #111114;
-  color: #f4f4f6;
-}
-body.ed-site .ed-search-field:focus-within { background: #111114; }
-
-/* brand.css:2201 — hero button was #191919 (dark on light → now light on dark) */
-body.ed-site .ed-home-hero .ed-button {
-  background: #f4f4f6;
-  border-color: #f4f4f6;
-  color: #0a0a0c;
-}
-
-/* brand.css:2147,2166,2218 — hardcoded #1a1918 text → light */
-body.ed-site .ed-home-hero,
-body.ed-site .ed-home-hero .ed-display,
-body.ed-site .ed-home-hero .ed-hero-sub { color: #f4f4f6; }
-
-/* brand.css:2245 — flag dot was warm #e8e8ee → silver */
-body.ed-site .ed-home-hero .ed-hero-flag span { background: #e8e8ee; }
-
-/* brand.css:2915 — chat demo gradient was light → dark */
-body.ed-site .ed-chat-demo {
-  background: linear-gradient(180deg, #111114 0%, #050507 100%);
-  border-color: rgba(255, 255, 255, .10);
-}
-
-/* brand.css:3800 — search field focus was #fff */
-body.ed-site .ed-search-field:focus-within { background: #111114; border-color: #e8e8ee; }
-
-/* brand.css:5309 — tutor bubble was #fffdf8 */
-body.ed-site .ed-chat-bubble.tutor { background: #111114; border-color: rgba(255, 255, 255, .10); }
-
-/* editorial.css:609 — price card button hover was #fff */
-body.ed-site .ed-price-card.is-featured .ed-button:hover { background: #fff; color: #000; }
-
-/* ── L15. Warm clay rgba → cool silver rgba (40+ usages) ────────────── */
-/* Replace all warm clay overlays with cool silver at similar opacity. */
-body.ed-site .ed-ledger-row:hover { background: linear-gradient(90deg, rgba(200, 205, 225, .06), transparent 55%); }
-body.ed-site main tbody tr:hover { background-color: rgba(200, 205, 225, .05); }
-body.ed-site .ed-contact-card,
-body.ed-site .ed-course-card,
-body.ed-site .ed-featured {
-  background-image: radial-gradient(620px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(200, 205, 225, .06), transparent 44%);
-}
-body.ed-site .ed-black-band,
-body.ed-site .ed-inline-feature {
-  background-image: radial-gradient(760px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(200, 205, 225, .07), transparent 46%);
-}
-body.ed-site .ed-essay-row,
-body.ed-site .ed-publication-row {
-  background-image: linear-gradient(90deg, rgba(200, 205, 225, .05), transparent 60%);
-}
-body.ed-site .ed-article a {
-  text-decoration-color: rgba(200, 205, 225, .45);
-}
-
-/* ── L16. Anthropic-style section backgrounds (use --an-paper) ─────── */
-body.ed-site .ed-an-band,
-body.ed-site .ed-an-section,
-body.ed-site [class*="ed-an-"] {
-  background-color: var(--an-paper);
-  color: var(--an-ink);
-}
-
-/* ── L17. Code blocks, pre, kbd — dark on dark ─────────────────────── */
-body.ed-site pre,
-body.ed-site code,
-body.ed-site kbd,
-body.ed-site .ed-code-block {
-  background: #111114;
-  color: #e8e8ee;
-  border-color: rgba(255, 255, 255, .10);
-}
-body.ed-site pre { background: var(--site-ink); color: var(--site-paper); }
-/* The developers page code blocks use inline background:var(--site-ink)
-   which is now LIGHT. Override to dark background + light text. */
-body.ed-site .ed-app-content pre,
-body.ed-site main pre {
-  background: #0d0d10 !important;
-  color: #e8e8ee !important;
-  border: 1px solid rgba(255, 255, 255, .10);
-}
-
-/* ── L18. Page heroes on sub-pages — dark with moonlight ──────────── */
-body.ed-site .ed-page-hero,
-body.ed-site .ed-reference-hero,
-body.ed-site .ed-learning-hero,
-body.ed-site .ed-news-hero {
-  color: #f4f4f6;
-}
-body.ed-site .ed-page-hero .ed-page-title,
-body.ed-site .ed-page-hero .ed-title,
-body.ed-site .ed-reference-hero .ed-page-title,
-body.ed-site .ed-reference-hero .ed-title {
-  color: #f4f4f6;
-}
-body.ed-site .ed-page-hero .ed-copy,
-body.ed-site .ed-page-hero .ed-serif,
-body.ed-site .ed-reference-hero .ed-copy,
-body.ed-site .ed-reference-hero .ed-serif {
-  color: rgba(244, 244, 246, .72);
-}
-
-/* ── L19. Legal pages (terms, privacy) — dark ─────────────────────── */
-body.ed-site.legal-page .page,
-body.ed-site.legal-page .page-header,
-body.ed-site.legal-page .page > section {
-  color: #f4f4f6;
-}
-body.ed-site.legal-page .page-header h1 { color: #f4f4f6; }
-body.ed-site.legal-page .page h2,
-body.ed-site.legal-page .page h3 { color: #f4f4f6; }
-body.ed-site.legal-page .page p,
-body.ed-site.legal-page .page li { color: rgba(244, 244, 246, .78); }
-body.ed-site.legal-page .page a { color: #e8e8ee; }
-
-/* ── L20. Account / checkout / profile pages — dark ────────────────── */
-body.ed-site .ed-app-grid,
-body.ed-site .ed-app-side,
-body.ed-site .ed-app-content { color: #f4f4f6; }
-body.ed-site .ed-app-side-nav a { color: rgba(244, 244, 246, .72); border-bottom-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-app-side-nav a:hover { color: #fff; }
-body.ed-site .ed-app-side-nav a.is-current { color: #fff; }
-body.ed-site .ed-app-side-nav a.is-current span { color: #e8e8ee; }
-body.ed-site .ed-app-side-nav { border-top-color: rgba(255, 255, 255, .10); }
-
-/* Account page cards with inline background:var(--ed-paper-soft) are
-   already dark via the variable override. But inline rgba overlays
-   need explicit fixes. */
-body.ed-site .ed-app-content [style*="rgba(154"] { background: rgba(200, 205, 225, .08) !important; }
-body.ed-site .ed-app-content [style*="rgba(23,23,22,.03)"] { background: rgba(255, 255, 255, .03) !important; }
-body.ed-site .ed-app-content [style*="background:#f3ede3"] { background: #111114 !important; color: #e8e8ee; }
-body.ed-site .ed-app-content [style*="color:#faf9f5"] { color: #e8e8ee !important; }
-
-/* ── L21. Moon image hero backdrop ─────────────────────────────────── */
-/* A real moon disc behind the hero starfield, upper-right, partially
-   off-canvas. Replaces the CSS-only radial gradient moon with an
-   actual NASA photograph (public domain). */
-body.ed-site .ed-home-hero .ed-hero-nebula {
-  background-image:
-    /* stars */
-    radial-gradient(1.4px 1.4px at 8% 22%, rgba(255,255,255,.85), transparent 60%),
-    radial-gradient(1px 1px at 17% 48%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1.6px 1.6px at 23% 14%, rgba(255,255,255,.70), transparent 60%),
-    radial-gradient(1px 1px at 31% 64%, rgba(255,255,255,.45), transparent 60%),
-    radial-gradient(1.2px 1.2px at 39% 30%, rgba(255,255,255,.60), transparent 60%),
-    radial-gradient(1px 1px at 46% 12%, rgba(255,255,255,.50), transparent 60%),
-    radial-gradient(1.5px 1.5px at 54% 56%, rgba(255,255,255,.65), transparent 60%),
-    radial-gradient(1px 1px at 61% 24%, rgba(255,255,255,.40), transparent 60%),
-    radial-gradient(1.3px 1.3px at 68% 70%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1px 1px at 74% 38%, rgba(255,255,255,.45), transparent 60%),
-    radial-gradient(1.6px 1.6px at 83% 60%, rgba(255,255,255,.70), transparent 60%),
-    radial-gradient(1px 1px at 90% 30%, rgba(255,255,255,.50), transparent 60%),
-    radial-gradient(1.2px 1.2px at 95% 14%, rgba(255,255,255,.55), transparent 60%),
-    radial-gradient(1px 1px at 14% 76%, rgba(255,255,255,.40), transparent 60%),
-    radial-gradient(1.4px 1.4px at 44% 82%, rgba(255,255,255,.50), transparent 60%),
-    radial-gradient(2px 2px at 27% 18%, rgba(255,255,255,.95), transparent 70%),
-    radial-gradient(2px 2px at 71% 44%, rgba(255,255,255,.90), transparent 70%),
-    /* real moon image, upper-right, partially off-canvas */
-    url('/media/lunar/moon-full-disc.webp');
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat, no-repeat, no-repeat, no-repeat, no-repeat,
-    no-repeat;
-  background-position:
-    8% 22%, 17% 48%, 23% 14%, 31% 64%, 39% 30%, 46% 12%,
-    54% 56%, 61% 24%, 68% 70%, 74% 38%, 83% 60%, 90% 30%,
-    95% 14%, 14% 76%, 44% 82%, 27% 18%, 71% 44%,
-    top -8% right -6%;
-  background-size:
-    auto, auto, auto, auto, auto, auto,
-    auto, auto, auto, auto, auto, auto,
-    auto, auto, auto, auto, auto,
-    clamp(280px, 32vw, 460px) auto;
-  opacity: .88;
-  filter: brightness(1.1) contrast(1.05);
-  mix-blend-mode: screen;
-  animation: lunar-twinkle 9s ease-in-out infinite alternate;
-}
-@media (max-width: 980px) {
-  body.ed-site .ed-home-hero .ed-hero-nebula {
-    background-position:
-      8% 22%, 17% 48%, 23% 14%, 31% 64%, 39% 30%, 46% 12%,
-      54% 56%, 61% 24%, 68% 70%, 74% 38%, 83% 60%, 90% 30%,
-      95% 14%, 14% 76%, 44% 82%, 27% 18%, 71% 44%,
-      top -4% right -12%;
-    background-size:
-      auto, auto, auto, auto, auto, auto,
-      auto, auto, auto, auto, auto, auto,
-      auto, auto, auto, auto, auto,
-      clamp(200px, 40vw, 300px) auto;
-  }
-}
-
-/* ── L22. Home stage — moon surface image ──────────────────────────── */
-/* Replace the existing atlas artwork with the Apollo surface photo
-   so the stage reads as a real lunar landscape. */
-body.ed-site .ed-home-stage img {
-  object-fit: cover;
-}
-/* Moon surface backdrop behind the stage, subtle */
-body.ed-site .ed-home-stage .ed-stage-moon-bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: url('/media/lunar/apollo-surface.webp') center / cover no-repeat;
-  opacity: .12;
-  filter: grayscale(.6) brightness(.7);
-  pointer-events: none;
-}
-body.ed-site .ed-home-stage > *:not(.ed-stage-moon-bg) { position: relative; z-index: 1; }
-
-/* ── L22b. Page hero moon backdrops ────────────────────────────────── */
-/* Subtle lunar surface behind sub-page heroes for the cosmic theme. */
-body.ed-site .ed-page-hero::before,
-body.ed-site .ed-reference-hero::before {
-  background-image: url('/media/lunar/moon-bootprint.webp') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  transform: none !important;
-  opacity: .08;
-  filter: grayscale(.8);
-}
-/* Earthrise image on the research page hero */
-body.ed-site.ed-research-page .ed-page-hero::before {
-  background-image: url('/media/lunar/earthrise.webp') !important;
-  opacity: .10;
-  filter: grayscale(.4);
-}
-
-/* ── L23. Pricing cards — dark surfaces ────────────────────────────── */
-body.ed-site .ed-price-card {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .10);
-  color: #f4f4f6;
-}
-body.ed-site .ed-price-card.is-featured {
-  border-color: rgba(255, 255, 255, .30);
-}
-body.ed-site .ed-price-card h3,
-body.ed-site .ed-price-card .ed-price-name { color: #f4f4f6; }
-body.ed-site .ed-price-card .ed-price-amount { color: #fff; }
-body.ed-site .ed-price-card p { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-price-card li { color: rgba(244, 244, 246, .78); }
-body.ed-site .ed-price-card li::before { color: #e8e8ee; }
-
-/* ── L24. Product blocks, principle cards — dark ───────────────────── */
-body.ed-site .ed-product-block,
-body.ed-site .ed-principle,
-body.ed-site .ed-showcase-entry,
-body.ed-site .ed-publication-row {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .10);
-  color: #f4f4f6;
-}
-body.ed-site .ed-product-block h2,
-body.ed-site .ed-principle h3,
-body.ed-site .ed-showcase-entry h2 { color: #f4f4f6; }
-body.ed-site .ed-product-block p,
-body.ed-site .ed-principle p { color: rgba(244, 244, 246, .72); }
-
-/* ── L25. Misc surfaces — dark ──────────────────────────────────────── */
-body.ed-site .ed-mini-card-front,
-body.ed-site .ed-mini-card-back {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .10);
-  color: #f4f4f6;
-}
-body.ed-site .ed-article-toc { background: #111114; border-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-article-toc a { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-article-toc a:hover { color: #fff; }
-body.ed-site .ed-timeline { background: none; }
-body.ed-site .ed-timeline-row { border-top-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-search-field {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .14);
-}
-body.ed-site .ed-search-field input { color: #f4f4f6; }
-body.ed-site .ed-search-field input::placeholder { color: rgba(244, 244, 246, .40); }
-
-/* ── L26. Developers page table rows ───────────────────────────────── */
-body.ed-site .ed-app-content tr { border-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-app-content tr[style*="rgba(23,23,22,.03)"] { background: rgba(255, 255, 255, .03) !important; }
-
-/* ── L27. Announcement / news cards — dark ──────────────────────────── */
-body.ed-site .ed-news-card,
-body.ed-site .ed-announcement-card {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .10);
-  color: #f4f4f6;
-}
-body.ed-site .ed-news-card h3,
-body.ed-site .ed-announcement-card h3 { color: #f4f4f6; }
-
-/* ── L28. Guide / learn cards — dark ───────────────────────────────── */
-body.ed-site .ed-guide-card,
-body.ed-site .ed-learning-object,
-body.ed-site .ed-course-card {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .10);
-  color: #f4f4f6;
-}
-body.ed-site .ed-guide-card h3,
-body.ed-site .ed-learning-object h2,
-body.ed-site .ed-course-card h3 { color: #f4f4f6; }
-
-/* ── L29. Contact form — dark ──────────────────────────────────────── */
-body.ed-site .ed-contact-card { background: #111114; border-color: rgba(255, 255, 255, .10); }
-
-/* ── L30. Brand mark background in footer ───────────────────────────── */
-body.ed-site .ed-footer .ed-brand-mark,
-body.ed-site .ed-footer .ed-brand img {
-  background: rgba(255, 255, 255, .08);
-  border-radius: 6px;
-}
-
-/* ── L31. Research article colors — cool silver ────────────────────── */
-/* Override warm custom properties set via inline styles (legacy warm + current silver). */
-body.ed-site .ed-report-hero-card { --report-tint: #1a1a22 !important; }
-body.ed-site [style*="--sw:#b86a45"],
-body.ed-site [style*="--sw:#e8e8ee"] { --sw: #e8e8ee !important; }
-body.ed-site [style*="--sw:#56534e"] { --sw: #6a6a72 !important; }
-/* SVG bar labels — warm clay fill → silver */
-body.ed-site .ed-bar-label,
-body.ed-site text.ed-bar-label { fill: rgba(244, 244, 246, .56) !important; }
-body.ed-site text.ed-bar-label[style*="fill:#b86a45"],
-body.ed-site text.ed-bar-label[style*="fill:#e8e8ee"] { fill: #e8e8ee !important; }
-/* Research article body text */
-body.ed-site .ed-article p,
-body.ed-site .ed-article li { color: rgba(244, 244, 246, .78); }
-body.ed-site .ed-article blockquote { color: rgba(244, 244, 246, .72); border-left-color: rgba(255, 255, 255, .20); }
-body.ed-site .ed-article figcaption { color: rgba(244, 244, 246, .50); }
-body.ed-site .ed-article code { background: #111114; color: #e8e8ee; }
-body.ed-site .ed-article pre { background: #0d0d10; color: #e8e8ee; }
-
-/* ── L32. Research report hero card — dark ─────────────────────────── */
-body.ed-site .ed-report-hero-card {
-  background: #111114;
-  border-color: rgba(255, 255, 255, .10);
-}
-body.ed-site .ed-report-hero-card > img,
-body.ed-site .ed-report-hero-card.is-illustration > svg,
-body.ed-site .ed-report-hero-card.is-illustration > img {
-  border-color: rgba(255, 255, 255, .10);
-}
-
-/* ── L33. SVG chart elements — light on dark ───────────────────────── */
-body.ed-site .ed-svg-bar rect { fill: rgba(255, 255, 255, .12); }
-body.ed-site .ed-svg-bar rect[fill="#e8e8ee"],
-body.ed-site .ed-svg-bar rect[fill*="b86a45"] { fill: #e8e8ee; }
-body.ed-site .ed-svg-bar path,
-body.ed-site .ed-timeline path { stroke: rgba(255, 255, 255, .30); }
-body.ed-site .ed-svg-bar text,
-body.ed-site .ed-svg-bar tspan { fill: rgba(244, 244, 246, .72); }
-body.ed-site .ed-svg-bar .ed-bar-fill { fill: #f4f4f6 !important; }
-
-/* ── L34. Research legend swatches — cool ──────────────────────────── */
-body.ed-site .ed-legend span i { border-color: rgba(255, 255, 255, .30); }
-body.ed-site .ed-legend span i.is-dashed { border-style: dashed; }
-
-/* ── L35. Remaining warm clay rgba → silver (final pass) ──────────── */
-body.ed-site .ed-search-field input:focus { outline-color: rgba(232, 232, 238, .40); }
-body.ed-site main input:focus,
-body.ed-site main textarea:focus { outline: 2px solid rgba(232, 232, 238, .40); outline-offset: 1px; }
-body.ed-site .ed-article-hero-media:hover,
-body.ed-site .ed-black-band-media:hover,
-body.ed-site .ed-showcase-media:hover,
-body.ed-site .ed-publication-side:hover { box-shadow: 0 0 0 1px rgba(232, 232, 238, .25); }
-body.ed-site .ed-mini-pulse { background: rgba(232, 232, 238, .25); }
-body.ed-site .ed-article-tag,
-body.ed-site .ed-pill[style*="sv-clay"],
-body.ed-site [class*="ed-tag"] {
-  background: rgba(232, 232, 238, .08);
-  border-color: var(--sv-clay);
-  color: var(--sv-clay);
-}
-body.ed-site .ed-reference-links a { text-decoration-color: rgba(232, 232, 238, .35); }
-body.ed-site .ed-reference-links a:hover { color: #fff; text-decoration-color: currentColor; }
-
-/* ── L36. Misc text colors — ensure light on dark ─────────────────── */
-body.ed-site .ed-meta,
-body.ed-site .ed-row-meta { color: rgba(244, 244, 246, .56); }
-body.ed-site .ed-publication-side .ed-meta,
-body.ed-site .ed-essay-row .ed-essay-date,
-body.ed-site .ed-essay-row .ed-essay-tag { color: rgba(244, 244, 246, .50); }
-body.ed-site .ed-showcase-entry .ed-meta,
-body.ed-site .ed-publication-row .ed-meta { color: rgba(244, 244, 246, .50); }
-body.ed-site .ed-section-tight .ed-meta,
-body.ed-site .ed-section .ed-meta { color: rgba(244, 244, 246, .56); }
-
-/* ── L37. Silver-bg elements: dark text for contrast ──────────────── */
-/* Author avatar, mini-card back: --sv-clay is now #e8e8ee (silver),
-   so white text is invisible. Use dark text instead. */
-body.ed-site .ed-author-avatar { color: #0a0a0c; }
-body.ed-site .ed-mini-card::after,
-body.ed-site .ed-mini-card-back { color: #0a0a0c; }
-
-/* ── L38. Warm link colors → silver/white ─────────────────────────── */
-body.ed-site .ed-black-band-copy .ed-link,
-body.ed-site .ed-inline-feature .ed-link {
-  color: #e8e8ee;
-  text-decoration-color: rgba(232, 232, 238, .40);
-}
-body.ed-site .ed-black-band-copy .ed-link:hover,
-body.ed-site .ed-inline-feature .ed-link:hover {
-  color: #fff;
-  text-decoration-color: currentColor;
-}
-
-/* ── L39. Button hover: ensure light→white, not light→black ──────── */
-/* Multiple pre-override rules set .ed-button:hover to background:#000
-   which inverts our light button to black on hover. Force white. */
-body.ed-site .ed-button:hover {
-  color: #000 !important;
-  background: #fff !important;
-  border-color: #fff !important;
-}
-
-/* ── L40. Chat demo Z-section override ──────────────────────────────── */
-body.ed-site .ed-chat-demo { background: #111114 !important; border-color: rgba(255, 255, 255, .10) !important; }
-body.ed-site .ed-chat-bubble.user { background: #f4f4f6 !important; color: #0a0a0c !important; }
-body.ed-site .ed-chat-bubble.tutor { background: #111114 !important; color: #f4f4f6 !important; border-color: rgba(255, 255, 255, .10) !important; }
-
-/* ── L41. Black band / inline feature — dark surfaces ────────────── */
-body.ed-site .ed-black-band,
-body.ed-site .ed-inline-feature {
-  background: #050507;
-  color: #f4f4f6;
-}
-body.ed-site .ed-black-band h2,
-body.ed-site .ed-inline-feature h2 { color: #f4f4f6; }
-body.ed-site .ed-black-band p,
-body.ed-site .ed-inline-feature p { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-black-band .ed-kicker,
-body.ed-site .ed-inline-feature .ed-kicker { color: rgba(244, 244, 246, .52); }
-body.ed-site .ed-black-band .ed-kicker::before,
-body.ed-site .ed-inline-feature .ed-kicker::before { background: #e8e8ee; }
-
-/* ── L42. Account.css warm clay → cool silver ─────────────────────── */
-body.ed-site .ed-app-card-danger { border-color: rgba(200, 205, 225, .25) !important; }
-body.ed-site .ed-app-card-danger .ed-app-card-head { border-bottom-color: rgba(200, 205, 225, .18) !important; }
-body.ed-site .ed-app-msg.ok { background: rgba(180, 200, 220, .12) !important; border-color: rgba(180, 200, 220, .3) !important; }
-body.ed-site .ed-app-msg.err { background: rgba(200, 205, 225, .10) !important; border-color: rgba(200, 205, 225, .3) !important; }
-body.ed-site .ed-badge.is-expired { background: rgba(200, 205, 225, .15) !important; color: #e8e8ee !important; }
-body.ed-site .ed-key-del:hover { color: #e8e8ee !important; border-color: #e8e8ee !important; background: rgba(200, 205, 225, .08) !important; }
-body.ed-site .ed-select-option.is-selected { background: rgba(200, 205, 225, .08) !important; }
-body.ed-site .ed-heatmap-cell[data-level="1"] { background: rgba(200, 205, 225, .2) !important; }
-body.ed-site .ed-heatmap-cell[data-level="2"] { background: rgba(200, 205, 225, .42) !important; }
-body.ed-site .ed-heatmap-cell[data-level="3"] { background: rgba(200, 205, 225, .7) !important; }
-/* Focus outlines in account.css */
-body.ed-site .ed-app-content input:focus,
-body.ed-site .ed-app-content textarea:focus,
-body.ed-site .ed-app-content select:focus { outline-color: rgba(232, 232, 238, .40) !important; }
-
-/* ── L43. Footer social/lang — ensure light on dark ──────────────── */
-body.ed-site .ed-footer-social a { color: rgba(244, 244, 246, .72); border-color: rgba(255, 255, 255, .18); }
-body.ed-site .ed-footer-social a:hover { color: #fff; border-color: rgba(255, 255, 255, .40); background: rgba(255, 255, 255, .06); }
-body.ed-site .ed-footer-lang { color: rgba(244, 244, 246, .72); border-color: rgba(255, 255, 255, .18); }
-body.ed-site .ed-footer-lang:hover { color: #fff; border-color: rgba(255, 255, 255, .40); }
-body.ed-site .ed-footer-column h2 { color: rgba(244, 244, 246, .44); }
-body.ed-site .ed-footer-column a { color: rgba(244, 244, 246, .76); }
-body.ed-site .ed-footer-bottom { color: rgba(244, 244, 246, .50); border-top-color: rgba(255, 255, 255, .12); }
-
-/* ── L44. Stage index and network copy — ensure light on dark ────── */
-body.ed-site .ed-stage-index a { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-stage-index a:hover { color: #fff; background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .28); }
-body.ed-site .ed-home-stage .ed-network-copy h2 { color: #f4f4f6; }
-body.ed-site .ed-home-stage .ed-network-copy p { color: rgba(244, 244, 246, .66); }
-body.ed-site .ed-stage-caption { color: rgba(244, 244, 246, .45); }
-
-/* ── L45. Author meta — light on dark ─────────────────────────────── */
-body.ed-site .ed-author-meta { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-author-meta .ed-meta { color: rgba(244, 244, 246, .56); }
-
-/* ── L46. Announcement / news lists — dark ────────────────────────── */
-body.ed-site .ed-news-list,
-body.ed-site .ed-announcement-list { color: #f4f4f6; }
-body.ed-site .ed-news-list a,
-body.ed-site .ed-announcement-list a { color: #f4f4f6; }
-body.ed-site .ed-news-list a:hover,
-body.ed-site .ed-announcement-list a:hover { color: #fff; }
-
-/* ── L47. Principles matrix / visual — dark ──────────────────────── */
-body.ed-site .ed-principles-matrix { background: #111114; border-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-principles-matrix th,
-body.ed-site .ed-principles-matrix td { color: #f4f4f6; border-color: rgba(255, 255, 255, .10); }
-
-/* ── L48. Guide / learn featured — dark ──────────────────────────── */
-body.ed-site .ed-featured { background: #111114; border-color: rgba(255, 255, 255, .10); color: #f4f4f6; }
-body.ed-site .ed-featured h2,
-body.ed-site .ed-featured h3 { color: #f4f4f6; }
-body.ed-site .ed-featured p { color: rgba(244, 244, 246, .72); }
-
-/* ── L49. Product reasoning path / route engine — dark ───────────── */
-body.ed-site .ed-product-reasoning,
-body.ed-site .ed-product-route { background: #111114; border-color: rgba(255, 255, 255, .10); color: #f4f4f6; }
-
-/* ── L50. Misc: marquee, dividers ────────────────────────────────── */
-body.ed-site .ed-marquee { border-top-color: rgba(255, 255, 255, .10); border-bottom-color: rgba(255, 255, 255, .10); color: rgba(244, 244, 246, .56); }
-
-/* ── L51. Final warm color cleanup ────────────────────────────────── */
-/* Result bar gradient endpoint was warm #c8c8d2 → cool silver */
-body.ed-site .ed-result-track i { background: linear-gradient(90deg, #e8e8ee, #c8c8d2) !important; }
-
-/* Related chip hover: ensure light on dark */
-body.ed-site .ed-related-chip { color: rgba(244, 244, 246, .72); border-color: rgba(255, 255, 255, .14); }
-body.ed-site .ed-related-chip:hover { color: #fff; border-color: #e8e8ee; background: rgba(255, 255, 255, .06); }
-
-/* Path node: silver border on dark bg */
-body.ed-site .ed-path-node { background: #111114; border-color: #e8e8ee; }
-body.ed-site .ed-path-node::after { background: #e8e8ee; }
-
-/* Key takeaways, chart frame: dark surfaces */
-body.ed-site .ed-key-takeaways { background: #111114; border-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-key-takeaways li strong { color: #f4f4f6; }
-body.ed-site .ed-chart-frame { background: #111114; border-color: rgba(255, 255, 255, .10); }
-
-/* Article foot: dark */
-body.ed-site .ed-article-foot { border-color: rgba(255, 255, 255, .10); }
-body.ed-site .ed-article-foot a { background: #111114; border-color: rgba(255, 255, 255, .10); color: #f4f4f6; }
-body.ed-site .ed-article-foot a:hover { border-color: rgba(255, 255, 255, .30); }
-
-/* Pull quote citation */
-body.ed-site .ed-pull-quote cite { color: rgba(244, 244, 246, .56); }
-
-/* Team grid heading hover */
-body.ed-site .ed-team-grid article:hover h2 { color: #e8e8ee; }
-
-/* Thread element */
-body.ed-site .ed-thread { border-color: rgba(255, 255, 255, .14); color: rgba(244, 244, 246, .72); }
-
-/* Card input */
-body.ed-site .ed-card-input input { background: #111114; color: #f4f4f6; border-color: rgba(255, 255, 255, .14); }
-body.ed-site .ed-card-input input:focus { border-color: #e8e8ee; outline-color: rgba(232, 232, 238, .40); }
-
-/* Author cards */
-body.ed-site .ed-author-cards { background: #111114; border-color: rgba(255, 255, 255, .10); }
-
-/* Chat head dot — silver */
-body.ed-site .ed-chat-head-dot { background: #e8e8ee; }
-
-/* Mini node — silver dot */
-body.ed-site .ed-mini-node { background: #e8e8ee; }
-
-/* Account.css field focus outline */
-body.ed-site .ed-field input:focus,
-body.ed-site .ed-field textarea:focus,
-body.ed-site .ed-field select:focus { outline: 2px solid rgba(232, 232, 238, .40) !important; border-color: #e8e8ee !important; }
-
-/* Account.css disabled input */
-body.ed-site .ed-field input:disabled { background: #1a1a1e; color: rgba(244, 244, 246, .40); }
-
-/* Account.css select content */
-body.ed-site .ed-select-content { background: #111114; border-color: rgba(255, 255, 255, .14); color: #f4f4f6; }
-body.ed-site .ed-select-option { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-select-option:hover { background: rgba(255, 255, 255, .06); }
-body.ed-site .ed-select-option-name { color: #f4f4f6; }
-
-/* Account.css usage display */
-body.ed-site .ed-usage { color: rgba(244, 244, 246, .72); }
-body.ed-site .ed-usage-bar { background: rgba(255, 255, 255, .10); }
-body.ed-site .ed-usage-bar i { background: #e8e8ee; }
-
-/* ════════════════════════════════════════════════════════════════════════
-   LUNAR MONOCHROME — V2: Vercel/xAI-grade design language
-   ════════════════════════════════════════════════════════════════════════
-   Massive typography, full-viewport hero, generous spacing, refined
-   animations, and polished card surfaces. */
-
-/* ── V1. Typography: Geist for all display headings ──────────────────── */
-/* Switch display headings from Newsreader (serif) to Geist (sans) for the
-   Vercel-grade technical feel. Serif stays for .ed-serif, pull quotes,
-   and long-form body text — creating the editorial contrast Vercel uses. */
-:root { --an-serif: "Geist", "Inter", "Noto Sans SC", "PingFang SC", sans-serif; }
-body.ed-site .ed-display,
-body.ed-site .ed-page-title,
-body.ed-site .ed-title,
-body.ed-site .ed-statement-title,
-body.ed-site .ed-reference-title,
-body.ed-site .ed-news-hero h1,
-body.ed-site .ed-learning-hero h1,
-body.ed-site .ed-research-coda h2,
-body.ed-site .ed-policy-manifesto h2,
-body.ed-site .ed-course-intro h2,
-body.ed-site .ed-learning-object h2,
-body.ed-site .ed-network-copy h2,
-body.ed-site .ed-section-head h2,
-body.ed-site .ed-section h2,
-body.ed-site .ed-price-card h3,
-body.ed-site .ed-guide-card h3,
-body.ed-site .ed-principles-card h3,
-body.ed-site .ed-news-card h3,
-body.ed-site .ed-product-block h2,
-body.ed-site .ed-black-band h2,
-body.ed-site .ed-inline-feature h2,
-body.ed-site .ed-featured h2,
-body.ed-site .ed-featured h3,
-body.ed-site .ed-contact-card h2,
-body.ed-site .ed-article h2,
-body.ed-site .ed-article h3 {
-  font-family: "Geist", "Inter", "Noto Sans SC", "PingFang SC", sans-serif;
-  font-weight: 700;
-  letter-spacing: -.035em;
-}
-
-/* Hero display: massive, tight, Vercel-scale */
-body.ed-site .ed-home-hero .ed-display {
-  font-family: "Geist", "Inter", "Noto Sans SC", sans-serif;
-  font-size: clamp(64px, 7.5vw, 120px);
-  font-weight: 700;
-  letter-spacing: -.04em;
-  line-height: .95;
-  max-width: 12ch;
-}
-html:lang(zh) body.ed-site .ed-home-hero .ed-display {
-  font-size: clamp(48px, 6vw, 96px);
-  letter-spacing: -.02em;
-  line-height: 1.0;
-}
-
-/* Page titles: bigger, sans */
-body.ed-site .ed-page-title {
-  font-size: clamp(56px, 6.5vw, 96px);
-  font-weight: 700;
-  letter-spacing: -.035em;
-  line-height: 1.0;
-}
-body.ed-site .ed-title {
-  font-size: clamp(40px, 4.5vw, 64px);
-  font-weight: 700;
-  letter-spacing: -.03em;
-}
-body.ed-site .ed-statement-title {
-  font-size: clamp(44px, 4.5vw, 72px);
-  font-weight: 700;
-  letter-spacing: -.03em;
-}
-
-/* Section headings: sans, larger */
-body.ed-site .ed-section h2,
-body.ed-site .ed-section-head h2 {
-  font-size: clamp(36px, 4vw, 56px);
-  font-weight: 700;
-  letter-spacing: -.03em;
-  line-height: 1.05;
-}
-body.ed-site .ed-section h3 {
-  font-size: clamp(24px, 2.8vw, 36px);
-  font-weight: 700;
-  letter-spacing: -.025em;
-}
-
-/* Serif subtitle stays serif for contrast — but lighter, more elegant */
-body.ed-site .ed-hero-sub,
-body.ed-site .ed-serif {
-  font-family: "Newsreader", "Source Serif 4", "Noto Serif SC", serif;
-  font-weight: 400;
-}
-
-/* ── V2. Hero: full viewport, bigger moon ──────────────────────────── */
-body.ed-site .ed-home-hero {
-  min-height: 100vh;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(80px, 10vw, 160px) 0 clamp(60px, 8vw, 120px);
-}
-body.ed-site .ed-hero-grid {
-  align-items: center;
-  gap: clamp(40px, 5vw, 80px);
-}
-body.ed-site .ed-hero-lead { max-width: none; }
-body.ed-site .ed-hero-lead h1 { max-width: none; }
-
-/* Moon: bigger, positioned right of text, partially off-canvas */
-body.ed-site .ed-home-hero .ed-hero-nebula {
-  width: clamp(500px, 50vw, 800px);
-  height: clamp(500px, 50vw, 800px);
-  top: 45%;
-  right: -20%;
-  transform: translateY(-50%);
-  opacity: .75;
-}
-body.ed-site .ed-home-hero .ed-hero-nebula::before {
-  /* Moon disc — real photo */
-  width: clamp(420px, 42vw, 700px);
-  height: clamp(420px, 42vw, 700px);
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  background-size: 100%;
-  opacity: .9;
-}
-/* Star field stays subtle */
-body.ed-site .ed-home-hero .ed-hero-nebula::after {
-  width: 100%;
-  height: 100%;
-}
-
-/* Stage: moved below hero, full-bleed feel */
-body.ed-site .ed-home-stage {
-  margin-top: 0;
-  padding-top: clamp(40px, 5vw, 80px);
-}
-/* Hide the stage-index nav (too dense for Vercel-style minimalism) */
-body.ed-site .ed-home-stage .ed-stage-index { display: none; }
-
-/* Hero flag: subtle, monospace */
-body.ed-site .ed-hero-flag {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: rgba(244, 244, 246, .44);
-  margin-bottom: 20px;
-}
-body.ed-site .ed-hero-flag span { background: #e8e8ee; }
-
-/* ── V3. Section spacing: generous, Vercel-grade ────────────────────── */
-body.ed-site .ed-section { padding: clamp(120px, 12vw, 200px) 0; }
-body.ed-site .ed-section-tight { padding: clamp(80px, 8vw, 140px) 0; }
-body.ed-site .ed-section-line + .ed-section-line { padding-top: clamp(80px, 10vw, 160px); }
-body.ed-site .ed-section-head { margin-bottom: clamp(48px, 6vw, 80px); }
-body.ed-site .ed-page-hero { padding: clamp(120px, 14vw, 200px) 0 clamp(80px, 10vw, 140px); }
-body.ed-site .ed-reference-hero { padding: clamp(100px, 12vw, 180px) 0 clamp(60px, 8vw, 120px); }
-/* Article hero */
-body.ed-site .ed-article-hero { padding: clamp(80px, 10vw, 160px) 0 clamp(40px, 5vw, 80px); }
-/* Footer */
-body.ed-site .ed-footer { padding: clamp(60px, 8vw, 120px) 0 clamp(40px, 5vw, 80px); }
-body.ed-site .ed-footer-frame { padding: clamp(60px, 8vw, 100px); }
-
-/* ── V4. Hero staggered reveal animation ────────────────────────────── */
-@keyframes heroFadeUp {
-  from { opacity: 0; transform: translateY(32px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-body.ed-site .ed-hero-grid > * {
-  opacity: 0;
-  animation: heroFadeUp .8s cubic-bezier(.16, 1, .3, 1) forwards;
-}
-body.ed-site .ed-hero-grid > *:nth-child(1) { animation-delay: .1s; }
-body.ed-site .ed-hero-grid > *:nth-child(2) { animation-delay: .25s; }
-body.ed-site .ed-hero-grid > *:nth-child(3) { animation-delay: .4s; }
-body.ed-site .ed-hero-nebula { animation: heroFadeUp 1.2s cubic-bezier(.16, 1, .3, 1) .3s forwards; }
-@media (prefers-reduced-motion: reduce) {
-  body.ed-site .ed-hero-grid > *,
-  body.ed-site .ed-hero-nebula { animation: none; opacity: 1; }
-}
-
-/* ── V5. Card hover effects — subtle lift + glow ───────────────────── */
-body.ed-site .ed-guide-card,
-body.ed-site .ed-principles-card,
-body.ed-site .ed-news-card,
-body.ed-site .ed-price-card,
-body.ed-site .ed-product-block,
-body.ed-site .ed-featured,
-body.ed-site .ed-contact-card,
-body.ed-site .ed-key-takeaways,
-body.ed-site .ed-chart-frame {
-  transition: transform .35s cubic-bezier(.16, 1, .3, 1), box-shadow .35s cubic-bezier(.16, 1, .3, 1), border-color .35s ease;
-}
-body.ed-site .ed-guide-card:hover,
-body.ed-site .ed-principles-card:hover,
-body.ed-site .ed-news-card:hover,
-body.ed-site .ed-price-card:hover,
-body.ed-site .ed-product-block:hover,
-body.ed-site .ed-featured:hover,
-body.ed-site .ed-contact-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, .3), 0 0 0 1px rgba(255, 255, 255, .08);
-  border-color: rgba(255, 255, 255, .20);
-}
-
-/* Button hover: subtle scale */
-body.ed-site .ed-button { transition: transform .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
-body.ed-site .ed-button:hover { transform: scale(1.02); }
-body.ed-site .ed-button:active { transform: scale(.98); }
-
-/* Link hover: subtle underline glow */
-body.ed-site .ed-article a,
-body.ed-site .ed-reference-links a,
-body.ed-site .ed-black-band-copy .ed-link,
-body.ed-site .ed-inline-feature .ed-link {
-  transition: color .2s ease, text-decoration-color .2s ease;
-}
-
-/* ── V6. Logo marquee: more visible ────────────────────────────────── */
-body.ed-site .ed-marquee-track { gap: clamp(48px, 6vw, 80px); }
-body.ed-site .ed-marquee-track img,
-body.ed-site .ed-marquee-track svg {
-  opacity: .5;
-  filter: brightness(0) invert(1);
-  transition: opacity .3s ease;
-}
-body.ed-site .ed-marquee-track img:hover,
-body.ed-site .ed-marquee-track svg:hover { opacity: .8; }
-
-/* ── V7. Enhanced reveal animation ──────────────────────────────────── */
-body.ed-site .ed-reveal {
-  transition: opacity .8s cubic-bezier(.16, 1, .3, 1), transform .8s cubic-bezier(.16, 1, .3, 1);
-}
-body.ed-site .ed-reveal:not(.is-visible) {
-  opacity: 0;
-  transform: translateY(24px);
-}
-
-/* ── V8. Moon parallax on scroll ────────────────────────────────────── */
-body.ed-site .ed-hero-nebula {
-  will-change: transform;
-  transition: transform .1s linear;
-}
-
-/* ── V9. Refined borders and surfaces ──────────────────────────────── */
-/* Subtle inner glow on cards */
-body.ed-site .ed-guide-card,
-body.ed-site .ed-principles-card,
-body.ed-site .ed-news-card,
-body.ed-site .ed-price-card,
-body.ed-site .ed-featured {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
-}
-
-/* Rounded corners — more generous */
-body.ed-site .ed-guide-card,
-body.ed-site .ed-principles-card,
-body.ed-site .ed-news-card,
-body.ed-site .ed-featured,
-body.ed-site .ed-contact-card {
-  border-radius: 16px;
-}
-body.ed-site .ed-price-card { border-radius: 20px; }
-
-/* ── V10. Misc refinements ─────────────────────────────────────────── */
-/* Kicker labels: more subtle, uppercase, wider tracking */
-body.ed-site .ed-kicker,
-body.ed-site .ed-section-head .ed-kicker {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(244, 244, 246, .44);
-}
-body.ed-site .ed-kicker::before { background: #e8e8ee; }
-
-/* Stage caption: more subtle */
-body.ed-site .ed-stage-caption {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: .08em;
-  color: rgba(244, 244, 246, .40);
-}
-
-/* Hero actions: larger buttons */
-body.ed-site .ed-hero-actions .ed-button {
-  padding: 14px 28px;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 999px;
-}
-body.ed-site .ed-hero-actions .ed-button-ghost {
-  border-width: 1px;
-  border-color: rgba(255, 255, 255, .20);
-}
-body.ed-site .ed-hero-actions .ed-button-ghost:hover {
-  border-color: rgba(255, 255, 255, .40);
-  background: rgba(255, 255, 255, .06);
-}
-
-/* Scrollbar: thinner, more subtle */
-body.ed-site ::-webkit-scrollbar { width: 5px; }
-body.ed-site ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .15); }
-
-/* Selection: cooler */
-body.ed-site ::selection { background: rgba(200, 205, 225, .35); color: #fff; }
-
-/* ── V11. Mobile responsive adjustments ────────────────────────────── */
-@media (max-width: 768px) {
-  body.ed-site .ed-home-hero .ed-display { font-size: clamp(40px, 10vw, 56px); }
-  body.ed-site .ed-page-title { font-size: clamp(36px, 8vw, 56px); }
-  body.ed-site .ed-home-hero { min-height: auto; padding-top: 80px; }
-  body.ed-site .ed-home-hero .ed-hero-nebula { opacity: .35; }
-  body.ed-site .ed-section { padding: clamp(64px, 16vw, 100px) 0; }
-}
-
-/* ── END V2 ── */
-
-/* ═══════════════════════════════════════════════════════════════════════
-   2026-09-14 · L48. Light-background sweep — final safety net
-   Any remaining paper/cream/white card or chart surface that escaped the
-   token fixes above is forced to the lunar dark surface here. Placed last
-   so it wins the cascade for ed-site pages.
-   ═══════════════════════════════════════════════════════════════════════ */
-body.ed-site .ed-stats-strip,
-body.ed-site .ed-course-card,
-body.ed-site .ed-app-card,
-body.ed-site .ed-auth,
-body.ed-site .ed-modal,
-body.ed-site .ed-toast,
-body.ed-site .ed-select-panel,
-body.ed-site .ed-select-trigger,
-body.ed-site .ed-field input,
-body.ed-site .ed-field textarea,
-body.ed-site .ed-field select {
-  background-color: #111114;
-  border-color: rgba(255, 255, 255, .10);
-  color: #f4f4f6;
-}
-body.ed-site .ed-course-card:hover { background-color: rgba(255, 255, 255, .07); }
-body.ed-site .ed-stats-strip { background-color: rgba(255, 255, 255, .04); }
-/* Research charts: legacy warm strokes/fills → silver (covers cached HTML). */
-body.ed-site .ed-chart-frame path[stroke="#b86a45"],
-body.ed-site .ed-chart-frame path[stroke="#9a5a3b"],
-body.ed-site svg path[stroke="#b86a45"] { stroke: #e8e8ee; }
-body.ed-site svg path[stroke="#56534e"] { stroke: #8a8a93; }
-body.ed-site svg circle[fill="#b86a45"],
-body.ed-site svg g[fill="#b86a45"] { fill: #e8e8ee; }
-body.ed-site svg circle[fill="#56534e"] { fill: #8a8a93; }
-body.ed-site svg text[fill="#b86a45"] { fill: #e8e8ee; }
-body.ed-site svg text[fill="#56534e"],
-body.ed-site svg text[fill="#77716a"] { fill: #9a9aa3; }
-body.ed-site svg stop[stop-color="#b86a45"],
-body.ed-site svg stop[stop-color="#9a5a3b"] { stop-color: #e8e8ee; }
-body.ed-site svg stop[stop-color="#d97b56"] { stop-color: #c8c8d2; }

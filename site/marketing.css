@@ -1720,10 +1720,10 @@ body.mk-page .mk-changelog { border-color: var(--mk-line); }
 body.mk-page .mk-stat strong { font-size: clamp(30px, 4vw, 52px); font-weight: 500; }
 body.mk-page .mk-story-step,
 body.mk-page .mk-guide-step { border-color: var(--mk-line); }
-body.mk-page .mk-cta-band { border-radius: 8px; background: #111114; color: #f4f4f6; border: 1px solid rgba(255, 255, 255, .10); }
+body.mk-page .mk-cta-band { border-radius: 8px; background: #f4f4f4; color: #000; }
 body.mk-page .mk-cta-band p,
-body.mk-page .mk-cta-band .dim { color: rgba(244, 244, 246, .62); }
-body.mk-page .mk-cta-band .mk-btn-dark { background: #f4f4f6; color: #0a0a0c; border-color: #f4f4f6; }
+body.mk-page .mk-cta-band .dim { color: rgba(0,0,0,.52); }
+body.mk-page .mk-cta-band .mk-btn-dark { background: #000; color: #fff; border-color: #000; }
 body.mk-page .mk-footer { border-top-color: var(--mk-line); background: #000; }
 body.mk-page .mk-footer-col h3 { color: var(--mk-text-70); }
 
@@ -1772,9 +1772,9 @@ body:not(.mk-page):not(.xa-page) footer .footer-inner { max-width: var(--mk-max)
 }
 
 /* Final layout fixes from reference review. */
-body.mk-page .mk-cta-band h2 { color: #f4f4f6; }
-body.mk-page .mk-cta-band h2 .dim { color: rgba(244, 244, 246, .52); }
-body.mk-page .mk-cta-band p { color: rgba(244, 244, 246, .62); }
+body.mk-page .mk-cta-band h2 { color: #000; }
+body.mk-page .mk-cta-band h2 .dim { color: rgba(0,0,0,.52); }
+body.mk-page .mk-cta-band p { color: rgba(0,0,0,.58); }
 
 body.mk-page .mk-provider-tabs {
   display: flex;

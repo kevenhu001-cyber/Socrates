@@ -27,7 +27,6 @@
    * -------------------------------------------------------------- */
   function initialiseReferenceNavigation() {
     if (isChinesePage()) return;
-    if (document.body.classList.contains('sv-home')) return;
     var pathname = window.location.pathname;
     var isResearchArticle = pathname.indexOf('/research/') !== -1;
     var prefix = isResearchArticle ? '../../' : '';

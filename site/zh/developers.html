@@ -8,11 +8,11 @@
   <link rel="canonical" href="https://topodrive.top/zh/developers">
   <link rel="alternate" type="text/markdown" href="/developers.md">
   <link rel="icon" href="../favicon.png">
-  <link rel="stylesheet" href="../fonts.css?cb=20260915v3">
+  <link rel="stylesheet" href="../fonts.css?cb=20260825d">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="../editorial.css?cb=20260915v3">
-  <link rel="stylesheet" href="../brand.css?cb=20260915v3">
+  <link rel="stylesheet" href="../editorial.css?cb=20260825">
+  <link rel="stylesheet" href="../brand.css?cb=20260825g">
   <script src="../editorial.js?cb=20260824" defer></script>
   <script src="../locale.js?cb=20260824" defer></script>
 </head>
@@ -71,7 +71,7 @@
               <h3 style="margin:12px 0 8px;font-size:20px;font-weight:600">选择认证方式</h3>
               <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">第三方智能体建议采用 <a class="ed-link" href="/auth.md">OAuth 2.0 PKCE 授权流</a>；第一方自动化任务可直接在 <a class="ed-link" href="https://app.topodrive.top">控制台</a> 或通过 API 创建受限密钥。</p>
             </div>
-            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:#0d0d10;color:#e8e8ee;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>Authorization: Bearer ak_&lt;keyId&gt;.&lt;secret&gt;</code></pre>
+            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:var(--site-ink);color:#faf9f5;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>Authorization: Bearer ak_&lt;keyId&gt;.&lt;secret&gt;</code></pre>
           </article>
 
           <article class="ed-card ed-reveal" style="display:flex;flex-direction:column;justify-content:space-between">
@@ -80,7 +80,7 @@
               <h3 style="margin:12px 0 8px;font-size:20px;font-weight:600">查阅 API 协议</h3>
               <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">所有公开接口均在 <a class="ed-link" href="/openapi.json">OpenAPI 3.0 规范</a> 中完整定义，包含操作 ID、请求响应 Schema、错误码以及细粒度 OAuth 权限范围。</p>
             </div>
-            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:#0d0d10;color:#e8e8ee;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>curl -s https://topodrive.top/openapi.json</code></pre>
+            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:var(--site-ink);color:#faf9f5;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>curl -s https://topodrive.top/openapi.json</code></pre>
           </article>
 
           <article class="ed-card ed-reveal" style="display:flex;flex-direction:column;justify-content:space-between">
@@ -89,7 +89,7 @@
               <h3 style="margin:12px 0 8px;font-size:20px;font-weight:600">发起调用</h3>
               <p style="color:var(--site-ink-soft);font-size:14.5px;line-height:1.6">基础地址 <code>https://app.topodrive.top</code>。可先通过 <code>GET /api/v2/health</code> 探活。响应头附带 <code>RateLimit-*</code> 信息方便客户端自适应控频。</p>
             </div>
-            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:#0d0d10;color:#e8e8ee;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>GET https://app.topodrive.top/api/v2/health</code></pre>
+            <pre style="margin-top:16px;padding:12px;border-radius:8px;background:var(--site-ink);color:#faf9f5;font-size:12px;overflow-x:auto;font-family:var(--site-mono)"><code>GET https://app.topodrive.top/api/v2/health</code></pre>
           </article>
         </div>
       </div>
@@ -107,7 +107,7 @@
         <div class="ed-table-wrap ed-reveal" style="border:1px solid var(--site-line);border-radius:14px;overflow:hidden;background:var(--site-paper-soft)">
           <table style="width:100%;border-collapse:collapse;text-align:left;font-size:14px">
             <thead>
-              <tr style="border-bottom:1px solid var(--site-line);background:rgba(255,255,255,.03)">
+              <tr style="border-bottom:1px solid var(--site-line);background:rgba(23,23,22,.03)">
                 <th style="padding:14px 20px;font-family:var(--site-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--site-ink-muted)">资源名称</th>
                 <th style="padding:14px 20px;font-family:var(--site-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--site-ink-muted)">端点路径</th>
                 <th style="padding:14px 20px;font-family:var(--site-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--site-ink-muted)">格式</th>
