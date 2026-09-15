@@ -65,6 +65,40 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.background).toBe('rgb(0, 0, 0)');
   expect(geometry.pageToken).toBe('0 0% 13%');
 
+  /* P_greeting-mobile-center — the landing greeting must be visually
+     centred horizontally on the viewport and sit just above the optical
+     middle on phones. The previous absolute + dual left/right inset could
+     land sub-pixel off when the parent's 16px padding and the viewport
+     settled (URL-bar collapse, soft keyboard); the absolute box anchored
+     at 42% of the surface always lands the line on the reference hero
+     position regardless of those shifts. */
+  const centering = await page.evaluate(() => {
+    const greet = document.querySelector('#topicTitle.greeting');
+    const box = greet?.getBoundingClientRect();
+    const surface = document.getElementById('topicSetup')?.getBoundingClientRect();
+    const style = greet ? getComputedStyle(greet) : null;
+    return {
+      x: box?.x,
+      width: box?.width,
+      centerY: box ? box.top + box.height / 2 : undefined,
+      surfaceTop: surface?.top,
+      surfaceHeight: surface?.height,
+      viewportWidth: window.innerWidth,
+      position: style?.position,
+      textAlign: style?.textAlign,
+    };
+  });
+  expect(centering.position, 'greeting is positioned against the live landing surface').toBe('absolute');
+  expect(centering.textAlign).toBe('center');
+  /* ±1px slack covers browser sub-pixel rendering and any safe-area
+     asymmetry on the top-bar that does not propagate into the
+     greeting's parent flex column. */
+  expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
+    .toBeLessThanOrEqual(1);
+  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.42;
+  expect(Math.abs(centering.centerY - expectedCenterY))
+    .toBeLessThanOrEqual(1);
+
   /* The active-chat header uses the reference's one tactile navigation
      control plus two unframed utilities. Expose the session-only controls
      without invoking a networked share action so this remains visual QA. */
@@ -99,7 +133,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(headerVisual.share?.width).toBe(44);
   expect(headerVisual.find?.borderWidth).toBe('0px');
   expect(headerVisual.share?.borderWidth).toBe('0px');
-  expect(headerVisual.sidebarStatus?.width).toBe(8);
+  /* The reference header shows no always-on status dot next to the
+     sidebar toggle, so it stays display:none on mobile. */
+  expect(headerVisual.sidebarStatus?.width).toBe(0);
   expect(headerVisual.findIcon?.width).toBe(24);
   expect(headerVisual.shareIcon?.width).toBe(24);
   expect(headerVisual.shareLabelVisible).toBe(false);
@@ -129,9 +165,10 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
     .toBeGreaterThan(beforeFocus + 24);
   await expect(composer.locator('.effort-picker')).toBeVisible();
-  /* The landing composer has no separate mic control; the start button
-     doubles as the voice affordance. */
-  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(0);
+  /* The landing composer mirrors the reference controls row: a dedicated
+     dictation mic sits beside the voice/send primary. */
+  await expect(composer.locator('.mobile-mic-btn')).toHaveCount(1);
+  await expect(composer.locator('.mobile-mic-btn')).toBeVisible();
   await expect(composer.locator('.start-btn')).toBeVisible();
   await expect(composer.locator('.start-btn')).toHaveAttribute('aria-label', 'Send');
 

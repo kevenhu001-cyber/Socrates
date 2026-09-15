@@ -25,10 +25,8 @@ export function mountLegacyShellListeners(actions) {
   click('startBtn', () => {
     /* Empty-topic voice input: the old document-wide data-action dispatcher
        routed a non-active start button to toggleSpeechInput('topic'); keep
-       that behavior now that the button is bound directly. The old mobile
-       early-return existed to defer to the dedicated mic button, which was
-       removed as a duplicate of this control — the white button is now the
-       single voice entry point on every viewport. */
+       that behavior now that the button is bound directly. The dedicated
+       mic button next to it is the same entry point — both route here. */
     const button = byId('startBtn');
     if (button && !button.classList.contains('active')
         && typeof window.toggleSpeechInput === 'function') {
@@ -50,6 +48,9 @@ export function mountLegacyShellListeners(actions) {
       return;
     }
     actions.sendMessage();
+  });
+  click('topicMobileMicBtn', () => {
+    if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('topic');
   });
   click('chatMobileMicBtn', () => {
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('chat');

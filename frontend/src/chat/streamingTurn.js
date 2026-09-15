@@ -31,6 +31,7 @@ import { appendLocalMemory } from '../storage/localMemory.js';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
+import { withElementSwapTransition } from '../ui/viewTransitions.ts';
 
 function _t(key, fallback) {
   try {
@@ -373,8 +374,16 @@ export function addStreamingMessage(opts){
   /* React commits the growth in its own rAF, which runs before doRender's
      scroll pass — so "was the reader at the bottom?" has to be answered when
      the delta arrives, not after the DOM already grew. */
+  var _growthMeasuredAt=-1e9;
   function noteStreamGrowth(){
     if(!reactLive)return;
+    /* A token burst can deliver dozens of chunks inside one frame, and each
+       read below forces a synchronous layout. The DOM cannot have changed
+       between chunks in the same frame, so only the first call pays for the
+       measurement. */
+    var _now=(typeof performance!=="undefined"&&performance.now)?performance.now():Date.now();
+    if(_now-_growthMeasuredAt<16)return;
+    _growthMeasuredAt=_now;
     var sc=list||scrollContainer();
     if(!sc)return;
     _pinWanted=isPinnedToBottom(
@@ -596,6 +605,22 @@ export function addStreamingMessage(opts){
          rawText + toolCalls all along, so the final render is only the
          `html` string that history reload and session save read — nothing
          touches the detached shell. */
+      /* P_finish-crossfade — the patch + stream-finished publish below
+         rebuild the bubble's DOM in one commit (final html replaces the
+         live-tail paint, streaming chrome retires, scaffold previews become
+         widget slots, think blocks collapse). Wrapped in a scoped view
+         transition, the row morphs through a short native cross-fade instead
+         of snapping. The update callback also runs finishAfterRender(), whose
+         anchor capture reads the still-old DOM — inside the transition the
+         new frame is captured two frames later, so the reads stay correct. */
+      var _swapRow=null;
+      if(reactLive&&list){
+        try{
+          var _escCid=(typeof CSS!=="undefined"&&CSS.escape)?CSS.escape(clientId):String(clientId).replace(/["\\]/g,"\\$&");
+          _swapRow=list.querySelector('.msg[data-client-id="'+_escCid+'"]');
+        }catch(_){}
+      }
+      withElementSwapTransition(_swapRow,function(){
       try{
         /* Final render: buildAssistantHtml parses <quiz>/<example>/<practice>
            scaffold blocks (replaces them with slot divs), runs formatMsg,
@@ -671,6 +696,7 @@ export function addStreamingMessage(opts){
         });
       }
       finishAfterRender();
+      });
 
       function finishAfterRender(){
         /* Post-render wiring (mermaid, viz, code headers, images) runs in

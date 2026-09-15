@@ -32,6 +32,7 @@
 
 import type { ImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
 import { useBridge } from '../lib/bridge/useBridge.ts';
+import { getStreamRenderInterval } from '../render/streaming.js';
 import { stateStore } from '../state/store.js';
 import type {
   ChatRuntimeEvent,
@@ -85,6 +86,15 @@ let pendingDelta: Extract<ChatRuntimeEvent, { type: 'stream-delta' }> | null = n
    new turn streams), so the coalesced set is keyed by message id. */
 let pendingToolRuns: Set<string> | null = null;
 let pendingDeltaFrame = 0;
+/* P_stream-paint-cadence — deltas used to commit once per rAF (up to 60
+   repaints/sec), which made the adaptive getStreamRenderInterval() cadence
+   dead code: it paced the state mirror but not the paint path. Each commit
+   re-parses the markdown tail and rewrites innerHTML, so at 60fps the main
+   thread never got a frame back on long answers. Now delta commits are also
+   gated by the same interval: the first paint is immediate, and subsequent
+   ones are paced at ~20/12/8fps by answer length. */
+let pendingDeltaTimer: ReturnType<typeof setTimeout> | null = null;
+let lastDeltaCommitAt = 0;
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
@@ -212,14 +222,35 @@ function requestFrame(cb: () => void): number {
   return setTimeout(cb, 0) as unknown as number;
 }
 
+function nowMs(): number {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+function deltaDue(): boolean {
+  if (!pendingDelta) return true;
+  if (!lastDeltaCommitAt) return true;
+  return nowMs() - lastDeltaCommitAt >= getStreamRenderInterval(pendingDelta.textLength);
+}
+
+function clearDeltaTimer(): void {
+  if (pendingDeltaTimer !== null) {
+    clearTimeout(pendingDeltaTimer);
+    pendingDeltaTimer = null;
+  }
+}
+
 function flushPendingDelta(): void {
   if (!pendingDelta) return;
   const event = pendingDelta;
   pendingDelta = null;
+  clearDeltaTimer();
   if (pendingDeltaFrame) {
     cancelFrame(pendingDeltaFrame);
     pendingDeltaFrame = 0;
   }
+  lastDeltaCommitAt = nowMs();
   commit(event);
 }
 
@@ -227,9 +258,37 @@ function scheduleFrame(): void {
   if (pendingDeltaFrame) return;
   pendingDeltaFrame = requestFrame(() => {
     pendingDeltaFrame = 0;
-    flushPendingDelta();
+    /* A tool-run commit must not smuggle an early delta paint past the
+       cadence gate — the delta stays pending until its own deadline. */
+    if (deltaDue()) {
+      flushPendingDelta();
+    } else if (pendingDelta) {
+      /* The pending delta grew past a cadence boundary since its timer was
+         armed (a longer textLength raises the interval). Re-arm so a mid-
+         stream stall cannot leave the last paint hanging until the next
+         event happens to arrive. */
+      scheduleDeltaFlush(pendingDelta);
+    }
     flushPendingToolRuns();
   });
+}
+
+/* Defer the next delta commit until its cadence deadline, then hand it to
+   the normal rAF seam so the paint still lands on a frame boundary. */
+function scheduleDeltaFlush(event: Extract<ChatRuntimeEvent, { type: 'stream-delta' }>): void {
+  if (deltaDue()) {
+    scheduleFrame();
+    return;
+  }
+  if (pendingDeltaTimer !== null) return;
+  const wait = Math.max(
+    1,
+    lastDeltaCommitAt + getStreamRenderInterval(event.textLength) - nowMs(),
+  );
+  pendingDeltaTimer = setTimeout(() => {
+    pendingDeltaTimer = null;
+    scheduleFrame();
+  }, wait);
 }
 
 /**
@@ -253,7 +312,7 @@ function flushPendingToolRuns(): void {
 function publish(event: ChatRuntimeEvent): void {
   if (event.type === 'stream-delta') {
     pendingDelta = event;
-    scheduleFrame();
+    scheduleDeltaFlush(event);
     return;
   }
   if (event.type === 'tool-run-updated') {
@@ -307,6 +366,8 @@ const chatRuntimeBridge: ImmutableBridge<ChatRuntimeSnapshot, ChatRuntimeEvent> 
     });
     pendingDelta = null;
     pendingToolRuns = null;
+    clearDeltaTimer();
+    lastDeltaCommitAt = 0;
     if (pendingDeltaFrame) {
       window.cancelAnimationFrame(pendingDeltaFrame);
       pendingDeltaFrame = 0;

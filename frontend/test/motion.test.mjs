@@ -11,6 +11,8 @@ import {
   planMotionForUser,
   prefersReducedMotion,
   easeOutQuint,
+  easeInOutQuad,
+  easeInOutCubic,
 } from '../src/ui/motion.js';
 
 test('planMotion returns a snap for sub-perceptual distances', () => {
@@ -125,6 +127,49 @@ test('easeOutQuint is monotonic and bounded in [0,1]', () => {
     assert.ok(e <= 1);
     previous = e;
   }
+});
+
+test('easeInOutQuad is bounded, monotonic, and starts gentle', () => {
+  assert.equal(easeInOutQuad(0), 0);
+  assert.equal(easeInOutQuad(1), 1);
+  assert.equal(easeInOutQuad(0.5), 0.5);
+  const samples = [0.1, 0.25, 0.5, 0.75, 0.9];
+  let previous = easeInOutQuad(0);
+  for (const t of samples) {
+    const e = easeInOutQuad(t);
+    assert.ok(e > previous, `easeInOutQuad must be monotonic; got ${e} after ${previous} at t=${t}`);
+    assert.ok(e <= 1);
+    previous = e;
+  }
+  /* The keyboard lift must not pop: in the first 10% of the duration a
+     hot ease-out (quint ≈ 0.41) covers ~20x more distance than this
+     gentle in-out start. */
+  assert.ok(easeInOutQuad(0.1) < 0.05);
+  assert.ok(easeInOutQuad(0.1) < easeOutQuint(0.1));
+});
+
+/* The keyboard lift's primary easing (easeInOutCubic). Even gentler at
+   the start than easeInOutQuad — the first 10% of the duration covers
+   < 0.1% of the distance, so on a 260px keyboard the first motion frame
+   (~16ms in, t≈0.09) writes ≈0.7px of inset, well inside the 14px
+   resting-margin absorption floor. This is what makes the lift land
+   without a perceptible first-frame jump. */
+test('easeInOutCubic is bounded, monotonic, and starts almost flat', () => {
+  assert.equal(easeInOutCubic(0), 0);
+  assert.equal(easeInOutCubic(1), 1);
+  assert.equal(easeInOutCubic(0.5), 0.5);
+  const samples = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95];
+  let previous = easeInOutCubic(0);
+  for (const t of samples) {
+    const e = easeInOutCubic(t);
+    assert.ok(e > previous, `easeInOutCubic must be monotonic; got ${e} after ${previous} at t=${t}`);
+    assert.ok(e <= 1);
+    previous = e;
+  }
+  /* First 10% of the duration covers < 0.1% of the distance — used to
+     suppress the previous 16px engagement write that read as a jump. */
+  assert.ok(easeInOutCubic(0.1) < 0.005);
+  assert.ok(easeInOutCubic(0.1) < easeInOutQuad(0.1));
 });
 
 test('planMotion round-trips: duration is reproducible for the same distance', () => {

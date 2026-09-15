@@ -1,7 +1,7 @@
 import { smoothScrollToBottom } from './scroll.js';
 import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from './scrollDecision.ts';
 import { getLastScrollIntentAt } from './scrollPill.js';
-import { planMotionForUser, easeOutQuint } from './motion.js';
+import { planMotionForUser, easeInOutCubic } from './motion.js';
 
 /*
  * Keep chat controls above mobile virtual keyboards.
@@ -38,13 +38,18 @@ import { planMotionForUser, easeOutQuint } from './motion.js';
  * keyboard — chat-surface.css owns its shape, and this module only
  * publishes how much of the app the keyboard covers.
  * Browsers differ in how they report the keyboard's travel: some emit
- * many progressive samples (the composer can follow them 1:1), others
- * a single discrete jump once the keyboard is up. A short glide toward
- * the latest measurement — velocity-planned and eased like every other
- * chat motion (ui/motion.js), owned here, nowhere else in CSS or JS —
- * turns both shapes into one smooth, continuous lift and prevents the
- * composer from snapping ahead of the keyboard or flashing between
- * intermediate positions.
+ * many progressive samples (the composer follows frame-sized steps 1:1),
+ * others a single discrete jump once the keyboard is up, and some mutate
+ * the geometry without dispatching per-frame events at all. So the
+ * measured inset is only ever a *target*: a rAF loop samples the viewport
+ * while a transition window is open, frame-sized steps are written
+ * straight through (true tracking), and any larger step is covered by a
+ * retargetable glide — velocity-planned so a ~300px keyboard lands inside
+ * the platform's own ~220-240ms IME animation window, eased out-cubic so
+ * the first frame already detaches the composer (~3% of distance, no
+ * separate engagement write that would read as a teleport). A new
+ * measurement restarts the glide from the painted value, never from
+ * zero and never as a direct write of a far target.
  *
  * The same controller anchors the transcript across the lift: a reader
  * following the bottom stays on the newest content, while a reader
@@ -61,46 +66,41 @@ import { planMotionForUser, easeOutQuint } from './motion.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
-/* P_css-keyboard-motion — Detect whether the running browser can animate
-   the `--keyboard-inset` custom property natively. When it can
-   (Chrome 85+, Safari 16.4+, Firefox 128+), `styles.css` declares
-   `@property --keyboard-inset` and the JS module only writes the per-sample
-   target. The browser then interpolates `--keyboard-inset` natively and
-   the chat-view's padding-bottom rides the same CSS transition. The JS
-   path keeps owning scroll-anchor restoration and the "stuck keyboard"
-   guard, but no longer drives per-frame motion itself.
+/* A measured step of this size or smaller is real per-frame geometry: a
+ * keyboard travelling ~1500px/s moves ~25px per 60fps frame (~50px on a
+ * 30fps WebView). Anything larger means the browser skipped intermediate
+ * reports — a jump, not a stream — so it must be eased toward instead of
+ * written directly, or the composer teleports to the target. The check
+ * compares successive *measured* targets, never the painted value: a
+ * painted inset that is still gliding up must not reclassify the stream's
+ * next frame-sized step as a jump. */
+export const KEYBOARD_TRACK_STEP_PX = 72;
 
-   Browsers without @property still honour `transition: padding-bottom`,
-   so they get a CSS-only smoothing layer between JS-driven frame writes;
-   they stay on the velocity-planned JS path. The probe registers a
-   throwaway property so the catch can identify "already registered"
-   (declaration via CSS still counts as supported). */
-export function detectKeyboardInsetAnimationSupport() {
-  if (typeof CSS === 'undefined' || typeof CSS.registerProperty !== 'function') return false;
-  try {
-    CSS.registerProperty({
-      name: '--socrates-kb-probe',
-      syntax: '<length>',
-      inherits: false,
-      initialValue: '0px',
-    });
-    return true;
-  } catch (err) {
-    /* The browser supports @property but the property is already declared
-       (either here or via CSS). That is still a positive signal — the
-       interpolation path will be active. */
-    const message = String((err && err.message) || err);
-    return /already|exists|defined|registered/i.test(message);
-  }
+export function isFrameSizedKeyboardStep(previousTarget, nextTarget) {
+  if (!Number.isFinite(previousTarget) || !Number.isFinite(nextTarget)) return false;
+  return Math.abs(nextTarget - previousTarget) <= KEYBOARD_TRACK_STEP_PX;
 }
 
-/* When the measured inset arrives as a discrete jump (most Android
- * overlay keyboards report the final size in one event), the lift's
- * duration is velocity-planned by planMotionForUser so a small nudge
- * snaps quickly while a full-height keyboard lands inside the platform's
- * own animation window. easeOutQuint is the JS mirror of the project's
- * shared cubic-bezier(.22,1,.36,1) — the same curve the composer's CSS
- * focus transition runs, so the two overlapping motions read as one. */
+/* Velocity plan for the eased lift that covers a measurement jump:
+ * ~1350px/s lands a phone keyboard (~300px) inside the platform's own
+ * ~220-240ms IME animation window. Paired with easeInOutCubic
+ * (ui/motion.js) so the first motion frame covers ≈0.14% of the
+ * distance (≈0.4px on a 260px keyboard), well inside the 14px resting
+ * margin floor, so no engagement write is needed and no first-frame
+ * jump is visible. */
+export const KEYBOARD_LIFT_MOTION = {
+  velocity: 1350,
+  minDuration: 180,
+  maxDuration: 240,
+};
+
+/* Transition-window geometry poll: some platforms mutate visualViewport
+ * geometry every frame without dispatching per-frame resize/scroll
+ * events. A rAF sampler opens for ~900ms around each focus edge and is
+ * extended while the measured inset keeps moving, so those platforms get
+ * tracked frame by frame instead of by one late discrete jump. */
+export const KEYBOARD_POLL_EDGE_MS = 900;
+export const KEYBOARD_POLL_IDLE_MS = 240;
 
 /* Viewport implementations that expose the IME animation emit resize/scroll
  * samples roughly once per frame. Once a second sample arrives in the same
@@ -185,7 +185,7 @@ export function isTrackedInputFocused(trackedInputs, activeElement) {
 }
 
 export function initKeyboardViewport({ inputs, input, container, root = document.documentElement } = {}) {
-  if (!root) return () => {};
+  if (!root) return () => undefined;
   /* Clear the legacy frozen-height value when hot reload or a soft navigation
      reuses the document. It is no longer part of keyboard avoidance. */
   try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
@@ -220,35 +220,30 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let motionFrom = 0;
   let motionStart = 0;
   let motionDuration = 0;
+  let motionEase = easeInOutCubic;
   let progressiveInsetMotion = false;
   let lastTargetAt = 0;
   let transitionDirection = 0;
+  let geometryPollFrame = 0;
+  let geometryPollUntil = 0;
   /* Reader position captured for the duration of a keyboard transition.
      The captured intent (bottom-follow vs history) is authoritative for
      the whole motion; per-frame geometry is not re-interpreted, so the
      first shrunk frame cannot strand a pinned reader or drag a history
      reader to the bottom. */
   let transcriptAnchor = null;
-  /* P_css-keyboard-motion — When the running engine can animate
-     `--keyboard-inset` natively (Chrome 85+, Safari 16.4+, Firefox 128+),
-     JS only writes the per-sample target. The CSS transition on
-     `.chat-view`'s padding-bottom owns the visible motion; the JS path
-     owns scroll anchoring via a transition-driven rAF loop (started on
-     `transitionrun`, stopped on `transitionend`). When the engine cannot
-     animate the custom property, fall back to the per-frame
-     velocity-planned JS interpolation (`stepMotion`). */
-  const cssKeyboardMotion = detectKeyboardInsetAnimationSupport();
-  /* chat-view is the padding-bottom consumer. Cached here so the CSS-path
-     transition listener does not query for it on every event. */
-  const chatViewEl = (typeof document !== 'undefined')
-    ? document.getElementById('chatView') || document.querySelector('.chat-view')
-    : null;
-  /* True while a CSS transition is actively driving the chat-view lift.
-     The scroll-anchor rAF loop runs only between transitionrun and
-     transitionend, so a stationary keyboard does not pay the rAF cost. */
-  let keyboardTransitionActive = false;
-  /* rAF handle for the scroll-anchor loop used in the CSS-driven path. */
-  let anchorRestoreFrame = 0;
+  /* Freeze the 100dvh shell for the keyboard session. Some browsers resize
+     the layout viewport before dispatching their first geometry event; if we
+     let that native resize through, the composer reaches its final position
+     before the JS animation has a chance to run. The original inline height
+     is restored only after the inset is back at zero and the viewport has
+     settled. */
+  let keyboardShellFrozen = false;
+  let keyboardShellBaselineInnerHeight = 0;
+  let keyboardShellBaselineVisualHeight = 0;
+  let keyboardShellRestoreStyle = null;
+  let keyboardShellReleaseTimer = 0;
+  let keyboardSessionStartedAt = 0;
 
   const prefersReducedMotion = () => {
     try {
@@ -267,7 +262,22 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (viewport && (!Number.isFinite(viewportHeight) || viewportHeight < MIN_STABLE_VISUAL_VIEWPORT_HEIGHT)) {
       return appliedInset > 0 ? appliedInset : 0;
     }
-    return measureKeyboardInset(appShellBottom(), viewport, window.innerHeight);
+    const appBottom = appShellBottom();
+    const measured = measureKeyboardInset(appBottom, viewport, window.innerHeight);
+    /* A few WebViews keep visualViewport.height at its pre-keyboard value
+       while shrinking innerHeight. Once the shell is frozen, that inner
+       height delta is a valid second signal. Only use it when the visual
+       viewport itself has not moved; otherwise offsetTop/pan would be
+       counted twice. */
+    if (keyboardShellFrozen) {
+      const visualChanged = Number.isFinite(viewportHeight)
+        && keyboardShellBaselineVisualHeight > 0
+        && Math.abs(viewportHeight - keyboardShellBaselineVisualHeight) > 1;
+      if (!visualChanged) {
+        return Math.max(measured, getKeyboardInset(appBottom, Number(window.innerHeight), 0));
+      }
+    }
+    return measured;
   };
 
   /* ── Transcript scroll anchoring ────────────────────────────────────
@@ -297,6 +307,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const viewportOffsetTop = () => {
     const value = viewport ? Number(viewport.offsetTop) : 0;
     return Number.isFinite(value) ? value : 0;
+  };
+
+  /* While the shell is frozen at its pre-keyboard height, the browser pans
+     the visual viewport down to the focused composer — scrolling in-flow
+     chrome pinned to the layout top (the top bar) off the visible edge.
+     Publish the pan distance (plus page scroll, for builds where the
+     document can still move) so CSS can translate that chrome back onto
+     the visible top edge without a layout change. */
+  const writeVisualTop = () => {
+    const top = viewportOffsetTop() + (Number(window.scrollY) || 0);
+    root.style.setProperty('--keyboard-visual-top', `${Math.max(0, Math.round(top))}px`);
   };
 
   const captureTranscriptAnchor = () => {
@@ -407,6 +428,20 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (roundedInset === appliedInset) return;
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
     appliedInset = roundedInset;
+    /* A pan can grow inside a single eased frame without a fresh event —
+       keep the top-chrome offset current on the same frame cadence. */
+    writeVisualTop();
+    /* P_keyboard-open-painted — this flag changes more than visibility:
+       mobile composer rules use it to reveal the second control row and to
+       consume the resting safe-area gap. Deriving it from the measured
+       target made those layout changes land before the first eased frame,
+       so the composer could move down briefly while the JS lift was still
+       starting. The flag must describe the value already painted, not the
+       destination the rAF loop is travelling toward. */
+    const openFlag = roundedInset > 50 ? 'true' : 'false';
+    try {
+      if (root.dataset.keyboardOpen !== openFlag) root.dataset.keyboardOpen = openFlag;
+    } catch (_) { /* detached root */ }
     const anchorList = transcriptAnchor && transcriptAnchor.list;
     /* See onViewportGeometry: while a send anchor owns the transcript the
        restore can only decide 'none', and forcing layout here races the
@@ -425,38 +460,32 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (t >= 1) {
       writeInsetFrame(targetInset);
       progressiveInsetMotion = false;
+      maybeReleaseKeyboardShell();
       return;
     }
     const value = progressiveInsetMotion
       ? targetInset
-      : motionFrom + (targetInset - motionFrom) * easeOutQuint(t);
+      : motionFrom + (targetInset - motionFrom) * motionEase(t);
     writeInsetFrame(value);
     motionFrame = requestAnimationFrame(stepMotion);
   };
 
-  /* P_css-keyboard-motion — CSS-driven path. Writes the per-sample target
-     exactly once per geometry change; the `.chat-view` CSS transition
-     (registered by styles.css via @property) interpolates the value
-     natively. The scroll-anchor lifecycle is bound to the transition's
-     lifecycle via a transitionrun/transitionend-bound rAF loop. */
-  const applyTargetInset = (roundedTarget) => {
-    /* No per-frame interpolation. The transition event listeners (below)
-       own the anchor loop; this function only writes the target value. */
-    if (roundedTarget === appliedInset) return;
-    root.style.setProperty('--keyboard-inset', `${roundedTarget}px`);
-    appliedInset = roundedTarget;
-  };
-
-  /* Legacy per-frame JS interpolation path. Kept as the fallback for
-     engines without @property (and for reduced-motion users, where
-     planMotionForUser collapses the duration to 0 so the JS path is a
-     direct snap anyway). The CSS transition on padding-bottom is still
-     active as a smoothing layer between JS-driven frame writes. */
-  const applyInterpInset = (roundedTarget) => {
+  /* The visible keyboard lift is owned by this rAF loop. CSS only consumes
+     the already-interpolated value; it must not run a second transition on
+     top of these writes or the composer will lag behind the keyboard. */
+  const applyInset = (inset) => {
+    const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+    /* `data-keyboard-open` is updated by writeInsetFrame from the painted
+       value. Do not flip it here from the target: its CSS consumers include
+       the composer geometry and safe-area padding, and changing those at
+       target-arrival would undo the continuous first frames below. */
+    /* A repeated application of the current target must not restart the
+       tween: resetting motionFrom/motionStart on every event would pin
+       the composer near its start value for as long as same-geometry
+       events keep arriving, then let it pop once they stop. */
     if (
       roundedTarget === targetInset
-      && motionFrame === 0
-      && appliedInset === roundedTarget
+      && (motionFrame !== 0 || appliedInset === roundedTarget)
     ) return;
 
     const now = (typeof performance !== 'undefined' && performance.now)
@@ -465,6 +494,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const currentInset = appliedInset < 0 ? 0 : appliedInset;
     const nextDirection = Math.sign(roundedTarget - currentInset);
     const targetChanged = roundedTarget !== targetInset;
+    /* Per-sample delta of the measured stream, used to tell real
+       per-frame geometry from a jump over skipped reports. Computed
+       before targetInset is overwritten below. */
+    const measuredStep = Math.abs(roundedTarget - targetInset);
     const sameDirection = nextDirection !== 0 && nextDirection === transitionDirection;
     const directionChanged = nextDirection !== 0
       && transitionDirection !== 0
@@ -478,6 +511,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         nextDirection,
       )
     );
+    /* The geometry is still moving — keep the sampling window open so
+       platforms that mutate the viewport without per-frame events keep
+       feeding this tracker. */
+    if (targetChanged) extendGeometryPoll(KEYBOARD_POLL_IDLE_MS);
 
     /* A keyboard can reverse direction while its previous lift is still
      * running (for example, a cancelled focus or a quick swipe). Reverse
@@ -489,7 +526,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       progressiveInsetMotion = false;
       motionFrom = currentInset;
       motionStart = now;
-      motionDuration = planMotionForUser(Math.abs(roundedTarget - currentInset)).duration;
+      motionEase = easeInOutCubic;
+      motionDuration = planMotionForUser(
+        Math.abs(roundedTarget - currentInset),
+        KEYBOARD_LIFT_MOTION,
+      ).duration;
       targetInset = roundedTarget;
       lastTargetAt = now;
       transitionDirection = nextDirection;
@@ -505,99 +546,86 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     lastTargetAt = now;
 
     /* Once the browser is giving us the keyboard's real intermediate
-     * geometry, that geometry is the animation timeline. Writing each sample
-     * directly keeps the composer attached to the rising keyboard instead of
-     * easing toward an increasingly stale point. The first sample of a new
-     * direction is still continuous: it begins from the currently applied
-     * inset and uses the discrete-jump fallback until a second sample proves
-     * that a progressive stream exists. */
-    if (progressive && !prefersReducedMotion()) {
+     * geometry, that geometry is the animation timeline — but only while
+     * each measured step is frame-sized. A larger step means the browser
+     * skipped intermediate reports and handed over a far target; writing
+     * it directly would teleport the composer, so it falls through to the
+     * eased retarget below. */
+    if (
+      progressive
+      && !prefersReducedMotion()
+      && isFrameSizedKeyboardStep(roundedTarget - measuredStep, roundedTarget)
+    ) {
       progressiveInsetMotion = true;
       writeInsetFrame(roundedTarget);
       return;
     }
     if (nextDirection) transitionDirection = nextDirection;
 
-    /* Progressive viewports (iOS) deliver many small steps; a short glide
-     * begins the motion, then subsequent samples become the timeline above.
-     * Discrete viewports (most Android builds) get the whole lift from the
-     * interpolation — velocity-planned so a 40px nudge and a 400px keyboard
-     * share one perceived speed. Reduced-motion plans snap to the target. */
-    const liftPlan = planMotionForUser(Math.abs(roundedTarget - currentInset));
+    /* Everything that is not a faithful per-frame stream — discrete
+     * Android jumps, skipped intermediate samples, the close path — is
+     * covered by this retargetable glide: motionFrom is always the
+     * painted value, so a fresher measurement bends the in-flight motion
+     * instead of restarting it or snapping. Reduced-motion plans snap to
+     * the target. */
+
+    /* No engagement write: easeInOutCubic's first frame covers
+       ≈0.14% of distance (≈0.4px on a 260px keyboard), which sits
+       inside the chat-input-bar + chat-view resting margins (8 + 6
+       = 14px) and lands as zero visible lift. The previous 16px
+       engagement read as a small jump on the very first frame; the
+       ease itself now keeps the first ~3 frames sub-perceptual.
+       Mid-flight retargets bend the in-flight ease (motionFrom is
+       always the painted value). */
+    const glideFrom = appliedInset < 0 ? 0 : appliedInset;
+    const liftPlan = planMotionForUser(
+      Math.abs(roundedTarget - glideFrom),
+      KEYBOARD_LIFT_MOTION,
+    );
     if (liftPlan.snap || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
       progressiveInsetMotion = false;
       writeInsetFrame(roundedTarget);
       return;
     }
-    motionFrom = currentInset;
+    motionFrom = glideFrom;
     motionStart = now;
     motionDuration = liftPlan.duration;
+    motionEase = easeInOutCubic;
     progressiveInsetMotion = false;
     if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
   };
 
-  /* Dispatcher. data-keyboard-open is a state flag (not motion logic) and
-     must flip exactly once per open/close regardless of which path the
-     browser takes — that is what scroll.js's keyboardStyleObserver reads
-     to decide whether an external --keyboard-inset write is the live
-     keyboard path or a stray bridge update. */
-  const applyInset = (inset) => {
-    const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
-    root.dataset.keyboardOpen = roundedTarget > 50 ? 'true' : 'false';
-    if (cssKeyboardMotion) {
-      applyTargetInset(roundedTarget);
-    } else {
-      applyInterpInset(roundedTarget);
+  /* Per-frame geometry sampler for platforms whose visualViewport values
+     change without per-frame events. The window opens around each focus
+     edge and stays open while the measured inset keeps changing (each
+     new target extends it), then the loop stops itself — no permanent
+     rAF during an idle keyboard session. */
+  const pollKeyboardGeometry = () => {
+    geometryPollFrame = 0;
+    const now = (typeof performance !== 'undefined' && performance.now)
+      ? performance.now()
+      : Date.now();
+    if (now >= geometryPollUntil) return;
+    applyInset(stableMeasuredInset(isInputFocused()));
+    if (
+      !geometryPollFrame
+      && typeof window.requestAnimationFrame === 'function'
+      && geometryPollUntil > ((typeof performance !== 'undefined' && performance.now)
+        ? performance.now()
+        : Date.now())
+    ) {
+      geometryPollFrame = window.requestAnimationFrame(pollKeyboardGeometry);
     }
   };
 
-  /* P_css-keyboard-motion — Scroll-anchor rAF loop for the CSS-driven
-     path. The CSS transition on `.chat-view`'s padding-bottom is what
-     drives the visible motion; the loop mirrors that motion for the
-     transcript so a history-mode reader keeps their exact visual position
-     while the keyboard rises. It is started on `transitionrun` and
-     stopped on `transitionend` (plus a final restore at the end), so a
-     stationary keyboard pays no rAF cost. */
-  const turnAnchorHeld = () => {
-    const list = transcriptAnchor && transcriptAnchor.list;
-    return Boolean(list && list.dataset && list.dataset.turnAnchorHold === 'true');
-  };
-  const stepAnchorRestore = () => {
-    anchorRestoreFrame = 0;
-    if (!keyboardTransitionActive) return;
-    if (transcriptAnchor && !turnAnchorHeld()) {
-      restoreTranscriptAnchor();
-    }
-    if (typeof window.requestAnimationFrame !== 'function') return;
-    anchorRestoreFrame = window.requestAnimationFrame(stepAnchorRestore);
-  };
-  const startAnchorRestoreLoop = () => {
-    if (anchorRestoreFrame || typeof window.requestAnimationFrame !== 'function') return;
-    anchorRestoreFrame = window.requestAnimationFrame(stepAnchorRestore);
-  };
-  const stopAnchorRestoreLoop = () => {
-    if (anchorRestoreFrame) {
-      cancelAnimationFrame(anchorRestoreFrame);
-      anchorRestoreFrame = 0;
-    }
-  };
-  const onChatViewTransitionRun = (event) => {
-    if (!cssKeyboardMotion || !chatViewEl || event.target !== chatViewEl) return;
-    if (event.propertyName && event.propertyName !== 'padding-bottom') return;
-    keyboardTransitionActive = true;
-    startAnchorRestoreLoop();
-  };
-  const onChatViewTransitionEnd = (event) => {
-    if (!cssKeyboardMotion || !chatViewEl || event.target !== chatViewEl) return;
-    if (event.propertyName && event.propertyName !== 'padding-bottom') return;
-    keyboardTransitionActive = false;
-    stopAnchorRestoreLoop();
-    /* Final restore: capture any pan the browser did during the
-       transition, so the reader's content lands at the exact intended
-       position even if a frame was dropped. */
-    if (transcriptAnchor && !turnAnchorHeld()) {
-      restoreTranscriptAnchor();
+  const extendGeometryPoll = (windowMs) => {
+    const now = (typeof performance !== 'undefined' && performance.now)
+      ? performance.now()
+      : Date.now();
+    geometryPollUntil = Math.max(geometryPollUntil, now + windowMs);
+    if (!geometryPollFrame && typeof window.requestAnimationFrame === 'function') {
+      geometryPollFrame = window.requestAnimationFrame(pollKeyboardGeometry);
     }
   };
 
@@ -618,6 +646,107 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
+
+  const keyboardShellElement = () => container
+    || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
+    || root;
+
+  const beginKeyboardSession = () => {
+    if (keyboardShellReleaseTimer) {
+      clearTimeout(keyboardShellReleaseTimer);
+      keyboardShellReleaseTimer = 0;
+    }
+    /* This attribute disables the small CSS fallback transition on
+       .chat-view. The real keyboard session is always driven by the JS
+       frames below; the fallback remains available for external, non-focus
+       style writes used by older bridges. */
+    try { root.dataset.keyboardMotion = 'manual'; } catch (_) { /* detached root */ }
+    if (keyboardShellFrozen) return;
+
+    const shell = keyboardShellElement();
+    if (!shell || typeof shell.getBoundingClientRect !== 'function') return;
+    let height = 0;
+    try { height = Number(shell.getBoundingClientRect().height); } catch (_) { /* keep zero */ }
+    if (!Number.isFinite(height) || height <= 0) return;
+
+    const style = shell.style;
+    keyboardShellRestoreStyle = {
+      value: style.getPropertyValue('height'),
+      priority: style.getPropertyPriority('height'),
+    };
+    keyboardShellBaselineInnerHeight = Number(window.innerHeight) || height;
+    keyboardShellBaselineVisualHeight = Number(viewport?.height)
+      || keyboardShellBaselineInnerHeight;
+    keyboardSessionStartedAt = Date.now();
+    keyboardShellFrozen = true;
+    /* Lock the pre-keyboard geometry before the browser's next layout pass.
+       This is the compensation baseline; --keyboard-inset then moves the
+       in-flow composer toward the visual viewport one frame at a time. */
+    style.setProperty('height', `${height}px`, keyboardShellRestoreStyle.priority);
+  };
+
+  const keyboardViewportSettled = () => {
+    if (!keyboardShellFrozen) return true;
+    const currentVisualHeight = Number(viewport?.height);
+    const currentInnerHeight = Number(window.innerHeight);
+    const visualSettled = !Number.isFinite(currentVisualHeight)
+      || keyboardShellBaselineVisualHeight <= 0
+      || currentVisualHeight >= keyboardShellBaselineVisualHeight - 1;
+    const innerSettled = !Number.isFinite(currentInnerHeight)
+      || keyboardShellBaselineInnerHeight <= 0
+      || currentInnerHeight >= keyboardShellBaselineInnerHeight - 1;
+    return visualSettled && innerSettled;
+  };
+
+  const restoreKeyboardShell = () => {
+    if (!keyboardShellFrozen) return;
+    const shell = keyboardShellElement();
+    try {
+      if (shell?.style && keyboardShellRestoreStyle) {
+        if (keyboardShellRestoreStyle.value) {
+          shell.style.setProperty(
+            'height',
+            keyboardShellRestoreStyle.value,
+            keyboardShellRestoreStyle.priority,
+          );
+        } else {
+          shell.style.removeProperty('height');
+        }
+      }
+    } catch (_) { /* detached shell */ }
+    keyboardShellFrozen = false;
+    keyboardShellBaselineInnerHeight = 0;
+    keyboardShellBaselineVisualHeight = 0;
+    keyboardShellRestoreStyle = null;
+    keyboardSessionStartedAt = 0;
+    try { delete root.dataset.keyboardMotion; } catch (_) { /* detached root */ }
+  };
+
+  const maybeReleaseKeyboardShell = () => {
+    if (!keyboardShellFrozen) return;
+    if (isInputFocused() || targetInset > 0 || motionFrame || appliedInset > 0) return;
+    const graceElapsed = keyboardSessionStartedAt > 0
+      && Date.now() - keyboardSessionStartedAt > 900;
+    if (!keyboardViewportSettled() && !graceElapsed) {
+      if (!keyboardShellReleaseTimer) {
+        keyboardShellReleaseTimer = setTimeout(() => {
+          keyboardShellReleaseTimer = 0;
+          maybeReleaseKeyboardShell();
+        }, 50);
+      }
+      return;
+    }
+    restoreKeyboardShell();
+  };
+
+  const scheduleKeyboardShellRelease = () => {
+    if (!keyboardShellFrozen) return;
+    if (keyboardShellReleaseTimer) clearTimeout(keyboardShellReleaseTimer);
+    keyboardShellReleaseTimer = setTimeout(() => {
+      keyboardShellReleaseTimer = 0;
+      maybeReleaseKeyboardShell();
+    }, 160);
+  };
 
   /* P_topic-disclaimer-hide — set data-topic-composer-focused on <html>
      when the topic-setup composer (not the in-chat one) holds focus, so
@@ -693,7 +822,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (topicEnsureFrame || typeof window.requestAnimationFrame !== 'function') return;
     topicEnsureFrame = window.requestAnimationFrame(() => {
       topicEnsureFrame = 0;
-      if (isInputFocused()) ensureTopicComposerVisible();
+      /* P_topic-kb-avoid — when the keyboard is open, #topicSetup consumes
+         the animated --keyboard-inset as padding-bottom, so the composer
+         rises smoothly frame-by-frame. ensureTopicComposerVisible does an
+         instant scrollTop assignment that would fight that animation
+         (jumping the content on every frame until the padding catches up).
+         Skip it whenever a keyboard target is active; the padding is the
+         sole avoidance mechanism in that state. The function remains the
+         fallback for focus-without-keyboard (desktop, tap-to-focus on a
+         partially off-screen input) where targetInset is 0. */
+      if (isInputFocused() && targetInset <= 0) ensureTopicComposerVisible();
     });
   };
 
@@ -706,6 +844,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
     const focused = isInputFocused();
+    if (focused) beginKeyboardSession();
     /* Anchoring follows the whole keyboard session: focus happens before
        the first geometry change, so capturing covers layout-resize
        keyboards (Android/Capacitor, --keyboard-inset stays 0) as well as
@@ -714,6 +853,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        reader's pre-write intent, not a post-write snapshot. */
     if (focused) beginTranscriptAnchor();
     applyInset(stableMeasuredInset(focused));
+    writeVisualTop();
     applyTopicComposerFocused(focused);
     if (focused) scheduleTopicEnsure();
     /* Every visualViewport resize/pan re-applies the captured reader
@@ -724,6 +864,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       scheduleTranscriptRestore();
       scheduleAnchorRefresh();
     }
+    if (!focused) maybeReleaseKeyboardShell();
   };
 
   const schedule = () => {
@@ -735,6 +876,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   const onFocusIn = () => {
+    beginKeyboardSession();
+    /* Open the geometry sampling window for the whole open animation:
+       even platforms that never dispatch per-frame events still get
+       tracked frame by frame while the keyboard travels. */
+    extendGeometryPoll(KEYBOARD_POLL_EDGE_MS);
     schedule();
     /* Mirror the focus state to data-topic-composer-focused synchronously
        so the disclaimer disappears on the same frame the topic input
@@ -746,6 +892,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const onBlur = () => {
     schedule();
+    scheduleKeyboardShellRelease();
+    /* Same window for the close animation: the keyboard can sink without
+       a single visualViewport event on some Android WebView builds. */
+    extendGeometryPoll(KEYBOARD_POLL_EDGE_MS);
     /* Late re-check: some platforms fire blur BEFORE the close-resize
        (so the measured inset is still large) and then resize fires
        ~50-200ms later. Others fire resize before blur. Either way,
@@ -795,17 +945,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   if (virtualKeyboard && typeof virtualKeyboard.addEventListener === 'function') {
     virtualKeyboard.addEventListener('geometrychange', schedule);
   }
-  /* P_css-keyboard-motion — Bind scroll-anchor lifecycle to the chat-view
-     CSS transition. Only wired when the CSS-driven path is active; the
-     JS path does its anchor work inline via writeInsetFrame so it does
-     not need this listener. transitioncancel is also handled so an
-     interrupted lift (focus blur, viewport removal) tears down the
-     loop cleanly instead of leaving it running against a stale anchor. */
-  if (cssKeyboardMotion && chatViewEl) {
-    chatViewEl.addEventListener('transitionrun', onChatViewTransitionRun);
-    chatViewEl.addEventListener('transitionend', onChatViewTransitionEnd);
-    chatViewEl.addEventListener('transitioncancel', onChatViewTransitionEnd);
-  }
   /* focusout on document catches focus moving to ANY element (not just
      input.blur). This is the path that fires when the user dismisses
      the keyboard by tapping a message or the page background, where
@@ -824,15 +963,20 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   return () => {
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (motionFrame) window.cancelAnimationFrame(motionFrame);
-    if (anchorRestoreFrame) window.cancelAnimationFrame(anchorRestoreFrame);
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
+    if (geometryPollFrame) window.cancelAnimationFrame(geometryPollFrame);
+    geometryPollUntil = 0;
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
-    keyboardTransitionActive = false;
+    if (keyboardShellReleaseTimer) clearTimeout(keyboardShellReleaseTimer);
+    keyboardShellReleaseTimer = 0;
+    restoreKeyboardShell();
     clearTranscriptAnchor();
     try {
       root.style.removeProperty('--keyboard-inset');
+      root.style.removeProperty('--keyboard-visual-top');
     } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
+    try { delete root.dataset.keyboardMotion; } catch (_) { /* detached root */ }
     try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
     if (viewport) {
       viewport.removeEventListener('resize', onViewportGeometry);
@@ -841,11 +985,6 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     window.removeEventListener('resize', onViewportGeometry);
     if (virtualKeyboard && typeof virtualKeyboard.removeEventListener === 'function') {
       virtualKeyboard.removeEventListener('geometrychange', schedule);
-    }
-    if (cssKeyboardMotion && chatViewEl) {
-      chatViewEl.removeEventListener('transitionrun', onChatViewTransitionRun);
-      chatViewEl.removeEventListener('transitionend', onChatViewTransitionEnd);
-      chatViewEl.removeEventListener('transitioncancel', onChatViewTransitionEnd);
     }
     document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('focusout', onBlur);

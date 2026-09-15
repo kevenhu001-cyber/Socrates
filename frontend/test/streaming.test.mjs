@@ -377,6 +377,11 @@ test('heading markers missing a space are repaired', () => {
     /* A hash followed by a digit is prose, not a heading. */
     assert.match(formatMsg('#1 candidate'), /#1 candidate/);
     assert.doesNotMatch(formatMsg('#1 candidate'), /<h1>/);
+    /* 3+ hashes followed by a digit IS a heading with a missing space —
+       `###1` as a prose reference is vanishingly rare, while `###1. 方法`
+       is a common weak-model heading. */
+    assert.match(formatMsg('###1. 特征方程法'), /<h3>1\. 特征方程法<\/h3>/);
+    assert.match(formatMsg('###1、特征方程法'), /<h3>1、特征方程法<\/h3>/);
   } finally {
     if (previousMarked === undefined) delete globalThis.marked;
     else globalThis.marked = previousMarked;

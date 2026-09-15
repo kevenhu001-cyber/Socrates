@@ -10,7 +10,7 @@ import { esc } from '../render/helpers.js';
 import { formatMsg, formatMsgProgressive } from '../render/markdown.js';
 import { getStreamRenderInterval, splitStreamingMarkdown } from '../render/streaming.js';
 import { scrollContainer } from '../ui/scroll.js';
-import { processPendingMermaid, processPendingViz, processPendingVizActions } from '../render/viz.js';
+import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from '../render/viz.js';
 
 /* Stream agent text into a single assistant bubble. Returns the
    controller { append(delta), finalize() }. Same rAF-coalesced
@@ -72,6 +72,10 @@ export function beginAgentTextStream(){
         if(settledText!==null){settled.innerHTML="";settledText=null}
         live.innerHTML=formatMsgProgressive(full);
       }
+      /* The tail innerHTML rewrite recreates viz cards every frame;
+         reclaim the already-rendered element so the iframe/diagram is not
+         torn down and reloaded each repaint. */
+      try{reclaimVizCards(body)}catch(_){}
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}
     }catch {
@@ -112,6 +116,7 @@ export function beginAgentTextStream(){
           try{hljs.highlightElement(c)}catch(_){}
         });
       }
+      try{reclaimVizCards(body)}catch(_){}
       try{processPendingMermaid()}catch(_){}
       try{processPendingViz()}catch(_){}
       try{processPendingVizActions()}catch(_){}

@@ -377,9 +377,17 @@ export async function loadSession(id){
            renderers apply to conversations saved before they existed. Turns
            whose calls predate recorded offsets simply render no rows; the
            classic cards still come back through
-           restorePersistedMessageExtras(message.restoredFromHistory). */
-        try { restoredHtml = buildAssistantHtml(m.rawText); }
-        catch (_) { restoredHtml = m.html || formatMsg(m.rawText); }
+           restorePersistedMessageExtras(message.restoredFromHistory).
+           P_history-slice — but do it in background slices (see below):
+           running N×buildAssistantHtml inside this task made session loads
+           a single long task followed by an all-at-once pop-in. The stored
+           snapshot paints instantly; the canonical rebuild patches each
+           message a few frames later. */
+        restoredHtml = m.html || "";
+        if(!restoredHtml){
+          try { restoredHtml = buildAssistantHtml(m.rawText); }
+          catch (_) { restoredHtml = formatMsg(m.rawText); }
+        }
       } else {
         restoredHtml = m.html || (m.rawText ? formatMsg(m.rawText) : "");
       }
@@ -604,6 +612,44 @@ export async function loadSession(id){
     var sc=scrollContainer();
     sc.scrollTop=sc.scrollHeight;
     publishReactChatRuntime({type:"state-synced",reason:"session-loaded"});
+    /* P_history-slice — the stored snapshots painted above; now re-render
+       each assistant message from its canonical rawText, two per frame, so
+       current scaffold / widget / visualization renderers upgrade the
+       history without one long task at load. Guards on session id + slot
+       identity so a mid-slice session switch abandons the queue. */
+    var _upgradeQueue=[];
+    restoredMessages.forEach(function(rm,idx){
+      if(rm.role==="assistant"&&rm.rawText){
+        _upgradeQueue.push({index:idx,clientId:rm.clientId,rawText:rm.rawText});
+      }
+    });
+    if(_upgradeQueue.length){
+      var _upgradeRaf=typeof requestAnimationFrame==="function"
+        ?requestAnimationFrame
+        :function(cb){return setTimeout(cb,0)};
+      var _uqi=0;
+      var _upgradeSlice=function(){
+        if(stateStore.read("currentSessionId")!==s.id)return;
+        var changed=false;
+        for(var _uqn=0;_uqn<2&&_uqi<_upgradeQueue.length;_uqn++,_uqi++){
+          var _uqt=_upgradeQueue[_uqi];
+          var _liveM=stateStore.read("messages")[_uqt.index];
+          if(!_liveM||_liveM.clientId!==_uqt.clientId)continue;
+          var _fresh;
+          try{_fresh=buildAssistantHtml(_uqt.rawText)}catch(_){continue}
+          if(_fresh&&_fresh!==_liveM.html){
+            stateStore.dispatch({
+              type:"session/update-message",index:_uqt.index,clientId:_uqt.clientId,
+              patch:{html:_fresh}
+            });
+            changed=true;
+          }
+        }
+        if(changed)publishReactChatRuntime({type:"state-synced",reason:"history-html-upgraded"});
+        if(_uqi<_upgradeQueue.length)_upgradeRaf(_upgradeSlice);
+      };
+      _upgradeRaf(_upgradeSlice);
+    }
   }catch(e){
     /* P_stale-loadSession — if a newer loadSession was requested
        while this one was in-flight, the error (if any) belongs to

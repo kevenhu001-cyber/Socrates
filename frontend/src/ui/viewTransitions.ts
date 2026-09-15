@@ -64,3 +64,67 @@ export function withViewTransition(update: () => void): void {
 export function hasViewTransitions(): boolean {
   return detect();
 }
+
+let swapSeq = 0;
+
+/**
+ * Cross-fade ONE element through a DOM rewrite (e.g. a streaming bubble's
+ * finish() swap, where the whole markdown body is re-rendered and spliced).
+ *
+ * The element gets a temporary `view-transition-name`; a `vt-scoped-swap`
+ * class on <html> (see styles.css) suppresses the root snapshot's own
+ * cross-fade, so only the named row morphs — size and position interpolate
+ * while its content fades — instead of the entire viewport flashing.
+ *
+ * `update` runs inside the transition's update phase; afterwards we wait two
+ * frames before letting the browser capture the new state, so a store-driven
+ * React commit has landed by capture time even when it did not flush
+ * synchronously inside `update`.
+ *
+ * Falls back to running `update` immediately when the API is missing, the
+ * element is gone, or the user prefers reduced motion.
+ */
+export function withElementSwapTransition(el: HTMLElement | null, update: () => void): void {
+  const start =
+    typeof document !== 'undefined' && typeof document.startViewTransition === 'function'
+      ? document.startViewTransition.bind(document)
+      : undefined;
+  let reduce = false;
+  try {
+    reduce =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch (_) { /* matchMedia unavailable — treat as no preference */ }
+  if (!start || !el || !el.isConnected || reduce) {
+    update();
+    return;
+  }
+  const rootEl = document.documentElement;
+  const name = 'msg-swap-' + (++swapSeq);
+  const cleanup = () => {
+    try { el.style.viewTransitionName = ''; } catch (_) { /* element may be detached */ }
+    rootEl.classList.remove('vt-scoped-swap');
+  };
+  try {
+    el.style.viewTransitionName = name;
+    rootEl.classList.add('vt-scoped-swap');
+    const vt = start(() => {
+      update();
+      return new Promise<void>((resolve) => {
+        const raf = typeof requestAnimationFrame === 'function'
+          ? requestAnimationFrame
+          : (cb: FrameRequestCallback) => setTimeout(cb, 0) as unknown as number;
+        raf(() => raf(() => resolve()));
+        /* rAF is throttled to ~never in hidden tabs — cap the wait so the
+           transition cannot stall on a paused frame pump. */
+        setTimeout(resolve, 120);
+      });
+    });
+    vt.updateCallbackDone.catch(() => { /* update threw — swap falls back to instant */ });
+    vt.finished.then(cleanup, cleanup);
+  } catch (_) {
+    cleanup();
+    update();
+  }
+}

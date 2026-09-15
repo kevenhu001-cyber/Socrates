@@ -162,9 +162,10 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
                   dangerouslySetInnerHTML={settled(split.prefix)}
                 />
               ) : null}
-              <div className="tool-run-prose is-live">
-                <span dangerouslySetInnerHTML={tail(split.tail)} />
-              </div>
+              <div
+                className="tool-run-prose is-live"
+                dangerouslySetInnerHTML={tail(split.tail)}
+              />
             </Fragment>
           );
         }

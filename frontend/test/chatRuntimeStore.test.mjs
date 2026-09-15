@@ -96,6 +96,28 @@ test('stream and tool-run publishes coalesce to one commit per frame', () => {
   assert.equal(bridge.getSnapshot().stream.textLength, 5, 'the last delta wins');
 });
 
+test('stream-delta commits are paced by the adaptive render interval', async () => {
+  const bridge = freshBridge();
+  stateStore.dispatch({ type: 'session/replace-messages', payload: [message('m-pace', '')] });
+  bridge.publish({ type: 'stream-started', messageId: 'm-pace' });
+  bridge.publish({ type: 'stream-delta', messageId: 'm-pace', textLength: 3 });
+  runFrames();
+  const first = bridge.getSnapshot().revision;
+
+  /* A delta inside the cadence window stays pending across frames — the
+     paint path now honors getStreamRenderInterval, not just the state
+     mirror. */
+  bridge.publish({ type: 'stream-delta', messageId: 'm-pace', textLength: 6 });
+  runFrames();
+  assert.equal(bridge.getSnapshot().revision, first, 'a too-early delta does not commit');
+
+  /* Once the 50ms first-screen interval elapses, the pacing timer hands the
+     delta to the normal rAF seam and the next frame commits it. */
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  runFrames();
+  assert.equal(bridge.getSnapshot().stream.textLength, 6, 'the paced delta commits at its deadline');
+});
+
 test('a terminal event flushes pending work before it commits', () => {
   const bridge = freshBridge();
   const messages = [message('m-3', 'partial')];
