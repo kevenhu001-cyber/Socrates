@@ -22,6 +22,11 @@
  */
 import type { AttachmentEntry } from './types';
 
+/* Structural subset the icon picker actually reads — widened so both
+   the composer AttachmentEntry and the persisted domain attachment
+   (optional id, ReadonlyArray rows) can drive it. */
+type IconSource = Pick<AttachmentEntry, 'kind' | 'docKind' | 'mime' | 'name'>;
+
 const DOC_OUTLINE =
   '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
   '<polyline points="14 2 14 8 20 8"/>';
@@ -72,6 +77,14 @@ const FILE_ICON =
   DOC_OUTLINE +
   '</svg>';
 
+/* Media — play triangle inside the document outline, for audio/video
+   attachments (kind 'file'). */
+const MEDIA_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  DOC_OUTLINE +
+  '<polygon points="10 11 15 14 10 17 10 11" fill="currentColor" stroke="none"/>' +
+  '</svg>';
+
 /* File-extension → category lookup. Lower-cased, dotted forms only.
  * Order doesn't matter: the first matcher in FILE_ICON_PICKER that
  * accepts the entry wins, so this list is grouped by specificity. */
@@ -100,18 +113,32 @@ function getExtension(name: string | undefined): string {
  *   3. The filename extension (CODE / TEXT categories).
  *   4. Fallback to FILE_ICON.
  */
-function pickIcon(entry: AttachmentEntry): string {
+function pickIcon(entry: IconSource): string {
   const docKind = String(entry.docKind || '').toLowerCase();
-  if (docKind === 'docx') return WORD_ICON;
-  if (docKind === 'xlsx') return EXCEL_ICON;
-  if (docKind === 'pptx') return POWERPOINT_ICON;
+  if (docKind === 'docx' || docKind === 'doc') return WORD_ICON;
+  if (docKind === 'xlsx' || docKind === 'xls') return EXCEL_ICON;
+  if (docKind === 'pptx' || docKind === 'ppt') return POWERPOINT_ICON;
   if (docKind === 'pdf') return PDF_ICON;
   if (docKind === 'epub' || docKind === 'rtf') return TEXT_ICON;
 
   const mime = String(entry.mime || '').toLowerCase();
   if (mime.startsWith('image/')) return IMAGE_ICON;
   if (mime === 'application/pdf') return PDF_ICON;
+  if (mime.startsWith('audio/') || mime.startsWith('video/')) return MEDIA_ICON;
   if (mime.startsWith('text/')) return TEXT_ICON;
+
+  /* Media files classified as kind 'file' by extension (the browser
+     didn't supply a mime). */
+  if (entry.kind === 'file') {
+    const mediaExt = getExtension(entry.name);
+    if (mediaExt && ['mp4', 'webm', 'mov', 'mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac'].includes(mediaExt)) {
+      return MEDIA_ICON;
+    }
+    const officeExt = getExtension(entry.name);
+    if (officeExt === 'doc') return WORD_ICON;
+    if (officeExt === 'xls') return EXCEL_ICON;
+    if (officeExt === 'ppt') return POWERPOINT_ICON;
+  }
 
   const ext = getExtension(entry.name);
   if (ext && CODE_EXTENSIONS.has(ext)) return CODE_ICON;
@@ -120,6 +147,6 @@ function pickIcon(entry: AttachmentEntry): string {
   return FILE_ICON;
 }
 
-export function getAttachmentIcon(entry: AttachmentEntry): string {
+export function getAttachmentIcon(entry: IconSource): string {
   return pickIcon(entry);
 }

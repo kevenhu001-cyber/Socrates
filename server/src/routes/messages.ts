@@ -32,13 +32,18 @@ const attachmentSchema = z.object({
      image | text | document (attachments.js#classify); 'pdf' survives only
      in legacy rows. The old enum rejected every 'document' attachment on
      the PATCH path even though the session-save path accepted it. */
-  kind: z.enum(['image', 'text', 'document', 'pdf']),
+  kind: z.enum(['image', 'text', 'document', 'pdf', 'file']),
   docKind: z.string().max(20).optional(),
   name: z.string().max(500),
   mime: z.string().max(200),
+  /* Durable files-table reference (POST /api/files). The model re-reads
+     the attachment through read_attachment; the UI resolves it against
+     /api/files/:id/raw. */
+  fileId: z.string().max(100).optional(),
   dataUrl: z.string().max(2_000_000).optional(),
   text: z.string().max(500_000).optional(),
   truncated: z.boolean().optional(),
+  error: z.string().max(300).optional(),
   size: z.number().int().nonnegative().max(50 * 1024 * 1024),
 });
 const attachmentsSchema = z.array(attachmentSchema).max(20);

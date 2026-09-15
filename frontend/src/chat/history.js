@@ -1,4 +1,5 @@
 import { loadLocalMemory } from '../storage/localMemory.js';
+import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.js';
 
 var HISTORY_MAX_TURNS=30;      /* user+assistant pairs to keep (increased for longer context) */
 var HISTORY_MAX_CHARS=2000;    /* per-message truncation ceiling (increased from 500) */
@@ -20,6 +21,63 @@ function compressMessages(msgs){
   return"[Earlier conversation: "+parts.join(" | ")+"]";
 }
 
+/* P_file-attachments — rebuild a content-parts array from a user
+   message's stored attachments so a resend / regenerate / history turn
+   carries the file to the model:
+     - images → native image_url parts, but ONLY when the active
+       provider is multimodal (text-only providers get the pointer and
+       read the file through read_attachment — no more upstream 400s).
+     - fileId references → [Attached file: …] pointer lines.
+     - legacy inline rows (text/dataUrl, no fileId) → the old
+       [Parsed …] text parts so nothing degrades silently.
+   Returns the parts array when the message has usable attachment
+   content, or null when it's text-only (callers then send the plain
+   string). */
+function partsForStoredAttachments(rawText,attachments,opts){
+  opts=opts||{};
+  var truncate=!!opts.truncate;
+  if(!Array.isArray(attachments)||!attachments.length)return null;
+  var multimodal=activeProviderSupportsImages();
+  var hasUsable=attachments.some(function(att){
+    return att&&(
+      /* Any inline image counts — multimodal providers get the
+         image_url part, text-only ones get the "cannot view" note. */
+      (att.kind==="image"&&att.dataUrl)
+      ||att.fileId
+      ||((att.kind==="text"||att.kind==="document"||att.kind==="pdf")&&att.text)
+    );
+  });
+  if(!hasUsable)return null;
+  var txt=String(rawText||"").trim();
+  var parts=[];
+  if(txt)parts.push({type:"text",text:truncate&&txt.length>HISTORY_MAX_CHARS?txt.slice(0,HISTORY_MAX_CHARS)+"…":txt});
+  for(var ai=0;ai<attachments.length;ai++){
+    var att=attachments[ai];
+    if(!att)continue;
+    if(att.kind==="image"&&att.dataUrl&&multimodal){
+      parts.push({type:"image_url",image_url:{url:att.dataUrl,detail:"auto"}});
+    }
+    if(att.fileId){
+      parts.push({type:"text",text:attachmentPointerLine(att)});
+      continue;
+    }
+    if((att.kind==="text"||att.kind==="document"||att.kind==="pdf")&&att.text){
+      var attTxt=truncate&&att.text.length>HISTORY_MAX_CHARS?att.text.slice(0,HISTORY_MAX_CHARS)+"…":att.text;
+      var label=att.docKind
+        ?"[Parsed "+String(att.docKind).toUpperCase()+": "+(att.name||"file")+"]"
+        :(att.kind==="pdf"?"[Parsed PDF: "+(att.name||"document")+"]":"[Parsed file: "+(att.name||"file")+"]");
+      parts.push({type:"text",text:label+"\n"+attTxt});
+      continue;
+    }
+    if(att.kind==="image"&&att.dataUrl&&!multimodal){
+      /* Persisted inline image on a text-only provider with no fileId:
+         the model cannot see it — say so instead of dropping silently. */
+      parts.push({type:"text",text:"[User attached an image \""+(att.name||"image")+"\" that this model cannot view inline.]"});
+    }
+  }
+  return parts.length?parts:null;
+}
+
 /* P0.1 BUG-P01-03 — rebuild a multimodal content parts array from a
    user message's stored attachments so an edit-and-resend (or a
    regenerate) carries the original image / PDF / text to the model
@@ -29,24 +87,7 @@ function compressMessages(msgs){
    then send the plain string). Unlike the history path this does NOT
    truncate — it is the CURRENT turn's content, not compressed context. */
 export function buildUserContentParts(rawText, attachments){
-  if(!Array.isArray(attachments)||!attachments.length)return null;
-  var hasMultimodal=attachments.some(function(att){return att&&((att.kind==="image"&&att.dataUrl)||((att.kind==="text"||att.kind==="pdf")&&att.text));});
-  if(!hasMultimodal)return null;
-  var txt=String(rawText||"").trim();
-  var parts=[];
-  if(txt)parts.push({type:"text",text:txt});
-  for(var ai=0;ai<attachments.length;ai++){
-    var att=attachments[ai];
-    if(!att)continue;
-    if(att.kind==="image"&&att.dataUrl){
-      parts.push({type:"image_url",image_url:{url:att.dataUrl,detail:"auto"}});
-    }else if(att.kind==="text"&&att.text){
-      parts.push({type:"text",text:"[Parsed file: "+(att.name||"file")+"]\n"+att.text});
-    }else if(att.kind==="pdf"&&att.text){
-      parts.push({type:"text",text:"[Parsed PDF: "+(att.name||"document")+"]\n"+att.text});
-    }
-  }
-  return parts.length?parts:null;
+  return partsForStoredAttachments(rawText,attachments,{truncate:false});
 }
 
 export function extractHistory(){
@@ -72,8 +113,14 @@ export function extractHistory(){
     }
     for(var i=Math.max(0,window.stateStore.read("messages").length-maxTurns);i<window.stateStore.read("messages").length;i++){
       var m=window.stateStore.read("messages")[i];
-      if(!m||!m.rawText)continue;
-      var txt=String(m.rawText).replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+      if(!m)continue;
+      /* P_file-attachments — a user turn can be attachment-only (empty
+         rawText, e.g. "just a screenshot"). Keep it: the parts builder
+         below emits the fileId pointer lines so the model still sees
+         the file on every subsequent turn. */
+      var _hasAtt=m.role==="user"&&Array.isArray(m.attachments)&&m.attachments.length>0;
+      if(!m.rawText&&!_hasAtt)continue;
+      var txt=String(m.rawText||"").replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
       /* P_regen-empty-stream — strip embedded <think>…</think> blocks
        * from assistant messages before sending them back to the model.
        * MiniMax M3 (and other reasoning models) sometimes emit a
@@ -93,30 +140,15 @@ export function extractHistory(){
       }
       if(!txt&&!(m.role==="user"&&Array.isArray(m.attachments)&&m.attachments.length))continue;
       /* P_attachments-extractHistory — for user messages with stored
-       * image/text/PDF attachments, reconstruct a proper multimodal
-       * content parts array so the LLM receives the actual image data
-       * (not just the rawText string) on every turn. Without this, the
-       * image is only sent on the first turn (via _pendingChatContent)
-       * and subsequent history turns degrade to text-only. */
+       * attachments, reconstruct a proper content parts array so the
+       * LLM receives the file reference (or the actual image data for
+       * multimodal providers) on every turn. Without this, the
+       * attachment is only sent on the first turn and subsequent
+       * history turns degrade to text-only. */
       var content;
       if(m.role==="user" && Array.isArray(m.attachments) && m.attachments.length){
-        var hasMultimodal=m.attachments.some(function(att){return att&&((att.kind==="image"&&att.dataUrl)||((att.kind==="text"||att.kind==="pdf")&&att.text));});
-        if(hasMultimodal){
-          var parts=[];
-          if(txt)parts.push({type:"text",text:txt.length>HISTORY_MAX_CHARS?txt.slice(0,HISTORY_MAX_CHARS)+"…":txt});
-          for(var ai=0;ai<m.attachments.length;ai++){
-            var att=m.attachments[ai];
-            if(!att)continue;
-            if(att.kind==="image"&&att.dataUrl){
-              parts.push({type:"image_url",image_url:{url:att.dataUrl,detail:"auto"}});
-            }else if(att.kind==="text"&&att.text){
-              var attTxt=att.text.length>HISTORY_MAX_CHARS?att.text.slice(0,HISTORY_MAX_CHARS)+"…":att.text;
-              parts.push({type:"text",text:"[Parsed file: "+att.name+"]\n"+attTxt});
-            }else if(att.kind==="pdf"&&att.text){
-              var pdfTxt=att.text.length>HISTORY_MAX_CHARS?att.text.slice(0,HISTORY_MAX_CHARS)+"…":att.text;
-              parts.push({type:"text",text:"[Parsed PDF: "+att.name+"]\n"+pdfTxt});
-            }
-          }
+        var parts=partsForStoredAttachments(txt,m.attachments,{truncate:true});
+        if(parts){
           content=parts;
         }else{
           if(txt.length>HISTORY_MAX_CHARS)txt=txt.slice(0,HISTORY_MAX_CHARS)+"…";

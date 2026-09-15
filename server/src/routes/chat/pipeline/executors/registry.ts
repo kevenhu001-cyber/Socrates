@@ -17,6 +17,7 @@ import { executeCodeInterpreter } from './codeInterpreter.js';
 import { executeRenderVisualization } from './renderVisualization.js';
 import { executeWebSearch } from './webSearch.js';
 import { executeWebFetch } from './webFetch.js';
+import { executeReadAttachment } from './readAttachment.js';
 import { executePlanSpec } from './planSpec.js';
 import {
   executePersonalConnector,
@@ -40,6 +41,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['render_visualization', executeRenderVisualization],
     ['web_search', executeWebSearch],
     ['web_fetch', executeWebFetch],
+    ['read_attachment', executeReadAttachment],
     ['create_plan', executePlanSpec],
     ['create_spec', executePlanSpec],
   ]);

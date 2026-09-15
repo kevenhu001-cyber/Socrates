@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, and, sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { files } from '../db/schema.js';
+import { files, sessions } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
@@ -12,6 +12,14 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { extractText as extractDocumentText } from '../services/fileParsers/index.js';
+import {
+  TEXT_FILE_EXTENSIONS,
+  DOCUMENT_FILE_EXTENSIONS,
+  LEGACY_OFFICE_EXTENSIONS,
+  MEDIA_FILE_EXTENSIONS,
+  TEXTUAL_APPLICATION_MIMES,
+} from '../services/attachmentReader.js';
+import { isUuid } from '../lib/validate.js';
 
 import os from 'node:os';
 
@@ -45,37 +53,62 @@ const storage = multer.diskStorage({
   },
 });
 
+/* Upload allow-list. Chat attachments ride on this endpoint, so it must
+   accept every format the model can read via read_attachment (text,
+   PDF, Office, EPUB/RTF, images) plus media files kept as attachments.
+   Extension sets are shared with services/attachmentReader.ts. */
+const ALLOWED_EXACT_MIMES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
+  'application/pdf',
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg',
+  'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/flac',
+  /* Office formats — see services/fileParsers/index.js for the
+     matching extractor set. The raw endpoint force-downloads
+     these so the browser never renders embedded script. */
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  /* Legacy Office — stored as attachments; no extractor, the model gets
+     metadata only until the file is converted. */
+  'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
+  'application/epub+zip',
+  'application/rtf', 'text/rtf',
+]);
+
 const upload = multer({
   storage,
   limits: { fileSize: MAX_SIZE },
   fileFilter: (_req: any, file: any, cb: any) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp',
-      'application/pdf', 'text/plain', 'text/csv', 'text/markdown',
-      'video/mp4', 'audio/mpeg', 'audio/wav', 'audio/webm',
-      'application/json',
-      /* Office formats — see services/fileParsers/index.js for the
-         matching extractor set. The raw endpoint force-downloads
-         these so the browser never renders embedded script. */
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/epub+zip',
-      'application/rtf', 'text/rtf'];
-    // text/html and application/xhtml+xml are explicitly blocked:
-    // a malicious upload labelled as HTML would render in the
-    // browser when /api/files/:id/raw is hit, opening an XSS
-    // surface. SVG is allowed (image rendering) but flagged for
-    // content-sniffing at the raw endpoint via nosniff header and
-    // force-download for non-image types.
-    if (file.mimetype === 'text/html' || file.mimetype === 'application/xhtml+xml') {
-      cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
+    const mime = String(file.mimetype || '').toLowerCase();
+    // text/html, application/xhtml+xml and image/svg+xml are explicitly
+    // blocked: a malicious upload labelled as HTML/SVG would render in
+    // the browser when /api/files/:id/raw is hit, opening an XSS
+    // surface. Other types are flagged for content-sniffing at the raw
+    // endpoint via nosniff + force-download for non-image types.
+    if (mime === 'text/html' || mime === 'application/xhtml+xml' || mime === 'image/svg+xml') {
+      cb(new BadRequest(`Unsupported file type: ${mime}`));
       return;
     }
-    if (allowed.includes(file.mimetype)) {
+    if (ALLOWED_EXACT_MIMES.has(mime) || TEXTUAL_APPLICATION_MIMES.has(mime) || mime.startsWith('text/')) {
       cb(null, true);
-    } else {
-      cb(new BadRequest(`Unsupported file type: ${file.mimetype}`));
+      return;
     }
+    /* Browsers label unrecognized types as application/octet-stream;
+       admit them when the extension is a known readable format (code
+       files, documents, media). */
+    if (mime === 'application/octet-stream' || mime === 'binary/octet-stream' || !mime) {
+      const ext = path.extname(String(file.originalname || '')).toLowerCase();
+      const known = TEXT_FILE_EXTENSIONS.has(ext)
+        || DOCUMENT_FILE_EXTENSIONS.has(ext)
+        || LEGACY_OFFICE_EXTENSIONS.has(ext)
+        || MEDIA_FILE_EXTENSIONS.has(ext);
+      if (known) {
+        cb(null, true);
+        return;
+      }
+    }
+    cb(new BadRequest(`Unsupported file type: ${mime || 'unknown'}`));
   },
 });
 
@@ -236,6 +269,23 @@ router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => 
     const file = (req as any).file;
     const sha256 = await hashFileStreaming(file.path);
 
+    /* Optional session link: an attachment uploaded from a chat composer
+       carries sessionId so the file's share/lifecycle follows that
+       conversation. The id must be a uuid AND point at one of the
+       caller's own sessions — otherwise an arbitrary value could attach
+       an upload to somebody else's session (or poison the link). */
+    let sessionId: string | null = null;
+    const rawSessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
+    if (rawSessionId) {
+      if (!isUuid(rawSessionId)) throw new BadRequest('sessionId must be a uuid');
+      const db = getDb();
+      const [owned] = await db.select({ id: sessions.id }).from(sessions)
+        .where(and(eq(sessions.id, rawSessionId), eq(sessions.userId, req.userId!)))
+        .limit(1);
+      if (!owned) throw new BadRequest('sessionId does not reference one of your sessions');
+      sessionId = rawSessionId;
+    }
+
     const db = getDb();
     let record;
     try {
@@ -255,10 +305,10 @@ router.post('/', writeLimiter, upload.single('file'), async (req, res, next) => 
           name: file.originalname,
           mimeType: file.mimetype,
           size: file.size,
-          kind: mimeKind(file.mimetype),
+          kind: mimeKind(file.mimetype, file.originalname),
           sha256,
           storagePath: file.path,
-          sessionId: req.body.sessionId || null,
+          sessionId,
         }).returning();
         return row;
       });
@@ -322,17 +372,27 @@ router.delete('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-function mimeKind(mime: string) {
-  if (mime.startsWith('image/')) return 'image';
-  if (mime.startsWith('video/')) return 'video';
-  if (mime.startsWith('audio/')) return 'audio';
-  if (mime === 'application/pdf') return 'pdf';
-  if (mime.startsWith('text/')) return 'text';
-  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
-  if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
-  if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
-  if (mime === 'application/epub+zip') return 'epub';
-  if (mime === 'application/rtf' || mime === 'text/rtf') return 'rtf';
+function mimeKind(mime: string, name?: string) {
+  const m = String(mime || '').toLowerCase();
+  if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('video/')) return 'video';
+  if (m.startsWith('audio/')) return 'audio';
+  if (m === 'application/pdf') return 'pdf';
+  if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
+  if (m === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
+  if (m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
+  if (m === 'application/msword') return 'doc';
+  if (m === 'application/vnd.ms-excel') return 'xls';
+  if (m === 'application/vnd.ms-powerpoint') return 'ppt';
+  if (m === 'application/epub+zip') return 'epub';
+  if (m === 'application/rtf' || m === 'text/rtf') return 'rtf';
+  if (m.startsWith('text/') || TEXTUAL_APPLICATION_MIMES.has(m)) return 'text';
+  /* octet-stream uploads are classified by extension so a .py or .csv
+     file still lands in the 'text' bucket the reader can serve. */
+  if ((m === 'application/octet-stream' || m === 'binary/octet-stream' || !m)
+      && TEXT_FILE_EXTENSIONS.has(path.extname(String(name || '')).toLowerCase())) {
+    return 'text';
+  }
   return 'other';
 }
 

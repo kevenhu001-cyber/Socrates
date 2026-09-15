@@ -222,6 +222,8 @@ export interface NativeToolContractOptions {
   disabledTools?: ReadonlyArray<{ name: string; reason: string }> | null;
   /** `name → one-line JSON example`, rendered under the tool list. */
   examples?: Readonly<Record<string, string>> | null;
+  /** Calls dropped by the per-iteration cap on the previous hop. */
+  droppedCalls?: number;
 }
 
 export function appendNativeToolContract<T extends { role: string; content?: unknown }>(
@@ -269,6 +271,13 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
     ].join('\n'));
   }
 
+  if (options.droppedCalls && options.droppedCalls > 0) {
+    sections.push(
+      `Your previous round emitted ${options.droppedCalls} tool call(s) over the per-round limit; ` +
+      'those calls were discarded and never ran. Re-issue only the calls that still matter, within the per-round limit.',
+    );
+  }
+
   return appendAppendix(messages, NATIVE_TOOL_CONTRACT_MARKER, sections.join('\n'));
 }
 
@@ -299,6 +308,9 @@ When \`create_plan\` is supplied, call it for a genuinely multi-step request: a 
 When \`create_spec\` is supplied, call it to pin down WHAT a deliverable must satisfy before any implementation: send \`title\`, an optional one-sentence \`summary\`, 1-40 functional \`requirements\`, and optional \`acceptanceCriteria\`, \`constraints\`, and \`outOfScope\`. Use \`create_plan\` instead when the user wants an ordered sequence of actions.
 Follow the native JSON schema exactly: no extra top-level fields and no \`input\`/\`arguments\` wrapper. Write every title, step, and requirement in the user's language. After the tool succeeds the card is rendered above your reply, so refer to it briefly in prose rather than pasting the whole plan or spec again. If validation returns field errors, correct those fields once and retry.`;
 
+const READ_ATTACHMENT_ROUTING_HINT = `## Reading file attachments
+When a user message contains \`[Attached file: "name" (mime, size) — fileId: <uuid>]\` pointers, those files are stored on the server. Call \`read_attachment\` with the pointer's fileId to read a file on demand: documents return extracted text page by page (page forward with \`offset\` until hasMore is false), image attachments return a visual description (optionally focused by \`question\`), and media/binary files return metadata. Always read an attachment before answering questions about its contents — never guess from the filename. If the message also contains native image content, prefer it; use \`read_attachment\` for a second look or for files with no inline preview.`;
+
 const WORKSPACE_AGENT_ROUTING_HINT = `## Workspace agent (Pi)
 Choose \`workspace_agent\` automatically whenever the user's intent requires touching the project workspace: creating, editing, or reviewing files; implementing, fixing, or refactoring code; inspecting a repository; running commands or tests; performing an experiment; using project workspace context; or doing work that should be resumed later. This includes a request that changes only one file. Call \`initialize_workspace\` first when the user wants an explicit or clean workspace. Do not wait for the user to enable Agent, start a worker, or provide a special mode. Include the concrete desired outcome and constraints in \`task\`, then let the workspace agent perform the work instead of returning an imagined patch or merely describing commands. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, sandbox, and resource limits. Never ask for or invent an absolute workspace path. While the agent works, the interface streams each step it takes (commands run, files edited, files read) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, preserve the explanation and add a short learning takeaway or follow-up exercise.`;
 
@@ -307,6 +319,7 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   const blocks: string[] = [];
   if (nameSet.has('render_visualization')) blocks.push(VISUALIZATION_ROUTING_HINT);
   if (nameSet.has('create_plan') || nameSet.has('create_spec')) blocks.push(PLANNING_ROUTING_HINT);
+  if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);
   if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);
   if (blocks.length === 0) return messages;
   const hint = `${TOOL_ROUTING_HINTS_MARKER}\n${blocks.join('\n\n')}`;
@@ -690,7 +703,7 @@ export function transformContentForModel(content: string | ContentPart[], multim
       // next to the bubble so the user knows what was attached.
       out.push({
         type: 'text',
-        text: '[User attached an image. Your current model cannot view images. Ask the user to describe what they want help with.]',
+        text: '[User attached an image that this model cannot view inline. If this message includes an [Attached file: …] pointer, call read_attachment with its fileId to get a description of the image; otherwise ask the user to describe what they want help with.]',
       });
     } else if (part && part.type === 'text' && typeof part.text === 'string') {
       out.push(part);

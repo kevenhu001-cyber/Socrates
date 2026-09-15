@@ -8,13 +8,17 @@
  * rows.
  */
 
-export type AttachmentKind = 'image' | 'text' | 'document' | 'unknown';
+export type AttachmentKind = 'image' | 'text' | 'document' | 'file' | 'pdf' | 'unknown';
 
 export interface AttachmentEntry {
   id: string;
   kind: AttachmentKind | string;
   name?: string;
   mime?: string;
+  /** Durable files-table id from POST /api/files — the chip resolves
+      thumbnails/links against /api/v2/files/:id/raw and the model reads
+      the file via read_attachment. */
+  fileId?: string;
   size?: number;
   pending?: boolean;
   progress?: number;

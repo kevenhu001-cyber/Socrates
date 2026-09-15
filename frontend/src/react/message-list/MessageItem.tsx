@@ -6,6 +6,7 @@ import type { LegacyChatMessage } from '../types/domain';
 import { MessageToolbar } from './MessageToolbar';
 import { CanvasBlock } from '../canvas';
 import { getLegacyActions } from '../legacy/gateway';
+import { getAttachmentIcon } from '../attachments/fileIcons';
 
 interface MessageItemProps {
   message: LegacyChatMessage;
@@ -35,6 +36,11 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
   if (live) return true;
   if (typeof message.html === 'string' && message.html.length > 0) return true;
   if (typeof message.rawText === 'string' && message.rawText.length > 0) return true;
+  /* P_file-attachments — a user message that carries ONLY attachments
+     (image/file with no caption) must still render: the chips are its
+     entire content. Without this the row vanished the moment it was
+     sent — the "uploaded image never shows in history" report. */
+  if (Array.isArray(message.attachments) && message.attachments.length > 0) return true;
   return false;
 }
 
@@ -85,6 +91,9 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
     ) as HTMLElement | null;
     if (!root) return;
     const pr = getLegacyActions().postRender;
+    /* Reclaim rendered viz/mermaid cards BEFORE the pending queues drain:
+       a placeholder adopted here must not also get a fresh handshake. */
+    try { pr.reclaimVizCards?.(root); } catch (_) { /* hook unavailable */ }
     try { pr.processPendingMermaid?.(); } catch (_) { /* hook unavailable */ }
     try { pr.processPendingViz?.(root); } catch (_) { }
     try { pr.processPendingVizActions?.(root); } catch (_) { }
@@ -130,21 +139,49 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
       {role === 'user' && attachments.length > 0 ? (
         <div className="msg-attachment-chips" aria-label="Attachments">
           {attachments.map((attachment, index) => {
-            const key = `${attachment.name ?? 'attachment'}-${index}`;
+            const key = `${attachment.id ?? attachment.name ?? 'attachment'}-${index}`;
             const isImage = attachment.kind === 'image'
               || attachment.dataUrl?.startsWith('data:image/');
-            return (
-              <span className="attachment-chip" key={key}>
-                {isImage && attachment.dataUrl ? (
+            /* P_file-attachments — the durable file is the canonical
+               source: /api/v2/files/:id/raw serves the original upload
+               for thumbnails and click-through, so history reloads and
+               non-multimodal turns still show the attachment. dataUrl
+               remains the fallback for legacy inline rows. */
+            const fileUrl = attachment.fileId
+              ? `/api/v2/files/${attachment.fileId}/raw`
+              : undefined;
+            const imgSrc = attachment.dataUrl || (isImage ? fileUrl : undefined);
+            const inner = (
+              <>
+                {imgSrc ? (
                   <img
                     className="attachment-chip-thumb"
-                    src={attachment.dataUrl}
+                    src={imgSrc}
                     alt=""
                   />
                 ) : (
-                  <span className="attachment-chip-icon" aria-hidden="true">↗</span>
+                  <span
+                    className="attachment-chip-icon"
+                    aria-hidden="true"
+                    dangerouslySetInnerHTML={{ __html: getAttachmentIcon(attachment) }}
+                  />
                 )}
                 <span className="attachment-chip-name">{attachment.name ?? 'file'}</span>
+              </>
+            );
+            return fileUrl ? (
+              <a
+                className="attachment-chip attachment-chip-link"
+                key={key}
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {inner}
+              </a>
+            ) : (
+              <span className="attachment-chip" key={key}>
+                {inner}
               </span>
             );
           })}
