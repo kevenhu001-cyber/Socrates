@@ -14,7 +14,8 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
   <link rel="stylesheet" href="editorial.css?cb=20260825">
-  <link rel="stylesheet" href="brand.css?cb=20260825g">
+  <link rel="stylesheet" href="brand.css?cb=20260914j">
+  <link rel="stylesheet" href="home-v2.css?cb=20260915a">
   <link rel="canonical" href="https://topodrive.top/">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/index.md" title="Markdown twin of the home page">
   <meta property="og:type" content="website">
@@ -106,13 +107,6 @@
           { "@type": "Offer", "name": "Descartes", "price": "19", "priceCurrency": "USD", "priceSpecification": { "@type": "UnitPriceSpecification", "billingIncrement": 1, "unitCode": "MON" } },
           { "@type": "Offer", "name": "Euclid", "price": "39", "priceCurrency": "USD", "priceSpecification": { "@type": "UnitPriceSpecification", "billingIncrement": 1, "unitCode": "MON" } }
         ],
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.7",
-          "reviewCount": "182",
-          "bestRating": "5",
-          "worstRating": "1"
-        },
         "author": { "@id": "https://topodrive.top/#organization" }
       },
       {
@@ -160,17 +154,17 @@
   }
   </script>
 <script src="locale.js?cb=20260910"></script></head>
-<body class="ed-site">
+<body class="ed-site sv-home">
   <a class="ed-skip" href="#main">Skip to content</a>
 
   <header class="ed-header">
     <div class="ed-shell">
       <nav class="ed-header-inner" data-ed-nav aria-label="Primary navigation">
         <a class="ed-brand" href="index" aria-label="Socrates home"><img src="/logo.png" width="24" height="24" alt=""><span class="ed-brand-word">Socrates</span></a>
-        <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="research">Research</a><a href="product">Product</a><a href="principles">Principles</a><a href="learn">Learn</a><a href="developers">Developers</a><a href="about">Company</a></div>
+        <div class="ed-nav-links" id="site-menu" data-menu-panel><a href="product">Product</a><a href="research">Research</a><a href="principles">Principles</a><a href="developers">Developers</a></div>
         <div class="ed-header-actions">
           <div class="ed-lang" data-lang-root><button class="ed-lang-toggle" type="button" data-lang-toggle aria-haspopup="true" aria-expanded="false" aria-label="Language"><svg class="ed-lang-globe" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18" stroke="currentColor" stroke-width="1.6"/></svg><span class="ed-lang-label">Language</span><svg class="ed-lang-caret" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ed-lang-menu" data-lang-menu role="menu" hidden><button class="ed-lang-item" type="button" data-lang="en" role="menuitem"><span>English</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="ed-lang-item" type="button" data-lang="zh" role="menuitem"><span>中文</span><svg class="ed-lang-check" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
-          <a class="ed-button" href="https://app.topodrive.top/">Open Socrates</a>
+          <a class="ed-button" href="https://app.topodrive.top/">Start learning</a>
         </div>
         <button class="ed-menu-toggle" type="button" data-menu-button aria-expanded="false" aria-controls="site-menu" aria-label="Menu"><span class="ed-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
       </nav>
@@ -178,120 +172,206 @@
   </header>
 
   <main id="main">
-    <section class="ed-home-hero">
-      <div class="ed-hero-nebula" aria-hidden="true"></div>
-      <div class="ed-shell">
-        <div class="ed-hero-grid ed-reveal">
-          <div class="ed-hero-lead">
-            <p class="ed-hero-flag"><span aria-hidden="true"></span>New · The Question Atlas</p>
-            <h1 class="ed-display" data-animate-text>Understanding begins with a question.</h1>
-          </div>
-          <p class="ed-serif ed-hero-sub">Follow a thought through dialogue, recall, and connection.</p>
-          <div class="ed-hero-actions">
-            <a class="ed-button" href="https://app.topodrive.top">Try Socrates</a>
-            <a class="ed-button ed-button-ghost" href="research">Read the research</a>
+    <section class="sv-hero" aria-labelledby="sv-hero-title">
+      <div class="sv-shell sv-hero-grid">
+        <div class="sv-hero-copy" data-sv-reveal>
+          <h1 id="sv-hero-title">Don’t just get the answer. <em>Learn how to reach it.</em></h1>
+          <p>An AI tutor for the moment you get stuck—built around dialogue, connected ideas, and recall you can return to.</p>
+          <div class="sv-actions">
+            <a class="sv-button sv-button-primary" href="https://app.topodrive.top">Try Socrates <span aria-hidden="true">↗</span></a>
+            <a class="sv-button sv-button-secondary" href="#how-it-works">See how it works</a>
           </div>
         </div>
-        <div class="ed-home-stage ed-reveal">
-          <nav class="ed-stage-index" aria-label="Explore Socrates">
-            <a href="research">Research</a>
-            <a href="product">Product</a>
-            <a href="principles">Principles</a>
-          </nav>
-          <img  alt="A dark editorial learning map that carries a question through evidence, recall, and connected ideas" src="/media/socrates-home-question-atlas-v2.webp" loading="lazy" decoding="async" width="1672" height="941">
-          <div class="ed-network-copy"><h2>Questions become a field of study.</h2><p>Trace a difficult subject through dialogue, recall, and the connections that make it useful again.</p></div>
-          <p class="ed-meta ed-stage-caption">Socrates research / 2026</p>
+
+        <div class="sv-product" data-sv-demo data-mode="dialogue" data-sv-reveal>
+          <div class="sv-product-tabs" role="tablist" aria-label="Explore the learning loop">
+            <button type="button" role="tab" aria-selected="true" aria-controls="sv-demo-dialogue" data-sv-tab="dialogue"><span>01</span>Dialogue</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="sv-demo-map" data-sv-tab="map" tabindex="-1"><span>02</span>Knowledge map</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="sv-demo-recall" data-sv-tab="recall" tabindex="-1"><span>03</span>Recall</button>
+          </div>
+
+          <div class="sv-demo-toolbar">
+            <span class="sv-demo-state"><i aria-hidden="true"></i><span data-sv-demo-status aria-live="polite">Interactive example</span></span>
+            <button class="sv-demo-play" type="button" data-sv-play aria-pressed="false"><span class="sv-play-icon" aria-hidden="true">▶</span><span data-sv-play-label>Play the learning loop</span></button>
+          </div>
+
+          <div class="sv-product-body">
+            <section class="sv-demo-panel is-active" id="sv-demo-dialogue" data-sv-panel="dialogue" role="tabpanel" aria-label="Dialogue demo">
+              <div class="sv-session">
+                <div class="sv-session-head"><p class="sv-ui-label">Calculus · an interactive example</p><span class="sv-session-live"><i aria-hidden="true"></i><em data-sv-live-label>Ready</em></span></div>
+                <div class="sv-prompt-picker"><span>Try a question</span><div role="group" aria-label="Example questions"><button type="button" data-sv-prompt-choice="derivative" aria-pressed="true">Derivative</button><button type="button" data-sv-prompt-choice="limit" aria-pressed="false">Limits</button><button type="button" data-sv-prompt-choice="memory" aria-pressed="false">Recall</button></div></div>
+                <div class="sv-thread" data-sv-thread aria-live="off">
+                  <div class="sv-message sv-message-user"><small>You</small><p>Why does a derivative describe change at one exact moment?</p></div>
+                  <div class="sv-message sv-message-tutor"><small>Socrates</small><p>Start with two moments. What does the slope between them measure?</p></div>
+                  <div class="sv-message sv-message-user"><small>You</small><p>An average rate of change.</p></div>
+                  <div class="sv-message sv-message-tutor"><small>Socrates</small><p>Good. Now move those moments closer together. What happens to the interval?</p></div>
+                </div>
+                <form class="sv-composer" data-sv-prompt-form><label class="sv-visually-hidden" for="sv-prompt-input">Ask Socrates a question</label><input id="sv-prompt-input" data-sv-prompt-input type="text" placeholder="Ask a question…" autocomplete="off"><button class="sv-composer-submit" type="submit" aria-label="Send question"><span aria-hidden="true">↗</span></button></form>
+                <p class="sv-composer-note" data-sv-composer-note>Try an example or write your own question.</p>
+              </div>
+              <div class="sv-concept-side">
+                <p class="sv-ui-label">Concept forming</p>
+                <div class="sv-mini-map" aria-label="Rate of change connects limits and derivatives">
+                  <span class="sv-node sv-node-main" data-mm="main">rate of change</span>
+                  <span class="sv-node sv-node-a" data-mm="a">limits</span>
+                  <span class="sv-node sv-node-b" data-mm="b">derivatives</span>
+                  <svg viewBox="0 0 300 230" aria-hidden="true"><path pathLength="1" d="M145 115 C205 115 188 55 250 55"/><path pathLength="1" d="M145 115 C205 115 188 178 250 178"/></svg>
+                </div>
+                <p class="sv-concept-note">A useful phrase becomes a connection you can revisit.</p>
+              </div>
+            </section>
+
+            <section class="sv-demo-panel" id="sv-demo-map" data-sv-panel="map" role="tabpanel" aria-label="Knowledge map demo" hidden>
+              <div class="sv-map-canvas">
+                <p class="sv-ui-label">Your knowledge map · Calculus</p>
+                <svg class="sv-map-lines" viewBox="0 0 800 390" aria-hidden="true"><path pathLength="1" d="M185 197 C270 197 265 120 350 120"/><path pathLength="1" d="M455 120 C540 120 530 200 620 200"/><path pathLength="1" d="M455 120 C525 120 530 58 620 58"/></svg>
+                <button class="sv-map-node n1" type="button" data-sv-map-node="limits" aria-pressed="false"><small>foundation</small>limits</button>
+                <button class="sv-map-node n2 is-current" type="button" data-sv-map-node="rate" aria-pressed="true"><small>forming</small>rate of change</button>
+                <button class="sv-map-node n3" type="button" data-sv-map-node="derivatives" aria-pressed="false"><small>next</small>derivatives</button>
+                <button class="sv-map-node n4" type="button" data-sv-map-node="continuity" aria-pressed="false"><small>related</small>continuity</button>
+                <div class="sv-source-note"><small data-sv-source-title>From this dialogue</small><p data-sv-source-text>As the interval approaches zero, average change approaches instantaneous change.</p></div>
+              </div>
+            </section>
+
+            <section class="sv-demo-panel" id="sv-demo-recall" data-sv-panel="recall" role="tabpanel" aria-label="Recall demo" hidden>
+              <div class="sv-recall-view">
+                <div class="sv-recall-meta"><span>Recall · due today</span><span>Calculus / derivatives</span></div>
+                <p class="sv-recall-question" data-sv-recall-question>If a derivative is an instantaneous rate of change, what role does a limit play?</p>
+                <button type="button" class="sv-reveal-answer" data-sv-answer>Reveal a hint</button>
+                <p class="sv-hint" data-sv-hint hidden>Think about what happens to the interval between two measured moments.</p>
+                <div class="sv-recall-footer"><span>Built from your earlier dialogue</span><span>2 of 4</span></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <a class="sv-scroll-cue" href="#how-it-works">Follow the learning path <span aria-hidden="true">↓</span></a>
+      </div>
+    </section>
+
+    <section class="sv-path" id="how-it-works" aria-labelledby="sv-path-title">
+      <div class="sv-shell sv-path-grid">
+        <div class="sv-path-copy" data-sv-reveal>
+          <h2 id="sv-path-title">One question becomes a path you can keep.</h2>
+          <p>Socrates follows what you understand, what you miss, and what deserves another look.</p>
+          <div class="sv-path-steps" role="tablist" aria-label="Learning path">
+            <button type="button" role="tab" aria-selected="true" aria-controls="sv-stage-dialogue" data-sv-step="dialogue"><span>01</span><strong>Dialogue</strong><small>You reason through the idea.</small></button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="sv-stage-connect" data-sv-step="connect" tabindex="-1"><span>02</span><strong>Connect</strong><small>The useful relationships remain.</small></button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="sv-stage-recall" data-sv-step="recall" tabindex="-1"><span>03</span><strong>Recall</strong><small>The right question returns later.</small></button>
+          </div>
+        </div>
+
+        <div class="sv-path-stage" data-sv-workflow data-state="dialogue" data-sv-reveal>
+          <div class="sv-stage-bar"><span>Socrates / Calculus</span><span data-sv-stage-label>Dialogue</span></div>
+          <div class="sv-stage-panel is-active" id="sv-stage-dialogue" data-sv-stage="dialogue" role="tabpanel">
+            <div class="sv-stage-transcript"><small>YOU</small><p>What does a limit really mean?</p><small>SOCRATES</small><p>Imagine approaching a doorway. Must you touch it to describe where the path leads?</p><mark>approaching a value</mark></div>
+            <p class="sv-stage-caption">The tutor asks for your reasoning before it supplies an explanation.</p>
+          </div>
+          <div class="sv-stage-panel" id="sv-stage-connect" data-sv-stage="connect" role="tabpanel" hidden>
+            <div class="sv-stage-network" aria-label="A map connecting limits, rate of change, and derivatives">
+              <span class="sv-large-node a">limits</span><span class="sv-large-node b">rate of change</span><span class="sv-large-node c">derivatives</span>
+              <svg viewBox="0 0 760 300" aria-hidden="true"><path pathLength="1" d="M185 150 C270 150 260 88 355 88"/><path pathLength="1" d="M480 88 C560 88 555 160 645 160"/></svg>
+              <div class="sv-stage-source"><small>SOURCE</small><p>“The derivative at a point is the limit of the difference quotient.”</p></div>
+            </div>
+            <p class="sv-stage-caption">Ideas from the conversation become a map with sources and context.</p>
+          </div>
+          <div class="sv-stage-panel" id="sv-stage-recall" data-sv-stage="recall" role="tabpanel" hidden>
+            <div class="sv-stage-recall"><span class="sv-review-ring" aria-hidden="true"></span><small>SCHEDULED RECALL</small><h3>Review in 3 days</h3><p>Explain how limits turn average change into instantaneous change.</p><div><span>limits</span><span>rate of change</span><span>derivatives</span></div></div>
+            <p class="sv-stage-caption">A short prompt brings the connection back before it fades.</p>
+          </div>
+        </div>
+      </div>
+      <p class="sv-path-outcome" data-sv-reveal>The conversation ends. <em>The learning path stays.</em></p>
+    </section>
+
+    <section class="sv-surfaces" aria-labelledby="sv-surfaces-title">
+      <div class="sv-shell">
+        <div class="sv-section-heading" data-sv-reveal>
+          <h2 id="sv-surfaces-title">The real surfaces, live.</h2>
+          <p>Working slices of the actual interface — answers stream, exams grade, misses land in your mistake book.</p>
+        </div>
+        <div class="sv-bento">
+          <div class="sv-panel sv-panel-stream" data-sv-stream data-sv-reveal>
+            <div class="sv-panel-bar"><span>Session · Calculus</span><span class="sv-panel-state" data-sv-stream-state>Ready</span></div>
+            <div class="sv-stream-body" data-sv-stream-body>
+              <div class="sv-sm sv-sm-user"><small>You</small><p>Give me the short version — what is a derivative, geometrically?</p></div>
+              <div class="sv-sm-tool"><span class="sv-tool-ic" aria-hidden="true">▸</span><span class="sv-tool-name">knowledge map · reading earlier nodes</span><span class="sv-tool-time">0.9s</span><span class="sv-tool-done">✓</span></div>
+              <div class="sv-sm sv-sm-tutor"><small>Socrates</small>
+                <p>The derivative at a point is the limit of the secant slope:</p>
+                <p class="sv-math">f′(x) = lim<sub>h→0</sub> [ f(x+h) − f(x) ] / h</p>
+                <p>In your own words — what does h do to that secant line?</p>
+              </div>
+              <div class="sv-vizcard">
+                <div class="sv-viz-head"><span>Visualization</span><span>secant → tangent · y = x²</span></div>
+                <svg class="sv-viz-svg" viewBox="0 0 560 230" aria-hidden="true"><line class="ax" x1="24" y1="200" x2="544" y2="200"/><line class="ax" x1="224" y1="14" x2="224" y2="216"/><path class="curve" pathLength="1" d="M40 148 Q280 282 540 44"/><path class="secant" d="M288 189 L424 133"/><circle class="secp" cx="288" cy="189" r="3.4"/><circle class="secp" cx="424" cy="133" r="3.4"/><line class="tangent" x1="212" y1="221" x2="504" y2="104"/><circle class="tanp" cx="352" cy="165" r="5"/></svg>
+                <div class="sv-viz-foot">Interactive in the app — pans, zooms, exports</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sv-panel" data-sv-exam data-sv-reveal>
+            <div class="sv-panel-bar"><span>Exam · Calculus</span><span data-sv-exam-pos>Question 3 of 6</span></div>
+            <div class="sv-exam-body">
+              <p class="sv-exam-q">For f(x) = x², what is the slope of the tangent line at x = 1?</p>
+              <div class="sv-exam-opts" role="group" aria-label="Answer options">
+                <button type="button" data-sv-opt>0</button>
+                <button type="button" data-sv-opt>1</button>
+                <button type="button" data-sv-opt data-correct>2</button>
+                <button type="button" data-sv-opt>x</button>
+              </div>
+              <p class="sv-exam-result" data-sv-exam-result hidden></p>
+            </div>
+            <div class="sv-exam-foot"><span data-sv-exam-tally>2 of 6 answered</span><button class="sv-exam-submit" type="button" data-sv-exam-submit disabled>Submit</button></div>
+          </div>
+
+          <div class="sv-panel" data-sv-mistakes data-sv-reveal>
+            <div class="sv-panel-bar"><span>Mistake book · Calculus</span><span class="sv-count" data-sv-mistake-count>1</span></div>
+            <ul class="sv-mistake-list" data-sv-mistake-list>
+              <li class="sv-mistake">
+                <button type="button" data-sv-mistake-toggle><strong>Why does the secant slope approach the tangent?</strong><span>rate of change · from a quiz · 2d ago</span></button>
+                <p class="sv-mistake-note" hidden>Your answer skipped the limit step — the tangent is what the secant approaches, not a separate line.</p>
+              </li>
+            </ul>
+            <p class="sv-mistake-empty-hint">Misses from quizzes and exams land here — tap an entry for the correction.</p>
+          </div>
+        </div>
+
+        <div class="sv-log" data-sv-reveal aria-hidden="true">
+          <span class="sv-log-tag">session log</span>
+          <div class="sv-log-lines" data-sv-log-lines>
+            <p><time>t+00:14</time>node “limits” → status: forming</p>
+            <p><time>t+02:31</time>recall +1 · due in 3 days</p>
+            <p><time>t+05:47</time>session saved · calculus</p>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line" aria-labelledby="in-conversation-title">
-      <div class="ed-shell">
-        <div class="ed-reveal" style="max-width:760px;margin:0 auto 28px;text-align:center">
-          <p class="ed-kicker">In conversation</p>
-          <h2 class="ed-title" id="in-conversation-title">A tutor that follows your thinking.</h2>
-          <p class="ed-copy" style="margin-top:14px">A short slice of a real session — the kind of exchange that ends in a sharper question, not a faster answer.</p>
-        </div>
-
-        <div class="ed-chat-demo ed-reveal-paragraphs">
-          <div class="ed-chat-head"><span class="ed-chat-head-dot"></span><span>Session · mathematics · 6 turns</span></div>
-          <div class="ed-chat-thread">
-            <div class="ed-chat-bubble user">Why does a retry mask help a failed request get through?</div>
-            <div class="ed-chat-bubble tutor">Good question. What changes about the request after it fails once — is it the same payload, or a different shape?</div>
-            <div class="ed-chat-bubble user">Same payload. We just resend the bytes.</div>
-            <div class="ed-chat-bubble tutor">So if the bytes are the same, what does the mask actually change? Try to name the variable that moves.</div>
-            <div class="ed-chat-bubble user">Oh — the timing. The mask is just a way to retry with a different wall clock, not a different request.</div>
-            <div class="ed-chat-bubble tutor">Right. Now: where in your service does that clock actually live, and could a slower client ever beat a faster one because of it?</div>
-          </div>
+    <section class="sv-principles" aria-labelledby="sv-principles-title">
+      <div class="sv-shell">
+        <div class="sv-section-heading" data-sv-reveal><h2 id="sv-principles-title">Designed around how understanding lasts.</h2><p>Three principles shape every exchange.</p></div>
+        <div class="sv-principle-rail" data-sv-reveal>
+          <article><span>01</span><h3>Active recall</h3><p>You work through ideas in your own words, instead of merely rereading them.</p></article>
+          <article><span>02</span><h3>Connected context</h3><p>New ideas stay linked to what you already know and where they came from.</p></article>
+          <article><span>03</span><h3>Honest uncertainty</h3><p>A pause is treated as useful evidence—not something the tutor should hide.</p></article>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line">
-      <div class="ed-shell">
-        <div class="ed-stats-strip ed-reveal-paragraphs">
-          <div>
-            <p>Active learners · six-week intervention</p>
-            <b><span class="ed-stat" data-stat-value="184" data-stat-duration="1300">184</span></b>
-          </div>
-          <div>
-            <p>Recall prompts · April – July 2026</p>
-            <b><span class="ed-stat" data-stat-value="1247" data-stat-duration="1500">1,247</span></b>
-          </div>
-          <div>
-            <p>Average treatment effect · re-framed prompts</p>
-            <b><span class="ed-stat" data-stat-prefix="+" data-stat-value="17" data-stat-suffix=" pp" data-stat-duration="1100">+17 pp</span></b>
-          </div>
+    <section class="sv-research" aria-labelledby="sv-research-title">
+      <div class="sv-shell">
+        <div class="sv-section-heading sv-research-heading" data-sv-reveal><h2 id="sv-research-title">Research, not rhetoric.</h2><a href="research">View all research <span aria-hidden="true">↗</span></a></div>
+        <div class="sv-research-list" data-sv-reveal>
+          <a href="research/memory-recall/"><span>Memory · 7 min</span><strong>The route back to an idea.</strong><p>Why retrieval—not repetition—makes an idea available when it matters.</p><i aria-hidden="true">↗</i></a>
+          <a href="research/explanation-evidence/"><span>Explanation · 6 min</span><strong>When a clear explanation becomes evidence.</strong><p>What your own explanation reveals about the shape of your understanding.</p><i aria-hidden="true">↗</i></a>
+          <a href="research/honest-pause/"><span>Practice · 5 min</span><strong>The value of an honest pause.</strong><p>Why uncertainty can be the beginning of a more durable learning path.</p><i aria-hidden="true">↗</i></a>
         </div>
       </div>
     </section>
 
-    <section class="ed-section ed-section-line">
-      <div class="ed-shell ed-home-statement ed-reveal">
-        <div>
-          <p class="ed-kicker">Built around hard questions</p>
-          <h2 class="ed-statement-title">We do not make the subject smaller. We make the path into it clearer.</h2>
-        </div>
-        <div class="ed-home-statement-copy">
-          <p class="ed-copy-serif">Socrates is an AI tutor for people who want to understand—not just finish an answer.</p>
-          <p class="ed-copy">Start where you are. Test the edges of an idea. Return to the useful connection when you need it again.</p>
-          <a class="ed-link" href="product">Explore the learning loop →</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="ed-section ed-section-line" aria-labelledby="latest-research-title">
-      <div class="ed-shell">
-        <div class="ed-home-research-heading ed-reveal">
-          <div>
-            <p class="ed-kicker">Latest research</p>
-            <h2 class="ed-title" id="latest-research-title">What we are learning about learning.</h2>
-          </div>
-          <a class="ed-link" href="research">View all research →</a>
-        </div>
-
-        <div class="ed-essay-list ed-reveal">
-          <a class="ed-essay-row" href="research/memory-recall/">
-            <span class="ed-essay-date">Aug 12, 2026</span>
-            <span class="ed-essay-title">The route back to an idea.</span>
-            <span class="ed-essay-tag">Memory · 7 min</span>
-          </a>
-          <a class="ed-essay-row" href="research/explanation-evidence/">
-            <span class="ed-essay-date">Jul 29, 2026</span>
-            <span class="ed-essay-title">When a clear explanation becomes evidence.</span>
-            <span class="ed-essay-tag">Explanation · 6 min</span>
-          </a>
-          <a class="ed-essay-row" href="research/honest-pause/">
-            <span class="ed-essay-date">Jul 11, 2026</span>
-            <span class="ed-essay-title">The value of an honest pause.</span>
-            <span class="ed-essay-tag">Practice · 5 min</span>
-          </a>
-          <a class="ed-essay-row" href="research/maps-preserve-path/">
-            <span class="ed-essay-date">Jun 24, 2026</span>
-            <span class="ed-essay-title">Maps that preserve the path.</span>
-            <span class="ed-essay-tag">Knowledge mapping · 8 min</span>
-          </a>
-        </div>
+    <section class="sv-closing">
+      <div class="sv-shell sv-closing-grid" data-sv-reveal>
+        <div><h2>Bring one difficult question.</h2><p>Socrates will help you find the next useful one.</p></div>
+        <div class="sv-actions"><a class="sv-button sv-button-dark" href="https://app.topodrive.top">Start learning <span aria-hidden="true">↗</span></a><a class="sv-button sv-button-light" href="research">Read the research</a></div>
       </div>
     </section>
   </main>
@@ -309,5 +389,6 @@
     </div>
   </footer>
   <script src="editorial.js?cb=20260824"></script>
+  <script src="home-v2.js?cb=20260915a"></script>
 </body>
 </html>
