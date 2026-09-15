@@ -436,6 +436,21 @@ describe('transformContentForModel', () => {
     assert.deepEqual(transformContentForModel(content, true), content);
   });
 
+  test('strips image_url.detail on vision-capable models', () => {
+    /* MiniMax 400s on `detail: "auto"` ("invalid params, invalid image
+       detail"). Clients used to send it, and stale cached builds still
+       may — the transform must normalise it away before forwarding. */
+    const content = [
+      { type: 'text', text: 'look at this' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,XYZ', detail: 'auto' } },
+    ];
+    const out = transformContentForModel(content, true);
+    assert.deepEqual(out, [
+      { type: 'text', text: 'look at this' },
+      { type: 'image_url', image_url: { url: 'data:image/png;base64,XYZ' } },
+    ]);
+  });
+
   test('replaces image_url with a textual placeholder on text-only models', () => {
     const out = transformContentForModel(
       [{ type: 'image_url', image_url: { url: 'data:image/png;base64,HUGE_PAYLOAD' } }],
