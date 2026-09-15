@@ -745,7 +745,10 @@ export async function buildMessageContent(text, attachmentSnapshot) {
       continue;
     }
     if (a.kind === 'image' && a.dataUrl && multimodal) {
-      parts.push({ type: 'image_url', image_url: { url: a.dataUrl, detail: 'auto' } });
+      /* No `detail` field: the allowed set differs per provider and
+         MiniMax rejects "auto" outright with a 400. Omitting it lets
+         the upstream use its default resolution. */
+      parts.push({ type: 'image_url', image_url: { url: a.dataUrl } });
     }
     if (a.fileId) {
       parts.push({ type: 'text', text: attachmentPointerLine(a) });

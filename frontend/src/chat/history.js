@@ -55,7 +55,9 @@ function partsForStoredAttachments(rawText,attachments,opts){
     var att=attachments[ai];
     if(!att)continue;
     if(att.kind==="image"&&att.dataUrl&&multimodal){
-      parts.push({type:"image_url",image_url:{url:att.dataUrl,detail:"auto"}});
+      /* `detail` is omitted on purpose — MiniMax 400s on "auto"; the
+         backend transform strips the field anyway (helpers.ts). */
+      parts.push({type:"image_url",image_url:{url:att.dataUrl}});
     }
     if(att.fileId){
       parts.push({type:"text",text:attachmentPointerLine(att)});

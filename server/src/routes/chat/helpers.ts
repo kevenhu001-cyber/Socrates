@@ -692,7 +692,19 @@ export { sanitizeExtraBody };
  * provider, but we don't trust the client and re-check here. */
 export function transformContentForModel(content: string | ContentPart[], multimodal: boolean): string | ContentPart[] {
   if (!Array.isArray(content)) return content;
-  if (multimodal) return content;
+  if (multimodal) {
+    /* Normalise `image_url` parts before forwarding: providers disagree
+       on the accepted `detail` values (OpenAI allows low/high/auto;
+       MiniMax 400s on "auto" — "invalid params, invalid image detail").
+       Nothing in the app relies on the knob, so drop it and let the
+       upstream use its default resolution regardless of what a client
+       (or a stale cached build) sends. */
+    return content.map((part) =>
+      part && part.type === 'image_url' && part.image_url && typeof part.image_url.url === 'string'
+        ? { ...part, image_url: { url: part.image_url.url } }
+        : part
+    );
+  }
   const out: ContentPart[] = [];
   for (const part of content) {
     if (part && part.type === 'image_url') {
