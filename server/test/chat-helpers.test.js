@@ -443,7 +443,10 @@ describe('transformContentForModel', () => {
     );
     assert.equal(out.length, 1);
     assert.equal(out[0].type, 'text');
-    assert.match(out[0].text, /cannot view images/i);
+    /* The placeholder points the model at read_attachment so it can
+       still describe the image via the stored file. */
+    assert.match(out[0].text, /cannot view inline/i);
+    assert.match(out[0].text, /read_attachment/);
     /* The base64 payload MUST be dropped — otherwise we'd ship a
        500 KB image to a model that cannot read it. */
     assert.equal(out[0].text.includes('base64'), false);
@@ -459,7 +462,7 @@ describe('transformContentForModel', () => {
     );
     assert.equal(out.length, 2);
     assert.deepEqual(out[0], { type: 'text', text: 'explain this image' });
-    assert.match(out[1].text, /cannot view images/i);
+    assert.match(out[1].text, /cannot view inline/i);
   });
 
   test('drops unknown part types on text-only models', () => {
@@ -512,7 +515,7 @@ describe('transformMessagesForModel', () => {
     assert.equal(out[2].content, 'hello');
     /* User message: image_url replaced. */
     assert.equal(out[1].content.length, 2);
-    assert.match(out[1].content[1].text, /cannot view images/);
+    assert.match(out[1].content[1].text, /cannot view inline/);
   });
 
   test('does not mutate input messages (defensive copy)', () => {
@@ -606,6 +609,20 @@ describe('appendNativeToolContract', () => {
     assert.doesNotMatch(out[0].content, /tool rounds/);
     assert.doesNotMatch(out[0].content, /minimal correct argument object/);
     assert.doesNotMatch(out[0].content, /Withdrawn for the rest/);
+    assert.doesNotMatch(out[0].content, /discarded/);
+  });
+
+  test('tells the model when calls were dropped by the per-round cap', () => {
+    /* Calls over the per-iteration limit are truncated before protocol
+       echo, so without this section the model would wait forever for
+       tool results that will never arrive. */
+    const out = appendNativeToolContract(
+      [{ role: 'system', content: 'base' }],
+      ['web_search'],
+      { droppedCalls: 2 },
+    );
+    assert.match(out[0].content, /2 tool call\(s\) over the per-round limit/);
+    assert.match(out[0].content, /discarded and never ran/);
   });
 });
 

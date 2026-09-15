@@ -41,21 +41,12 @@ function _publishAttachments(){
   }catch(_){ /* swallow — bridge is best-effort */ }
 }
 
-/* P_attachments-multimodal — surface the rejection via toast
-   preferring the i18n-aware multimodal-gate message when every
-   rejection is from the gate. */
+/* Surface the first rejection via toast — rejects carry plain reasons
+   ("unsupported file type", "file exceeds 25 MB limit", upload errors). */
 function surfaceRejectionToast(res){
   if(!res || !res.rejected || !res.rejected.length) return;
   console.warn("[attachments] rejected:", res.rejected);
-  const hasMmRejection = res.rejected.some(function(r){
-    return r.indexOf("active provider is not multimodal") !== -1;
-  });
-  if(hasMmRejection){
-    showToast(translate("attach.notMultimodal")
-      || "The active model can't view images. Add a multimodal provider or remove image attachments.");
-  } else {
-    showToast(res.rejected[0]);
-  }
+  showToast(res.rejected[0]);
 }
 
 /* P_multi-input-attachment — every composer that wants attachments

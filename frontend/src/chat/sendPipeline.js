@@ -27,7 +27,6 @@ import { selectedComposerPlugins } from '../react/composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../react/composer/pluginCatalog.ts';
 import {
   buildMessageContent,
-  validateImageAttachments,
   resetAttachments,
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
@@ -121,16 +120,10 @@ export async function submitChatMessage(textOverride,opts){
      image description / multimodal assembly continues in the background. */
   var isComposerSubmit=textOverride==null;
   var turnAttachments=isComposerSubmit&&Array.isArray(window.attachments)?window.attachments.slice():[];
-  /* P_attachments-multimodal — a model switch can happen while an image is
-     being read or compressed. Keep the same guard at the send boundary so a
-     stale pending image is rejected before the user bubble is committed. */
-  if(isComposerSubmit){
-    var attachmentValidation=validateImageAttachments(turnAttachments);
-    if(!attachmentValidation.ok){
-      showToast(attachmentValidation.message);
-      return;
-    }
-  }
+  /* P_file-attachments — entries may still be uploading (pending:true).
+     The bubble gets the stub list immediately so chips appear in-frame;
+     buildMessageContent waits for their jobs (waitForAttachmentsReady)
+     and the resolved fileId list is patched onto the message below. */
   var immediateAttList=turnAttachments.slice(0,20).map(function(a){
     return Object.assign({},a);
   });
@@ -153,8 +146,9 @@ export async function submitChatMessage(textOverride,opts){
       });
     } catch (_) { precreatedChatCtl=null; }
   }
+  var userClientId=null;
   if(isComposerSubmit){
-    addMessage("user",text,null,null,immediateAttList);
+    userClientId=addMessage("user",text,null,null,immediateAttList);
     precreateChatTurn();
     clearComposer("chat");updateSendBtn();
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
@@ -168,7 +162,7 @@ export async function submitChatMessage(textOverride,opts){
     }
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
-    addMessage("user",text,null,null,immediateAttList);
+    userClientId=addMessage("user",text,null,null,immediateAttList);
     precreateChatTurn();
   }
   /* P_attachments — clear the pending chips after the message is
@@ -180,9 +174,10 @@ export async function submitChatMessage(textOverride,opts){
   }
 
   /* Assemble the model payload from the immutable snapshot after the UI has
-     committed. buildMessageContent may await vision description, but it can
-     no longer read or clear a newer draft's attachments. A description
-     failure degrades to the original text + attachment metadata. */
+     committed. buildMessageContent waits for in-flight uploads
+     (waitForAttachmentsReady) so a send clicked while a file was still
+     uploading still ships its fileId — then we patch the already-visible
+     user bubble with the resolved attachment list. */
   var built;
   try{
     built=(typeof buildMessageContent==="function")
@@ -193,6 +188,26 @@ export async function submitChatMessage(textOverride,opts){
   }
   var chatContent=built.parts;
   var attList=built.attachmentList||immediateAttList;
+  /* P_file-attachments — the committed user row still holds the pending
+     stubs (no fileId yet). Now that uploads resolved, patch the row in
+     place so the persisted message carries the durable file references. */
+  if(userClientId){
+    var _msgs=stateStore.read("messages");
+    for(var _mi=_msgs.length-1;_mi>=0;_mi--){
+      if(_msgs[_mi]&&_msgs[_mi].clientId===userClientId){
+        stateStore.dispatch({
+          type:"session/update-message",index:_mi,clientId:userClientId,
+          patch:{attachments:attList}
+        });
+        try{
+          if(typeof window.publishReactChatRuntime==="function"){
+            window.publishReactChatRuntime({type:"state-synced",reason:"send-attachment-patch"});
+          }
+        }catch(_){}
+        break;
+      }
+    }
+  }
   precreatedRetry=function(){ return _askChatTurn(text,chatContent); };
   turnState.pendingChatContent=chatContent;
   turnState.pendingAttachments=attList;

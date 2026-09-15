@@ -18,7 +18,7 @@
  *     for user-initiated image uploads, not for tight loops.
  */
 
-import { writeFile, unlink } from 'node:fs/promises';
+import { writeFile, unlink, stat } from 'node:fs/promises';
 import { tmpdir, homedir } from 'node:os';
 import nodePath from 'node:path';
 import crypto from 'node:crypto';
@@ -94,7 +94,6 @@ export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; pro
   const tmpPath = nodePath.join(tmpdir(), `mmx-vision-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${extForMime(parsed.mimeType)}`);
   await writeFile(tmpPath, parsed.buffer);
 
-  const start = Date.now();
   /* Atomic cleanup — the temp file MUST be unlinked on every exit
      path (success, mmx failure, parse failure, syntax error, OOM,
      etc.). A plain try/catch after the call would leak the temp file
@@ -103,16 +102,43 @@ export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; pro
      rejection. unlink failures are swallowed because the temp dir
      is OS-managed (Linux: `tmpwatch`/`systemd-tmpfiles`, macOS:
      reboot cleanup). */
-  let stdout;
   try {
-    stdout = await runMmx(
-      ['vision', 'describe', '--image', tmpPath, '--output', 'json', '--quiet',
-        ...(prompt ? ['--prompt', prompt] : [])],
-      { timeoutMs: REQUEST_TIMEOUT },
-    );
+    return await describeImageFile({ path: tmpPath, prompt });
   } finally {
     await unlink(tmpPath).catch(() => {});
   }
+}
+
+/**
+ * Describe an image already on disk (e.g. a persisted /api/files upload)
+ * via MiniMax vision. Used by the read_attachment tool so a text-only
+ * model can still "see" an image the user attached — the file stays a
+ * real attachment; the model asks for the description on demand instead
+ * of receiving a pre-baked text dump in the prompt.
+ *
+ * @param {object} input
+ * @param {string} input.path    Absolute path to the image file.
+ * @param {string} [input.prompt]  Optional question about the image.
+ * @returns {Promise<{description: string, model: string, latencyMs: number}>}
+ */
+export async function describeImageFile({ path, prompt }: { path?: string; prompt?: string } = {}) {
+  if (!path || typeof path !== 'string') {
+    throw reject(400, 'path is required');
+  }
+  const info = await stat(path);
+  if (!info.isFile() || info.size === 0) {
+    throw reject(400, 'Empty image payload');
+  }
+  if (info.size > MAX_BYTES) {
+    throw reject(413, `Image too large (${info.size} > ${MAX_BYTES} bytes)`);
+  }
+
+  const start = Date.now();
+  const stdout = await runMmx(
+    ['vision', 'describe', '--image', path, '--output', 'json', '--quiet',
+      ...(prompt ? ['--prompt', prompt] : [])],
+    { timeoutMs: REQUEST_TIMEOUT },
+  );
 
   let data;
   try { data = JSON.parse(stdout as string); }

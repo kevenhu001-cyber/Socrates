@@ -16,7 +16,7 @@ var I18N={
     "chat.attach.maxReached":"You can attach up to 6 files per turn.",
     "chat.attach.imageTooLarge":"Image exceeds the {size} MB limit.",
     "chat.attach.pdfTooLarge":"PDF exceeds the 25 MB limit.",
-    "chat.attach.unsupported":"Only images, text files, and PDFs are supported.",
+    "chat.attach.unsupported":"This file type isn't supported. Images, text/code files, PDF, Office documents, EPUB, audio, and video are accepted.",
     "chat.attach.truncated":"(truncated)",
     /* P_attachments-multimodal — UI strings for the user-controlled
      * multimodal checkbox on the API key editor row (provider.*) and
@@ -985,7 +985,7 @@ var I18N={
     "chat.attach.maxReached":"每次最多附加 6 个文件。",
     "chat.attach.imageTooLarge":"图片超过 {size} MB 上限。",
     "chat.attach.pdfTooLarge":"PDF 超过 25 MB 上限。",
-    "chat.attach.unsupported":"仅支持图片、文本文件和 PDF。",
+    "chat.attach.unsupported":"不支持的文件类型。支持图片、文本/代码文件、PDF、Office 文档、EPUB、音频和视频。",
     "chat.attach.truncated":"（已截断）",
     /* P_attachments-multimodal — see matching en block. */
     "provider.multimodal":"多模态（支持图像理解）",

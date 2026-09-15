@@ -148,71 +148,76 @@ async function chatChipsAttrVisible(page, selector) {
   }, selector);
 }
 
-test('Image upload is rejected immediately for a text-only active model', async ({ page }) => {
-  await mockAuthedApp(page);
-  await page.route('**/api/**', async (route) => {
+/* P_file-attachments — every accepted file is uploaded to
+   POST /api/files and the pending entry resolves into a durable fileId.
+   Multimodality no longer gates admission: a text-only model still
+   receives the file as an attachment the read_attachment tool can read. */
+const MOCK_UPLOAD = {
+  id: 'file-uuid-1', name: 'shot.png', mimeType: 'image/png',
+  size: 21, kind: 'image', sha256: 'deadbeef',
+};
+
+function mockProviderAndUpload(page, providers) {
+  return page.route('**/api/**', async (route) => {
     const req = route.request();
     const apiUrl = req.url().replace('/api/v2/', '/api/');
+    if (req.method() === 'POST' && apiUrl.includes('/api/files')) {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(MOCK_UPLOAD),
+      });
+      return;
+    }
     if (req.method() === 'GET' && apiUrl.includes('/api/api-key')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          providers: [{
-            id: 'text-only', label: 'Text only', url: 'https://example.test/v1',
-            model: 'text-model', hasKey: true, isActive: true,
-            isBuiltIn: false, isMultimodal: false,
-          }],
-        }),
+        body: JSON.stringify({ providers }),
       });
       return;
     }
     await route.fallback();
   });
+}
+
+test('Image upload is admitted for a text-only model and stored as a durable file', async ({ page }) => {
+  await mockAuthedApp(page);
+  await mockProviderAndUpload(page, [{
+    id: 'text-only', label: 'Text only', url: 'https://example.test/v1',
+    model: 'text-model', hasKey: true, isActive: true,
+    isBuiltIn: false, isMultimodal: false,
+  }]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const startedAt = await page.evaluate(() => performance.now());
   await page.locator('#attachInput').setInputFiles({
-    name: 'not-supported.png',
+    name: 'shot.png',
     mimeType: 'image/png',
     buffer: Buffer.from('synthetic image bytes'),
   });
 
-  const toast = page.locator('.msg-toast').last();
-  await expect(toast).toContainText("can't view images");
-  const elapsed = await page.evaluate((started) => performance.now() - started, startedAt);
-  expect(elapsed).toBeLessThan(1000);
-  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(0);
-  await expect(page.locator('#topicAttachmentChips .attachment-chip')).toHaveCount(0);
+  /* The pending stub uploads to /api/files and resolves into the durable
+     fileId — no "model can't view images" rejection anymore. */
+  await page.waitForFunction(() => {
+    const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
+    return snapshot?.attachments?.[0]?.fileId === 'file-uuid-1';
+  });
+  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
 });
 
 test('Image upload is admitted for a multimodal active model', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/api/**', async (route) => {
-    const req = route.request();
-    const apiUrl = req.url().replace('/api/v2/', '/api/');
-    if (req.method() === 'GET' && apiUrl.includes('/api/api-key')) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          providers: [{
-            id: 'vision', label: 'Vision', url: 'https://example.test/v1',
-            model: 'vision-model', hasKey: true, isActive: true,
-            isBuiltIn: false, isMultimodal: true,
-          }],
-        }),
-      });
-      return;
-    }
-    await route.fallback();
-  });
+  await mockProviderAndUpload(page, [{
+    id: 'vision', label: 'Vision', url: 'https://example.test/v1',
+    model: 'vision-model', hasKey: true, isActive: true,
+    isBuiltIn: false, isMultimodal: true,
+  }]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.locator('#attachInput').setInputFiles({
-    name: 'supported.png',
+    name: 'shot.png',
     mimeType: 'image/png',
     buffer: Buffer.from('synthetic image bytes'),
   });
@@ -221,4 +226,41 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
     return snapshot?.attachments?.[0]?.pending === false;
   });
   await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
+  /* Multimodal images additionally carry an inline dataUrl for the
+     native image_url part, alongside the durable fileId. */
+  const entry = await page.evaluate(() => {
+    const s = window.__socratesAttachmentsBridge?.getSnapshot();
+    const a = s?.attachments?.[0];
+    return a ? { fileId: a.fileId, hasDataUrl: !!a.dataUrl } : null;
+  });
+  expect(entry).toEqual({ fileId: 'file-uuid-1', hasDataUrl: true });
+});
+
+test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) => {
+  await mockAuthedApp(page);
+  await mockProviderAndUpload(page, [{
+    id: 'any', label: 'Any', url: 'https://example.test/v1',
+    model: 'm', hasKey: true, isActive: true,
+    isBuiltIn: false, isMultimodal: false,
+  }]);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  await page.locator('#attachInput').setInputFiles({
+    name: 'report.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 fake'),
+  });
+  await page.waitForFunction(() => {
+    const snapshot = window.__socratesAttachmentsBridge?.getSnapshot();
+    return snapshot?.attachments?.[0]?.fileId === 'file-uuid-1';
+  });
+  await expect(page.locator('#attachmentChips .attachment-chip')).toHaveCount(1);
+  const kind = await page.evaluate(() => {
+    const s = window.__socratesAttachmentsBridge?.getSnapshot();
+    return s?.attachments?.[0]?.kind;
+  });
+  /* PDFs classify as 'document' with docKind pdf — the model reads them
+     via read_attachment, not as inline text. */
+  expect(kind).toBe('document');
 });

@@ -136,9 +136,21 @@ export interface LegacyChatMessage {
     action?: string;
   }> | null;
   attachments?: ReadonlyArray<{
+    id?: string;
     kind?: string;
+    docKind?: string;
     name?: string;
+    mime?: string;
+    /** Durable files-table id — resolves against /api/v2/files/:id/raw
+        and feeds the model's read_attachment pointer. */
+    fileId?: string;
     dataUrl?: string;
+    text?: string;
+    truncated?: boolean;
+    error?: string;
+    pending?: boolean;
+    progress?: number;
+    thumbnailUrl?: string;
     size?: number;
   }>;
   modelInfo?: { label?: string; model?: string } | null;

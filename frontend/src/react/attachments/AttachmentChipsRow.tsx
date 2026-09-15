@@ -30,9 +30,11 @@ interface ChipProps {
 function Chip({ entry, onRemove }: ChipProps) {
   /* P_perf-blob-url — prefer thumbnailUrl (URL.createObjectURL) for
      the chip <img> source. It's O(1) and the browser lazily decodes
-     only what the 28×28 chip needs. Falls back to dataUrl once the
-     blob URL is revoked after the full base64 read completes. */
-  const imgSrc = (entry.thumbnailUrl || entry.dataUrl) ?? undefined;
+     only what the 28×28 chip needs. Once the upload resolves, the
+     durable /api/v2/files/:id/raw URL (then the inline dataUrl)
+     takes over so the chip survives composer resets and reloads. */
+  const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
+  const imgSrc = (entry.thumbnailUrl || fileUrl || entry.dataUrl) ?? undefined;
   const isImage = entry.kind === 'image' && !!imgSrc;
   const showSpinner = !!entry.pending;
   const showProgressBar = !!entry.pending && typeof entry.progress === 'number' && entry.progress >= 0;

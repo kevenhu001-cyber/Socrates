@@ -30,6 +30,30 @@ const HIDDEN: ComposerToolsSnapshot = Object.freeze({
   revision: 0,
 });
 
+/* File-picker accept list — mirrors the upload allow-list in
+   server/src/routes/files.ts (images, text/code, PDF, Office, EPUB/RTF,
+   media). Kept in one constant so index.html's static accept attribute
+   and this mobile picker never diverge by accident. */
+const ATTACHMENT_ACCEPT = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
+  'text/*',
+  'application/json', 'application/pdf', 'application/rtf', 'text/rtf',
+  'application/epub+zip',
+  'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/flac',
+  '.txt', '.md', '.markdown', '.csv', '.tsv', '.log', '.json', '.jsonl',
+  '.yaml', '.yml', '.toml', '.xml',
+  '.py', '.js', '.ts', '.tsx', '.jsx', '.java', '.c', '.h', '.cpp', '.cs',
+  '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.sh', '.sql', '.css',
+  '.ipynb',
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.epub', '.rtf',
+  '.mp4', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac',
+].join(',');
+
 type Action = Omit<ComposerToolsSnapshot, 'revision'>;
 
 const factoryBridge = createImmutableBridge<ComposerToolsSnapshot, Action>({
@@ -81,7 +105,7 @@ function openMobileAttachmentPicker(
       input.accept = 'image/*';
       input.removeAttribute('capture');
     } else {
-      input.accept = 'image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf';
+      input.accept = ATTACHMENT_ACCEPT;
       input.removeAttribute('capture');
     }
   }

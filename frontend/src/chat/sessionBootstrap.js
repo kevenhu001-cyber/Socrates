@@ -50,7 +50,6 @@ import { serializeSelectedPluginContext } from '../react/composer/pluginCatalog.
 import {
   attachments,
   buildMessageContent,
-  validateImageAttachments,
   resetAttachments,
 } from '../attachments.js';
 import { renderAttachmentChips } from '../attachments/render.js';
@@ -94,14 +93,16 @@ export async function startSession(){
      existing slash-app path. */
   var topicPlugins=selectedComposerPlugins("topic").slice();
   var topicForModel=serializeSelectedPluginContext(topicPlugins,topic);
-  /* P_attachments-multimodal — the model may have been switched after the
-     image was attached on the landing composer. Re-check before consuming
-     the pending store so the first turn cannot bypass the upload-time gate. */
-  var startAttachmentValidation=validateImageAttachments(attachments);
-  if(!startAttachmentValidation.ok){
-    showToast(startAttachmentValidation.message);
-    return;
-  }
+  /* P_file-attachments — snapshot the pending store BEFORE anything can
+     reset it. Both branches below call resetAttachments() to clear the
+     composer chips; without this snapshot the deferred
+     buildMessageContent read an emptied store and the landing-page
+     attachments silently vanished from the first turn (the reported
+     "uploaded image never reaches the model or history" bug). */
+  var startAttachments=Array.isArray(attachments)?attachments.slice():[];
+  var startImmediateAttList=startAttachments.slice(0,20).map(function(a){
+    return Object.assign({},a);
+  });
 
   /* Deep Research mode — if the extension is active, the landing topic
      is routed to the research agent INSTEAD of a normal first chat turn,
@@ -198,8 +199,10 @@ export async function startSession(){
 
     /* The user turn must precede its assistant placeholder in the
        authoritative message array. The old controller was retired above;
-       askChatTurn will explicitly claim this new placeholder. */
-    var _startUserClientId = addMessage("user", stateStore.read("topic"), null, null, []);
+       askChatTurn will explicitly claim this new placeholder. Landing
+       attachments ride along immediately (pending stubs resolve into
+       fileIds in the deferred patch below). */
+    var _startUserClientId = addMessage("user", stateStore.read("topic"), null, null, startImmediateAttList);
     var _startSaveP = saveState.saveInFlight || null;
     var _syncCtl = null;
     if(typeof window.addStreamingMessage === "function"){
@@ -228,12 +231,13 @@ export async function startSession(){
          first model request. */
       resetSessionTransients();
       /* P_attachments-start — only block on buildMessageContent when
-         the topic actually carries attachments (vision/describe
-         roundtrips). Plain-text topics skip the await entirely, so
-         the click → first-token path is reduced to one macrotask. */
-      var _hasStartAttach = Array.isArray(window.attachments) && window.attachments.length > 0;
+         the topic actually carries attachments (in-flight uploads).
+         Plain-text topics skip the await entirely, so the
+         click → first-token path is reduced to one macrotask. The
+         snapshot (not the now-reset live store) is what gets built. */
+      var _hasStartAttach = startAttachments.length > 0;
       var builtP = (_hasStartAttach && typeof buildMessageContent === "function")
-        ? buildMessageContent(topicForModel)
+        ? buildMessageContent(topicForModel, startAttachments)
         : Promise.resolve({ rawText: topicForModel, parts: topicForModel, attachmentList: [] });
       var startBuilt;
       try {
@@ -254,7 +258,7 @@ export async function startSession(){
       turnState.pendingChatContent = startChatContent;
       turnState.pendingAttachments = startAttList;
       /* Patch the user bubble in place if attachments arrived late
-         (image attachments need /api/vision/describe). React's message
+         (uploads resolve their fileId asynchronously). React's message
          list reads from the state snapshot, so a state-synced publish
          causes it to re-render the bubble with the chips attached. */
       if (startAttList.length && _startUserClientId) {
@@ -318,12 +322,13 @@ export async function startSession(){
   if(typeof updateStartBtn === "function") updateStartBtn();
   if(typeof updateSendBtn === "function") updateSendBtn();
   if(typeof buildMessageContent === "function"){
-    /* Fire-and-forget. The promise resolves into state.tutorAttachments
-       so the eventual generateDiagnosticQuestions() can read it. We do
-       NOT await here — the user already sees the diagnostic view; the
-       attachment list will appear in the first teaching turn even if
-       it's empty for the diagnostic step. */
-    buildMessageContent(topic).then(function(tutorBuilt){
+    /* Fire-and-forget — on the SNAPSHOT taken before resetAttachments,
+       not the cleared live store (same bug class as the chat branch:
+       reading window.attachments here would always see an empty list).
+       The promise resolves into state.tutorAttachments so the eventual
+       generateDiagnosticQuestions() can read it. We do NOT await —
+       the user already sees the diagnostic view. */
+    buildMessageContent(topic,startAttachments).then(function(tutorBuilt){
       try{
         stateStore.dispatch({type:"state/batch",patch:{
           tutorAttachments:(tutorBuilt&&tutorBuilt.attachmentList)||[],

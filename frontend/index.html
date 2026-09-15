@@ -576,7 +576,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               </button>
               <input type="file" id="topicAttachInput" multiple
-                     accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                     accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,text/*,application/json,application/pdf,application/rtf,text/rtf,application/epub+zip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,.txt,.md,.markdown,.csv,.tsv,.log,.json,.jsonl,.yaml,.yml,.toml,.xml,.py,.js,.ts,.tsx,.jsx,.java,.c,.h,.cpp,.cs,.go,.rs,.rb,.php,.swift,.kt,.sh,.sql,.css,.ipynb,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.epub,.rtf,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.flac,.aac"
                      hidden>
             </div>
             <!-- P_cowork-landing — reasoning effort sits with the send button,
@@ -607,9 +607,12 @@
               </div>
             </div>
             <!-- Keep the topic controls structurally identical to the
-                 in-session composer. The primary button keeps its
-                 voice/send state; the landing surface deliberately has no
-                 separate mic control. -->
+                 in-session composer. The microphone is the explicit
+                 dictation entry point; the primary button keeps its
+                 voice/send state without moving the control row. -->
+            <button class="mobile-mic-btn" id="topicMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg>
+            </button>
             <button class="start-btn" id="startBtn" aria-label="Voice input" title="Voice input">
               <span id="startBtnContent"><svg class="icon-voice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span>
             </button>
@@ -860,7 +863,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                   </button>
                   <input type="file" id="attachInput" multiple
-                         accept="image/jpeg,image/png,image/gif,image/webp,text/plain,text/csv,text/markdown,application/json,application/pdf,.txt,.md,.csv,.json,.log,.pdf"
+                         accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,text/*,application/json,application/pdf,application/rtf,text/rtf,application/epub+zip,application/msword,application/vnd.ms-excel,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4,audio/aac,audio/flac,.txt,.md,.markdown,.csv,.tsv,.log,.json,.jsonl,.yaml,.yml,.toml,.xml,.py,.js,.ts,.tsx,.jsx,.java,.c,.h,.cpp,.cs,.go,.rs,.rb,.php,.swift,.kt,.sh,.sql,.css,.ipynb,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.epub,.rtf,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.flac,.aac"
                          hidden>
                   <!-- P_chatgpt-landing — reasoning-effort selector (高/中/低)
                        for the in-session composer; shares the persisted value

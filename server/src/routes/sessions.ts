@@ -67,19 +67,24 @@ const SessionPayloadSchema = z.object({
     /* P_reasoning-persist — chain-of-thought text from reasoning
        models. Preserved so it survives session save/load. */
     reasoningContent: z.string().max(500000).optional().nullable(),
-    /* P_attachments — array of {id, kind, name, mime, dataUrl?, text?,
-       size, truncated?} representing user-supplied files for this
-       message. Persisted so a session reload restores thumbnails
-       and parsed text. dataUrl is capped at 2 MB per attachment. */
+    /* P_attachments — array of {id, kind, name, mime, fileId?, dataUrl?,
+       text?, size, truncated?, error?} representing user-supplied files
+       for this message. Persisted so a session reload restores chips,
+       thumbnails and the durable file reference the model can re-read
+       via read_attachment. fileId points at the files table row created
+       by POST /api/files; dataUrl (still capped at 2 MB) is the legacy
+       inline-image path kept for multimodal turns. */
     attachments: z.array(z.object({
       id: z.string().max(100),
       kind: z.string().max(50),
       docKind: z.string().max(20).optional(),
       name: z.string().max(500),
       mime: z.string().max(200),
+      fileId: z.string().max(100).optional(),
       dataUrl: z.string().max(2_000_000).optional(),
       text: z.string().max(500_000).optional(),
       truncated: z.boolean().optional(),
+      error: z.string().max(300).optional(),
       size: z.number().int().nonnegative().max(50 * 1024 * 1024),
     })).max(20).optional(),
     /* P_tool-history — tool calls the assistant made on this turn
@@ -216,6 +221,8 @@ function sanitizeSessionPayload(body: any): any {
           x.name = clipStr(x.name, 500) || 'file';
           x.mime = clipStr(x.mime, 200) || 'application/octet-stream';
           x.docKind = clipStr(x.docKind, 20);
+          x.fileId = clipStr(x.fileId, 100);
+          x.error = clipStr(x.error, 300);
           x.dataUrl = clipStr(x.dataUrl, 2_000_000);
           x.text = clipStr(x.text, 500_000);
           if (typeof x.size !== 'number' || !(x.size >= 0)) x.size = 0;
@@ -639,6 +646,34 @@ router.post('/', writeLimiter, async (req, res, next) => {
             role: messages.role,
           });
         indexedRows = upserted.filter((r) => r.role === 'assistant' && r.rawText);
+
+        /* P_file-session-link — adopt attachment uploads into this
+         * session. Composer uploads hit POST /api/files before the
+         * session row exists (or while its id is still a client draft),
+         * so they land as orphans (session_id IS NULL). Now that the
+         * session is durable, any orphan file referenced by these
+         * messages takes its id so file lifecycle and share visibility
+         * follow the conversation. The userId guard makes a foreign
+         * fileId a silent no-op — a client cannot bind someone else's
+         * upload by guessing its id. */
+        const referencedFileIds = new Set<string>();
+        for (const m of persistMsgs) {
+          if (!Array.isArray(m.attachments)) continue;
+          for (const a of m.attachments) {
+            const fid = a && typeof a === 'object' && typeof a.fileId === 'string'
+              ? a.fileId.trim() : '';
+            if (fid && isUuid(fid)) referencedFileIds.add(fid);
+          }
+        }
+        if (referencedFileIds.size) {
+          await tx.update(files)
+            .set({ sessionId: sid })
+            .where(and(
+              eq(files.userId, req.userId!),
+              isNull(files.sessionId),
+              inArray(files.id, [...referencedFileIds]),
+            ));
+        }
       }
 
       const [session] = await tx.select().from(sessions).where(eq(sessions.id, sid)).limit(1);
