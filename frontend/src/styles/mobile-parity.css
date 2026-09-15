@@ -87,20 +87,14 @@
     padding: 0 14px max(16px, env(safe-area-inset-bottom)) !important;
   }
 
-  /* The suggestion hosts sit after the composer in the DOM; pull them
-     above it in the flex column. */
-  #appShell#appShell .home-suggestions-wrap,
+  /* The quick-actions row sits after the composer in the DOM; pull it
+     above it in the flex column. (The home-suggestions-wrap container was
+     removed from index.html — see section-7 note in ref-baseline.css.) */
   #appShell#appShell .home-quick-actions {
     order: 0;
   }
   #appShell#appShell #topicInputWrap:not(.voice-recording-active) {
     order: 1;
-  }
-
-  #appShell#appShell .home-suggestions-wrap {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
   }
 
   #appShell#appShell .home-quick-actions {
@@ -112,13 +106,6 @@
     gap: 0 !important;
   }
 
-  #appShell#appShell .home-suggestions-list {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-  }
-
-  #appShell#appShell .home-suggestion-btn,
   #appShell#appShell .home-quick-action {
     display: flex !important;
     align-items: center !important;
@@ -132,12 +119,10 @@
     text-align: left !important;
   }
 
-  #appShell#appShell .home-suggestion-btn:active,
   #appShell#appShell .home-quick-action:active {
     background: var(--cg-surface-hover) !important;
   }
 
-  #appShell#appShell .home-suggestion-icon,
   #appShell#appShell .home-quick-action-icon {
     display: inline-flex !important;
     align-items: center !important;
@@ -148,29 +133,16 @@
     color: var(--cg-text-muted) !important;
   }
 
-  #appShell#appShell .home-suggestion-icon svg,
   #appShell#appShell .home-quick-action-icon svg {
     width: 24px !important;
     height: 24px !important;
   }
 
-  #appShell#appShell .home-suggestion-text,
   #appShell#appShell .home-quick-action-copy strong {
     color: var(--cg-text-secondary) !important;
     font-size: 16px !important;
     font-weight: 400 !important;
     line-height: 24px !important;
-  }
-
-  #appShell#appShell .home-suggestion-text {
-    display: block !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-
-  #appShell#appShell .home-suggestion-dismiss {
-    display: none !important;
   }
 
   /* ─────────────────────────────────────────────────────────────
@@ -599,7 +571,8 @@
     justify-content: flex-end !important;
   }
 
-  #appShell#appShell .home-suggestions-wrap,
+  /* The home-suggestions-wrap container was removed from index.html — only
+     the quick-actions row remains on landing. */
   #appShell#appShell .home-quick-actions {
     width: 100% !important;
     max-width: none !important;
@@ -611,8 +584,7 @@
     gap: 0 !important;
   }
 
-  #appShell#appShell .home-quick-action,
-  #appShell#appShell .home-suggestion-btn {
+  #appShell#appShell .home-quick-action {
     min-height: 52px !important;
     padding: 8px 44px 8px 8px !important;
     gap: 14px !important;
@@ -621,24 +593,21 @@
     color: var(--cg-text-secondary) !important;
   }
 
-  #appShell#appShell .home-quick-action-icon,
-  #appShell#appShell .home-suggestion-icon {
+  #appShell#appShell .home-quick-action-icon {
     flex: 0 0 28px !important;
     width: 28px !important;
     height: 28px !important;
     color: var(--cg-text-muted) !important;
   }
 
-  #appShell#appShell .home-quick-action-icon svg,
-  #appShell#appShell .home-suggestion-icon svg {
+  #appShell#appShell .home-quick-action-icon svg {
     width: 24px !important;
     height: 24px !important;
     stroke-width: 1.8 !important;
   }
 
   #appShell#appShell .home-quick-action-copy,
-  #appShell#appShell .home-quick-action-copy span,
-  #appShell#appShell .home-suggestion-text {
+  #appShell#appShell .home-quick-action-copy span {
     min-width: 0 !important;
     color: var(--cg-text-secondary) !important;
     font-size: 16px !important;

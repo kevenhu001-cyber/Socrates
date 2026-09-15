@@ -2,7 +2,6 @@
 // Time-of-day and name personalization were removed — they made the hero
 // read as two clauses ("下午好，Jiacheng。准备好开始了吗？") and fought
 // the reference composition, which is a single calm line.
-import { mountHomeSuggestions } from './homeSuggestions.ts';
 
 export function renderGreeting() {
   var el = document.getElementById("topicTitle");
@@ -14,9 +13,9 @@ export function renderGreeting() {
   if (!tmpl || tmpl === key) tmpl = fallback;
   el.textContent = tmpl;
   el.classList.add("greeting");
-  try {
-    mountHomeSuggestions();
-  } catch (_) {}
+  /* The previous heuristic suggestions (mountHomeSuggestions) were removed
+     — they read as noise on the landing surface and conflicted with the
+     quick-actions reference block. See src/ui/homeSuggestions.ts. */
 }
 
 // Consumers import renderGreeting directly (window bridge removed in

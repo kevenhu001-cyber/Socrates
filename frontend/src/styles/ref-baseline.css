@@ -396,134 +396,18 @@ body.workspace-active #appShell .main-page {
 }
 
 /* --------------------------------------------------------------------------
-   7. Home suggestions (beneath composer, matching ChatGPT.html / chatgpt-home.png)
+   7. Home suggestions — REMOVED
+
+   The heuristic AI suggestion chips (`.home-suggestions-wrap` and
+   `.home-suggestion-*`) were removed from index.html because they read as
+   noise on mobile and conflicted with the quick-actions reference block.
+   src/ui/homeSuggestions.ts is kept as a no-op shim so any future
+   re-introduction (or third-party import) compiles without a sweeping
+   refactor. Styles intentionally not deleted yet — search history may
+   still reference them in design docs.
    -------------------------------------------------------------------------- */
 #appShell .lobe-home-context {
   display: none !important;
-}
-
-#appShell .home-suggestions-wrap {
-  width: min(100%, 732px);
-  margin: 16px auto 0;
-  display: flex;
-  flex-direction: column;
-}
-
-#appShell .home-suggestions-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-}
-
-#appShell .home-suggestion-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-#appShell .home-suggestion-btn {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  gap: 12px;
-  transition: background 0.15s ease;
-}
-
-#appShell .home-suggestion-btn:hover {
-  background: var(--cg-surface-hover);
-}
-
-[data-mode="light"] #appShell .home-suggestion-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-#appShell .home-suggestion-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  color: var(--cg-text-muted);
-}
-
-#appShell .home-suggestion-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-#appShell .home-suggestion-text {
-  font-size: 14px;
-  color: var(--cg-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  padding-right: 32px;
-}
-
-[data-mode="light"] #appShell .home-suggestion-text {
-  color: #374151;
-}
-
-#appShell .home-suggestion-dismiss {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease;
-  color: var(--cg-text-muted);
-}
-
-#appShell .home-suggestion-item:hover .home-suggestion-dismiss,
-#appShell .home-suggestion-item:focus-within .home-suggestion-dismiss {
-  opacity: 1;
-}
-
-#appShell .home-suggestion-dismiss:hover {
-  background: var(--cg-surface-raised);
-  color: var(--cg-text);
-}
-
-/* Dismiss animation. mountHomeSuggestions() toggles these classes instead of
-   setting inline styles so the IDE no-inline-styles hint stays happy. */
-#appShell .home-suggestion-item.home-suggestion-item--dismissing {
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  pointer-events: none;
-}
-
-#appShell .home-suggestion-item.home-suggestion-item--dismissed {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  #appShell .home-suggestions-wrap {
-    display: none !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1056,27 +940,8 @@ body.workspace-active #appShell .main-page {
     margin-right: 4px !important;
   }
 
-  #appShell .home-suggestions-wrap {
-    width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
-    margin: 0 auto !important;
-  }
-
-  #appShell .home-suggestions-list {
-    gap: 0 !important;
-    padding: 24px 0 10px !important;
-  }
-
-  #appShell .home-suggestion-btn {
-    min-height: 52px !important;
-    padding: 12px 40px 12px 14px !important;
-    border-radius: 8px !important;
-    gap: 12px !important;
-  }
-
-  #appShell .home-suggestion-text {
-    font-size: 16px !important;
-    line-height: 24px !important;
-  }
+  /* The previous `.home-suggestions-*` overrides were removed together
+     with the corresponding DOM container; see the section-7 comment above. */
 
   /* Workspace pages share the same 768px column. Library's reference
      capture is 15px right of the exact centre because of its outer gutter;
@@ -1618,9 +1483,9 @@ body.workspace-active #appShell .main-page {
   margin: 24px auto 0;
 }
 
-#appShell #homeSuggestionsWrap[data-state="ready"] + .home-quick-actions {
-  display: none !important;
-}
+/* The previous "hide quick-actions when AI suggestions are ready" rule
+   was removed together with the homeSuggestionsWrap container; the
+   quick-actions row is now the only landing shortcut. */
 
 #appShell .home-quick-action {
   display: flex;
@@ -2181,8 +2046,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     padding: 0 24px 24px !important;
   }
 
-  #appShell .home-quick-actions,
-  #appShell .home-suggestions-wrap {
+  /* Only the quick-actions row remains on landing; the home-suggestions-wrap
+     container was removed from index.html. */
+  #appShell .home-quick-actions {
     width: min(100%, 768px) !important;
   }
 

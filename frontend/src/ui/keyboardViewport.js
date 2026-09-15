@@ -61,6 +61,39 @@ import { planMotionForUser, easeOutQuint } from './motion.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
+/* P_css-keyboard-motion — Detect whether the running browser can animate
+   the `--keyboard-inset` custom property natively. When it can
+   (Chrome 85+, Safari 16.4+, Firefox 128+), `styles.css` declares
+   `@property --keyboard-inset` and the JS module only writes the per-sample
+   target. The browser then interpolates `--keyboard-inset` natively and
+   the chat-view's padding-bottom rides the same CSS transition. The JS
+   path keeps owning scroll-anchor restoration and the "stuck keyboard"
+   guard, but no longer drives per-frame motion itself.
+
+   Browsers without @property still honour `transition: padding-bottom`,
+   so they get a CSS-only smoothing layer between JS-driven frame writes;
+   they stay on the velocity-planned JS path. The probe registers a
+   throwaway property so the catch can identify "already registered"
+   (declaration via CSS still counts as supported). */
+export function detectKeyboardInsetAnimationSupport() {
+  if (typeof CSS === 'undefined' || typeof CSS.registerProperty !== 'function') return false;
+  try {
+    CSS.registerProperty({
+      name: '--socrates-kb-probe',
+      syntax: '<length>',
+      inherits: false,
+      initialValue: '0px',
+    });
+    return true;
+  } catch (err) {
+    /* The browser supports @property but the property is already declared
+       (either here or via CSS). That is still a positive signal — the
+       interpolation path will be active. */
+    const message = String((err && err.message) || err);
+    return /already|exists|defined|registered/i.test(message);
+  }
+}
+
 /* When the measured inset arrives as a discrete jump (most Android
  * overlay keyboards report the final size in one event), the lift's
  * duration is velocity-planned by planMotionForUser so a small nudge
@@ -196,6 +229,26 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      first shrunk frame cannot strand a pinned reader or drag a history
      reader to the bottom. */
   let transcriptAnchor = null;
+  /* P_css-keyboard-motion — When the running engine can animate
+     `--keyboard-inset` natively (Chrome 85+, Safari 16.4+, Firefox 128+),
+     JS only writes the per-sample target. The CSS transition on
+     `.chat-view`'s padding-bottom owns the visible motion; the JS path
+     owns scroll anchoring via a transition-driven rAF loop (started on
+     `transitionrun`, stopped on `transitionend`). When the engine cannot
+     animate the custom property, fall back to the per-frame
+     velocity-planned JS interpolation (`stepMotion`). */
+  const cssKeyboardMotion = detectKeyboardInsetAnimationSupport();
+  /* chat-view is the padding-bottom consumer. Cached here so the CSS-path
+     transition listener does not query for it on every event. */
+  const chatViewEl = (typeof document !== 'undefined')
+    ? document.getElementById('chatView') || document.querySelector('.chat-view')
+    : null;
+  /* True while a CSS transition is actively driving the chat-view lift.
+     The scroll-anchor rAF loop runs only between transitionrun and
+     transitionend, so a stationary keyboard does not pay the rAF cost. */
+  let keyboardTransitionActive = false;
+  /* rAF handle for the scroll-anchor loop used in the CSS-driven path. */
+  let anchorRestoreFrame = 0;
 
   const prefersReducedMotion = () => {
     try {
@@ -381,15 +434,25 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     motionFrame = requestAnimationFrame(stepMotion);
   };
 
-  const applyInset = (inset) => {
-    const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+  /* P_css-keyboard-motion — CSS-driven path. Writes the per-sample target
+     exactly once per geometry change; the `.chat-view` CSS transition
+     (registered by styles.css via @property) interpolates the value
+     natively. The scroll-anchor lifecycle is bound to the transition's
+     lifecycle via a transitionrun/transitionend-bound rAF loop. */
+  const applyTargetInset = (roundedTarget) => {
+    /* No per-frame interpolation. The transition event listeners (below)
+       own the anchor loop; this function only writes the target value. */
+    if (roundedTarget === appliedInset) return;
+    root.style.setProperty('--keyboard-inset', `${roundedTarget}px`);
+    appliedInset = roundedTarget;
+  };
 
-    /* The public keyboard state is the measured target, not the in-flight
-     * interpolated value: flipping it once per open/close keeps the
-     * external-inset fallback in scroll.js from taking over while this
-     * module owns the motion. */
-    root.dataset.keyboardOpen = roundedTarget > 50 ? 'true' : 'false';
-
+  /* Legacy per-frame JS interpolation path. Kept as the fallback for
+     engines without @property (and for reduced-motion users, where
+     planMotionForUser collapses the duration to 0 so the JS path is a
+     direct snap anyway). The CSS transition on padding-bottom is still
+     active as a smoothing layer between JS-driven frame writes. */
+  const applyInterpInset = (roundedTarget) => {
     if (
       roundedTarget === targetInset
       && motionFrame === 0
@@ -472,6 +535,70 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     motionDuration = liftPlan.duration;
     progressiveInsetMotion = false;
     if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
+  };
+
+  /* Dispatcher. data-keyboard-open is a state flag (not motion logic) and
+     must flip exactly once per open/close regardless of which path the
+     browser takes — that is what scroll.js's keyboardStyleObserver reads
+     to decide whether an external --keyboard-inset write is the live
+     keyboard path or a stray bridge update. */
+  const applyInset = (inset) => {
+    const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+    root.dataset.keyboardOpen = roundedTarget > 50 ? 'true' : 'false';
+    if (cssKeyboardMotion) {
+      applyTargetInset(roundedTarget);
+    } else {
+      applyInterpInset(roundedTarget);
+    }
+  };
+
+  /* P_css-keyboard-motion — Scroll-anchor rAF loop for the CSS-driven
+     path. The CSS transition on `.chat-view`'s padding-bottom is what
+     drives the visible motion; the loop mirrors that motion for the
+     transcript so a history-mode reader keeps their exact visual position
+     while the keyboard rises. It is started on `transitionrun` and
+     stopped on `transitionend` (plus a final restore at the end), so a
+     stationary keyboard pays no rAF cost. */
+  const turnAnchorHeld = () => {
+    const list = transcriptAnchor && transcriptAnchor.list;
+    return Boolean(list && list.dataset && list.dataset.turnAnchorHold === 'true');
+  };
+  const stepAnchorRestore = () => {
+    anchorRestoreFrame = 0;
+    if (!keyboardTransitionActive) return;
+    if (transcriptAnchor && !turnAnchorHeld()) {
+      restoreTranscriptAnchor();
+    }
+    if (typeof window.requestAnimationFrame !== 'function') return;
+    anchorRestoreFrame = window.requestAnimationFrame(stepAnchorRestore);
+  };
+  const startAnchorRestoreLoop = () => {
+    if (anchorRestoreFrame || typeof window.requestAnimationFrame !== 'function') return;
+    anchorRestoreFrame = window.requestAnimationFrame(stepAnchorRestore);
+  };
+  const stopAnchorRestoreLoop = () => {
+    if (anchorRestoreFrame) {
+      cancelAnimationFrame(anchorRestoreFrame);
+      anchorRestoreFrame = 0;
+    }
+  };
+  const onChatViewTransitionRun = (event) => {
+    if (!cssKeyboardMotion || !chatViewEl || event.target !== chatViewEl) return;
+    if (event.propertyName && event.propertyName !== 'padding-bottom') return;
+    keyboardTransitionActive = true;
+    startAnchorRestoreLoop();
+  };
+  const onChatViewTransitionEnd = (event) => {
+    if (!cssKeyboardMotion || !chatViewEl || event.target !== chatViewEl) return;
+    if (event.propertyName && event.propertyName !== 'padding-bottom') return;
+    keyboardTransitionActive = false;
+    stopAnchorRestoreLoop();
+    /* Final restore: capture any pan the browser did during the
+       transition, so the reader's content lands at the exact intended
+       position even if a frame was dropped. */
+    if (transcriptAnchor && !turnAnchorHeld()) {
+      restoreTranscriptAnchor();
+    }
   };
 
   /* Bottom edge of the app shell in client coordinates. Falls back to
@@ -668,6 +795,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   if (virtualKeyboard && typeof virtualKeyboard.addEventListener === 'function') {
     virtualKeyboard.addEventListener('geometrychange', schedule);
   }
+  /* P_css-keyboard-motion — Bind scroll-anchor lifecycle to the chat-view
+     CSS transition. Only wired when the CSS-driven path is active; the
+     JS path does its anchor work inline via writeInsetFrame so it does
+     not need this listener. transitioncancel is also handled so an
+     interrupted lift (focus blur, viewport removal) tears down the
+     loop cleanly instead of leaving it running against a stale anchor. */
+  if (cssKeyboardMotion && chatViewEl) {
+    chatViewEl.addEventListener('transitionrun', onChatViewTransitionRun);
+    chatViewEl.addEventListener('transitionend', onChatViewTransitionEnd);
+    chatViewEl.addEventListener('transitioncancel', onChatViewTransitionEnd);
+  }
   /* focusout on document catches focus moving to ANY element (not just
      input.blur). This is the path that fires when the user dismisses
      the keyboard by tapping a message or the page background, where
@@ -686,8 +824,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   return () => {
     if (updateFrame) window.cancelAnimationFrame(updateFrame);
     if (motionFrame) window.cancelAnimationFrame(motionFrame);
+    if (anchorRestoreFrame) window.cancelAnimationFrame(anchorRestoreFrame);
     if (topicEnsureFrame) window.cancelAnimationFrame(topicEnsureFrame);
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
+    keyboardTransitionActive = false;
     clearTranscriptAnchor();
     try {
       root.style.removeProperty('--keyboard-inset');
@@ -701,6 +841,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     window.removeEventListener('resize', onViewportGeometry);
     if (virtualKeyboard && typeof virtualKeyboard.removeEventListener === 'function') {
       virtualKeyboard.removeEventListener('geometrychange', schedule);
+    }
+    if (cssKeyboardMotion && chatViewEl) {
+      chatViewEl.removeEventListener('transitionrun', onChatViewTransitionRun);
+      chatViewEl.removeEventListener('transitionend', onChatViewTransitionEnd);
+      chatViewEl.removeEventListener('transitioncancel', onChatViewTransitionEnd);
     }
     document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('focusout', onBlur);
