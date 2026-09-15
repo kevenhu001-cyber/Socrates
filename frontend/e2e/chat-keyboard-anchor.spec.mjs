@@ -244,7 +244,21 @@ test('visualViewport keyboard lift follows a pinned reader through open and clos
   await editor.focus();
   await page.waitForTimeout(100);
 
-  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  /* The transcript must stay glued to the composer on every painted frame
+     of the lift — the correction is written in the same frame as the
+     inset write, so a pinned reader's distance-from-bottom never opens
+     up mid-motion. */
+  const liftDistances = await page.evaluate(() => new Promise((resolve) => {
+    const list = document.getElementById('msgList');
+    const distances = [];
+    const sample = () => {
+      distances.push(Math.round(list.scrollHeight - list.scrollTop - list.clientHeight));
+      if (distances.length < 24) requestAnimationFrame(sample); else resolve(distances);
+    };
+    window.__fakeViewport.__resize({ height: 510 });
+    requestAnimationFrame(sample);
+  }));
+  expect(Math.max(...liftDistances), JSON.stringify(liftDistances)).toBeLessThanOrEqual(4);
   await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
   await page.waitForTimeout(400);
   const lifted = await transcriptState(page);
@@ -423,7 +437,32 @@ test('visual viewport pan compensates a history reader and returns on un-pan', a
      opposite to offsetTop, not with it. The topmost visible row may change
      because the cut line moves inside the previous row, so the assertion is
      on the tracked row's visual offset, not on the first intersecting row. */
-  await page.evaluate(() => window.__fakeViewport.__resize({ height: 410, offsetTop: 100 }));
+  /* The pan compensation is written inside the viewport event itself, so
+     the tracked row's visual offset holds on every painted frame — a
+     deferred restore would let it drift by the full pan delta for a
+     frame. */
+  const panDrift = await page.evaluate((needle) => new Promise((resolve) => {
+    const list = document.getElementById('msgList');
+    const row = [...list.querySelectorAll(':scope > .msg')]
+      .find((el) => el.textContent.startsWith(needle));
+    const offsets = [];
+    const sample = () => {
+      offsets.push(row
+        ? Math.round(
+            row.getBoundingClientRect().top
+            - list.getBoundingClientRect().top
+            - (window.visualViewport?.offsetTop || 0),
+          )
+        : null);
+      if (offsets.length < 12) requestAnimationFrame(sample); else resolve(offsets);
+    };
+    window.__fakeViewport.__resize({ height: 410, offsetTop: 100 });
+    requestAnimationFrame(sample);
+  }), anchoredRow);
+  const panOffsets = panDrift.filter((value) => value != null);
+  for (const offset of panOffsets) {
+    expect(Math.abs(offset - settledVisual), JSON.stringify(panDrift)).toBeLessThanOrEqual(3);
+  }
   await page.waitForTimeout(420);
   const panned = await transcriptState(page);
   expect(panned.away).toBe(true);

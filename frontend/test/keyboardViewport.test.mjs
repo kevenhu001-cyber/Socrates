@@ -5,7 +5,6 @@ import {
   getKeyboardInset,
   measureKeyboardInset,
   isTrackedInputFocused,
-  easeKeyboardLift,
   isProgressiveKeyboardSample,
   KEYBOARD_PROGRESSIVE_SAMPLE_MS,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
@@ -14,23 +13,10 @@ import {
 /*
  * Pure helpers — no DOM, no window. The DOM-touching initKeyboardViewport
  * is exercised end-to-end by the Playwright smoke suite; these tests guard
- * the math behind the inset value and the focus check.
+ * the math behind the inset value and the focus check. The lift's easing
+ * and duration come from ui/motion.js (easeOutQuint + planMotionForUser),
+ * covered by motion.test.mjs.
  */
-
-test('easeKeyboardLift is a clamped, monotonic ease-out curve', () => {
-  assert.equal(easeKeyboardLift(0), 0);
-  assert.equal(easeKeyboardLift(1), 1);
-  assert.equal(easeKeyboardLift(-0.5), 0);
-  assert.equal(easeKeyboardLift(1.5), 1);
-  let previous = 0;
-  for (let t = 0.1; t <= 1.0001; t += 0.1) {
-    const value = easeKeyboardLift(t);
-    assert.ok(value >= previous, `monotonic at t=${t}`);
-    previous = value;
-  }
-  /* Ease-out: more than half the distance covered in the first quarter. */
-  assert.ok(easeKeyboardLift(0.25) > 0.5);
-});
 
 test('continuous keyboard samples follow native geometry instead of restarting the tween', () => {
   const start = 1_000;
