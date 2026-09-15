@@ -22,7 +22,7 @@
      and --ed-sans below don't crash, but brand.css wins on the visible
      surface. We deliberately removed "Segoe UI" and the system CJK
      fallbacks so Microsoft YaHei / SimSun never leak through on Windows. */
-  --ed-serif: var(--font-serif);
+  --ed-serif: var(--font-sans);
   --ed-sans: var(--font-sans);
   --ed-mono: var(--font-mono);
   --ed-radius-lg: 28px;

@@ -6,7 +6,7 @@
    Noto Sans SC / Noto Serif SC so Windows hosts never leak Microsoft
    YaHei / SimSun. Every other stylesheet references these variables. */
 :root {
-  --font-sans: "Inter", "Geist", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Geist", "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Songti SC", "SimSun", serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
 }

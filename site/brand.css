@@ -38,12 +38,12 @@
      Spectral or Source Serif. Geist is intentionally NOT in this stack:
      it reads as "UI sans" and loses the quiet differentiation we want
      between the marketing display and the body copy. */
-  --site-serif-latin: var(--font-serif);
+  --site-serif-latin: var(--font-sans);
   /* CJK editorial serif — the Latin families (Newsreader …) are listed
      FIRST so embedded English inside a Chinese page matches the
      English-interface serif; CJK glyphs fall through to Noto Serif SC
      (Google Fonts), with Songti SC kept only as a local fallback. */
-  --site-serif-cjk: var(--font-serif);
+  --site-serif-cjk: var(--font-sans);
   --site-mono: var(--font-mono);
   --site-shadow: none;
 
