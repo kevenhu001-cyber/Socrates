@@ -654,6 +654,14 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     width: 100% !important;
     max-width: none !important;
     min-height: 104px !important;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  :root[data-keyboard-motion="manual"] #appShell#appShell #topicSetup,
+  :root[data-keyboard-motion="manual"] #appShell#appShell #chatInputBar,
+  :root[data-keyboard-motion="manual"] #appShell#appShell .chat-view {
+    transition: none !important;
   }
 
   #appShell#appShell #chatInputBar {
@@ -664,6 +672,8 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     width: calc(100% - 4px) !important;
     margin-inline: auto !important;
     padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
+    will-change: padding-bottom, transform;
+    transform: translateZ(0);
   }
 
   /* Keep the transcript comfortable above the persistent input surface. */

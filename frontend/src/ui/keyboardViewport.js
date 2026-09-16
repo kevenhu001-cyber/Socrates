@@ -87,8 +87,8 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * Velocity is a state variable, so a retarget mid-flight bends the
  * motion instead of restarting it — the continuity the previous eased
  * tween could not provide when coarse samples kept arriving. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.10;
-export const KEYBOARD_CHASE_STREAM_S = 0.045;
+export const KEYBOARD_CHASE_SMOOTH_S = 0.22;
+export const KEYBOARD_CHASE_STREAM_S = 0.16;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -96,22 +96,16 @@ export const KEYBOARD_CHASE_STREAM_S = 0.045;
  * a dead stop. This exponential arrival envelope preserves that tracking
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
-export const KEYBOARD_ARRIVAL_S = 0.024;
+export const KEYBOARD_ARRIVAL_S = 0.06;
 
-/* During a live progressive stream the chase runs hot, so a slightly
- * longer arrival time keeps each frame's consumption under ~43% of the
- * remaining gap (~47px on the steepest legitimate step) — tight enough to
- * stay glued to the keyboard's leading edge, bounded enough that a coarse
- * burst cannot read as a teleport. */
-export const KEYBOARD_ARRIVAL_STREAM_S = 0.03;
+/* During a live progressive stream the chase runs smoothly, keeping each
+ * frame's progress bounded and continuous without snapping. */
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.08;
 
-/* Hard floor on the number of chase frames before settle is allowed to
- * fire. 6 frames @ 60 Hz ≈ 100 ms — short enough that no perceptual lag
- * is added on slow platforms, long enough that the composer always
- * travels an arc the eye can read instead of arriving in one frame. The
- * counter resets whenever the chase starts or retargets by more than a
- * trivial amount, so repeated re-opens do not get to skip the ramp. */
-export const MIN_MOTION_FRAMES = 6;
+/* Floor on the number of chase frames before settle is allowed to fire.
+ * ~14 frames @ 60 Hz ≈ 230 ms — matches platform IME window (~250-300ms)
+ * so the composer glides smoothly alongside the keyboard instead of snapping. */
+export const MIN_MOTION_FRAMES = 14;
 
 /* A focused visual viewport can differ from the shell by a fractional pixel
  * because of device-pixel rounding. Treat the keyboard as open on the first
@@ -119,14 +113,12 @@ export const MIN_MOTION_FRAMES = 6;
  * and changing the composer's internal layout halfway through the motion. */
 export const KEYBOARD_OPEN_THRESHOLD_PX = 2;
 
-/* The feed-forward lead uses the measured stream velocity to aim up to
- * one smooth-time ahead of the target, cancelling the spring's natural
- * lag while the keyboard is still moving. When samples stop arriving
- * the estimate is stale: it decays over ~40ms so the chase target
- * unwinds back to the real inset instead of hovering past it. */
-export const KEYBOARD_STREAM_STALE_MS = 48;
-export const KEYBOARD_STREAM_DECAY_S = 0.04;
-export const KEYBOARD_STREAM_MAX_VELOCITY = 4800;
+/* The feed-forward lead uses the measured stream velocity to aim slightly
+ * ahead of the target, cancelling the spring's natural lag while the
+ * keyboard is still moving. When samples stop arriving the estimate is stale. */
+export const KEYBOARD_STREAM_STALE_MS = 64;
+export const KEYBOARD_STREAM_DECAY_S = 0.06;
+export const KEYBOARD_STREAM_MAX_VELOCITY = 1500;
 
 /* Transition-window geometry poll: some platforms mutate visualViewport
  * geometry every frame without dispatching per-frame resize/scroll
@@ -327,6 +319,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let lastSampleProgressive = false;
   let lastMotionAt = 0;
   let lastTargetAt = 0;
+  let chaseStartedAt = 0;
   let transitionDirection = 0;
   let geometryPollFrame = 0;
   let geometryPollUntil = 0;
@@ -538,11 +531,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const writeInsetFrame = (travel) => {
     const paintedValue = Number.isFinite(travel) ? Math.max(0, travel) : 0;
     /* Convert the continuous screen-space travel to layout compensation.
-       visualViewport.offsetTop is motion the browser already applied, so
-       subtract it instead of letting the spring chase it. A pan-only event
-       must still rewrite the CSS inset even when the spring value is idle. */
-    const layoutInset = Math.max(0, paintedValue - Math.max(0, viewportOffsetTop()));
-    const panCompensation = Math.max(0, viewportOffsetTop() - paintedValue);
+       Filter sub-pixel pan wobble to prevent 60Hz visual jitter. */
+    const rawOffset = viewportOffsetTop();
+    const effectiveOffset = Math.abs(rawOffset) < 1.0 ? 0 : rawOffset;
+    const layoutInset = Math.max(0, paintedValue - effectiveOffset);
+    const panCompensation = Math.max(0, effectiveOffset - paintedValue);
     if (
       Math.abs(paintedValue - appliedTravel) < 0.01
       && Math.abs(layoutInset - appliedInset) < 0.01
@@ -572,14 +565,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     try {
       if (root.dataset.keyboardOpen !== openFlag) root.dataset.keyboardOpen = openFlag;
     } catch (_) { /* detached root */ }
-    const anchorList = transcriptAnchor && transcriptAnchor.list;
-    /* See onViewportGeometry: while a send anchor owns the transcript the
-       restore can only decide 'none', and forcing layout here races the
-       turn anchor's own inset-mutation correction. Skip the same-frame
-       pass; the rAF fallback still recaptures the reader's position. */
-    if (transcriptAnchor && !(anchorList && anchorList.dataset && anchorList.dataset.turnAnchorHold === 'true')) {
-      if (anchorFrame) { cancelAnimationFrame(anchorFrame); anchorFrame = 0; }
-      restoreTranscriptAnchor();
+    /* Do NOT force synchronous layout reflow inside writeInsetFrame!
+       Schedule transcript restore so layout mutation and metrics reading
+       are decoupled, eliminating dropped frames and visual jitter. */
+    if (transcriptAnchor && isInputFocused()) {
+      scheduleTranscriptRestore();
     }
   };
 
@@ -602,29 +592,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       ) streamVelocity = 0;
     }
     /* Stream tracking: while progressive samples keep arriving the target
-       is the keyboard's live leading edge — chase it hot so the composer
-       stays visible and rides the IME instead of emerging at the end. The
-       tighter smooth time still interpolates between coarse samples and
-       carries velocity through retargets; the arrival envelope below
-       caps every step at the real target, so tracking can never float the
-       composer above the keyboard. A stalled stream falls back to the
-       discrete smooth time for the remainder of the arc. */
+       is the keyboard's live leading edge — chase it smoothly so the composer
+       stays visible and rides the IME instead of emerging at the end. */
     const streamAlive = lastSampleProgressive
       && lastTargetAt > 0
       && now - lastTargetAt <= KEYBOARD_PROGRESSIVE_SAMPLE_MS;
     const smoothTime = streamAlive ? KEYBOARD_CHASE_STREAM_S : KEYBOARD_CHASE_SMOOTH_S;
-    /* Feed-forward: lead the chase target by up to one smooth-time of
-       measured keyboard travel, so the painted position rides the keyboard's
-       top edge instead of trailing it by velocity·smoothTime. The lead
-       is capped by the remaining gap, so it can accelerate mid-flight
-       but can never aim the composer past the target — and it vanishes
-       as soon as the stream stops or reverses. During a live stream a
-       one-frame lookahead is enough; the larger discrete lead would let
-       the aim overshoot the real edge. */
+    /* Feed-forward: lead the chase target gently, capped to a small fraction
+       of the remaining gap so it can never overshoot or oscillate. */
     const gap = targetTravel - painted;
-    let lead = streamVelocity * (streamAlive ? dt : KEYBOARD_CHASE_SMOOTH_S);
+    let lead = streamVelocity * (streamAlive ? dt * 1.5 : 0.05);
     if (Math.sign(lead) !== Math.sign(gap)) lead = 0;
-    if (Math.abs(lead) > Math.abs(gap)) lead = gap;
+    const maxLead = Math.abs(gap) * 0.35;
+    if (Math.abs(lead) > maxLead) lead = Math.sign(lead) * maxLead;
     const next = smoothDampStep(
       painted,
       targetTravel + lead,
@@ -634,14 +614,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     );
     chaseVelocity = next.velocity;
     /* Never paint past the measured target. The arrival envelope trims a
-       step that would consume too much of the remaining gap, retaining a
-       few sub-pixel deceleration frames instead of clamping visible motion
-       straight to zero at the keyboard's top edge. */
+       step that would consume too much of the remaining gap. */
     let landed = limitKeyboardInsetArrival(
       painted,
       next.value,
       targetTravel,
       dt,
+      streamAlive ? KEYBOARD_ARRIVAL_STREAM_S : KEYBOARD_ARRIVAL_S,
     );
     if (landed !== next.value) {
       chaseVelocity = (landed - painted) / dt;
@@ -650,20 +629,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     writeInsetFrame(landed);
     const reachedTarget = landed === targetTravel
       || (Math.abs(targetTravel - landed) < 0.5 && Math.abs(chaseVelocity) < 12);
-    /* Honour MIN_MOTION_FRAMES before letting the loop end: a spring
-       that arrives on frame 1 has not produced any visible motion, and
-       terminating then paints the final inset for one frame straight
-       from 0 — the instant jump the user sees on iOS. The floor keeps
-       the arc short enough to stay inside the IME window (~240 ms)
-       while still guaranteeing every chase spends at least a couple of
-       frames visibly in motion. */
-    const settled = reachedTarget && motionFrameCount >= MIN_MOTION_FRAMES;
+    const chaseElapsed = chaseStartedAt > 0 ? (now - chaseStartedAt) : 0;
+    const settled = reachedTarget
+      && motionFrameCount >= MIN_MOTION_FRAMES
+      && (targetTravel === 0 || chaseElapsed >= 200);
     if (settled) {
       paintedTravel = targetTravel;
       writeInsetFrame(targetTravel);
       chaseVelocity = 0;
       streamVelocity = 0;
       motionFrameCount = 0;
+      chaseStartedAt = 0;
       maybeReleaseKeyboardShell();
       return;
     }
@@ -711,12 +687,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         streamDirection,
       );
       if (progressive) {
-        const raw = (nextTarget - targetTravel) / ((now - lastTargetAt) / 1000);
+        const dtSample = Math.max(0.016, (now - lastTargetAt) / 1000);
+        const raw = (nextTarget - targetTravel) / dtSample;
         const clamped = Math.max(
           -KEYBOARD_STREAM_MAX_VELOCITY,
           Math.min(KEYBOARD_STREAM_MAX_VELOCITY, raw),
         );
-        const blend = Math.min(1, (now - lastTargetAt) / 50);
+        const blend = Math.min(0.4, (now - lastTargetAt) / 60);
         streamVelocity += (clamped - streamVelocity) * blend;
         lastSampleProgressive = true;
       } else {
@@ -725,6 +702,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       }
       targetTravel = nextTarget;
       lastTargetAt = now;
+      chaseStartedAt = now;
       if (streamDirection) transitionDirection = streamDirection;
       /* The geometry is still moving — keep the sampling window open so
          platforms that mutate the viewport without per-frame events keep
@@ -740,11 +718,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       chaseVelocity = 0;
       streamVelocity = 0;
       motionFrameCount = 0;
+      chaseStartedAt = 0;
       writeInsetFrame(nextTarget);
       return;
     }
     if (!motionFrame) {
       lastMotionAt = now;
+      chaseStartedAt = now;
       /* A new chase session restarts the frame counter so the MIN_MOTION_FRAMES
          floor always protects the visible ramp — even if the previous
          session was interrupted before settling. */
@@ -790,12 +770,15 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      innerHeight when the shell is missing, hidden, or not laid out yet
      (rect.bottom = 0 — the composer cannot be focused then anyway). */
   const appShellBottom = () => {
+    if (keyboardShellFrozen && keyboardShellBaselineInnerHeight > 0) {
+      return keyboardShellBaselineInnerHeight;
+    }
     const appEl = container
       || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
       || root;
     try {
       if (appEl && typeof appEl.getBoundingClientRect === 'function') {
-        const bottom = appEl.getBoundingClientRect().bottom;
+        const bottom = appEl.getBoundingClientRect().bottom + (Number(window.scrollY) || 0);
         if (Number.isFinite(bottom) && bottom > 0) return bottom;
       }
     } catch (_) { /* detached node — use the fallback */ }
@@ -1048,6 +1031,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   const onFocusIn = () => {
+    if (typeof window !== 'undefined' && Number(window.scrollY) > 0) {
+      try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
+    }
     beginKeyboardSession();
     /* Open the geometry sampling window for the whole open animation:
        even platforms that never dispatch per-frame events still get
@@ -1056,9 +1042,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     schedule();
     /* Mirror the focus state to data-topic-composer-focused synchronously
        so the disclaimer disappears on the same frame the topic input
-       takes focus (the deferred schedule() runs after a rAF, which is
-       enough to flicker the disclaimer across the screen during a fast
-       tap-to-focus on iOS). */
+       takes focus. */
     applyTopicComposerFocused(isInputFocused());
   };
 
@@ -1070,42 +1054,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     extendGeometryPoll(KEYBOARD_POLL_EDGE_MS);
     /* Late re-check: some platforms fire blur BEFORE the close-resize
        (so the measured inset is still large) and then resize fires
-       ~50-200ms later. Others fire resize before blur. Either way,
-       schedule one more update shortly after to catch the late settle —
-       and if the resize never arrives (the stuck-keyboard bug), the
-       focus check in update() forces the inset to 0 anyway. */
+       ~50-200ms later. Others fire resize before blur. */
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     blurRecheckTimer = setTimeout(() => { blurRecheckTimer = 0; schedule(); }, 150);
   };
 
-  /* Resize and pan events are dispatched before the frame that paints
-     them. A pure pan changes no layout (so no observer fires), and a
-     resize-mode keyboard changes the layout without touching
-     --keyboard-inset at all — in both cases waiting for the coalesced
-     rAF would leave the transcript one frame behind the compositor's
-     own motion. Re-applying the captured anchor inside the event keeps
-     the correction on the same frame; the rAF'd update() then re-checks
-     focus and geometry as the fallback. */
   const onViewportGeometry = () => {
-    /* A visual-viewport pan is compositor motion and can be dispatched from
-       inside the frame that will paint it. Re-project the current spring
-       value synchronously; deferring this write through schedule() leaves
-       one frame where the browser pan is visible on its own — precisely the
-       focus-time teleport this controller is meant to cancel. Height changes
-       still enter the spring through the coalesced update below. */
-    if (isInputFocused()) writeInsetFrame(paintedTravel);
     schedule();
     if (!transcriptAnchor) return;
-    /* While a send-time turn anchor holds the transcript (dataset flag),
-       the only possible decision is 'none' — but the decision path still
-       forces a synchronous layout inside the resize/pan event, which races
-       the send anchor's own same-frame correction and lets the browser
-       paint a clamped scrollTop for a frame. Leave the event-time pass to
-       the turn anchor; the rAF'd update() re-applies the anchor anyway. */
     const anchorList = transcriptAnchor.list;
     if (anchorList && anchorList.dataset && anchorList.dataset.turnAnchorHold === 'true') return;
-    if (anchorFrame) { cancelAnimationFrame(anchorFrame); anchorFrame = 0; }
-    restoreTranscriptAnchor();
+    scheduleTranscriptRestore();
   };
 
   if (viewport) {
