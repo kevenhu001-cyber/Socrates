@@ -87,8 +87,8 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * Velocity is a state variable, so a retarget mid-flight bends the
  * motion instead of restarting it — the continuity the previous eased
  * tween could not provide when coarse samples kept arriving. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.14;
-export const KEYBOARD_CHASE_STREAM_S = 0.06;
+export const KEYBOARD_CHASE_SMOOTH_S = 0.24;
+export const KEYBOARD_CHASE_STREAM_S = 0.16;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -96,15 +96,15 @@ export const KEYBOARD_CHASE_STREAM_S = 0.06;
  * a dead stop. This exponential arrival envelope preserves that tracking
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
-export const KEYBOARD_ARRIVAL_S = 0.03;
+export const KEYBOARD_ARRIVAL_S = 0.06;
 
 /* During a live progressive stream the chase runs tightly and smoothly,
  * matching the keyboard's rising speed in lockstep without falling behind. */
-export const KEYBOARD_ARRIVAL_STREAM_S = 0.035;
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.06;
 
 /* Minimum frames before settle is allowed to fire.
- * ~8 frames ensures smooth interpolation on both 60Hz and 120Hz displays. */
-export const MIN_MOTION_FRAMES = 8;
+ * ~16 frames ensures smooth interpolation on both 60Hz and 120Hz displays. */
+export const MIN_MOTION_FRAMES = 16;
 
 /* A focused visual viewport can differ from the shell by a fractional pixel
  * because of device-pixel rounding. Treat the keyboard as open on the first
@@ -561,19 +561,29 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const writeInsetFrame = (travel) => {
     const paintedValue = Number.isFinite(travel) ? Math.max(0, travel) : 0;
     /* Convert the continuous screen-space travel to layout compensation.
-       Filter sub-pixel pan wobble to prevent 60Hz visual jitter. */
+       Filter sub-pixel pan wobble with a smooth deadband to prevent 60Hz visual jitter. */
     const rawOffset = viewportOffsetTop();
-    const effectiveOffset = Math.abs(rawOffset) < 1.0 ? 0 : rawOffset;
+    let effectiveOffset = 0;
+    if (Math.abs(rawOffset) >= 1.5) {
+      effectiveOffset = rawOffset > 0 ? rawOffset - 1.5 : rawOffset + 1.5;
+    }
     let layoutInset = Math.max(0, paintedValue - effectiveOffset);
-    const panCompensation = Math.max(0, effectiveOffset - paintedValue);
+    let panCompensation = Math.max(0, effectiveOffset - paintedValue);
 
     /* Monotonicity guarantee: while the keyboard is rising (targetTravel > appliedTravel),
        layoutInset must never regress backwards because of temporary viewportOffsetTop spikes.
-       This completely eliminates elastic bouncing and rubber-banding. */
+       Similarly, panCompensation should only monotonically decrease to prevent vertical jitter.
+       This completely eliminates elastic bouncing, rubber-banding, and jitter. */
     if (targetTravel > appliedTravel && appliedInset >= 0) {
       layoutInset = Math.max(appliedInset, layoutInset);
+      if (appliedPanCompensation >= 0) {
+        panCompensation = Math.min(appliedPanCompensation, panCompensation);
+      }
     } else if (targetTravel < appliedTravel && appliedInset >= 0) {
       layoutInset = Math.min(appliedInset, layoutInset);
+      if (appliedPanCompensation >= 0) {
+        panCompensation = Math.max(appliedPanCompensation, panCompensation);
+      }
     }
 
     if (
@@ -588,23 +598,23 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const cssPanCompensation = Number(panCompensation.toFixed(3));
     root.style.setProperty('--keyboard-inset', `${cssInset}px`);
     root.style.setProperty('--keyboard-pan-compensation', `${cssPanCompensation}px`);
+    const insetDelta = Math.abs(layoutInset - appliedInset);
     appliedInset = layoutInset;
     appliedTravel = paintedValue;
     appliedPanCompensation = panCompensation;
     /* A pan can grow inside a single chase frame without a fresh event —
        keep the top-chrome offset current on the same frame cadence. */
     writeVisualTop();
-    /* `data-keyboard-open` is an intent/visibility flag, not a per-frame
-       geometry signal. It is updated when the target changes, while the
-       separate phase attribute remains `opening`/`closing` until the spring
-       settles. This prevents a first non-zero paint from activating a second
-       composer layout halfway through the lift. */
-    /* The keyboard transition owns this one scroll correction. Reading the
-       list after the inset write forces the flex layout before paint, so the
-       transcript and composer commit on the same frame instead of exposing
-       a one-frame gap. scroll.js remains a fallback for non-keyboard changes. */
+    /* The keyboard transition owns this scroll correction. Avoid forced
+       synchronous layout (layout thrashing) on fractional sub-pixel deltas:
+       only force layout synchronously when delta >= 1.5px or settling, and
+       schedule a deferred restore otherwise. */
     if (transcriptAnchor && (isInputFocused() || keyboardPhase === 'closing')) {
-      restoreTranscriptAnchorNow();
+      if (insetDelta >= 1.5 || Math.abs(paintedValue - targetTravel) < 0.5) {
+        restoreTranscriptAnchorNow();
+      } else {
+        scheduleTranscriptRestore();
+      }
     }
   };
 
@@ -1051,7 +1061,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
          sole avoidance mechanism in that state. The function remains the
          fallback for focus-without-keyboard (desktop, tap-to-focus on a
          partially off-screen input) where targetTravel is 0. */
-      if (isInputFocused() && targetTravel <= 0) ensureTopicComposerVisible();
+      if (isInputFocused() && targetTravel <= 0 && !keyboardShellFrozen) ensureTopicComposerVisible();
     });
   };
 
