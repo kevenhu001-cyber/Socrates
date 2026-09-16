@@ -1542,16 +1542,6 @@ true) but the dropdown never shows — see commit history. */
   flex:0 0 auto;
   order:2;
   position:relative;
-  /* P_contain-paint — isolate the layout reflow caused by changing
-     --keyboard-inset (which drives padding-bottom) from any transform
-     on the same element (the pan-compensation translate). Without
-     `contain: paint`, the browser treats the chat-view as a single
-     paint layer for both effects and the per-frame interaction between
-     padding growth and the translate shows up as a 1-2px vertical
-     jitter, especially on 120Hz displays. paint keeps the reflow
-     contained to the chat-view's painted box without affecting the
-     transform compositing path. */
-  contain:paint;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
   /* --keyboard-inset is already interpolated by keyboardViewport.js. Keep a
@@ -5084,7 +5074,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     /* All properties share the unified --composer-motion-duration/ease so
        the focus-in expansion and blur-out collapse move as one motion —
        border, shadow, size, and reordered children glide in lockstep. */
-    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);
+    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease);
   }
   .chat-input-wrap .chat-input-footer{display:contents}
   /* Mobile collapsed state is a real three-column row: left controls,
