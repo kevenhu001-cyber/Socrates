@@ -68,15 +68,27 @@ import { smoothDampStep } from './motion.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
-/* Chase dynamics for the keyboard lift. A ~100ms smooth time completes the
- * critically-damped arc inside the platform's ~220-300ms IME window while
- * keeping the first motion frame inside the resting-margin absorption floor.
- * The visual-viewport pan is compensated separately below, so the spring no
- * longer needs to be artificially slow to hide an iOS offsetTop jump.
+/* Chase dynamics for the keyboard lift. Two regimes share one spring:
+
+ *   - stream: while progressive geometry samples keep arriving, the
+ *     measured travel IS the keyboard's live leading edge. The chase must
+ *     track it within a couple of frames (~45ms smooth time ≈ half the
+ *     remaining gap per 60Hz frame), or the composer spends the whole
+ *     lift below the keyboard's top edge — invisible until the very end,
+ *     which reads as "teleported straight to the target". A hot spring
+ *     still interpolates between coarse samples (no per-sample snap),
+ *     and the arrival envelope below keeps it from overshooting past the
+ *     real edge, so the composer can never float above the keyboard.
+ *   - discrete: a lone jump report (first sample after silence, a
+ *     direction flip, or a platform that emits only the final geometry)
+ *     gets the looser ~100ms arc, which lands a ~300px keyboard inside
+ *     the platform's own ~220-300ms IME window as a visible ease.
+
  * Velocity is a state variable, so a retarget mid-flight bends the
  * motion instead of restarting it — the continuity the previous eased
  * tween could not provide when coarse samples kept arriving. */
 export const KEYBOARD_CHASE_SMOOTH_S = 0.10;
+export const KEYBOARD_CHASE_STREAM_S = 0.045;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -85,6 +97,13 @@ export const KEYBOARD_CHASE_SMOOTH_S = 0.10;
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
 export const KEYBOARD_ARRIVAL_S = 0.024;
+
+/* During a live progressive stream the chase runs hot, so a slightly
+ * longer arrival time keeps each frame's consumption under ~43% of the
+ * remaining gap (~47px on the steepest legitimate step) — tight enough to
+ * stay glued to the keyboard's leading edge, bounded enough that a coarse
+ * burst cannot read as a teleport. */
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.03;
 
 /* Hard floor on the number of chase frames before settle is allowed to
  * fire. 6 frames @ 60 Hz ≈ 100 ms — short enough that no perceptual lag
@@ -157,7 +176,7 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
   return Math.min(layoutHeight, Math.max(0, covered));
 }
 
-export function limitKeyboardInsetArrival(current, proposed, target, dt) {
+export function limitKeyboardInsetArrival(current, proposed, target, dt, arrivalS = KEYBOARD_ARRIVAL_S) {
   if (
     !Number.isFinite(current)
     || !Number.isFinite(proposed)
@@ -167,7 +186,7 @@ export function limitKeyboardInsetArrival(current, proposed, target, dt) {
   const gap = target - current;
   const step = proposed - current;
   if (gap === 0 || step === 0 || Math.sign(step) !== Math.sign(gap)) return proposed;
-  const maxFraction = 1 - Math.exp(-dt / KEYBOARD_ARRIVAL_S);
+  const maxFraction = 1 - Math.exp(-dt / arrivalS);
   if (Math.abs(step) <= Math.abs(gap) * maxFraction) return proposed;
   return current + gap * maxFraction;
 }
@@ -300,6 +319,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let paintedTravel = 0;
   let chaseVelocity = 0;
   let streamVelocity = 0;
+  /* True when the latest target-changing sample continued a same-direction
+     stream — i.e. the platform is reporting the keyboard's leading edge
+     frame-by-frame. Drives the stream/discrete smooth-time switch in
+     stepMotion. Cleared by staleness in stepMotion and by any
+     non-progressive sample. */
+  let lastSampleProgressive = false;
   let lastMotionAt = 0;
   let lastTargetAt = 0;
   let transitionDirection = 0;
@@ -323,6 +348,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let keyboardShellRestoreStyle = null;
   let keyboardShellReleaseTimer = 0;
   let keyboardSessionStartedAt = 0;
+  /* Last shell height observed while the keyboard was fully closed. Some
+     platforms shrink the layout viewport before dispatching focusin, so
+     measuring at focus time would freeze the shell at the already-shrunken
+     height: the measured travel would stay ~0, the native resize would
+     silently own the whole lift, and the composer would appear to teleport
+     to its final position. Freezing to max(live, last known) re-expands the
+     shell in that case, restoring the full animation range. */
+  let lastKnownShellHeight = 0;
 
   const prefersReducedMotion = () => {
     try {
@@ -568,21 +601,35 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         || Math.abs(streamVelocity) < 1
       ) streamVelocity = 0;
     }
+    /* Stream tracking: while progressive samples keep arriving the target
+       is the keyboard's live leading edge — chase it hot so the composer
+       stays visible and rides the IME instead of emerging at the end. The
+       tighter smooth time still interpolates between coarse samples and
+       carries velocity through retargets; the arrival envelope below
+       caps every step at the real target, so tracking can never float the
+       composer above the keyboard. A stalled stream falls back to the
+       discrete smooth time for the remainder of the arc. */
+    const streamAlive = lastSampleProgressive
+      && lastTargetAt > 0
+      && now - lastTargetAt <= KEYBOARD_PROGRESSIVE_SAMPLE_MS;
+    const smoothTime = streamAlive ? KEYBOARD_CHASE_STREAM_S : KEYBOARD_CHASE_SMOOTH_S;
     /* Feed-forward: lead the chase target by up to one smooth-time of
        measured keyboard travel, so the painted position rides the keyboard's
        top edge instead of trailing it by velocity·smoothTime. The lead
        is capped by the remaining gap, so it can accelerate mid-flight
        but can never aim the composer past the target — and it vanishes
-       as soon as the stream stops or reverses. */
+       as soon as the stream stops or reverses. During a live stream a
+       one-frame lookahead is enough; the larger discrete lead would let
+       the aim overshoot the real edge. */
     const gap = targetTravel - painted;
-    let lead = streamVelocity * KEYBOARD_CHASE_SMOOTH_S;
+    let lead = streamVelocity * (streamAlive ? dt : KEYBOARD_CHASE_SMOOTH_S);
     if (Math.sign(lead) !== Math.sign(gap)) lead = 0;
     if (Math.abs(lead) > Math.abs(gap)) lead = gap;
     const next = smoothDampStep(
       painted,
       targetTravel + lead,
       chaseVelocity,
-      KEYBOARD_CHASE_SMOOTH_S,
+      smoothTime,
       dt,
     );
     chaseVelocity = next.velocity;
@@ -671,8 +718,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         );
         const blend = Math.min(1, (now - lastTargetAt) / 50);
         streamVelocity += (clamped - streamVelocity) * blend;
+        lastSampleProgressive = true;
       } else {
         streamVelocity = 0;
+        lastSampleProgressive = false;
       }
       targetTravel = nextTarget;
       lastTargetAt = now;
@@ -775,6 +824,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (!shell || typeof shell.getBoundingClientRect !== 'function') return;
     let height = 0;
     try { height = Number(shell.getBoundingClientRect().height); } catch (_) { /* keep zero */ }
+    /* If the layout viewport already shrank before this focus (some
+       platforms dispatch the first resize ahead of focusin), the live
+       rect is the post-keyboard height — freezing it would lock the
+       composer at its final position with no animation range left. The
+       remembered pre-keyboard height re-expands the shell instead. */
+    if (lastKnownShellHeight > height + 1) height = lastKnownShellHeight;
     if (!Number.isFinite(height) || height <= 0) return;
 
     const style = shell.style;
@@ -951,6 +1006,15 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        keyboard can only be open while a tracked input has focus, so
        the activeElement check is authoritative — visualViewport can
        be stale but focus cannot. */
+    /* While the shell is unfrozen (keyboard fully closed), keep the
+       pre-keyboard height baseline current — orientation changes, URL-bar
+       collapses and window resizes all flow through this update path. */
+    if (!keyboardShellFrozen) {
+      try {
+        const live = keyboardShellElement()?.getBoundingClientRect?.().height;
+        if (Number.isFinite(live) && live > 0) lastKnownShellHeight = live;
+      } catch (_) { /* detached shell */ }
+    }
     const focused = isInputFocused();
     if (focused) beginKeyboardSession();
     /* Anchoring follows the whole keyboard session: focus happens before
