@@ -1,0 +1,65 @@
+const smoothDampStep = (current, target, velocity, smoothTime, dt) => {
+  const omega = 2 / smoothTime;
+  const x = omega * dt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = current - target;
+  const temp = (velocity + omega * change) * dt;
+  const nextVelocity = (velocity - omega * temp) * exp;
+  let next = target + (change + temp) * exp;
+  if ((target - current > 0) === (next > target)) {
+    return { value: target, velocity: 0 };
+  }
+  return { value: next, velocity: nextVelocity };
+};
+
+const limitKeyboardInsetArrival = (current, proposed, target, dt, arrivalS) => {
+  if (!Number.isFinite(current) || !Number.isFinite(proposed) || !Number.isFinite(target) || !(dt > 0)) {
+    return Number.isFinite(target) ? target : current;
+  }
+  const gap = target - current;
+  const step = proposed - current;
+  if (gap === 0 || step === 0 || Math.sign(step) !== Math.sign(gap)) return proposed;
+  const maxFraction = 1 - Math.exp(-dt / arrivalS);
+  if (Math.abs(step) <= Math.abs(gap) * maxFraction) return proposed;
+  return current + gap * maxFraction;
+};
+
+const simulate = (smooth, arrival, preset, target, frames=32) => {
+  let p = 0, v = 0;
+  let chaseStartedAt = 0;
+  let motionFrameCount = 0;
+  const dt = 1 / 60;
+  let presetV = preset ? Math.min(600, (target / smooth) * 0.65) : 0;
+  console.log('--- smooth=' + smooth + ', arrival=' + arrival + ', preset=' + (preset ? 'on' : 'off') + ', MIN_MOTION_FRAMES=11 ---');
+  for (let i = 1; i <= frames; i++) {
+    motionFrameCount = i;
+    if (i === 1 && presetV > 0) {
+      v = presetV;
+      presetV = 0;
+    }
+    const r = smoothDampStep(p, target, v, smooth, dt);
+    const landed = limitKeyboardInsetArrival(p, r.value, target, dt, arrival);
+    if ((target - p > 0) === (landed > target)) {
+      p = target; v = 0;
+    } else {
+      p = landed; v = r.velocity;
+    }
+    const reachedTarget = p === target || (Math.abs(target - p) < 0.5 && Math.abs(v) < 15);
+    const settled = reachedTarget && motionFrameCount >= 11;
+    if (settled) {
+      p = target; v = 0;
+    }
+    if (i === 5 || i === 10 || i === 11 || i === 12 || i === 15 || i === 20 || i === 25 || i === 29) {
+      console.log('  frame ' + i + ' (' + Math.round(i*1000/60) + 'ms): painted=' + p.toFixed(2) + ' v=' + v.toFixed(2) + (settled ? ' SETTLED' : ''));
+    }
+    if (i === 29) {
+      console.log('  SAMPLE@480ms: painted=' + p.toFixed(2) + ' visible=' + (p - 14).toFixed(2));
+    }
+  }
+};
+
+simulate(0.10, 0.05, true, 260);
+simulate(0.10, 0.05, false, 260);
+simulate(0.12, 0.06, true, 260);
+simulate(0.24, 0.06, false, 260);
+

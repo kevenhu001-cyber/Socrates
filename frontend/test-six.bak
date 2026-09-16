@@ -1,0 +1,35 @@
+npm notice run socrates-app@1.0.0 npx
+npm notice run playwright test --config=playwright.config.mjs e2e/keyboard-viewport.spec.mjs --workers=1 -g lift starts continuous --reporter=line --timeout=120000
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › e2e\keyboard-viewport.spec.mjs:183:1 › keyboard lift starts continuous without an engagement write
+  1) [chromium] › e2e\keyboard-viewport.spec.mjs:183:1 › keyboard lift starts continuous without an engagement write 
+
+    Error: expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 244
+    Received:    234
+
+      267 |      to ±2px of test-side timing slack. The monotonicity + visible-lift
+      268 |      guards above still pin the shape of the curve. */
+    > 269 |   expect(Math.round(before.barTop - samples.at(-1).barTop)).toBeGreaterThanOrEqual(244);
+          |                                                             ^
+      270 |   expect(Math.round(before.barTop - samples.at(-1).barTop)).toBeLessThanOrEqual(248);
+      271 | });
+      272 |
+        at C:\Users\Jiacheng\Desktop\Socrates\frontend\e2e\keyboard-viewport.spec.mjs:269:61
+
+    Error Context: test-results\keyboard-viewport-keyboard-5c858-without-an-engagement-write-chromium\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\keyboard-viewport-keyboard-5c858-without-an-engagement-write-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\keyboard-viewport-keyboard-5c858-without-an-engagement-write-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+  1 failed
+    [chromium] › e2e\keyboard-viewport.spec.mjs:183:1 › keyboard lift starts continuous without an engagement write 
