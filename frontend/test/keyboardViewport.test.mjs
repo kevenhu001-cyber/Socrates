@@ -6,6 +6,8 @@ import {
   measureKeyboardInset,
   isTrackedInputFocused,
   isProgressiveKeyboardSample,
+  limitKeyboardInsetArrival,
+  KEYBOARD_ARRIVAL_S,
   KEYBOARD_PROGRESSIVE_SAMPLE_MS,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
@@ -44,7 +46,7 @@ test('getKeyboardInset ignores a transient zero-height visual viewport', () => {
   assert.equal(getKeyboardInset(844, -1, 0), 0);
 });
 
-test('getKeyboardInset rounds the gap between layout and visual viewport', () => {
+test('getKeyboardInset preserves sub-pixel viewport travel', () => {
   /* Layout viewport 800 px tall, keyboard covers 300 px of the bottom,
      visualViewport is panned to offsetTop 0. */
   assert.equal(getKeyboardInset(800, 500, 0), 300);
@@ -53,6 +55,20 @@ test('getKeyboardInset rounds the gap between layout and visual viewport', () =>
   assert.equal(getKeyboardInset(800, 500, 60), 240);
   /* A negative pan/overscroll offset must not increase the covered gap. */
   assert.equal(getKeyboardInset(800, 500, -60), 300);
+  assert.equal(getKeyboardInset(800.5, 500.25, 0), 300.25);
+});
+
+test('limitKeyboardInsetArrival decelerates instead of hard-stopping at the target', () => {
+  const dt = 1 / 60;
+  const maximumFraction = 1 - Math.exp(-dt / KEYBOARD_ARRIVAL_S);
+  const opening = limitKeyboardInsetArrival(220, 250, 240, dt);
+  const closing = limitKeyboardInsetArrival(20, -10, 0, dt);
+
+  assert.ok(opening > 220 && opening < 240);
+  assert.ok(closing < 20 && closing > 0);
+  assert.ok(Math.abs(opening - 220) <= 20 * maximumFraction + 1e-9);
+  assert.ok(Math.abs(closing - 20) <= 20 * maximumFraction + 1e-9);
+  assert.equal(limitKeyboardInsetArrival(100, 110, 200, dt), 110);
 });
 
 test('getKeyboardInset clamps to zero when visual viewport matches layout', () => {

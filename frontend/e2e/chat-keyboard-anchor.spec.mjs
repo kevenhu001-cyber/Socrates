@@ -219,6 +219,8 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
 
   const opening = await sampleMotion(appBottom - 240);
   expect(opening.at(-1).open).toBe('true');
+  const firstLiftedFrame = opening.find((frame) => frame.inset > 2);
+  expect(firstLiftedFrame?.open).toBe('true');
   for (let index = 1; index < opening.length; index += 1) {
     expect(opening[index].inset).toBeGreaterThanOrEqual(opening[index - 1].inset - 1);
     expect(opening[index].height).toBeGreaterThanOrEqual(opening[index - 1].height - 1);
@@ -227,6 +229,14 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
   expect(Math.max(...opening.slice(1).map((frame, index) =>
     frame.height - opening[index].height,
   ))).toBeLessThan(18);
+  const openingInsets = opening.map((frame) => frame.inset);
+  const lastMovingIndex = openingInsets.findLastIndex((value, index) => (
+    index > 0 && Math.abs(value - openingInsets[index - 1]) > 0.01
+  ));
+  const finalOpeningStep = lastMovingIndex > 0
+    ? openingInsets[lastMovingIndex] - openingInsets[lastMovingIndex - 1]
+    : Infinity;
+  expect(finalOpeningStep).toBeLessThan(4);
 
   const closing = await sampleMotion(appBottom);
   expect(closing.at(-1).open).toBe('false');
