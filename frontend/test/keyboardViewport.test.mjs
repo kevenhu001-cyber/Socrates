@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   getKeyboardInset,
   measureKeyboardInset,
+  measureKeyboardTravel,
   isTrackedInputFocused,
   isProgressiveKeyboardSample,
   limitKeyboardInsetArrival,
@@ -79,6 +80,13 @@ test('getKeyboardInset clamps to zero when visual viewport matches layout', () =
 test('measureKeyboardInset prefers visualViewport when present', () => {
   const viewport = { height: 500, offsetTop: 60 };
   assert.equal(measureKeyboardInset(800, viewport, 800), 240);
+});
+
+test('measureKeyboardTravel stays stable when iOS pans the visual viewport', () => {
+  assert.equal(measureKeyboardTravel(800, { height: 500, offsetTop: 0 }, 800), 300);
+  assert.equal(measureKeyboardTravel(800, { height: 500, offsetTop: 60 }, 800), 300);
+  /* Layout compensation still subtracts the pan at the final projection. */
+  assert.equal(measureKeyboardInset(800, { height: 500, offsetTop: 60 }, 800), 240);
 });
 
 test('measureKeyboardInset ignores a zoomed or transient visual viewport', () => {

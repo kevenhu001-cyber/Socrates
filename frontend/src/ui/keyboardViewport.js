@@ -42,7 +42,7 @@ import { smoothDampStep } from './motion.js';
  * keyboard is up, and some mutate the geometry without dispatching
  * per-frame events at all. So the measured inset is only ever a
  * *target*: a rAF loop chases it with a critically-damped spring
- * (smoothDampStep, ui/motion.js) whose ~80ms convergence lands a ~300px
+ * (smoothDampStep, ui/motion.js) whose ~100ms convergence lands a ~300px
  * keyboard inside the platform's own ~220-240ms IME window. Position
  * and velocity are continuous under every retarget — per-frame streams,
  * skipped samples, and mid-flight reversals all share one motion law,
@@ -68,16 +68,15 @@ import { smoothDampStep } from './motion.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
-/* Chase dynamics for the keyboard lift. The spring's smoothTime of ~160ms
- * intentionally lags the platform's own ~220-240ms IME window so the
- * composer visibly rides the keyboard instead of arriving in lockstep
- * with it; a single-frame spring was so fast it read as a snap on iOS.
- * The longer convergence keeps a gentle start (first motion frame well
- * inside the ~14px resting-margin absorption floor) and a soft landing.
+/* Chase dynamics for the keyboard lift. A ~100ms smooth time completes the
+ * critically-damped arc inside the platform's ~220-300ms IME window while
+ * keeping the first motion frame inside the resting-margin absorption floor.
+ * The visual-viewport pan is compensated separately below, so the spring no
+ * longer needs to be artificially slow to hide an iOS offsetTop jump.
  * Velocity is a state variable, so a retarget mid-flight bends the
  * motion instead of restarting it — the continuity the previous eased
  * tween could not provide when coarse samples kept arriving. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.16;
+export const KEYBOARD_CHASE_SMOOTH_S = 0.10;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -192,6 +191,32 @@ export function measureKeyboardInset(appBottom, viewport, innerHeight) {
   return getKeyboardInset(appBottom, Number(innerHeight) || 0, 0);
 }
 
+/* Motion must be integrated in visual-screen coordinates, not in layout
+ * coordinates. On iOS the browser is free to pan the visual viewport while
+ * the IME opens. `offsetTop` can arrive as one late jump (and can wobble by a
+ * few pixels), even when `height` changes progressively. If the spring chases
+ * the layout inset directly, that pan is visible immediately and the spring
+ * then chases the opposite correction: the composer appears to teleport and
+ * jitter.
+ *
+ * The total screen-space keyboard travel is independent of that pan:
+ *
+ *     travel = appBottom - visualViewport.height
+ *
+ * Each painted frame converts the interpolated travel back to the required
+ * layout inset by subtracting the *current* offsetTop. Browser pan + layout
+ * inset therefore always equals the continuous spring value. */
+export function measureKeyboardTravel(appBottom, viewport, innerHeight) {
+  const viewportHeight = Number(viewport?.height);
+  if (viewport && Number.isFinite(viewportHeight)) {
+    if (viewportHeight <= 0 || viewportHeight < MIN_STABLE_VISUAL_VIEWPORT_HEIGHT) return 0;
+    const scale = Number(viewport.scale);
+    if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) return 0;
+    return getKeyboardInset(appBottom, viewportHeight, 0);
+  }
+  return getKeyboardInset(appBottom, Number(innerHeight) || 0, 0);
+}
+
 /* The tracked node is usually the React composer mount point, while the
  * actual focus lives on a nested contenteditable element. Checking only
  * `root.matches(':focus')` misses that relationship and makes the virtual
@@ -257,10 +282,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* -1 forces the first write to apply, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
-  /* Chase state: the measured inset is only a target. The value exposed
-     to CSS is integrated by a critically-damped spring each frame
+  let appliedTravel = -1;
+  let appliedPanCompensation = -1;
+  /* Chase state: the measured screen-space travel is only a target. The
+     value is integrated by a critically-damped spring each frame and then
+     projected to the layout inset CSS consumes
      (smoothDampStep), so it is continuous in position and velocity under
-     every retarget. `paintedInset` is the spring's float position —
+     every retarget. `paintedTravel` is the spring's float position —
      integrating the rounded `appliedInset` instead would trap the spring
      in a quantization well ~1px short of the target and never settle.
      Keeping that float also lets CSS receive sub-pixel progress instead of
@@ -268,8 +296,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      `chaseVelocity` is the spring's own velocity; `streamVelocity` is
      the low-passed measured keyboard speed used for the feed-forward
      lead. */
-  let targetInset = 0;
-  let paintedInset = 0;
+  let targetTravel = 0;
+  let paintedTravel = 0;
   let chaseVelocity = 0;
   let streamVelocity = 0;
   let lastMotionAt = 0;
@@ -303,7 +331,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     } catch (_) { return false; }
   };
 
-  const stableMeasuredInset = (focused) => {
+  const stableMeasuredTravel = (focused) => {
     if (!focused) return 0;
     const viewportHeight = Number(viewport?.height);
     /* Preserve the last stable value while the visual viewport is in its
@@ -311,10 +339,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      * the composer down and back up, while an opening keyboard starts at 0
      * and adopts the first real sample on the next frame. */
     if (viewport && (!Number.isFinite(viewportHeight) || viewportHeight < MIN_STABLE_VISUAL_VIEWPORT_HEIGHT)) {
-      return appliedInset > 0 ? appliedInset : 0;
+      return appliedTravel > 0 ? appliedTravel : 0;
     }
     const appBottom = appShellBottom();
-    const measured = measureKeyboardInset(appBottom, viewport, window.innerHeight);
+    const measured = measureKeyboardTravel(appBottom, viewport, window.innerHeight);
     /* A few WebViews keep visualViewport.height at its pre-keyboard value
        while shrinking innerHeight. Once the shell is frozen, that inner
        height delta is a valid second signal. Only use it when the visual
@@ -474,15 +502,29 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      the composer by one frame. The ResizeObserver path in scroll.js and
      the scheduled restore stay as fallbacks — both decisions are
      idempotent. */
-  const writeInsetFrame = (inset) => {
-    const paintedValue = Number.isFinite(inset) ? Math.max(0, inset) : 0;
-    if (Math.abs(paintedValue - appliedInset) < 0.01) return;
+  const writeInsetFrame = (travel) => {
+    const paintedValue = Number.isFinite(travel) ? Math.max(0, travel) : 0;
+    /* Convert the continuous screen-space travel to layout compensation.
+       visualViewport.offsetTop is motion the browser already applied, so
+       subtract it instead of letting the spring chase it. A pan-only event
+       must still rewrite the CSS inset even when the spring value is idle. */
+    const layoutInset = Math.max(0, paintedValue - Math.max(0, viewportOffsetTop()));
+    const panCompensation = Math.max(0, viewportOffsetTop() - paintedValue);
+    if (
+      Math.abs(paintedValue - appliedTravel) < 0.01
+      && Math.abs(layoutInset - appliedInset) < 0.01
+      && Math.abs(panCompensation - appliedPanCompensation) < 0.01
+    ) return;
     /* Preserve sub-pixel progress. Integer writes repeat values near both
        ends of the spring and make a smooth curve look like a staircase on
        high-DPR phones. Three decimals is stable without growing style text. */
-    const cssInset = Number(paintedValue.toFixed(3));
+    const cssInset = Number(layoutInset.toFixed(3));
+    const cssPanCompensation = Number(panCompensation.toFixed(3));
     root.style.setProperty('--keyboard-inset', `${cssInset}px`);
-    appliedInset = paintedValue;
+    root.style.setProperty('--keyboard-pan-compensation', `${cssPanCompensation}px`);
+    appliedInset = layoutInset;
+    appliedTravel = paintedValue;
+    appliedPanCompensation = panCompensation;
     /* A pan can grow inside a single chase frame without a fresh event —
        keep the top-chrome offset current on the same frame cadence. */
     writeVisualTop();
@@ -515,7 +557,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       ? Math.min(0.064, Math.max(0.001, (now - lastMotionAt) / 1000))
       : 1 / 60;
     lastMotionAt = now;
-    const painted = paintedInset;
+    const painted = paintedTravel;
     /* Once samples stop arriving mid-travel the measured velocity is
        stale: decay it so the chase lead unwinds instead of holding the
        composer on a target that has already settled. */
@@ -527,18 +569,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       ) streamVelocity = 0;
     }
     /* Feed-forward: lead the chase target by up to one smooth-time of
-       measured keyboard travel, so the painted inset rides the keyboard's
+       measured keyboard travel, so the painted position rides the keyboard's
        top edge instead of trailing it by velocity·smoothTime. The lead
        is capped by the remaining gap, so it can accelerate mid-flight
        but can never aim the composer past the target — and it vanishes
        as soon as the stream stops or reverses. */
-    const gap = targetInset - painted;
+    const gap = targetTravel - painted;
     let lead = streamVelocity * KEYBOARD_CHASE_SMOOTH_S;
     if (Math.sign(lead) !== Math.sign(gap)) lead = 0;
     if (Math.abs(lead) > Math.abs(gap)) lead = gap;
     const next = smoothDampStep(
       painted,
-      targetInset + lead,
+      targetTravel + lead,
       chaseVelocity,
       KEYBOARD_CHASE_SMOOTH_S,
       dt,
@@ -551,16 +593,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     let landed = limitKeyboardInsetArrival(
       painted,
       next.value,
-      targetInset,
+      targetTravel,
       dt,
     );
     if (landed !== next.value) {
       chaseVelocity = (landed - painted) / dt;
     }
-    paintedInset = landed;
+    paintedTravel = landed;
     writeInsetFrame(landed);
-    const reachedTarget = landed === targetInset
-      || (Math.abs(targetInset - landed) < 0.5 && Math.abs(chaseVelocity) < 12);
+    const reachedTarget = landed === targetTravel
+      || (Math.abs(targetTravel - landed) < 0.5 && Math.abs(chaseVelocity) < 12);
     /* Honour MIN_MOTION_FRAMES before letting the loop end: a spring
        that arrives on frame 1 has not produced any visible motion, and
        terminating then paints the final inset for one frame straight
@@ -570,8 +612,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        frames visibly in motion. */
     const settled = reachedTarget && motionFrameCount >= MIN_MOTION_FRAMES;
     if (settled) {
-      paintedInset = targetInset;
-      writeInsetFrame(targetInset);
+      paintedTravel = targetTravel;
+      writeInsetFrame(targetTravel);
       chaseVelocity = 0;
       streamVelocity = 0;
       motionFrameCount = 0;
@@ -584,8 +626,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* The visible keyboard lift is owned by this rAF loop. CSS only consumes
      the already-interpolated value; it must not run a second transition on
      top of these writes or the composer will lag behind the keyboard. */
-  const applyInset = (inset) => {
-    const nextTarget = Number.isFinite(inset) ? Math.max(0, inset) : 0;
+  const applyTravel = (travel) => {
+    const nextTarget = Number.isFinite(travel) ? Math.max(0, travel) : 0;
     /* `data-keyboard-open` is updated by writeInsetFrame from the painted
        value. Do not flip it here from the target: its CSS consumers include
        the composer geometry and safe-area padding, and changing those at
@@ -593,16 +635,22 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* A repeated application of the current target must not disturb the
        chase — the rAF loop is already converging on it (or has arrived). */
     if (
-      nextTarget === targetInset
-      && (motionFrame !== 0 || appliedInset === nextTarget)
-    ) return;
+      nextTarget === targetTravel
+      && (motionFrame !== 0 || appliedTravel === nextTarget)
+    ) {
+      /* offsetTop may have changed without a height change. Re-project the
+         current spring position so that native pan never becomes a visible
+         jump. */
+      writeInsetFrame(paintedTravel);
+      return;
+    }
 
     const now = (typeof performance !== 'undefined' && performance.now)
       ? performance.now()
       : Date.now();
-    const streamDirection = Math.sign(nextTarget - targetInset);
+    const streamDirection = Math.sign(nextTarget - targetTravel);
 
-    if (nextTarget !== targetInset) {
+    if (nextTarget !== targetTravel) {
       /* Feed-forward velocity: only a sample that continues an
          established same-direction stream carries the keyboard's
          measured speed into the lead. A lone jump (first report, long
@@ -616,7 +664,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         streamDirection,
       );
       if (progressive) {
-        const raw = (nextTarget - targetInset) / ((now - lastTargetAt) / 1000);
+        const raw = (nextTarget - targetTravel) / ((now - lastTargetAt) / 1000);
         const clamped = Math.max(
           -KEYBOARD_STREAM_MAX_VELOCITY,
           Math.min(KEYBOARD_STREAM_MAX_VELOCITY, raw),
@@ -626,7 +674,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       } else {
         streamVelocity = 0;
       }
-      targetInset = nextTarget;
+      targetTravel = nextTarget;
       lastTargetAt = now;
       if (streamDirection) transitionDirection = streamDirection;
       /* The geometry is still moving — keep the sampling window open so
@@ -639,7 +687,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the spring is the only animation, so a snap is a direct write. */
     if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      paintedInset = nextTarget;
+      paintedTravel = nextTarget;
       chaseVelocity = 0;
       streamVelocity = 0;
       motionFrameCount = 0;
@@ -667,7 +715,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       ? performance.now()
       : Date.now();
     if (now >= geometryPollUntil) return;
-    applyInset(stableMeasuredInset(isInputFocused()));
+    applyTravel(stableMeasuredTravel(isInputFocused()));
     if (
       !geometryPollFrame
       && typeof window.requestAnimationFrame === 'function'
@@ -784,7 +832,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const maybeReleaseKeyboardShell = () => {
     if (!keyboardShellFrozen) return;
-    if (isInputFocused() || targetInset > 0 || motionFrame || appliedInset > 0) return;
+    if (isInputFocused() || targetTravel > 0 || motionFrame || appliedTravel > 0) return;
     const graceElapsed = keyboardSessionStartedAt > 0
       && Date.now() - keyboardSessionStartedAt > 900;
     if (!keyboardViewportSettled() && !graceElapsed) {
@@ -890,8 +938,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
          Skip it whenever a keyboard target is active; the padding is the
          sole avoidance mechanism in that state. The function remains the
          fallback for focus-without-keyboard (desktop, tap-to-focus on a
-         partially off-screen input) where targetInset is 0. */
-      if (isInputFocused() && targetInset <= 0) ensureTopicComposerVisible();
+         partially off-screen input) where targetTravel is 0. */
+      if (isInputFocused() && targetTravel <= 0) ensureTopicComposerVisible();
     });
   };
 
@@ -908,11 +956,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* Anchoring follows the whole keyboard session: focus happens before
        the first geometry change, so capturing covers layout-resize
        keyboards (Android/Capacitor, --keyboard-inset stays 0) as well as
-       overlay keyboards. The capture must precede applyInset: a written
+       overlay keyboards. The capture must precede applyTravel: a written
        inset re-anchors in the same frame, and that correction needs the
        reader's pre-write intent, not a post-write snapshot. */
     if (focused) beginTranscriptAnchor();
-    applyInset(stableMeasuredInset(focused));
+    applyTravel(stableMeasuredTravel(focused));
     writeVisualTop();
     applyTopicComposerFocused(focused);
     if (focused) scheduleTopicEnsure();
@@ -975,6 +1023,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      the correction on the same frame; the rAF'd update() then re-checks
      focus and geometry as the fallback. */
   const onViewportGeometry = () => {
+    /* A visual-viewport pan is compositor motion and can be dispatched from
+       inside the frame that will paint it. Re-project the current spring
+       value synchronously; deferring this write through schedule() leaves
+       one frame where the browser pan is visible on its own — precisely the
+       focus-time teleport this controller is meant to cancel. Height changes
+       still enter the spring through the coalesced update below. */
+    if (isInputFocused()) writeInsetFrame(paintedTravel);
     schedule();
     if (!transcriptAnchor) return;
     /* While a send-time turn anchor holds the transcript (dataset flag),
@@ -1029,13 +1084,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     if (keyboardShellReleaseTimer) clearTimeout(keyboardShellReleaseTimer);
     keyboardShellReleaseTimer = 0;
-    paintedInset = 0;
+    paintedTravel = 0;
     chaseVelocity = 0;
     streamVelocity = 0;
     restoreKeyboardShell();
     clearTranscriptAnchor();
     try {
       root.style.removeProperty('--keyboard-inset');
+      root.style.removeProperty('--keyboard-pan-compensation');
       root.style.removeProperty('--keyboard-visual-top');
     } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
