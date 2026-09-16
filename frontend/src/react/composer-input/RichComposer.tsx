@@ -536,7 +536,18 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         },
         focus: (view) => {
           composerWrapRef.current = view.dom.closest('.chat-input-wrap, .topic-input-wrap');
-          composerWrapRef.current?.classList.add('composer-focused');
+          /* Defer the wrap's height/border-radius growth by one frame so it
+             does not land in the same frame as the JS keyboard-lift spring
+             starting from rest. Without the defer, the wrap's .34s CSS
+             transition changes the bar's intrinsic height in the same task
+             as the IME animation, and the composer's height jump reads as
+             an instant snap on top of an otherwise-smooth lift. */
+          const wrap = composerWrapRef.current;
+          if (wrap) {
+            requestAnimationFrame(() => {
+              wrap.classList.add('composer-focused');
+            });
+          }
           return false;
         },
         blur: (_view, event) => {

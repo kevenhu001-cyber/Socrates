@@ -68,14 +68,16 @@ import { smoothDampStep } from './motion.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
-/* Chase dynamics for the keyboard lift. The spring's smoothTime of ~80ms
- * lands a phone keyboard (~300px) inside the platform's own ~220-240ms
- * IME window, with a gentle start (first motion frame ≈15px, inside the
- * 14px resting-margin absorption floor) and a soft landing. Velocity is
- * a state variable, so a retarget mid-flight bends the motion instead of
- * restarting it — the continuity the previous eased tween could not
- * provide when coarse samples kept arriving. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.08;
+/* Chase dynamics for the keyboard lift. The spring's smoothTime of ~160ms
+ * intentionally lags the platform's own ~220-240ms IME window so the
+ * composer visibly rides the keyboard instead of arriving in lockstep
+ * with it; a single-frame spring was so fast it read as a snap on iOS.
+ * The longer convergence keeps a gentle start (first motion frame well
+ * inside the ~14px resting-margin absorption floor) and a soft landing.
+ * Velocity is a state variable, so a retarget mid-flight bends the
+ * motion instead of restarting it — the continuity the previous eased
+ * tween could not provide when coarse samples kept arriving. */
+export const KEYBOARD_CHASE_SMOOTH_S = 0.16;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -84,6 +86,14 @@ export const KEYBOARD_CHASE_SMOOTH_S = 0.08;
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
 export const KEYBOARD_ARRIVAL_S = 0.024;
+
+/* Hard floor on the number of chase frames before settle is allowed to
+ * fire. 6 frames @ 60 Hz ≈ 100 ms — short enough that no perceptual lag
+ * is added on slow platforms, long enough that the composer always
+ * travels an arc the eye can read instead of arriving in one frame. The
+ * counter resets whenever the chase starts or retargets by more than a
+ * trivial amount, so repeated re-opens do not get to skip the ramp. */
+export const MIN_MOTION_FRAMES = 6;
 
 /* A focused visual viewport can differ from the shell by a fractional pixel
  * because of device-pixel rounding. Treat the keyboard as open on the first
@@ -209,6 +219,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* Clear the legacy frozen-height value when hot reload or a soft navigation
      reuses the document. It is no longer part of keyboard avoidance. */
   try { root.style.removeProperty('--app-vh'); } catch (_) { /* detached root */ }
+  /* Pre-arm the manual-motion flag so the .34s CSS transition on .chat-view
+     is dead from the very first frame — including the window before focusin
+     fires, when a stray visualViewport.resize can already write
+     --keyboard-inset once. Without this the first write could be carried
+     by the CSS transition (which lands in one timeline) and then cut off
+     mid-flight by the JS spring, reading as a snap. beginKeyboardSession
+     still owns the same attribute, so this is just a fast-path. */
+  try { root.dataset.keyboardMotion = 'manual'; } catch (_) { /* detached root */ }
 
   /* P_multi-input — `input` (single element) is the legacy shape; pass
    * `inputs` (single element, array of elements, or CSS selector) to
@@ -229,6 +247,12 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let anchorFrame = 0;
   let anchorRefreshTimer = 0;
   let motionFrame = 0;
+  /* Frames spent in the current chase — the settle test below uses this to
+     guarantee at least MIN_MOTION_FRAMES of interpolation before we are
+     allowed to declare the target reached. Without it the spring can land
+     at the target on frame 1 (the chase lead can eat the whole gap) and
+     the loop ends before any visible motion — the snap the user reports. */
+  let motionFrameCount = 0;
   let blurRecheckTimer = 0;
   /* -1 forces the first write to apply, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
@@ -486,6 +510,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const stepMotion = (now) => {
     motionFrame = 0;
+    motionFrameCount += 1;
     const dt = lastMotionAt > 0
       ? Math.min(0.064, Math.max(0.001, (now - lastMotionAt) / 1000))
       : 1 / 60;
@@ -534,13 +559,22 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     }
     paintedInset = landed;
     writeInsetFrame(landed);
-    const settled = landed === targetInset
+    const reachedTarget = landed === targetInset
       || (Math.abs(targetInset - landed) < 0.5 && Math.abs(chaseVelocity) < 12);
+    /* Honour MIN_MOTION_FRAMES before letting the loop end: a spring
+       that arrives on frame 1 has not produced any visible motion, and
+       terminating then paints the final inset for one frame straight
+       from 0 — the instant jump the user sees on iOS. The floor keeps
+       the arc short enough to stay inside the IME window (~240 ms)
+       while still guaranteeing every chase spends at least a couple of
+       frames visibly in motion. */
+    const settled = reachedTarget && motionFrameCount >= MIN_MOTION_FRAMES;
     if (settled) {
       paintedInset = targetInset;
       writeInsetFrame(targetInset);
       chaseVelocity = 0;
       streamVelocity = 0;
+      motionFrameCount = 0;
       maybeReleaseKeyboardShell();
       return;
     }
@@ -608,11 +642,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       paintedInset = nextTarget;
       chaseVelocity = 0;
       streamVelocity = 0;
+      motionFrameCount = 0;
       writeInsetFrame(nextTarget);
       return;
     }
     if (!motionFrame) {
       lastMotionAt = now;
+      /* A new chase session restarts the frame counter so the MIN_MOTION_FRAMES
+         floor always protects the visible ramp — even if the previous
+         session was interrupted before settling. */
+      motionFrameCount = 0;
       motionFrame = requestAnimationFrame(stepMotion);
     }
   };
