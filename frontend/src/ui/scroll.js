@@ -315,8 +315,18 @@ export function initChatComposerReserve(options){
     if(composerFollowFrame){cancelAnimationFrame(composerFollowFrame);composerFollowFrame=0;}
     composerFollowUntil=0;
   }
+  function keyboardTransitionActive(){
+    var phase=document.documentElement&&document.documentElement.dataset
+      ?document.documentElement.dataset.keyboardPhase
+      :'';
+    return phase==='opening'||phase==='closing';
+  }
   function runComposerFollow(){
     composerFollowFrame=0;
+    if(keyboardTransitionActive()){
+      stopComposerFollow();
+      return;
+    }
     if(!list||userScrolledAway()||!lastPinned||
        (list.querySelector&&list.querySelector(".turn-viewport-anchor"))){
       stopComposerFollow();
@@ -347,6 +357,11 @@ export function initChatComposerReserve(options){
     ?document.querySelector("#chatView, .chat-view")
     :null;
   var followComposerResize=function(){
+      /* keyboardViewport owns the scroll anchor during its opening/closing
+         rAF. A ResizeObserver delivery from the same flex reflow must not
+         write scrollTop a second time, or the composer appears to wobble even
+         when its inset is monotonic. */
+      if(keyboardTransitionActive())return;
       if(!list||userScrolledAway())return;
       /* A programmatic scrollTop write dispatches its scroll event after the
          current task. If a keyboard/layout change arrives in that same task,
@@ -404,7 +419,7 @@ export function initChatComposerReserve(options){
     ?new MutationObserver(function(){
       var rootEl=document.documentElement;
       var inset=parseFloat(rootEl.style.getPropertyValue("--keyboard-inset"))||0;
-      if(inset<=0||rootEl.dataset.keyboardOpen==="true"||keyboardStyleFollowFrame)return;
+      if(inset<=0||rootEl.dataset.keyboardOpen==="true"||keyboardTransitionActive()||keyboardStyleFollowFrame)return;
       keyboardStyleFollowFrame=requestAnimationFrame(function(){
         keyboardStyleFollowFrame=0;
         followComposerResize();
@@ -415,6 +430,7 @@ export function initChatComposerReserve(options){
     keyboardStyleObserver.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
   }
   function onComposerTransition(event){
+    if(keyboardTransitionActive())return;
     var target=event&&event.target;
     if(target&&target.closest&&target.closest(".chat-input-wrap"))armComposerFollow();
   }

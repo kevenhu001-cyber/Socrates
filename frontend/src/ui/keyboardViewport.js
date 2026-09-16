@@ -33,8 +33,8 @@ import { smoothDampStep } from './motion.js';
  *   - resize mode:   appBottom already moved up      → inset ≈ 0 (CSS did it)
  *   - stuck 100vh:   appBottom stuck at full height  → inset = keyboard height
  *
- * This module writes one CSS custom property (--keyboard-inset) plus a
- * data-keyboard-open flag. The composer's geometry never morphs with the
+ * This module writes one CSS custom property (--keyboard-inset) plus
+ * keyboard intent/phase flags. The composer's geometry never morphs with the
  * keyboard — chat-surface.css owns its shape, and this module only
  * publishes how much of the app the keyboard covers.
  * Browsers differ in how they report the keyboard's travel: some emit
@@ -340,6 +340,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let keyboardShellRestoreStyle = null;
   let keyboardShellReleaseTimer = 0;
   let keyboardSessionStartedAt = 0;
+  let keyboardPhase = 'closed';
   /* Last shell height observed while the keyboard was fully closed. Some
      platforms shrink the layout viewport before dispatching focusin, so
      measuring at focus time would freeze the shell at the already-shrunken
@@ -348,6 +349,23 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      to its final position. Freezing to max(live, last known) re-expands the
      shell in that case, restoring the full animation range. */
   let lastKnownShellHeight = 0;
+  let lastKnownVisualHeight = 0;
+
+  const setKeyboardPhase = (nextPhase) => {
+    keyboardPhase = nextPhase;
+    try {
+      root.dataset.keyboardPhase = nextPhase;
+    } catch (_) { /* detached root */ }
+  };
+
+  const setKeyboardIntent = (open) => {
+    try {
+      root.dataset.keyboardOpen = open ? 'true' : 'false';
+    } catch (_) { /* detached root */ }
+  };
+
+  setKeyboardPhase('closed');
+  setKeyboardIntent(false);
 
   const prefersReducedMotion = () => {
     try {
@@ -519,6 +537,19 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     anchorFrame = window.requestAnimationFrame(restoreTranscriptAnchor);
   };
 
+  const restoreTranscriptAnchorNow = () => {
+    /* A deferred restore leaves one painted frame where flex has already
+       shortened the transcript but scrollTop still describes the old
+       viewport. During a keyboard transition that one frame is visible as
+       a gap/jump. Cancel the fallback rAF and let the keyboard controller
+       be the single synchronous scroll owner for this frame. */
+    if (anchorFrame) {
+      cancelAnimationFrame(anchorFrame);
+      anchorFrame = 0;
+    }
+    restoreTranscriptAnchor();
+  };
+
   /* One frame of the lift: write the current interpolated inset, then
      re-anchor in this same frame. Raising the in-flow composer shrinks
      the transcript's flex viewport; reading the list's metrics right
@@ -563,22 +594,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* A pan can grow inside a single chase frame without a fresh event —
        keep the top-chrome offset current on the same frame cadence. */
     writeVisualTop();
-    /* P_keyboard-open-painted — this flag changes more than visibility:
-       mobile composer rules use it to reveal the second control row and to
-       consume the resting safe-area gap. Deriving it from the measured
-       target made those layout changes land before the first chase frame,
-       so the composer could move down briefly while the JS lift was still
-       starting. The flag must describe the value already painted, not the
-       destination the rAF loop is travelling toward. */
-    const openFlag = paintedValue > KEYBOARD_OPEN_THRESHOLD_PX ? 'true' : 'false';
-    try {
-      if (root.dataset.keyboardOpen !== openFlag) root.dataset.keyboardOpen = openFlag;
-    } catch (_) { /* detached root */ }
-    /* Do NOT force synchronous layout reflow inside writeInsetFrame!
-       Schedule transcript restore so layout mutation and metrics reading
-       are decoupled, eliminating dropped frames and visual jitter. */
-    if (transcriptAnchor && isInputFocused()) {
-      scheduleTranscriptRestore();
+    /* `data-keyboard-open` is an intent/visibility flag, not a per-frame
+       geometry signal. It is updated when the target changes, while the
+       separate phase attribute remains `opening`/`closing` until the spring
+       settles. This prevents a first non-zero paint from activating a second
+       composer layout halfway through the lift. */
+    /* The keyboard transition owns this one scroll correction. Reading the
+       list after the inset write forces the flex layout before paint, so the
+       transcript and composer commit on the same frame instead of exposing
+       a one-frame gap. scroll.js remains a fallback for non-keyboard changes. */
+    if (transcriptAnchor && (isInputFocused() || keyboardPhase === 'closing')) {
+      restoreTranscriptAnchorNow();
     }
   };
 
@@ -636,6 +662,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (settled) {
       paintedTravel = targetTravel;
       writeInsetFrame(targetTravel);
+      if (targetTravel > KEYBOARD_OPEN_THRESHOLD_PX) {
+        setKeyboardIntent(true);
+        setKeyboardPhase('open');
+      } else {
+        setKeyboardIntent(false);
+        setKeyboardPhase('closed');
+      }
       chaseVelocity = 0;
       streamVelocity = 0;
       motionFrameCount = 0;
@@ -651,10 +684,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      top of these writes or the composer will lag behind the keyboard. */
   const applyTravel = (travel) => {
     const nextTarget = Number.isFinite(travel) ? Math.max(0, travel) : 0;
-    /* `data-keyboard-open` is updated by writeInsetFrame from the painted
-       value. Do not flip it here from the target: its CSS consumers include
-       the composer geometry and safe-area padding, and changing those at
-       target-arrival would undo the continuous first frames below. */
+    /* Publish intent at the edge of the transition, but keep all geometry
+       on the spring's rAF timeline. The phase is separate because a close
+       intent must not let scroll.js or visual-only chrome react while the
+       inset is still travelling back to zero. */
     /* A repeated application of the current target must not disturb the
        chase — the rAF loop is already converging on it (or has arrived). */
     if (
@@ -674,6 +707,24 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const streamDirection = Math.sign(nextTarget - targetTravel);
 
     if (nextTarget !== targetTravel) {
+      if (nextTarget > KEYBOARD_OPEN_THRESHOLD_PX) {
+        setKeyboardIntent(true);
+        /* A new sample means the keyboard is still moving. Do not promote
+           the phase to `open` just because an earlier frame crossed 2px;
+           progressive samples can continue arriving for the whole IME
+           animation and scroll.js must stay out of that timeline. */
+        setKeyboardPhase('opening');
+      } else if (paintedTravel > KEYBOARD_OPEN_THRESHOLD_PX || targetTravel > KEYBOARD_OPEN_THRESHOLD_PX) {
+        /* Close intent is published immediately, but the `closing` phase
+           keeps visual-only chrome hidden until the spring has actually
+           reached the resting position. scroll.js also uses this phase to
+           stay out of the keyboard controller's scroll timeline. */
+        setKeyboardIntent(false);
+        setKeyboardPhase('closing');
+      } else {
+        setKeyboardIntent(false);
+        setKeyboardPhase('closed');
+      }
       /* Feed-forward velocity: only a sample that continues an
          established same-direction stream carries the keyboard's
          measured speed into the lead. A lone jump (first report, long
@@ -720,6 +771,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       motionFrameCount = 0;
       chaseStartedAt = 0;
       writeInsetFrame(nextTarget);
+      setKeyboardPhase(nextTarget > KEYBOARD_OPEN_THRESHOLD_PX ? 'open' : 'closed');
+      setKeyboardIntent(nextTarget > KEYBOARD_OPEN_THRESHOLD_PX);
       return;
     }
     if (!motionFrame) {
@@ -787,6 +840,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const isInputFocused = () => isTrackedInputFocused(trackedInputs);
 
+  const isTrackedEditableTarget = (eventTarget) => {
+    let target = eventTarget;
+    try {
+      if (target && target.nodeType !== 1) target = target.parentElement;
+      const editor = target?.closest?.('[contenteditable="true"], textarea, input');
+      if (!editor) return false;
+      return trackedInputs.some((tracked) => tracked && (
+        tracked === editor || tracked.contains?.(editor)
+      ));
+    } catch (_) { return false; }
+  };
+
   const keyboardShellElement = () => container
     || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
     || root;
@@ -814,21 +879,30 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        remembered pre-keyboard height re-expands the shell instead. */
     if (lastKnownShellHeight > height + 1) height = lastKnownShellHeight;
     if (!Number.isFinite(height) || height <= 0) return;
+    const baselineHeight = Math.max(height, lastKnownShellHeight);
+    const liveVisualHeight = Number(viewport?.height);
+    const baselineVisualHeight = lastKnownVisualHeight >= MIN_STABLE_VISUAL_VIEWPORT_HEIGHT
+      ? lastKnownVisualHeight
+      : (Number.isFinite(liveVisualHeight) && liveVisualHeight >= MIN_STABLE_VISUAL_VIEWPORT_HEIGHT
+        ? liveVisualHeight
+        : baselineHeight);
 
     const style = shell.style;
     keyboardShellRestoreStyle = {
       value: style.getPropertyValue('height'),
       priority: style.getPropertyPriority('height'),
     };
-    keyboardShellBaselineInnerHeight = Number(window.innerHeight) || height;
-    keyboardShellBaselineVisualHeight = Number(viewport?.height)
-      || keyboardShellBaselineInnerHeight;
+    /* `innerHeight` may already be the post-keyboard value here. The shell
+       height (or the closed-shell snapshot) is the actual layout baseline;
+       using live innerHeight reintroduced the zero-animation-range bug. */
+    keyboardShellBaselineInnerHeight = baselineHeight;
+    keyboardShellBaselineVisualHeight = baselineVisualHeight;
     keyboardSessionStartedAt = Date.now();
     keyboardShellFrozen = true;
     /* Lock the pre-keyboard geometry before the browser's next layout pass.
        This is the compensation baseline; --keyboard-inset then moves the
        in-flow composer toward the visual viewport one frame at a time. */
-    style.setProperty('height', `${height}px`, keyboardShellRestoreStyle.priority);
+    style.setProperty('height', `${baselineHeight}px`, keyboardShellRestoreStyle.priority);
   };
 
   const keyboardViewportSettled = () => {
@@ -997,6 +1071,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         const live = keyboardShellElement()?.getBoundingClientRect?.().height;
         if (Number.isFinite(live) && live > 0) lastKnownShellHeight = live;
       } catch (_) { /* detached shell */ }
+      const liveVisualHeight = Number(viewport?.height);
+      if (Number.isFinite(liveVisualHeight) && liveVisualHeight >= MIN_STABLE_VISUAL_VIEWPORT_HEIGHT) {
+        lastKnownVisualHeight = liveVisualHeight;
+      }
     }
     const focused = isInputFocused();
     if (focused) beginKeyboardSession();
@@ -1030,10 +1108,24 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     });
   };
 
+  /* Arm the shell before the browser performs the default focus action. On
+     resize-content platforms the layout viewport can shrink between
+     pointerdown and focusin; waiting for focusin leaves the in-flow composer
+     at its post-keyboard position before the rAF chase owns the first frame.
+     This listener is capture-only and does not prevent focus, it merely takes
+     the closed geometry snapshot early enough for the keyboard session. */
+  const onFocusIntent = (event) => {
+    if (!isTrackedEditableTarget(event?.target)) return;
+    beginKeyboardSession();
+    extendGeometryPoll(KEYBOARD_POLL_EDGE_MS);
+    /* A cancelled pointer/touch gesture may never produce focusin/focusout.
+       Do not leave the shell frozen in that case; a real focus keeps this
+       timer harmless because maybeReleaseKeyboardShell sees the focused
+       editor and waits for the normal keyboard session. */
+    scheduleKeyboardShellRelease();
+  };
+
   const onFocusIn = () => {
-    if (typeof window !== 'undefined' && Number(window.scrollY) > 0) {
-      try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (_) { window.scrollTo(0, 0); }
-    }
     beginKeyboardSession();
     /* Open the geometry sampling window for the whole open animation:
        even platforms that never dispatch per-frame events still get
@@ -1060,6 +1152,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   const onViewportGeometry = () => {
+    /* visualViewport can pan before the next rAF. Project the already-painted
+       travel immediately so the native pan is cancelled in the same event;
+       waiting for update() makes the composer visibly jump for one frame on
+       iOS. The next rAF still measures the new height and advances the
+       spring. */
+    if (keyboardShellFrozen || isInputFocused()) writeInsetFrame(paintedTravel);
+    else writeVisualTop();
     schedule();
     if (!transcriptAnchor) return;
     const anchorList = transcriptAnchor.list;
@@ -1092,6 +1191,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      covers an editor that mounts after this initializer has run. */
   document.addEventListener('focusin', onFocusIn);
   document.addEventListener('focusout', onBlur);
+  document.addEventListener('pointerdown', onFocusIntent, { capture: true, passive: true });
+  document.addEventListener('touchstart', onFocusIntent, { capture: true, passive: true });
   /* Returning from the background (tab switch, native app pause) can
      swallow the close-resize entirely; re-measure on visibility flips.
      The Capacitor bridge mirrors appStateChange into this same event. */
@@ -1110,6 +1211,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     paintedTravel = 0;
     chaseVelocity = 0;
     streamVelocity = 0;
+    keyboardPhase = 'closed';
     restoreKeyboardShell();
     clearTranscriptAnchor();
     try {
@@ -1118,6 +1220,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       root.style.removeProperty('--keyboard-visual-top');
     } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardOpen; } catch (_) { /* detached root */ }
+    try { delete root.dataset.keyboardPhase; } catch (_) { /* detached root */ }
     try { delete root.dataset.keyboardMotion; } catch (_) { /* detached root */ }
     try { delete root.dataset.topicComposerFocused; } catch (_) { /* detached root */ }
     if (viewport) {
@@ -1130,6 +1233,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     }
     document.removeEventListener('focusin', onFocusIn);
     document.removeEventListener('focusout', onBlur);
+    document.removeEventListener('pointerdown', onFocusIntent, { capture: true });
+    document.removeEventListener('touchstart', onFocusIntent, { capture: true });
     document.removeEventListener('visibilitychange', schedule);
   };
 }
