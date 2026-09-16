@@ -6,21 +6,19 @@ import {
   measureKeyboardInset,
   isTrackedInputFocused,
   isProgressiveKeyboardSample,
-  isFrameSizedKeyboardStep,
   KEYBOARD_PROGRESSIVE_SAMPLE_MS,
-  KEYBOARD_TRACK_STEP_PX,
   MIN_STABLE_VISUAL_VIEWPORT_HEIGHT,
 } from '../src/ui/keyboardViewport.js';
 
 /*
  * Pure helpers — no DOM, no window. The DOM-touching initKeyboardViewport
  * is exercised end-to-end by the Playwright smoke suite; these tests guard
- * the math behind the inset value and the focus check. The lift's easing
- * and duration come from ui/motion.js (easeOutQuint + planMotionForUser),
- * covered by motion.test.mjs.
+ * the math behind the inset value and the focus check. The lift's motion
+ * law (critically-damped spring + stream-velocity lead) lives in
+ * ui/motion.js (smoothDampStep), covered by motion.test.mjs.
  */
 
-test('continuous keyboard samples follow native geometry instead of restarting the tween', () => {
+test('same-direction samples inside the progressive window count as stream evidence', () => {
   const start = 1_000;
   assert.equal(isProgressiveKeyboardSample(start, start + 16, 1, 1), true);
   assert.equal(
@@ -30,19 +28,6 @@ test('continuous keyboard samples follow native geometry instead of restarting t
   assert.equal(isProgressiveKeyboardSample(start, start + KEYBOARD_PROGRESSIVE_SAMPLE_MS + 1, 1, 1), false);
   assert.equal(isProgressiveKeyboardSample(start, start + 16, 1, -1), false);
   assert.equal(isProgressiveKeyboardSample(0, start + 16, 1, 1), false);
-});
-
-test('frame-sized measured steps are tracked directly, larger jumps are not', () => {
-  /* A real per-frame IME stream moves ≤ ~70px between samples even on a
-     30fps WebView; those steps may be written straight through. */
-  assert.equal(isFrameSizedKeyboardStep(60, 120), true);
-  assert.equal(isFrameSizedKeyboardStep(120, 120 + KEYBOARD_TRACK_STEP_PX), true);
-  /* A jump beyond the frame budget means the browser skipped reports —
-     it must take the eased glide instead of teleporting the composer. */
-  assert.equal(isFrameSizedKeyboardStep(30, 30 + KEYBOARD_TRACK_STEP_PX + 1), false);
-  assert.equal(isFrameSizedKeyboardStep(0, 300), false);
-  assert.equal(isFrameSizedKeyboardStep(NaN, 100), false);
-  assert.equal(isFrameSizedKeyboardStep(100, Infinity), false);
 });
 
 test('getKeyboardInset returns 0 for non-finite inputs', () => {

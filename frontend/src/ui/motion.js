@@ -134,3 +134,31 @@ export function easeInOutCubic(t) {
   if (t >= 1) return 1;
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
+
+/* Critically-damped spring step (the classic SmoothDamp integrator) for
+ * chasing a target that can retarget at any moment. Unlike a restarted
+ * tween, position AND velocity carry through every retarget, so the
+ * motion never pops: the keyboard inset chase (ui/keyboardViewport.js)
+ * uses this to follow a measured target that updates on an arbitrary
+ * cadence — per-frame streams, coarse jumps, and mid-flight reversals
+ * all share one continuous motion law.
+ *
+ * `smoothTime` is the approximate convergence constant in seconds;
+ * `dt` is the frame delta in seconds. Returns the new {value, velocity};
+ * the caller feeds `velocity` straight back into the next step. */
+export function smoothDampStep(current, target, velocity, smoothTime, dt) {
+  if (!(smoothTime > 0) || !(dt > 0)) return { value: target, velocity: 0 };
+  const omega = 2 / smoothTime;
+  const x = omega * dt;
+  const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = current - target;
+  const temp = (velocity + omega * change) * dt;
+  const nextVelocity = (velocity - omega * temp) * exp;
+  let next = target + (change + temp) * exp;
+  /* Overshoot guard: a step that crosses the target lands exactly on
+     it — an arrival, not a bounce. */
+  if ((target - current > 0) === (next > target)) {
+    return { value: target, velocity: 0 };
+  }
+  return { value: next, velocity: nextVelocity };
+}

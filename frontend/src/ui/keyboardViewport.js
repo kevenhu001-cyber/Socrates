@@ -1,7 +1,7 @@
 import { smoothScrollToBottom } from './scroll.js';
 import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from './scrollDecision.ts';
 import { getLastScrollIntentAt } from './scrollPill.js';
-import { planMotionForUser, easeInOutCubic } from './motion.js';
+import { smoothDampStep } from './motion.js';
 
 /*
  * Keep chat controls above mobile virtual keyboards.
@@ -38,18 +38,20 @@ import { planMotionForUser, easeInOutCubic } from './motion.js';
  * keyboard — chat-surface.css owns its shape, and this module only
  * publishes how much of the app the keyboard covers.
  * Browsers differ in how they report the keyboard's travel: some emit
- * many progressive samples (the composer follows frame-sized steps 1:1),
- * others a single discrete jump once the keyboard is up, and some mutate
- * the geometry without dispatching per-frame events at all. So the
- * measured inset is only ever a *target*: a rAF loop samples the viewport
- * while a transition window is open, frame-sized steps are written
- * straight through (true tracking), and any larger step is covered by a
- * retargetable glide — velocity-planned so a ~300px keyboard lands inside
- * the platform's own ~220-240ms IME animation window, eased out-cubic so
- * the first frame already detaches the composer (~3% of distance, no
- * separate engagement write that would read as a teleport). A new
- * measurement restarts the glide from the painted value, never from
- * zero and never as a direct write of a far target.
+ * many progressive samples, others a single discrete jump once the
+ * keyboard is up, and some mutate the geometry without dispatching
+ * per-frame events at all. So the measured inset is only ever a
+ * *target*: a rAF loop chases it with a critically-damped spring
+ * (smoothDampStep, ui/motion.js) whose ~80ms convergence lands a ~300px
+ * keyboard inside the platform's own ~220-240ms IME window. Position
+ * and velocity are continuous under every retarget — per-frame streams,
+ * skipped samples, and mid-flight reversals all share one motion law,
+ * so the composer never teleports and never restarts a tween mid-air.
+ * While samples keep arriving, the measured stream velocity feeds a
+ * lead of up to one smooth-time ahead of the target, so the composer
+ * rides the keyboard's top edge instead of trailing it; the lead decays
+ * the moment the stream goes stale and can never aim past the
+ * remaining gap.
  *
  * The same controller anchors the transcript across the lift: a reader
  * following the bottom stays on the newest content, while a reader
@@ -66,33 +68,23 @@ import { planMotionForUser, easeInOutCubic } from './motion.js';
  * full height of the app. */
 export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
-/* A measured step of this size or smaller is real per-frame geometry: a
- * keyboard travelling ~1500px/s moves ~25px per 60fps frame (~50px on a
- * 30fps WebView). Anything larger means the browser skipped intermediate
- * reports — a jump, not a stream — so it must be eased toward instead of
- * written directly, or the composer teleports to the target. The check
- * compares successive *measured* targets, never the painted value: a
- * painted inset that is still gliding up must not reclassify the stream's
- * next frame-sized step as a jump. */
-export const KEYBOARD_TRACK_STEP_PX = 72;
+/* Chase dynamics for the keyboard lift. The spring's smoothTime of ~80ms
+ * lands a phone keyboard (~300px) inside the platform's own ~220-240ms
+ * IME window, with a gentle start (first motion frame ≈15px, inside the
+ * 14px resting-margin absorption floor) and a soft landing. Velocity is
+ * a state variable, so a retarget mid-flight bends the motion instead of
+ * restarting it — the continuity the previous eased tween could not
+ * provide when coarse samples kept arriving. */
+export const KEYBOARD_CHASE_SMOOTH_S = 0.08;
 
-export function isFrameSizedKeyboardStep(previousTarget, nextTarget) {
-  if (!Number.isFinite(previousTarget) || !Number.isFinite(nextTarget)) return false;
-  return Math.abs(nextTarget - previousTarget) <= KEYBOARD_TRACK_STEP_PX;
-}
-
-/* Velocity plan for the eased lift that covers a measurement jump:
- * ~1350px/s lands a phone keyboard (~300px) inside the platform's own
- * ~220-240ms IME animation window. Paired with easeInOutCubic
- * (ui/motion.js) so the first motion frame covers ≈0.14% of the
- * distance (≈0.4px on a 260px keyboard), well inside the 14px resting
- * margin floor, so no engagement write is needed and no first-frame
- * jump is visible. */
-export const KEYBOARD_LIFT_MOTION = {
-  velocity: 1350,
-  minDuration: 180,
-  maxDuration: 240,
-};
+/* The feed-forward lead uses the measured stream velocity to aim up to
+ * one smooth-time ahead of the target, cancelling the spring's natural
+ * lag while the keyboard is still moving. When samples stop arriving
+ * the estimate is stale: it decays over ~40ms so the chase target
+ * unwinds back to the real inset instead of hovering past it. */
+export const KEYBOARD_STREAM_STALE_MS = 48;
+export const KEYBOARD_STREAM_DECAY_S = 0.04;
+export const KEYBOARD_STREAM_MAX_VELOCITY = 4800;
 
 /* Transition-window geometry poll: some platforms mutate visualViewport
  * geometry every frame without dispatching per-frame resize/scroll
@@ -103,11 +95,10 @@ export const KEYBOARD_POLL_EDGE_MS = 900;
 export const KEYBOARD_POLL_IDLE_MS = 240;
 
 /* Viewport implementations that expose the IME animation emit resize/scroll
- * samples roughly once per frame. Once a second sample arrives in the same
- * direction, follow the measured geometry directly: restarting a full
- * tween for every sample makes the composer trail the keyboard and then
- * keep moving after the keyboard has stopped. Slower,
- * isolated jumps still use the fallback tween below. */
+ * samples roughly once per frame. A sample that arrives inside this window
+ * in the same direction as the previous one is stream evidence — only
+ * stream samples feed the chase's velocity estimate, so a lone jump starts
+ * the spring from rest instead of inheriting a phantom lead. */
 export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 120;
 
 export function isProgressiveKeyboardSample(
@@ -213,15 +204,20 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   /* -1 forces the first write to apply, so --keyboard-inset and
      data-keyboard-open are initialised even when the inset starts at 0. */
   let appliedInset = -1;
-  /* Interpolation state: the measured inset is the motion target; the
-     value exposed to CSS glides toward it over a velocity-planned
-     duration (planMotionForUser). */
+  /* Chase state: the measured inset is only a target. The value exposed
+     to CSS is integrated by a critically-damped spring each frame
+     (smoothDampStep), so it is continuous in position and velocity under
+     every retarget. `paintedInset` is the spring's float position —
+     integrating the rounded `appliedInset` instead would trap the spring
+     in a quantization well ~1px short of the target and never settle.
+     `chaseVelocity` is the spring's own velocity; `streamVelocity` is
+     the low-passed measured keyboard speed used for the feed-forward
+     lead. */
   let targetInset = 0;
-  let motionFrom = 0;
-  let motionStart = 0;
-  let motionDuration = 0;
-  let motionEase = easeInOutCubic;
-  let progressiveInsetMotion = false;
+  let paintedInset = 0;
+  let chaseVelocity = 0;
+  let streamVelocity = 0;
+  let lastMotionAt = 0;
   let lastTargetAt = 0;
   let transitionDirection = 0;
   let geometryPollFrame = 0;
@@ -428,13 +424,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (roundedInset === appliedInset) return;
     root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
     appliedInset = roundedInset;
-    /* A pan can grow inside a single eased frame without a fresh event —
+    /* A pan can grow inside a single chase frame without a fresh event —
        keep the top-chrome offset current on the same frame cadence. */
     writeVisualTop();
     /* P_keyboard-open-painted — this flag changes more than visibility:
        mobile composer rules use it to reveal the second control row and to
        consume the resting safe-area gap. Deriving it from the measured
-       target made those layout changes land before the first eased frame,
+       target made those layout changes land before the first chase frame,
        so the composer could move down briefly while the JS lift was still
        starting. The flag must describe the value already painted, not the
        destination the rAF loop is travelling toward. */
@@ -455,18 +451,60 @@ export function initKeyboardViewport({ inputs, input, container, root = document
 
   const stepMotion = (now) => {
     motionFrame = 0;
-    const elapsed = now - motionStart;
-    const t = motionDuration > 0 ? elapsed / motionDuration : 1;
-    if (t >= 1) {
+    const dt = lastMotionAt > 0
+      ? Math.min(0.064, Math.max(0.001, (now - lastMotionAt) / 1000))
+      : 1 / 60;
+    lastMotionAt = now;
+    const painted = paintedInset;
+    /* Once samples stop arriving mid-travel the measured velocity is
+       stale: decay it so the chase lead unwinds instead of holding the
+       composer on a target that has already settled. */
+    if (lastTargetAt > 0 && now - lastTargetAt > KEYBOARD_STREAM_STALE_MS) {
+      streamVelocity *= Math.exp(-dt / KEYBOARD_STREAM_DECAY_S);
+      if (
+        now - lastTargetAt > KEYBOARD_PROGRESSIVE_SAMPLE_MS
+        || Math.abs(streamVelocity) < 1
+      ) streamVelocity = 0;
+    }
+    /* Feed-forward: lead the chase target by up to one smooth-time of
+       measured keyboard travel, so the painted inset rides the keyboard's
+       top edge instead of trailing it by velocity·smoothTime. The lead
+       is capped by the remaining gap, so it can accelerate mid-flight
+       but can never aim the composer past the target — and it vanishes
+       as soon as the stream stops or reverses. */
+    const gap = targetInset - painted;
+    let lead = streamVelocity * KEYBOARD_CHASE_SMOOTH_S;
+    if (Math.sign(lead) !== Math.sign(gap)) lead = 0;
+    if (Math.abs(lead) > Math.abs(gap)) lead = gap;
+    const next = smoothDampStep(
+      painted,
+      targetInset + lead,
+      chaseVelocity,
+      KEYBOARD_CHASE_SMOOTH_S,
+      dt,
+    );
+    chaseVelocity = next.velocity;
+    /* Never paint past the measured target: the lead already compensates
+       tracking lag, so any residual overshoot is momentum noise — a step
+       that would cross the target lands exactly on it instead of leaving
+       a settle bounce behind the keyboard's top edge. */
+    let landed = next.value;
+    if ((targetInset - painted > 0) === (landed > targetInset)) {
+      landed = targetInset;
+      chaseVelocity = 0;
+    }
+    paintedInset = landed;
+    writeInsetFrame(landed);
+    const settled = landed === targetInset
+      || (Math.abs(targetInset - landed) < 0.5 && Math.abs(chaseVelocity) < 12);
+    if (settled) {
+      paintedInset = targetInset;
       writeInsetFrame(targetInset);
-      progressiveInsetMotion = false;
+      chaseVelocity = 0;
+      streamVelocity = 0;
       maybeReleaseKeyboardShell();
       return;
     }
-    const value = progressiveInsetMotion
-      ? targetInset
-      : motionFrom + (targetInset - motionFrom) * motionEase(t);
-    writeInsetFrame(value);
     motionFrame = requestAnimationFrame(stepMotion);
   };
 
@@ -479,10 +517,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        value. Do not flip it here from the target: its CSS consumers include
        the composer geometry and safe-area padding, and changing those at
        target-arrival would undo the continuous first frames below. */
-    /* A repeated application of the current target must not restart the
-       tween: resetting motionFrom/motionStart on every event would pin
-       the composer near its start value for as long as same-geometry
-       events keep arriving, then let it pop once they stop. */
+    /* A repeated application of the current target must not disturb the
+       chase — the rAF loop is already converging on it (or has arrived). */
     if (
       roundedTarget === targetInset
       && (motionFrame !== 0 || appliedInset === roundedTarget)
@@ -491,109 +527,55 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     const now = (typeof performance !== 'undefined' && performance.now)
       ? performance.now()
       : Date.now();
-    const currentInset = appliedInset < 0 ? 0 : appliedInset;
-    const nextDirection = Math.sign(roundedTarget - currentInset);
-    const targetChanged = roundedTarget !== targetInset;
-    /* Per-sample delta of the measured stream, used to tell real
-       per-frame geometry from a jump over skipped reports. Computed
-       before targetInset is overwritten below. */
-    const measuredStep = Math.abs(roundedTarget - targetInset);
-    const sameDirection = nextDirection !== 0 && nextDirection === transitionDirection;
-    const directionChanged = nextDirection !== 0
-      && transitionDirection !== 0
-      && nextDirection !== transitionDirection;
-    const progressive = targetChanged && sameDirection && (
-      motionFrame !== 0
-      || isProgressiveKeyboardSample(
+    const streamDirection = Math.sign(roundedTarget - targetInset);
+
+    if (roundedTarget !== targetInset) {
+      /* Feed-forward velocity: only a sample that continues an
+         established same-direction stream carries the keyboard's
+         measured speed into the lead. A lone jump (first report, long
+         silence, or a direction flip) leaves the estimate at zero, so
+         the spring starts from rest and stays smooth instead of
+         inheriting a phantom lead that would overshoot. */
+      const progressive = isProgressiveKeyboardSample(
         lastTargetAt,
         now,
         transitionDirection,
-        nextDirection,
-      )
-    );
-    /* The geometry is still moving — keep the sampling window open so
-       platforms that mutate the viewport without per-frame events keep
-       feeding this tracker. */
-    if (targetChanged) extendGeometryPoll(KEYBOARD_POLL_IDLE_MS);
-
-    /* A keyboard can reverse direction while its previous lift is still
-     * running (for example, a cancelled focus or a quick swipe). Reverse
-     * the timeline from its already-painted value instead of restarting
-     * from zero. planMotionForUser already collapses to a 0-duration snap
-     * under prefers-reduced-motion and for sub-perceptual distances. */
-    if (directionChanged) {
-      if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      progressiveInsetMotion = false;
-      motionFrom = currentInset;
-      motionStart = now;
-      motionEase = easeInOutCubic;
-      motionDuration = planMotionForUser(
-        Math.abs(roundedTarget - currentInset),
-        KEYBOARD_LIFT_MOTION,
-      ).duration;
+        streamDirection,
+      );
+      if (progressive) {
+        const raw = (roundedTarget - targetInset) / ((now - lastTargetAt) / 1000);
+        const clamped = Math.max(
+          -KEYBOARD_STREAM_MAX_VELOCITY,
+          Math.min(KEYBOARD_STREAM_MAX_VELOCITY, raw),
+        );
+        const blend = Math.min(1, (now - lastTargetAt) / 50);
+        streamVelocity += (clamped - streamVelocity) * blend;
+      } else {
+        streamVelocity = 0;
+      }
       targetInset = roundedTarget;
       lastTargetAt = now;
-      transitionDirection = nextDirection;
-      if (motionDuration <= 0 || typeof window.requestAnimationFrame !== 'function') {
-        writeInsetFrame(roundedTarget);
-        return;
-      }
-      motionFrame = requestAnimationFrame(stepMotion);
-      return;
+      if (streamDirection) transitionDirection = streamDirection;
+      /* The geometry is still moving — keep the sampling window open so
+         platforms that mutate the viewport without per-frame events keep
+         feeding this tracker. */
+      extendGeometryPoll(KEYBOARD_POLL_IDLE_MS);
     }
 
-    targetInset = roundedTarget;
-    lastTargetAt = now;
-
-    /* Once the browser is giving us the keyboard's real intermediate
-     * geometry, that geometry is the animation timeline — but only while
-     * each measured step is frame-sized. A larger step means the browser
-     * skipped intermediate reports and handed over a far target; writing
-     * it directly would teleport the composer, so it falls through to the
-     * eased retarget below. */
-    if (
-      progressive
-      && !prefersReducedMotion()
-      && isFrameSizedKeyboardStep(roundedTarget - measuredStep, roundedTarget)
-    ) {
-      progressiveInsetMotion = true;
-      writeInsetFrame(roundedTarget);
-      return;
-    }
-    if (nextDirection) transitionDirection = nextDirection;
-
-    /* Everything that is not a faithful per-frame stream — discrete
-     * Android jumps, skipped intermediate samples, the close path — is
-     * covered by this retargetable glide: motionFrom is always the
-     * painted value, so a fresher measurement bends the in-flight motion
-     * instead of restarting it or snapping. Reduced-motion plans snap to
-     * the target. */
-
-    /* No engagement write: easeInOutCubic's first frame covers
-       ≈0.14% of distance (≈0.4px on a 260px keyboard), which sits
-       inside the chat-input-bar + chat-view resting margins (8 + 6
-       = 14px) and lands as zero visible lift. The previous 16px
-       engagement read as a small jump on the very first frame; the
-       ease itself now keeps the first ~3 frames sub-perceptual.
-       Mid-flight retargets bend the in-flight ease (motionFrom is
-       always the painted value). */
-    const glideFrom = appliedInset < 0 ? 0 : appliedInset;
-    const liftPlan = planMotionForUser(
-      Math.abs(roundedTarget - glideFrom),
-      KEYBOARD_LIFT_MOTION,
-    );
-    if (liftPlan.snap || typeof window.requestAnimationFrame !== 'function') {
+    /* Reduced-motion (and no-rAF) builds skip the interpolation entirely:
+       the spring is the only animation, so a snap is a direct write. */
+    if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      progressiveInsetMotion = false;
+      paintedInset = roundedTarget;
+      chaseVelocity = 0;
+      streamVelocity = 0;
       writeInsetFrame(roundedTarget);
       return;
     }
-    motionFrom = glideFrom;
-    motionStart = now;
-    motionDuration = liftPlan.duration;
-    motionEase = easeInOutCubic;
-    progressiveInsetMotion = false;
-    if (!motionFrame) motionFrame = requestAnimationFrame(stepMotion);
+    if (!motionFrame) {
+      lastMotionAt = now;
+      motionFrame = requestAnimationFrame(stepMotion);
+    }
   };
 
   /* Per-frame geometry sampler for platforms whose visualViewport values
@@ -969,6 +951,9 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     if (blurRecheckTimer) clearTimeout(blurRecheckTimer);
     if (keyboardShellReleaseTimer) clearTimeout(keyboardShellReleaseTimer);
     keyboardShellReleaseTimer = 0;
+    paintedInset = 0;
+    chaseVelocity = 0;
+    streamVelocity = 0;
     restoreKeyboardShell();
     clearTranscriptAnchor();
     try {
