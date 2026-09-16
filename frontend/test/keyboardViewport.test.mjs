@@ -148,8 +148,8 @@ test('keyboard spring fits inside the platform IME window for a 300px discrete l
     const next = smoothDampStep(painted, target, velocity, smoothTime, dt);
     velocity = next.velocity;
     painted = next.value;
-    /* Overshoot guard, same as keyboardViewport.js */
-    if ((target - painted > 0) !== (painted > target)) {
+    /* Overshoot guard, same as motion.js */
+    if ((target - painted > 0) === (painted > target)) {
       painted = target;
       velocity = 0;
     }

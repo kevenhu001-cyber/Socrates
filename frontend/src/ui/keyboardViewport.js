@@ -94,8 +94,8 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * the first ~80ms after focus showed < 5% of the rise — the user reads
  * this as "snapped to target". A spring close to the IME window keeps
  * the composer in lockstep across the whole lift. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.085;
-export const KEYBOARD_CHASE_STREAM_S = 0.05;
+export const KEYBOARD_CHASE_SMOOTH_S = 0.12;
+export const KEYBOARD_CHASE_STREAM_S = 0.08;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -103,16 +103,16 @@ export const KEYBOARD_CHASE_STREAM_S = 0.05;
  * a dead stop. This exponential arrival envelope preserves that tracking
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
-export const KEYBOARD_ARRIVAL_S = 0.05;
+export const KEYBOARD_ARRIVAL_S = 0.06;
 
 /* During a live progressive stream the chase runs tightly and smoothly,
  * matching the keyboard's rising speed in lockstep without falling behind. */
-export const KEYBOARD_ARRIVAL_STREAM_S = 0.045;
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.05;
 
 /* Minimum frames before settle is allowed to fire.
- * ~11 frames ≈ 183ms @ 60Hz — keeps the visible ramp from collapsing into
- * one or two frames when the spring would otherwise land near target. */
-export const MIN_MOTION_FRAMES = 11;
+ * ~12 frames ≈ 200ms @ 60Hz — ensures a smooth continuous interpolation
+ * matching platform IME duration (~250-300ms) without abrupt jumps. */
+export const MIN_MOTION_FRAMES = 12;
 
 /* A focused visual viewport can differ from the shell by a fractional pixel
  * because of device-pixel rounding. Treat the keyboard as open on the first
@@ -302,35 +302,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let appliedInset = -1;
   let appliedTravel = -1;
   let appliedPanCompensation = -1;
-  /* P_write-order — the pan-compensation value is queued for the next
-     microtask so layout and transform commits land in separate frames.
-     Only the most recent value is written; stale entries are coalesced. */
-  let panCompensationQueue = null;
-  let panCompensationFlushScheduled = false;
-  const flushPanCompensation = () => {
-    panCompensationFlushScheduled = false;
-    if (panCompensationQueue === null) return;
-    const next = panCompensationQueue;
-    panCompensationQueue = null;
-    try {
-      root.style.setProperty('--keyboard-pan-compensation', `${next}px`);
-    } catch (_) { /* detached root */ }
-  };
-  const schedulePanCompensationWrite = (next) => {
-    panCompensationQueue = next;
-    if (panCompensationFlushScheduled) return;
-    panCompensationFlushScheduled = true;
-    if (typeof queueMicrotask === 'function') {
-      queueMicrotask(flushPanCompensation);
-    } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(flushPanCompensation);
-    } else {
-      panCompensationFlushScheduled = false;
-      try {
-        root.style.setProperty('--keyboard-pan-compensation', `${next}px`);
-      } catch (_) { /* detached root */ }
-    }
-  };
+
   /* Chase state: the measured screen-space travel is only a target. The
      value is integrated by a critically-damped spring each frame and then
      projected to the layout inset CSS consumes
@@ -615,8 +587,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        noise floor without delaying a real pan event. */
     const rawOffset = viewportOffsetTop();
     let effectiveOffset = 0;
-    if (Math.abs(rawOffset) >= 2.5) {
-      effectiveOffset = rawOffset > 0 ? rawOffset - 2.5 : rawOffset + 2.5;
+    if (Math.abs(rawOffset) > 1.0) {
+      effectiveOffset = rawOffset > 0 ? rawOffset - 1.0 : rawOffset + 1.0;
     }
     let layoutInset = Math.max(0, paintedValue - effectiveOffset);
     let panCompensation = Math.max(0, effectiveOffset - paintedValue);
@@ -647,18 +619,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        high-DPR phones. Three decimals is stable without growing style text. */
     const cssInset = Number(layoutInset.toFixed(3));
     const cssPanCompensation = Number(panCompensation.toFixed(3));
-    /* P_write-order — write the layout-side CSS variable on the current
-       frame, schedule the transform-side variable (pan-compensation) for
-       the next microtask so the browser commits the padding/grow change
-       and the transform translate in two consecutive frames instead of
-       one. Committing both on the same frame can flip the composer's
-       visual position by a fractional pixel because the layout reflow
-       and the GPU transform run on different pipelines with different
-       round-off behaviour. Splitting the writes costs at most one frame
-       of delay on the transform side, which the spring already smooths
-       out, and removes a class of 1-frame jitter. */
+    /* Synchronous atomic update: layout-side inset and transform-side pan compensation
+       are committed in the exact same render frame, ensuring that the net visual position
+       never suffers from 1-frame microtask phase tearing or jitter. */
     root.style.setProperty('--keyboard-inset', `${cssInset}px`);
-    schedulePanCompensationWrite(cssPanCompensation);
+    root.style.setProperty('--keyboard-pan-compensation', `${cssPanCompensation}px`);
     const insetDelta = Math.abs(layoutInset - appliedInset);
     appliedInset = layoutInset;
     appliedTravel = paintedValue;
@@ -829,21 +794,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       } else {
         streamVelocity = 0;
         lastSampleProgressive = false;
-        /* First discrete jump from rest: pre-arm the chase velocity so
-         * frame 1 already covers ~6% of the gap (instead of the natural
-         * 0.6% v=0 start) and the ramp reads continuously. Subsequent
-         * retargets reuse the live velocity the spring has built up, so
-         * no preset is applied and overshoot stays bounded. The 0.65
-         * factor smoothly meets the spring's natural arrival envelope
-         * without producing a one-frame overshoot when smooth=0.12. */
+        /* First discrete jump from rest: provide a gentle initial lead so
+         * frame 1 starts in visible motion without pausing, while keeping
+         * acceleration moderate and natural across the entire IME arc. */
         if (paintedTravel <= KEYBOARD_OPEN_THRESHOLD_PX && chaseVelocity === 0 && motionFrameCount === 0) {
           const smoothTime = KEYBOARD_CHASE_SMOOTH_S;
           const gap = nextTarget - paintedTravel;
           if (gap > 0) {
-            const preset = (gap / smoothTime) * 0.65;
+            const preset = (gap / smoothTime) * 0.12;
             presetVelocityPending = Math.max(
               0,
-              Math.min(KEYBOARD_STREAM_MAX_VELOCITY * 0.4, preset),
+              Math.min(KEYBOARD_STREAM_MAX_VELOCITY * 0.12, preset),
             );
           } else {
             presetVelocityPending = 0;
