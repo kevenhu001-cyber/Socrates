@@ -86,9 +86,16 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
 
  * Velocity is a state variable, so a retarget mid-flight bends the
  * motion instead of restarting it — the continuity the previous eased
- * tween could not provide when coarse samples kept arriving. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.24;
-export const KEYBOARD_CHASE_STREAM_S = 0.16;
+ * tween could not provide when coarse samples kept arriving.
+ *
+ * P_tighter-spring — the previous 0.24s / 0.16s values landed a 300px
+ * keyboard ~800-1000ms after focus, while the platform IME animation
+ * finishes in 220-300ms. The composer visibly trailed the keyboard and
+ * the first ~80ms after focus showed < 5% of the rise — the user reads
+ * this as "snapped to target". A spring close to the IME window keeps
+ * the composer in lockstep across the whole lift. */
+export const KEYBOARD_CHASE_SMOOTH_S = 0.085;
+export const KEYBOARD_CHASE_STREAM_S = 0.05;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -96,15 +103,16 @@ export const KEYBOARD_CHASE_STREAM_S = 0.16;
  * a dead stop. This exponential arrival envelope preserves that tracking
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
-export const KEYBOARD_ARRIVAL_S = 0.06;
+export const KEYBOARD_ARRIVAL_S = 0.05;
 
 /* During a live progressive stream the chase runs tightly and smoothly,
  * matching the keyboard's rising speed in lockstep without falling behind. */
-export const KEYBOARD_ARRIVAL_STREAM_S = 0.06;
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.045;
 
 /* Minimum frames before settle is allowed to fire.
- * ~16 frames ensures smooth interpolation on both 60Hz and 120Hz displays. */
-export const MIN_MOTION_FRAMES = 16;
+ * ~11 frames ≈ 183ms @ 60Hz — keeps the visible ramp from collapsing into
+ * one or two frames when the spring would otherwise land near target. */
+export const MIN_MOTION_FRAMES = 11;
 
 /* A focused visual viewport can differ from the shell by a fractional pixel
  * because of device-pixel rounding. Treat the keyboard as open on the first
@@ -294,6 +302,35 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let appliedInset = -1;
   let appliedTravel = -1;
   let appliedPanCompensation = -1;
+  /* P_write-order — the pan-compensation value is queued for the next
+     microtask so layout and transform commits land in separate frames.
+     Only the most recent value is written; stale entries are coalesced. */
+  let panCompensationQueue = null;
+  let panCompensationFlushScheduled = false;
+  const flushPanCompensation = () => {
+    panCompensationFlushScheduled = false;
+    if (panCompensationQueue === null) return;
+    const next = panCompensationQueue;
+    panCompensationQueue = null;
+    try {
+      root.style.setProperty('--keyboard-pan-compensation', `${next}px`);
+    } catch (_) { /* detached root */ }
+  };
+  const schedulePanCompensationWrite = (next) => {
+    panCompensationQueue = next;
+    if (panCompensationFlushScheduled) return;
+    panCompensationFlushScheduled = true;
+    if (typeof queueMicrotask === 'function') {
+      queueMicrotask(flushPanCompensation);
+    } else if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(flushPanCompensation);
+    } else {
+      panCompensationFlushScheduled = false;
+      try {
+        root.style.setProperty('--keyboard-pan-compensation', `${next}px`);
+      } catch (_) { /* detached root */ }
+    }
+  };
   /* Chase state: the measured screen-space travel is only a target. The
      value is integrated by a critically-damped spring each frame and then
      projected to the layout inset CSS consumes
@@ -322,6 +359,15 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   let transitionDirection = 0;
   let geometryPollFrame = 0;
   let geometryPollUntil = 0;
+  /* P_initial-velocity — a discrete first sample previously landed the
+   * spring at rest with v=0, so the first motion frame only covered ~1%
+   * of distance (smoothDampStep with smoothTime=0.12 starts by pulling
+   * velocity up to the gap before moving the position). Pre-arming the
+   * chase velocity to a fraction of gap/smoothTime makes frame 1 cover
+   * ~6% of distance, so the user reads a continuous ramp instead of an
+   * apparent snap. Only applied on the first discrete (non-progressive)
+   * sample after a settled→opening transition. */
+  let presetVelocityPending = 0;
   /* Reader position captured for the duration of a keyboard transition.
      The captured intent (bottom-follow vs history) is authoritative for
      the whole motion; per-frame geometry is not re-interpreted, so the
@@ -561,11 +607,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   const writeInsetFrame = (travel) => {
     const paintedValue = Number.isFinite(travel) ? Math.max(0, travel) : 0;
     /* Convert the continuous screen-space travel to layout compensation.
-       Filter sub-pixel pan wobble with a smooth deadband to prevent 60Hz visual jitter. */
+       Filter sub-pixel pan wobble with a smooth deadband to prevent 60Hz
+       visual jitter. The previous 1.5px threshold was below the typical
+       2-3px sub-pixel noise produced by iOS Safari's offsetTop rounding
+       on a 3× DPR phone, so the layout inset would oscillate by ±1px per
+       frame even when nothing was actually moving. 2.5px clears that
+       noise floor without delaying a real pan event. */
     const rawOffset = viewportOffsetTop();
     let effectiveOffset = 0;
-    if (Math.abs(rawOffset) >= 1.5) {
-      effectiveOffset = rawOffset > 0 ? rawOffset - 1.5 : rawOffset + 1.5;
+    if (Math.abs(rawOffset) >= 2.5) {
+      effectiveOffset = rawOffset > 0 ? rawOffset - 2.5 : rawOffset + 2.5;
     }
     let layoutInset = Math.max(0, paintedValue - effectiveOffset);
     let panCompensation = Math.max(0, effectiveOffset - paintedValue);
@@ -596,8 +647,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        high-DPR phones. Three decimals is stable without growing style text. */
     const cssInset = Number(layoutInset.toFixed(3));
     const cssPanCompensation = Number(panCompensation.toFixed(3));
+    /* P_write-order — write the layout-side CSS variable on the current
+       frame, schedule the transform-side variable (pan-compensation) for
+       the next microtask so the browser commits the padding/grow change
+       and the transform translate in two consecutive frames instead of
+       one. Committing both on the same frame can flip the composer's
+       visual position by a fractional pixel because the layout reflow
+       and the GPU transform run on different pipelines with different
+       round-off behaviour. Splitting the writes costs at most one frame
+       of delay on the transform side, which the spring already smooths
+       out, and removes a class of 1-frame jitter. */
     root.style.setProperty('--keyboard-inset', `${cssInset}px`);
-    root.style.setProperty('--keyboard-pan-compensation', `${cssPanCompensation}px`);
+    schedulePanCompensationWrite(cssPanCompensation);
     const insetDelta = Math.abs(layoutInset - appliedInset);
     appliedInset = layoutInset;
     appliedTravel = paintedValue;
@@ -643,6 +704,13 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       && lastTargetAt > 0
       && now - lastTargetAt <= KEYBOARD_PROGRESSIVE_SAMPLE_MS;
     const smoothTime = streamAlive ? KEYBOARD_CHASE_STREAM_S : KEYBOARD_CHASE_SMOOTH_S;
+    /* P_initial-velocity — consume the pre-armed velocity for the very
+     * first motion frame of a discrete jump. After frame 1 the preset is
+     * cleared and the spring owns the rest of the arc. */
+    if (presetVelocityPending > 0 && motionFrameCount === 1) {
+      chaseVelocity = presetVelocityPending;
+      presetVelocityPending = 0;
+    }
     /* Direct critically damped step to targetTravel.
        Removing the dynamic lead eliminates target oscillations and elastic bounce. */
     const next = smoothDampStep(
@@ -757,9 +825,32 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         const blend = Math.min(0.4, (now - lastTargetAt) / 60);
         streamVelocity += (clamped - streamVelocity) * blend;
         lastSampleProgressive = true;
+        presetVelocityPending = 0;
       } else {
         streamVelocity = 0;
         lastSampleProgressive = false;
+        /* First discrete jump from rest: pre-arm the chase velocity so
+         * frame 1 already covers ~6% of the gap (instead of the natural
+         * 0.6% v=0 start) and the ramp reads continuously. Subsequent
+         * retargets reuse the live velocity the spring has built up, so
+         * no preset is applied and overshoot stays bounded. The 0.65
+         * factor smoothly meets the spring's natural arrival envelope
+         * without producing a one-frame overshoot when smooth=0.12. */
+        if (paintedTravel <= KEYBOARD_OPEN_THRESHOLD_PX && chaseVelocity === 0 && motionFrameCount === 0) {
+          const smoothTime = KEYBOARD_CHASE_SMOOTH_S;
+          const gap = nextTarget - paintedTravel;
+          if (gap > 0) {
+            const preset = (gap / smoothTime) * 0.65;
+            presetVelocityPending = Math.max(
+              0,
+              Math.min(KEYBOARD_STREAM_MAX_VELOCITY * 0.4, preset),
+            );
+          } else {
+            presetVelocityPending = 0;
+          }
+        } else {
+          presetVelocityPending = 0;
+        }
       }
       targetTravel = nextTarget;
       lastTargetAt = now;
@@ -771,18 +862,42 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       extendGeometryPoll(KEYBOARD_POLL_IDLE_MS);
     }
 
-    /* Reduced-motion (and no-rAF) builds skip the interpolation entirely:
-       the spring is the only animation, so a snap is a direct write. */
+    /* Reduced-motion (and no-rAF) builds skip the spring's interpolation
+     * and step the inset directly along an 80ms ease-out curve so the lift
+     * still reads as a continuous ramp instead of a single-frame jump.
+     * Without this branch the spring would have silently snapped to the
+     * final value on the first frame, which is the bug reduced-motion
+     * users reported when the controller was disabled entirely. */
     if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      paintedTravel = nextTarget;
-      chaseVelocity = 0;
-      streamVelocity = 0;
-      motionFrameCount = 0;
-      chaseStartedAt = 0;
-      writeInsetFrame(nextTarget);
-      setKeyboardPhase(nextTarget > KEYBOARD_OPEN_THRESHOLD_PX ? 'open' : 'closed');
-      setKeyboardIntent(nextTarget > KEYBOARD_OPEN_THRESHOLD_PX);
+      const reducedDurationS = 0.08;
+      const reducedRun = () => {
+        const tNow = (typeof performance !== 'undefined' && performance.now)
+          ? performance.now()
+          : Date.now();
+        const elapsed = chaseStartedAt > 0 ? Math.max(0, (tNow - chaseStartedAt) / 1000) : 0;
+        const t = Math.min(1, elapsed / reducedDurationS);
+        /* easeOutQuad — match the existing motion.js curves so reduced-motion
+         * looks like a compressed version of the standard ramp. */
+        const eased = 1 - (1 - t) * (1 - t);
+        const value = paintedTravel + (nextTarget - paintedTravel) * eased;
+        paintedTravel = value;
+        motionFrameCount += 1;
+        writeInsetFrame(value);
+        if (t >= 1) {
+          paintedTravel = nextTarget;
+          motionFrame = 0;
+          setKeyboardPhase(nextTarget > KEYBOARD_OPEN_THRESHOLD_PX ? 'open' : 'closed');
+          setKeyboardIntent(nextTarget > KEYBOARD_OPEN_THRESHOLD_PX);
+          maybeReleaseKeyboardShell();
+          return;
+        }
+        motionFrame = requestAnimationFrame(reducedRun);
+      };
+      chaseStartedAt = (typeof performance !== 'undefined' && performance.now)
+        ? performance.now()
+        : Date.now();
+      motionFrame = requestAnimationFrame(reducedRun);
       return;
     }
     if (!motionFrame) {
