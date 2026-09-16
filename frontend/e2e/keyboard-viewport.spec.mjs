@@ -230,7 +230,7 @@ test('keyboard lift starts continuous without an engagement write', async ({ pag
     samples.push(sample);
   }
 
-  /* The critically-damped chase (~80ms smoothTime) lands a 260px target
+  /* The critically-damped chase (~100ms smoothTime) lands a 260px target
      in ~230ms. The first non-zero inset is the rAF proving it owns the
      lift; its
      exact value depends on which frame Playwright's sample lands in

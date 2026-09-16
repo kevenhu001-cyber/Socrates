@@ -250,6 +250,59 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
   ))).toBeLessThan(18);
 });
 
+test('a discrete iOS viewport pan cannot teleport or reverse the composer', async ({ page }) => {
+  await seedChat(page, 8);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(80);
+
+  const appBottom = await page.evaluate(() => Math.round(
+    document.getElementById('appShell').getBoundingClientRect().bottom,
+  ));
+  const samples = await page.evaluate(async ({ bottom }) => new Promise((resolve) => {
+    const positions = [];
+    let frame = 0;
+    const targets = [
+      { height: bottom - 45, offsetTop: 0 },
+      { height: bottom - 105, offsetTop: 64 },
+      { height: bottom - 175, offsetTop: 112 },
+      { height: bottom - 240, offsetTop: 76 },
+    ];
+    const sample = () => {
+      if (frame < targets.length) window.__fakeViewport.__resize(targets[frame]);
+      const root = document.documentElement;
+      const view = document.getElementById('chatView');
+      const barTop = document.getElementById('chatInputBar').getBoundingClientRect().top;
+      positions.push({
+        visualTop: barTop - window.visualViewport.offsetTop,
+        barTop,
+        offsetTop: window.visualViewport.offsetTop,
+        inset: root.style.getPropertyValue('--keyboard-inset'),
+        compensation: root.style.getPropertyValue('--keyboard-pan-compensation'),
+        transform: getComputedStyle(view).transform,
+      });
+      frame += 1;
+      if (frame < 28) requestAnimationFrame(sample);
+      else resolve(positions);
+    };
+    requestAnimationFrame(sample);
+  }), { bottom: appBottom });
+
+  for (let index = 1; index < samples.length; index += 1) {
+    expect(samples[index].visualTop, JSON.stringify(samples)).toBeLessThanOrEqual(samples[index - 1].visualTop + 2);
+  }
+  const largestStep = Math.max(...samples.slice(1).map((value, index) => (
+    Math.abs(value.visualTop - samples[index].visualTop)
+  )));
+  /* A 240px IME lift delivered in four compositor samples can legitimately
+     cover ~45px in one 60Hz frame. Guard against the old 64-112px pan jump,
+     while allowing the controller to remain attached to a fast keyboard. */
+  expect(largestStep, JSON.stringify(samples)).toBeLessThan(50);
+  await expect.poll(async () => page.evaluate(() => Number.parseFloat(
+    document.documentElement.style.getPropertyValue('--keyboard-inset'),
+  ))).toBe(164);
+});
+
 test('external keyboard inset keeps a history reader anchored instead of snapping to the bottom', async ({ page }) => {
   await seedChat(page);
   await page.evaluate(() => {

@@ -91,6 +91,20 @@
     transform: translateY(var(--keyboard-visual-top, 0px)) !important;
   }
 
+  /* iOS may pan the visual viewport to the focused editor in one compositor
+     step before it reports the keyboard's height animation. The keyboard
+     controller integrates total screen-space travel and publishes the part
+     of that native pan which has not yet been reached by the spring. Moving
+     only the composer surfaces down by that remainder cancels the premature
+     browser jump; the value reaches zero continuously as the spring catches
+     up. This is a paint-only transform, so it cannot trigger the layout loop
+     that caused the previous focus jitter. */
+  :root[data-keyboard-motion="manual"] #appShell#appShell .chat-view,
+  :root[data-keyboard-motion="manual"] #appShell#appShell #topicInputWrap {
+    transform: translateY(var(--keyboard-pan-compensation, 0px)) !important;
+    will-change: transform;
+  }
+
   /* The reference keeps only the header and composer once the topic input
      owns focus (and the keyboard owns the lower half of the screen); the
      absolutely-centred greeting would otherwise stay painted in the
