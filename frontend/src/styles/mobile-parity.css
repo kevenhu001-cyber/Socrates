@@ -101,7 +101,7 @@
      that caused the previous focus jitter. */
   :root[data-keyboard-motion="manual"] #appShell#appShell .chat-view,
   :root[data-keyboard-motion="manual"] #appShell#appShell #topicInputWrap {
-    transform: translateY(var(--keyboard-pan-compensation, 0px)) !important;
+    transform: translate3d(0, var(--keyboard-pan-compensation, 0px), 0) !important;
     will-change: transform;
   }
 
