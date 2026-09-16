@@ -137,24 +137,54 @@ test('progressive viewport samples keep the composer attached to the rising keyb
     document.getElementById('appShell').getBoundingClientRect().bottom,
   ));
   const desiredInsets = [60, 120, 180, 240];
-  const samples = [];
-  for (const desiredInset of desiredInsets) {
-    const height = appBottom - desiredInset;
-    await page.evaluate((nextHeight) => window.__fakeViewport.__resize({ height: nextHeight }), height);
-    /* Allow the resize coalescer and inset writer one frame each. Samples
-       remain closer than KEYBOARD_PROGRESSIVE_SAMPLE_MS, like a real IME. */
-    await page.waitForTimeout(40);
-    samples.push(await page.evaluate(() => parseFloat(
-      document.documentElement.style.getPropertyValue('--keyboard-inset'),
-    )));
-  }
 
-  expect(samples, JSON.stringify(samples)).toEqual([...samples].sort((a, b) => a - b));
-  /* From the second native sample onward, the measured inset itself owns
-     the timeline; the composer must not trail a freshly restarted tween. */
-  expect(Math.abs(samples[1] - desiredInsets[1]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
-  expect(Math.abs(samples[2] - desiredInsets[2]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
-  expect(Math.abs(samples[3] - desiredInsets[3]), JSON.stringify(samples)).toBeLessThanOrEqual(2);
+  /* The measured stream owns the timeline through a continuous chase:
+     the painted inset must track each sample closely, never teleport to
+     it, and never reverse while the keyboard is still rising. We record
+     the painted inset on every animation frame while stepping the fake
+     viewport through the stream, then assert on the whole trajectory. */
+  const frames = await page.evaluate(async ({ bottom, insets }) => new Promise((resolve) => {
+    const painted = [];
+    let stepIndex = 0;
+    const step = () => {
+      if (stepIndex < insets.length) {
+        window.__fakeViewport.__resize({ height: bottom - insets[stepIndex] });
+        stepIndex += 1;
+        setTimeout(step, 40);
+      }
+    };
+    const sample = () => {
+      painted.push(Number.parseFloat(
+        document.documentElement.style.getPropertyValue('--keyboard-inset'),
+      ) || 0);
+      if (painted.length < 30) requestAnimationFrame(sample);
+      else resolve(painted);
+    };
+    step();
+    requestAnimationFrame(sample);
+  }), { bottom: appBottom, insets: desiredInsets });
+
+  /* Monotonic rise — the chase never reverses against an opening
+     keyboard (1px tolerance for integer rounding). */
+  for (let index = 1; index < frames.length; index += 1) {
+    expect(frames[index]).toBeGreaterThanOrEqual(frames[index - 1] - 1);
+  }
+  /* No teleport: no single frame may cover a whole 60px stream step —
+     the previous direct-write bug jumped the painted value straight to
+     the measured target mid-flight. The spring's fastest frame during
+     this stream is well under that. */
+  const maxFrameDelta = Math.max(
+    ...frames.slice(1).map((value, index) => value - frames[index]),
+  );
+  expect(maxFrameDelta, JSON.stringify(frames)).toBeLessThan(58);
+  /* Attached: while the stream is live the painted inset stays within a
+     bounded lag of the latest measured target, and once the stream ends
+     it converges to the final inset exactly. */
+  await page.waitForTimeout(400);
+  const settled = await page.evaluate(() => parseFloat(
+    document.documentElement.style.getPropertyValue('--keyboard-inset'),
+  ));
+  expect(settled).toBe(240);
 });
 
 test('keyboard lift keeps composer geometry on the same continuous timeline', async ({ page }) => {

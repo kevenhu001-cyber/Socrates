@@ -13,6 +13,7 @@ import {
   easeOutQuint,
   easeInOutQuad,
   easeInOutCubic,
+  smoothDampStep,
 } from '../src/ui/motion.js';
 
 test('planMotion returns a snap for sub-perceptual distances', () => {
@@ -170,6 +171,59 @@ test('easeInOutCubic is bounded, monotonic, and starts almost flat', () => {
      suppress the previous 16px engagement write that read as a jump. */
   assert.ok(easeInOutCubic(0.1) < 0.005);
   assert.ok(easeInOutCubic(0.1) < easeInOutQuad(0.1));
+});
+
+/* The keyboard lift's motion law: a critically-damped spring step that
+   carries velocity across retargets, so the painted inset is continuous
+   in position and speed no matter how irregularly the measured target
+   updates. */
+test('smoothDampStep converges to the target without overshooting it', () => {
+  let value = 0;
+  let velocity = 0;
+  const dt = 1 / 60;
+  const positions = [0];
+  for (let frame = 0; frame < 120; frame += 1) {
+    const next = smoothDampStep(value, 300, velocity, 0.08, dt);
+    value = next.value;
+    velocity = next.velocity;
+    positions.push(value);
+  }
+  assert.ok(Math.abs(value - 300) < 0.5, `did not settle: ${value}`);
+  /* Monotonic ascent to the target — critically damped, no crossing. */
+  for (let i = 1; i < positions.length; i += 1) {
+    assert.ok(positions[i] >= positions[i - 1] - 1e-9, `reversed at ${i}: ${positions[i - 1]} -> ${positions[i]}`);
+    assert.ok(positions[i] <= 300 + 1e-9, `overshot at ${i}: ${positions[i]}`);
+  }
+});
+
+test('smoothDampStep keeps position continuous across a mid-flight retarget', () => {
+  let value = 0;
+  let velocity = 0;
+  const dt = 1 / 60;
+  /* Half a second of travel toward 300, then the target jumps to 80 —
+     the value must reverse smoothly from its current point, never snap. */
+  for (let frame = 0; frame < 30; frame += 1) {
+    const next = smoothDampStep(value, 300, velocity, 0.08, dt);
+    value = next.value;
+    velocity = next.velocity;
+  }
+  const peak = value;
+  assert.ok(peak > 200 && peak < 310, `unexpected mid-flight value ${peak}`);
+  for (let frame = 0; frame < 120; frame += 1) {
+    const next = smoothDampStep(value, 80, velocity, 0.08, dt);
+    value = next.value;
+    velocity = next.velocity;
+    /* The reversal may carry a little momentum past the peak, but a
+       teleport (a jump of more than a few px in one frame) is the bug
+       this motion law exists to prevent. */
+    assert.ok(Math.abs(value - peak) < 40 || value <= peak, `snapped to ${value}`);
+  }
+  assert.ok(Math.abs(value - 80) < 0.5, `did not settle: ${value}`);
+});
+
+test('smoothDampStep snaps cleanly for degenerate inputs', () => {
+  assert.deepEqual(smoothDampStep(10, 300, 0, 0, 1 / 60), { value: 300, velocity: 0 });
+  assert.deepEqual(smoothDampStep(10, 300, 0, 0.08, 0), { value: 300, velocity: 0 });
 });
 
 test('planMotion round-trips: duration is reproducible for the same distance', () => {

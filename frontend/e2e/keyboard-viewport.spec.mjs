@@ -229,8 +229,9 @@ test('keyboard lift starts continuous without an engagement write', async ({ pag
     samples.push(sample);
   }
 
-  /* easeInOutCubic, velocity 1350 → a 260px target lands in ~190ms.
-     The first non-zero inset is the rAF proving it owns the lift; its
+  /* The critically-damped chase (~80ms smoothTime) lands a 260px target
+     in ~230ms. The first non-zero inset is the rAF proving it owns the
+     lift; its
      exact value depends on which frame Playwright's sample lands in
      and is intentionally not pinned (per-frame timing in test code is
      not reliable enough to catch a 1px-vs-16px regression directly).
@@ -311,8 +312,9 @@ test('resize-mode keyboard uses JS compensation before the shell reaches its tar
   expect(samples[0].shellHeight).toBeCloseTo(before.shellHeight, 0);
   /* The JS controller must write a non-zero inset within the first sample
      — that is the proof of JS compensation, not the visible lift on
-     barTop. With easeInOutCubic the first motion frame is ≈0.7px
-     (~16ms in), well inside the 14px resting-margin absorption floor, so
+     barTop. With the critically-damped chase the first motion frame is
+     ≈15px (~16ms in), which the 14px resting-margin absorption floor
+     still hides almost completely, so
      barTop may not have moved visibly yet at the 20ms mark — but the
      inset variable itself must already be progressing. A ±3px slack
      on barTop covers sub-pixel jitter in the shell's frozen-height
