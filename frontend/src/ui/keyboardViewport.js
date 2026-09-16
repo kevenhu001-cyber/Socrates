@@ -87,8 +87,8 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * Velocity is a state variable, so a retarget mid-flight bends the
  * motion instead of restarting it — the continuity the previous eased
  * tween could not provide when coarse samples kept arriving. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.22;
-export const KEYBOARD_CHASE_STREAM_S = 0.16;
+export const KEYBOARD_CHASE_SMOOTH_S = 0.14;
+export const KEYBOARD_CHASE_STREAM_S = 0.06;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -96,16 +96,15 @@ export const KEYBOARD_CHASE_STREAM_S = 0.16;
  * a dead stop. This exponential arrival envelope preserves that tracking
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
-export const KEYBOARD_ARRIVAL_S = 0.06;
+export const KEYBOARD_ARRIVAL_S = 0.03;
 
-/* During a live progressive stream the chase runs smoothly, keeping each
- * frame's progress bounded and continuous without snapping. */
-export const KEYBOARD_ARRIVAL_STREAM_S = 0.08;
+/* During a live progressive stream the chase runs tightly and smoothly,
+ * matching the keyboard's rising speed in lockstep without falling behind. */
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.035;
 
-/* Floor on the number of chase frames before settle is allowed to fire.
- * ~14 frames @ 60 Hz ≈ 230 ms — matches platform IME window (~250-300ms)
- * so the composer glides smoothly alongside the keyboard instead of snapping. */
-export const MIN_MOTION_FRAMES = 14;
+/* Minimum frames before settle is allowed to fire.
+ * ~8 frames ensures smooth interpolation on both 60Hz and 120Hz displays. */
+export const MIN_MOTION_FRAMES = 8;
 
 /* A focused visual viewport can differ from the shell by a fractional pixel
  * because of device-pixel rounding. Treat the keyboard as open on the first
@@ -534,8 +533,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        Filter sub-pixel pan wobble to prevent 60Hz visual jitter. */
     const rawOffset = viewportOffsetTop();
     const effectiveOffset = Math.abs(rawOffset) < 1.0 ? 0 : rawOffset;
-    const layoutInset = Math.max(0, paintedValue - effectiveOffset);
+    let layoutInset = Math.max(0, paintedValue - effectiveOffset);
     const panCompensation = Math.max(0, effectiveOffset - paintedValue);
+
+    /* Monotonicity guarantee: while the keyboard is rising (targetTravel > appliedTravel),
+       layoutInset must never regress backwards because of temporary viewportOffsetTop spikes.
+       This completely eliminates elastic bouncing and rubber-banding. */
+    if (targetTravel > appliedTravel && appliedInset >= 0) {
+      layoutInset = Math.max(appliedInset, layoutInset);
+    } else if (targetTravel < appliedTravel && appliedInset >= 0) {
+      layoutInset = Math.min(appliedInset, layoutInset);
+    }
+
     if (
       Math.abs(paintedValue - appliedTravel) < 0.01
       && Math.abs(layoutInset - appliedInset) < 0.01
@@ -592,29 +601,23 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       ) streamVelocity = 0;
     }
     /* Stream tracking: while progressive samples keep arriving the target
-       is the keyboard's live leading edge — chase it smoothly so the composer
-       stays visible and rides the IME instead of emerging at the end. */
+       is the keyboard's live leading edge — chase it smoothly and responsively
+       so the composer moves in lockstep with the IME without lagging behind. */
     const streamAlive = lastSampleProgressive
       && lastTargetAt > 0
       && now - lastTargetAt <= KEYBOARD_PROGRESSIVE_SAMPLE_MS;
     const smoothTime = streamAlive ? KEYBOARD_CHASE_STREAM_S : KEYBOARD_CHASE_SMOOTH_S;
-    /* Feed-forward: lead the chase target gently, capped to a small fraction
-       of the remaining gap so it can never overshoot or oscillate. */
-    const gap = targetTravel - painted;
-    let lead = streamVelocity * (streamAlive ? dt * 1.5 : 0.05);
-    if (Math.sign(lead) !== Math.sign(gap)) lead = 0;
-    const maxLead = Math.abs(gap) * 0.35;
-    if (Math.abs(lead) > maxLead) lead = Math.sign(lead) * maxLead;
+    /* Direct critically damped step to targetTravel.
+       Removing the dynamic lead eliminates target oscillations and elastic bounce. */
     const next = smoothDampStep(
       painted,
-      targetTravel + lead,
+      targetTravel,
       chaseVelocity,
       smoothTime,
       dt,
     );
     chaseVelocity = next.velocity;
-    /* Never paint past the measured target. The arrival envelope trims a
-       step that would consume too much of the remaining gap. */
+    /* Arrival envelope prevents abrupt stops near target. */
     let landed = limitKeyboardInsetArrival(
       painted,
       next.value,
@@ -622,17 +625,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       dt,
       streamAlive ? KEYBOARD_ARRIVAL_STREAM_S : KEYBOARD_ARRIVAL_S,
     );
-    if (landed !== next.value) {
-      chaseVelocity = (landed - painted) / dt;
+    if (landed === targetTravel) {
+      chaseVelocity = 0;
     }
     paintedTravel = landed;
     writeInsetFrame(landed);
     const reachedTarget = landed === targetTravel
-      || (Math.abs(targetTravel - landed) < 0.5 && Math.abs(chaseVelocity) < 12);
-    const chaseElapsed = chaseStartedAt > 0 ? (now - chaseStartedAt) : 0;
-    const settled = reachedTarget
-      && motionFrameCount >= MIN_MOTION_FRAMES
-      && (targetTravel === 0 || chaseElapsed >= 200);
+      || (Math.abs(targetTravel - landed) < 0.5 && Math.abs(chaseVelocity) < 15);
+    const settled = reachedTarget && motionFrameCount >= MIN_MOTION_FRAMES;
     if (settled) {
       paintedTravel = targetTravel;
       writeInsetFrame(targetTravel);
