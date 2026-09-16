@@ -1,0 +1,11 @@
+npm notice run socrates-app@1.0.0 npx
+npm notice run playwright test --config=playwright.config.mjs e2e/keyboard-viewport.spec.mjs --workers=1 --reporter=line
+
+Running 12 tests using 1 worker
+
+[1/12] [chromium] › e2e\keyboard-viewport.spec.mjs:6:1 › normalizes virtual-keyboard measurements without double-counting layout resize
+[2/12] [chromium] › e2e\keyboard-viewport.spec.mjs:16:1 › measures against the app shell bottom so every keyboard mode gets the exact height
+[3/12] [chromium] › e2e\keyboard-viewport.spec.mjs:32:1 › recognizes focus inside the nested rich-composer editor
+[4/12] [chromium] › e2e\keyboard-viewport.spec.mjs:42:1 › in-flow composer and transcript follow the normalized keyboard inset on mobile
+[5/12] [chromium] › e2e\keyboard-viewport.spec.mjs:136:1 › mobile composer follows a keyboard inset continuously without a position flash
+[6/12] [chromium] › e2e\keyboard-viewport.spec.mjs:183:1 › keyboard lift starts continuous without an engagement write
