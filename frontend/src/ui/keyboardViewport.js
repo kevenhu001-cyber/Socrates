@@ -77,6 +77,20 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * provide when coarse samples kept arriving. */
 export const KEYBOARD_CHASE_SMOOTH_S = 0.08;
 
+/* Do not let the spring consume the whole remaining gap in one frame.
+ * Feed-forward keeps the composer close to a moving keyboard, but it can
+ * otherwise reach the final target with visible velocity and be clamped to
+ * a dead stop. This exponential arrival envelope preserves that tracking
+ * through the middle of the lift, then guarantees a short, continuous
+ * deceleration over the final few frames. */
+export const KEYBOARD_ARRIVAL_S = 0.024;
+
+/* A focused visual viewport can differ from the shell by a fractional pixel
+ * because of device-pixel rounding. Treat the keyboard as open on the first
+ * meaningful painted frame, rather than waiting until 50px into the lift
+ * and changing the composer's internal layout halfway through the motion. */
+export const KEYBOARD_OPEN_THRESHOLD_PX = 2;
+
 /* The feed-forward lead uses the measured stream velocity to aim up to
  * one smooth-time ahead of the target, cancelling the spring's natural
  * lag while the keyboard is still moving. When samples stop arriving
@@ -130,8 +144,23 @@ export function getKeyboardInset(layoutHeight, visualHeight, visualOffsetTop = 0
    * same covered pixels twice and producing an over-large lift. */
   const offsetTop = Number.isFinite(visualOffsetTop) ? Math.max(0, visualOffsetTop) : 0;
   const visualBottom = Math.max(0, visualHeight + offsetTop);
-  const covered = Math.round(layoutHeight - visualBottom);
+  const covered = layoutHeight - visualBottom;
   return Math.min(layoutHeight, Math.max(0, covered));
+}
+
+export function limitKeyboardInsetArrival(current, proposed, target, dt) {
+  if (
+    !Number.isFinite(current)
+    || !Number.isFinite(proposed)
+    || !Number.isFinite(target)
+    || !(dt > 0)
+  ) return Number.isFinite(target) ? target : (Number.isFinite(current) ? current : 0);
+  const gap = target - current;
+  const step = proposed - current;
+  if (gap === 0 || step === 0 || Math.sign(step) !== Math.sign(gap)) return proposed;
+  const maxFraction = 1 - Math.exp(-dt / KEYBOARD_ARRIVAL_S);
+  if (Math.abs(step) <= Math.abs(gap) * maxFraction) return proposed;
+  return current + gap * maxFraction;
 }
 
 /* Pure measurement step, split out for unit tests. `appBottom` is the app
@@ -210,6 +239,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      every retarget. `paintedInset` is the spring's float position —
      integrating the rounded `appliedInset` instead would trap the spring
      in a quantization well ~1px short of the target and never settle.
+     Keeping that float also lets CSS receive sub-pixel progress instead of
+     repeating integer positions near the ends of the curve.
      `chaseVelocity` is the spring's own velocity; `streamVelocity` is
      the low-passed measured keyboard speed used for the feed-forward
      lead. */
@@ -420,10 +451,14 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      the scheduled restore stay as fallbacks — both decisions are
      idempotent. */
   const writeInsetFrame = (inset) => {
-    const roundedInset = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
-    if (roundedInset === appliedInset) return;
-    root.style.setProperty('--keyboard-inset', `${roundedInset}px`);
-    appliedInset = roundedInset;
+    const paintedValue = Number.isFinite(inset) ? Math.max(0, inset) : 0;
+    if (Math.abs(paintedValue - appliedInset) < 0.01) return;
+    /* Preserve sub-pixel progress. Integer writes repeat values near both
+       ends of the spring and make a smooth curve look like a staircase on
+       high-DPR phones. Three decimals is stable without growing style text. */
+    const cssInset = Number(paintedValue.toFixed(3));
+    root.style.setProperty('--keyboard-inset', `${cssInset}px`);
+    appliedInset = paintedValue;
     /* A pan can grow inside a single chase frame without a fresh event —
        keep the top-chrome offset current on the same frame cadence. */
     writeVisualTop();
@@ -434,7 +469,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        so the composer could move down briefly while the JS lift was still
        starting. The flag must describe the value already painted, not the
        destination the rAF loop is travelling toward. */
-    const openFlag = roundedInset > 50 ? 'true' : 'false';
+    const openFlag = paintedValue > KEYBOARD_OPEN_THRESHOLD_PX ? 'true' : 'false';
     try {
       if (root.dataset.keyboardOpen !== openFlag) root.dataset.keyboardOpen = openFlag;
     } catch (_) { /* detached root */ }
@@ -484,14 +519,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       dt,
     );
     chaseVelocity = next.velocity;
-    /* Never paint past the measured target: the lead already compensates
-       tracking lag, so any residual overshoot is momentum noise — a step
-       that would cross the target lands exactly on it instead of leaving
-       a settle bounce behind the keyboard's top edge. */
-    let landed = next.value;
-    if ((targetInset - painted > 0) === (landed > targetInset)) {
-      landed = targetInset;
-      chaseVelocity = 0;
+    /* Never paint past the measured target. The arrival envelope trims a
+       step that would consume too much of the remaining gap, retaining a
+       few sub-pixel deceleration frames instead of clamping visible motion
+       straight to zero at the keyboard's top edge. */
+    let landed = limitKeyboardInsetArrival(
+      painted,
+      next.value,
+      targetInset,
+      dt,
+    );
+    if (landed !== next.value) {
+      chaseVelocity = (landed - painted) / dt;
     }
     paintedInset = landed;
     writeInsetFrame(landed);
@@ -512,7 +551,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      the already-interpolated value; it must not run a second transition on
      top of these writes or the composer will lag behind the keyboard. */
   const applyInset = (inset) => {
-    const roundedTarget = Number.isFinite(inset) ? Math.max(0, Math.round(inset)) : 0;
+    const nextTarget = Number.isFinite(inset) ? Math.max(0, inset) : 0;
     /* `data-keyboard-open` is updated by writeInsetFrame from the painted
        value. Do not flip it here from the target: its CSS consumers include
        the composer geometry and safe-area padding, and changing those at
@@ -520,16 +559,16 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* A repeated application of the current target must not disturb the
        chase — the rAF loop is already converging on it (or has arrived). */
     if (
-      roundedTarget === targetInset
-      && (motionFrame !== 0 || appliedInset === roundedTarget)
+      nextTarget === targetInset
+      && (motionFrame !== 0 || appliedInset === nextTarget)
     ) return;
 
     const now = (typeof performance !== 'undefined' && performance.now)
       ? performance.now()
       : Date.now();
-    const streamDirection = Math.sign(roundedTarget - targetInset);
+    const streamDirection = Math.sign(nextTarget - targetInset);
 
-    if (roundedTarget !== targetInset) {
+    if (nextTarget !== targetInset) {
       /* Feed-forward velocity: only a sample that continues an
          established same-direction stream carries the keyboard's
          measured speed into the lead. A lone jump (first report, long
@@ -543,7 +582,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
         streamDirection,
       );
       if (progressive) {
-        const raw = (roundedTarget - targetInset) / ((now - lastTargetAt) / 1000);
+        const raw = (nextTarget - targetInset) / ((now - lastTargetAt) / 1000);
         const clamped = Math.max(
           -KEYBOARD_STREAM_MAX_VELOCITY,
           Math.min(KEYBOARD_STREAM_MAX_VELOCITY, raw),
@@ -553,7 +592,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       } else {
         streamVelocity = 0;
       }
-      targetInset = roundedTarget;
+      targetInset = nextTarget;
       lastTargetAt = now;
       if (streamDirection) transitionDirection = streamDirection;
       /* The geometry is still moving — keep the sampling window open so
@@ -566,10 +605,10 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        the spring is the only animation, so a snap is a direct write. */
     if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
       if (motionFrame) { cancelAnimationFrame(motionFrame); motionFrame = 0; }
-      paintedInset = roundedTarget;
+      paintedInset = nextTarget;
       chaseVelocity = 0;
       streamVelocity = 0;
-      writeInsetFrame(roundedTarget);
+      writeInsetFrame(nextTarget);
       return;
     }
     if (!motionFrame) {
