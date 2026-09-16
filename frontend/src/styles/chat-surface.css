@@ -197,15 +197,13 @@ body,
   color: var(--conversation-text) !important;
   box-shadow: none !important;
   overflow: visible !important;
-  /* P_kb-shape-anim — include min-height so the data-keyboard-open
-     shape change (one-row → two-row, 104→110px) eases in alongside
-     the --keyboard-inset rise instead of popping in one frame.
-     grid-template-rows can't be interpolated (3 rows → 2 rows), so
-     the row reflow is still instant, but the min-height transition
-     covers the visible height delta. The --keyboard-inset rise is
-     owned by keyboardViewport.js (frame-by-frame writes to .chat-view
-     / #topicSetup padding-bottom), not by this transition. */
-  transition: border-color 180ms ease, background-color 180ms ease, min-height 200ms cubic-bezier(.22,1,.36,1) !important;
+  /* Focus and keyboard motion must not start a second geometry timeline.
+     The keyboard controller owns the external lift frame by frame, while
+     `.composer-multiline` is the only state allowed to change the editor's
+     intrinsic height. A min-height transition here would interpolate from
+     the old layout at the same time as the controller writes the inset and
+     expose the exact one-frame snap/jitter this surface is meant to avoid. */
+  transition: border-color 180ms ease, background-color 180ms ease !important;
 }
 
 #appShell#appShell #topicInputWrap:not(.voice-recording-active) {
