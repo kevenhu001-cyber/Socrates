@@ -152,7 +152,7 @@ export function initKeyboardLift({
         return null;
       }
     },
-    viewportOffset: () => viewportOffsetTop(),
+    viewportOffset: () => composerPanOffset(),
     stillActive: () => isFocused() || phase === 'closing',
   });
 
@@ -311,11 +311,61 @@ export function initKeyboardLift({
       ? getKeyboardInset(appBottom, Number(window.innerHeight), 0)
       : 0;
     const geometry = Math.max(measured, innerCovered);
-    /* The native hint is a floor for WebViews that report no geometry at
-       all — the moment the platform reports real geometry it wins, so a
-       bridge that reports physical pixels can never hold the composer
-       above the keyboard's true leading edge. */
-    return geometry > 0 ? geometry : (focused ? nativeHeightHint : 0);
+    /* A real geometry sample always outranks the estimate — and retires
+       the anticipation for the rest of the session so the measurement
+       owns the target from the first report onward. */
+    if (geometry > 0) {
+      anticipatedUntil = 0;
+      return geometry;
+    }
+    /* Until the platform's first usable sample lands, hold the estimated
+       keyboard travel so the spring starts at the focus edge instead of
+       at the report edge. The native hint is a floor for WebViews that
+       report no geometry at all — the moment the platform reports real
+       geometry it wins, so a bridge that reports physical pixels can never
+       hold the composer above the keyboard's true leading edge. */
+    const anticipated = now() < anticipatedUntil ? anticipatedTravel : 0;
+    return focused ? Math.max(nativeHeightHint, anticipated) : 0;
+  };
+
+  const coarsePointer = (): boolean => {
+    try {
+      return typeof window.matchMedia === 'function'
+        && window.matchMedia('(pointer: coarse)').matches;
+    } catch {
+      return false;
+    }
+  };
+
+  /* Best guess at the keyboard's travel before the platform reports real
+     geometry: the previous session's settled value is exact for the same
+     keyboard; the VirtualKeyboard boundingRect's height field is reliable
+     on Chrome Android (its y/top coordinates are buggy, height is not);
+     last resort is a window fraction, coarse-pointer devices only. */
+  const estimateKeyboardTravel = (): number => {
+    if (lastKeyboardTravel > 40) return lastKeyboardTravel;
+    const vkRect = virtualKeyboard
+      && (virtualKeyboard as unknown as { boundingRect?: { height?: number } }).boundingRect;
+    const vkHeight = Number(vkRect?.height);
+    if (Number.isFinite(vkHeight) && vkHeight > 40) {
+      return Math.min(vkHeight, Math.max(1, appShellBottom()) * 0.62);
+    }
+    if (!coarsePointer()) return 0;
+    const inner = Number(window.innerHeight) || 0;
+    return Math.min(Math.max(inner * 0.36, 160), 440);
+  };
+
+  /* Arm the estimate on a touch focus edge. Requires a recent touch on a
+     tracked editable: programmatic focus (desktop tests, autofocus) and
+     mouse clicks never arm it, and a cancelled focus can never lift —
+     measureTarget only consults the estimate while a tracked input is
+     actually focused. */
+  const armAnticipation = () => {
+    if (now() - touchIntentAt > TOUCH_INTENT_MS) return;
+    const estimate = estimateKeyboardTravel();
+    if (estimate <= 0) return;
+    anticipatedTravel = estimate;
+    anticipatedUntil = now() + ANTICIPATE_MS;
   };
 
   /* One frame of output: project the painted travel against the live pan,
@@ -323,7 +373,7 @@ export function initKeyboardLift({
      same frame. */
   const write = (paintedTravel: number) => {
     const painted = Number.isFinite(paintedTravel) ? Math.max(0, paintedTravel) : 0;
-    const { layoutInset, panCompensation } = projectTravel(painted, viewportOffsetTop());
+    const { layoutInset, panCompensation } = projectTravel(painted, composerPanOffset());
     if (
       Math.abs(painted - appliedTravel) < 0.01
       && Math.abs(layoutInset - appliedInset) < 0.01
@@ -513,6 +563,14 @@ export function initKeyboardLift({
      frame. */
   const onFocusIntent = (event: Event) => {
     if (!isEditableWithin(event?.target, trackedInputs)) return;
+    const pointerType = (event as PointerEvent).pointerType;
+    if (event.type === 'touchstart' || pointerType === 'touch') {
+      touchIntentAt = now();
+      /* Arming at the intent edge (not just focusin) starts the motion
+         one event earlier — the pointerdown→focus gap is already inside
+         the IME window on fast devices. */
+      armAnticipation();
+    }
     beginSession();
     armPoll(POLL_EDGE_MS);
     wake();
@@ -523,12 +581,15 @@ export function initKeyboardLift({
   };
 
   const onFocusIn = () => {
+    armAnticipation();
     beginSession();
     armPoll(POLL_EDGE_MS);
     wake();
   };
 
   const onFocusOut = () => {
+    anticipatedUntil = 0;
+    touchIntentAt = 0;
     armPoll(POLL_EDGE_MS);
     wake();
     scheduleShellRelease();
