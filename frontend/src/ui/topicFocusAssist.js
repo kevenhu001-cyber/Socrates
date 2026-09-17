@@ -1,48 +1,47 @@
-// src/ui/topicFocusAssist.js — keep the topic-setup composer inside the
-// visible viewport when it takes focus WITHOUT a software keyboard.
+// src/ui/topicFocusAssist.js — desktop/hardware-keyboard visibility assist.
 //
-// The topic landing is its own scroll container (.topic-setup), so the
-// browser's native scroll-into-view-on-focus does not apply. When the
-// keyboard is open — or already opening — the animated --keyboard-inset
-// padding is the sole avoidance mechanism, and a scrollTop write here
-// would fight that animation frame by frame. So this module only assists
-// in the focus-without-keyboard case (desktop, hardware keyboard,
-// tap-to-focus on a partially off-screen input).
-//
-// The check runs ~140ms after focusin: that is late enough for every
-// platform's keyboard geometry (visualViewport shrink or pan, and the
-// controller's data-keyboard-phase) to have reported, so the assist can
-// never race the first lift frames.
+// Mobile software-keyboard movement is owned exclusively by ui/keyboard.
+// This helper must never write topicSetup.scrollTop while a keyboard session
+// is opening/open/closing, because that scroll would feed back into viewport
+// geometry and can make the composer bounce. On touch-only/mobile surfaces we
+// therefore skip the assist altogether and let the browser + keyboard
+// controller own focus reveal.
 
 const TOPIC_SCROLL_ROOT = '#topicSetup, .topic-setup';
 const TOPIC_COMPOSER = '#topicComposerRoot, #topicInputWrap';
-
-/* Delay long enough for the keyboard's first geometry events to land. */
-const FOCUS_SETTLE_MS = 140;
-/* A viewport that has already shrunk or panned by more than this is a
-   keyboard in flight — the inset padding owns the composer position. */
-const SHRINK_PX = 48;
-const PAN_PX = 8;
+const FOCUS_SETTLE_MS = 180;
 
 function keyboardEngaged() {
-  /* data-keyboard-phase is owned by ui/keyboard. Anything other than
-     'closed' means the inset padding owns the composer position. */
-  const phase = document.documentElement && document.documentElement.dataset
-    ? document.documentElement.dataset.keyboardPhase
-    : 'closed';
-  if (phase && phase !== 'closed') return true;
-  const viewport = window.visualViewport;
-  if (!viewport) return false;
-  if ((Number(viewport.offsetTop) || 0) > PAN_PX) return true;
-  return (window.innerHeight - (Number(viewport.height) || 0)) > SHRINK_PX;
+  const root = document.documentElement;
+  const dataset = root && root.dataset ? root.dataset : {};
+  if (dataset.keyboardOpen === 'true') return true;
+  if (dataset.keyboardPhase && dataset.keyboardPhase !== 'closed') return true;
+  if (dataset.keyboardMode && dataset.keyboardMode !== 'unknown') return true;
+  return false;
+}
+
+function touchKeyboardEnvironment() {
+  const root = document.documentElement;
+  if (root?.classList?.contains('is-native-app')) return true;
+  try {
+    return Boolean(
+      window.matchMedia?.('(pointer: coarse)').matches
+      && window.matchMedia?.('(hover: none)').matches
+    );
+  } catch {
+    return false;
+  }
 }
 
 function ensureTopicComposerVisible() {
+  /* The keyboard controller is authoritative. Never add a second scroll
+     timeline while it owns the focus edge. Touch-only devices are skipped
+     as well because their IME geometry can arrive later than focusin. */
+  if (keyboardEngaged() || touchKeyboardEnvironment()) return;
+
   const active = document.activeElement;
-  if (!active || keyboardEngaged()) return;
-  const composer = active.closest
-    ? active.closest(TOPIC_COMPOSER)
-    : null;
+  if (!active) return;
+  const composer = active.closest ? active.closest(TOPIC_COMPOSER) : null;
   if (!composer) return;
   const topic = composer.closest(TOPIC_SCROLL_ROOT);
   if (!topic || typeof topic.getBoundingClientRect !== 'function') return;
@@ -53,6 +52,7 @@ function ensureTopicComposerVisible() {
     ? Number(viewport.height)
     : Number(window.innerHeight);
   if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) return;
+
   const visibleTop = offsetTop + 8;
   const visibleBottom = offsetTop + viewportHeight - 16;
   const rect = composer.getBoundingClientRect();
@@ -60,16 +60,14 @@ function ensureTopicComposerVisible() {
   if (rect.bottom > visibleBottom) delta = rect.bottom - visibleBottom;
   else if (rect.top < visibleTop) delta = rect.top - visibleTop;
   if (Math.abs(delta) < 1) return;
+
   const maxScrollTop = Math.max(0, topic.scrollHeight - topic.clientHeight);
   topic.scrollTop = Math.min(maxScrollTop, Math.max(0, topic.scrollTop + delta));
 }
 
 let timer = 0;
 function onFocusIn() {
-  /* Defer past the focus ring layout AND the platform's first keyboard
-     geometry report — the early check cannot tell "no keyboard" from
-     "keyboard hasn't reported yet", and only the former should scroll. */
-  if (timer) return;
+  if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = 0;
     try { ensureTopicComposerVisible(); } catch (_) { /* detached */ }
@@ -79,7 +77,7 @@ function onFocusIn() {
 export function initTopicFocusAssist() {
   document.addEventListener('focusin', onFocusIn);
   return () => {
-    if (timer) clearTimeout(timer);
+    if (timer) { clearTimeout(timer); timer = 0; }
     document.removeEventListener('focusin', onFocusIn);
   };
 }

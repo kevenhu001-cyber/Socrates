@@ -1,96 +1,60 @@
 /**
- * ui/keyboard — the keyboard lift controller.
+ * ui/keyboard — virtual-keyboard avoidance controller.
  *
- * Keeps the in-flow composer above mobile virtual keyboards with a direct
- * 1:1 follower (the same approach as Open WebUI):
+ * One keyboard session has exactly one motion owner:
+ *   - native-resize: the layout viewport / 100dvh shell moves with the IME;
+ *     JS publishes zero inset and only exposes keyboard state.
+ *   - overlay: the layout viewport stays fixed; JS mirrors the uncovered
+ *     VisualViewport geometry into --keyboard-inset.
  *
- *     geometry event → measure against the live shell → write --keyboard-inset
- *
- * Two complementary mechanisms share the work:
- *
- *   - Native (Chrome/Edge Android 108+ via `interactive-widget=resizes-content`,
- *     Firefox Android, Capacitor `Keyboard.resize: "native"`): the layout
- *     viewport itself shrinks above the keyboard, so the 100dvh flex column
- *     reflows on the compositor with zero JS motion. The live-shell
- *     measurement below reads ~0 there, so no inset is ever added twice.
- *   - Overlay (iOS Safari, older WebViews, Samsung builds that never resize):
- *     the layout viewport stays put while window.visualViewport shrinks
- *     (and pans). Each visualViewport resize/scroll event is mirrored
- *     straight into `--keyboard-inset` in one rAF-coalesced write, so the
- *     composer tracks the keyboard's own per-frame animation curve with no
- *     interpolation lag, no estimated lift, and no corrective snap.
- *
- * Deliberately NOT done here (all former sources of visible jump/stutter):
- * spring interpolation (trails the IME by ~100-270ms, then snaps), shell
- * height freezing (fights the browser's native resize and thrashes layout),
- * anticipated/estimated lifts (wrong height corrected mid-flight), and
- * compositor transforms on the shell (mis-positioned on recent iOS).
- *
- * Outputs (all owned exclusively by this module):
- *   --keyboard-inset              layout-space coverage, drives
- *                                 .chat-view / #topicSetup padding-bottom
- *   data-keyboard-open            true while a published inset is active
- *   data-keyboard-phase           open | closing | closed
- *
- * External `--keyboard-inset` writes (older bridges, tests) are still
- * honoured: they bypass this controller entirely, with scroll.js
- * re-anchoring a pinned reader.
- *
- * Open needs focus; close follows the viewport: the value tracks the live
- * visualViewport even after blur (the keyboard slides away over ~250ms and
- * the composer must slide with it, not snap on blur). A blur grace timer
- * and the Capacitor hide signal force the close on platforms that never
- * report the restore geometry, so a stale report can never leave the
- * composer lifted.
+ * The mode is locked for the lifetime of a session. While mode is unknown,
+ * JS intentionally publishes zero inset instead of guessing. This prevents
+ * the classic Android sequence "visual viewport shrinks -> JS lifts ->
+ * layout viewport catches up -> JS drops", which appears as a large bounce.
  */
 
 import {
   isTrackedInputFocused,
-  measureKeyboard,
   KEYBOARD_OPEN_THRESHOLD_PX,
   MIN_STABLE_VISUAL_HEIGHT,
   type ViewportLike,
 } from './geometry.ts';
 import { TranscriptAnchor } from './anchor.ts';
 
-/* A lone zero sample is held for one extra frame. Real devices emit a
- * transient empty frame mid-session (an IME reporting hiccup); acting on
- * it dips the composer and re-rises — a visible stutter. A real close
- * keeps reporting zero, so holding one frame costs at most ~16ms of close
- * latency while swallowing the glitch. */
-const ZERO_HOLD_MS = 32;
-
-/* After blur, the close still follows the viewport's own restore animation.
- * Platforms that never report it (some Samsung builds) get force-closed
- * here so the composer cannot stick above a dismissed keyboard. */
 const BLUR_GRACE_MS = 900;
+const EDGE_SAMPLE_MS = 650;
+const OVERLAY_EVIDENCE_FRAMES = 2;
+const NATIVE_DELTA_PX = 24;
+const OVERLAY_DELTA_PX = 24;
+const RESTORE_SLOP_PX = 8;
+const NATIVE_OPEN_SETTLE_MS = 220;
 
+type KeyboardMode = 'unknown' | 'native-resize' | 'overlay';
 export type KeyboardPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 export interface KeyboardLift {
   readonly phase: KeyboardPhase;
-  /** Last published layout-space inset in px. */
   readonly inset: number;
-  /** Subscribe to each published inset write (turnAnchor's viewport hold). */
   onInset(cb: (layoutInset: number) => void): () => void;
-  /** Native bridge signal: Capacitor keyboardWillShow / keyboardWillHide. */
   notifyNativeKeyboard(kind: 'show' | 'hide', keyboardHeight?: number): void;
   destroy(): void;
 }
 
 export interface KeyboardLiftOptions {
-  /** Composer roots to track: element, array of elements, or selector. */
   inputs?: HTMLElement | HTMLElement[] | string;
-  /** Legacy single-element form of `inputs`. */
   input?: HTMLElement;
-  /** The app shell element (defaults to #appShell). */
   container?: HTMLElement | null;
   root?: HTMLElement | null;
 }
 
+interface SessionBaseline {
+  shellBottom: number;
+  innerHeight: number;
+  visualHeight: number;
+}
+
 let active: KeyboardLift | null = null;
 
-/** The most recently initialised lift — null before boot or after destroy. */
 export function getKeyboardLift(): KeyboardLift | null {
   return active;
 }
@@ -105,7 +69,9 @@ export function initKeyboardLift({
   container,
   root = typeof document !== 'undefined' ? document.documentElement : null,
 }: KeyboardLiftOptions = {}): KeyboardLift {
-  if (!root) return unavailableLift();
+  if (!root || typeof window === 'undefined' || typeof document === 'undefined') {
+    return unavailableLift();
+  }
 
   const trackedInputs = (() => {
     const source = inputs ?? input;
@@ -116,323 +82,310 @@ export function initKeyboardLift({
     return (Array.isArray(source) ? source : [source]).filter(Boolean);
   })();
 
-  const viewport = (typeof window !== 'undefined' ? window.visualViewport : null) as
-    (ViewportLike & EventTarget) | null;
-  const anchor = new TranscriptAnchor({
-    listFor: () => {
-      try {
-        return typeof document !== 'undefined' ? document.getElementById('msgList') : null;
-      } catch {
-        return null;
-      }
-    },
-    viewportOffset: () => composerPanOffset(),
-    stillActive: () => isFocused() || phase === 'closing',
-  });
-
-  let phase: KeyboardPhase = 'closed';
-  let frame = 0;
-  let blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  let holdTimer: ReturnType<typeof setTimeout> | 0 = 0;
-  /** Last published inset (integer px). -1 forces the first write. */
-  let appliedInset = -1;
-  /** True once this session has published a non-zero inset. */
-  let sessionActive = false;
-  /** Timestamp of the last non-zero computed sample (glitch hold). */
-  let lastNonZeroAt = 0;
-  /* Floor for the computed inset while a native bridge has just reported
-     keyboardWillShow — covers WebViews that report no geometry change. */
-  let nativeHeightHint = 0;
+  const viewport = window.visualViewport as (ViewportLike & EventTarget) | null;
   const insetListeners = new Set<(layoutInset: number) => void>();
 
-  const setPhase = (next: KeyboardPhase) => {
-    if (next === phase && root.dataset.keyboardPhase === next) return;
-    phase = next;
-    try { root.dataset.keyboardPhase = next; } catch { /* detached root */ }
-  };
-  const setIntent = (open: boolean) => {
-    try { root.dataset.keyboardOpen = open ? 'true' : 'false'; } catch { /* detached root */ }
-  };
-  setPhase('closed');
-  setIntent(false);
+  let phase: KeyboardPhase = 'closed';
+  let mode: KeyboardMode = 'unknown';
+  let sessionActive = false;
+  let baseline: SessionBaseline | null = null;
+  let appliedInset = -1;
+  let overlayEvidence = 0;
+  let frame = 0;
+  let sampleUntil = 0;
+  let blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  let nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
 
   const shellElement = (): HTMLElement | null => (
     container
-    || (typeof document !== 'undefined' ? document.getElementById('appShell') : null)
+    || document.getElementById('appShell')
     || root
   );
 
   const isFocused = () => isTrackedInputFocused(trackedInputs);
 
-  /* Document scroll is a pan channel, not an error: folding window.scrollY
-     into the pan offset keeps the composer glued while the browser pans the
-     page on resize-mode platforms. Residual scroll is cleared once, when
-     the session fully closes. */
-  const settleScroll = () => {
-    if (typeof window !== 'undefined' && (window.scrollY !== 0 || window.scrollX !== 0)) {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  const setPhase = (next: KeyboardPhase) => {
+    if (phase === next && root.dataset.keyboardPhase === next) return;
+    phase = next;
+    try { root.dataset.keyboardPhase = next; } catch { /* detached root */ }
+  };
+
+  const setIntent = (open: boolean) => {
+    try { root.dataset.keyboardOpen = open ? 'true' : 'false'; } catch { /* detached root */ }
+  };
+
+  const setMode = (next: KeyboardMode) => {
+    if (mode !== 'unknown' && next !== mode) return;
+    mode = next;
+    try { root.dataset.keyboardMode = next; } catch { /* detached root */ }
+  };
+
+  const publishInset = (value: number) => {
+    const next = Math.max(0, Math.round(Number.isFinite(value) ? value : 0));
+    if (next === appliedInset) return;
+    appliedInset = next;
+    root.style.setProperty('--keyboard-inset', `${next}px`);
+    for (const cb of insetListeners) {
+      try { cb(next); } catch { /* subscriber faults stay isolated */ }
     }
-    for (const id of ['mainContent', 'topicSetup']) {
-      try {
-        const el = document.getElementById(id);
-        if (el && el.scrollTop) el.scrollTop = 0;
-      } catch { /* detached */ }
-    }
   };
 
-  const viewportOffsetTop = () => {
-    const vp = viewport && Number.isFinite(Number(viewport.offsetTop)) ? Number(viewport.offsetTop) : 0;
-    const sy = (typeof window !== 'undefined' && Number.isFinite(Number(window.scrollY))) ? Number(window.scrollY) : 0;
-    const total = vp + sy;
-    return Number.isFinite(total) ? Math.max(0, total) : 0;
-  };
-
-  /* Scroll-into-view on the composer's own scrollable ancestors is a third
-     displacement channel that neither offsetTop nor window.scrollY reports:
-     .topic-setup is overflow:auto and .main-content is overflow:hidden —
-     both still scroll programmatically. Folding their scrollTop into the
-     pan offset absorbs the reveal in the same write instead of leaving the
-     composer teleported by it. */
-  const composerContainerScroll = () => {
-    let px = 0;
-    try {
-      const mainEl = typeof document !== 'undefined' ? document.getElementById('mainContent') : null;
-      if (mainEl) px += Number(mainEl.scrollTop) || 0;
-      const topicEl = typeof document !== 'undefined' ? document.getElementById('topicSetup') : null;
-      if (topicEl) px += Number(topicEl.scrollTop) || 0;
-    } catch { /* detached */ }
-    return Number.isFinite(px) && px > 0 ? px : 0;
-  };
-
-  /* Total displacement applied to the composer surfaces by native channels:
-     visual-viewport pan + document scroll + container scroll-into-view. The
-     transcript anchor compensates the same total so both surfaces agree. */
-  const composerPanOffset = () => viewportOffsetTop() + composerContainerScroll();
-
-  /* Bottom edge of the app shell in client coordinates, read LIVE on every
-     frame (never frozen). On resizes-content platforms this edge has
-     already moved up with the keyboard, so the measured travel is ~0 and
-     the browser's native animation owns the motion alone. Falls back to
-     innerHeight when the shell is missing or not laid out yet. */
-  const appShellBottom = () => {
+  const shellBottom = (): number => {
     const el = shellElement();
     try {
       if (el && typeof el.getBoundingClientRect === 'function') {
-        const bottom = el.getBoundingClientRect().bottom + (Number(window.scrollY) || 0);
+        const bottom = Number(el.getBoundingClientRect().bottom);
         if (Number.isFinite(bottom) && bottom > 0) return bottom;
       }
-    } catch { /* detached node — use the fallback */ }
-    return window.innerHeight || 0;
+    } catch { /* detached */ }
+    return Math.max(0, Number(window.innerHeight) || 0);
   };
 
-  /* The inset for this frame, measured — never interpolated. Focus gates
-     the open direction only: once a session is active the close follows
-     the viewport's own restore animation even across blur, so the composer
-     slides down with the keyboard instead of snapping on blur. */
-  const measureTarget = (focused: boolean): number => {
-    const viewportHeight = Number(viewport?.height);
-    /* A transient zero/tiny viewport is not a usable sample — hold the
-       last value instead of flashing the composer (see ZERO_HOLD_MS). */
-    if (viewport && (!Number.isFinite(viewportHeight) || viewportHeight < MIN_STABLE_VISUAL_HEIGHT)) {
-      return appliedInset > 0 ? appliedInset : 0;
-    }
-    /* Pinch-zoom shrinks the visual viewport without any keyboard — never
-       treat it as occlusion (same guard as measureKeyboard). */
-    const scale = Number(viewport?.scale);
-    if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) {
-      return appliedInset > 0 ? appliedInset : 0;
-    }
-    const appBottom = appShellBottom();
-    let travel = measureKeyboard(appBottom, viewport, window.innerHeight).travel;
-    if (travel <= 0 && viewport) {
-      /* Legacy WebViews can leave visualViewport.height stuck at its
-         pre-keyboard value while shrinking innerHeight. That layout delta
-         is a valid second signal — but only when the visual viewport
-         itself reports no coverage, so offsetTop/pan is never counted
-         twice. (Without a viewport, measureKeyboard already used the
-         innerHeight fallback.) */
-      travel = Math.max(0, appBottom - (Number(window.innerHeight) || 0));
-    }
-    const inset = Math.max(0, travel - composerPanOffset());
-    if (inset > 0) return inset;
-    /* No measurable geometry: the native hint is a floor for WebViews that
-       report nothing at all — but only while focused. The moment the
-       platform reports real geometry it wins, so a bridge answering in
-       physical pixels can never hold the composer above the keyboard's
-       true leading edge. */
-    return focused ? nativeHeightHint : 0;
+  const viewportPan = (): number => {
+    const visualTop = viewport && Number.isFinite(Number(viewport.offsetTop))
+      ? Math.max(0, Number(viewport.offsetTop))
+      : 0;
+    const documentTop = Number.isFinite(Number(window.scrollY))
+      ? Math.max(0, Number(window.scrollY))
+      : 0;
+    return visualTop + documentTop;
   };
 
-  /* One coalesced frame: measure live, publish 1:1, then let subscribers
-     correct their layout in the same frame. Integer px keeps style text
-     stable and avoids sub-pixel layout churn every frame. */
-  const publish = (focused: boolean) => {
-    /* The capture must precede the write: a written inset re-anchors in
-       the same frame, and that correction needs the reader's pre-write
-       intent, not a post-write snapshot. */
-    if (focused) anchor.begin();
+  const anchor = new TranscriptAnchor({
+    listFor: () => {
+      try { return document.getElementById('msgList'); } catch { return null; }
+    },
+    viewportOffset: viewportPan,
+    stillActive: () => sessionActive || phase === 'closing',
+  });
 
-    const sampled = measureTarget(focused);
-    let next = Math.max(0, Math.round(sampled));
-    if (next === 0 && appliedInset > 0 && now() - lastNonZeroAt < ZERO_HOLD_MS) {
-      next = appliedInset;
-      /* Re-check once the hold window lapses even if no new geometry
-         event arrives — otherwise a real close delivered as a single
-         sample would stick at the held value forever. */
-      if (!holdTimer) {
-        holdTimer = setTimeout(() => { holdTimer = 0; wake(); }, ZERO_HOLD_MS);
-      }
-    } else if (next > 0) {
-      lastNonZeroAt = now();
+  const captureBaseline = (): SessionBaseline => ({
+    shellBottom: shellBottom(),
+    innerHeight: Math.max(0, Number(window.innerHeight) || 0),
+    visualHeight: viewport && Number.isFinite(Number(viewport.height))
+      ? Math.max(0, Number(viewport.height))
+      : Math.max(0, Number(window.innerHeight) || 0),
+  });
+
+  const ensureBaseline = () => {
+    if (!baseline) baseline = captureBaseline();
+  };
+
+  const startSession = () => {
+    if (sessionActive) return;
+    ensureBaseline();
+    sessionActive = true;
+    overlayEvidence = 0;
+    setIntent(true);
+    setPhase('opening');
+    anchor.begin();
+  };
+
+  const clearNativeOpenTimer = () => {
+    if (!nativeOpenTimer) return;
+    clearTimeout(nativeOpenTimer);
+    nativeOpenTimer = 0;
+  };
+
+  const finishSession = () => {
+    clearNativeOpenTimer();
+    sessionActive = false;
+    mode = 'unknown';
+    baseline = null;
+    overlayEvidence = 0;
+    sampleUntil = 0;
+    setIntent(false);
+    setPhase('closed');
+    publishInset(0);
+    anchor.end();
+    try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
+  };
+
+  const geometry = () => {
+    ensureBaseline();
+    const base = baseline as SessionBaseline;
+    const innerHeight = Math.max(0, Number(window.innerHeight) || 0);
+    const currentShellBottom = shellBottom();
+    const visualHeight = viewport && Number.isFinite(Number(viewport.height))
+      ? Math.max(0, Number(viewport.height))
+      : innerHeight;
+    const visualOffsetTop = viewport && Number.isFinite(Number(viewport.offsetTop))
+      ? Math.max(0, Number(viewport.offsetTop))
+      : 0;
+
+    const innerShrink = Math.max(0, base.innerHeight - innerHeight);
+    const shellShrink = Math.max(0, base.shellBottom - currentShellBottom);
+    const visualShrink = Math.max(0, base.visualHeight - visualHeight);
+    const visibleCoverage = Math.max(
+      0,
+      currentShellBottom - (visualHeight + visualOffsetTop),
+    );
+
+    return {
+      innerHeight,
+      currentShellBottom,
+      visualHeight,
+      visualOffsetTop,
+      innerShrink,
+      shellShrink,
+      visualShrink,
+      visibleCoverage,
+    };
+  };
+
+  const geometryLooksRestored = (g: ReturnType<typeof geometry>): boolean => {
+    if (!baseline) return true;
+    return (
+      g.visualShrink <= RESTORE_SLOP_PX
+      && g.innerShrink <= RESTORE_SLOP_PX
+      && g.shellShrink <= RESTORE_SLOP_PX
+      && g.visibleCoverage <= KEYBOARD_OPEN_THRESHOLD_PX
+    );
+  };
+
+  const classifyMode = (g: ReturnType<typeof geometry>) => {
+    if (mode !== 'unknown') return;
+
+    /* Native resize is authoritative as soon as either the layout viewport
+       or the rendered shell has materially shrunk. This usually arrives in
+       the same frame as visualViewport on Android resizes-content. */
+    if (g.innerShrink >= NATIVE_DELTA_PX || g.shellShrink >= NATIVE_DELTA_PX) {
+      setMode('native-resize');
+      overlayEvidence = 0;
+      return;
     }
-    /* Opening needs focus; an active session keeps following the viewport
-       across blur until it reports the restore (or the grace timer fires).
-       Geometry while unfocused and session-less is never ours (rotation,
-       URL-bar, pinch-zoom guard in measureKeyboard). */
-    if (next > 0 && !focused && !sessionActive) next = 0;
 
-    if (next !== appliedInset) {
-      appliedInset = next;
-      root.style.setProperty('--keyboard-inset', `${next}px`);
-      for (const cb of insetListeners) {
-        try { cb(next); } catch { /* subscriber faults stay isolated */ }
-      }
+    /* Overlay requires repeated evidence. A single early visualViewport
+       shrink is deliberately ignored because Android can report it one
+       frame before the 100dvh shell/layout viewport catches up. */
+    const overlayCandidate = (
+      g.visualShrink >= OVERLAY_DELTA_PX
+      || g.visibleCoverage >= OVERLAY_DELTA_PX
+      || g.visualOffsetTop >= OVERLAY_DELTA_PX
+    );
+    overlayEvidence = overlayCandidate ? overlayEvidence + 1 : 0;
+    if (overlayEvidence >= OVERLAY_EVIDENCE_FRAMES) {
+      setMode('overlay');
+    }
+  };
+
+  const sample = () => {
+    const focused = isFocused();
+    const g = geometry();
+
+    const keyboardGeometryPresent = (
+      g.visualShrink > KEYBOARD_OPEN_THRESHOLD_PX
+      || g.innerShrink > KEYBOARD_OPEN_THRESHOLD_PX
+      || g.shellShrink > KEYBOARD_OPEN_THRESHOLD_PX
+      || g.visibleCoverage > KEYBOARD_OPEN_THRESHOLD_PX
+      || g.visualOffsetTop > KEYBOARD_OPEN_THRESHOLD_PX
+    );
+
+    if (!sessionActive && focused && keyboardGeometryPresent) startSession();
+    if (sessionActive) classifyMode(g);
+
+    if (!sessionActive) {
+      publishInset(0);
+      return;
     }
 
-    const open = appliedInset > KEYBOARD_OPEN_THRESHOLD_PX;
-    if (open) {
-      sessionActive = true;
-      setIntent(true);
-      setPhase(focused ? 'open' : 'closing');
-    } else {
-      const wasActive = sessionActive;
-      setIntent(false);
-      setPhase('closed');
-      sessionActive = false;
-      if (wasActive) {
-        /* The lift is back at zero: any document scroll the browser used
-           to pan is residual — clear it once so the shell lands
-           unscrolled. */
-        settleScroll();
-      }
+    if (phase === 'closing' && geometryLooksRestored(g)) {
+      finishSession();
+      return;
     }
 
-    /* The correction is written inside the same frame that publishes a
-       new inset, so the painted transcript never trails the composer by
-       a frame. */
-    if (anchor.active && (focused || phase === 'closing')) anchor.correct();
+    if (mode === 'native-resize') {
+      /* Native/layout resize is the sole motion owner. Never add a second
+         JS displacement, even during the one-frame viewport/layout skew. */
+      publishInset(0);
+      if (phase === 'opening' && (g.innerShrink >= NATIVE_DELTA_PX || g.shellShrink >= NATIVE_DELTA_PX)) {
+        setPhase('open');
+      } else if (phase !== 'opening' && geometryLooksRestored(g)) {
+        /* Browser resizes-content can dismiss the IME without a native
+           bridge event while focus remains in the editor. Geometry restore
+           is sufficient to end that web session. */
+        finishSession();
+      }
+      return;
+    }
+
+    if (mode === 'overlay') {
+      /* Only the residual layout-space coverage is published. Container
+         scrollTop is intentionally excluded: padding changes can cause
+         scroll-into-view, and feeding that scroll back into the inset forms
+         a positive feedback loop (padding -> scroll -> padding -> jitter). */
+      publishInset(g.visibleCoverage);
+      if (phase === 'opening' && g.visibleCoverage > KEYBOARD_OPEN_THRESHOLD_PX) {
+        setPhase('open');
+      }
+      if (geometryLooksRestored(g)) finishSession();
+      return;
+    }
+
+    /* Unknown mode: wait for evidence instead of guessing. Zero is safer
+       than a wrong full-height compensation that must be undone next frame. */
+    publishInset(0);
   };
 
   const onFrame = () => {
     frame = 0;
-    publish(isFocused());
+    sample();
+    if (sampleUntil > now() && !frame) frame = requestAnimationFrame(onFrame);
   };
 
-  const wake = () => {
-    if (frame || typeof requestAnimationFrame !== 'function') {
-      /* No rAF (non-DOM test envs): publish synchronously so the state
-         machine stays testable without a frame pump. */
-      if (typeof requestAnimationFrame !== 'function') publish(isFocused());
-      return;
+  const sampleFor = (ms = EDGE_SAMPLE_MS) => {
+    sampleUntil = Math.max(sampleUntil, now() + ms);
+    if (!frame && typeof requestAnimationFrame === 'function') {
+      frame = requestAnimationFrame(onFrame);
+    } else if (typeof requestAnimationFrame !== 'function') {
+      sample();
     }
-    frame = requestAnimationFrame(onFrame);
   };
-
-  /* ── Event handlers ──────────────────────────────────────────────── */
 
   const onFocusIn = () => {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
-    wake();
-  };
-
-  /* Forced close for platforms that never report the restore geometry
-     (stale visualViewport after blur, Samsung dismiss without resize).
-     The normal path never needs this: the close follows the viewport's
-     own per-frame restore animation through publish(). */
-  const forceClose = () => {
-    if (!sessionActive) return;
-    appliedInset = 0;
-    root.style.setProperty('--keyboard-inset', '0px');
-    for (const cb of insetListeners) {
-      try { cb(0); } catch { /* isolated */ }
+    if (!sessionActive) {
+      baseline = captureBaseline();
+      mode = 'unknown';
+      overlayEvidence = 0;
+      try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
     }
-    setIntent(false);
-    setPhase('closed');
-    sessionActive = false;
-    settleScroll();
-    wake();
+    sampleFor();
   };
 
   const onFocusOut = () => {
+    if (!sessionActive) {
+      baseline = null;
+      return;
+    }
+    setPhase('closing');
+    sampleFor();
     if (blurTimer) clearTimeout(blurTimer);
-    /* The close follows the viewport's restore animation; this timer only
-       fires on platforms that never report it. */
     blurTimer = setTimeout(() => {
       blurTimer = 0;
-      if (sessionActive && !isFocused()) forceClose();
+      if (sessionActive && !isFocused()) finishSession();
     }, BLUR_GRACE_MS);
-    wake();
   };
 
   const onViewportGeometry = () => {
-    wake();
-    /* The transcript correction must land in this same task — a deferred
-       (next-rAF) restore leaves the transcript one frame behind the pan
-       on every event, which reads as continuous judder while iOS pans. */
+    sampleFor();
     if (anchor.active) anchor.correct();
   };
 
   if (viewport && typeof viewport.addEventListener === 'function') {
-    /* iOS Safari can pan the visual viewport without a paired resize. */
     viewport.addEventListener('resize', onViewportGeometry);
     viewport.addEventListener('scroll', onViewportGeometry);
   }
   window.addEventListener('resize', onViewportGeometry);
-  /* Document scroll is one of the pan channels (resize-mode platforms
-     scroll the page to reveal the focused composer). The live measurement
-     absorbs the delta exactly — never reset it per frame. */
   window.addEventListener('scroll', onViewportGeometry, { passive: true });
-  /* The composer's own scrollable ancestors can move under a browser
-     scroll-into-view without any window/visualViewport event firing
-     (notably .topic-setup revealing a below-fold landing input). Their
-     scrollTop is folded into the pan offset, so listen directly —
-     otherwise the published inset goes stale until the next viewport
-     event and the correction lands as a visible jump. */
-  const scrolledAncestors: HTMLElement[] = [];
-  try {
-    for (const id of ['mainContent', 'topicSetup']) {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener('scroll', onViewportGeometry, { passive: true });
-        scrolledAncestors.push(el);
-      }
-    }
-  } catch { /* detached */ }
-  /* Chromium's VirtualKeyboard API reports the IME animation timing.
-     overlaysContent stays off — enabling it would switch Chrome to
-     overlay mode and leave every untracked input uncovered — so only the
-     event timing is used. The reported height is intentionally ignored:
-     it overshoots mid-animation on current Chrome builds. */
-  const virtualKeyboard = (typeof navigator !== 'undefined'
-    ? (navigator as Navigator & { virtualKeyboard?: EventTarget }).virtualKeyboard
-    : undefined) ?? null;
-  if (virtualKeyboard && typeof virtualKeyboard.addEventListener === 'function') {
-    virtualKeyboard.addEventListener('geometrychange', wake);
-  }
-  /* focusin/focusout bubble from the nested Tiptap editor to the document;
-     focus/blur do not, and a document-level listener also covers an editor
-     that mounts after this initializer has run. */
   document.addEventListener('focusin', onFocusIn);
   document.addEventListener('focusout', onFocusOut);
-  /* Returning from the background (tab switch, native app pause) can
-     swallow the close-resize entirely; re-measure on visibility flips.
-     The Capacitor bridge mirrors appStateChange into this same event. */
-  const onVisibility = () => { wake(); };
-  document.addEventListener('visibilitychange', onVisibility);
+  document.addEventListener('visibilitychange', onViewportGeometry);
 
-  /* Initial publish: 0px vars and the closed phase so consumers never
-     read a missing variable. */
-  publish(isFocused());
+  publishInset(0);
+  setPhase('closed');
+  setIntent(false);
+  try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
 
   const controller: KeyboardLift = {
     get phase() { return phase; },
@@ -441,61 +394,69 @@ export function initKeyboardLift({
       insetListeners.add(cb);
       return () => { insetListeners.delete(cb); };
     },
-    notifyNativeKeyboard(kind, keyboardHeight) {
-      /* Capacitor's Keyboard plugin delivers the signal ahead of (or
-         instead of) a visualViewport resize on some Android builds. The
-         reported height is capped at ~62% of the shell: a bridge that
-         answers in physical pixels (density unscaled) must not lift the
-         composer off the top of the screen. */
-      const cap = Math.max(0, appShellBottom()) * 0.62;
-      nativeHeightHint = kind === 'show'
-        ? Math.min(Math.max(0, Number(keyboardHeight) || 0), cap)
-        : 0;
-      if (kind === 'hide') {
-        if (blurTimer) clearTimeout(blurTimer);
-        blurTimer = setTimeout(() => { blurTimer = 0; forceClose(); }, 200);
+    notifyNativeKeyboard(kind, _keyboardHeight) {
+      if (kind === 'show') {
+        if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
+        baseline = baseline ?? captureBaseline();
+        startSession();
+        /* Capacitor is configured with Keyboard.resize='native'. The native
+           signal is therefore state/timing only; keyboardHeight must never
+           become a CSS inset or the composer will jump to the final height
+           before Android's own resize animation begins. */
+        setMode('native-resize');
+        publishInset(0);
+        setPhase('opening');
+        clearNativeOpenTimer();
+        nativeOpenTimer = setTimeout(() => {
+          nativeOpenTimer = 0;
+          if (sessionActive && mode === 'native-resize' && phase === 'opening') setPhase('open');
+        }, NATIVE_OPEN_SETTLE_MS);
+        sampleFor();
+        return;
       }
-      wake();
+
+      if (!sessionActive) {
+        finishSession();
+        return;
+      }
+      clearNativeOpenTimer();
+      setPhase('closing');
+      publishInset(0);
+      sampleFor();
+      if (blurTimer) clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => {
+        blurTimer = 0;
+        if (sessionActive) finishSession();
+      }, NATIVE_OPEN_SETTLE_MS);
     },
     destroy() {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
       if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
-      if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
+      clearNativeOpenTimer();
       anchor.end();
       insetListeners.clear();
-      appliedInset = -1;
-      sessionActive = false;
-      nativeHeightHint = 0;
-      lastNonZeroAt = 0;
-      try {
-        root.style.removeProperty('--keyboard-inset');
-      } catch { /* detached root */ }
-      try { delete root.dataset.keyboardOpen; } catch { /* detached root */ }
-      try { delete root.dataset.keyboardPhase; } catch { /* detached root */ }
       if (viewport && typeof viewport.removeEventListener === 'function') {
         viewport.removeEventListener('resize', onViewportGeometry);
         viewport.removeEventListener('scroll', onViewportGeometry);
       }
       window.removeEventListener('resize', onViewportGeometry);
       window.removeEventListener('scroll', onViewportGeometry);
-      for (const el of scrolledAncestors) {
-        try { el.removeEventListener('scroll', onViewportGeometry); } catch { /* detached */ }
-      }
-      if (virtualKeyboard && typeof virtualKeyboard.removeEventListener === 'function') {
-        virtualKeyboard.removeEventListener('geometrychange', wake);
-      }
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
-      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('visibilitychange', onViewportGeometry);
+      try { root.style.removeProperty('--keyboard-inset'); } catch { /* detached */ }
+      try { delete root.dataset.keyboardOpen; } catch { /* detached */ }
+      try { delete root.dataset.keyboardPhase; } catch { /* detached */ }
+      try { delete root.dataset.keyboardMode; } catch { /* detached */ }
       if (active === controller) active = null;
     },
   };
+
   active = controller;
   return controller;
 }
 
-/* Returned when the root element is unavailable (non-DOM test envs). */
 function unavailableLift(): KeyboardLift {
   return {
     phase: 'closed',
