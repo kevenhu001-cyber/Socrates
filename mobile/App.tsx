@@ -40,7 +40,7 @@ import { PluginsScreen } from './src/screens/PluginsScreen';
 import { ProjectsScreen } from './src/screens/ProjectsScreen';
 import { KnowledgeScreen } from './src/screens/KnowledgeScreen';
 import { MistakesScreen } from './src/screens/MistakesScreen';
-import { RecentsScreen } from './src/screens/RecentsScreen';
+import { LibraryScreen } from './src/screens/LibraryScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { ScheduledScreen } from './src/screens/ScheduledScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
@@ -150,7 +150,7 @@ function NativeStack() {
         <Stack.Screen name="Home" component={NewChatScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="Tutor" component={TutorScreen} />
-        <Stack.Screen name="Library" component={RecentsScreen} />
+        <Stack.Screen name="Library" component={LibraryScreen} />
         <Stack.Screen name="ExamSession" component={ExamScreen} />
         <Stack.Screen
           name="Settings"

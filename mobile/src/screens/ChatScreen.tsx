@@ -26,7 +26,6 @@ import { Composer } from '../components/Composer';
 import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { shareModal } from '../components/ShareModal';
-import { toast } from '../components/Toast';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -372,7 +371,6 @@ export function ChatScreen({ navigation }: Props) {
           onAttach={onAttach}
           onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
           onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
-          onVoiceInput={() => toast.show(t('chat.voiceUnavailable') || 'Voice input is not available on this device yet.', 'info')}
           placeholder={t('chat.inputPlaceholder')}
         />
       </View>
