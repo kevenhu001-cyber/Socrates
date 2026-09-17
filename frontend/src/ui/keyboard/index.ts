@@ -1,17 +1,19 @@
 /**
  * ui/keyboard — virtual-keyboard avoidance controller.
  *
- * Motion ownership is intentionally strict:
- *   - native-resize: Android/WebView or the browser owns the layout motion.
- *     JS publishes zero keyboard inset and never adds transform/FLIP motion.
- *     The Capacitor Android shell opts into synchronized IME insets so 100dvh
- *     is relaid out on the same animation clock as the real keyboard.
- *   - overlay: the layout viewport stays fixed; JS publishes only the
- *     uncovered VisualViewport coverage as --keyboard-inset.
+ * Motion ownership is strict:
+ *   - browser native-resize: the browser owns layout geometry. JS uses the
+ *     VisualViewport only as a progress signal, applying a temporary inverse
+ *     transform so the composer follows the real keyboard frame-by-frame even
+ *     when the layout viewport itself updates in coarse steps.
+ *   - Capacitor native-resize: the native shell owns motion; JS adds no visual
+ *     transform here.
+ *   - overlay: layout stays fixed and JS publishes only uncovered viewport
+ *     coverage as --keyboard-inset.
  *
- * Keeping native-resize presentation-only code out of this controller avoids
- * a second animation timeline fighting the IME. JS still owns keyboard state,
- * mode classification, transcript anchoring and overlay compensation.
+ * There is no fixed-duration opening animation on the browser path. The
+ * composer's visible position is derived directly from the current
+ * VisualViewport height/offset, so the keyboard's own timing is the clock.
  */
 
 import {
@@ -30,6 +32,8 @@ const OVERLAY_DELTA_PX = 24;
 const RESTORE_SLOP_PX = 8;
 const NATIVE_OPEN_SETTLE_MS = 260;
 const NATIVE_HIDE_FALLBACK_MS = 520;
+const WEB_SYNC_LAYOUT_EVIDENCE_PX = 2;
+const WEB_SYNC_EPSILON_PX = 0.2;
 
 type KeyboardMode = 'unknown' | 'native-resize' | 'overlay';
 export type KeyboardPhase = 'closed' | 'opening' | 'open' | 'closing';
@@ -53,6 +57,7 @@ interface SessionBaseline {
   shellBottom: number;
   innerHeight: number;
   visualHeight: number;
+  visualOffsetTop: number;
 }
 
 interface KeyboardGeometry {
@@ -65,6 +70,10 @@ interface KeyboardGeometry {
   visualShrink: number;
   visibleCoverage: number;
 }
+
+type CapacitorLike = {
+  isNativePlatform?: () => boolean;
+};
 
 let active: KeyboardLift | null = null;
 
@@ -97,6 +106,11 @@ export function initKeyboardLift({
 
   const viewport = window.visualViewport as (ViewportLike & EventTarget) | null;
   const insetListeners = new Set<(layoutInset: number) => void>();
+  const capacitor = (window as Window & { Capacitor?: CapacitorLike }).Capacitor;
+  const isCapacitorNative = (() => {
+    try { return Boolean(capacitor?.isNativePlatform?.()); }
+    catch { return false; }
+  })();
 
   let phase: KeyboardPhase = 'closed';
   let mode: KeyboardMode = 'unknown';
@@ -111,16 +125,37 @@ export function initKeyboardLift({
   let nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
   let nativeHideTimer: ReturnType<typeof setTimeout> | 0 = 0;
 
+  /* Browser-only VisualViewport motion state. */
+  let webMotionTarget: HTMLElement | null = null;
+  let webMotionArmed = false;
+  let webStartTop: number | null = null;
+  let webTranslateY = 0;
+  let webOriginalTransformValue = '';
+  let webOriginalTransformPriority = '';
+  let webOriginalWillChangeValue = '';
+  let webOriginalWillChangePriority = '';
+
   const shellElement = (): HTMLElement | null => (
     container || document.getElementById('appShell') || root
   );
 
   const isFocused = () => isTrackedInputFocused(trackedInputs);
 
-  const isTrackedNode = (node: EventTarget | Node | null): boolean => {
-    if (!(node instanceof Node)) return false;
-    return trackedInputs.some((element) => element === node || element.contains(node));
+  const trackedWrapForNode = (node: EventTarget | Node | null): HTMLElement | null => {
+    if (!(node instanceof Node)) return null;
+    return trackedInputs.find((element) => element === node || element.contains(node)) || null;
   };
+
+  const motionTargetForNode = (node: EventTarget | Node | null): HTMLElement | null => {
+    const wrap = trackedWrapForNode(node);
+    if (!wrap) return null;
+    if (wrap.id === 'chatInputWrap') return document.getElementById('chatInputBar') || wrap;
+    return wrap;
+  };
+
+  const activeMotionTarget = (): HTMLElement | null => (
+    motionTargetForNode(document.activeElement) || webMotionTarget
+  );
 
   const setPhase = (next: KeyboardPhase) => {
     if (phase === next && root.dataset.keyboardPhase === next) return;
@@ -181,14 +216,131 @@ export function initKeyboardLift({
     visualHeight: viewport && Number.isFinite(Number(viewport.height))
       ? Math.max(0, Number(viewport.height))
       : Math.max(0, Number(window.innerHeight) || 0),
+    visualOffsetTop: viewport && Number.isFinite(Number(viewport.offsetTop))
+      ? Math.max(0, Number(viewport.offsetTop))
+      : 0,
   });
 
   const ensureBaseline = () => {
     if (!baseline) baseline = captureBaseline();
   };
 
-  const clearTimer = (timer: ReturnType<typeof setTimeout> | 0) => {
-    if (timer) clearTimeout(timer);
+  const restoreWebMotionStyle = () => {
+    const target = webMotionTarget;
+    if (!target) return;
+
+    if (webOriginalTransformValue) {
+      target.style.setProperty(
+        'transform',
+        webOriginalTransformValue,
+        webOriginalTransformPriority,
+      );
+    } else {
+      target.style.removeProperty('transform');
+    }
+
+    if (webOriginalWillChangeValue) {
+      target.style.setProperty(
+        'will-change',
+        webOriginalWillChangeValue,
+        webOriginalWillChangePriority,
+      );
+    } else {
+      target.style.removeProperty('will-change');
+    }
+  };
+
+  const resetWebMotion = (restoreStyle = true) => {
+    if (restoreStyle && webMotionArmed) restoreWebMotionStyle();
+    webMotionTarget = null;
+    webMotionArmed = false;
+    webStartTop = null;
+    webTranslateY = 0;
+    webOriginalTransformValue = '';
+    webOriginalTransformPriority = '';
+    webOriginalWillChangeValue = '';
+    webOriginalWillChangePriority = '';
+    try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
+  };
+
+  const webTransform = (offset: number): string => {
+    const translate = `translate3d(0, ${offset}px, 0)`;
+    return webOriginalTransformValue
+      ? `${translate} ${webOriginalTransformValue}`
+      : translate;
+  };
+
+  const armWebMotion = (target: HTMLElement | null) => {
+    if (isCapacitorNative || !viewport || !target) return;
+    if (webMotionArmed && webMotionTarget === target) return;
+
+    resetWebMotion();
+    webMotionTarget = target;
+
+    const rectTop = Number(target.getBoundingClientRect().top);
+    if (!Number.isFinite(rectTop)) {
+      webMotionTarget = null;
+      return;
+    }
+
+    webOriginalTransformValue = target.style.getPropertyValue('transform');
+    webOriginalTransformPriority = target.style.getPropertyPriority('transform');
+    webOriginalWillChangeValue = target.style.getPropertyValue('will-change');
+    webOriginalWillChangePriority = target.style.getPropertyPriority('will-change');
+    webStartTop = rectTop;
+    webTranslateY = 0;
+    webMotionArmed = true;
+
+    /* Establish the compositor layer before the first keyboard resize. */
+    target.style.setProperty('transform', webTransform(0), 'important');
+    target.style.setProperty('will-change', 'transform', 'important');
+    try { root.dataset.keyboardMotion = 'web-visual-viewport-armed'; } catch { /* detached */ }
+  };
+
+  const syncWebMotionNow = () => {
+    if (isCapacitorNative || !viewport || !baseline || !webMotionArmed) return;
+    if (mode === 'overlay') return;
+
+    const target = activeMotionTarget();
+    if (!target || target !== webMotionTarget || webStartTop == null) return;
+
+    const innerHeight = Math.max(0, Number(window.innerHeight) || 0);
+    const currentShellBottom = shellBottom();
+    const layoutEvidence = Math.max(
+      Math.abs(baseline.innerHeight - innerHeight),
+      Math.abs(baseline.shellBottom - currentShellBottom),
+    );
+
+    /* If layout has not moved, this is an overlay-style viewport change.
+       Do not move the composer here; overlay mode will publish an inset. */
+    if (layoutEvidence < WEB_SYNC_LAYOUT_EVIDENCE_PX && mode !== 'native-resize') return;
+
+    const visualHeight = Number.isFinite(Number(viewport.height))
+      ? Math.max(0, Number(viewport.height))
+      : innerHeight;
+    const visualOffsetTop = Number.isFinite(Number(viewport.offsetTop))
+      ? Math.max(0, Number(viewport.offsetTop))
+      : 0;
+
+    /* Remove our own presentation translation to recover layout position. */
+    const paintedTop = Number(target.getBoundingClientRect().top);
+    if (!Number.isFinite(paintedTop)) return;
+    const layoutTop = paintedTop - webTranslateY;
+
+    /* The real keyboard progress is encoded by VisualViewport shrink. Offset
+       is added back because getBoundingClientRect is layout-viewport based;
+       this makes the visible-screen movement independent of browser panning. */
+    const visualShrink = Math.max(0, baseline.visualHeight - visualHeight);
+    const offsetDelta = visualOffsetTop - baseline.visualOffsetTop;
+    const desiredLayoutTop = webStartTop - visualShrink + offsetDelta;
+    const nextTranslate = desiredLayoutTop - layoutTop;
+    if (!Number.isFinite(nextTranslate)) return;
+
+    if (Math.abs(nextTranslate - webTranslateY) <= WEB_SYNC_EPSILON_PX) return;
+    webTranslateY = nextTranslate;
+    target.style.setProperty('transform', webTransform(webTranslateY), 'important');
+    target.style.setProperty('will-change', 'transform', 'important');
+    try { root.dataset.keyboardMotion = 'web-visual-viewport-sync'; } catch { /* detached */ }
   };
 
   const clearNativeOpenTimer = () => {
@@ -216,6 +368,7 @@ export function initKeyboardLift({
   const finishSession = () => {
     clearNativeOpenTimer();
     clearNativeHideTimer();
+    resetWebMotion();
     sessionActive = false;
     mode = 'unknown';
     baseline = null;
@@ -227,7 +380,6 @@ export function initKeyboardLift({
     publishInset(0);
     anchor.end();
     try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
-    try { delete root.dataset.keyboardMotion; } catch { /* legacy cleanup */ }
   };
 
   const geometry = (): KeyboardGeometry => {
@@ -279,7 +431,17 @@ export function initKeyboardLift({
     if (overlayEvidence >= OVERLAY_EVIDENCE_FRAMES) setMode('overlay');
   };
 
+  const expireUnusedPreFocusState = () => {
+    if (sessionActive || isFocused()) return;
+    if (!preFocusBaselineUntil || preFocusBaselineUntil > now()) return;
+    resetWebMotion();
+    baseline = null;
+    preFocusBaselineUntil = 0;
+  };
+
   const sample = () => {
+    expireUnusedPreFocusState();
+
     const focused = isFocused();
     const g = geometry();
 
@@ -303,9 +465,10 @@ export function initKeyboardLift({
     }
 
     if (mode === 'native-resize') {
-      /* Native layout is the only movement owner. In the Capacitor Android
-         shell synchronized window insets make 100dvh advance on the real IME
-         animation clock. Any JS transform here would create a second clock. */
+      /* Browser path: transform is driven by VisualViewport progress rather
+         than a fixed animation duration. Capacitor path does not enter the
+         browser synchronizer at all. */
+      syncWebMotionNow();
       publishInset(0);
       if (phase === 'opening' && (
         g.innerShrink >= NATIVE_DELTA_PX || g.shellShrink >= NATIVE_DELTA_PX
@@ -316,6 +479,8 @@ export function initKeyboardLift({
     }
 
     if (mode === 'overlay') {
+      /* Overlay owns the lift; drop any pre-armed browser transform first. */
+      resetWebMotion();
       publishInset(g.visibleCoverage);
       if (phase === 'opening' && g.visibleCoverage > KEYBOARD_OPEN_THRESHOLD_PX) {
         setPhase('open');
@@ -324,7 +489,8 @@ export function initKeyboardLift({
       return;
     }
 
-    /* Unknown mode: wait for evidence instead of guessing and double-lifting. */
+    /* Unknown mode: synchronous resize callbacks may already be compensating
+       a real layout resize, but no CSS inset is published until mode is known. */
     publishInset(0);
   };
 
@@ -344,11 +510,15 @@ export function initKeyboardLift({
   };
 
   const onPointerDown = (event: PointerEvent) => {
-    if (sessionActive || !isTrackedNode(event.target)) return;
+    if (sessionActive) return;
+    const target = motionTargetForNode(event.target);
+    if (!target) return;
+
     baseline = captureBaseline();
     preFocusBaselineUntil = now() + PRE_FOCUS_BASELINE_MS;
     mode = 'unknown';
     overlayEvidence = 0;
+    armWebMotion(target);
     try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
     sampleFor(PRE_FOCUS_BASELINE_MS + 50);
   };
@@ -366,11 +536,14 @@ export function initKeyboardLift({
       overlayEvidence = 0;
       try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
     }
-    sampleFor();
+
+    armWebMotion(motionTargetForNode(document.activeElement));
+    sampleFor(PRE_FOCUS_BASELINE_MS + 50);
   };
 
   const onFocusOut = () => {
     if (!sessionActive) {
+      resetWebMotion();
       baseline = null;
       preFocusBaselineUntil = 0;
       return;
@@ -385,27 +558,41 @@ export function initKeyboardLift({
     }, BLUR_GRACE_MS);
   };
 
-  const onViewportGeometry = () => {
+  const onVisualViewportGeometry = () => {
+    /* Same callback, before next paint: use the browser's own keyboard
+       viewport progress as our motion clock. */
+    syncWebMotionNow();
+    sampleFor();
+    if (anchor.active) anchor.correct();
+  };
+
+  const onWindowResize = () => {
+    syncWebMotionNow();
+    sampleFor();
+    if (anchor.active) anchor.correct();
+  };
+
+  const onWindowScroll = () => {
     sampleFor();
     if (anchor.active) anchor.correct();
   };
 
   document.addEventListener('pointerdown', onPointerDown, true);
   if (viewport && typeof viewport.addEventListener === 'function') {
-    viewport.addEventListener('resize', onViewportGeometry);
-    viewport.addEventListener('scroll', onViewportGeometry);
+    viewport.addEventListener('resize', onVisualViewportGeometry);
+    viewport.addEventListener('scroll', onVisualViewportGeometry);
   }
-  window.addEventListener('resize', onViewportGeometry);
-  window.addEventListener('scroll', onViewportGeometry, { passive: true });
+  window.addEventListener('resize', onWindowResize);
+  window.addEventListener('scroll', onWindowScroll, { passive: true });
   document.addEventListener('focusin', onFocusIn);
   document.addEventListener('focusout', onFocusOut);
-  document.addEventListener('visibilitychange', onViewportGeometry);
+  document.addEventListener('visibilitychange', onWindowResize);
 
   publishInset(0);
   setPhase('closed');
   setIntent(false);
   try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
-  try { delete root.dataset.keyboardMotion; } catch { /* legacy cleanup */ }
+  try { delete root.dataset.keyboardMotion; } catch { /* cleanup */ }
 
   const controller: KeyboardLift = {
     get phase() { return phase; },
@@ -463,18 +650,19 @@ export function initKeyboardLift({
       }
       clearNativeOpenTimer();
       clearNativeHideTimer();
+      resetWebMotion();
       anchor.end();
       insetListeners.clear();
       document.removeEventListener('pointerdown', onPointerDown, true);
       if (viewport && typeof viewport.removeEventListener === 'function') {
-        viewport.removeEventListener('resize', onViewportGeometry);
-        viewport.removeEventListener('scroll', onViewportGeometry);
+        viewport.removeEventListener('resize', onVisualViewportGeometry);
+        viewport.removeEventListener('scroll', onVisualViewportGeometry);
       }
-      window.removeEventListener('resize', onViewportGeometry);
-      window.removeEventListener('scroll', onViewportGeometry);
+      window.removeEventListener('resize', onWindowResize);
+      window.removeEventListener('scroll', onWindowScroll);
       document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('focusout', onFocusOut);
-      document.removeEventListener('visibilitychange', onViewportGeometry);
+      document.removeEventListener('visibilitychange', onWindowResize);
       try { root.style.removeProperty('--keyboard-inset'); } catch { /* detached */ }
       try { delete root.dataset.keyboardOpen; } catch { /* detached */ }
       try { delete root.dataset.keyboardPhase; } catch { /* detached */ }
