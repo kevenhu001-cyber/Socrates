@@ -20,7 +20,7 @@ export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 // planner in ui/motion.js. smoothScrollToBottom() is layered on top of
 // velocityScrollTo() so the data-auto-scrolling flag and cancellation
 // semantics are written once. Keyboard geometry itself is handled by
-// keyboardViewport.js; this module only re-anchors a pinned transcript
+// ui/keyboard/index.ts; this module only re-anchors a pinned transcript
 // after the browser applies that geometry.
 //
 // smoothScrollToBottom() centralises the "glide to the new bottom"
@@ -36,7 +36,7 @@ export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 // participates in the chat flex layout; this controller only preserves
 // bottom-follow intent for in-message content growth (streaming text,
 // image decode, tool card expansion). Keyboard-driven layout shifts
-// are measured by keyboardViewport.js and re-anchor the transcript after
+// are measured by ui/keyboard/index.ts and re-anchor the transcript after
 // the flex layout settles.
 
 /* The page's scrollable area is .msg-list (when chat/tutor is
@@ -102,7 +102,7 @@ function cancelScrollAnimationFor(list){
 
    The planner guarantees a constant perceived velocity regardless of
    the distance. Keyboard inset geometry is deliberately not animated by
-   this function; keyboardViewport applies the measured CSS inset directly
+   this function; ui/keyboard applies the measured CSS inset directly
    and only asks this function to restore a pinned transcript after layout.
 
    Implementation: manual requestAnimationFrame interpolation of
@@ -243,7 +243,7 @@ export function smoothScrollToBottom(list, opts){
    450 ms ResizeObserver RAF loop that handled *keyboard/composer*
    layout shifts has been removed — that motion now belongs to a
    single browser-native smoothScrollToBottom() call dispatched from
-   keyboardViewport.js, so the browser's layout update owns
+   ui/keyboard/index.ts, so the browser's layout update owns
    the visual motion and the JS no longer resets scrollTop every
    frame mid-animation. The bounded composer-follow sequence below only
      runs while a focus/composer transition is active. */
@@ -346,7 +346,7 @@ export function initChatComposerReserve(options){
     if(!composerFollowFrame)composerFollowFrame=requestAnimationFrame(runComposerFollow);
   }
 
-  /* Composer geometry is now owned by flex layout and keyboardViewport.
+  /* Composer geometry is now owned by flex layout and ui/keyboard.
      Observe the resulting chat-column resize once per layout notification;
      this keeps a reader who was already at the bottom at the new bottom on
      desktop focus expansion, while never moving a reader who scrolled away.
@@ -357,7 +357,7 @@ export function initChatComposerReserve(options){
     ?document.querySelector("#chatView, .chat-view")
     :null;
   var followComposerResize=function(){
-      /* keyboardViewport owns the scroll anchor during its opening/closing
+      /* ui/keyboard owns the scroll anchor during its opening/closing
          rAF. A ResizeObserver delivery from the same flex reflow must not
          write scrollTop a second time, or the composer appears to wobble even
          when its inset is monotonic. */
@@ -380,7 +380,7 @@ export function initChatComposerReserve(options){
          the reader's position: a history reader keeps their exact
          scrollTop instead of being dragged to the latest message. The
          inset-driven re-anchor for the live keyboard path belongs to
-         keyboardViewport.js, which captures pin intent before the first
+         ui/keyboard/index.ts, which captures pin intent before the first
          frame writes. */
       if(!pinnedBeforeResize)return;
       /* A newly submitted turn deliberately owns the prompt's viewport
@@ -410,7 +410,7 @@ export function initChatComposerReserve(options){
      without producing a reliable ResizeObserver delivery for the flex
      column. Cover that edge with one coalesced style-attribute fallback,
      but only for an inset that is visibly open while the app's own keyboard
-     flag is still closed. keyboardViewport.js sets the flag before its
+     flag is still closed. ui/keyboard/index.ts sets the flag before its
      measured writes, so normal keyboard motion keeps its single scroll
      owner and is not re-snapped by this observer. */
   var keyboardStyleFollowFrame=0;

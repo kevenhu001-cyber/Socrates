@@ -138,7 +138,7 @@ export function easeInOutCubic(t) {
 /* Critically-damped spring step (the classic SmoothDamp integrator) for
  * chasing a target that can retarget at any moment. Unlike a restarted
  * tween, position AND velocity carry through every retarget, so the
- * motion never pops: the keyboard inset chase (ui/keyboardViewport.js)
+ * motion never pops: the keyboard inset chase (ui/keyboard/index.ts)
  * uses this to follow a measured target that updates on an arbitrary
  * cadence — per-frame streams, coarse jumps, and mid-flight reversals
  * all share one continuous motion law.

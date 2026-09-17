@@ -29,7 +29,8 @@ import { toggleEffortPicker } from './ui/effortPicker.js';
 import { selectAppMode, toggleMobileModeMenu } from './ui/mobileModeSwitch.js';
 import { openFindInSession } from './ui/findInSession.js';
 import { initChatComposerReserve } from './ui/scroll.js';
-import { initKeyboardViewport } from './ui/keyboardViewport.js';
+import { initKeyboardLift } from './ui/keyboard/index.ts';
+import { initTopicFocusAssist } from './ui/topicFocusAssist.js';
 import './ui/composerAnim.js';
 import { installKeyboardShortcuts } from './ui/keyboardShortcuts.js';
 import { isNativeApp, setupNativeBridge } from './native/capacitorBridge.js';
@@ -154,10 +155,12 @@ installKeyboardShortcuts();
    unexpected. The backdrop is a sibling of the sidebar in the DOM and
    z-index 25; tapping it always closes the drawer on mobile. */
 /* B6: mobile drawer listeners moved to ui/sidebarChrome.js (initSidebarChrome). */
-/* Mobile keyboard avoidance lives in src/ui/keyboardViewport.js. An older
-   imperative scroll-compensation experiment (a visualViewport resize state
-   machine mutating scrollTop) used to sit here behind `if(false)`; it was
-   removed — the CSS-inset approach below superseded it. */
+/* Mobile keyboard avoidance lives in src/ui/keyboard/ — the controller
+   measures the visual viewport, interpolates the lift with a spring, and
+   publishes --keyboard-inset for the CSS to consume. An older imperative
+   scroll-compensation experiment (a visualViewport resize state machine
+   mutating scrollTop) used to sit here behind `if(false)`; it was removed
+   — the CSS-inset approach below superseded it. */
 
 /* P_composer-fr-anim — the mobile composer's focus-in expansion relies
    on `grid-template-rows: 0fr → 1fr` interpolating smoothly. Modern
@@ -174,22 +177,30 @@ installKeyboardShortcuts();
 
 /* Use a CSS inset instead of imperative scroll compensation. This keeps the
    composer stable when browsers report VisualViewport measurements differently.
-   Track both composers so the data-keyboard-open attribute and
-   --keyboard-inset variable reflect whichever input is currently focused —
-   critical for the topic-setup view's keyboard-aware layout. */
-initKeyboardViewport({
+   Track the whole composer wraps (not just the editor roots) so the
+   data-keyboard-open attribute and --keyboard-inset variable reflect whichever
+   input is currently focused — critical for the topic-setup view's
+   keyboard-aware layout. The wrap also keeps the session alive when focus
+   moves to the composer's own chrome (attach, effort, mic, send) — otherwise
+   each button tap reads as a blur and the lift would drop and re-rise around
+   the tap. */
+const keyboardLift = initKeyboardLift({
   inputs: [
-    document.getElementById('chatComposerRoot'),
-    document.getElementById('topicComposerRoot'),
+    document.getElementById('chatInputWrap'),
+    document.getElementById('topicInputWrap'),
   ].filter(Boolean),
   container: document.getElementById('appShell'),
 });
+/* Debug/e2e handle — lets tests drive the native-bridge path
+   (notifyNativeKeyboard) and inspect the session phase. */
+window.__socratesKeyboard = keyboardLift;
+initTopicFocusAssist();
 
 /* Capacitor native bridge — StatusBar theme sync, keyboard signal
    forwarding, hardware back button. No-op when window.Capacitor is
    absent (i.e. regular web browser). */
 if (isNativeApp()) {
-  setupNativeBridge();
+  setupNativeBridge({ keyboard: keyboardLift });
 }
 
 /* B6: switchTab moved to ui/sidebarChrome.js (imported at top). */

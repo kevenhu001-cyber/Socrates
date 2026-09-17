@@ -11,7 +11,7 @@
 //      anchor is abandoned instead of fighting the user.
 //
 // The measured path is driven through a fake window.visualViewport so the
-// real keyboardViewport.js rAF interpolation runs in Chromium.
+// real ui/keyboard/index.ts rAF interpolation runs in Chromium.
 
 import { test } from './_lib.mjs';
 import { expect } from '@playwright/test';
@@ -20,7 +20,7 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 /* Install a controllable visual viewport before the bundle loads. The app
    shims must not use the real browser property, so every module that
-   reads it (keyboardViewport, composer popovers) sees this object. */
+   reads it (ui/keyboard, composer popovers) sees this object. */
 function installFakeVisualViewport(page) {
   return page.addInitScript(() => {
     const listeners = { resize: new Set(), scroll: new Set() };
@@ -617,4 +617,196 @@ test('layout-viewport compression (Android resizes-content) follows pinned and a
   const restored = await transcriptState(page);
   expect(restored.scrollTop).toBe(before.scrollTop);
   expect(restored.anchorText).toBe(before.anchorText);
+});
+
+test('document scroll during an open session is absorbed, not fought', async ({ page }) => {
+  await seedChat(page);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await page.waitForTimeout(700);
+
+  /* Simulate the resize-mode platform scrolling the document to reveal the
+     focused composer: stub scrollY and record every scrollTo call. The
+     controller must re-project (absorb) the delta instead of resetting it —
+     a per-frame scrollTo(0) tug-of-war is the jitter this guards against. */
+  await page.evaluate(() => {
+    window.__sy = 0;
+    window.__scrollCalls = [];
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      get: () => window.__sy,
+    });
+    window.scrollTo = (opts) => {
+      window.__scrollCalls.push(opts);
+      window.__sy = (opts && opts.top) || 0;
+    };
+  });
+  const settledInset = await page.evaluate(() => Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+
+  await page.evaluate(() => {
+    window.__sy = 60;
+    window.dispatchEvent(new Event('scroll'));
+  });
+  await page.waitForTimeout(250);
+
+  const during = await page.evaluate(() => ({
+    calls: window.__scrollCalls.length,
+    inset: Number.parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--keyboard-inset')),
+    pan: Number.parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--keyboard-pan-compensation')),
+    phase: document.documentElement.dataset.keyboardPhase,
+  }));
+  /* No scrollTo fight while the session is live — the 60px document pan is
+     absorbed into the layout inset (inset = travel − offset). */
+  expect(during.calls).toBe(0);
+  expect(Math.abs(during.inset - (settledInset - 60))).toBeLessThanOrEqual(2);
+  expect(during.pan).toBe(0);
+  expect(during.phase).toBe('open');
+
+  /* Past the travel, padding cannot go negative — the remainder lands in
+     the pan-compensation transform. */
+  await page.evaluate(() => {
+    window.__sy = 400;
+    window.dispatchEvent(new Event('scroll'));
+  });
+  await page.waitForTimeout(250);
+  const overPanned = await page.evaluate(() => ({
+    calls: window.__scrollCalls.length,
+    inset: Number.parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--keyboard-inset')),
+    pan: Number.parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--keyboard-pan-compensation')),
+  }));
+  expect(overPanned.calls).toBe(0);
+  expect(overPanned.inset).toBe(0);
+  expect(Math.abs(overPanned.pan - (400 - settledInset))).toBeLessThanOrEqual(2);
+
+  /* Closing clears the residual document scroll exactly once. */
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
+  await page.waitForTimeout(900);
+  const after = await page.evaluate(() => ({
+    calls: window.__scrollCalls.length,
+    top: window.__scrollCalls.length ? window.__scrollCalls[0].top : null,
+    phase: document.documentElement.dataset.keyboardPhase,
+  }));
+  expect(after.phase).toBe('closed');
+  expect(after.calls).toBe(1);
+  expect(after.top).toBe(0);
+});
+
+test('focus on composer chrome keeps the transcript anchor alive', async ({ page }) => {
+  await seedChat(page);
+  /* History reader: scroll away from the bottom before opening. */
+  await page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    list.dispatchEvent(new WheelEvent('wheel', { deltaY: -400, bubbles: true }));
+    list.scrollTop = 600;
+    list.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect.poll(async () => (await transcriptState(page)).away).toBe(true);
+
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await page.waitForTimeout(700);
+  const settled = await transcriptState(page);
+
+  /* Moving focus to a composer footer button is not a blur of the composer
+     surface — the keyboard session (and its anchor) must stay armed. Wait
+     past the anchor's refresh window so an expired anchor would be dead by
+     the time the pan lands. */
+  await page.locator('#chatComposerToolsBtn').focus();
+  await page.waitForTimeout(450);
+  const focused = await page.evaluate(() => ({
+    open: document.documentElement.dataset.keyboardOpen,
+    phase: document.documentElement.dataset.keyboardPhase,
+    inset: Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')),
+  }));
+  expect(focused.open).toBe('true');
+  expect(focused.phase).toBe('open');
+  expect(focused.inset).toBeGreaterThan(300);
+
+  /* A pan while chrome holds focus must still be compensated. */
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 410, offsetTop: 100 }));
+  await page.waitForTimeout(250);
+  const panned = await transcriptState(page);
+  expect(panned.scrollTop).toBe(settled.scrollTop - 100);
+});
+
+test('a single empty geometry frame does not dip the composer', async ({ page }) => {
+  await seedChat(page);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await page.waitForTimeout(700);
+  const settledInset = await page.evaluate(() => Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  expect(settledInset).toBeGreaterThan(300);
+
+  /* A lone zero-height sample — an IME reporting hiccup — is held for one
+     tick instead of retargeting the lift to zero. Restore within the tick
+     window so the session never sees two consecutive zeros. */
+  const trace = await page.evaluate(() => new Promise((resolve) => {
+    const samples = [];
+    const read = () => {
+      samples.push({
+        inset: Number.parseFloat(getComputedStyle(document.documentElement)
+          .getPropertyValue('--keyboard-inset')),
+        phase: document.documentElement.dataset.keyboardPhase,
+      });
+      if (samples.length < 30) requestAnimationFrame(read);
+      else resolve(samples);
+    };
+    window.__fakeViewport.__resize({ height: 844 });
+    setTimeout(() => window.__fakeViewport.__resize({ height: 510 }), 5);
+    requestAnimationFrame(read);
+  }));
+  const dip = Math.min(...trace.map((s) => s.inset));
+  expect(dip).toBeGreaterThan(settledInset - 20);
+  for (const s of trace) {
+    expect(s.phase === 'closing' || s.phase === 'closed').toBe(false);
+  }
+});
+
+test('native height hint is a floor, not an override', async ({ page }) => {
+  await seedChat(page);
+  const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
+  await editor.focus();
+  await page.waitForTimeout(80);
+
+  /* A bridge that reports physical pixels (density unscaled) must not lift
+     the composer off the screen — the hint is capped against the shell. */
+  await page.evaluate(() => window.__socratesKeyboard.notifyNativeKeyboard('show', 2400));
+  await page.waitForTimeout(700);
+  const hinted = await page.evaluate(() => Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  const shellBottom = await page.evaluate(() =>
+    Math.round(document.getElementById('appShell').getBoundingClientRect().bottom));
+  expect(hinted).toBeLessThan(shellBottom * 0.68);
+  expect(hinted).toBeGreaterThan(shellBottom * 0.5);
+
+  /* Real geometry beats the hint: when the viewport reports 334px of
+     coverage the composer settles there, not at the native figure. */
+  await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
+  await page.waitForTimeout(700);
+  const measured = await page.evaluate(() => Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  expect(Math.abs(measured - 334)).toBeLessThanOrEqual(12);
+
+  await page.evaluate(() => {
+    window.__socratesKeyboard.notifyNativeKeyboard('hide');
+    window.__fakeViewport.__resize({ height: 844 });
+  });
+  await page.waitForTimeout(900);
+  const closed = await page.evaluate(() => ({
+    inset: Number.parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue('--keyboard-inset')),
+    phase: document.documentElement.dataset.keyboardPhase,
+  }));
+  expect(closed.phase).toBe('closed');
+  expect(closed.inset).toBeLessThanOrEqual(4);
 });

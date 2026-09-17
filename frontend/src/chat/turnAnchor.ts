@@ -17,6 +17,7 @@ import { publishReactChatRuntime } from '../ui/reactBridge.js';
 import { updateMessageSnapshot } from '../ui/messageSnapshot.js';
 import { velocityScrollTo } from '../ui/scroll.js';
 import { suppressScrollPositionIntent } from '../ui/scrollPill.js';
+import { getKeyboardLift } from '../ui/keyboard/index.ts';
 import type { MessageEntry } from '../ui/messageActions.ts';
 
 export interface TurnAnchorDeps {
@@ -181,11 +182,10 @@ interface TurnViewportHold {
   clientId: string;
   targetOffset: number;
   observer: ResizeObserver | null;
-  /** Last `--keyboard-inset` this hold corrected for. */
-  keyboardInset: string;
   /** Same-task correction listeners, removed on release. */
   onViewportResize: (() => void) | null;
-  insetObserver: MutationObserver | null;
+  /** Unsubscribe from the keyboard lift's per-frame inset writes. */
+  unsubInset: (() => void) | null;
 }
 
 let viewportHold: TurnViewportHold | null = null;
@@ -205,11 +205,11 @@ export function releaseTurnViewportHold(): void {
   if (hold.onViewportResize) {
     try { window.removeEventListener('resize', hold.onViewportResize); } catch (_) { /* no window */ }
   }
-  if (hold.insetObserver) {
-    try { hold.insetObserver.disconnect(); } catch (_) { /* detached root */ }
+  if (hold.unsubInset) {
+    try { hold.unsubInset(); } catch (_) { /* released controller */ }
   }
-  /* keyboardViewport.js reads this flag to leave the transcript alone while
-     the send anchor owns it; clearing it hands the position back. */
+  /* ui/keyboard reads this flag to leave the transcript alone while the
+     send anchor owns it; clearing it hands the position back. */
   if (hold.list.dataset) delete hold.list.dataset.turnAnchorHold;
 }
 
@@ -297,7 +297,6 @@ function startTurnViewportHold(
   const promptRow = latestUserRow(list);
   const anchorRow = rowFor();
   if (!promptRow || !anchorRow) return;
-  const root = typeof document !== 'undefined' ? document.documentElement : null;
   const hold: TurnViewportHold = {
     list,
     rowFor,
@@ -305,9 +304,8 @@ function startTurnViewportHold(
     clientId,
     targetOffset,
     observer: null,
-    keyboardInset: readKeyboardInset(root),
     onViewportResize: null,
-    insetObserver: null,
+    unsubInset: null,
   };
   const observer = new ResizeObserver(function () { holdTurnViewport(); });
   hold.observer = observer;
@@ -324,28 +322,15 @@ function startTurnViewportHold(
      frame's paint, so correcting here keeps the change off screen. */
   hold.onViewportResize = function () { holdTurnViewport(); };
   try { window.addEventListener('resize', hold.onViewportResize); } catch (_) { /* no window */ }
-  /* The virtual keyboard is tweened into `--keyboard-inset` frame by frame.
-     A style mutation on the root is delivered as a microtask right after the
-     write that caused it — still inside the frame that will lay it out — so
-     the reserve can be corrected before that frame paints. */
-  if (root && typeof MutationObserver === 'function') {
-    hold.insetObserver = new MutationObserver(function () {
-      const inset = readKeyboardInset(root);
-      if (inset === hold.keyboardInset) return;
-      hold.keyboardInset = inset;
-      holdTurnViewport();
-    });
-    try {
-      hold.insetObserver.observe(root, { attributes: true, attributeFilter: ['style'] });
-    } catch (_) { hold.insetObserver = null; }
-  }
+  /* The virtual keyboard is tweened into `--keyboard-inset` frame by frame
+     by the lift controller. Its onInset subscription fires synchronously
+     inside the same write that will be laid out — so the reserve can be
+     corrected before that frame paints. */
+  try {
+    hold.unsubInset = getKeyboardLift()?.onInset(() => { holdTurnViewport(); }) ?? null;
+  } catch (_) { hold.unsubInset = null; }
   if (list.dataset) list.dataset.turnAnchorHold = 'true';
   holdTurnViewport();
-}
-
-function readKeyboardInset(root: HTMLElement | null): string {
-  if (!root) return '';
-  try { return root.style.getPropertyValue('--keyboard-inset') || ''; } catch (_) { return ''; }
 }
 
 /**

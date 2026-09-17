@@ -68,7 +68,7 @@
 - [ ] 编辑作用域确认：`edit` 仅在 **user** 消息（符合产品预期；assistant 消息编辑无教学意义，保持现状）。
 - [ ] **带附件消息**编辑：编辑含图片/PDF/文本附件的 user 消息后，`extractHistory` 是否正确重建多模态 content parts（`history.js` L75-97）。
 - [ ] **流式进行中编辑**：编辑时若上一条回复仍在流式，`editUserMessage` 已 abort `_activeChatCtl`/`_activeChatAbort`（L4557-4558），验证无竞态。
-- [ ] **移动端**：长按唤起工具栏、textarea 键盘弹出与视口（对照 `ui/keyboardViewport.js`）。
+- [ ] **移动端**：长按唤起工具栏、textarea 键盘弹出与视口（对照 `ui/keyboard/index.ts`）。
 - [ ] **前后端一致性**：本地 `rollbackMessagesAfter` 与 `PATCH /api/messages/<id>?regenerate=true&discardFollowing=true`（L4541-4548）在离线/失败时的表现，硬刷新后不应出现残留旧回复。
 - [ ] **重生成**：`regenerateAssistantMessage` 对"多轮工具调用后"的 assistant 消息重生成是否正确定位上一条 user 消息。
 
