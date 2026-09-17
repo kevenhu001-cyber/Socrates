@@ -84,12 +84,10 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
 
   const after = await composer.boundingBox();
   expect(after).not.toBeNull();
-  /* The bar's top edge rises by the inset minus the resting safe-area
-     padding the keyboard consumes (16px -> 8px optical floor): the card
-     keeps an 8px gap above the keyboard instead of covering it. The 6px
-     breathing margin on .chat-view is already 0 here because the seeded
-     messages set data-conversation-active. */
-  expect(Math.round(settledBefore.y - after.y)).toBe(300 - 8);
+  /* Strictly linear lift: the resting safe-area/margin spacing stays
+     constant through the motion, so the bar's top edge rises by exactly
+     the inset — no gap consumption, no first-frame snap. */
+  expect(Math.round(settledBefore.y - after.y)).toBe(300);
   const geometry = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
@@ -164,23 +162,21 @@ test('mobile composer follows a keyboard inset continuously without a position f
   for (let index = 1; index < samples.length; index += 1) {
     expect(samples[index]).toBeLessThanOrEqual(samples[index - 1] + 1);
   }
-  /* Same consumption as above, plus the 6px .chat-view breathing margin:
-     no messages were seeded, so data-conversation-active is off and the
-     resting margin collapses into the lift as well (260 - 8 - 6). */
-  expect(Math.round(start.y - samples[samples.length - 1])).toBe(246);
+  /* Strictly linear: resting spacing is constant, so the settled lift
+     equals the inset exactly (260). */
+  expect(Math.round(start.y - samples[samples.length - 1])).toBe(260);
 });
 
-/* P_no-engagement-step — the lift must start continuous, with no same-frame
-   16px "engagement" jump that used to read as a teleport on first paint.
-   Goes through the real focus path so the JS rAF motion owns the lift
-   (the CSS transition is suppressed by data-keyboard-motion="manual").
-   Simulates an Android resize-mode keyboard by shrinking the viewport,
-   then samples barTop at ~1 frame, ~2 frames, and once settled. The
-   first sample's visible lift must stay inside the 14px resting-margin
-   absorption floor (8px chat-input-bar padding + 6px chat-view margin);
-   subsequent samples must be strictly monotonic; the settled lift lands
-   at 246px. */
-test('keyboard lift starts continuous without an engagement write', async ({ page }) => {
+/* P_native-resize — with interactive-widget=resizes-content the layout
+   viewport itself shrinks above the keyboard (same approach as Open WebUI:
+   h-screen max-h-[100dvh] + in-flow composer, zero JS motion). The
+   controller measures against the LIVE shell, so it reads ~0 there and
+   never adds an inset twice: the composer follows the native reflow, no
+   shell freeze, no JS compensation write, no phase flip. Goes through the
+   real focus path with a shrunken browser viewport standing in for the
+   IME (the real keyboard changes innerHeight/visualViewport.height the
+   same way). */
+test('resize-mode keyboard follows the native layout reflow with no JS compensation', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -197,80 +193,45 @@ test('keyboard lift starts continuous without an engagement write', async ({ pag
   await editor.focus();
   await page.waitForTimeout(420);
   const before = await page.evaluate(() => {
+    const shell = document.getElementById('appShell');
     const bar = document.getElementById('chatInputBar');
     return {
+      shellHeight: shell.getBoundingClientRect().height,
       barTop: bar.getBoundingClientRect().top,
-      keyboardMotion: document.documentElement.dataset.keyboardMotion,
+      shellInlineHeight: shell.style.height,
     };
   });
-  expect(before.keyboardMotion).toBe('manual');
 
-  /* A reduced browser viewport stands in for Android's resize-mode IME.
-     The real keyboard changes innerHeight/visualViewport.height in the
-     same way, while the controller freezes the 100dvh shell and animates
-     its inset. */
   await page.setViewportSize({ width: 390, height: 584 });
-  const samples = [];
-  /* Dense early samples: rAF runs at ~16ms, so the first motion frame
-     lands at ~33ms. We start sampling at 20ms (pre-motion) and step
-     forward to catch the moment the motion begins, the first motion
-     frame itself, and a few frames after. The tail waits long enough
-     for the chase spring to settle so the final sample lands at the
-     target rather than part-way up the curve. */
-  for (const delay of [20, 16, 16, 16, 32, 60, 80, 240]) {
-    await page.waitForTimeout(delay);
-    const sample = await page.evaluate(() => {
-      const bar = document.getElementById('chatInputBar');
-      return {
-        barTop: bar.getBoundingClientRect().top,
-        inset: document.documentElement.style.getPropertyValue('--keyboard-inset'),
-        transition: getComputedStyle(document.getElementById('chatView')).transitionDuration,
-      };
-    });
-    samples.push(sample);
-  }
+  await page.waitForTimeout(450);
+  const after = await page.evaluate(() => {
+    const shell = document.getElementById('appShell');
+    const bar = document.getElementById('chatInputBar');
+    return {
+      shellHeight: shell.getBoundingClientRect().height,
+      barTop: bar.getBoundingClientRect().top,
+      shellInlineHeight: shell.style.height,
+      inset: document.documentElement.style.getPropertyValue('--keyboard-inset'),
+      open: document.documentElement.dataset.keyboardOpen,
+      phase: document.documentElement.dataset.keyboardPhase,
+    };
+  });
 
-  /* The critically-damped chase (~100ms smoothTime) lands a 260px target
-     in ~230ms. The first non-zero inset is the rAF proving it owns the
-     lift; its
-     exact value depends on which frame Playwright's sample lands in
-     and is intentionally not pinned (per-frame timing in test code is
-     not reliable enough to catch a 1px-vs-16px regression directly).
-     The hard guards against an engagement step come from the
-     monotonicity + visible-lift-in-resting-margin checks below — and
-     from unit coverage of the motion curve itself in test/motion.test.mjs. */
-  const nonZero = samples.find((sample) => Number.parseInt(sample.inset, 10) > 0);
-  expect(nonZero, 'rAF motion must start writing inset within ~100ms').toBeDefined();
-  /* The first frame the composer becomes measurably above the resting
-     margin (visible lift > 14px), the inset must still be a fraction of
-     the target — not the whole 260px in one write. */
-  const firstVisibleLift = samples.find((sample) => before.barTop - sample.barTop > 14);
-  if (firstVisibleLift) {
-    const firstVisibleInset = Number.parseInt(firstVisibleLift.inset, 10) || 0;
-    expect(firstVisibleInset).toBeLessThan(260);
-    expect(firstVisibleInset).toBeGreaterThan(14);
-  }
-
-  /* Strictly monotonic — each subsequent frame must not have moved
-     further than the previous one, and never reversed. */
-  for (let index = 1; index < samples.length; index += 1) {
-    expect(samples[index].barTop).toBeLessThanOrEqual(samples[index - 1].barTop + 1);
-  }
-  /* The CSS transition must be off — data-keyboard-motion="manual"
-     suppresses it so the rAF motion owns the lift and does not fight
-     a parallel CSS interpolation. */
-  expect(samples.at(-1).transition).toBe('0s');
-  /* Settled displacement: viewport shrank by 260px (844→584), and the
-     same 14px resting-margin absorption as in the static test applies.
-     The spring's smoothTime is tuned to keep the chase visibly inside
-     the platform IME window, so the absolute settled value carries up
-     to ±2px of test-side timing slack. The monotonicity + visible-lift
-     guards above still pin the shape of the curve. */
-  expect(Math.round(before.barTop - samples.at(-1).barTop)).toBeGreaterThanOrEqual(244);
-  expect(Math.round(before.barTop - samples.at(-1).barTop)).toBeLessThanOrEqual(248);
+  /* The 100dvh shell tracks the shrunken layout viewport natively… */
+  expect(after.shellHeight).toBeCloseTo(before.shellHeight - 260, 0);
+  /* …the composer rides that reflow 1:1 (260px, no margin absorption left
+     to hide behind — the inset is 0 so the resting margins stay put)… */
+  expect(Math.round(before.barTop - after.barTop)).toBeGreaterThanOrEqual(258);
+  expect(Math.round(before.barTop - after.barTop)).toBeLessThanOrEqual(262);
+  /* …and the controller stays out of the way: no frozen inline height, no
+     inset write, still closed. */
+  expect(after.shellInlineHeight).toBe('');
+  expect(Number.parseFloat(after.inset) || 0).toBe(0);
+  expect(after.open).toBe('false');
+  expect(after.phase).toBe('closed');
 });
 
-test('resize-mode keyboard uses JS compensation before the shell reaches its target height', async ({ page }) => {
+test('resize-mode keyboard restores exactly with no stuck inset or height', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -285,61 +246,28 @@ test('resize-mode keyboard uses JS compensation before the shell reaches its tar
   const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(420);
-  const before = await page.evaluate(() => {
-    const shell = document.getElementById('appShell');
-    const bar = document.getElementById('chatInputBar');
-    return {
-      shellHeight: shell.getBoundingClientRect().height,
-      barTop: bar.getBoundingClientRect().top,
-      keyboardMotion: document.documentElement.dataset.keyboardMotion,
-    };
-  });
-  expect(before.keyboardMotion).toBe('manual');
+  const before = await page.evaluate(() => ({
+    barTop: document.getElementById('chatInputBar').getBoundingClientRect().top,
+    shellHeight: document.getElementById('appShell').getBoundingClientRect().height,
+  }));
 
-  /* A reduced browser viewport stands in for Android's resize-mode IME. The
-     real keyboard changes innerHeight/visualViewport.height in the same way,
-     while the controller freezes the 100dvh shell and animates its inset. */
   await page.setViewportSize({ width: 390, height: 584 });
-  const samples = [];
-  for (const delay of [20, 30, 40, 60, 120, 180]) {
-    await page.waitForTimeout(delay);
-    samples.push(await page.evaluate(() => {
-      const shell = document.getElementById('appShell');
-      const bar = document.getElementById('chatInputBar');
-      return {
-        shellHeight: shell.getBoundingClientRect().height,
-        barTop: bar.getBoundingClientRect().top,
-        inset: document.documentElement.style.getPropertyValue('--keyboard-inset'),
-        transition: getComputedStyle(document.getElementById('chatView')).transitionDuration,
-      };
-    }));
-  }
+  await page.waitForTimeout(400);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(400);
 
-  expect(samples[0].shellHeight).toBeCloseTo(before.shellHeight, 0);
-  /* The JS controller must write a non-zero inset within the first sample
-     — that is the proof of JS compensation, not the visible lift on
-     barTop. With the critically-damped chase the first motion frame is
-     ≈15px (~16ms in), which the 14px resting-margin absorption floor
-     still hides almost completely, so
-     barTop may not have moved visibly yet at the 20ms mark — but the
-     inset variable itself must already be progressing. A ±3px slack
-     on barTop covers sub-pixel jitter in the shell's frozen-height
-     measurement when the viewport shrinks (the shell re-measures with
-     slightly different sub-pixel rounding after the viewport change). */
-  expect(Number.parseInt(samples[0].inset, 10) || 0, 'JS compensation must write a non-zero inset on the first sample').toBeGreaterThan(0);
-  expect(samples[0].barTop).toBeLessThanOrEqual(before.barTop + 3);
-  for (let index = 1; index < samples.length; index += 1) {
-    expect(samples[index].barTop).toBeLessThanOrEqual(samples[index - 1].barTop + 1);
-  }
-  /* The spring's tuned smoothTime keeps the chase visibly inside the
-     platform IME window, so the final sample at +450ms lands within
-     ±3px of the 260px target depending on test-side frame timing. The
-     shape of the curve is the property under test, not the absolute
-     final pixel. */
-  const finalInset = Number.parseFloat(samples.at(-1).inset);
-  expect(finalInset).toBeGreaterThanOrEqual(257);
-  expect(finalInset).toBeLessThanOrEqual(260);
-  expect(samples.at(-1).transition).toBe('0s');
+  const restored = await page.evaluate(() => ({
+    barTop: document.getElementById('chatInputBar').getBoundingClientRect().top,
+    shellHeight: document.getElementById('appShell').getBoundingClientRect().height,
+    shellInlineHeight: document.getElementById('appShell').style.height,
+    inset: document.documentElement.style.getPropertyValue('--keyboard-inset'),
+    phase: document.documentElement.dataset.keyboardPhase,
+  }));
+  expect(Math.round(restored.barTop)).toBe(Math.round(before.barTop));
+  expect(Math.round(restored.shellHeight)).toBe(Math.round(before.shellHeight));
+  expect(restored.shellInlineHeight).toBe('');
+  expect(Number.parseFloat(restored.inset) || 0).toBe(0);
+  expect(restored.phase).toBe('closed');
 });
 
 test('a second input line expands the mobile composer and keeps the latest message unobscured', async ({ page }) => {

@@ -138,11 +138,13 @@ test('progressive viewport samples keep the composer attached to the rising keyb
   ));
   const desiredInsets = [60, 120, 180, 240];
 
-  /* The measured stream owns the timeline through a continuous chase:
-     the painted inset must track each sample closely, never teleport to
-     it, and never reverse while the keyboard is still rising. We record
-     the painted inset on every animation frame while stepping the fake
-     viewport through the stream, then assert on the whole trajectory. */
+  /* The measured stream owns the timeline through direct 1:1 mirroring:
+     every visualViewport event is published as-is in the next frame — no
+     spring, no interpolation. The painted inset must track each sample
+     within a frame, never blend between targets, and never reverse while
+     the keyboard is still rising. We record the painted inset on every
+     animation frame while stepping the fake viewport through the stream,
+     then assert on the whole trajectory. */
   const frames = await page.evaluate(async ({ bottom, insets }) => new Promise((resolve) => {
     const painted = [];
     let stepIndex = 0;
@@ -164,22 +166,22 @@ test('progressive viewport samples keep the composer attached to the rising keyb
     requestAnimationFrame(sample);
   }), { bottom: appBottom, insets: desiredInsets });
 
-  /* Monotonic rise — the chase never reverses against an opening
-     keyboard (1px tolerance for integer rounding). */
+  /* Monotonic rise — direct writes to rising targets never reverse
+     against an opening keyboard (1px tolerance for integer rounding). */
   for (let index = 1; index < frames.length; index += 1) {
     expect(frames[index]).toBeGreaterThanOrEqual(frames[index - 1] - 1);
   }
-  /* No teleport: no single frame may cover a whole 60px stream step —
-     the previous direct-write bug jumped the painted value straight to
-     the measured target mid-flight. The spring's fastest frame during
-     this stream is well under that. */
-  const maxFrameDelta = Math.max(
-    ...frames.slice(1).map((value, index) => value - frames[index]),
-  );
-  expect(maxFrameDelta, JSON.stringify(frames)).toBeLessThan(58);
-  /* Attached: while the stream is live the painted inset stays within a
-     bounded lag of the latest measured target, and once the stream ends
-     it converges to the final inset exactly. */
+  /* No interpolation: every painted frame must equal one of the sampled
+     targets (or the resting 0) — the old spring bug blended between them
+     and trailed the keyboard by ~100ms. A direct follower never paints a
+     value no sample reported. */
+  const targets = new Set([0, ...desiredInsets]);
+  for (const value of frames) {
+    const nearest = Math.min(...[...targets].map((t) => Math.abs(t - value)));
+    expect(nearest, JSON.stringify(frames)).toBeLessThanOrEqual(1);
+  }
+  /* Attached: once the stream ends the painted inset is already exactly
+     the final target — no settle tail. */
   await page.waitForTimeout(400);
   const settled = await page.evaluate(() => parseFloat(
     document.documentElement.style.getPropertyValue('--keyboard-inset'),
@@ -226,17 +228,16 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
     expect(opening[index].height).toBeGreaterThanOrEqual(opening[index - 1].height - 1);
     expect(opening[index].top).toBeLessThanOrEqual(opening[index - 1].top + 2);
   }
+  /* Direct follower: the full 240px lands within a few frames of the
+     sample — no ramp, no settle tail. Every painted inset is either the
+     resting value or the exact target. */
+  expect(opening[2].inset).toBe(240);
+  for (const frame of opening.slice(2)) {
+    expect(frame.inset).toBe(240);
+  }
   expect(Math.max(...opening.slice(1).map((frame, index) =>
     frame.height - opening[index].height,
   ))).toBeLessThan(18);
-  const openingInsets = opening.map((frame) => frame.inset);
-  const lastMovingIndex = openingInsets.findLastIndex((value, index) => (
-    index > 0 && Math.abs(value - openingInsets[index - 1]) > 0.01
-  ));
-  const finalOpeningStep = lastMovingIndex > 0
-    ? openingInsets[lastMovingIndex] - openingInsets[lastMovingIndex - 1]
-    : Infinity;
-  expect(finalOpeningStep).toBeLessThan(4);
 
   const closing = await sampleMotion(appBottom);
   expect(closing.at(-1).open).toBe('false');
@@ -250,7 +251,7 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
   ))).toBeLessThan(18);
 });
 
-test('a discrete iOS viewport pan cannot teleport or reverse the composer', async ({ page }) => {
+test('a progressive iOS viewport pan keeps the composer glued without jumps', async ({ page }) => {
   await seedChat(page, 8);
   const editor = page.locator('#chatComposerRoot .rich-composer-editor').first();
   await editor.focus();
@@ -259,27 +260,30 @@ test('a discrete iOS viewport pan cannot teleport or reverse the composer', asyn
   const appBottom = await page.evaluate(() => Math.round(
     document.getElementById('appShell').getBoundingClientRect().bottom,
   ));
+  /* Real iOS pans in small per-frame scroll events while the height
+     animates — not in one 100px compositor jump. Each step keeps
+     travel − pan continuous, so the layout inset (and the composer's
+     visual position) glides instead of teleporting. */
   const samples = await page.evaluate(async ({ bottom }) => new Promise((resolve) => {
     const positions = [];
     let frame = 0;
     const targets = [
       { height: bottom - 45, offsetTop: 0 },
-      { height: bottom - 105, offsetTop: 64 },
-      { height: bottom - 175, offsetTop: 112 },
+      { height: bottom - 90, offsetTop: 12 },
+      { height: bottom - 135, offsetTop: 28 },
+      { height: bottom - 180, offsetTop: 48 },
+      { height: bottom - 220, offsetTop: 64 },
       { height: bottom - 240, offsetTop: 76 },
     ];
     const sample = () => {
       if (frame < targets.length) window.__fakeViewport.__resize(targets[frame]);
       const root = document.documentElement;
-      const view = document.getElementById('chatView');
       const barTop = document.getElementById('chatInputBar').getBoundingClientRect().top;
       positions.push({
         visualTop: barTop - window.visualViewport.offsetTop,
         barTop,
         offsetTop: window.visualViewport.offsetTop,
         inset: root.style.getPropertyValue('--keyboard-inset'),
-        compensation: root.style.getPropertyValue('--keyboard-pan-compensation'),
-        transform: getComputedStyle(view).transform,
       });
       frame += 1;
       if (frame < 28) requestAnimationFrame(sample);
@@ -294,9 +298,9 @@ test('a discrete iOS viewport pan cannot teleport or reverse the composer', asyn
   const largestStep = Math.max(...samples.slice(1).map((value, index) => (
     Math.abs(value.visualTop - samples[index].visualTop)
   )));
-  /* A 240px IME lift delivered in four compositor samples can legitimately
-     cover ~45px in one 60Hz frame. Guard against the old 64-112px pan jump,
-     while allowing the controller to remain attached to a fast keyboard. */
+  /* Progressive pan+shrink steps move the visual position by ~25px per
+     sample at most; guard against the old 64-112px pan jump while the
+     direct follower tracks a fast keyboard. */
   expect(largestStep, JSON.stringify(samples)).toBeLessThan(50);
   await expect.poll(async () => page.evaluate(() => Number.parseFloat(
     document.documentElement.style.getPropertyValue('--keyboard-inset'),
@@ -626,10 +630,12 @@ test('document scroll during an open session is absorbed, not fought', async ({ 
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(700);
 
-  /* Simulate the resize-mode platform scrolling the document to reveal the
+  /* Simulate a resize-mode platform scrolling the document to reveal the
      focused composer: stub scrollY and record every scrollTo call. The
-     controller must re-project (absorb) the delta instead of resetting it —
-     a per-frame scrollTo(0) tug-of-war is the jitter this guards against. */
+     live-shell measurement reads rect.bottom + scrollY as one quantity,
+     so a pure scroll (no layout change) is inherently neutral to the
+     inset — the controller must neither write a new inset nor fight back
+     with a per-frame scrollTo(0) tug-of-war. */
   await page.evaluate(() => {
     window.__sy = 0;
     window.__scrollCalls = [];
@@ -655,19 +661,21 @@ test('document scroll during an open session is absorbed, not fought', async ({ 
     calls: window.__scrollCalls.length,
     inset: Number.parseFloat(getComputedStyle(document.documentElement)
       .getPropertyValue('--keyboard-inset')),
-    pan: Number.parseFloat(getComputedStyle(document.documentElement)
-      .getPropertyValue('--keyboard-pan-compensation')),
+    pan: getComputedStyle(document.documentElement)
+      .getPropertyValue('--keyboard-pan-compensation'),
     phase: document.documentElement.dataset.keyboardPhase,
   }));
-  /* No scrollTo fight while the session is live — the 60px document pan is
-     absorbed into the layout inset (inset = travel − offset). */
+  /* No scrollTo fight while the session is live, and the stubbed scroll —
+     which moves no layout — leaves the published inset exactly alone.
+     There is no pan-compensation transform anymore (it mis-positions on
+     recent iOS); plain layout carries the lift. */
   expect(during.calls).toBe(0);
-  expect(Math.abs(during.inset - (settledInset - 60))).toBeLessThanOrEqual(2);
-  expect(during.pan).toBe(0);
+  expect(Math.abs(during.inset - settledInset)).toBeLessThanOrEqual(1);
+  expect(during.pan).toBe('');
   expect(during.phase).toBe('open');
 
-  /* Past the travel, padding cannot go negative — the remainder lands in
-     the pan-compensation transform. */
+  /* A larger stubbed pan is equally neutral — layout never moved, so the
+     inset still holds instead of clamping to zero with a remainder. */
   await page.evaluate(() => {
     window.__sy = 400;
     window.dispatchEvent(new Event('scroll'));
@@ -677,12 +685,9 @@ test('document scroll during an open session is absorbed, not fought', async ({ 
     calls: window.__scrollCalls.length,
     inset: Number.parseFloat(getComputedStyle(document.documentElement)
       .getPropertyValue('--keyboard-inset')),
-    pan: Number.parseFloat(getComputedStyle(document.documentElement)
-      .getPropertyValue('--keyboard-pan-compensation')),
   }));
   expect(overPanned.calls).toBe(0);
-  expect(overPanned.inset).toBe(0);
-  expect(Math.abs(overPanned.pan - (400 - settledInset))).toBeLessThanOrEqual(2);
+  expect(Math.abs(overPanned.inset - settledInset)).toBeLessThanOrEqual(1);
 
   /* Closing clears the residual document scroll exactly once. */
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));

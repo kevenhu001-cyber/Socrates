@@ -1531,11 +1531,11 @@ true) but the dropdown never shows — see commit history. */
   max-width:calc(58rem * var(--app-width-scale, 1));
   /* P_input-lift — keep a small breathing gap below the chat composer so
      the input sits ~6px above the bottom edge on desktop and mobile.
-     The keyboard's leading edge covers that gap pixel for pixel as
-     --keyboard-inset rises, so the composer settles flush against the
-     keyboard with no layout pop when data-keyboard-open flips. */
+     The gap stays CONSTANT through the lift (the keyboard adds travel on
+     top of it via padding-bottom): collapsing it as --keyboard-inset rose
+     stole 6px of travel in the first frame and read as a snap. */
   margin:0 auto;
-  margin-bottom:max(0px, calc(6px - var(--keyboard-inset, 0px)));
+  margin-bottom:6px;
   display:flex;
   flex-direction:column;
   gap:4px;
@@ -1544,33 +1544,15 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* --keyboard-inset is already interpolated by ui/keyboard/index.ts. Keep a
-     small transition for legacy/external style writes, but the controller
-     disables it for a focused keyboard session so no browser transition is
-     layered over the explicit rAF compensation. */
   margin-top:0;
-  /* Keyboard avoidance: linear and continuous 1:1 displacement driven by
-     ui/keyboard/index.ts. No dead-zone or piecewise stall at the bottom. */
+  /* Keyboard avoidance (Open WebUI model): --keyboard-inset is mirrored
+     1:1 from the visual viewport by ui/keyboard/index.ts on every geometry
+     event — the value already moves on the keyboard's own animation curve,
+     so it must NOT be transitioned here. A CSS transition would lag each
+     per-frame write by its full duration and read as trailing/jitter.
+     External (non-controller) inset writes land instantly for the same
+     reason; scroll.js re-anchors a pinned reader in the same task. */
   padding-bottom:var(--keyboard-inset, 0px);
-  transition:
-    padding-bottom var(--chat-motion-duration) var(--chat-motion-ease),
-    margin-bottom var(--chat-motion-duration) var(--chat-motion-ease);
-  will-change:padding-bottom, margin-bottom;
-}
-
-:root[data-keyboard-motion="manual"] .chat-view,
-:root[data-keyboard-motion="manual"] .chat-input-bar,
-:root[data-keyboard-motion="manual"] #chatInputBar,
-:root[data-keyboard-motion="manual"] .chat-input-wrap,
-:root[data-keyboard-motion="manual"] #topicSetup,
-:root[data-keyboard-motion="manual"] #topicInputWrap{
-  transition:none !important;
-}
-
-:root[data-keyboard-motion="manual"] #appShell .chat-view,
-:root[data-keyboard-motion="manual"] #appShell #topicInputWrap {
-  transform: translate3d(0, var(--keyboard-pan-compensation, 0px), 0) !important;
-  will-change: transform;
 }
 
 /* P_composer-anim-no-fr — when the engine does not interpolate fr
@@ -7285,15 +7267,16 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
          crowd the topic input even with the new top padding),
        ③ the topic input is focused (so the disclaimer doesn't sit
          between the input and the keyboard as it animates).
-     The original rule only covered ① and ②@500px, which left a
-     500–700px window where the disclaimer could overlap the input. */
+     visibility (not display) keeps the layout box: display:none would
+     reflow the flex-end landing mid-lift and teleport the composer by
+     the disclaimer height in one frame. */
   :root[data-keyboard-open="true"] #topicDisclaimer,
   :root[data-keyboard-phase="opening"] #topicDisclaimer,
   :root[data-keyboard-phase="open"] #topicDisclaimer,
-  :root[data-keyboard-phase="closing"] #topicDisclaimer{display:none}
-  :root:has(#topicInputWrap:focus-within) #topicDisclaimer{display:none}
+  :root[data-keyboard-phase="closing"] #topicDisclaimer{visibility:hidden}
+  :root:has(#topicInputWrap:focus-within) #topicDisclaimer{visibility:hidden}
   @media(max-height:700px){
-    #topicDisclaimer{display:none}
+    #topicDisclaimer{visibility:hidden}
   }
 
   /* One flex item owns the entire mobile composer body. The editor and
@@ -11739,12 +11722,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     grid-row:2!important;
   }
 
-  /* P_kb-gap — while the keyboard is up it already covers the
-     home-indicator strip. The resting safe-area padding on #chatInputBar
-     and the 6px breathing margin on .chat-view are now consumed by the
-     rising --keyboard-inset on one continuous timeline (see
-     chat-surface.css and .chat-view above), so the composer settles to
-     its 8px optical gap without a layout pop at this boolean flip. */
+  /* P_kb-gap — the resting safe-area padding on #chatInputBar and the 6px
+     breathing margin on .chat-view stay CONSTANT through the lift; the
+     keyboard travel adds on top via --keyboard-inset (see chat-surface.css
+     and .chat-view above). Collapsing them used to steal ~14px of travel
+     in the first frame and read as a snap, so the composer now settles to
+     its full safe-area gap with strictly linear motion. */
 
   /* Surface the actual model/effort text on the selector. The bars and caret
      are retained inside the popup, but the closed mobile control reads like

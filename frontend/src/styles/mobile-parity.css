@@ -80,30 +80,11 @@
     color: var(--cg-text-secondary) !important;
   }
 
-  /* Visual-viewport pan: ui/keyboard/index.ts freezes the shell at its
-     full height while the browser pans the visual viewport down to the
-     composer, which scrolls this in-flow bar off the top edge. Translate
-     it by the pan distance (--keyboard-visual-top, 0 when there is no
-     pan) so it stays pinned to the visible top like the reference header
-     — the transform moves only the paint box, so the content below does
-     not reflow. */
-  #appShell#appShell .top-bar {
-    transform: translateY(var(--keyboard-visual-top, 0px)) !important;
-  }
-
-  /* iOS may pan the visual viewport to the focused editor in one compositor
-     step before it reports the keyboard's height animation. The keyboard
-     controller integrates total screen-space travel and publishes the part
-     of that native pan which has not yet been reached by the spring. Moving
-     only the composer surfaces down by that remainder cancels the premature
-     browser jump; the value reaches zero continuously as the spring catches
-     up. This is a paint-only transform, so it cannot trigger the layout loop
-     that caused the previous focus jitter. */
-  :root[data-keyboard-motion="manual"] #appShell#appShell .chat-view,
-  :root[data-keyboard-motion="manual"] #appShell#appShell #topicInputWrap {
-    transform: translate3d(0, var(--keyboard-pan-compensation, 0px), 0) !important;
-    will-change: transform;
-  }
+  /* In-flow surfaces need no paint compensation: the visual-viewport pan
+     is already subtracted from --keyboard-inset by ui/keyboard/index.ts,
+     so the composer position tracks the visible keyboard edge 1:1 with
+     plain layout (no transform — transforms on scrolled/fixed surfaces
+     mis-position on recent iOS and fight the browser's own pan). */
 
   /* The reference keeps only the header and composer once the topic input
      owns focus (and the keyboard owns the lower half of the screen); the

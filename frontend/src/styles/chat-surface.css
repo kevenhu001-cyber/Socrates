@@ -472,10 +472,12 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   /* .chat-view already supplies the conversation column. Adding a second
      horizontal inset here was the last reason the in-session card was 28px
      narrower than the landing card.
-     The resting safe-area bottom is covered by the keyboard pixel for
-     pixel as --keyboard-inset rises, down to an 8px optical gap — no
-     layout pop when data-keyboard-open flips. */
-  padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
+     The resting safe-area bottom stays CONSTANT through the whole lift:
+     --keyboard-inset adds on top of it (via .chat-view's padding), so the
+     composer tracks the keyboard edge exactly 1:1. Collapsing this padding
+     as the inset rises (an older "consume the gap" trick) stole ~8px of
+     travel in the very first frame and read as a snap on top of the lift. */
+  padding: 0 0 var(--conversation-safe-bottom) !important;
   background: transparent !important;
 }
 
@@ -599,16 +601,14 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     flex-direction: column !important;
     justify-content: flex-end !important;
     min-height: calc(100dvh - 56px) !important;
-    /* P_topic-kb-avoid — consume the animated --keyboard-inset so the
-       landing composer rises smoothly with the rAF-interpolated value
-       instead of jumping to its target via an instant scroll. The
-       shell freeze (ui/keyboard/index.ts) keeps the layout viewport at
-       its pre-keyboard height, so --keyboard-inset is the exact number
-       of CSS pixels the keyboard covers. max() collapses to the resting
-       safe-area when no keyboard is open. No CSS transition is set
-       here: ui/keyboard/index.ts writes --keyboard-inset frame-by-frame,
-       and a transition would lag behind those writes by one frame. */
-    padding: 0 16px max(var(--conversation-safe-bottom), var(--keyboard-inset, 0px)) !important;
+    /* P_topic-kb-avoid — the safe-area bottom stays CONSTANT and the
+       keyboard inset adds on top of it, so the landing composer tracks
+       the keyboard edge exactly 1:1 from the very first frame (no dead
+       zone, no first-frame snap). max() collapses to the resting
+       safe-area when no keyboard is open. No CSS transition here:
+       transitioning would lag each write by its full duration and read
+       as trailing/jitter. */
+    padding: 0 16px calc(var(--conversation-safe-bottom) + var(--keyboard-inset, 0px)) !important;
   }
 
   #appShell#appShell #topicSetup .topic-title.greeting {
@@ -652,26 +652,16 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     width: 100% !important;
     max-width: none !important;
     min-height: 104px !important;
-    will-change: transform;
-    transform: translateZ(0);
-  }
-
-  :root[data-keyboard-motion="manual"] #appShell#appShell #topicSetup,
-  :root[data-keyboard-motion="manual"] #appShell#appShell #chatInputBar,
-  :root[data-keyboard-motion="manual"] #appShell#appShell .chat-view {
-    transition: none !important;
   }
 
   #appShell#appShell #chatInputBar {
     /* The lifted chat view is 4px wider than the landing main-inner on the
        phone shell. Constrain the bar itself so both cards share the same
-       visible 16px viewport gutter. Same continuous keyboard gap as the
-       base rule above. */
+       visible 16px viewport gutter. Same constant safe-area as the base
+       rule above — strictly linear lift, no first-frame snap. */
     width: calc(100% - 4px) !important;
     margin-inline: auto !important;
-    padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
-    will-change: padding-bottom, transform;
-    transform: translateZ(0);
+    padding: 0 0 var(--conversation-safe-bottom) !important;
   }
 
   /* Keep the transcript comfortable above the persistent input surface. */
