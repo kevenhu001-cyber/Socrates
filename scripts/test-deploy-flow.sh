@@ -196,6 +196,7 @@ grep -q 'mobile.bootstrap contract v1 aligned' "$success_base/output.log"
 grep -q '"mobileBootstrapAligned": true' "$success_base/deploy-state.json"
 grep -q 'admin.status ok' "$success_base/output.log"
 grep -q 'admin.config fail-closed (403)' "$success_base/output.log"
+grep -q 'pi.agent disabled (binary unavailable)' "$success_base/output.log"
 grep -q '"adminConfigFailClosed": true' "$success_base/deploy-state.json"
 grep -q '"schemaTablesVerified": true' "$success_base/deploy-state.json"
 if compgen -G "$success_base/server/.dist-next.*" >/dev/null; then
