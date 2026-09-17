@@ -40,6 +40,12 @@ const NATIVE_FLIP_MIN_PX = 28;
 const NATIVE_FLIP_MS = 240;
 const NATIVE_FLIP_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
 
+/* On Android the browser can perform focus reveal / viewport resize before
+ * focusin or keyboardWillShow reaches JS. Capture the composer's resting
+ * layout during pointerdown (capture phase), then protect that snapshot long
+ * enough for the first native-resize sample to compare against it. */
+const PRE_FOCUS_SNAPSHOT_MS = 800;
+
 type KeyboardMode = 'unknown' | 'native-resize' | 'overlay';
 export type KeyboardPhase = 'closed' | 'opening' | 'open' | 'closing';
 
@@ -111,6 +117,7 @@ export function initKeyboardLift({
   let nativeMotionTarget: HTMLElement | null = null;
   let lastComposerLayoutTop: number | null = null;
   let nativeMotionAnimation: Animation | null = null;
+  let preFocusSnapshotUntil = 0;
 
   const shellElement = (): HTMLElement | null => (
     container
@@ -187,11 +194,10 @@ export function initKeyboardLift({
     if (!baseline) baseline = captureBaseline();
   };
 
-  const activeComposerMotionTarget = (): HTMLElement | null => {
-    const focused = document.activeElement;
-    if (!(focused instanceof Node)) return nativeMotionTarget;
-    const wrap = trackedInputs.find((element) => element === focused || element.contains(focused));
-    if (!wrap) return nativeMotionTarget;
+  const motionTargetForNode = (node: EventTarget | Node | null): HTMLElement | null => {
+    if (!(node instanceof Node)) return null;
+    const wrap = trackedInputs.find((element) => element === node || element.contains(node));
+    if (!wrap) return null;
     /* Move the full chat input bar so its bottom fade/safe-area travels with
        the card. The landing composer has no separate bar wrapper. */
     if (wrap.id === 'chatInputWrap') {
@@ -199,6 +205,10 @@ export function initKeyboardLift({
     }
     return wrap;
   };
+
+  const activeComposerMotionTarget = (): HTMLElement | null => (
+    motionTargetForNode(document.activeElement) || nativeMotionTarget
+  );
 
   const animatedTranslateY = (target: HTMLElement): number => {
     if (!nativeMotionAnimation || nativeMotionTarget !== target) return 0;
@@ -224,11 +234,38 @@ export function initKeyboardLift({
     }
   };
 
-  const captureComposerPosition = () => {
-    const target = activeComposerMotionTarget();
+  const hasFreshPreFocusSnapshot = (target: HTMLElement | null): boolean => (
+    Boolean(target)
+    && target === nativeMotionTarget
+    && lastComposerLayoutTop != null
+    && preFocusSnapshotUntil > now()
+  );
+
+  const captureComposerPosition = (
+    target: HTMLElement | null = activeComposerMotionTarget(),
+    preservePreFocus = false,
+  ) => {
     if (!target) return;
+    if (preservePreFocus && hasFreshPreFocusSnapshot(target)) return;
     nativeMotionTarget = target;
     lastComposerLayoutTop = composerLayoutTop(target);
+  };
+
+  const primePreFocusSnapshot = (event: PointerEvent) => {
+    if (sessionActive) return;
+    const target = motionTargetForNode(event.target);
+    if (!target) return;
+
+    /* pointerdown capture runs before focusin and before Android's IME resize
+       path. This is the last reliable resting geometry on WebViews that
+       coalesce the whole keyboard opening into one layout commit. */
+    baseline = captureBaseline();
+    mode = 'unknown';
+    overlayEvidence = 0;
+    nativeMotionTarget = target;
+    lastComposerLayoutTop = composerLayoutTop(target);
+    preFocusSnapshotUntil = now() + PRE_FOCUS_SNAPSHOT_MS;
+    try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
   };
 
   const prefersReducedMotion = (): boolean => {
@@ -289,6 +326,7 @@ export function initKeyboardLift({
     if (target !== nativeMotionTarget) {
       nativeMotionTarget = target;
       lastComposerLayoutTop = composerLayoutTop(target);
+      preFocusSnapshotUntil = 0;
       return;
     }
     const nextTop = composerLayoutTop(target);
@@ -299,6 +337,7 @@ export function initKeyboardLift({
     }
     const delta = lastComposerLayoutTop - nextTop;
     lastComposerLayoutTop = nextTop;
+    if (Math.abs(delta) >= 1) preFocusSnapshotUntil = 0;
     animateNativeLayoutJump(delta);
   };
 
@@ -309,7 +348,7 @@ export function initKeyboardLift({
     overlayEvidence = 0;
     setIntent(true);
     setPhase('opening');
-    captureComposerPosition();
+    captureComposerPosition(activeComposerMotionTarget(), true);
     anchor.begin();
   };
 
@@ -326,6 +365,7 @@ export function initKeyboardLift({
     baseline = null;
     overlayEvidence = 0;
     sampleUntil = 0;
+    preFocusSnapshotUntil = 0;
     setIntent(false);
     setPhase('closed');
     publishInset(0);
@@ -474,18 +514,21 @@ export function initKeyboardLift({
   const onFocusIn = () => {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
     if (!sessionActive) {
-      baseline = captureBaseline();
+      /* Preserve the pointerdown baseline if it is still fresh. Capturing a
+         new baseline here can already be too late on Android. */
+      if (preFocusSnapshotUntil <= now() || !baseline) baseline = captureBaseline();
       mode = 'unknown';
       overlayEvidence = 0;
       try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
     }
-    captureComposerPosition();
+    captureComposerPosition(activeComposerMotionTarget(), true);
     sampleFor();
   };
 
   const onFocusOut = () => {
     if (!sessionActive) {
       baseline = null;
+      preFocusSnapshotUntil = 0;
       return;
     }
     captureComposerPosition();
@@ -503,6 +546,7 @@ export function initKeyboardLift({
     if (anchor.active) anchor.correct();
   };
 
+  document.addEventListener('pointerdown', primePreFocusSnapshot, true);
   if (viewport && typeof viewport.addEventListener === 'function') {
     viewport.addEventListener('resize', onViewportGeometry);
     viewport.addEventListener('scroll', onViewportGeometry);
@@ -529,7 +573,7 @@ export function initKeyboardLift({
       if (kind === 'show') {
         if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
         baseline = baseline ?? captureBaseline();
-        captureComposerPosition();
+        captureComposerPosition(activeComposerMotionTarget(), true);
         startSession();
         /* Capacitor is configured with Keyboard.resize='native'. The native
            signal is timing/state only; keyboardHeight never becomes a CSS
@@ -572,6 +616,7 @@ export function initKeyboardLift({
       }
       anchor.end();
       insetListeners.clear();
+      document.removeEventListener('pointerdown', primePreFocusSnapshot, true);
       if (viewport && typeof viewport.removeEventListener === 'function') {
         viewport.removeEventListener('resize', onViewportGeometry);
         viewport.removeEventListener('scroll', onViewportGeometry);
@@ -582,10 +627,10 @@ export function initKeyboardLift({
       document.removeEventListener('focusout', onFocusOut);
       document.removeEventListener('visibilitychange', onViewportGeometry);
       try { root.style.removeProperty('--keyboard-inset'); } catch { /* detached */ }
-      try { delete root.dataset.keyboardOpen; } catch { /* detached */ }
-      try { delete root.dataset.keyboardPhase; } catch { /* detached */ }
-      try { delete root.dataset.keyboardMode; } catch { /* detached */ }
-      try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
+      try { delete root.dataset.keyboardOpen; } catch { /* detached root */ }
+      try { delete root.dataset.keyboardPhase; } catch { /* detached root */ }
+      try { delete root.dataset.keyboardMode; } catch { /* detached root */ }
+      try { delete root.dataset.keyboardMotion; } catch { /* detached root */ }
       if (active === controller) active = null;
     },
   };
