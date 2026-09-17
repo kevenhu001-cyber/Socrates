@@ -18,16 +18,6 @@
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
 
-            <!--
-              Ask modern Android to apply IME/window insets on every animation
-              frame instead of committing the resized layout in one coarse
-              step. With Keyboard.resize="native" this lets the WebView's
-              100dvh layout follow the real keyboard animation clock/easing.
-            -->
-            <property
-                android:name="android.window.PROPERTY_COMPAT_ALLOW_SYNCHRONIZED_INSETS_ANIMATION"
-                android:value="true" />
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
