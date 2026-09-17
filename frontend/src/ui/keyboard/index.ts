@@ -133,6 +133,7 @@ export function initKeyboardLift({
   let blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
   let nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
   let nativeHideTimer: ReturnType<typeof setTimeout> | 0 = 0;
+  let lastKeyboardTravel = 0;
 
   /* Browser-only composer presentation state. */
   let webMotionTarget: HTMLElement | null = null;
@@ -442,7 +443,19 @@ export function initKeyboardLift({
     const previous = webLastLayoutTop;
     webLastLayoutTop = layoutTop;
     if (previous == null) return false;
-    return startCoarseFallback(target, previous - layoutTop);
+
+    const delta = previous - layoutTop;
+    if (Math.abs(delta) >= WEB_COARSE_JUMP_PX) {
+      /* Do not depend on focusout for the closing edge: mobile browsers often
+         keep the editor focused when the IME is dismissed with its own down
+         button. Layout moving up means opening; moving down means closing. */
+      const inferredEdge: WebMotionEdge = delta > 0 ? 'opening' : 'closing';
+      if (inferredEdge !== webMotionEdge) {
+        webMotionEdge = inferredEdge;
+        webFallbackPlayed = false;
+      }
+    }
+    return startCoarseFallback(target, delta);
   };
 
   const syncWebMotionNow = () => {
@@ -549,6 +562,7 @@ export function initKeyboardLift({
     sessionActive = false;
     mode = 'unknown';
     baseline = null;
+    lastKeyboardTravel = 0;
     preFocusBaselineUntil = 0;
     overlayEvidence = 0;
     sampleUntil = 0;
@@ -631,10 +645,36 @@ export function initKeyboardLift({
     if (!sessionActive && focused && keyboardGeometryPresent) startSession();
     if (sessionActive) classifyMode(g);
 
+    const keyboardTravel = Math.max(
+      g.visualShrink,
+      g.innerShrink,
+      g.shellShrink,
+      g.visibleCoverage,
+      g.visualOffsetTop,
+    );
+
     if (!sessionActive) {
+      lastKeyboardTravel = keyboardTravel;
       publishInset(0);
       return;
     }
+
+    /* Some mobile browsers keep focus when the keyboard's own dismiss button
+       is pressed. Detect the closing edge from geometry instead: once an open
+       keyboard starts losing meaningful travel, the session is closing even
+       without focusout. */
+    if (
+      phase === 'open'
+      && lastKeyboardTravel > KEYBOARD_OPEN_THRESHOLD_PX
+      && keyboardTravel + RESTORE_SLOP_PX < lastKeyboardTravel
+    ) {
+      setPhase('closing');
+      if (webMotionArmed) {
+        webMotionEdge = 'closing';
+        webFallbackPlayed = false;
+      }
+    }
+    lastKeyboardTravel = keyboardTravel;
 
     if (mode === 'native-resize') {
       syncWebMotionNow();
