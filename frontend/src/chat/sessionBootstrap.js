@@ -22,7 +22,6 @@ import { addMessage } from './messages.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
 import { updateKB } from '../ui/knowledgePanel.js';
-import { showToast } from '../ui/toast.js';
 import { renderDiagQuestion, proceedToTeaching } from '../tutor/diagnosticFlow.js';
 import { resetSessionTransients, setCurrentSessionId } from '../session/loader.js';
 import { rememberDeletedSession } from '../session/saveState.js';
