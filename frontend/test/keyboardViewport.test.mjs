@@ -5,6 +5,7 @@ import {
   getKeyboardInset,
   measureKeyboardInset,
   measureKeyboardTravel,
+  projectKeyboardTravel,
   isTrackedInputFocused,
   isProgressiveKeyboardSample,
   limitKeyboardInsetArrival,
@@ -93,6 +94,24 @@ test('measureKeyboardTravel stays stable when iOS pans the visual viewport', () 
   assert.equal(measureKeyboardInset(800, { height: 500, offsetTop: 60 }, 800), 240);
 });
 
+test('screen-space travel stays continuous across iOS viewport pan changes', () => {
+  /* iOS can pan ahead of the height animation and then partially un-pan.
+   * The projection components may reverse, but their painted sum must
+   * always equal the spring value; clamping either component caused the
+   * composer to jump up and then fall back. */
+  const samples = [
+    { travel: 0, offset: 0 },
+    { travel: 8, offset: 64 },
+    { travel: 22, offset: 112 },
+    { travel: 41, offset: 76 },
+    { travel: 90, offset: 40 },
+  ];
+  for (const { travel, offset } of samples) {
+    const { layoutInset, panCompensation } = projectKeyboardTravel(travel, offset);
+    assert.equal(layoutInset - panCompensation + offset, travel);
+  }
+});
+
 test('measureKeyboardInset ignores a zoomed or transient visual viewport', () => {
   assert.equal(measureKeyboardInset(844, { height: 0, offsetTop: 0 }, 844), 0);
   assert.equal(measureKeyboardInset(844, { height: MIN_STABLE_VISUAL_VIEWPORT_HEIGHT - 1, offsetTop: 0 }, 844), 0);
@@ -172,17 +191,15 @@ test('keyboard spring with pre-armed initial velocity covers more on the first f
   const smoothTime = KEYBOARD_CHASE_SMOOTH_S;
   const target = 300;
   const coldStart = smoothDampStep(0, target, 0, smoothTime, dt);
-  const raw = (target / smoothTime) * 0.65;
-  const clamp = 600; /* KEYBOARD_STREAM_MAX_VELOCITY (1500) * 0.4 */
+  const raw = (target / smoothTime) * 0.12;
+  const clamp = 180; /* KEYBOARD_STREAM_MAX_VELOCITY (1500) * 0.12 */
   const presetV = Math.max(0, Math.min(clamp, raw));
   const warmedStart = smoothDampStep(0, target, presetV, smoothTime, dt);
-  /* The exact ratio depends on smoothTime; with 0.12s the math lands at
-   * ~1.8× the cold start. Assert the lead in absolute pixels — anything
-   * above ~5px already turns the first frame into visible motion rather
-   * than a barely-perceptible kick. */
+  /* Keep the lead deliberately small: it should remove a dead first frame,
+   * not kick the composer ahead of the keyboard. */
   const lead = warmedStart.value - coldStart.value;
-  assert.ok(lead > 5,
-    `warmedStart (${warmedStart.value.toFixed(3)}) should beat cold (${coldStart.value.toFixed(3)}) by more than 5px, got ${lead.toFixed(3)}`);
+  assert.ok(lead > 1 && lead < 5,
+    `warmedStart (${warmedStart.value.toFixed(3)}) should lead gently by 1-5px, got ${lead.toFixed(3)}`);
   assert.ok(presetV <= clamp,
     `preset velocity (${presetV}) should stay inside the runtime cap (${clamp})`);
 });
@@ -232,4 +249,14 @@ test('spring constants stay within platform IME window bounds', () => {
     `stream smoothTime too tight (${KEYBOARD_CHASE_STREAM_S}), will oscillate`);
   assert.ok(MIN_MOTION_FRAMES >= 8 && MIN_MOTION_FRAMES <= 16,
     `MIN_MOTION_FRAMES out of range (${MIN_MOTION_FRAMES}), spring may snap or stall`);
+});
+
+test('stream spring tracks the keyboard leading edge without trailing', () => {
+  /* A progressive stream must react on its first frame while preserving a
+   * gradual acceleration. With STREAM_S at 0.06, a 60px inter-sample gap
+   * advances by roughly 6.5px rather than snapping to the sample. */
+  const dt = 1 / 60;
+  const next = smoothDampStep(0, 60, 0, KEYBOARD_CHASE_STREAM_S, dt);
+  assert.ok(next.value > 6 && next.value < 9,
+    `stream step must start promptly without a kick, got ${next.value}`);
 });

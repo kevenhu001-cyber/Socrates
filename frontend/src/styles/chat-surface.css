@@ -475,7 +475,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
      The resting safe-area bottom is consumed by the rising
      --keyboard-inset on the same continuous timeline, down to an 8px
      optical gap — no layout pop when data-keyboard-open flips. */
-  padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
+  padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - (var(--keyboard-inset, 0px) * 0.031))) !important;
   background: transparent !important;
 }
 
@@ -669,7 +669,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        base rule above. */
     width: calc(100% - 4px) !important;
     margin-inline: auto !important;
-    padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
+    padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - (var(--keyboard-inset, 0px) * 0.031))) !important;
     will-change: padding-bottom, transform;
     transform: translateZ(0);
   }
