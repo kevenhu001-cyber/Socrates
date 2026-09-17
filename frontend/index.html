@@ -2,11 +2,13 @@
 <html lang="en" data-theme="socrates" data-mode="dark">
 <head>
 <meta charset="UTF-8">
-<!-- interactive-widget=resizes-visual: on Chrome/Edge Android 108+ keeps
-     the layout viewport stable so the keyboard transition animates smoothly
-     and continuously via visualViewport and --keyboard-inset without discrete
-     layout snaps. -->
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-visual">
+<!-- interactive-widget=resizes-content: on Chrome/Edge Android 108+ the
+     layout viewport itself shrinks above the keyboard, so the 100dvh flex
+     column reflows natively on the compositor (same approach as Open WebUI:
+     h-screen max-h-[100dvh] + in-flow composer, zero JS motion). iOS Safari
+     ignores this flag and stays in overlay mode; there the controller below
+     (ui/keyboard) mirrors the visual viewport 1:1 into --keyboard-inset. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>Socrates</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <script>

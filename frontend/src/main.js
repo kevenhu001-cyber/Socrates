@@ -156,11 +156,11 @@ installKeyboardShortcuts();
    z-index 25; tapping it always closes the drawer on mobile. */
 /* B6: mobile drawer listeners moved to ui/sidebarChrome.js (initSidebarChrome). */
 /* Mobile keyboard avoidance lives in src/ui/keyboard/ — the controller
-   measures the visual viewport, interpolates the lift with a spring, and
-   publishes --keyboard-inset for the CSS to consume. An older imperative
-   scroll-compensation experiment (a visualViewport resize state machine
-   mutating scrollTop) used to sit here behind `if(false)`; it was removed
-   — the CSS-inset approach below superseded it. */
+   mirrors the visual viewport 1:1 into --keyboard-inset for the CSS to
+   consume (Open WebUI model: resizes-content browsers reflow the 100dvh
+   flex column natively with no JS motion at all; overlay-mode browsers
+   get one rAF-coalesced write per geometry event — no spring, no shell
+   freeze, no estimated lift). */
 
 /* P_composer-fr-anim — the mobile composer's focus-in expansion relies
    on `grid-template-rows: 0fr → 1fr` interpolating smoothly. Modern
