@@ -16,7 +16,7 @@ import {
  *   - a newer user gesture cancels any compensation,
  *   - a missing anchor is a no-op.
  *
- * These are pure decisions extracted from keyboardViewport.js so they can
+ * These are pure decisions extracted from ui/keyboard/index.ts so they can
  * be verified without a DOM; the DOM wiring is covered by the Playwright
  * keyboard-viewport / chat-anchor specs.
  */

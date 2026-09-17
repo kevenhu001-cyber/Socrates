@@ -8,9 +8,9 @@
  * Goals:
  *  - Status bar: keep the OS chrome in sync with the in-app theme so
  *    the bar reads as part of the UI on both dark and light backgrounds.
- *  - Keyboard: forward Capacitor's keyboardWillShow/Hide to the
- *    focusin/focusout pipeline that keyboardViewport.js already listens
- *    to, so the visualViewport measurement has the correct focus state.
+ *  - Keyboard: forward Capacitor's keyboardWillShow/Hide to the keyboard
+ *    lift controller (ui/keyboard), so the visualViewport measurement has
+ *    the correct focus state ahead of the platform's own geometry events.
  *  - Back button: route Android's hardware back through the in-app
  *    router/history so the user can navigate Recents / modal stacks
  *    the same way as on desktop browsers, falling back to Capacitor's
@@ -94,31 +94,23 @@ function setupStatusBarThemeSync() {
 
 /*
  * Capacitor's Keyboard plugin fires keyboardWillShow/Hide with the
- * keyboard height. We forward those as focusin/focusout on the input
- * element so keyboardViewport.js's focus-authoritative path fires
- * immediately on the native signal (visualViewport.resize on Android
- * can lag by 16-50ms, and on some Samsung builds it never fires for
- * the dismiss path).
+ * keyboard height. We hand them to the lift controller's native-signal
+ * entry point (ui/keyboard notifyNativeKeyboard) — visualViewport.resize
+ * on Android can lag by 16-50ms, and on some Samsung builds it never
+ * fires for the dismiss path, so the native signal is the faster and more
+ * honest trigger than a synthesized DOM focus event ever was.
  */
-function wireKeyboardBridge() {
+function wireKeyboardBridge(keyboard) {
   const Keyboard = getPlugin('Keyboard');
-  if (!Keyboard) return () => {};
+  if (!Keyboard || !keyboard) return () => {};
 
-  const findInput = () => document.querySelector('#chatComposerRoot .rich-composer-editor');
-
-  const showHandle = Keyboard.addListener('keyboardWillShow', () => {
-    const input = findInput();
-    if (input && document.activeElement !== input) {
-      input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    }
+  const showHandle = Keyboard.addListener('keyboardWillShow', (info) => {
+    keyboard.notifyNativeKeyboard('show', info && info.keyboardHeight);
   });
   const hideHandle = Keyboard.addListener('keyboardWillHide', () => {
-    const input = findInput();
-    if (input) {
-      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-    }
-    // Always force a re-measure even if focusout didn't fire from a
-    // tap-away path — visualViewport can be stale on Android.
+    keyboard.notifyNativeKeyboard('hide');
+    // Re-measure for any other listeners even if focusout didn't fire
+    // from a tap-away path — visualViewport can be stale on Android.
     window.requestAnimationFrame(() => {
       window.dispatchEvent(new Event('resize'));
     });
@@ -235,13 +227,16 @@ function setupAppStateMirror() {
  * every listener / observer registered here. Called once at app boot
  * from main.js; the caller is responsible for guarding on
  * isNativeApp() so web builds skip this entirely.
+ *
+ * `options.keyboard` is the KeyboardLift controller created by
+ * initKeyboardLift() — the bridge forwards native IME signals into it.
  */
-export function setupNativeBridge() {
+export function setupNativeBridge(options) {
   if (!isNativeApp()) return () => {};
 
   const teardowns = [
     setupStatusBarThemeSync(),
-    wireKeyboardBridge(),
+    wireKeyboardBridge(options && options.keyboard),
     setupBackButton(),
     setupAppStateMirror(),
     setupDeepLinkHandler(),

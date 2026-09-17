@@ -384,7 +384,7 @@ mobile 整屏 `SettingsScreen` vs web `.settings-modal`（440px，见 §3.2 同�
 ## §5 Interaction State Audit
 
 > Source: `mobile/src/**` vs `frontend/src/styles.css` / `frontend/src/ui/motion.js` /
-> `keyboardViewport.js` / `scrollPill.js` / `composerTools.js` / `sidebarResize.js`。
+> `ui/keyboard/index.ts` / `scrollPill.js` / `composerTools.js` / `sidebarResize.js`。
 
 ### 5.1 Pressed（按下缩放）— 🟡 P1
 
@@ -799,12 +799,12 @@ mobile 整屏 `SettingsScreen` vs web `.settings-modal`（440px，见 §3.2 同�
   `paddingBottom: offset` 撑起面板。| `CmdKPalette.tsx:82-97, 395-407`
 
 **Frontend behavior**:
-- `keyboardViewport.js` 测 `appBottom - (visualViewport.offsetTop + visualViewport.height)`，写 `--keyboard-inset`。
+- `ui/keyboard/index.ts` 测 `appBottom - (visualViewport.offsetTop + visualViewport.height)`，写 `--keyboard-inset`。
   抬起动画 `KEYBOARD_LIFT_MS = 220`，`easeKeyboardLift(t) = 1 - (1-t)^3`（ease-out cubic）。
-  | `keyboardViewport.js:54, 57-60, 209-220`
+  | `ui/keyboard/index.ts:54, 57-60, 209-220`
 - composer / msg-list 在 inset 改变后重新锚定（`smooth:false`）。
-- `data-keyboard-open` 切换：`roundedTarget > 50 ? 'true' : 'false'`。| `keyboardViewport.js:228`
-- 减弱-motion 时直接 snap。| `keyboardViewport.js:237`
+- `data-keyboard-open` 切换：`roundedTarget > 50 ? 'true' : 'false'`。| `ui/keyboard/index.ts:228`
+- 减弱-motion 时直接 snap。| `ui/keyboard/index.ts:237`
 
 **Diff**:
 - mobile 走 RN `KeyboardAvoidingView`（iOS 平台 slide-up，Android windowSoftInputMode）；
@@ -988,7 +988,7 @@ mobile 整屏 `SettingsScreen` vs web `.settings-modal`（440px，见 §3.2 同�
   - `cubic-bezier(.45,.05,.55,.95)` tool-inline spin alt。| `styles.css:4481`
 - 速度规划：`MOTION_VELOCITY_PX_PER_S = 1800`，`MOTION_MIN/MAX_DURATION_MS = 90/520`，
   `MOTION_SNAP_DISTANCE_PX = 24`。| `motion.js:47-50`
-- `KEYBOARD_LIFT_MS = 220`。| `keyboardViewport.js:54`
+- `KEYBOARD_LIFT_MS = 220`。| `ui/keyboard/index.ts:54`
 
 **Diff**:
 - mobile 没有 canonical curve；frontend 5+ 种已被命名。
@@ -1123,7 +1123,7 @@ mobile 整屏 `SettingsScreen` vs web `.settings-modal`（440px，见 §3.2 同�
 | Canonical easing | None | `--ease-out: cubic-bezier(.16,1,.3,1)` (`styles.css:29`) | P0 |
 | Velocity planner | None | `1800 px/s`, `90–520ms` clamp (`motion.js:47-50`) | P2 |
 | Reduced-motion | No listener | `prefersReducedMotion()` snaps (`motion.js:77-85`) | P1 |
-| Keyboard lift easing | RN default | `220ms easeKeyboardLift` ease-out cubic (`keyboardViewport.js:54-60`) | P1 |
+| Keyboard lift easing | RN default | `220ms easeKeyboardLift` ease-out cubic (`ui/keyboard/index.ts:54-60`) | P1 |
 
 ---
 

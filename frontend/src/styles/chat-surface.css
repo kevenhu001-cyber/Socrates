@@ -472,10 +472,10 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   /* .chat-view already supplies the conversation column. Adding a second
      horizontal inset here was the last reason the in-session card was 28px
      narrower than the landing card.
-     The resting safe-area bottom is consumed by the rising
-     --keyboard-inset on the same continuous timeline, down to an 8px
-     optical gap — no layout pop when data-keyboard-open flips. */
-  padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - (var(--keyboard-inset, 0px) * 0.031))) !important;
+     The resting safe-area bottom is covered by the keyboard pixel for
+     pixel as --keyboard-inset rises, down to an 8px optical gap — no
+     layout pop when data-keyboard-open flips. */
+  padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
   background: transparent !important;
 }
 
@@ -602,11 +602,11 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     /* P_topic-kb-avoid — consume the animated --keyboard-inset so the
        landing composer rises smoothly with the rAF-interpolated value
        instead of jumping to its target via an instant scroll. The
-       shell freeze (keyboardViewport.js) keeps the layout viewport at
+       shell freeze (ui/keyboard/index.ts) keeps the layout viewport at
        its pre-keyboard height, so --keyboard-inset is the exact number
        of CSS pixels the keyboard covers. max() collapses to the resting
        safe-area when no keyboard is open. No CSS transition is set
-       here: keyboardViewport.js writes --keyboard-inset frame-by-frame,
+       here: ui/keyboard/index.ts writes --keyboard-inset frame-by-frame,
        and a transition would lag behind those writes by one frame. */
     padding: 0 16px max(var(--conversation-safe-bottom), var(--keyboard-inset, 0px)) !important;
   }
@@ -669,7 +669,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
        base rule above. */
     width: calc(100% - 4px) !important;
     margin-inline: auto !important;
-    padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - (var(--keyboard-inset, 0px) * 0.031))) !important;
+    padding: 0 0 max(8px, calc(var(--conversation-safe-bottom) - var(--keyboard-inset, 0px))) !important;
     will-change: padding-bottom, transform;
     transform: translateZ(0);
   }

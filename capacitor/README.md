@@ -80,7 +80,7 @@ Google Play.
 ## Status bar & keyboard avoidance
 
 The web frontend already ships a sophisticated `visualViewport`-driven
-keyboard handler (`frontend/src/ui/keyboardViewport.js`) that writes a
+keyboard handler (`frontend/src/ui/keyboard/index.ts`) that writes a
 single CSS custom property `--keyboard-inset`. That same path runs
 unchanged inside the Capacitor WebView, so the chat composer lifts above
 the keyboard on Android with no extra code on the web side.
@@ -94,12 +94,12 @@ What Capacitor adds:
   `frontend/src/native/capacitorBridge.js → setupStatusBarThemeSync`.
 - **Keyboard** — `@capacitor/keyboard` is mounted on top of the existing
   `adjustResize` behaviour. Its `keyboardWillShow` / `keyboardWillHide`
-  events are forwarded as `focusin` / `focusout` on the chat input, so
-  the focus-authoritative path inside `keyboardViewport.js` runs the
-  instant the OS starts animating the keyboard (faster than waiting for
-  `visualViewport.resize`, and necessary on Samsung keyboards that fire
-  blur without a paired resize and would otherwise leave the input bar
-  stuck above a closed keyboard).
+  events are forwarded to `notifyNativeKeyboard('show' | 'hide', height)`
+  on the lift controller in `ui/keyboard/index.ts`, so the measured
+  pipeline runs the instant the OS starts animating the keyboard (faster
+  than waiting for `visualViewport.resize`, and necessary on Samsung
+  keyboards that fire blur without a paired resize and would otherwise
+  leave the input bar stuck above a closed keyboard).
 - **Back button** — `App.addListener('backButton', …)` routes the
   Android hardware back through `history.back()` first, falling back to
   `App.exitApp()` on the root. Modals/overlays can intercept the

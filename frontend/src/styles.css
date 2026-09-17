@@ -25,7 +25,7 @@
 
 :root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
 /* Shared timing tokens for composer focus expansion. Keyboard avoidance is
-   deliberately not part of this CSS timeline: keyboardViewport.js owns the
+   deliberately not part of this CSS timeline: ui/keyboard/index.ts owns the
    inset animation frame by frame so a browser resize cannot drop the input
    straight onto its final position. --composer-motion-duration and
    --composer-motion-ease remain aliases for the existing composer rules. */
@@ -35,7 +35,7 @@
   --composer-motion-duration:var(--chat-motion-duration);
   --composer-motion-ease:var(--chat-motion-ease);
 }
-/* Keyboard inset motion is driven by keyboardViewport.js; the browser only
+/* Keyboard inset motion is driven by ui/keyboard/index.ts; the browser only
    consumes the interpolated value below. */
 html[data-mode=dark]{color-scheme:dark}
 html[data-mode=light]{color-scheme:light}
@@ -190,7 +190,7 @@ body[data-conversation-active="true"] #mobileMode{display:none!important}
 @supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}}
 .app{display:flex;height:100vh;height:100dvh;
   /* The dynamic viewport is allowed to follow the browser's native resize.
-     keyboardViewport.js adds only the measured overlay inset when a browser
+     ui/keyboard/index.ts adds only the measured overlay inset when a browser
      keeps the layout viewport unchanged. */
   overflow:hidden;overscroll-behavior:none;position:relative}
 /* UI-align: translucent sidebar surface (open-webui desktop look).
@@ -994,7 +994,7 @@ html[data-show-grid="false"] .main-bg{background-image:none}
   transform:translateY(8px) scale(.96);
   pointer-events:none;
   /* No `bottom` transition: the value embeds --keyboard-inset, which
-     keyboardViewport.js already eases — a second easing on top would make
+     ui/keyboard/index.ts already eases — a second easing on top would make
      the pill trail the composer for the whole lift. */
   transition:opacity .22s cubic-bezier(.4,0,.2,1),transform .26s cubic-bezier(.16,1,.3,1),box-shadow .2s cubic-bezier(.4,0,.2,1),filter .2s ease;
   z-index:30;
@@ -1531,11 +1531,11 @@ true) but the dropdown never shows — see commit history. */
   max-width:calc(58rem * var(--app-width-scale, 1));
   /* P_input-lift — keep a small breathing gap below the chat composer so
      the input sits ~6px above the bottom edge on desktop and mobile.
-     The rising --keyboard-inset consumes the gap on the same continuous
-     timeline, so the composer settles flush against the keyboard with no
-     layout pop when data-keyboard-open flips. */
+     The keyboard's leading edge covers that gap pixel for pixel as
+     --keyboard-inset rises, so the composer settles flush against the
+     keyboard with no layout pop when data-keyboard-open flips. */
   margin:0 auto;
-  margin-bottom:max(0px, calc(6px - (var(--keyboard-inset, 0px) * 0.024)));
+  margin-bottom:max(0px, calc(6px - var(--keyboard-inset, 0px)));
   display:flex;
   flex-direction:column;
   gap:4px;
@@ -1544,13 +1544,13 @@ true) but the dropdown never shows — see commit history. */
   position:relative;
   --composer-motion-duration:.34s;
   --composer-motion-ease:cubic-bezier(.22,1,.36,1);
-  /* --keyboard-inset is already interpolated by keyboardViewport.js. Keep a
+  /* --keyboard-inset is already interpolated by ui/keyboard/index.ts. Keep a
      small transition for legacy/external style writes, but the controller
      disables it for a focused keyboard session so no browser transition is
      layered over the explicit rAF compensation. */
   margin-top:0;
   /* Keyboard avoidance: linear and continuous 1:1 displacement driven by
-     keyboardViewport.js. No dead-zone or piecewise stall at the bottom. */
+     ui/keyboard/index.ts. No dead-zone or piecewise stall at the bottom. */
   padding-bottom:var(--keyboard-inset, 0px);
   transition:
     padding-bottom var(--chat-motion-duration) var(--chat-motion-ease),
@@ -7291,7 +7291,7 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   :root[data-keyboard-phase="opening"] #topicDisclaimer,
   :root[data-keyboard-phase="open"] #topicDisclaimer,
   :root[data-keyboard-phase="closing"] #topicDisclaimer{display:none}
-  :root[data-topic-composer-focused="true"] #topicDisclaimer{display:none}
+  :root:has(#topicInputWrap:focus-within) #topicDisclaimer{display:none}
   @media(max-height:700px){
     #topicDisclaimer{display:none}
   }
@@ -11677,7 +11677,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
   /* Long drafts use the reference's second row: editor above,
      plus/model/mic/send below. Keyboard motion must not toggle this layout;
-     keyboardViewport.js owns only the external lift and keeps it on one
+     ui/keyboard/index.ts owns only the external lift and keeps it on one
      continuous timeline. */
   #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
   #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active){
@@ -12077,6 +12077,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 
 /* Keyboard geometry: chat-surface.css owns the composer shape at rest and
-   while the keyboard is up. keyboardViewport.js publishes only the
+   while the keyboard is up. ui/keyboard/index.ts publishes only the
    `--keyboard-inset` value consumed by .chat-view; there is deliberately no
    per-frame composer morph layer here. */

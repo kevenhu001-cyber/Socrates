@@ -14,7 +14,7 @@ import { stateStore } from '../state/store.js';
 const SCROLL_SLACK = 64;   /* pixels from bottom considered "pinned" */
 
 /* Timestamp of the most recent user scroll gesture (wheel, touch drag,
-   keyboard scroll key, or a pill click). keyboardViewport.js snapshots
+   keyboard scroll key, or a pill click). ui/keyboard/index.ts snapshots
    this when a keyboard transition begins and abandons its transcript
    compensation as soon as a newer gesture lands — a live gesture always
    owns the scroll. */

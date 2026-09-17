@@ -3,7 +3,7 @@ import test from 'node:test';
 
 /*
  * Tests for the fixes flagged in the skeptical review:
- *   - A1: keyboardViewport.js inset rAF loop now has a real cancel
+ *   - A1: ui/keyboard/index.ts inset rAF loop now has a real cancel
  *   - A2: useAutoHeight rAF fallback has a real cancel (covered via
  *     the cap clamp behaviour, since the WAAPI path is browser-only)
  *   - A4: useAutoHeight clamps `natural` to the CSS max-height so we
@@ -19,7 +19,7 @@ import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/ui/motion
 
 test('A8: easeOutQuint is the easing the scroll/inset rAF loops consume', () => {
   /* The closed form 1-(1-t)^5 must match what scroll.js and
-     keyboardViewport.js use for manual rAF interpolation. Three
+     ui/keyboard/index.ts use for manual rAF interpolation. Three
      samples are enough to lock the shape. */
   assert.equal(easeOutQuint(0), 0);
   assert.equal(easeOutQuint(1), 1);
@@ -63,7 +63,7 @@ test('A4 / useAutoHeight cap semantics: planner honours caller maxDuration for s
 test('A1 / A3 contract: planMotionForUser returns a Promise-resolvable plan', () => {
   /* The keyboard inset animation and the scroll follow share one
      plan. The plan's `duration` must be a finite non-negative number
-     that scroll.js and keyboardViewport.js can both consume
+     that scroll.js and ui/keyboard/index.ts can both consume
      without extra parsing. */
   const plan = planMotionForUser(300);
   assert.ok(Number.isFinite(plan.duration));

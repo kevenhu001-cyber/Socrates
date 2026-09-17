@@ -80,7 +80,7 @@
     color: var(--cg-text-secondary) !important;
   }
 
-  /* Visual-viewport pan: keyboardViewport.js freezes the shell at its
+  /* Visual-viewport pan: ui/keyboard/index.ts freezes the shell at its
      full height while the browser pans the visual viewport down to the
      composer, which scrolls this in-flow bar off the top edge. Translate
      it by the pan distance (--keyboard-visual-top, 0 when there is no
@@ -110,7 +110,7 @@
      absolutely-centred greeting would otherwise stay painted in the
      middle of the black band. The focused attribute covers both the
      overlay and layout-resize keyboard modes. */
-  :root[data-topic-composer-focused="true"] #appShell#appShell #topicTitle.greeting,
+  :root:has(#topicInputWrap:focus-within) #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-open="true"] #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-phase="opening"] #appShell#appShell #topicTitle.greeting,
   :root[data-keyboard-phase="open"] #appShell#appShell #topicTitle.greeting,
