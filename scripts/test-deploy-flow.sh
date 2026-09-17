@@ -100,6 +100,10 @@ if [[ "$*" == *"api/embedding-config"* ]]; then
   # The deploy's admin fail-closed gate expects the ungated config
   # surface to reject anonymous callers with 403.
   printf '403'
+elif [[ "$*" == *"api/agent-runs/capabilities"* ]]; then
+  # The fixture intentionally has no Pi binary. Mirror the live API's
+  # fail-closed response when the workspace-agent runtime is unavailable.
+  printf '401'
 elif [[ "$*" == *"-w"* ]]; then
   printf '200'
 elif [[ "$*" == *"mobile/bootstrap"* ]]; then
