@@ -56,6 +56,19 @@ const POLL_EDGE_MS = 900;
 const POLL_IDLE_MS = 240;
 const POLL_EXTERNAL_MS = 400;
 
+/* Anticipated lift: Android Chrome reports the keyboard's final geometry
+ * in a single shot (visualViewport resize right around focusin, then a
+ * scroll as it pans the visual viewport to reveal the covered composer).
+ * That native pan is painted by the compositor a frame ahead of the
+ * scroll event that would let us cancel it — the painted raw pan is the
+ * instant-jump users see, and the compensation snap-back is the jitter.
+ * Starting the spring at the touch edge with an estimated target moves
+ * the composer inside the shrinking viewport before the browser needs to
+ * pan at all; the first real geometry sample then replaces the estimate
+ * mid-flight through the same continuous retarget path. */
+const ANTICIPATE_MS = 1200;
+const TOUCH_INTENT_MS = 1200;
+
 /* Shell release: once the close motion has settled the frozen height can
  * go back, but only after the viewports themselves report the keyboard
  * fully gone — or after a grace period for platforms that never do. */
@@ -161,6 +174,15 @@ export function initKeyboardLift({
   /* Floor for the measured travel while a native bridge has just reported
      keyboardWillShow — covers WebViews that report no geometry change. */
   let nativeHeightHint = 0;
+  /* Anticipated-lift state (see ANTICIPATE_MS above): armed on a touch
+     focus edge, consumed by the first real geometry sample, and expired
+     on blur or timeout so a keyboard that never arrives settles back. */
+  let anticipatedTravel = 0;
+  let anticipatedUntil = 0;
+  let touchIntentAt = 0;
+  /* Settled travel of the previous session — keyboards keep their height
+     across shows, so it is the best estimate for the next lift. */
+  let lastKeyboardTravel = 0;
   /* A zero travel sample is only trusted after two consecutive reads.
      Real devices occasionally report one empty frame mid-session (an IME
      animation hiccup, a blur whose keyboard has not finished reporting),
@@ -200,6 +222,15 @@ export function initKeyboardLift({
     if (typeof window !== 'undefined' && (window.scrollY !== 0 || window.scrollX !== 0)) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
+    /* Clear any scroll-into-view the browser performed on the composer's
+       own scroll containers — the projection compensated it per frame
+       during the session; at full close the residual is restored once. */
+    for (const id of ['mainContent', 'topicSetup']) {
+      try {
+        const el = document.getElementById(id);
+        if (el && el.scrollTop) el.scrollTop = 0;
+      } catch { /* detached */ }
+    }
   };
 
   const viewportOffsetTop = () => {
@@ -208,6 +239,28 @@ export function initKeyboardLift({
     const total = vp + sy;
     return Number.isFinite(total) ? Math.max(0, total) : 0;
   };
+
+  /* Scroll-into-view on the composer's own scrollable ancestors is a third
+     displacement channel that neither offsetTop nor window.scrollY reports:
+     .topic-setup is overflow:auto and .main-content is overflow:hidden —
+     both still scroll programmatically. Folding their scrollTop into the
+     projection lets --keyboard-pan-compensation cancel it in the same frame
+     instead of leaving the composer teleported by the browser's reveal. */
+  const composerContainerScroll = () => {
+    let px = 0;
+    try {
+      const mainEl = typeof document !== 'undefined' ? document.getElementById('mainContent') : null;
+      if (mainEl) px += Number(mainEl.scrollTop) || 0;
+      const topicEl = typeof document !== 'undefined' ? document.getElementById('topicSetup') : null;
+      if (topicEl) px += Number(topicEl.scrollTop) || 0;
+    } catch { /* detached */ }
+    return Number.isFinite(px) && px > 0 ? px : 0;
+  };
+
+  /* Total displacement applied to the composer surfaces by native channels:
+     visual-viewport pan + document scroll + container scroll-into-view. The
+     transcript anchor compensates the same total so both surfaces agree. */
+  const composerPanOffset = () => viewportOffsetTop() + composerContainerScroll();
 
   /* While the shell is frozen at its pre-keyboard height, the browser pans
      the visual viewport down to the focused composer — scrolling in-flow
