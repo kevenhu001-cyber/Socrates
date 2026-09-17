@@ -1,18 +1,17 @@
 /**
  * ui/keyboard — virtual-keyboard avoidance controller.
  *
- * One keyboard session has exactly one layout-motion owner:
- *   - native-resize: the layout viewport / 100dvh shell moves with the IME;
- *     JS publishes zero inset. If that native reflow arrives as one coarse
- *     jump, a FLIP transform smooths the already-correct final layout without
- *     taking ownership of the keyboard geometry.
- *   - overlay: the layout viewport stays fixed; JS mirrors the uncovered
- *     VisualViewport geometry into --keyboard-inset.
+ * A keyboard session has one layout-motion owner:
+ *   - native-resize: Android/WebView resizes the layout viewport. JS never
+ *     adds keyboard inset. If that resize arrives in coarse steps, JS holds
+ *     the composer at its pre-focus visual position until native geometry is
+ *     stable, then releases it with one compositor animation.
+ *   - overlay: layout stays fixed and JS publishes only the uncovered visual
+ *     viewport coverage as --keyboard-inset.
  *
- * The mode is locked for the lifetime of a session. While mode is unknown,
- * JS intentionally publishes zero inset instead of guessing. This prevents
- * the classic Android sequence "visual viewport shrinks -> JS lifts ->
- * layout viewport catches up -> JS drops", which appears as a large bounce.
+ * The important invariant is that a JS animation is never allowed to run
+ * while the native layout is still changing underneath it. That was the
+ * source of the opening judder in earlier FLIP implementations.
  */
 
 import {
@@ -30,21 +29,22 @@ const OVERLAY_DELTA_PX = 24;
 const RESTORE_SLOP_PX = 8;
 const NATIVE_OPEN_SETTLE_MS = 220;
 
-/* Some Android WebViews update 100dvh in one layout commit instead of
- * exposing the IME's intermediate frames. The final geometry is correct,
- * but the composer visibly teleports. FLIP keeps layout ownership native:
- * detect only a coarse layout jump, invert it with a compositor transform,
- * then animate that transform back to zero. Progressive native motion is
- * left untouched. */
 const NATIVE_FLIP_MIN_PX = 28;
-const NATIVE_FLIP_MS = 240;
+const NATIVE_FLIP_MS = 220;
 const NATIVE_FLIP_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
 
-/* On Android the browser can perform focus reveal / viewport resize before
- * focusin or keyboardWillShow reaches JS. Capture the composer's resting
- * layout during pointerdown (capture phase), then protect that snapshot long
- * enough for the first native-resize sample to compare against it. */
+/* A pre-focus snapshot must survive focusin / keyboardWillShow because some
+ * Android WebViews have already performed focus reveal by then. */
 const PRE_FOCUS_SNAPSHOT_MS = 800;
+
+/* Once a coarse native jump is detected, keep the composer visually frozen
+ * until both its layout box and the viewport have stopped changing for a few
+ * consecutive frames. This prevents a compositor animation from being mixed
+ * with a still-running 100dvh/native-resize animation. */
+const OPENING_STABLE_FRAMES = 3;
+const OPENING_STABLE_SLOP_PX = 1.5;
+const OPENING_HOLD_MIN_MS = 48;
+const OPENING_HOLD_MAX_MS = 220;
 
 type KeyboardMode = 'unknown' | 'native-resize' | 'overlay';
 type NativeMotionEdge = 'opening' | 'closing' | null;
@@ -69,6 +69,17 @@ interface SessionBaseline {
   shellBottom: number;
   innerHeight: number;
   visualHeight: number;
+}
+
+interface KeyboardGeometry {
+  innerHeight: number;
+  currentShellBottom: number;
+  visualHeight: number;
+  visualOffsetTop: number;
+  innerShrink: number;
+  shellShrink: number;
+  visualShrink: number;
+  visibleCoverage: number;
 }
 
 let active: KeyboardLift | null = null;
@@ -114,13 +125,26 @@ export function initKeyboardLift({
   let blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
   let nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
 
-  /* FLIP state is visual only; it never feeds back into layout geometry. */
+  /* Native motion state. Layout coordinates are always measured without the
+     presentation-only hold/animation offset. */
   let nativeMotionTarget: HTMLElement | null = null;
   let lastComposerLayoutTop: number | null = null;
   let nativeMotionAnimation: Animation | null = null;
-  let preFocusSnapshotUntil = 0;
   let nativeMotionEdge: NativeMotionEdge = null;
-  let openingFlipPlayed = false;
+  let preFocusSnapshotUntil = 0;
+
+  /* Opening-only visual hold. */
+  let openingLockTop: number | null = null;
+  let openingHoldActive = false;
+  let openingHoldOffset = 0;
+  let openingHoldStartedAt = 0;
+  let openingStableFrames = 0;
+  let openingLastLayoutTop: number | null = null;
+  let openingLastInnerHeight: number | null = null;
+  let openingLastShellBottom: number | null = null;
+  let openingReleaseStarted = false;
+  let openingOriginalInlineTransform = '';
+  let openingOriginalWillChange = '';
 
   const shellElement = (): HTMLElement | null => (
     container
@@ -201,8 +225,6 @@ export function initKeyboardLift({
     if (!(node instanceof Node)) return null;
     const wrap = trackedInputs.find((element) => element === node || element.contains(node));
     if (!wrap) return null;
-    /* Move the full chat input bar so its bottom fade/safe-area travels with
-       the card. The landing composer has no separate bar wrapper. */
     if (wrap.id === 'chatInputWrap') {
       return document.getElementById('chatInputBar') || wrap;
     }
@@ -225,16 +247,25 @@ export function initKeyboardLift({
     }
   };
 
+  const presentationTranslateY = (target: HTMLElement): number => {
+    if (openingHoldActive && target === nativeMotionTarget) return openingHoldOffset;
+    return animatedTranslateY(target);
+  };
+
   const composerLayoutTop = (target: HTMLElement): number | null => {
     try {
-      /* getBoundingClientRect includes our FLIP transform. Remove that
-         presentation-only offset so repeated samples observe layout, not
-         the animation we created ourselves. */
-      const top = Number(target.getBoundingClientRect().top) - animatedTranslateY(target);
+      const top = Number(target.getBoundingClientRect().top) - presentationTranslateY(target);
       return Number.isFinite(top) ? top : null;
     } catch {
       return null;
     }
+  };
+
+  const cancelNativeAnimation = () => {
+    if (!nativeMotionAnimation) return;
+    try { nativeMotionAnimation.cancel(); } catch { /* already finished */ }
+    nativeMotionAnimation = null;
+    try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
   };
 
   const hasFreshPreFocusSnapshot = (target: HTMLElement | null): boolean => (
@@ -254,22 +285,43 @@ export function initKeyboardLift({
     lastComposerLayoutTop = composerLayoutTop(target);
   };
 
+  const restoreOpeningInlineStyle = () => {
+    const target = nativeMotionTarget;
+    if (!target) return;
+    target.style.transform = openingOriginalInlineTransform;
+    target.style.willChange = openingOriginalWillChange;
+  };
+
+  const resetOpeningMotion = (restoreStyle = true) => {
+    if (restoreStyle && openingHoldActive) restoreOpeningInlineStyle();
+    openingHoldActive = false;
+    openingHoldOffset = 0;
+    openingHoldStartedAt = 0;
+    openingStableFrames = 0;
+    openingLastLayoutTop = null;
+    openingLastInnerHeight = null;
+    openingLastShellBottom = null;
+    openingReleaseStarted = false;
+    openingOriginalInlineTransform = '';
+    openingOriginalWillChange = '';
+  };
+
   const primePreFocusSnapshot = (event: PointerEvent) => {
     if (sessionActive) return;
     const target = motionTargetForNode(event.target);
     if (!target) return;
 
-    /* pointerdown capture runs before focusin and before Android's IME resize
-       path. This is the last reliable resting geometry on WebViews that
-       coalesce the whole keyboard opening into one layout commit. */
+    cancelNativeAnimation();
+    resetOpeningMotion();
+
     baseline = captureBaseline();
     mode = 'unknown';
     overlayEvidence = 0;
     nativeMotionTarget = target;
     lastComposerLayoutTop = composerLayoutTop(target);
+    openingLockTop = lastComposerLayoutTop;
     preFocusSnapshotUntil = now() + PRE_FOCUS_SNAPSHOT_MS;
     nativeMotionEdge = 'opening';
-    openingFlipPlayed = false;
     try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
   };
 
@@ -278,26 +330,165 @@ export function initKeyboardLift({
     catch { return false; }
   };
 
-  const animateNativeLayoutJump = (delta: number) => {
+  const applyOpeningHold = (target: HTMLElement, layoutTop: number) => {
+    if (openingLockTop == null) openingLockTop = lastComposerLayoutTop ?? layoutTop;
+    openingHoldOffset = openingLockTop - layoutTop;
+    target.style.transform = `translate3d(0, ${openingHoldOffset}px, 0)`;
+    target.style.willChange = 'transform';
+  };
+
+  const beginOpeningHold = (
+    target: HTMLElement,
+    previousLayoutTop: number,
+    layoutTop: number,
+    g: KeyboardGeometry,
+  ) => {
+    if (prefersReducedMotion()) return;
+    if (openingLockTop == null) openingLockTop = previousLayoutTop;
+
+    cancelNativeAnimation();
+    openingOriginalInlineTransform = target.style.transform;
+    openingOriginalWillChange = target.style.willChange;
+    openingHoldActive = true;
+    openingReleaseStarted = false;
+    openingHoldStartedAt = now();
+    openingStableFrames = 0;
+    openingLastLayoutTop = layoutTop;
+    openingLastInnerHeight = g.innerHeight;
+    openingLastShellBottom = g.currentShellBottom;
+    applyOpeningHold(target, layoutTop);
+    try { root.dataset.keyboardMotion = 'native-hold'; } catch { /* detached */ }
+  };
+
+  const releaseOpeningHold = () => {
+    const target = nativeMotionTarget;
+    if (!target || !openingHoldActive || openingReleaseStarted) return;
+
+    const from = openingHoldOffset;
+    openingReleaseStarted = true;
+    openingHoldActive = false;
+
+    if (prefersReducedMotion() || Math.abs(from) < 1 || typeof target.animate !== 'function') {
+      restoreOpeningInlineStyle();
+      openingHoldOffset = 0;
+      nativeMotionEdge = null;
+      try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
+      return;
+    }
+
+    const originalTransform = openingOriginalInlineTransform.trim();
+    const fromTransform = originalTransform
+      ? `translate3d(0, ${from}px, 0) ${originalTransform}`
+      : `translate3d(0, ${from}px, 0)`;
+    const toTransform = originalTransform || 'translate3d(0, 0, 0)';
+
+    let animation: Animation;
+    try {
+      animation = target.animate(
+        [
+          { transform: fromTransform },
+          { transform: toTransform },
+        ],
+        {
+          duration: NATIVE_FLIP_MS,
+          easing: NATIVE_FLIP_EASING,
+          fill: 'both',
+        },
+      );
+    } catch {
+      restoreOpeningInlineStyle();
+      openingHoldOffset = 0;
+      nativeMotionEdge = null;
+      try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
+      return;
+    }
+
+    /* WAAPI takes over the presentation transform synchronously; restore the
+       normal inline style underneath it so cancel/finish reveals final layout. */
+    restoreOpeningInlineStyle();
+    openingHoldOffset = 0;
+    nativeMotionAnimation = animation;
+    try { root.dataset.keyboardMotion = 'native-release'; } catch { /* detached */ }
+
+    animation.onfinish = () => {
+      if (nativeMotionAnimation !== animation) return;
+      nativeMotionAnimation = null;
+      try { animation.cancel(); } catch { /* no-op */ }
+      nativeMotionEdge = null;
+      try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
+    };
+    animation.oncancel = () => {
+      if (nativeMotionAnimation === animation) nativeMotionAnimation = null;
+    };
+  };
+
+  const updateNativeOpeningMotion = (g: KeyboardGeometry) => {
+    if (nativeMotionEdge !== 'opening' || openingReleaseStarted) return;
+    const target = activeComposerMotionTarget();
+    if (!target) return;
+
+    if (target !== nativeMotionTarget) {
+      nativeMotionTarget = target;
+      lastComposerLayoutTop = composerLayoutTop(target);
+      openingLockTop = lastComposerLayoutTop;
+      preFocusSnapshotUntil = 0;
+      return;
+    }
+
+    const layoutTop = composerLayoutTop(target);
+    if (layoutTop == null) return;
+    if (lastComposerLayoutTop == null) {
+      lastComposerLayoutTop = layoutTop;
+      if (openingLockTop == null) openingLockTop = layoutTop;
+      return;
+    }
+
+    const previousLayoutTop = lastComposerLayoutTop;
+    const coarseStep = Math.abs(previousLayoutTop - layoutTop) >= NATIVE_FLIP_MIN_PX;
+    lastComposerLayoutTop = layoutTop;
+
+    if (!openingHoldActive) {
+      /* Smooth native motion is already desirable. Intervene only when one
+         frame contains a coarse jump large enough to look like teleporting. */
+      if (!coarseStep) return;
+      preFocusSnapshotUntil = 0;
+      beginOpeningHold(target, previousLayoutTop, layoutTop, g);
+      return;
+    }
+
+    /* Keep visual top exactly locked while native layout continues changing. */
+    applyOpeningHold(target, layoutTop);
+
+    const layoutStable = openingLastLayoutTop != null
+      && Math.abs(layoutTop - openingLastLayoutTop) <= OPENING_STABLE_SLOP_PX;
+    const innerStable = openingLastInnerHeight != null
+      && Math.abs(g.innerHeight - openingLastInnerHeight) <= OPENING_STABLE_SLOP_PX;
+    const shellStable = openingLastShellBottom != null
+      && Math.abs(g.currentShellBottom - openingLastShellBottom) <= OPENING_STABLE_SLOP_PX;
+
+    openingStableFrames = layoutStable && innerStable && shellStable
+      ? openingStableFrames + 1
+      : 0;
+    openingLastLayoutTop = layoutTop;
+    openingLastInnerHeight = g.innerHeight;
+    openingLastShellBottom = g.currentShellBottom;
+
+    const heldFor = now() - openingHoldStartedAt;
+    const stableEnough = (
+      openingStableFrames >= OPENING_STABLE_FRAMES
+      && heldFor >= OPENING_HOLD_MIN_MS
+    );
+    const timedOut = heldFor >= OPENING_HOLD_MAX_MS;
+    if (stableEnough || timedOut) releaseOpeningHold();
+  };
+
+  const animateClosingLayoutJump = (delta: number) => {
     const target = nativeMotionTarget;
     if (!target || Math.abs(delta) < NATIVE_FLIP_MIN_PX || prefersReducedMotion()) return;
     if (typeof target.animate !== 'function') return;
 
-    /* Opening is deliberately one-shot. Android often reports keyboard
-       resize in several coarse layout commits; restarting FLIP on every
-       commit creates the visible up/down judder we are trying to remove.
-       Once the first opening FLIP starts, later layout steps are allowed to
-       continue natively underneath it without cancelling/restarting it.
-
-       Closing keeps the carry-forward behaviour because that path has a
-       reliable pre-close snapshot and previously proved stable. */
-    if (nativeMotionEdge === 'opening' && openingFlipPlayed) return;
-
     const carry = animatedTranslateY(target);
-    if (nativeMotionAnimation) {
-      try { nativeMotionAnimation.cancel(); } catch { /* already finished */ }
-      nativeMotionAnimation = null;
-    }
+    cancelNativeAnimation();
     const from = carry + delta;
     if (Math.abs(from) < 1) return;
 
@@ -318,9 +509,8 @@ export function initKeyboardLift({
       return;
     }
 
-    if (nativeMotionEdge === 'opening') openingFlipPlayed = true;
     nativeMotionAnimation = animation;
-    try { root.dataset.keyboardMotion = 'native-flip'; } catch { /* detached */ }
+    try { root.dataset.keyboardMotion = 'native-closing'; } catch { /* detached */ }
     animation.onfinish = () => {
       if (nativeMotionAnimation !== animation) return;
       nativeMotionAnimation = null;
@@ -332,15 +522,16 @@ export function initKeyboardLift({
     };
   };
 
-  const smoothNativeComposerJump = () => {
+  const updateNativeClosingMotion = () => {
+    if (nativeMotionEdge !== 'closing') return;
     const target = activeComposerMotionTarget();
     if (!target) return;
     if (target !== nativeMotionTarget) {
       nativeMotionTarget = target;
       lastComposerLayoutTop = composerLayoutTop(target);
-      preFocusSnapshotUntil = 0;
       return;
     }
+
     const nextTop = composerLayoutTop(target);
     if (nextTop == null) return;
     if (lastComposerLayoutTop == null) {
@@ -349,8 +540,7 @@ export function initKeyboardLift({
     }
     const delta = lastComposerLayoutTop - nextTop;
     lastComposerLayoutTop = nextTop;
-    if (Math.abs(delta) >= 1) preFocusSnapshotUntil = 0;
-    animateNativeLayoutJump(delta);
+    animateClosingLayoutJump(delta);
   };
 
   const startSession = () => {
@@ -359,10 +549,11 @@ export function initKeyboardLift({
     sessionActive = true;
     overlayEvidence = 0;
     nativeMotionEdge = 'opening';
-    openingFlipPlayed = false;
+    openingReleaseStarted = false;
     setIntent(true);
     setPhase('opening');
     captureComposerPosition(activeComposerMotionTarget(), true);
+    if (openingLockTop == null) openingLockTop = lastComposerLayoutTop;
     anchor.begin();
   };
 
@@ -374,6 +565,10 @@ export function initKeyboardLift({
 
   const finishSession = () => {
     clearNativeOpenTimer();
+    if (openingHoldActive) restoreOpeningInlineStyle();
+    resetOpeningMotion(false);
+    cancelNativeAnimation();
+
     sessionActive = false;
     mode = 'unknown';
     baseline = null;
@@ -381,7 +576,7 @@ export function initKeyboardLift({
     sampleUntil = 0;
     preFocusSnapshotUntil = 0;
     nativeMotionEdge = null;
-    openingFlipPlayed = false;
+    openingLockTop = null;
     setIntent(false);
     setPhase('closed');
     publishInset(0);
@@ -390,7 +585,7 @@ export function initKeyboardLift({
     try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
   };
 
-  const geometry = () => {
+  const geometry = (): KeyboardGeometry => {
     ensureBaseline();
     const base = baseline as SessionBaseline;
     const innerHeight = Math.max(0, Number(window.innerHeight) || 0);
@@ -422,7 +617,7 @@ export function initKeyboardLift({
     };
   };
 
-  const geometryLooksRestored = (g: ReturnType<typeof geometry>): boolean => {
+  const geometryLooksRestored = (g: KeyboardGeometry): boolean => {
     if (!baseline) return true;
     return (
       g.visualShrink <= RESTORE_SLOP_PX
@@ -432,20 +627,15 @@ export function initKeyboardLift({
     );
   };
 
-  const classifyMode = (g: ReturnType<typeof geometry>) => {
+  const classifyMode = (g: KeyboardGeometry) => {
     if (mode !== 'unknown') return;
 
-    /* Native resize is authoritative as soon as either the layout viewport
-       or the rendered shell has materially shrunk. */
     if (g.innerShrink >= NATIVE_DELTA_PX || g.shellShrink >= NATIVE_DELTA_PX) {
       setMode('native-resize');
       overlayEvidence = 0;
       return;
     }
 
-    /* Overlay requires repeated evidence. A single early visualViewport
-       shrink is deliberately ignored because Android can report it before
-       the 100dvh shell/layout viewport catches up. */
     const overlayCandidate = (
       g.visualShrink >= OVERLAY_DELTA_PX
       || g.visibleCoverage >= OVERLAY_DELTA_PX
@@ -475,18 +665,17 @@ export function initKeyboardLift({
       return;
     }
 
-    if (mode === 'native-resize') smoothNativeComposerJump();
+    if (mode === 'native-resize') {
+      if (nativeMotionEdge === 'opening') updateNativeOpeningMotion(g);
+      else if (nativeMotionEdge === 'closing') updateNativeClosingMotion();
+    }
 
     if (phase === 'closing' && geometryLooksRestored(g)) {
-      /* smoothNativeComposerJump() runs first so a one-step downward native
-         restore gets its inverse transform before the session state closes. */
       finishSession();
       return;
     }
 
     if (mode === 'native-resize') {
-      /* Native/layout resize remains the sole geometry owner. The FLIP above
-         is presentation-only and always converges to transform:none. */
       publishInset(0);
       if (phase === 'opening' && (g.innerShrink >= NATIVE_DELTA_PX || g.shellShrink >= NATIVE_DELTA_PX)) {
         setPhase('open');
@@ -497,9 +686,12 @@ export function initKeyboardLift({
     }
 
     if (mode === 'overlay') {
-      /* Only residual layout-space coverage is published. Container scrollTop
-         is intentionally excluded to prevent padding -> scroll -> padding
-         feedback loops. */
+      /* Overlay and native motion must never coexist. */
+      if (openingHoldActive) restoreOpeningInlineStyle();
+      resetOpeningMotion(false);
+      nativeMotionEdge = null;
+      openingLockTop = null;
+
       publishInset(g.visibleCoverage);
       if (phase === 'opening' && g.visibleCoverage > KEYBOARD_OPEN_THRESHOLD_PX) {
         setPhase('open');
@@ -508,7 +700,6 @@ export function initKeyboardLift({
       return;
     }
 
-    /* Unknown mode: wait for evidence instead of guessing. */
     publishInset(0);
   };
 
@@ -530,15 +721,26 @@ export function initKeyboardLift({
   const onFocusIn = () => {
     if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
     if (!sessionActive) {
-      /* Preserve the pointerdown baseline if it is still fresh. Capturing a
-         new baseline here can already be too late on Android. */
       if (preFocusSnapshotUntil <= now() || !baseline) baseline = captureBaseline();
       mode = 'unknown';
       overlayEvidence = 0;
       try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
     }
     captureComposerPosition(activeComposerMotionTarget(), true);
+    if (openingLockTop == null) openingLockTop = lastComposerLayoutTop;
     sampleFor();
+  };
+
+  const prepareClosingMotion = () => {
+    /* A very fast dismiss can interrupt opening hold/release. Remove opening
+       presentation state before taking the closing layout snapshot so the two
+       edges never own transform at the same time. */
+    if (openingHoldActive) restoreOpeningInlineStyle();
+    resetOpeningMotion(false);
+    cancelNativeAnimation();
+    openingLockTop = null;
+    captureComposerPosition();
+    nativeMotionEdge = 'closing';
   };
 
   const onFocusOut = () => {
@@ -546,11 +748,10 @@ export function initKeyboardLift({
       baseline = null;
       preFocusSnapshotUntil = 0;
       nativeMotionEdge = null;
-      openingFlipPlayed = false;
+      openingLockTop = null;
       return;
     }
-    captureComposerPosition();
-    nativeMotionEdge = 'closing';
+    prepareClosingMotion();
     setPhase('closing');
     sampleFor();
     if (blurTimer) clearTimeout(blurTimer);
@@ -593,11 +794,9 @@ export function initKeyboardLift({
         if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
         baseline = baseline ?? captureBaseline();
         captureComposerPosition(activeComposerMotionTarget(), true);
+        if (openingLockTop == null) openingLockTop = lastComposerLayoutTop;
         startSession();
         nativeMotionEdge = 'opening';
-        /* Capacitor is configured with Keyboard.resize='native'. The native
-           signal is timing/state only; keyboardHeight never becomes a CSS
-           inset, so the FLIP cannot reintroduce double-lift. */
         setMode('native-resize');
         publishInset(0);
         setPhase('opening');
@@ -615,8 +814,7 @@ export function initKeyboardLift({
         return;
       }
       clearNativeOpenTimer();
-      captureComposerPosition();
-      nativeMotionEdge = 'closing';
+      prepareClosingMotion();
       setPhase('closing');
       publishInset(0);
       sampleFor();
@@ -631,12 +829,11 @@ export function initKeyboardLift({
       frame = 0;
       if (blurTimer) { clearTimeout(blurTimer); blurTimer = 0; }
       clearNativeOpenTimer();
-      if (nativeMotionAnimation) {
-        try { nativeMotionAnimation.cancel(); } catch { /* already finished */ }
-        nativeMotionAnimation = null;
-      }
+      if (openingHoldActive) restoreOpeningInlineStyle();
+      resetOpeningMotion(false);
+      cancelNativeAnimation();
       nativeMotionEdge = null;
-      openingFlipPlayed = false;
+      openingLockTop = null;
       anchor.end();
       insetListeners.clear();
       document.removeEventListener('pointerdown', primePreFocusSnapshot, true);
@@ -650,10 +847,10 @@ export function initKeyboardLift({
       document.removeEventListener('focusout', onFocusOut);
       document.removeEventListener('visibilitychange', onViewportGeometry);
       try { root.style.removeProperty('--keyboard-inset'); } catch { /* detached */ }
-      try { delete root.dataset.keyboardOpen; } catch { /* detached root */ }
-      try { delete root.dataset.keyboardPhase; } catch { /* detached root */ }
-      try { delete root.dataset.keyboardMode; } catch { /* detached root */ }
-      try { delete root.dataset.keyboardMotion; } catch { /* detached root */ }
+      try { delete root.dataset.keyboardOpen; } catch { /* detached */ }
+      try { delete root.dataset.keyboardPhase; } catch { /* detached */ }
+      try { delete root.dataset.keyboardMode; } catch { /* detached */ }
+      try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
       if (active === controller) active = null;
     },
   };
