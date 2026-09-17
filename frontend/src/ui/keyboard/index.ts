@@ -47,6 +47,7 @@ const NATIVE_FLIP_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
 const PRE_FOCUS_SNAPSHOT_MS = 800;
 
 type KeyboardMode = 'unknown' | 'native-resize' | 'overlay';
+type NativeMotionEdge = 'opening' | 'closing' | null;
 export type KeyboardPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 export interface KeyboardLift {
@@ -118,6 +119,8 @@ export function initKeyboardLift({
   let lastComposerLayoutTop: number | null = null;
   let nativeMotionAnimation: Animation | null = null;
   let preFocusSnapshotUntil = 0;
+  let nativeMotionEdge: NativeMotionEdge = null;
+  let openingFlipPlayed = false;
 
   const shellElement = (): HTMLElement | null => (
     container
@@ -265,6 +268,8 @@ export function initKeyboardLift({
     nativeMotionTarget = target;
     lastComposerLayoutTop = composerLayoutTop(target);
     preFocusSnapshotUntil = now() + PRE_FOCUS_SNAPSHOT_MS;
+    nativeMotionEdge = 'opening';
+    openingFlipPlayed = false;
     try { root.dataset.keyboardMode = 'unknown'; } catch { /* detached */ }
   };
 
@@ -278,10 +283,16 @@ export function initKeyboardLift({
     if (!target || Math.abs(delta) < NATIVE_FLIP_MIN_PX || prefersReducedMotion()) return;
     if (typeof target.animate !== 'function') return;
 
-    /* If another coarse native step lands while the previous FLIP is still
-       running, preserve the currently painted translation and add the new
-       layout delta. Cancelling first without carrying this value would
-       itself create a one-frame snap. */
+    /* Opening is deliberately one-shot. Android often reports keyboard
+       resize in several coarse layout commits; restarting FLIP on every
+       commit creates the visible up/down judder we are trying to remove.
+       Once the first opening FLIP starts, later layout steps are allowed to
+       continue natively underneath it without cancelling/restarting it.
+
+       Closing keeps the carry-forward behaviour because that path has a
+       reliable pre-close snapshot and previously proved stable. */
+    if (nativeMotionEdge === 'opening' && openingFlipPlayed) return;
+
     const carry = animatedTranslateY(target);
     if (nativeMotionAnimation) {
       try { nativeMotionAnimation.cancel(); } catch { /* already finished */ }
@@ -307,6 +318,7 @@ export function initKeyboardLift({
       return;
     }
 
+    if (nativeMotionEdge === 'opening') openingFlipPlayed = true;
     nativeMotionAnimation = animation;
     try { root.dataset.keyboardMotion = 'native-flip'; } catch { /* detached */ }
     animation.onfinish = () => {
@@ -346,6 +358,8 @@ export function initKeyboardLift({
     ensureBaseline();
     sessionActive = true;
     overlayEvidence = 0;
+    nativeMotionEdge = 'opening';
+    openingFlipPlayed = false;
     setIntent(true);
     setPhase('opening');
     captureComposerPosition(activeComposerMotionTarget(), true);
@@ -366,6 +380,8 @@ export function initKeyboardLift({
     overlayEvidence = 0;
     sampleUntil = 0;
     preFocusSnapshotUntil = 0;
+    nativeMotionEdge = null;
+    openingFlipPlayed = false;
     setIntent(false);
     setPhase('closed');
     publishInset(0);
@@ -529,9 +545,12 @@ export function initKeyboardLift({
     if (!sessionActive) {
       baseline = null;
       preFocusSnapshotUntil = 0;
+      nativeMotionEdge = null;
+      openingFlipPlayed = false;
       return;
     }
     captureComposerPosition();
+    nativeMotionEdge = 'closing';
     setPhase('closing');
     sampleFor();
     if (blurTimer) clearTimeout(blurTimer);
@@ -575,6 +594,7 @@ export function initKeyboardLift({
         baseline = baseline ?? captureBaseline();
         captureComposerPosition(activeComposerMotionTarget(), true);
         startSession();
+        nativeMotionEdge = 'opening';
         /* Capacitor is configured with Keyboard.resize='native'. The native
            signal is timing/state only; keyboardHeight never becomes a CSS
            inset, so the FLIP cannot reintroduce double-lift. */
@@ -596,6 +616,7 @@ export function initKeyboardLift({
       }
       clearNativeOpenTimer();
       captureComposerPosition();
+      nativeMotionEdge = 'closing';
       setPhase('closing');
       publishInset(0);
       sampleFor();
@@ -614,6 +635,8 @@ export function initKeyboardLift({
         try { nativeMotionAnimation.cancel(); } catch { /* already finished */ }
         nativeMotionAnimation = null;
       }
+      nativeMotionEdge = null;
+      openingFlipPlayed = false;
       anchor.end();
       insetListeners.clear();
       document.removeEventListener('pointerdown', primePreFocusSnapshot, true);
