@@ -289,10 +289,15 @@ export const filesApi = {
   }),
   remove: (id: string) => apiRequest<void>(`/files/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   content: (id: string) => apiRequest<{ ok: boolean; id: string; name: string; mimeType: string; kind: string; text: string; truncated: boolean; meta?: Record<string, unknown> }>(`/files/${encodeURIComponent(id)}/content`),
-  rawUrl: (id: string) => `${API_BASE_URL}/files/${encodeURIComponent(id)}/raw`,
-  async raw(id: string) {
+  rawUrl: (id: string, inline = false) => `${API_BASE_URL}/files/${encodeURIComponent(id)}/raw${inline ? '?inline=1' : ''}`,
+  async authHeaders() {
     const tokens = await readTokens();
-    const response = await fetch(filesApi.rawUrl(id), { headers: tokens.accessToken ? { Authorization: `Bearer ${tokens.accessToken}` } : undefined });
+    const headers: Record<string, string> = {};
+    if (tokens.accessToken) headers.Authorization = `Bearer ${tokens.accessToken}`;
+    return headers;
+  },
+  async raw(id: string) {
+    const response = await fetch(filesApi.rawUrl(id), { headers: await filesApi.authHeaders() });
     if (!response.ok) throw new ApiError(response.status, `Unable to download file (${response.status})`);
     return response.blob();
   },

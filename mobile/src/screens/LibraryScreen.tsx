@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -12,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
@@ -30,7 +32,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Library'>;
 type Tab = 'files' | 'artifacts';
 type LibraryItem = Record<string, unknown>;
 type DeleteTarget = { id: string; tab: Tab; title: string };
-type Preview = { name: string; mimeType: string; text: string; truncated: boolean };
+type Preview =
+  | { kind: 'text'; name: string; mimeType: string; text: string; truncated: boolean }
+  | { kind: 'image' | 'video' | 'audio' | 'pdf'; name: string; mimeType: string; uri: string; headers: Record<string, string> };
 
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'bmp', 'svg']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'mkv', 'avi']);
@@ -70,6 +74,18 @@ function iconForItem(item: LibraryItem, tab: Tab): React.ComponentProps<typeof I
   if (kind === 'xlsx' || TABLE_EXTENSIONS.has(ext)) return 'grid-outline';
   if (kind === 'pdf') return 'document-text-outline';
   return 'document-outline';
+}
+
+function mediaPreviewKind(item: LibraryItem): Exclude<Preview, { kind: 'text' }>['kind'] | null {
+  const mime = String(item.mimeType || '').toLowerCase();
+  const kind = String(item.kind || '').toLowerCase();
+  const name = String(item.name || '').toLowerCase();
+  const ext = name.includes('.') ? name.split('.').pop() || '' : '';
+  if (mime.startsWith('image/') || kind === 'image' || IMAGE_EXTENSIONS.has(ext)) return 'image';
+  if (mime.startsWith('video/') || kind === 'video' || VIDEO_EXTENSIONS.has(ext)) return 'video';
+  if (mime.startsWith('audio/') || kind === 'audio' || AUDIO_EXTENSIONS.has(ext)) return 'audio';
+  if (mime === 'application/pdf' || kind === 'pdf' || ext === 'pdf') return 'pdf';
+  return null;
 }
 
 export function LibraryScreen({ navigation }: Props) {
@@ -151,8 +167,19 @@ export function LibraryScreen({ navigation }: Props) {
         navigation.navigate('ArtifactPreview', { artifactId: id, html: String(artifact.source || '') });
         return;
       }
+      const mediaKind = mediaPreviewKind(item);
+      if (mediaKind) {
+        setPreview({
+          kind: mediaKind,
+          name: itemName(item, t('library.untitled')),
+          mimeType: String(item.mimeType || item.kind || mediaKind),
+          uri: filesApi.rawUrl(id, true),
+          headers: await filesApi.authHeaders(),
+        });
+        return;
+      }
       const file = await filesApi.content(id);
-      setPreview({ name: file.name, mimeType: file.mimeType, text: file.text, truncated: file.truncated });
+      setPreview({ kind: 'text', name: file.name, mimeType: file.mimeType, text: file.text, truncated: file.truncated });
     } catch (caught) {
       toast.show(caught instanceof Error ? caught.message : t('library.previewUnavailable'), 'error');
     }
@@ -366,10 +393,30 @@ export function LibraryScreen({ navigation }: Props) {
               </View>
               <AnimatedPressable accessibilityLabel={t('library.closePreview')} onPress={() => setPreview(null)} style={styles.closeButton}><Ionicons name="close" size={22} color={colors.textMuted} /></AnimatedPressable>
             </View>
-            <ScrollView style={styles.previewScroll} contentContainerStyle={styles.previewContent}>
-              <Text selectable style={[styles.previewText, { color: colors.text, fontFamily: typography.body }]}>{preview?.text || t('library.previewUnavailable')}</Text>
-            </ScrollView>
-            {preview?.truncated ? <Text style={[styles.truncated, { color: colors.textMuted }]}>{t('library.previewTruncated')}</Text> : null}
+            {preview?.kind === 'text' ? (
+              <ScrollView style={styles.previewScroll} contentContainerStyle={styles.previewContent}>
+                <Text selectable style={[styles.previewText, { color: colors.text, fontFamily: typography.body }]}>{preview.text || t('library.previewUnavailable')}</Text>
+              </ScrollView>
+            ) : preview?.kind === 'image' ? (
+              <ScrollView style={styles.previewScroll} contentContainerStyle={styles.imagePreviewContent} maximumZoomScale={4} minimumZoomScale={1}>
+                <Image source={{ uri: preview.uri, headers: preview.headers }} style={styles.imagePreview} resizeMode="contain" accessibilityLabel={preview.name} />
+              </ScrollView>
+            ) : preview ? (
+              <View style={styles.mediaPreview}>
+                <WebView
+                  source={{ uri: preview.uri, headers: preview.headers }}
+                  style={styles.mediaWebView}
+                  containerStyle={styles.mediaWebView}
+                  originWhitelist={['*']}
+                  javaScriptEnabled
+                  domStorageEnabled
+                  allowsInlineMediaPlayback
+                  mediaPlaybackRequiresUserAction
+                  setSupportMultipleWindows={false}
+                />
+              </View>
+            ) : null}
+            {preview?.kind === 'text' && preview.truncated ? <Text style={[styles.truncated, { color: colors.textMuted }]}>{t('library.previewTruncated')}</Text> : null}
           </View>
         </View>
       </Modal>
@@ -435,6 +482,10 @@ const styles = StyleSheet.create({
   closeButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   previewScroll: { marginTop: 12 },
   previewContent: { paddingVertical: 10 },
+  imagePreviewContent: { flexGrow: 1, minHeight: 320, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
+  imagePreview: { width: '100%', height: 420 },
+  mediaPreview: { flex: 1, minHeight: 320, marginTop: 12, overflow: 'hidden', borderRadius: 10 },
+  mediaWebView: { flex: 1, backgroundColor: 'transparent' },
   previewText: { fontSize: 14, lineHeight: 22 },
   truncated: { fontSize: 11.5, marginTop: 8 },
 });
