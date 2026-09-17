@@ -536,6 +536,10 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
         },
         focus: (view) => {
           composerWrapRef.current = view.dom.closest('.chat-input-wrap, .topic-input-wrap');
+          /* Prevent mobile WebKit native scrollIntoView from scrolling window on focus */
+          if (typeof window !== 'undefined' && (window.scrollY !== 0 || window.scrollX !== 0)) {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          }
           /* Defer the wrap's height/border-radius growth by one frame so it
              does not land in the same frame as the JS keyboard-lift spring
              starting from rest. Without the defer, the wrap's .34s CSS
@@ -652,7 +656,7 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       },
       setExtensionToken,
       focus(position = 'end') {
-        editor.commands.focus(position);
+        editor.commands.focus(position, { scrollIntoView: false });
       },
       getSelection() {
         return { from: editor.state.selection.from, to: editor.state.selection.to };

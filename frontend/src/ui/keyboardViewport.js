@@ -94,8 +94,11 @@ export const MIN_STABLE_VISUAL_VIEWPORT_HEIGHT = 96;
  * the first ~80ms after focus showed < 5% of the rise — the user reads
  * this as "snapped to target". A spring close to the IME window keeps
  * the composer in lockstep across the whole lift. */
-export const KEYBOARD_CHASE_SMOOTH_S = 0.12;
-export const KEYBOARD_CHASE_STREAM_S = 0.08;
+export const KEYBOARD_CHASE_SMOOTH_S = 0.11;
+/* Stream chase runs hotter than discrete: while progressive samples keep
+ * arriving the target IS the keyboard's live leading edge. 0.05 stays
+ * in tight lockstep with the keyboard's rising speed without falling behind. */
+export const KEYBOARD_CHASE_STREAM_S = 0.05;
 
 /* Do not let the spring consume the whole remaining gap in one frame.
  * Feed-forward keeps the composer close to a moving keyboard, but it can
@@ -103,11 +106,11 @@ export const KEYBOARD_CHASE_STREAM_S = 0.08;
  * a dead stop. This exponential arrival envelope preserves that tracking
  * through the middle of the lift, then guarantees a short, continuous
  * deceleration over the final few frames. */
-export const KEYBOARD_ARRIVAL_S = 0.06;
+export const KEYBOARD_ARRIVAL_S = 0.05;
 
 /* During a live progressive stream the chase runs tightly and smoothly,
  * matching the keyboard's rising speed in lockstep without falling behind. */
-export const KEYBOARD_ARRIVAL_STREAM_S = 0.05;
+export const KEYBOARD_ARRIVAL_STREAM_S = 0.035;
 
 /* Minimum frames before settle is allowed to fire.
  * ~12 frames ≈ 200ms @ 60Hz — ensures a smooth continuous interpolation
@@ -141,6 +144,31 @@ export const KEYBOARD_POLL_IDLE_MS = 240;
  * stream samples feed the chase's velocity estimate, so a lone jump starts
  * the spring from rest instead of inheriting a phantom lead. */
 export const KEYBOARD_PROGRESSIVE_SAMPLE_MS = 120;
+
+/* Transcript-side pan deadband: sub-4px offsetTop deltas are DPR rounding
+ * noise, not a real pan — feeding them into scrollTop jitters the
+ * transcript ±2px every frame for the whole lift. The layout-side pan
+ * projection above intentionally stays raw (instant 1:1 cancellation). */
+export const KEYBOARD_PAN_DEADBAND_PX = 4;
+
+/* Project the spring's screen-space travel into the two coordinates the
+ * browser actually paints:
+ *
+ *   layoutInset - panCompensation + viewportOffset = travel
+ *
+ * `layoutInset` and `panCompensation` are allowed to move in opposite
+ * directions when iOS changes offsetTop. Trying to make either component
+ * monotonic breaks this identity and exposes the native viewport pan as an
+ * instant jump followed by a correction. Only `travel` owns the visible
+ * motion curve; the projection must remain exact and stateless. */
+export function projectKeyboardTravel(travel, viewportOffset = 0) {
+  const paintedTravel = Number.isFinite(travel) ? Math.max(0, travel) : 0;
+  const offset = Number.isFinite(viewportOffset) ? Math.max(0, viewportOffset) : 0;
+  return {
+    layoutInset: Math.max(0, paintedTravel - offset),
+    panCompensation: Math.max(0, offset - paintedTravel),
+  };
+}
 
 export function isProgressiveKeyboardSample(
   lastSampleAt,
@@ -444,9 +472,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     } catch (_) { return null; }
   };
 
+  const enforceScrollAnchor = () => {
+    if (typeof window !== 'undefined' && (window.scrollY !== 0 || window.scrollX !== 0)) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  };
+
   const viewportOffsetTop = () => {
-    const value = viewport ? Number(viewport.offsetTop) : 0;
-    return Number.isFinite(value) ? value : 0;
+    const vp = viewport && Number.isFinite(Number(viewport.offsetTop)) ? Number(viewport.offsetTop) : 0;
+    const sy = (typeof window !== 'undefined' && Number.isFinite(Number(window.scrollY))) ? Number(window.scrollY) : 0;
+    const total = vp + sy;
+    return Number.isFinite(total) ? Math.max(0, total) : 0;
   };
 
   /* While the shell is frozen at its pre-keyboard height, the browser pans
@@ -456,7 +492,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      document can still move) so CSS can translate that chrome back onto
      the visible top edge without a layout change. */
   const writeVisualTop = () => {
-    const top = viewportOffsetTop() + (Number(window.scrollY) || 0);
+    const top = viewportOffsetTop();
     root.style.setProperty('--keyboard-visual-top', `${Math.max(0, Math.round(top))}px`);
   };
 
@@ -519,13 +555,18 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        captured snapshot current instead, so the first unheld geometry
        change compensates from the reader's real position. */
     const viewportOwnerHeld = Boolean(list.dataset && list.dataset.turnAnchorHold === 'true');
+    /* Deadband the pan delta: sub-4px offsetTop wobble is DPR rounding
+     * noise, not a real pan — feeding it into scrollTop jitters the
+     * transcript ±2px every frame for the whole lift. */
+    const rawPanDelta = viewportOffsetTop() - anchor.offsetTop;
+    const panDelta = Math.abs(rawPanDelta) < KEYBOARD_PAN_DEADBAND_PX ? 0 : rawPanDelta;
     const action = decideKeyboardAnchorAction(
       { scrollTop: anchor.scrollTop, pinned: anchor.pinned },
       {
         maxScrollTop: list.scrollHeight - list.clientHeight,
         scrolledAway: Boolean(window.stateStore.read('_userScrolledAway')),
         userIntentAfterCapture: getLastScrollIntentAt() > anchor.intentAt,
-        panDelta: viewportOffsetTop() - anchor.offsetTop,
+        panDelta,
         viewportOwnerHeld,
       },
     );
@@ -577,37 +618,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      the scheduled restore stay as fallbacks — both decisions are
      idempotent. */
   const writeInsetFrame = (travel) => {
+    enforceScrollAnchor();
     const paintedValue = Number.isFinite(travel) ? Math.max(0, travel) : 0;
-    /* Convert the continuous screen-space travel to layout compensation.
-       Filter sub-pixel pan wobble with a smooth deadband to prevent 60Hz
-       visual jitter. The previous 1.5px threshold was below the typical
-       2-3px sub-pixel noise produced by iOS Safari's offsetTop rounding
-       on a 3× DPR phone, so the layout inset would oscillate by ±1px per
-       frame even when nothing was actually moving. 2.5px clears that
-       noise floor without delaying a real pan event. */
-    const rawOffset = viewportOffsetTop();
-    let effectiveOffset = 0;
-    if (Math.abs(rawOffset) > 1.0) {
-      effectiveOffset = rawOffset > 0 ? rawOffset - 1.0 : rawOffset + 1.0;
-    }
-    let layoutInset = Math.max(0, paintedValue - effectiveOffset);
-    let panCompensation = Math.max(0, effectiveOffset - paintedValue);
-
-    /* Monotonicity guarantee: while the keyboard is rising (targetTravel > appliedTravel),
-       layoutInset must never regress backwards because of temporary viewportOffsetTop spikes.
-       Similarly, panCompensation should only monotonically decrease to prevent vertical jitter.
-       This completely eliminates elastic bouncing, rubber-banding, and jitter. */
-    if (targetTravel > appliedTravel && appliedInset >= 0) {
-      layoutInset = Math.max(appliedInset, layoutInset);
-      if (appliedPanCompensation >= 0) {
-        panCompensation = Math.min(appliedPanCompensation, panCompensation);
-      }
-    } else if (targetTravel < appliedTravel && appliedInset >= 0) {
-      layoutInset = Math.min(appliedInset, layoutInset);
-      if (appliedPanCompensation >= 0) {
-        panCompensation = Math.max(appliedPanCompensation, panCompensation);
-      }
-    }
+    /* Project the continuous screen-space travel against the current native
+     * viewport pan. Do not deadband or monotonic-clamp either component:
+     * offsetTop noise is already present in the browser's screen transform,
+     * so mirroring it exactly is what cancels the noise. Filtering only this
+     * side creates the 1-4px residual jitter it was intended to remove. */
+    const { layoutInset, panCompensation } = projectKeyboardTravel(
+      paintedValue,
+      viewportOffsetTop(),
+    );
 
     if (
       Math.abs(paintedValue - appliedTravel) < 0.01
@@ -624,19 +645,17 @@ export function initKeyboardViewport({ inputs, input, container, root = document
        never suffers from 1-frame microtask phase tearing or jitter. */
     root.style.setProperty('--keyboard-inset', `${cssInset}px`);
     root.style.setProperty('--keyboard-pan-compensation', `${cssPanCompensation}px`);
-    const insetDelta = Math.abs(layoutInset - appliedInset);
     appliedInset = layoutInset;
     appliedTravel = paintedValue;
     appliedPanCompensation = panCompensation;
     /* A pan can grow inside a single chase frame without a fresh event —
        keep the top-chrome offset current on the same frame cadence. */
     writeVisualTop();
-    /* The keyboard transition owns this scroll correction. Avoid forced
-       synchronous layout (layout thrashing) on fractional sub-pixel deltas:
-       only force layout synchronously when delta >= 1.5px or settling, and
-       schedule a deferred restore otherwise. */
+    /* Defer transcript scroll adjustment during active animation frames to avoid
+       forced synchronous layout (layout thrashing from reading scrollHeight right after
+       setting inline style properties). Only trigger synchronous restore on final settle. */
     if (transcriptAnchor && (isInputFocused() || keyboardPhase === 'closing')) {
-      if (insetDelta >= 1.5 || Math.abs(paintedValue - targetTravel) < 0.5) {
+      if (Math.abs(paintedValue - targetTravel) < 0.3 && Math.abs(chaseVelocity) < 10) {
         restoreTranscriptAnchorNow();
       } else {
         scheduleTranscriptRestore();
@@ -794,9 +813,11 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       } else {
         streamVelocity = 0;
         lastSampleProgressive = false;
-        /* First discrete jump from rest: provide a gentle initial lead so
-         * frame 1 starts in visible motion without pausing, while keeping
-         * acceleration moderate and natural across the entire IME arc. */
+        /* First discrete jump from rest: give frame 1 a small lead without
+         * turning focus into a kick. The resting 14px clearance naturally
+         * absorbs the keyboard's first few pixels; a large preset only
+         * compresses the acceleration into the next frame and reads as a
+         * snap. */
         if (paintedTravel <= KEYBOARD_OPEN_THRESHOLD_PX && chaseVelocity === 0 && motionFrameCount === 0) {
           const smoothTime = KEYBOARD_CHASE_SMOOTH_S;
           const gap = nextTarget - paintedTravel;
@@ -1202,6 +1223,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
      the closed geometry snapshot early enough for the keyboard session. */
   const onFocusIntent = (event) => {
     if (!isTrackedEditableTarget(event?.target)) return;
+    enforceScrollAnchor();
     beginKeyboardSession();
     extendGeometryPoll(KEYBOARD_POLL_EDGE_MS);
     /* A cancelled pointer/touch gesture may never produce focusin/focusout.
@@ -1212,6 +1234,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
   };
 
   const onFocusIn = () => {
+    enforceScrollAnchor();
     beginKeyboardSession();
     /* Open the geometry sampling window for the whole open animation:
        even platforms that never dispatch per-frame events still get
@@ -1241,8 +1264,8 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     /* visualViewport can pan before the next rAF. Project the already-painted
        travel immediately so the native pan is cancelled in the same event;
        waiting for update() makes the composer visibly jump for one frame on
-       iOS. The next rAF still measures the new height and advances the
-       spring. */
+       iOS (covered by the discrete-pan anchor spec). The next rAF still
+       measures the new height and advances the spring. */
     if (keyboardShellFrozen || isInputFocused()) writeInsetFrame(paintedTravel);
     else writeVisualTop();
     schedule();
@@ -1258,6 +1281,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
     viewport.addEventListener('scroll', onViewportGeometry);
   }
   window.addEventListener('resize', onViewportGeometry);
+  window.addEventListener('scroll', enforceScrollAnchor, { passive: true });
   /* Chromium's VirtualKeyboard API reports the IME animation even while
      the layout viewport already resizes. overlaysContent stays off —
      enabling it would switch Chrome to overlay mode and leave every
@@ -1314,6 +1338,7 @@ export function initKeyboardViewport({ inputs, input, container, root = document
       viewport.removeEventListener('scroll', onViewportGeometry);
     }
     window.removeEventListener('resize', onViewportGeometry);
+    window.removeEventListener('scroll', enforceScrollAnchor);
     if (virtualKeyboard && typeof virtualKeyboard.removeEventListener === 'function') {
       virtualKeyboard.removeEventListener('geometrychange', schedule);
     }
