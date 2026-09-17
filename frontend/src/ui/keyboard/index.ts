@@ -1,19 +1,17 @@
 /**
  * ui/keyboard — virtual-keyboard avoidance controller.
  *
- * Motion ownership is strict:
- *   - browser native-resize: the browser owns layout geometry. JS uses the
- *     VisualViewport only as a progress signal, applying a temporary inverse
- *     transform so the composer follows the real keyboard frame-by-frame even
- *     when the layout viewport itself updates in coarse steps.
- *   - Capacitor native-resize: the native shell owns motion; JS adds no visual
- *     transform here.
- *   - overlay: layout stays fixed and JS publishes only uncovered viewport
- *     coverage as --keyboard-inset.
+ * Browsers expose mobile-keyboard geometry in two very different ways:
+ *   - progressive: VisualViewport/layout geometry advances over several frames;
+ *   - coarse: the page receives only the start and final geometry.
  *
- * There is no fixed-duration opening animation on the browser path. The
- * composer's visible position is derived directly from the current
- * VisualViewport height/offset, so the keyboard's own timing is the clock.
+ * Progressive motion is followed directly. For a coarse jump, JS performs a
+ * same-frame FLIP: invert the already-applied layout jump before the next paint,
+ * then animate once to the browser's final layout. This preserves a visible
+ * opening/closing transition without reintroducing the old restart/judder loop.
+ *
+ * Capacitor native-resize remains system-owned; this browser fallback is never
+ * installed in the native shell.
  */
 
 import {
@@ -32,10 +30,21 @@ const OVERLAY_DELTA_PX = 24;
 const RESTORE_SLOP_PX = 8;
 const NATIVE_OPEN_SETTLE_MS = 260;
 const NATIVE_HIDE_FALLBACK_MS = 520;
+
 const WEB_SYNC_LAYOUT_EVIDENCE_PX = 2;
 const WEB_SYNC_EPSILON_PX = 0.2;
+/* Per-frame IME movement is normally well below this. Crossing it indicates
+ * that the browser exposed a coarse start->end geometry jump instead of the
+ * keyboard's intermediate animation frames. */
+const WEB_COARSE_JUMP_PX = 56;
+const WEB_FALLBACK_MIN_MS = 190;
+const WEB_FALLBACK_MAX_MS = 300;
+const WEB_FALLBACK_BASE_MS = 175;
+const WEB_FALLBACK_MS_PER_PX = 0.27;
+const WEB_FALLBACK_EASING = 'cubic-bezier(0.2, 0, 0, 1)';
 
 type KeyboardMode = 'unknown' | 'native-resize' | 'overlay';
+type WebMotionEdge = 'opening' | 'closing' | null;
 export type KeyboardPhase = 'closed' | 'opening' | 'open' | 'closing';
 
 export interface KeyboardLift {
@@ -125,11 +134,15 @@ export function initKeyboardLift({
   let nativeOpenTimer: ReturnType<typeof setTimeout> | 0 = 0;
   let nativeHideTimer: ReturnType<typeof setTimeout> | 0 = 0;
 
-  /* Browser-only VisualViewport motion state. */
+  /* Browser-only composer presentation state. */
   let webMotionTarget: HTMLElement | null = null;
   let webMotionArmed = false;
   let webStartTop: number | null = null;
+  let webLastLayoutTop: number | null = null;
   let webTranslateY = 0;
+  let webMotionEdge: WebMotionEdge = null;
+  let webFallbackPlayed = false;
+  let webFallbackAnimation: Animation | null = null;
   let webOriginalTransformValue = '';
   let webOriginalTransformPriority = '';
   let webOriginalWillChangeValue = '';
@@ -225,6 +238,18 @@ export function initKeyboardLift({
     if (!baseline) baseline = captureBaseline();
   };
 
+  const prefersReducedMotion = (): boolean => {
+    try { return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches); }
+    catch { return false; }
+  };
+
+  const webTransform = (offset: number): string => {
+    const translate = `translate3d(0, ${offset}px, 0)`;
+    return webOriginalTransformValue
+      ? `${translate} ${webOriginalTransformValue}`
+      : translate;
+  };
+
   const restoreWebMotionStyle = () => {
     const target = webMotionTarget;
     if (!target) return;
@@ -250,24 +275,30 @@ export function initKeyboardLift({
     }
   };
 
-  const resetWebMotion = (restoreStyle = true) => {
+  const cancelWebFallbackAnimation = () => {
+    if (!webFallbackAnimation) return;
+    try { webFallbackAnimation.cancel(); } catch { /* already finished */ }
+    webFallbackAnimation = null;
+  };
+
+  const resetWebMotion = (
+    restoreStyle = true,
+    cancelAnimation = true,
+  ) => {
+    if (cancelAnimation) cancelWebFallbackAnimation();
     if (restoreStyle && webMotionArmed) restoreWebMotionStyle();
     webMotionTarget = null;
     webMotionArmed = false;
     webStartTop = null;
+    webLastLayoutTop = null;
     webTranslateY = 0;
+    webMotionEdge = null;
+    webFallbackPlayed = false;
     webOriginalTransformValue = '';
     webOriginalTransformPriority = '';
     webOriginalWillChangeValue = '';
     webOriginalWillChangePriority = '';
     try { delete root.dataset.keyboardMotion; } catch { /* detached */ }
-  };
-
-  const webTransform = (offset: number): string => {
-    const translate = `translate3d(0, ${offset}px, 0)`;
-    return webOriginalTransformValue
-      ? `${translate} ${webOriginalTransformValue}`
-      : translate;
   };
 
   const armWebMotion = (target: HTMLElement | null) => {
@@ -288,18 +319,135 @@ export function initKeyboardLift({
     webOriginalWillChangeValue = target.style.getPropertyValue('will-change');
     webOriginalWillChangePriority = target.style.getPropertyPriority('will-change');
     webStartTop = rectTop;
+    webLastLayoutTop = rectTop;
     webTranslateY = 0;
+    webMotionEdge = 'opening';
+    webFallbackPlayed = false;
     webMotionArmed = true;
 
-    /* Establish the compositor layer before the first keyboard resize. */
+    /* Pre-promote before focus so a coarse keyboard jump can be inverted in
+       the resize callback without introducing a new compositor layer. */
     target.style.setProperty('transform', webTransform(0), 'important');
     target.style.setProperty('will-change', 'transform', 'important');
-    try { root.dataset.keyboardMotion = 'web-visual-viewport-armed'; } catch { /* detached */ }
+    try { root.dataset.keyboardMotion = 'web-armed'; } catch { /* detached */ }
+  };
+
+  const fallbackDuration = (distance: number): number => (
+    Math.round(Math.min(
+      WEB_FALLBACK_MAX_MS,
+      Math.max(
+        WEB_FALLBACK_MIN_MS,
+        WEB_FALLBACK_BASE_MS + Math.abs(distance) * WEB_FALLBACK_MS_PER_PX,
+      ),
+    ))
+  );
+
+  const startCoarseFallback = (
+    target: HTMLElement,
+    delta: number,
+  ): boolean => {
+    if (
+      isCapacitorNative
+      || prefersReducedMotion()
+      || !webMotionArmed
+      || webFallbackPlayed
+      || Math.abs(delta) < WEB_COARSE_JUMP_PX
+      || typeof target.animate !== 'function'
+    ) {
+      return false;
+    }
+
+    cancelWebFallbackAnimation();
+    webFallbackPlayed = true;
+
+    const from = webTranslateY + delta;
+    const to = webTranslateY;
+
+    /* Set the inverse synchronously first. The current resize/layout has
+       already landed, so this restores the previous painted position before
+       the browser gets another paint opportunity. */
+    target.style.setProperty('transform', webTransform(from), 'important');
+    target.style.setProperty('will-change', 'transform', 'important');
+
+    let animation: Animation;
+    try {
+      animation = target.animate(
+        [
+          { transform: webTransform(from) },
+          { transform: webTransform(to) },
+        ],
+        {
+          duration: fallbackDuration(delta),
+          easing: WEB_FALLBACK_EASING,
+          fill: 'both',
+        },
+      );
+    } catch {
+      target.style.setProperty('transform', webTransform(to), 'important');
+      return false;
+    }
+
+    /* The animation owns presentation; the inline style underneath is already
+       the final state, so cancel/finish reveals the correct layout. */
+    target.style.setProperty('transform', webTransform(to), 'important');
+    webFallbackAnimation = animation;
+    try {
+      root.dataset.keyboardMotion = webMotionEdge === 'closing'
+        ? 'web-fallback-closing'
+        : 'web-fallback-opening';
+    } catch { /* detached */ }
+
+    animation.onfinish = () => {
+      if (webFallbackAnimation !== animation) return;
+      webFallbackAnimation = null;
+      try { animation.cancel(); } catch { /* no-op */ }
+
+      if (!sessionActive && webMotionEdge === 'closing') {
+        resetWebMotion(true, false);
+        return;
+      }
+      try { root.dataset.keyboardMotion = 'web-armed'; } catch { /* detached */ }
+    };
+    animation.oncancel = () => {
+      if (webFallbackAnimation === animation) webFallbackAnimation = null;
+    };
+    return true;
+  };
+
+  const prepareWebClosingEdge = () => {
+    if (isCapacitorNative || !webMotionArmed) return;
+
+    /* A very fast close may interrupt the opening fallback. Prefer the real
+       open layout as the new baseline rather than carrying a stale animation. */
+    if (webFallbackAnimation) {
+      cancelWebFallbackAnimation();
+      const target = webMotionTarget;
+      if (target) target.style.setProperty('transform', webTransform(webTranslateY), 'important');
+    }
+
+    webMotionEdge = 'closing';
+    webFallbackPlayed = false;
+
+    const target = webMotionTarget;
+    if (!target) return;
+    const paintedTop = Number(target.getBoundingClientRect().top);
+    if (!Number.isFinite(paintedTop)) return;
+    webLastLayoutTop = paintedTop - webTranslateY;
+  };
+
+  const detectCoarseLayoutJump = (
+    target: HTMLElement,
+    layoutTop: number,
+  ): boolean => {
+    const previous = webLastLayoutTop;
+    webLastLayoutTop = layoutTop;
+    if (previous == null) return false;
+    return startCoarseFallback(target, previous - layoutTop);
   };
 
   const syncWebMotionNow = () => {
     if (isCapacitorNative || !viewport || !baseline || !webMotionArmed) return;
-    if (mode === 'overlay') return;
+    if (mode === 'overlay' || webFallbackAnimation) return;
 
     const target = activeMotionTarget();
     if (!target || target !== webMotionTarget || webStartTop == null) return;
@@ -311,8 +459,8 @@ export function initKeyboardLift({
       Math.abs(baseline.shellBottom - currentShellBottom),
     );
 
-    /* If layout has not moved, this is an overlay-style viewport change.
-       Do not move the composer here; overlay mode will publish an inset. */
+    /* Without layout movement this is likely overlay mode. Let the overlay
+       branch own the lift rather than pre-emptively double-moving the input. */
     if (layoutEvidence < WEB_SYNC_LAYOUT_EVIDENCE_PX && mode !== 'native-resize') return;
 
     const visualHeight = Number.isFinite(Number(viewport.height))
@@ -322,14 +470,14 @@ export function initKeyboardLift({
       ? Math.max(0, Number(viewport.offsetTop))
       : 0;
 
-    /* Remove our own presentation translation to recover layout position. */
     const paintedTop = Number(target.getBoundingClientRect().top);
     if (!Number.isFinite(paintedTop)) return;
     const layoutTop = paintedTop - webTranslateY;
 
-    /* The real keyboard progress is encoded by VisualViewport shrink. Offset
-       is added back because getBoundingClientRect is layout-viewport based;
-       this makes the visible-screen movement independent of browser panning. */
+    /* If the browser exposed only start/end geometry, animate this one coarse
+       jump immediately. If it exposes progressive frames, no fallback starts. */
+    if (detectCoarseLayoutJump(target, layoutTop)) return;
+
     const visualShrink = Math.max(0, baseline.visualHeight - visualHeight);
     const offsetDelta = visualOffsetTop - baseline.visualOffsetTop;
     const desiredLayoutTop = webStartTop - visualShrink + offsetDelta;
@@ -341,6 +489,30 @@ export function initKeyboardLift({
     target.style.setProperty('transform', webTransform(webTranslateY), 'important');
     target.style.setProperty('will-change', 'transform', 'important');
     try { root.dataset.keyboardMotion = 'web-visual-viewport-sync'; } catch { /* detached */ }
+  };
+
+  const publishOverlayInset = (value: number) => {
+    if (isCapacitorNative || !webMotionArmed || !webMotionTarget || webFallbackAnimation) {
+      publishInset(value);
+      return;
+    }
+
+    const target = webMotionTarget;
+    const beforePaintedTop = Number(target.getBoundingClientRect().top);
+    const beforeLayoutTop = Number.isFinite(beforePaintedTop)
+      ? beforePaintedTop - webTranslateY
+      : null;
+
+    publishInset(value);
+
+    /* Force one post-write geometry read while still in the same task. This
+       lets a one-step CSS/layout lift be inverted before the next paint. */
+    const afterPaintedTop = Number(target.getBoundingClientRect().top);
+    if (!Number.isFinite(afterPaintedTop)) return;
+    const afterLayoutTop = afterPaintedTop - webTranslateY;
+
+    if (beforeLayoutTop != null) webLastLayoutTop = beforeLayoutTop;
+    detectCoarseLayoutJump(target, afterLayoutTop);
   };
 
   const clearNativeOpenTimer = () => {
@@ -366,9 +538,14 @@ export function initKeyboardLift({
   };
 
   const finishSession = () => {
+    const keepClosingFallback = Boolean(
+      webFallbackAnimation && webMotionEdge === 'closing',
+    );
+
     clearNativeOpenTimer();
     clearNativeHideTimer();
-    resetWebMotion();
+    if (!keepClosingFallback) resetWebMotion();
+
     sessionActive = false;
     mode = 'unknown';
     baseline = null;
@@ -459,15 +636,7 @@ export function initKeyboardLift({
       return;
     }
 
-    if (phase === 'closing' && geometryLooksRestored(g)) {
-      finishSession();
-      return;
-    }
-
     if (mode === 'native-resize') {
-      /* Browser path: transform is driven by VisualViewport progress rather
-         than a fixed animation duration. Capacitor path does not enter the
-         browser synchronizer at all. */
       syncWebMotionNow();
       publishInset(0);
       if (phase === 'opening' && (
@@ -475,23 +644,26 @@ export function initKeyboardLift({
       )) {
         setPhase('open');
       }
+
+      /* Handle the final closing geometry before tearing down motion state, so
+         a coarse restore can animate after the logical session has ended. */
+      if (phase === 'closing' && geometryLooksRestored(g)) finishSession();
       return;
     }
 
     if (mode === 'overlay') {
-      /* Overlay owns the lift; drop any pre-armed browser transform first. */
-      resetWebMotion();
-      publishInset(g.visibleCoverage);
+      publishOverlayInset(g.visibleCoverage);
       if (phase === 'opening' && g.visibleCoverage > KEYBOARD_OPEN_THRESHOLD_PX) {
         setPhase('open');
       }
-      if (geometryLooksRestored(g)) finishSession();
+      if (phase === 'closing' && geometryLooksRestored(g)) finishSession();
       return;
     }
 
     /* Unknown mode: synchronous resize callbacks may already be compensating
-       a real layout resize, but no CSS inset is published until mode is known. */
+       a real layout jump, but no CSS inset is published until ownership is known. */
     publishInset(0);
+    if (phase === 'closing' && geometryLooksRestored(g)) finishSession();
   };
 
   const onFrame = () => {
@@ -549,6 +721,7 @@ export function initKeyboardLift({
       return;
     }
 
+    prepareWebClosingEdge();
     setPhase('closing');
     sampleFor();
     if (blurTimer) clearTimeout(blurTimer);
@@ -559,8 +732,8 @@ export function initKeyboardLift({
   };
 
   const onVisualViewportGeometry = () => {
-    /* Same callback, before next paint: use the browser's own keyboard
-       viewport progress as our motion clock. */
+    /* The callback runs after geometry changes but before the next paint. A
+       coarse jump is inverted here immediately; progressive frames stay 1:1. */
     syncWebMotionNow();
     sampleFor();
     if (anchor.active) anchor.correct();
