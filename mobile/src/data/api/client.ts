@@ -284,6 +284,10 @@ export const filesApi = {
     return apiRequest<{ id: string; name: string; mimeType: string; size: number; kind: string }>('/files', { method: 'POST', body: form });
   },
   get: (id: string) => apiRequest<Record<string, unknown>>(`/files/${encodeURIComponent(id)}`),
+  rename: (id: string, name: string) => apiRequest<{ id: string; name: string }>(`/files/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify({ name }),
+  }),
+  remove: (id: string) => apiRequest<void>(`/files/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   content: (id: string) => apiRequest<{ ok: boolean; id: string; name: string; mimeType: string; kind: string; text: string; truncated: boolean; meta?: Record<string, unknown> }>(`/files/${encodeURIComponent(id)}/content`),
   rawUrl: (id: string) => `${API_BASE_URL}/files/${encodeURIComponent(id)}/raw`,
   async raw(id: string) {
@@ -297,6 +301,10 @@ export const filesApi = {
 export const artifactsApi = {
   list: () => apiRequest<{ artifacts: Array<Record<string, unknown>> }>('/artifacts'),
   get: (id: string) => apiRequest<Record<string, unknown>>(`/artifacts/${encodeURIComponent(id)}`),
+  rename: (id: string, title: string) => apiRequest<Record<string, unknown>>(`/artifacts/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify({ title }),
+  }),
+  remove: (id: string) => apiRequest<void>(`/artifacts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
 export const searchApi = {

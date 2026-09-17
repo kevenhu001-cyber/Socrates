@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
-import { useT } from '../i18n';
+import { useI18n, useT } from '../i18n';
+import { toast } from './Toast';
 import { AnimatedPressable } from './AnimatedPressable';
+import { useVoiceInput, type VoiceInputErrorCode, type VoiceInputStatus } from '../native/voiceInput';
 
 export type ReasoningEffort = 'low' | 'medium' | 'high';
 
@@ -20,20 +22,22 @@ export interface ComposerProps {
   onAttach: () => void;
   onChangeReasoningEffort?: (effort: ReasoningEffort) => void;
   onToggleWebSearch?: () => void;
-  onVoiceInput?: () => void;
   placeholder?: string;
   autoFocus?: boolean;
 }
 
-/* Reserved for the future STT recording indicator (frontend
- * `ui/voiceInput.js` voice-recording-stop). Currently unreferenced —
- * no speech-recognition engine is wired on mobile yet. */
-export function VoiceWaveBars({ color }: { color: string }) {
-  const bars = [6, 12, 18, 12, 6];
+/* Compact native version of frontend `.voice-recording-wave`. The Android
+ * recognizer emits volumechange events, so the bars respond to the actual
+ * microphone level instead of being a decorative static icon. */
+export function VoiceWaveBars({ color, level = 0.16 }: { color: string; level?: number }) {
+  const bars = [0.45, 0.72, 1, 0.78, 0.5, 0.82, 0.58];
   return (
     <View style={waveStyles.container} pointerEvents="none">
-      {bars.map((h, i) => (
-        <View key={i} style={[waveStyles.bar, { height: h, backgroundColor: color }]} />
+      {bars.map((scale, i) => (
+        <View
+          key={i}
+          style={[waveStyles.bar, { height: Math.round(4 + Math.min(1, level) * scale * 18), backgroundColor: color }]}
+        />
       ))}
     </View>
   );
@@ -87,6 +91,58 @@ export function ThinkDeeperGlyph({ size = 19, color }: { size?: number; color: s
   );
 }
 
+function formatVoiceDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function VoiceRecordingBar({
+  status,
+  transcript,
+  elapsedSeconds,
+  volume,
+  onStop,
+}: {
+  status: Exclude<VoiceInputStatus, 'idle'>;
+  transcript: string;
+  elapsedSeconds: number;
+  volume: number;
+  onStop: () => void;
+}) {
+  const { colors, typography } = useTheme();
+  const t = useT();
+  const label = status === 'stopping'
+    ? t('chat.voiceProcessing')
+    : status === 'starting'
+      ? t('chat.voiceStarting')
+      : t('chat.voiceListening');
+
+  return (
+    <View style={styles.voiceBar} testID="voice-recording-bar" accessibilityLiveRegion="polite">
+      <View style={[styles.voiceIndicator, { backgroundColor: colors.voiceBlue }]} />
+      <View style={styles.voiceCopy}>
+        <View style={styles.voiceLabelRow}>
+          <Text style={[styles.voiceLabel, { color: colors.text, fontFamily: typography.semibold }]}>{label}</Text>
+          <Text style={[styles.voiceTimer, { color: colors.textMuted, fontFamily: typography.mono }]}>{formatVoiceDuration(elapsedSeconds)}</Text>
+        </View>
+        <Text numberOfLines={1} style={[styles.voiceTranscript, { color: colors.textMuted, fontFamily: typography.body }]}>
+          {transcript || t('chat.voiceSpeak')}
+        </Text>
+      </View>
+      <VoiceWaveBars color={colors.voiceBlue} level={volume} />
+      <AnimatedPressable
+        accessibilityRole="button"
+        accessibilityLabel={t('chat.voiceStop')}
+        disabled={status === 'stopping'}
+        onPress={status === 'stopping' ? undefined : onStop}
+        style={[styles.voiceStop, { backgroundColor: withAlpha(colors.voiceBlue, 0.14), borderColor: withAlpha(colors.voiceBlue, 0.35) }]}
+      >
+        <Ionicons name="stop" size={14} color={colors.voiceBlue} />
+      </AnimatedPressable>
+    </View>
+  );
+}
+
 export function Composer({
   value,
   disabled = false,
@@ -99,15 +155,33 @@ export function Composer({
   onAttach,
   onChangeReasoningEffort,
   onToggleWebSearch,
-  onVoiceInput,
   placeholder,
   autoFocus = false,
 }: ComposerProps) {
   const { colors, typography, contentWidth, fontScale } = useTheme();
   const t = useT();
+  const { language } = useI18n();
   const ref = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
   const canSend = (value.trim().length > 0 || hasAttachments) && !disabled;
+
+  const handleVoiceError = (code: VoiceInputErrorCode) => {
+    const message = code === 'not-allowed'
+      ? t('chat.voicePermission')
+      : code === 'no-speech'
+        ? t('chat.voiceNoSpeech')
+        : code === 'unsupported' || code === 'service-not-allowed' || code === 'language-not-supported'
+          ? t('chat.voiceUnsupported')
+          : t('chat.voiceError');
+    toast.show(message, code === 'no-speech' ? 'info' : 'error');
+  };
+
+  const voice = useVoiceInput({
+    language,
+    existingText: value,
+    onChangeText,
+    onError: handleVoiceError,
+  });
 
   // An expanded 2-row layout is shown when the user focuses, types multi-line, or enters text
   const isExpanded = focused || value.includes('\n') || value.length > 30;
@@ -134,18 +208,21 @@ export function Composer({
    * glyph). mobile previously painted it accent at all times. */
   const sendIdleBg = colors.surfaceHover;
   const sendIdleFg = colors.textMuted;
+  const voiceRecording = voice.status !== 'idle';
 
   return (
     <View
       style={[
-        isExpanded ? styles.containerExpanded : styles.containerCapsule,
+        voiceRecording ? styles.containerVoice : isExpanded ? styles.containerExpanded : styles.containerCapsule,
         {
           /* `--surface-input` / modal surfaces in frontend all resolve to
            * `--bg-000`, so the composer sits on the overlay token. */
           backgroundColor: colors.surfaceRaised,
           /* frontend: `border-color: hsl(var(--border-300)/0.24)` at rest,
            * brightening to the accent at 45% when focused. */
-          borderColor: focused
+          borderColor: voiceRecording
+            ? withAlpha(colors.voiceBlue, 0.55)
+            : focused
             ? withAlpha(colors.accent, 0.45)
             : withAlpha(colors.border, 0.24),
           /* frontend `.chat-input-wrap` / `.topic-input-wrap` both use a
@@ -158,15 +235,18 @@ export function Composer({
         },
       ]}
     >
-      {!isExpanded ? (
+      {voiceRecording ? (
+        <VoiceRecordingBar
+          status={voice.status === 'idle' ? 'starting' : voice.status}
+          transcript={voice.liveTranscript}
+          elapsedSeconds={voice.elapsedSeconds}
+          volume={voice.volume}
+          onStop={voice.stop}
+        />
+      ) : !isExpanded ? (
         /* Single-row resting capsule — frontend layout is
-         * attach + text + send only (`src/ui/composerTools.js` popover
-         * owns tools). The standalone mic + wave idle button was a
-         * mobile-only fork (see frontend-parity.md Composer 🔴) and is
-         * removed for 1:1. NOTE: voice input (STT) is not implemented
-         * on mobile yet — `speech.ts` is TTS-only while frontend has
-         * `ui/voiceInput.js` (SpeechRecognition). Do not re-add a mic
-         * button until an STT engine is wired. */
+         * attach + text + send. Voice input is implemented by the native
+         * SpeechRecognizer and swaps this row for the live recording bar. */
         <View style={styles.singleRow}>
           {/* Plus button */}
           <AnimatedPressable
@@ -203,8 +283,9 @@ export function Composer({
           <View style={styles.singleRightActions}>
             <AnimatedPressable
               accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
-              onPress={onVoiceInput}
-              style={styles.micBtn}
+              accessibilityState={{ selected: voiceRecording }}
+              onPress={voice.start}
+              style={[styles.micBtn, voiceRecording ? { backgroundColor: colors.accentSoft } : null]}
             >
               <Ionicons name="mic-outline" size={20} color={iconColor} />
             </AnimatedPressable>
@@ -274,10 +355,9 @@ export function Composer({
               <Ionicons name="add" size={20} color={iconColor} />
             </AnimatedPressable>
 
-            {/* Right actions: Think deeper + Web search + Send.
+            {/* Right actions: Think deeper + Web search + Voice + Send.
              * Mirrors the expanded composer toolbar (effort + search
-             * live here, not as floating buttons). Voice input stays
-             * in the attach sheet. */}
+             * live here, not as floating buttons). */}
             <View style={styles.expandedRightRow}>
               {/* Think deeper dome glyph */}
               <AnimatedPressable
@@ -312,8 +392,9 @@ export function Composer({
 
               <AnimatedPressable
                 accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
-                onPress={onVoiceInput}
-                style={styles.circleBtn}
+                accessibilityState={{ selected: voiceRecording }}
+                onPress={voice.start}
+                style={[styles.circleBtn, voiceRecording ? { backgroundColor: colors.accentSoft } : null]}
               >
                 <Ionicons name="mic-outline" size={20} color={iconColor} />
               </AnimatedPressable>
@@ -393,6 +474,49 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 14,
     elevation: 6,
+  },
+  containerVoice: {
+    minHeight: 78,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  voiceBar: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  voiceIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  voiceCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  voiceLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  voiceLabel: {
+    fontSize: 13,
+  },
+  voiceTimer: {
+    fontSize: 11,
+  },
+  voiceTranscript: {
+    marginTop: 4,
+    fontSize: 12,
+  },
+  voiceStop: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   singleRow: {
     flexDirection: 'row',

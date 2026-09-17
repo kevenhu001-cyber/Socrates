@@ -239,6 +239,7 @@ export const MessageBubble = React.memo(function MessageBubble({
           <CanvasBlock
             originalText={text}
             initialEditedText={canvasMessage.editedText}
+            persistKey={canvasMessage.canvasId || canvasMessage.id || canvasMessage.clientId || undefined}
             label={canvasMessage._extensionLabel || undefined}
             onIterate={onIterate}
           />

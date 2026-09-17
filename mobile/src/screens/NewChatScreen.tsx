@@ -15,7 +15,6 @@ import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/atta
 import { native } from '../native/native';
 import type { RootStackParamList } from '../navigation/types';
 import { useResponsive } from '../theme/responsive';
-import { toast } from '../components/Toast';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -279,7 +278,6 @@ export function NewChatScreen({ navigation, route }: Props) {
             onAttach={onAttach}
             onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
             onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
-            onVoiceInput={() => toast.show(t('chat.voiceUnavailable') || 'Voice input is not available on this device yet.', 'info')}
             placeholder={t('chat.inputPlaceholder')}
           />
         </View>
