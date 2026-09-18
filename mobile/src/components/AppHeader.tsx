@@ -67,7 +67,10 @@ export function AppHeader({
   const t = useT();
   const { openDrawer } = useAppDrawer();
   const { isCompact } = useResponsive();
-  const renderModeSwitch = showModeSwitch && !isCompact;
+  // The final mobile web cascade force-keeps the shared Chat / Tutor
+  // segmented control on the empty landing surface. Earlier mobile CSS used
+  // a dropdown, which is why the native implementation used to hide this.
+  const renderModeSwitch = showModeSwitch;
   const renderTitle = Boolean(title) && !(isCompact && conversationActive);
   const titleModelAnchor = useRef<View>(null);
   const landingModelAnchor = useRef<View>(null);
@@ -108,15 +111,18 @@ export function AppHeader({
       <AnimatedPressable
         accessibilityLabel={t('common.openNavigation') || 'Open navigation'}
         onPress={openDrawer}
+        hitSlop={isCompact ? 8 : undefined}
         scale={isCompact ? 0.94 : 0.92}
         style={[
           styles.circleBtn,
           isCompact ? styles.circleBtnCompact : null,
-          { borderColor: colors.border, backgroundColor: circleBg },
+          {
+            borderColor: isCompact ? 'transparent' : colors.border,
+            backgroundColor: isCompact ? 'transparent' : circleBg,
+          },
         ]}
       >
         <HamburgerLines color={colors.text} />
-        {isCompact ? <View style={[styles.statusDot, { backgroundColor: colors.voiceBlue, borderColor: colors.background }]} /> : null}
       </AnimatedPressable>
 
       {/* Center: Mode segmented switch or Title */}
@@ -152,6 +158,7 @@ export function AppHeader({
                 <Text
                   style={[
                     styles.modeText,
+                    isCompact ? styles.modeTextCompact : null,
                     {
                       color: selected ? colors.text : colors.textMuted,
                       fontFamily: selected ? typography.bold : typography.medium,
@@ -254,17 +261,22 @@ export function AppHeader({
             <AnimatedPressable
               accessibilityLabel={isIncognito ? 'Incognito active' : (t('sidebar.nav.new') || 'Conversation')}
               onPress={onToggleIncognito || onNewChat}
+              hitSlop={isCompact ? 8 : undefined}
               scale={isCompact ? 0.94 : 0.92}
               style={[
                 styles.circleBtn,
                 isCompact ? styles.circleBtnCompact : null,
                 {
-                  borderColor: isIncognito ? colors.accent : colors.border,
-                  backgroundColor: isIncognito ? colors.accentSoft : circleBg,
+                  borderColor: isCompact ? 'transparent' : (isIncognito ? colors.accent : colors.border),
+                  backgroundColor: isIncognito
+                    ? colors.accentSoft
+                    : isCompact
+                      ? 'transparent'
+                      : circleBg,
                 },
               ]}
             >
-              <Ionicons name="glasses-outline" size={isCompact ? 24 : 19} color={isIncognito ? colors.accent : colors.textMuted} />
+              <Ionicons name="glasses-outline" size={isCompact ? 16 : 19} color={isIncognito ? colors.accent : colors.textMuted} />
             </AnimatedPressable>
           </View>
         )}
@@ -305,18 +317,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   circleBtnCompact: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  statusDot: {
-    position: 'absolute',
-    top: 6,
-    right: 5,
-    width: 8,
-    height: 8,
-    borderWidth: 1.5,
-    borderRadius: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   modeSegment: {
     flexDirection: 'row',
@@ -344,6 +349,9 @@ const styles = StyleSheet.create({
   },
   modeText: {
     fontSize: 14.5,
+  },
+  modeTextCompact: {
+    fontSize: 16,
   },
   titleContainer: {
     flex: 1,

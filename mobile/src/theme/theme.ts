@@ -186,20 +186,20 @@ export const radius = {
 
 export const typography = {
   body: Platform.select({
-    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    default: 'Inter_400Regular',
+    web: '"Plus Jakarta Sans", Inter, "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    default: 'PlusJakartaSans_400Regular',
   }) as string,
   medium: Platform.select({
-    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    default: 'Inter_500Medium',
+    web: '"Plus Jakarta Sans", Inter, "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    default: 'PlusJakartaSans_500Medium',
   }) as string,
   semibold: Platform.select({
-    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    default: 'Inter_600SemiBold',
+    web: '"Plus Jakarta Sans", Inter, "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    default: 'PlusJakartaSans_600SemiBold',
   }) as string,
   bold: Platform.select({
-    web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    default: 'Inter_700Bold',
+    web: '"Plus Jakarta Sans", Inter, "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    default: 'PlusJakartaSans_700Bold',
   }) as string,
   display: Platform.select({
     web: '"Newsreader", Georgia, Cambria, "Times New Roman", Times, serif',
@@ -210,9 +210,8 @@ export const typography = {
     default: 'NotoSansSC_400Regular',
   }) as string,
   mono: Platform.select({
-    web: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-    android: 'monospace',
-    default: 'Courier New',
+    web: '"JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace',
+    default: 'JetBrainsMono_400Regular',
   }) as string,
   // font sizes match the web mobile 10/11/12/13/14/15/16/18/22/26/30/34 ramp
   sizes: {

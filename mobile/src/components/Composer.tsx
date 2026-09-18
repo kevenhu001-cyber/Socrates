@@ -174,6 +174,7 @@ export function Composer({
   const attachAnchorRef = useRef<View>(null);
   const effortAnchorRef = useRef<View>(null);
   const [focused, setFocused] = useState(false);
+  const [editorHeight, setEditorHeight] = useState(50);
   const [effortPickerOpen, setEffortPickerOpen] = useState(false);
   const [effortAnchor, setEffortAnchor] = useState<EffortPickerAnchor | null>(null);
   const canSend = (value.trim().length > 0 || hasAttachments) && !disabled;
@@ -258,7 +259,7 @@ export function Composer({
           borderColor: voiceRecording
             ? withAlpha(colors.voiceBlue, 0.55)
             : focused
-            ? withAlpha(colors.accent, 0.45)
+            ? withAlpha(colors.accent, 0.6)
             : withAlpha(colors.border, 0.24),
           /* frontend `.chat-input-wrap` / `.topic-input-wrap` both use a
            * 28px pill radius. The previous 16 was a pre-align value. */
@@ -370,12 +371,18 @@ export function Composer({
             placeholderTextColor={colors.textMuted}
             style={[
               styles.expandedInput,
+              isCompact ? { height: editorHeight } : null,
               {
                 color: colors.text,
                 fontFamily: typography.body,
               },
             ]}
             autoFocus={autoFocus}
+            onContentSizeChange={(event) => {
+              if (!isCompact) return;
+              const next = Math.max(50, Math.min(220, Math.ceil(event.nativeEvent.contentSize.height)));
+              setEditorHeight((current) => current === next ? current : next);
+            }}
             returnKeyType="default"
             blurOnSubmit={false}
           />
@@ -527,8 +534,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     minHeight: 104,
     borderWidth: 1,
-    paddingTop: 10,
-    paddingBottom: 8,
+    paddingVertical: 0,
     paddingHorizontal: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -603,13 +609,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expandedInput: {
-    minHeight: 42,
+    minHeight: 40,
     maxHeight: 220,
     fontSize: 17,
     lineHeight: 24,
     paddingHorizontal: 4,
-    paddingTop: 8,
-    paddingBottom: 5,
+    paddingTop: 16,
+    paddingBottom: 4,
     textAlignVertical: 'top',
   },
   expandedFooter: {
