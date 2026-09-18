@@ -82,9 +82,17 @@ export function NewChatScreen({ navigation, route }: Props) {
   };
 
   const send = async () => {
-    if (!state.draft.trim() && !state.pendingAttachments.length) return;
-    navigation.navigate('Chat');
+    const text = state.draft.trim();
+    if ((!text && !state.pendingAttachments.length) || state.isStreaming) return;
     await native.vibrate('light');
+    if (mode === 'tutor') {
+      // Web Tutor requires a textual topic before diagnostics; attachments
+      // remain queued and are attached to the first visible topic turn.
+      if (!text) return;
+      navigation.navigate('Tutor', { initialTopic: text });
+      return;
+    }
+    navigation.navigate('Chat');
     await appStore.sendMessage(state.draft);
   };
 
