@@ -72,7 +72,7 @@ export function MoreScreen({ navigation }: Props) {
         navigation.navigate('Embedded', { target: 'api-settings', title: t('sidebar.more.settings') || 'API settings' });
         break;
       case 'display':
-        navigation.navigate('Embedded', { target: 'display', title: t('sidebar.more.display') || 'Display & theme' });
+        navigation.navigate('Display');
         break;
       case 'shortcuts':
         navigation.navigate('Embedded', { target: 'shortcuts', title: t('sidebar.more.shortcuts') || 'Keyboard shortcuts' });
