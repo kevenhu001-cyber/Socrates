@@ -27,6 +27,7 @@ import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { shareModal } from '../components/ShareModal';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { native } from '../native/native';
