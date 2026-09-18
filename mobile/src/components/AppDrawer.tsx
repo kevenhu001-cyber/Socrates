@@ -109,11 +109,11 @@ const DRAWER_LABELS = {
  * the embedded skills surface, matching `index.html` skills iframe. */
 const PRIMARY_ITEMS: DrawerItem[] = [
   { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'add-circle-outline' },
-  { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
-  { route: 'Library', label: DRAWER_LABELS.library, icon: 'library-outline' },
-  { route: 'Scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
-  { route: 'Plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
-  { route: 'ExamSession', label: DRAWER_LABELS.exam, icon: 'document-text-outline' },
+  { target: 'projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
+  { target: 'library', label: DRAWER_LABELS.library, icon: 'library-outline' },
+  { target: 'scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
+  { target: 'plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
+  { target: 'exam', label: DRAWER_LABELS.exam, icon: 'document-text-outline' },
   { target: 'skills', label: DRAWER_LABELS.skills, icon: 'sparkles-outline' },
 ];
 
