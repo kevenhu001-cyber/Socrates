@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, BackHandler, Keyboard, Platform, StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import {
   NavigationContainer,
   createNavigationContainerRef,
@@ -315,19 +316,21 @@ export default function App() {
   }, [fontsLoaded]);
 
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <View onLayout={revealApp} style={styles.root} testID="app-root">
-        <ErrorBoundary>
-          <ThemeProvider>
-            <I18nProvider>
-              <AppDrawerProvider>
-                <NativeApp />
-              </AppDrawerProvider>
-            </I18nProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-      </View>
-    </SafeAreaProvider>
+    <KeyboardProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <View onLayout={revealApp} style={styles.root} testID="app-root">
+          <ErrorBoundary>
+            <ThemeProvider>
+              <I18nProvider>
+                <AppDrawerProvider>
+                  <NativeApp />
+                </AppDrawerProvider>
+              </I18nProvider>
+            </ThemeProvider>
+          </ErrorBoundary>
+        </View>
+      </SafeAreaProvider>
+    </KeyboardProvider>
   );
 }
 
