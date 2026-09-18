@@ -273,14 +273,14 @@ export const KATEX_MACROS: Record<string, string> = {
    out of the box — so the heuristic stops misclassifying bare
    bracket/paren math from weak models. */
 export const LATEX_COMMANDS_RE =
-  /\\(frac|int|sum|prod|partial|nabla|sqrt|mathcal|mathrm|mathbf|mathit|boldsymbol|text|textbf|textit|varepsilon|alpha|beta|gamma|delta|theta|lambda|mu|pi|sigma|phi|omega|tau|to|infty|cdotp|cdot|times|div|pm|leq|geq|neq|approx|equiv|sim|propto|leftarrow|rightarrow|Leftarrow|Rightarrow|leftrightarrow|Leftrightarrow|in|notin|subset|supset|cup|cap|emptyset|mathbb|binom|over|underline|hat|bar|vec|tilde|dot|ddot|acute|grave|breve|check|mathring|widehat|widetilde|overrightarrow|overleftarrow|Overrightarrow|overleftrightarrow|widecheck|overbrace|underbrace|overline|fbox|boxed|textcolor|color|cancelto|xrightarrow|xleftarrow|stackrel|overset|underset|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases|begin|end|small|large|left|right|big|Big|bigg|Bigg|displaystyle|textstyle|scriptstyle|scriptscriptstyle)/;
+  /\\(frac|int|sum|prod|partial|nabla|sqrt|mathcal|mathrm|mathbf|mathit|boldsymbol|bm|text|textbf|textit|varepsilon|alpha|beta|gamma|delta|theta|lambda|mu|pi|sigma|phi|omega|tau|to|infty|cdotp|cdot|times|div|pm|leq|geq|neq|le|ge|ne|approx|equiv|sim|propto|leftarrow|rightarrow|Leftarrow|Rightarrow|leftrightarrow|Leftrightarrow|in|notin|subset|supset|cup|cap|emptyset|mathbb|binom|over|underline|hat|bar|vec|tilde|dot|ddot|acute|grave|breve|check|mathring|widehat|widetilde|overrightarrow|overleftarrow|Overrightarrow|overleftrightarrow|widecheck|overbrace|underbrace|overline|fbox|boxed|textcolor|color|cancelto|xrightarrow|xleftarrow|stackrel|overset|underset|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases|begin|end|small|large|left|right|big|Big|bigg|Bigg|displaystyle|textstyle|scriptstyle|scriptscriptstyle|lim|sin|cos|tan|cot|sec|csc|ln|log|exp|dots|cdots|ldots|ddots|vdots|quad|qquad|forall|exists|prime)/;
 
 /* Heuristic: a block of text looks like LaTeX if it contains (a) any
    LaTeX command, OR (b) at least one math operator (=, +, −, ×,
    etc.) AND at least one letter. The second branch catches simple
    expressions like "x = 1" that have no LaTeX commands but are
    clearly math. */
-export const MATH_OPERATOR_RE = /[=+\-×÷≤≥≠→←⇒⇔∫∑∏∂√∞∈∉⊂⊃±∓]/;
+export const MATH_OPERATOR_RE = /[=+\-×÷≤≥≠<>→←⇒⇔∫∑∏∂√∞∈∉⊂⊃±∓]/;
 export const HAS_LETTER_RE = /[a-zA-Z\\]/;
 
 export function _looksLikeLatex(s: string): boolean {

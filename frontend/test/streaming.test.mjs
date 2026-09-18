@@ -512,3 +512,92 @@ test('chat-artifact stripping is unchanged by the fast-path guard', () => {
   // Falsy passthrough (guards the early return).
   assert.equal(stripChatArtifacts(''), '');
 });
+
+test('coordinate tuples, intervals, and parameter pairs render as KaTeX', () => {
+  withKatex(() => {
+    for (const expr of ['$(0, 0)$', '$(0,0)$', '$(x, y)$', '$(a, b)$', '$(1, 2)$', '$(-1, 1)$', '$[0, 1]$']) {
+      const progressive = renderProgressive(`点 ${expr} 处导数`);
+      assert.match(progressive, /class="katex/, `${expr} must render as KaTeX in progressive pass`);
+      assert.doesNotMatch(progressive, /\$\(/, `${expr} must not leave raw dollars`);
+    }
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('在 $(0,0)$ 与 $(x, y)$ 处偏导数都存在');
+      assert.match(final, /class="katex/);
+      assert.doesNotMatch(final, /\$\(/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
+test('fractions, arithmetic, and mathematical zero render as KaTeX', () => {
+  withKatex(() => {
+    for (const frac of ['$1/2$', '$3/4$', '$-1/2$', '$22/7$']) {
+      const out = renderProgressive(`极限为 ${frac}`);
+      assert.match(out, /class="katex/, `${frac} must render in progressive pass`);
+      assert.doesNotMatch(out, /\$1\/2\$/);
+    }
+
+    const zero = renderProgressive('极限不为 $0$ 且为 $-0$');
+    assert.match(zero, /class="katex/);
+    assert.doesNotMatch(zero, /\$0\$/);
+
+    const arith = renderProgressive('计算 $1 + 1 = 2$ 与 $1 < 2$');
+    assert.match(arith, /class="katex/);
+    assert.doesNotMatch(arith, /\$1 \+ 1 = 2\$/);
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('极限为 $1/2$，不为 $0$，且 $1 + 1 = 2$');
+      assert.match(final, /class="katex/);
+      assert.doesNotMatch(final, /\$1\/2\$/);
+      assert.doesNotMatch(final, /\$0\$/);
+      assert.doesNotMatch(final, /\$1 \+ 1 = 2\$/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
+test('multiline blockquote math and unsupported LaTeX environments are tolerated', () => {
+  withKatex(() => {
+    const bqMath = '> $$\n> x = 1\n> y = 2\n> $$';
+    const progressive = renderProgressive(bqMath);
+    assert.match(progressive, /class="katex/);
+    assert.doesNotMatch(progressive, /<blockquote>|&gt;/);
+
+    const eqn = '$$\\begin{eqnarray} x &= 1 \\\\ y &= 2 \\end{eqnarray}$$';
+    const eqnOut = renderProgressive(eqn);
+    assert.match(eqnOut, /class="katex/);
+    assert.doesNotMatch(eqnOut, /katex-error/);
+
+    const alignedat = '$$\\begin{alignedat} x &= 1 \\end{alignedat}$$';
+    const alignedatOut = renderProgressive(alignedat);
+    assert.match(alignedatOut, /class="katex/);
+    assert.doesNotMatch(alignedatOut, /katex-error/);
+
+    const unclosedAligned = '$$\\begin{aligned} x &= 1$$';
+    const unclosedOut = renderProgressive(unclosedAligned);
+    assert.match(unclosedOut, /class="katex/);
+    assert.doesNotMatch(unclosedOut, /katex-error/);
+
+    const labeled = '$$x = 1 \\label{eq:one}$$';
+    const labeledOut = renderProgressive(labeled);
+    assert.match(labeledOut, /class="katex/);
+    assert.doesNotMatch(labeledOut, /katex-error/);
+  });
+});

@@ -46,7 +46,9 @@ export function preprocessMarkdown(t: string | null | undefined): string {
     return _stash('\\(' + m.slice(2, -2).trim() + '\\)');
   });
 
-  s = s.replace(/\$\$\s+([\s\S]+?)\s+\$\$/g, '$$$$' + '$1' + '$$$$');
+  s = s.replace(/\$\$\s*([\s\S]+?)\s*\$\$/g, function (_, inner: string) {
+    return '$$' + inner.trim() + '$$';
+  });
 
   s = s.replace(/(^|\n)\$([^$\n]+(?:\\\\[^$\n]*)*)\$(\s*\n|$)/g, function (_, lead: string, math: string, tail: string) {
     return lead + '$$' + math + '$$' + tail;
@@ -106,11 +108,14 @@ export function preprocessMarkdown(t: string | null | undefined): string {
      setext-with-3-dashes case. */
   s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
 
-  /* Strip blockquote markers from lines that contain only math.
-     Weak models sometimes wrap a standalone formula in `> $$...$$`
+  /* Strip blockquote markers from lines that contain math.
+     Weak models sometimes wrap a formula in `> $$...$$` (even multi-line)
      or `> $...$`, which marked parses as a blockquote and renders
      with a left border bar that looks like a spurious `>` symbol. */
-  s = s.replace(/^[ \t]*>[ \t]*(\$\$[\s\S]*?\$\$)[ \t]*$/gm, '$1');
+  s = s.replace(/(?:^|\n)(?:[ \t]*>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, inner: string) {
+    const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
+    return '\n$$\n' + cleaned.trim() + '\n$$';
+  });
   s = s.replace(/^[ \t]*>[ \t]*(\$[^\n$]+\$)[ \t]*$/gm, '$1');
 
   const fenceMatch = s.match(/```/g);
@@ -189,7 +194,10 @@ export function preprocessMarkdownForStreaming(t: string | null | undefined): st
   s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
   /* Strip blockquote markers from standalone math lines (mirrors
      the same fix in preprocessMarkdown). */
-  s = s.replace(/^[ \t]*>[ \t]*(\$\$[\s\S]*?\$\$)[ \t]*$/gm, '$1');
+  s = s.replace(/(?:^|\n)(?:[ \t]*>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, inner: string) {
+    const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
+    return '\n$$\n' + cleaned.trim() + '\n$$';
+  });
   s = s.replace(/^[ \t]*>[ \t]*(\$[^\n$]+\$)[ \t]*$/gm, '$1');
   s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
   s = fixMarkdownTableSeparators(s);

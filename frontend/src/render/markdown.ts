@@ -508,6 +508,30 @@ function _looksLikeInlineMath(s: string): boolean {
   const trimmed = String(s).trim();
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
+
+  /* Exclude bare positive currency / plain amounts without math symbols
+     (e.g. "5", "100", "1,000", "5.00"), preserving tests like 'amount $5$ only'. */
+  if (/^[1-9]\d*(?:,\d{3})*(?:\.\d+)?$/.test(trimmed)) return false;
+
+  /* Zero is a fundamental mathematical value (e.g. "极限为 $0$"). */
+  if (/^[+-]?0(?:\.0+)?$/.test(trimmed)) return true;
+
+  /* Coordinates, intervals, and tuples: e.g. "(0, 0)", "(0,0)", "(x, y)", "(-1, 1)", "(a, b)", "[0, 1]" */
+  if (/^[([][^()[\]]+,[^()[\]]+[)\]]$/.test(trimmed)) {
+    return SPACED_MATH_CHARS_RE.test(trimmed);
+  }
+
+  /* Fractions: e.g. "1/2", "3/4", "-1/2", "22/7", "a/b", "x/y" */
+  if (/^[+-]?(?:\d+|[A-Za-z])\s*\/\s*(?:\d+|[A-Za-z])$/.test(trimmed)) return true;
+
+  /* Arithmetic / relational expressions with numbers & operators, e.g. "1 + 1 = 2", "1 < 2", "1+1=2" */
+  if (/[=+\-×÷*/≤≥≠<>~≈±∓]/.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed)) {
+    const words = trimmed.match(/[a-z]{2,}/g);
+    if (!words || words.every(w => /^(sin|cos|tan|cot|sec|csc|log|ln|exp|max|min|lim|det|gcd|deg|mod)$/.test(w))) {
+      return true;
+    }
+  }
+
   if (!/[A-Za-z]/.test(trimmed)) return false;
   if (!/\s/.test(trimmed)) return _isCompactMathToken(trimmed);
   return SPACED_CALL_RE.test(trimmed)
@@ -526,6 +550,15 @@ function _looksLikeInlineMathTail(s: string): boolean {
   const trimmed = String(s).trim();
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
+
+  /* Live open coordinates / tuples, e.g. "设在 $(0, 0" or "设 $(x, y" */
+  if (/^\([A-Za-z0-9\s,.'"+\-*/|=<>!:;\\^_{}[\]]*$/.test(trimmed) && trimmed.includes(',')) {
+    return true;
+  }
+
+  /* Live open fractions, e.g. "$1/" */
+  if (/^[+-]?(?:\d+|[A-Za-z])\s*\/$/.test(trimmed)) return true;
+
   if (/\s/.test(trimmed)) {
     return SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed);
   }
@@ -569,15 +602,29 @@ function renderStreamMath(math: string, displayMode: boolean, unclosed: boolean)
     katex.renderToString(source, tolerant ? { ...opts, throwOnError: false } : opts);
 
   let source = String(math).trim();
+
+  /* Strip leading blockquote markers */
+  source = source.replace(/^[ \t]*>[ \t]?/gm, '');
+
+  /* Map unsupported environments and fix common model LaTeX slips */
+  source = source
+    .replace(/\\begin\{eqnarray\*?\}/g, '\\begin{aligned}')
+    .replace(/\\end\{eqnarray\*?\}/g, '\\end{aligned}')
+    .replace(/\\begin\{alignedat\}(?!\{)/g, '\\begin{alignedat}{2}')
+    .replace(/\\label\{[^}]*\}/g, '');
+
+  if (!displayMode) {
+    source = source.replace(/\\tag\*?\{[^}]*\}/g, '');
+  }
+
   /* Complete, valid math — the common case — renders in one pass. */
   try {
     return render(source, false);
   } catch (_) { /* incomplete or malformed — tolerant passes below */ }
 
-  if (unclosed) {
-    /* Auto-close `\begin{aligned} …` so the rows typed so far render
-       live instead of hiding behind the missing `\end{aligned}`. */
-    const closed = closeUnclosedEnvironments(source);
+  /* Always attempt to auto-close environments if strict pass failed */
+  const closed = closeUnclosedEnvironments(source);
+  if (closed !== source) {
     try {
       return render(closed, false);
     } catch (_) { /* still structurally incomplete */ }
@@ -782,7 +829,7 @@ function _formatMsgProgressive(t: string): string {
     /* Closed display math. */
     s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
+      return html === null ? save('<span class="math-stream-pending">' + escHTML('$$' + math + '$$') + '</span>') : save(html);
     });
     /* Display math still arriving: the closing `$$` has not appeared.
        Auto-close open environments and neutralize parse-error spans so
@@ -790,7 +837,7 @@ function _formatMsgProgressive(t: string): string {
        "completes" when the last token lands. */
     s = s.replace(/\$\$([\s\S]+)$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, true);
-      return html === null ? _ : save(html);
+      return html === null ? save('<span class="math-stream-pending">' + escHTML('$$' + math) + '</span>') : save(html);
     });
   }
 
@@ -1003,7 +1050,7 @@ function _formatMsg(t: string): string {
   if (typeof katex !== 'undefined') {
     procT = procT.replace(/\$\$([\s\S]+?)\$\$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, false);
-      return html === null ? _ : save(html);
+      return html === null ? save('<span class="math-stream-pending">' + escHTML('$$' + math + '$$') + '</span>') : save(html);
     });
     /* Final pass on a message whose `$$` never closed (truncated output,
        a Stop mid-formula). Auto-close open environments and neutralize
@@ -1011,7 +1058,7 @@ function _formatMsg(t: string): string {
        instead of a red KaTeX error block. */
     procT = procT.replace(/\$\$([\s\S]+?)$/g, function (_, math: string) {
       const html = renderStreamMath(math, true, true);
-      return html === null ? _ : save(html);
+      return html === null ? save('<span class="math-stream-pending">' + escHTML('$$' + math) + '</span>') : save(html);
     });
 
     procT = procT.replace(/\$([\s\S]+?)\$/g, function (m, math: string) {
@@ -1236,9 +1283,7 @@ export function stripMarkdown(s: string | null | undefined): string {
     .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')
     .replace(/```[\s\S]*?```/g, '')
     .replace(/~~~[\s\S]*?~~~/g, '')
-    .replace(/\$\$([^$]*)\$\$/g, function (m, inner: string) {
-      return _looksLikeInlineMath(inner.trim()) ? '' : m;
-    })
+    .replace(/\$\$[\s\S]*?\$\$/g, '')
     .replace(/\$([^$]*)\$/g, function (m, inner: string) {
       return _looksLikeInlineMath(inner.trim()) ? '' : m;
     })
