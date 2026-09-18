@@ -2,6 +2,7 @@ import type { EmbeddedTarget, MobileWebViewMessage } from '@socrates/contracts';
 
 export const EMBEDDED_TARGETS: readonly EmbeddedTarget[] = [
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
+  'profile', 'usage', 'storage',
 ];
 
 export function isEmbeddedTarget(value: unknown): value is EmbeddedTarget {
