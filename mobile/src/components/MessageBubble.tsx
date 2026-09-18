@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import type { Message } from '@socrates/contracts';
@@ -10,7 +10,6 @@ import { Markdown } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
 import { AnimatedPressable } from './AnimatedPressable';
 import { CanvasBlock } from './CanvasBlock';
-import { messagesApi } from '../data/api/client';
 import { setClipboardText } from '../native/clipboard';
 import * as Speech from '../native/speech';
 
@@ -18,6 +17,12 @@ interface MessageBubbleProps {
   message: Message;
   isLastAssistant?: boolean;
   onRetry?: () => void;
+  onEdit?: (messageId: string, text: string) => void | Promise<void>;
+  onDelete?: (messageId: string) => void | Promise<void>;
+  onShare?: () => void | Promise<void>;
+  onRegenerate?: (messageId: string) => void | Promise<void>;
+  onBranch?: (messageId: string, options?: { reExplain?: boolean }) => void | Promise<void>;
+  onFeedback?: (messageId: string, rating: 'up' | 'down' | 'none') => void | Promise<void>;
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
   onIterate?: (text: string) => void;
@@ -236,6 +241,12 @@ export const MessageBubble = React.memo(function MessageBubble({
   message,
   isLastAssistant = false,
   onRetry,
+  onEdit,
+  onDelete,
+  onShare,
+  onRegenerate,
+  onBranch,
+  onFeedback,
   highlight,
   onIterate,
 }: MessageBubbleProps) {
@@ -243,6 +254,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   const t = useT();
   const isUser = message.role === 'user';
   const text = message.rawText || message.content || '';
+  const messageId = String(message.id || message.clientId || '');
   const canvasMessage = message as CanvasMessage;
   const isCanvas = !isUser && canvasMessage.outputMode === 'canvas' && Boolean(canvasMessage.canvasId);
   const streaming = message.type === 'streaming';
@@ -250,17 +262,36 @@ export const MessageBubble = React.memo(function MessageBubble({
   const [speaking, setSpeaking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [thinkingPanelOpen, setThinkingPanelOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(text);
 
   useEffect(() => () => { void Speech.stop(); }, []);
+  useEffect(() => {
+    if (!editing) setEditValue(text);
+  }, [editing, text]);
 
   const rate = async (next: 'up' | 'down') => {
     const value = rating === next ? 'none' : next;
     setRating(value);
-    if (message.id) {
-      await messagesApi.feedback(message.id, value).catch((err) => {
+    if (messageId && onFeedback) {
+      await Promise.resolve(onFeedback(messageId, value)).catch((err) => {
         console.warn('[MessageBubble] Failed to submit feedback:', err);
       });
     }
+  };
+
+  const commitEdit = async () => {
+    if (!editing) return;
+    setEditing(false);
+    const next = editValue.trim();
+    if (!messageId || !next || next === text.trim() || !onEdit) {
+      setEditValue(text);
+      return;
+    }
+    await Promise.resolve(onEdit(messageId, next)).catch((err) => {
+      console.warn('[MessageBubble] Failed to edit message:', err);
+      setEditValue(text);
+    });
   };
 
   const copyText = async () => {
@@ -358,7 +389,25 @@ export const MessageBubble = React.memo(function MessageBubble({
 
         {/* Message Content: Plain selectable text for user, Markdown for assistant */}
         {isUser ? (
-          text ? (
+          editing ? (
+            <TextInput
+              autoFocus
+              multiline
+              value={editValue}
+              onChangeText={setEditValue}
+              onBlur={() => { void commitEdit(); }}
+              selectionColor={colors.accent}
+              style={[
+                styles.editArea,
+                {
+                  color: colors.text,
+                  borderColor: withAlpha(colors.border, 0.35),
+                  backgroundColor: 'transparent',
+                  fontFamily: typography.body,
+                },
+              ]}
+            />
+          ) : text ? (
             <HighlightedPlainText
               text={text}
               highlightKey={highlight}
@@ -377,10 +426,10 @@ export const MessageBubble = React.memo(function MessageBubble({
           <Markdown text={text} streaming={streaming} highlight={highlight} />
         )}
 
-        {/* Action Toolbar */}
+        {/* Action Toolbar — same action set/order as SPA MessageToolbar. */}
         {!streaming && text && !isCanvas ? (
           <View style={[styles.toolbar, isUser && styles.toolbarUser]}>
-            <AnimatedPressable accessibilityLabel="Copy message" onPress={copyText} style={styles.toolbarButton}>
+            <AnimatedPressable accessibilityLabel="Copy" onPress={copyText} style={styles.toolbarButton}>
               <Ionicons
                 name={copied ? 'checkmark-circle-outline' : 'copy-outline'}
                 size={16}
@@ -388,40 +437,68 @@ export const MessageBubble = React.memo(function MessageBubble({
               />
             </AnimatedPressable>
 
-            {!isUser ? (
+            {isUser ? (
               <>
+                {messageId && onEdit ? (
+                  <AnimatedPressable
+                    accessibilityLabel="Edit message"
+                    onPress={() => { setEditValue(text); setEditing(true); }}
+                    style={styles.toolbarButton}
+                  >
+                    <Ionicons name="pencil-outline" size={16} color={colors.textSubtle} />
+                  </AnimatedPressable>
+                ) : null}
+                {messageId && onDelete ? (
+                  <AnimatedPressable
+                    accessibilityLabel="Delete message"
+                    onPress={() => { void Promise.resolve(onDelete(messageId)); }}
+                    style={styles.toolbarButton}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={colors.textSubtle} />
+                  </AnimatedPressable>
+                ) : null}
+              </>
+            ) : (
+              <>
+                {onShare ? (
+                  <AnimatedPressable accessibilityLabel="Share conversation" onPress={() => { void Promise.resolve(onShare()); }} style={styles.toolbarButton}>
+                    <Ionicons name="share-outline" size={16} color={colors.textSubtle} />
+                  </AnimatedPressable>
+                ) : null}
+                {messageId && onRegenerate ? (
+                  <AnimatedPressable accessibilityLabel="Regenerate response" onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
+                    <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
+                  </AnimatedPressable>
+                ) : isLastAssistant && onRetry ? (
+                  <AnimatedPressable accessibilityLabel={t('chat.retry') || 'Retry'} onPress={onRetry} style={styles.toolbarButton}>
+                    <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
+                  </AnimatedPressable>
+                ) : null}
+                <AnimatedPressable accessibilityLabel="Helpful" onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
+                  <Ionicons name={rating === 'up' ? 'thumbs-up' : 'thumbs-up-outline'} size={16} color={rating === 'up' ? colors.accent : colors.textSubtle} />
+                </AnimatedPressable>
+                <AnimatedPressable accessibilityLabel="Not helpful" onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
+                  <Ionicons name={rating === 'down' ? 'thumbs-down' : 'thumbs-down-outline'} size={16} color={rating === 'down' ? colors.accent : colors.textSubtle} />
+                </AnimatedPressable>
+                {messageId && onBranch ? (
+                  <>
+                    <AnimatedPressable accessibilityLabel="Branch from here" onPress={() => { void Promise.resolve(onBranch(messageId)); }} style={styles.toolbarButton}>
+                      <Ionicons name="git-branch-outline" size={16} color={colors.textSubtle} />
+                    </AnimatedPressable>
+                    <AnimatedPressable accessibilityLabel="Re-explain from a different angle" onPress={() => { void Promise.resolve(onBranch(messageId, { reExplain: true })); }} style={styles.toolbarButton}>
+                      <Ionicons name="bulb-outline" size={16} color={colors.textSubtle} />
+                    </AnimatedPressable>
+                  </>
+                ) : null}
                 <AnimatedPressable
                   accessibilityLabel={speaking ? 'Stop reading' : 'Read aloud'}
                   onPress={toggleSpeech}
                   style={styles.toolbarButton}
                 >
-                  <Ionicons
-                    name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'}
-                    size={18}
-                    color={speaking ? colors.accent : colors.textSubtle}
-                  />
+                  <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'} size={18} color={speaking ? colors.accent : colors.textSubtle} />
                 </AnimatedPressable>
-                <AnimatedPressable accessibilityLabel="Helpful" onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
-                  <Ionicons
-                    name={rating === 'up' ? 'thumbs-up' : 'thumbs-up-outline'}
-                    size={16}
-                    color={rating === 'up' ? colors.accent : colors.textSubtle}
-                  />
-                </AnimatedPressable>
-                <AnimatedPressable accessibilityLabel="Not helpful" onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
-                  <Ionicons
-                    name={rating === 'down' ? 'thumbs-down' : 'thumbs-down-outline'}
-                    size={16}
-                    color={rating === 'down' ? colors.accent : colors.textSubtle}
-                  />
-                </AnimatedPressable>
-                {isLastAssistant && onRetry ? (
-                  <AnimatedPressable accessibilityLabel={t('chat.retry') || 'Retry'} onPress={onRetry} style={styles.toolbarButton}>
-                    <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
-                  </AnimatedPressable>
-                ) : null}
               </>
-            ) : null}
+            )}
           </View>
         ) : null}
       </View>
@@ -437,6 +514,17 @@ const styles = StyleSheet.create({
   bubble: {},
   /* frontend `.msg-body`: font-size 15px, line-height 1.625 (~24). */
   text: { fontSize: 15, lineHeight: 24 },
+  editArea: {
+    minWidth: 180,
+    maxWidth: 520,
+    minHeight: 40,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 15,
+    lineHeight: 24,
+  },
   thinkingStatus: {
     alignSelf: 'flex-start',
     minHeight: 25,
