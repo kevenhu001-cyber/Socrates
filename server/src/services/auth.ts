@@ -272,12 +272,20 @@ export type EmbeddedMobileTarget =
   | 'knowledge'
   | 'mistakes'
   | 'skills'
-  | 'api-settings';
+  | 'api-settings'
+  | 'profile'
+  | 'usage'
+  | 'storage'
+  | 'display'
+  | 'shortcuts'
+  | 'library'
+  | 'exam';
 
 const EMBEDDED_MOBILE_TARGETS = new Set<EmbeddedMobileTarget>([
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
+  'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
 ]);
-const MOBILE_WEB_SESSION_RE = /^mw\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings)\.([a-f0-9]{64})$/;
+const MOBILE_WEB_SESSION_RE = /^mw\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings|profile|usage|storage|display|shortcuts|library|exam)\.([a-f0-9]{64})$/;
 const MOBILE_OAUTH_EXCHANGE_RE = /^mo\.([a-f0-9]{64})$/;
 
 export function isEmbeddedMobileTarget(value: unknown): value is EmbeddedMobileTarget {

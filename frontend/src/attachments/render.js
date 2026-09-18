@@ -12,17 +12,6 @@
 import { attachments, addFiles } from '../attachments.js';
 import { showToast } from '../ui/toast.js';
 
-// i18n translator is bound on `window.t` by i18n.js. Resolve it lazily so
-// module evaluation order cannot freeze an English fallback before the
-// language module has finished booting.
-function translate(key){
-  try{
-    return typeof window !== "undefined" && typeof window.t === "function"
-      ? window.t(key)
-      : null;
-  }catch(_){ return null; }
-}
-
 /* React migration bridge — fires whenever the pending attachments array
    changes so the React compatibility root can mirror the chip row via
    useSyncExternalStore. Installed by

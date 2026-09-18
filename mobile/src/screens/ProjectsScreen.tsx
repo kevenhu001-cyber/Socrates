@@ -58,6 +58,7 @@ export function ProjectsScreen({ navigation }: Props) {
       const payload = { ...draft, name: draft.name.trim() };
       const saved = editing ? await projectsApi.update(editing.id, payload) : await projectsApi.create(payload);
       setProjects((current) => editing ? current.map((item) => item.id === saved.id ? saved : item) : [saved, ...current]);
+      void appStore.refreshProjects().catch(() => undefined);
       setEditing(null);
       setEditorOpen(false);
     } catch (caught) { setError(caught instanceof Error ? caught.message : t('projects.loadFailed')); }
@@ -70,7 +71,12 @@ export function ProjectsScreen({ navigation }: Props) {
     const project = pendingDelete;
     if (!project) return;
     setPendingDelete(null);
-    void projectsApi.remove(project.id).then(() => setProjects((current) => current.filter((item) => item.id !== project.id))).catch((caught) => setError(caught instanceof Error ? caught.message : t('projects.loadFailed')));
+    void projectsApi.remove(project.id)
+      .then(() => {
+        setProjects((current) => current.filter((item) => item.id !== project.id));
+        return appStore.refreshProjects();
+      })
+      .catch((caught) => setError(caught instanceof Error ? caught.message : t('projects.loadFailed')));
   };
 
   const startProjectChat = (project: Project) => {

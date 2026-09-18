@@ -176,15 +176,23 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
      * regenerates the new reply in-place; without this cleanup the
      * server would keep the old reply around forever. */
     if (discardFollowing) {
-      const later = await db.select().from(messages)
-        .where(and(
-          eq(messages.sessionId, msg.sessionId),
-          eq(messages.role, 'assistant'),
-        ))
-        .orderBy(asc(messages.createdAt));
-      for (const r of later) {
-        if (r.createdAt >= msg.createdAt) {
-          await db.delete(messages).where(eq(messages.id, r.id));
+      /* Editing/regenerating a user turn rewinds the conversation to that
+       * exact point. Delete every later row — assistant, user, system or
+       * tool — rather than only assistant replies. Otherwise a mid-thread
+       * edit appears correct until reload, when stale later user turns
+       * re-enter the history and fork the conversation behind the UI. */
+      const ordered = await db.select({ id: messages.id })
+        .from(messages)
+        .where(eq(messages.sessionId, msg.sessionId))
+        .orderBy(asc(messages.createdAt), asc(messages.id));
+      let afterEdited = false;
+      for (const row of ordered) {
+        if (row.id === msg.id) {
+          afterEdited = true;
+          continue;
+        }
+        if (afterEdited) {
+          await db.delete(messages).where(eq(messages.id, row.id));
         }
       }
     }

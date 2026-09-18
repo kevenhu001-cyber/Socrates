@@ -57,10 +57,10 @@ export function MoreScreen({ navigation }: Props) {
   const handleAction = (action: MoreItemAction) => {
     switch (action) {
       case 'plugins':
-        navigation.navigate('Plugins');
+        navigation.navigate('Embedded', { target: 'plugins', title: t('sidebar.nav.plugins') || 'Plugins' });
         break;
       case 'exam':
-        navigation.navigate('ExamSession');
+        navigation.navigate('Embedded', { target: 'exam', title: t('sidebar.nav.exam') || 'Exam' });
         break;
       case 'skills':
         navigation.navigate('Embedded', {
@@ -69,11 +69,13 @@ export function MoreScreen({ navigation }: Props) {
         });
         break;
       case 'settings':
+        navigation.navigate('Embedded', { target: 'api-settings', title: t('sidebar.more.settings') || 'API settings' });
+        break;
       case 'display':
-        navigation.navigate('Settings');
+        navigation.navigate('Display');
         break;
       case 'shortcuts':
-        setShortcutsOpen(true);
+        navigation.navigate('Embedded', { target: 'shortcuts', title: t('sidebar.more.shortcuts') || 'Keyboard shortcuts' });
         break;
       case 'signout':
         setSignoutArmed(true);

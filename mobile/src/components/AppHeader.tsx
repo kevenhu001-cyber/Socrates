@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +17,7 @@ type Props = {
   isIncognito?: boolean;
   onModeChange?: (mode: 'chat' | 'tutor') => void;
   onNewChat?: () => void;
-  onOpenModelPicker?: () => void;
+  onOpenModelPicker?: (anchor?: { x: number; y: number; width: number; height: number }) => void;
   onToggleIncognito?: () => void;
   onSearchInSession?: () => void;
   onShare?: () => void;
@@ -69,6 +69,19 @@ export function AppHeader({
   const { isCompact } = useResponsive();
   const renderModeSwitch = showModeSwitch && !isCompact;
   const renderTitle = Boolean(title) && !(isCompact && conversationActive);
+  const titleModelAnchor = useRef<View>(null);
+  const landingModelAnchor = useRef<View>(null);
+
+  const openModelPickerFrom = (ref: React.RefObject<View | null>) => {
+    const node = ref.current;
+    if (!node || typeof node.measureInWindow !== 'function') {
+      onOpenModelPicker?.();
+      return;
+    }
+    node.measureInWindow((x, y, width, height) => {
+      onOpenModelPicker?.({ x, y, width, height });
+    });
+  };
 
   /* P1-2 alignment: every value below is sourced from the canonical
    * `@socrates/theme` palette so the AppHeader matches `frontend`'s
@@ -161,17 +174,19 @@ export function AppHeader({
            * (`frontend/src/styles.css:1104`). Previously `activeModelName` /
            * `onOpenModelPicker` were accepted as props but never rendered. */}
           {onOpenModelPicker && !isCompact ? (
-            <AnimatedPressable
-              accessibilityRole="button"
-              accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
-              onPress={onOpenModelPicker}
-              style={[styles.modelChip, { borderColor: colors.border }]}
-            >
-              <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
-                {activeModelName || t('settings.model') || 'Model'}
-              </Text>
-              <Ionicons name="chevron-down" size={12} color={colors.textMuted} />
-            </AnimatedPressable>
+            <View ref={titleModelAnchor} collapsable={false}>
+              <AnimatedPressable
+                accessibilityRole="button"
+                accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
+                onPress={() => openModelPickerFrom(titleModelAnchor)}
+                style={[styles.modelChip, { borderColor: colors.border }]}
+              >
+                <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+                  {activeModelName || t('settings.model') || 'Model'}
+                </Text>
+                <Ionicons name="chevron-down" size={12} color={colors.textMuted} />
+              </AnimatedPressable>
+            </View>
           ) : null}
         </View>
       ) : (
@@ -222,17 +237,19 @@ export function AppHeader({
              * picker next to the landing composer). Visible when the
              * parent wires `onOpenModelPicker`, e.g. NewChatScreen. */}
             {onOpenModelPicker && !isCompact ? (
-              <AnimatedPressable
-                accessibilityRole="button"
-                accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
-                onPress={onOpenModelPicker}
-                style={[styles.modelChipInline, { borderColor: colors.border, backgroundColor: circleBg }]}
-              >
-                <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
-                  {activeModelName || t('settings.model') || 'Model'}
-                </Text>
-                <Ionicons name="chevron-down" size={12} color={colors.textMuted} />
-              </AnimatedPressable>
+              <View ref={landingModelAnchor} collapsable={false}>
+                <AnimatedPressable
+                  accessibilityRole="button"
+                  accessibilityLabel={activeModelName || t('settings.model') || 'Model'}
+                  onPress={() => openModelPickerFrom(landingModelAnchor)}
+                  style={[styles.modelChipInline, { borderColor: colors.border, backgroundColor: circleBg }]}
+                >
+                  <Text numberOfLines={1} style={[styles.modelChipText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+                    {activeModelName || t('settings.model') || 'Model'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={12} color={colors.textMuted} />
+                </AnimatedPressable>
+              </View>
             ) : null}
             <AnimatedPressable
               accessibilityLabel={isIncognito ? 'Incognito active' : (t('sidebar.nav.new') || 'Conversation')}

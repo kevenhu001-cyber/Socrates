@@ -51,6 +51,11 @@ jobs:
           java-version: '17'
 
       - uses: android-actions/setup-android@v3
+        with:
+          # `tools` is an obsolete SDK package and is no longer present in
+          # Google's repository. Keep the runner setup limited to the package
+          # needed by the pinned component install below.
+          packages: platform-tools
 
       - uses: gradle/actions/setup-gradle@v4
 

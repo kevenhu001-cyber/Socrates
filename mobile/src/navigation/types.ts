@@ -3,10 +3,11 @@ import type { EmbeddedTarget } from '@socrates/contracts';
 export type RootStackParamList = {
   Home: { projectId?: string } | undefined;
   Chat: undefined;
-  Tutor: undefined;
+  Tutor: { initialTopic?: string } | undefined;
   Library: undefined;
   ExamSession: undefined;
   Settings: undefined;
+  Display: undefined;
   Search: undefined;
   Projects: undefined;
   Scheduled: undefined;

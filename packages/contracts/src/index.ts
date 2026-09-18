@@ -179,6 +179,13 @@ export interface KnowledgeNode {
   status: KnowledgeNodeStatus;
   sessionId: string;
   sessionTitle: string | null;
+  nodeIndex?: number;
+  questions?: number;
+  verifiedCount?: number;
+  confidenceScore?: number;
+  systemNote?: string | null;
+  userNote?: string | null;
+  history?: JsonValue[];
 }
 
 export interface Mistake {
@@ -240,7 +247,14 @@ export type EmbeddedTarget =
   | 'knowledge'
   | 'mistakes'
   | 'skills'
-  | 'api-settings';
+  | 'api-settings'
+  | 'profile'
+  | 'usage'
+  | 'storage'
+  | 'display'
+  | 'shortcuts'
+  | 'library'
+  | 'exam';
 
 export interface MobileWebSessionRequest {
   target: EmbeddedTarget;

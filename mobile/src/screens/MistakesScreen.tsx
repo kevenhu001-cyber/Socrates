@@ -127,10 +127,24 @@ export function MistakesScreen({ navigation }: Props) {
       .finally(() => setBusyId(null));
   };
 
-  const handleRedo = (item: Mistake) => {
-    appStore.setDraft(`Let's redo this mistake question: ${item.questionContent}`);
-    appStore.startNewSession('chat');
-    navigation.navigate('Home');
+  const handleRedo = async (item: Mistake) => {
+    const parsed = parseOptionsAndStem(item);
+    setBusyId(item.id);
+    setError('');
+    try {
+      const ok = await appStore.openMistakeRedo({
+        sessionId: item.sessionId,
+        source: item.source,
+        question: parsed.stem || item.questionContent,
+        options: parsed.options.map(({ letter, text }) => ({ letter, text })),
+        correctAnswer: item.correctAnswer,
+      });
+      if (ok) navigation.navigate('Chat');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('mistakes.loadFailed'));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -294,7 +308,8 @@ export function MistakesScreen({ navigation }: Props) {
                 <AnimatedPressable
                   accessibilityRole="button"
                   accessibilityLabel={t('mistakes.redo') || 'Redo'}
-                  onPress={() => handleRedo(item)}
+                  disabled={busy}
+                  onPress={() => { void handleRedo(item); }}
                   style={[
                     styles.redoBtn,
                     {

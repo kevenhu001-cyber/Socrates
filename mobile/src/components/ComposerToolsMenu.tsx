@@ -1,210 +1,445 @@
-import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { MobileExtensionKey } from '../data/chat/prompts';
+import type { ComposerPluginSelection } from '../data/chat/plugins';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 import { ThinkDeeperGlyph } from './Composer';
 
+export interface ComposerToolsAnchor {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface ComposerToolsMenuProps {
   visible: boolean;
+  surface?: 'topic' | 'chat';
+  anchor?: ComposerToolsAnchor | null;
   onClose: () => void;
   onPickCamera: () => void;
   onPickPhotos: () => void;
   onPickFiles: () => void;
-  onPickPlugins?: () => void;
+  onPickWrite?: () => void;
+  onPickExplore?: () => void;
+  onPickAnalyze?: () => void;
+  onPickExam?: () => void;
+  onPickSkills?: () => void;
   onToggleThinkDeeper?: () => void;
+  activeExtension?: MobileExtensionKey | null;
   isThinkDeeperActive?: boolean;
+  plugins?: ComposerPluginSelection[];
+  selectedPluginIds?: string[];
+  onTogglePlugin?: (pluginId: string) => void;
 }
+
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
+
+type MenuItem = {
+  id: string;
+  icon: IconName;
+  label: string;
+  hint?: string;
+  active?: boolean;
+  customThinking?: boolean;
+  onPress: () => void;
+};
 
 export function ComposerToolsMenu({
   visible,
+  surface = 'chat',
+  anchor,
   onClose,
   onPickCamera,
   onPickPhotos,
   onPickFiles,
-  onPickPlugins,
+  onPickWrite,
+  onPickExplore,
+  onPickAnalyze,
+  onPickExam,
+  onPickSkills,
   onToggleThinkDeeper,
+  activeExtension = null,
   isThinkDeeperActive = false,
+  plugins = [],
+  selectedPluginIds = [],
+  onTogglePlugin,
 }: ComposerToolsMenuProps) {
   const { colors, typography } = useTheme();
   const t = useT();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const [query, setQuery] = useState('');
+  const progress = useRef(new Animated.Value(0)).current;
 
-  /* Frontend runs the picked action immediately; the previous 100ms
-   * deferral made the menu feel laggy with no web equivalent. */
-  const handleAction = (action: () => void) => {
+  useEffect(() => {
+    if (!visible) return undefined;
+    setQuery('');
+    progress.setValue(0);
+    const animation = Animated.timing(progress, {
+      toValue: 1,
+      duration: 220,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [progress, visible]);
+
+  const runAndClose = (action?: () => void) => {
+    if (!action) return;
     onClose();
     action();
   };
 
-  const menuItems = [
-    {
-      id: 'camera',
-      icon: 'camera-outline' as const,
-      label: t('composer.tools.camera') || 'Camera',
-      onPress: () => handleAction(onPickCamera),
-      active: false,
-      useCustomGlyph: false,
-    },
-    {
-      id: 'photos',
-      icon: 'image-outline' as const,
-      label: t('composer.tools.photos') || 'Photos',
-      onPress: () => handleAction(onPickPhotos),
-      active: false,
-      useCustomGlyph: false,
-    },
-    {
-      id: 'files',
-      icon: 'attach-outline' as const,
-      label: t('composer.tools.files') || 'Files',
-      onPress: () => handleAction(onPickFiles),
-      active: false,
-      useCustomGlyph: false,
-    },
-    ...(onPickPlugins
-      ? [
-          {
-            id: 'plugins',
-            icon: 'globe-outline' as const,
-            label: t('composer.tools.plugins') || 'Plugins',
-            onPress: () => handleAction(onPickPlugins),
-            active: false,
-            useCustomGlyph: false,
-          },
-        ]
-      : []),
-    ...(onToggleThinkDeeper
-      ? [
-          {
-            id: 'thinkDeeper',
-            icon: 'bulb-outline' as const,
-            label: t('composer.tools.thinkDeeper') || 'Think deeper',
-            onPress: () => {
-              onToggleThinkDeeper();
-              onClose();
-            },
-            active: isThinkDeeperActive,
-            useCustomGlyph: true,
-          },
-        ]
-      : []),
-  ];
+  const rows = useMemo<MenuItem[]>(() => {
+    const base: MenuItem[] = [
+      {
+        id: 'camera',
+        icon: 'camera-outline',
+        label: t('composer.tools.camera') || 'Camera',
+        onPress: () => runAndClose(onPickCamera),
+      },
+      {
+        id: 'photos',
+        icon: 'image-outline',
+        label: t('composer.tools.photos') || 'Photos',
+        onPress: () => runAndClose(onPickPhotos),
+      },
+      {
+        id: 'files',
+        icon: 'attach-outline',
+        label: t('composer.tools.files') || 'Files',
+        onPress: () => runAndClose(onPickFiles),
+      },
+    ];
+
+    if (onPickWrite) {
+      base.push({
+        id: 'write',
+        icon: 'pencil-outline',
+        label: t('composer.write') || 'Write & edit',
+        hint: t('composer.writeHint') || 'Draft, rewrite and polish',
+        active: activeExtension === 'write',
+        onPress: () => runAndClose(onPickWrite),
+      });
+    }
+    if (onPickExplore) {
+      base.push({
+        id: 'explore',
+        icon: 'compass-outline',
+        label: t('composer.explore') || 'Explore',
+        hint: t('composer.exploreHint') || 'Scope, batch search, report',
+        active: activeExtension === 'explore',
+        onPress: () => runAndClose(onPickExplore),
+      });
+    }
+    if (onPickAnalyze) {
+      base.push({
+        id: 'analyze',
+        icon: 'stats-chart-outline',
+        label: t('composer.analyze') || 'Analyze data',
+        hint: t('composer.analyzeHint') || 'Calculate, chart and export',
+        active: activeExtension === 'analyze',
+        onPress: () => runAndClose(onPickAnalyze),
+      });
+    }
+    if (onPickExam) {
+      base.push({
+        id: 'exam',
+        icon: 'document-text-outline',
+        label: t('composer.exam') || 'Generate exam',
+        hint: t('composer.examHint') || 'Blueprint, questions and grading',
+        onPress: () => runAndClose(onPickExam),
+      });
+    }
+    if (onPickSkills) {
+      base.push({
+        id: 'skills',
+        icon: 'grid-outline',
+        label: t('composer.menu.skills') || 'Your workflows',
+        hint: t('composer.menu.skillsHint') || 'Create your own',
+        onPress: () => runAndClose(onPickSkills),
+      });
+    }
+    if (onToggleThinkDeeper) {
+      base.push({
+        id: 'think-deeper',
+        icon: 'bulb-outline',
+        label: t('composer.tools.thinkDeeper') || 'Think deeper',
+        hint: t('effort.high.note') || 'More deliberate reasoning',
+        active: isThinkDeeperActive,
+        customThinking: true,
+        onPress: () => runAndClose(onToggleThinkDeeper),
+      });
+    }
+
+    for (const plugin of plugins.filter((item) => item.connected === true)) {
+      base.push({
+        id: `plugin:${plugin.id}`,
+        icon: 'extension-puzzle-outline',
+        label: plugin.name,
+        hint: plugin.description || plugin.capabilities.join(', '),
+        active: selectedPluginIds.includes(plugin.id),
+        onPress: () => runAndClose(
+          onTogglePlugin ? () => onTogglePlugin(plugin.id) : undefined,
+        ),
+      });
+    }
+
+    return base;
+  }, [
+    activeExtension,
+    isThinkDeeperActive,
+    onPickAnalyze,
+    onPickCamera,
+    onPickExam,
+    onPickExplore,
+    onPickFiles,
+    onPickPhotos,
+    onPickSkills,
+    onPickWrite,
+    onTogglePlugin,
+    onToggleThinkDeeper,
+    plugins,
+    selectedPluginIds,
+    t,
+  ]);
+
+  const filteredRows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter((row) =>
+      `${row.label} ${row.hint || ''}`.toLowerCase().includes(needle),
+    );
+  }, [query, rows]);
+
+  const compact = viewportWidth <= 768;
+  const menuWidth = compact
+    ? Math.min(252, viewportWidth - 24)
+    : surface === 'topic'
+      ? Math.min(620, viewportWidth - 16)
+      : Math.min(280, viewportWidth - 16);
+  const maxHeight = Math.max(120, Math.min(viewportHeight / 2, 560));
+  const estimatedHeight = Math.min(maxHeight, 52 + filteredRows.length * (compact ? 46 : 40));
+  const target = anchor || {
+    x: 20,
+    y: Math.max(8, viewportHeight - 118),
+    width: 40,
+    height: 40,
+  };
+  const desiredLeft = compact ? target.x - 12 : target.x;
+  const left = Math.max(8, Math.min(desiredLeft, viewportWidth - menuWidth - 8));
+  const belowTop = target.y + target.height + 8;
+  const aboveTop = target.y - estimatedHeight - 8;
+  const belowSpace = viewportHeight - belowTop - 8;
+  const aboveSpace = target.y - 8;
+  const rawTop = belowSpace >= estimatedHeight
+    ? belowTop
+    : aboveSpace >= estimatedHeight
+      ? aboveTop
+      : Math.max(8, target.y - estimatedHeight - 8);
+  const top = Math.max(8, Math.min(rawTop, viewportHeight - estimatedHeight - 8));
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
+      navigationBarTranslucent
     >
-      <Pressable onPress={onClose} style={[styles.backdrop, { backgroundColor: colors.scrim }]}>
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
+      <Pressable onPress={onClose} style={StyleSheet.absoluteFill} />
+      <Animated.View
+        style={[
+          styles.card,
+          {
+            top,
+            left,
+            width: menuWidth,
+            maxHeight,
+            backgroundColor: withAlpha(colors.surface, 0.98),
+            borderColor: colors.border,
+            opacity: progress,
+            transform: [
+              {
+                translateY: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [7, 0],
+                }),
+              },
+              {
+                scale: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.985, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.list}
         >
-          {menuItems.map((item) => (
+          {filteredRows.map((item) => (
             <AnimatedPressable
               key={item.id}
               accessibilityRole="button"
               accessibilityLabel={item.label}
+              accessibilityState={{ selected: Boolean(item.active) }}
               onPress={item.onPress}
-              style={styles.itemRow}
+              style={styles.item}
             >
-              <View
-                style={[
-                  styles.iconWrap,
-                  {
-                    backgroundColor: colors.surfacePressed,
-                  },
-                ]}
-              >
-                {item.useCustomGlyph ? (
+              <View style={styles.iconWrap}>
+                {item.customThinking ? (
                   <ThinkDeeperGlyph
-                    size={20}
-                    color={item.active ? colors.accent : colors.text}
+                    size={22}
+                    color={item.active ? colors.accent : colors.textMuted}
                   />
                 ) : (
                   <Ionicons
                     name={item.icon}
-                    size={20}
-                    color={item.active ? colors.accent : colors.text}
+                    size={compact ? 22 : 18}
+                    color={item.active ? colors.accent : colors.textMuted}
                   />
                 )}
               </View>
-
-              <Text
-                style={[
-                  styles.itemLabel,
-                  {
-                    color: colors.text,
-                    fontFamily: typography.medium,
-                  },
-                ]}
-              >
-                {item.label}
-              </Text>
-
+              <View style={styles.copy}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.label,
+                    {
+                      color: item.active ? colors.accent : colors.text,
+                      fontFamily: typography.medium,
+                      fontSize: compact ? 14 : 13.5,
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+                {item.hint ? (
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.hint,
+                      { color: colors.textSubtle, fontFamily: typography.body },
+                    ]}
+                  >
+                    {item.hint}
+                  </Text>
+                ) : null}
+              </View>
               {item.active ? (
-                <Ionicons name="checkmark" size={18} color={colors.accent} style={styles.checkIcon} />
+                <Ionicons name="checkmark" size={18} color={colors.accent} />
               ) : null}
             </AnimatedPressable>
           ))}
+          {!filteredRows.length ? (
+            <Text style={[styles.empty, { color: colors.textSubtle, fontFamily: typography.body }]}>
+              {t('composer.tools.noMatch') || 'No matching tools.'}
+            </Text>
+          ) : null}
+        </ScrollView>
+
+        <View style={[styles.searchRow, { borderTopColor: withAlpha(colors.border, 0.3) }]}>
+          <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('composer.tools.searchFooter') || 'Search plugins, files, folders and skills'}
+            placeholderTextColor={colors.textSubtle}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
+          />
         </View>
-      </Pressable>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    /* backgroundColor is now sourced from `colors.scrim` at the call
-     * site so the dimming follows the canonical palette per theme. */
-    backgroundColor: 'transparent',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 76,
-  },
   card: {
-    width: 232,
-    borderRadius: 20,
+    position: 'absolute',
+    padding: 6,
     borderWidth: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    borderRadius: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
+    elevation: 18,
   },
-  itemRow: {
+  list: {
+    paddingBottom: 2,
+  },
+  item: {
+    width: '100%',
+    minHeight: 44,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 14,
+    gap: 12,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    flexShrink: 0,
   },
-  itemLabel: {
+  copy: {
     flex: 1,
-    fontSize: 15,
-    letterSpacing: -0.2,
+    minWidth: 0,
+    gap: 1,
   },
-  checkIcon: {
-    marginLeft: 8,
+  label: {
+    lineHeight: 20,
+  },
+  hint: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  empty: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  searchRow: {
+    minHeight: 40,
+    marginTop: 2,
+    paddingHorizontal: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 0,
+    fontSize: 13,
   },
 });

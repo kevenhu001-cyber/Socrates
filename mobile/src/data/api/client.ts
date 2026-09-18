@@ -1,5 +1,6 @@
 import type {
   ApiErrorBody,
+  Attachment,
   ChatRequest,
   EmbeddedTarget,
   MobileTokenPair,
@@ -178,6 +179,45 @@ export const embeddedApi = {
   }),
 };
 
+export interface ApiProvider {
+  id: string;
+  label: string;
+  url: string;
+  model: string;
+  keyHint?: string | null;
+  isActive?: boolean;
+  isBuiltIn?: boolean;
+  isMultimodal?: boolean;
+  hasKey?: boolean;
+}
+
+export const configApi = {
+  get: () => apiRequest<{ hasBeagleKey: boolean; isReasoning: boolean }>('/config'),
+};
+
+export const chatApi = {
+  complete: (request: ChatRequest & { sessionId?: string; projectId?: string; ragSessionId?: string }) =>
+    apiRequest<{ content: string; reasoning_content?: string | null }>('/chat', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
+};
+
+export const apiKeysApi = {
+  list: () => apiRequest<{ providers: ApiProvider[] }>('/api-key'),
+  create: (payload: Pick<ApiProvider, 'url' | 'model'> & Partial<Pick<ApiProvider, 'label' | 'isMultimodal'>> & { key: string }) =>
+    apiRequest<ApiProvider>('/api-key', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  patch: (id: string, payload: Partial<Pick<ApiProvider, 'label' | 'url' | 'model' | 'isActive' | 'isMultimodal'>> & { key?: string }) =>
+    apiRequest<ApiProvider>(`/api-key/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  remove: (id: string) => apiRequest<void>(`/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+};
+
 export const usersApi = {
   updateMe: (payload: Partial<Pick<User, 'displayName' | 'customInstructions' | 'preferences' | 'defaultModel'>>) => apiRequest<User>('/users/me', {
     method: 'PATCH', body: JSON.stringify(payload),
@@ -239,24 +279,63 @@ export const projectConnectorsApi = {
 
 export const knowledgeApi = {
   list: (status?: string) => apiRequest<{ items: KnowledgeNode[]; summary: Record<string, number> }>(`/knowledge-boundary${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  updateNode: (payload: {
+    sessionId: string;
+    nodeIndex: number;
+    confidenceScore?: number;
+    userNote?: string;
+  }) => apiRequest<KnowledgeNode>('/knowledge-boundary/node', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }),
 };
 
 export const mistakesApi = {
   list: (resolved?: boolean) => apiRequest<{ items: Mistake[]; total: number }>(`/mistakes?limit=100${resolved === undefined ? '' : `&resolved=${resolved}`}`),
+  create: (payload: {
+    sessionId?: string | null;
+    nodeName?: string | null;
+    questionContent: string;
+    userAnswer?: string | null;
+    correctAnswer?: string | null;
+    source?: 'quiz' | 'practice' | 'manual';
+  }) => apiRequest<Mistake>('/mistakes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
   resolve: (id: string, isResolved: boolean) => apiRequest<Mistake>(`/mistakes/${encodeURIComponent(id)}`, {
     method: 'PATCH', body: JSON.stringify({ isResolved }),
   }),
   remove: (id: string) => apiRequest<void>(`/mistakes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
+function messageApiPath(id: string, sessionId?: string | null, suffix = '') {
+  const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
+  return `/messages/${encodeURIComponent(id)}${suffix}${query}`;
+}
+
 export const messagesApi = {
-  edit: (id: string, content: string, regenerate = false) => apiRequest(`/messages/${encodeURIComponent(id)}`, {
-    method: 'PATCH', body: JSON.stringify({ content, regenerate }),
+  edit: (
+    id: string,
+    content: string,
+    sessionId?: string | null,
+    options: { regenerate?: boolean; discardFollowing?: boolean; attachments?: Attachment[] } = {},
+  ) => apiRequest(messageApiPath(id, sessionId), {
+    method: 'PATCH',
+    body: JSON.stringify({
+      content,
+      regenerate: options.regenerate === true,
+      discardFollowing: options.discardFollowing === true,
+      ...(options.attachments ? { attachments: options.attachments } : {}),
+    }),
   }),
-  regenerate: (id: string) => apiRequest(`/messages/${encodeURIComponent(id)}/regenerate`, { method: 'POST' }),
-  feedback: (id: string, rating: 'up' | 'down' | 'none', reason?: string) => apiRequest(`/messages/${encodeURIComponent(id)}/feedback`, {
-    method: 'PUT', body: JSON.stringify({ rating, reason }),
-  }),
+  remove: (id: string, sessionId?: string | null) =>
+    apiRequest<void>(messageApiPath(id, sessionId), { method: 'DELETE' }),
+  feedback: (id: string, rating: 'up' | 'down' | 'none', reason?: string, sessionId?: string | null) =>
+    apiRequest(messageApiPath(id, sessionId, '/feedback'), {
+      method: 'PUT',
+      body: JSON.stringify({ rating, reason }),
+    }),
 };
 
 export const sharesApi = {
@@ -284,11 +363,20 @@ export const filesApi = {
     return apiRequest<{ id: string; name: string; mimeType: string; size: number; kind: string }>('/files', { method: 'POST', body: form });
   },
   get: (id: string) => apiRequest<Record<string, unknown>>(`/files/${encodeURIComponent(id)}`),
+  rename: (id: string, name: string) => apiRequest<{ id: string; name: string }>(`/files/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify({ name }),
+  }),
+  remove: (id: string) => apiRequest<void>(`/files/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   content: (id: string) => apiRequest<{ ok: boolean; id: string; name: string; mimeType: string; kind: string; text: string; truncated: boolean; meta?: Record<string, unknown> }>(`/files/${encodeURIComponent(id)}/content`),
-  rawUrl: (id: string) => `${API_BASE_URL}/files/${encodeURIComponent(id)}/raw`,
-  async raw(id: string) {
+  rawUrl: (id: string, inline = false) => `${API_BASE_URL}/files/${encodeURIComponent(id)}/raw${inline ? '?inline=1' : ''}`,
+  async authHeaders() {
     const tokens = await readTokens();
-    const response = await fetch(filesApi.rawUrl(id), { headers: tokens.accessToken ? { Authorization: `Bearer ${tokens.accessToken}` } : undefined });
+    const headers: Record<string, string> = {};
+    if (tokens.accessToken) headers.Authorization = `Bearer ${tokens.accessToken}`;
+    return headers;
+  },
+  async raw(id: string) {
+    const response = await fetch(filesApi.rawUrl(id), { headers: await filesApi.authHeaders() });
     if (!response.ok) throw new ApiError(response.status, `Unable to download file (${response.status})`);
     return response.blob();
   },
@@ -297,6 +385,10 @@ export const filesApi = {
 export const artifactsApi = {
   list: () => apiRequest<{ artifacts: Array<Record<string, unknown>> }>('/artifacts'),
   get: (id: string) => apiRequest<Record<string, unknown>>(`/artifacts/${encodeURIComponent(id)}`),
+  rename: (id: string, title: string) => apiRequest<Record<string, unknown>>(`/artifacts/${encodeURIComponent(id)}`, {
+    method: 'PATCH', body: JSON.stringify({ title }),
+  }),
+  remove: (id: string) => apiRequest<void>(`/artifacts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
 export const searchApi = {

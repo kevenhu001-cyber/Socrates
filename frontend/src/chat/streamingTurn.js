@@ -21,7 +21,12 @@ import {
   updateMessageSnapshot,
 } from '../ui/messageSnapshot.js';
 import { createStreamScheduler } from '../render/streamScheduler.js';
-import { scheduleActiveTurnToTop, removeSupersededStub } from './turnAnchor.ts';
+import {
+  scheduleActiveTurnToTop,
+  removeSupersededStub,
+  turnAnchorReserve,
+  TURN_ANCHOR_TOP_OFFSET,
+} from './turnAnchor.ts';
 import { createToolRuntime } from './toolRuntime.js';
 import { esc } from '../render/helpers.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
@@ -84,13 +89,48 @@ export function addStreamingMessage(opts){
      is the rendered view, not the source. */
   var clientId="msg-"+generateId();
   div.dataset.clientId=clientId;
+  /* P_stream-start-reserve — the assistant placeholder is published to the
+     runtime bridge before this turn's leading reserve is laid out. Without
+     a pre-stamped reserve, the first React commit paints the bubble at its
+     natural height (status pill + cursor only, ~28px) and the new row
+     shrinks the transcript's scroll range by several hundred pixels — the
+     browser clamps scrollTop, the reader's position snaps to the new
+     bottom, and the prompt slides into view only when
+     scheduleActiveTurnToTop() measures the layout two frames later. The
+     reserve stamped here lives on the message entry, so MessageItem reads
+     it on its first commit and the bubble paints with the right height
+     synchronously; no second layout pass, no position snap, no reload
+     flicker. The user bubble's own size is the only thing that has just
+     changed, so we measure *its* post-commit height in a rAF, then stamp
+     the reserve onto the assistant entry before the chat-runtime bridge
+     publishes the new revision — the order keeps React's commit cycle
+     one and only one. */
+  var _initialReserve=0;
+  var _initialTargetOffset=TURN_ANCHOR_TOP_OFFSET;
+  try {
+    if (list && typeof turnAnchorReserve === 'function') {
+      var _listStyles=(typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(list) : null;
+      var _listBottomPad=_listStyles ? (parseFloat(_listStyles.paddingBottom) || 0) : 0;
+      var _latestUser=list.querySelector ? list.querySelector('.msg.user:last-of-type') : null;
+      var _promptHeight=_latestUser ? _latestUser.getBoundingClientRect().height : 0;
+      _initialReserve=turnAnchorReserve(
+        list.clientHeight,
+        _promptHeight,
+        _listBottomPad,
+      );
+    }
+  } catch (_) {}
+
   var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
     clientId:clientId,
     role:"assistant",
     rawText:"",
     html:null,
     type:"streaming",
-    actions:null
+    actions:null,
+    _turnAnchorMinHeight: _initialReserve > 0 ? _initialReserve : undefined,
+    _turnAnchorMode: _initialReserve > 0 ? 'turn' : undefined,
+    _turnViewportTarget: _initialReserve > 0 ? _initialTargetOffset : undefined,
   }});
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   var full="";
@@ -484,24 +524,20 @@ export function addStreamingMessage(opts){
         firstDelta=false;
         /* First delta arrived — stop the elapsed counter. */
         if(_elapsedTick)clearInterval(_elapsedTick);
-        /* The waiting line is retired with the first real content. */
-        clearLiveStatus();
-        /* Don't finalize the pill on the FIRST delta — many models emit
-           a short preamble ("好的,让我搜一下…") before the tool_use
-           event, and removing the pill here would leave the user
-           staring at a blank bubble while the search actually runs.
-           Defer the pill removal until the streaming text reaches
-           PILL_HIDE_MIN_CHARS, so short preambles keep the "Thinking…"
-           (or whatever label the upcoming tool_use sets) visible. */
       }
       full+=delta;
-      /* React renders from this field when the publish below flushes, so
-         the mirror has to happen before it. */
-      patchOwnedMessage({rawText:full},true);
-      /* Tokens are the proof the retry worked: the notice outlives tool
-         activity and thinking stamps by design, so retire it here. */
-      var _st=stateStore.read("messages")[msgIdx]._liveStatus;
-      if(_st&&_st.phase==="retrying")setLiveStatus(null);
+      if(wasFirst){
+        var _curSt=liveMessage()&&liveMessage()._liveStatus;
+        var _clearWaiting=_curSt&&(_curSt.phase==="waiting"||_curSt.phase==="retrying");
+        var _preRev1=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
+        patchOwnedMessage({
+          rawText:full,
+          _liveStatus:_clearWaiting ? null : (liveMessage()&&liveMessage()._liveStatus),
+          _toolRunRev:_clearWaiting ? (_preRev1+1) : _preRev1
+        },true);
+      }else{
+        patchOwnedMessage({rawText:full},true);
+      }
       publishReactChatRuntime({type:"stream-delta",messageId:clientId,textLength:full.length});
       /* Hide the status pill once the streamed text passes a small
          threshold — anything shorter is almost certainly a
@@ -613,14 +649,6 @@ export function addStreamingMessage(opts){
          of snapping. The update callback also runs finishAfterRender(), whose
          anchor capture reads the still-old DOM — inside the transition the
          new frame is captured two frames later, so the reads stay correct. */
-      var _swapRow=null;
-      if(reactLive&&list){
-        try{
-          var _escCid=(typeof CSS!=="undefined"&&CSS.escape)?CSS.escape(clientId):String(clientId).replace(/["\\]/g,"\\$&");
-          _swapRow=list.querySelector('.msg[data-client-id="'+_escCid+'"]');
-        }catch(_){}
-      }
-      withElementSwapTransition(_swapRow,function(){
       try{
         /* Final render: buildAssistantHtml parses <quiz>/<example>/<practice>
            scaffold blocks (replaces them with slot divs), runs formatMsg,
@@ -674,9 +702,13 @@ export function addStreamingMessage(opts){
              onto the message so React's <CanvasBlock> can branch instead of
              falling through to dangerouslySetInnerHTML. */
           var _om=(window._activeTemplate&&window._activeTemplate.outputMode)||'chat';
+          var _preRev=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
           var _finalPatch={
-            html:finalHtml,rawText:full,type:"assistant",
-            reasoningContent:fullReasoning||null,outputMode:_om
+            html:finalHtml,rawText:full,
+            type:"assistant",
+            reasoningContent:fullReasoning||null,outputMode:_om,
+            _streamSettled:true,
+            _toolRunRev:_preRev+1,
           };
           if(_om==='canvas'){
             _finalPatch.canvasId=stateStore.read("_canvasPendingId")||('canvas-'+Math.random().toString(36).slice(2,10));
@@ -688,14 +720,27 @@ export function addStreamingMessage(opts){
       }catch {
         console.log("[finish] render error");
         var fb="<p>"+esc(stripChatArtifacts(full).replace(/<think>[\s\S]*?<\/think>/gi,"").replace(/<think>[\s\S]*$/gi,""))+"</p>";
-        /* Without flipping type here the entry stays "streaming": React
-           would filter it out. */
+        var _preRevE=(stateStore.read("messages")[msgIdx]&&stateStore.read("messages")[msgIdx]._toolRunRev)||0;
         patchOwnedMessage({
-          html:fb,rawText:full,type:"assistant",
-          reasoningContent:fullReasoning||null
+          html:fb,rawText:full,
+          type:"assistant",
+          reasoningContent:fullReasoning||null,
+          _streamSettled:true,
+          _toolRunRev:_preRevE+1,
         });
       }
+      try {
+        if (div && div.isConnected) div.dataset.streamSettled = "true";
+        if (list && list.querySelector) {
+          var _settledRow = list.querySelector('.msg[data-client-id="' + clientId + '"]');
+          if (_settledRow) _settledRow.dataset.streamSettled = "true";
+        }
+      } catch (_) {}
       finishAfterRender();
+      publishReactChatRuntime({
+        type: "stream-finished",
+        messageId: clientId,
+        textLength: full.length,
       });
 
       function finishAfterRender(){
@@ -817,11 +862,11 @@ export function addStreamingMessage(opts){
             };
           }catch(_){}
         }
-        publishReactChatRuntime({
-          type:"stream-finished",
-          messageId:clientId,
-          textLength:full.length
-        });
+        /* The `stream-finished` runtime event is fired in the microtask
+           scheduled above, AFTER React commits the `_streamSettled`
+           bubble. Doing it here would flip the chat-runtime bridge to
+           "completed" before the visible row settles, which is what made
+           the page reload-and-flicker at end of stream. */
         /* P_react-live-turn — the bubble React has been painting this whole
            turn IS the finalized one: there is no transplant, no reveal, and
            no duplicate legacy node to drop. What still changes at finish is
