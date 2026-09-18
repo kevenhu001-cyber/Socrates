@@ -9,6 +9,7 @@ import { sessionRepository } from '../data/repositories/sessionRepository';
 import { reduceToolEvent, settleToolCalls, type ToolEventKind } from '../data/tools/toolState';
 import { tSync } from '../i18n';
 import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite, type LinkPreviewState } from '../data/chat/webLinks';
+import { buildAssistantModeInstruction, MOBILE_EXTENSIONS, type MobileExtensionKey } from '../data/chat/prompts';
 import { unregisterPushNotifications } from '../native/push';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
@@ -25,6 +26,7 @@ export interface AppState {
   linkPreviews: Record<string, LinkPreviewState>;
   providers: ApiProvider[];
   selectedModel: string;
+  activeExtension: MobileExtensionKey | null;
   reasoningEffort: ReasoningEffort;
   webSearchEnabled: boolean;
   isIncognito: boolean;
@@ -44,6 +46,7 @@ const initialState: AppState = {
   linkPreviews: {},
   providers: [],
   selectedModel: 'beagle-built-in',
+  activeExtension: null,
   reasoningEffort: 'medium',
   webSearchEnabled: true,
   isIncognito: false,
@@ -427,6 +430,10 @@ class AppStore {
     }
   }
 
+  setActiveExtension(activeExtension: MobileExtensionKey | null) {
+    this.setState({ activeExtension });
+  }
+
   setReasoningEffort(reasoningEffort: ReasoningEffort) {
     this.setState({ reasoningEffort });
   }
@@ -530,7 +537,17 @@ class AppStore {
     missingUrlMention?: string,
   ) {
     if (this.state.isStreaming) return;
-    const assistant: Message = { clientId: id('assistant'), role: 'assistant', rawText: '', content: '', type: 'streaming' };
+    const extension = this.state.activeExtension ? MOBILE_EXTENSIONS[this.state.activeExtension] : null;
+    const assistant = {
+      clientId: id('assistant'),
+      role: 'assistant',
+      rawText: '',
+      content: '',
+      type: 'streaming',
+      ...(extension?.outputMode === 'canvas'
+        ? { outputMode: 'canvas', canvasId: id('canvas') }
+        : {}),
+    } as Message & { outputMode?: 'chat' | 'canvas'; canvasId?: string };
     const generation = this.streamGeneration + 1;
     this.streamGeneration = generation;
     this.streamFinished = false;
@@ -540,6 +557,23 @@ class AppStore {
     try {
       const history = buildChatHistory(nextMessages);
       const finalUser = nextMessages.at(-1);
+      const userText = String(finalUser?.rawText || finalUser?.content || '');
+      history.unshift({
+        role: 'system',
+        content: buildAssistantModeInstruction(userText, this.state.reasoningEffort),
+      });
+      if (this.state.user?.customInstructions?.trim()) {
+        history.splice(1, 0, {
+          role: 'system',
+          content: `[User custom instructions]\n${this.state.user.customInstructions.trim()}`,
+        });
+      }
+      if (extension) {
+        history.splice(this.state.user?.customInstructions?.trim() ? 2 : 1, 0, {
+          role: 'system',
+          content: `[template:${extension.key}]\n${extension.systemPrompt}`,
+        });
+      }
       const lastHistory = history.at(-1);
       if (lastHistory?.role === 'user' && referencedPageBlocks.length) {
         const pagesText = `${String(finalUser?.rawText || finalUser?.content || '')}\n\n${referencedPageBlocks.join('\n\n')}`;
