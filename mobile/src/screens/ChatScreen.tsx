@@ -20,7 +20,7 @@ import type { Message } from '@socrates/contracts';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { useAppDrawer } from '../components/AppDrawer';
-import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
+import { ModelPickerModal } from '../components/ModelPickerModal';
 import { MessageBubble } from '../components/MessageBubble';
 import { Composer } from '../components/Composer';
 import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
@@ -54,7 +54,8 @@ export function ChatScreen({ navigation }: Props) {
    * above the composer. 96 covers the composer + wrap; add the device
    * safe-area so the pill never sits under the home indicator. */
   const scrollBottomOffset = 96 + Math.max(insets.bottom, 0) + 12;
-  const currentModelName = AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.name || 'Model';
+  const currentProvider = state.providers.find((provider) => provider.id === state.selectedModel);
+  const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
 
   // In-session search state
   const [searchActive, setSearchActive] = useState(false);
@@ -390,10 +391,11 @@ export function ChatScreen({ navigation }: Props) {
       {/* Model Picker Modal — mirrors frontend `.model-picker` menu */}
       <ModelPickerModal
         visible={modelPickerOpen}
+        providers={state.providers}
         selectedId={state.selectedModel}
-        onSelect={(modelId) => appStore.setSelectedModel(modelId)}
+        onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Settings')}
+        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('settings.title') || 'Settings' })}
       />
     </Screen>
   );
