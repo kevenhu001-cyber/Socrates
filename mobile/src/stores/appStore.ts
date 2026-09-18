@@ -1,7 +1,7 @@
-import type { Attachment, Message, Session, User } from '@socrates/contracts';
+import type { Attachment, Memory, Message, Project, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
-import { ApiError, apiKeysApi, authApi, configApi, messagesApi, projectConnectorsApi, sessionsApi, type ApiProvider } from '../data/api/client';
+import { ApiError, apiKeysApi, authApi, configApi, memoryApi, messagesApi, projectConnectorsApi, projectsApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
@@ -28,6 +28,8 @@ export interface AppState {
   providers: ApiProvider[];
   composerPlugins: ComposerPluginSelection[];
   selectedComposerPlugins: ComposerPluginSelection[];
+  memories: Memory[];
+  projects: Project[];
   selectedModel: string;
   activeExtension: MobileExtensionKey | null;
   reasoningEffort: ReasoningEffort;
@@ -50,6 +52,8 @@ const initialState: AppState = {
   providers: [],
   composerPlugins: [],
   selectedComposerPlugins: [],
+  memories: [],
+  projects: [],
   selectedModel: 'beagle-built-in',
   activeExtension: null,
   reasoningEffort: 'medium',
@@ -131,7 +135,7 @@ class AppStore {
           error: tSync('chat.offlineBanner'),
         });
       }
-      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()]);
+      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.refreshMemories(), this.refreshProjects(), this.syncOutbox()]);
     } catch (criticalError) {
       console.error('[AppStore] Fatal bootstrap failure, unlocking loading screen:', criticalError);
       this.setState({ authStatus: 'signedOut', user: null, isLoading: false });
@@ -143,7 +147,7 @@ class AppStore {
     try {
       const user = await authApi.login(email, password);
       this.setState({ authStatus: 'signedIn', user, isLoading: false });
-      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()]);
+      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.refreshMemories(), this.refreshProjects(), this.syncOutbox()]);
     } catch (error) {
       this.setState({ isLoading: false, error: error instanceof Error ? error.message : tSync('auth.cannotSignIn') });
       throw error;
@@ -152,7 +156,7 @@ class AppStore {
 
   async loginWithUser(user: User) {
     this.setState({ authStatus: 'signedIn', user, isLoading: false, error: null });
-    await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()]);
+    await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.refreshMemories(), this.refreshProjects(), this.syncOutbox()]);
   }
 
   async logout() {
@@ -281,6 +285,31 @@ class AppStore {
     });
   }
 
+  async refreshMemories() {
+    try {
+      const response = await memoryApi.list();
+      const memories = (Array.isArray(response.memories) ? response.memories : [])
+        .filter((memory) => memory.enabled !== false);
+      this.setState({ memories });
+      return memories;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 0) this.setState({ isOnline: false });
+      throw error;
+    }
+  }
+
+  async refreshProjects() {
+    try {
+      const response = await projectsApi.list();
+      const projects = Array.isArray(response.projects) ? response.projects : [];
+      this.setState({ projects });
+      return projects;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 0) this.setState({ isOnline: false });
+      throw error;
+    }
+  }
+
   async refreshSessions() {
     this.setState({ isLoading: true });
     try {
@@ -388,7 +417,7 @@ class AppStore {
 
   async resumeForeground() {
     const sessionId = this.state.activeSession?.id;
-    const tasks: Promise<unknown>[] = [this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()];
+    const tasks: Promise<unknown>[] = [this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.refreshMemories(), this.refreshProjects(), this.syncOutbox()];
     if (sessionId) tasks.push(sessionRepository.get(sessionId).then((session) => {
       if (session) this.setState({ activeSession: session });
     }));
@@ -637,6 +666,27 @@ class AppStore {
           role: 'system',
           content: `[template:${extension.key}]\n${extension.systemPrompt}`,
         });
+      }
+
+      // Match frontend appendClientContextMessages(): memories and active
+      // project are separate system blocks so the server can classify them
+      // into untrusted context vs project-level response behavior.
+      if (this.state.memories.length) {
+        history.push({
+          role: 'system',
+          content:
+            "\n\n## User's saved memories (long-term context)\n" +
+            this.state.memories.map((memory) => `- ${String(memory.text || '')}`).join('\n'),
+        });
+      }
+      if (session.projectId) {
+        const project = this.state.projects.find((item) => item.id === session.projectId);
+        if (project) {
+          let projectContext = `\n\n## Active project\nProject: ${String(project.name || 'Untitled')}`;
+          if (project.description) projectContext += `\nPurpose: ${String(project.description)}`;
+          if (project.systemPrompt) projectContext += `\nProject instructions: ${String(project.systemPrompt)}`;
+          history.push({ role: 'system', content: projectContext });
+        }
       }
       const lastHistory = history.at(-1);
       if (lastHistory?.role === 'user' && referencedPageBlocks.length) {
