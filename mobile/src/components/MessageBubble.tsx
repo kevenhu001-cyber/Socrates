@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
@@ -83,6 +84,154 @@ function StreamingIcon({ color }: { color: string }) {
   );
 }
 
+function ThinkingLiveDot({ color }: { color: string }) {
+  const opacity = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.45, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+  return <Animated.View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color, opacity }} />;
+}
+
+function ThinkingPanel({
+  visible,
+  text,
+  streaming,
+  onClose,
+}: {
+  visible: boolean;
+  text: string;
+  streaming: boolean;
+  onClose: () => void;
+}) {
+  const { colors, typography, fontScale } = useTheme();
+  const t = useT();
+  const { width } = useWindowDimensions();
+  const mobile = width <= 768;
+  const progress = useRef(new Animated.Value(0)).current;
+  const backdrop = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!visible) return;
+    progress.setValue(0);
+    backdrop.setValue(0);
+    const animation = Animated.parallel([
+      Animated.timing(backdrop, { toValue: 1, duration: 160, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: mobile ? 280 : 240,
+        easing: Easing.bezier(0.22, 1, 0.36, 1),
+        useNativeDriver: true,
+      }),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [backdrop, mobile, progress, visible]);
+
+  if (!visible) return null;
+
+  const translate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: mobile ? [42, 0] : [30, 0],
+  });
+  const panelOpacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] });
+  const title = t('think.panelTitle') === 'think.panelTitle' ? 'Thought process' : t('think.panelTitle');
+  const empty = t('think.panelEmpty') === 'think.panelEmpty'
+    ? 'The model has not started thinking yet.'
+    : t('think.panelEmpty');
+  const count = text.length;
+  const countLabel = count === 1
+    ? (t('think.wordCountOne') === 'think.wordCountOne' ? '1 word' : t('think.wordCountOne'))
+    : (t('think.wordCount') === 'think.wordCount' ? '{n} words' : t('think.wordCount')).replace('{n}', String(count));
+
+  const panel = (
+    <Animated.View
+      style={[
+        styles.thinkingPanel,
+        mobile ? styles.thinkingPanelMobile : styles.thinkingPanelDesktop,
+        {
+          backgroundColor: colors.background,
+          borderColor: withAlpha(colors.border, 0.28),
+          opacity: panelOpacity,
+          transform: [mobile ? { translateY: translate } : { translateX: translate }],
+        },
+      ]}
+    >
+      <View style={[styles.thinkingPanelHead, { borderBottomColor: withAlpha(colors.border, 0.18) }]}>
+        <View style={styles.thinkingPanelHeading}>
+          <Text
+            style={[
+              styles.thinkingPanelTitle,
+              { color: colors.text, fontFamily: typography.semibold, fontSize: 14 * fontScale },
+            ]}
+          >
+            {title}
+          </Text>
+          {streaming ? <ThinkingLiveDot color={withAlpha(colors.accent, 0.85)} /> : null}
+        </View>
+        <Text style={[styles.thinkingPanelMeta, { color: colors.textSubtle, fontSize: 11 * fontScale }]}>
+          {countLabel}
+        </Text>
+        <AnimatedPressable
+          accessibilityLabel={t('think.closePanel') === 'think.closePanel' ? 'Close thinking panel' : t('think.closePanel')}
+          onPress={onClose}
+          style={styles.thinkingPanelClose}
+        >
+          <Ionicons name="close" size={15} color={colors.textMuted} />
+        </AnimatedPressable>
+      </View>
+      <ScrollView
+        style={styles.thinkingPanelBody}
+        contentContainerStyle={styles.thinkingPanelBodyContent}
+        showsVerticalScrollIndicator
+      >
+        {text ? (
+          <Markdown text={text} streaming={streaming} />
+        ) : (
+          <Text
+            style={[
+              styles.thinkingPanelEmpty,
+              { color: colors.textSubtle, fontFamily: typography.body, fontSize: 12.5 * fontScale },
+            ]}
+          >
+            {empty}
+          </Text>
+        )}
+      </ScrollView>
+    </Animated.View>
+  );
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
+      {mobile ? (
+        <Animated.View style={[styles.thinkingBackdrop, { backgroundColor: 'rgba(0,0,0,0.45)', opacity: backdrop }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close thinking panel" />
+        </Animated.View>
+      ) : (
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: backdrop }]}>
+          <BlurView tint="dark" intensity={18} style={StyleSheet.absoluteFill}>
+            <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} onPress={onClose} accessibilityLabel="Close thinking panel" />
+          </BlurView>
+        </Animated.View>
+      )}
+      {panel}
+    </Modal>
+  );
+}
+
 export const MessageBubble = React.memo(function MessageBubble({
   message,
   isLastAssistant = false,
@@ -100,16 +249,9 @@ export const MessageBubble = React.memo(function MessageBubble({
   const [rating, setRating] = useState<'up' | 'down' | 'none'>('none');
   const [speaking, setSpeaking] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [reasoningExpanded, setReasoningExpanded] = useState(true);
+  const [thinkingPanelOpen, setThinkingPanelOpen] = useState(false);
 
   useEffect(() => () => { void Speech.stop(); }, []);
-
-  // During streaming, keep reasoning expanded. Once finished, collapse by default if long
-  useEffect(() => {
-    if (!streaming && message.reasoningContent && message.reasoningContent.length > 200) {
-      setReasoningExpanded(false);
-    }
-  }, [streaming, message.reasoningContent]);
 
   const rate = async (next: 'up' | 'down') => {
     const value = rating === next ? 'none' : next;
@@ -141,7 +283,7 @@ export const MessageBubble = React.memo(function MessageBubble({
     });
   };
 
-  if (!text && !message.reasoningContent && !message.toolCalls?.length && !message.attachments?.length) {
+  if (!streaming && !text && !message.toolCalls?.length && !message.attachments?.length) {
     return null;
   }
 
@@ -166,42 +308,30 @@ export const MessageBubble = React.memo(function MessageBubble({
           },
         ]}
       >
-        {/* Collapsible Reasoning Block (<think>) */}
-        {!isUser && message.reasoningContent ? (
-          <View style={[styles.reasoningCard, { backgroundColor: colors.reasoningBg, borderColor: colors.border, borderRadius: radius.md }]}>
-            <AnimatedPressable
-              onPress={() => setReasoningExpanded(!reasoningExpanded)}
-              style={styles.reasoningHeader}
-            >
-              <View style={styles.reasoningTitleWrap}>
-                {streaming ? (
-                  <StreamingIcon color={colors.accent} />
-                ) : (
-                  <Ionicons
-                    name="bulb-outline"
-                    size={14}
-                    color={colors.textMuted}
-                  />
-                )}
-                <Text style={[styles.reasoningLabel, { color: colors.textSecondary, fontFamily: typography.medium }]}>
-                  {streaming ? (t('think.thinking') || 'Thinking…') : (t('think.title') || 'Thinking process')}
-                </Text>
-              </View>
-              <Ionicons
-                name={reasoningExpanded ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={colors.textMuted}
-              />
-            </AnimatedPressable>
-
-            {reasoningExpanded ? (
-              <View style={[styles.reasoningContentWrap, { borderLeftColor: colors.accent }]}>
-                <Text selectable style={[styles.reasoningText, { color: colors.reasoningFg, fontFamily: typography.body }]}>
-                  {message.reasoningContent}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+        {/* Current SPA parity: reasoning is a live clickable status only.
+            The full trace lives in the responsive ThinkingPanel. The pill
+            disappears when streaming settles, while an already-open panel
+            stays visible with the completed trace. */}
+        {!isUser && streaming ? (
+          <AnimatedPressable
+            accessibilityRole="button"
+            accessibilityLabel={t('think.thinking') || 'Thinking…'}
+            onPress={() => setThinkingPanelOpen(true)}
+            style={styles.thinkingStatus}
+          >
+            <StreamingIcon color={colors.textSecondary} />
+            <Text style={[styles.thinkingStatusText, { color: colors.textSecondary, fontFamily: typography.body }]}>
+              {t('think.thinking') || 'Thinking…'}
+            </Text>
+          </AnimatedPressable>
+        ) : null}
+        {!isUser ? (
+          <ThinkingPanel
+            visible={thinkingPanelOpen}
+            text={message.reasoningContent || ''}
+            streaming={streaming}
+            onClose={() => setThinkingPanelOpen(false)}
+          />
         ) : null}
 
         {/* Attachments */}
@@ -307,35 +437,90 @@ const styles = StyleSheet.create({
   bubble: {},
   /* frontend `.msg-body`: font-size 15px, line-height 1.625 (~24). */
   text: { fontSize: 15, lineHeight: 24 },
-  reasoningCard: {
-    borderWidth: 1,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  reasoningHeader: {
+  thinkingStatus: {
+    alignSelf: 'flex-start',
+    minHeight: 25,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 7,
+    marginBottom: 4,
   },
-  reasoningTitleWrap: {
+  thinkingStatusText: {
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  thinkingBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  thinkingPanel: {
+    position: 'absolute',
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+  },
+  thinkingPanelMobile: {
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '40%',
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    shadowOffset: { width: 0, height: -18 },
+    shadowOpacity: 0.5,
+    shadowRadius: 50,
+    elevation: 24,
+  },
+  thinkingPanelDesktop: {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '90%',
+    maxWidth: 420,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    shadowOffset: { width: -18, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 50,
+    elevation: 24,
+  },
+  thinkingPanelHead: {
+    minHeight: 57,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  reasoningLabel: {
-    fontSize: 12,
+  thinkingPanelHeading: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  reasoningContentWrap: {
-    marginHorizontal: 12,
-    marginBottom: 10,
-    paddingVertical: 2,
+  thinkingPanelTitle: { fontWeight: '600' },
+  thinkingPanelMeta: { flexShrink: 0 },
+  thinkingPanelClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  reasoningText: {
-    fontSize: 12,
-    lineHeight: 18,
+  thinkingPanelBody: { flex: 1 },
+  thinkingPanelBodyContent: {
+    paddingTop: 16,
+    paddingHorizontal: 18,
+    paddingBottom: 22,
   },
+  thinkingPanelEmpty: { lineHeight: 20 },
   attachment: {
     flexDirection: 'row',
     alignItems: 'center',
