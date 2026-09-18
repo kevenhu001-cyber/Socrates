@@ -400,6 +400,59 @@ class AppStore {
     });
   }
 
+  async jumpToTutorNode(sessionId: string, nodeIndex: number) {
+    if (this.state.isStreaming) return false;
+    try {
+      const loaded = await sessionRepository.get(sessionId);
+      if (!loaded || loaded.mode !== 'tutor') return false;
+      const nodes = tutorNodes(loaded);
+      const index = Math.max(0, Math.min(Math.trunc(nodeIndex), Math.max(0, nodes.length - 1)));
+      const node = nodes[index];
+      if (!node) return false;
+
+      const session: Session = {
+        ...loaded,
+        currentNode: index,
+        updatedAt: new Date().toISOString(),
+      };
+      this.setState({
+        activeSession: session,
+        draft: '',
+        pendingAttachments: [],
+        isIncognito: false,
+        activeExtension: null,
+        selectedComposerPlugins: [],
+        tutorSubstantiveCount: 0,
+        tutorStuckCount: 0,
+        linkPreviews: {},
+        error: null,
+      });
+
+      if (!this.state.isOnline) {
+        this.setState({ error: tSync('chat.offline') });
+        return true;
+      }
+
+      const messages = session.messages || [];
+      const stage = (session.teachingStage || 'motivate') as TutorTeachingStage;
+      const applicationPrompt = buildTutorApplicationPrompt(
+        session.topic || session.domain || '',
+        node,
+        stage,
+        {
+          first: true,
+          diagnosticNotes: tutorDiagnosticNotes(node),
+        },
+      );
+      await this.persistTutorInteraction(session);
+      await this.startAssistantStream(session, messages, [], undefined, applicationPrompt);
+      return true;
+    } catch (error) {
+      this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      return false;
+    }
+  }
+
   async renameSession(sessionId: string, title: string) {
     const nextTitle = title.trim();
     if (!nextTitle) return;
