@@ -20,7 +20,7 @@ import { Screen } from '../components/Screen';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
-import { appStore } from '../stores/appStore';
+import { appStore, useAppStore } from '../stores/appStore';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Knowledge'>;
@@ -120,6 +120,7 @@ function historyEntries(history: JsonValue[] | undefined) {
 export function KnowledgeScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
+  const appState = useAppStore();
   const { width: viewportWidth } = useWindowDimensions();
   const [items, setItems] = useState<KnowledgeNode[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
@@ -243,13 +244,25 @@ export function KnowledgeScreen({ navigation }: Props) {
           contentContainerStyle={styles.scroll}
         >
           <View style={styles.headerRow}>
-            <View>
-              <Text style={[styles.fileTitle, { color: colors.text, fontFamily: typography.display }]}>
-                {t('tutor.kbFileTitle') === 'tutor.kbFileTitle' ? 'Knowledge Boundary' : t('tutor.kbFileTitle')}
-              </Text>
-              <Text style={[styles.updated, { color: colors.textSubtle, fontFamily: typography.body }]}>
-                {t('knowledge.total', { count: summary.total || grouped.length })}
-              </Text>
+            <View style={styles.fileHeadLine}>
+              <View style={styles.fileHeadCopy}>
+                <Text style={[styles.fileTitle, { color: colors.text, fontFamily: typography.display }]}>
+                  {t('tutor.kbFileTitle') === 'tutor.kbFileTitle' ? 'Knowledge Boundary' : t('tutor.kbFileTitle')}
+                </Text>
+                <Text style={[styles.updated, { color: colors.textSubtle, fontFamily: typography.body }]}>
+                  {t('knowledge.total', { count: summary.total || grouped.length })}
+                </Text>
+              </View>
+              {appState.activeSession?.mode === 'tutor' && Array.isArray(appState.activeSession.kbNodes) && appState.activeSession.kbNodes.length ? (
+                <AnimatedPressable
+                  onPress={() => { void appStore.saveKnowledgeSnapshot(); }}
+                  style={[styles.snapshotButton, { borderColor: colors.border, borderRadius: radius.sm }]}
+                >
+                  <Text style={[styles.snapshotButtonText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+                    {t('tutor.kbSnapshot') === 'tutor.kbSnapshot' ? 'Save snapshot' : t('tutor.kbSnapshot')}
+                  </Text>
+                </AnimatedPressable>
+              ) : null}
             </View>
             <View style={styles.legend}>
               {(['internalized', 'fuzzy', 'blank'] as const).map((status) => (
@@ -353,6 +366,28 @@ export function KnowledgeScreen({ navigation }: Props) {
             typography={typography}
             onPress={openDetail}
           />
+          {appState.activeSession?.mode === 'tutor' && Array.isArray(appState.activeSession.boundariesHistory) && appState.activeSession.boundariesHistory.length ? (
+            <View style={styles.snapshotHistory}>
+              <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>
+                {t('tutor.kbHistory') === 'tutor.kbHistory' ? 'Snapshot history' : t('tutor.kbHistory')}
+              </Text>
+              {appState.activeSession.boundariesHistory.slice(-8).reverse().map((entry, index) => {
+                const item = entry && typeof entry === 'object' && !Array.isArray(entry)
+                  ? entry as Record<string, JsonValue>
+                  : {};
+                return (
+                  <View key={index} style={[styles.snapshotRow, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.snapshotDate, { color: colors.textSubtle, fontFamily: typography.mono }]}>
+                      {String(item.date || '')}
+                    </Text>
+                    <Text style={[styles.snapshotSummary, { color: colors.textMuted, fontFamily: typography.body }]}>
+                      {String(item.summary || '')}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
         </ScrollView>
       )}
 
@@ -596,7 +631,11 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 24, textAlign: 'center' },
   emptyBody: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginTop: 10 },
   headerRow: { paddingHorizontal: 4, paddingTop: 16, paddingBottom: 14, gap: 12 },
+  fileHeadLine: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  fileHeadCopy: { flex: 1, minWidth: 0 },
   fileTitle: { fontSize: 26, lineHeight: 34 },
+  snapshotButton: { minHeight: 34, paddingHorizontal: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  snapshotButtonText: { fontSize: 10.5 },
   updated: { fontSize: 11, marginTop: 4 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -632,5 +671,9 @@ const styles = StyleSheet.create({
   historyDate: { fontSize: 10 },
   historyText: { fontSize: 11.5, lineHeight: 17 },
   historyEmpty: { fontSize: 12, lineHeight: 18 },
+  snapshotHistory: { marginTop: 26, paddingHorizontal: 4 },
+  snapshotRow: { minHeight: 38, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  snapshotDate: { width: 82, fontSize: 10 },
+  snapshotSummary: { flex: 1, fontSize: 11.5 },
   goButton: { minHeight: 48, marginTop: 24, alignItems: 'center', justifyContent: 'center' },
 });
