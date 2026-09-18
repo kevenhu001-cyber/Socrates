@@ -421,18 +421,16 @@ export const MessageBubble = React.memo(function MessageBubble({
         style={[
           styles.bubble,
           {
-            /* frontend `.msg.user .msg-body`:
-             *   background: hsl(var(--bg-000)); border: none;
-             *   border-radius: 24px (`styles.css:1881`);
-             *   padding: 9px 18px; max-width: 90%;
-             * The hairline border mobile drew has no web equivalent. */
+            /* Final authority is chat-surface.css (loaded after the older
+             * stylesheets): user bubbles are 15px radius, 11x16 padding and
+             * capped at 86% of the conversation width. */
             backgroundColor: isUser ? colors.surfaceRaised : 'transparent',
             borderColor: 'transparent',
             borderWidth: 0,
-            borderRadius: isUser ? 24 : 0,
-            paddingHorizontal: isUser ? 18 : 0,
-            paddingVertical: isUser ? 9 : 0,
-            maxWidth: isUser ? '90%' : '100%',
+            borderRadius: isUser ? 15 : 0,
+            paddingHorizontal: isUser ? 16 : 0,
+            paddingVertical: isUser ? 11 : 0,
+            maxWidth: isUser ? '86%' : '100%',
           },
         ]}
       >
