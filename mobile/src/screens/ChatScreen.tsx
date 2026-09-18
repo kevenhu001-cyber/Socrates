@@ -186,11 +186,17 @@ export function ChatScreen({ navigation }: Props) {
         message={item}
         isLastAssistant={index === lastAssistantIndex}
         onRetry={() => { void appStore.retryLastResponse(); }}
+        onEdit={(messageId, text) => appStore.editUserMessage(messageId, text)}
+        onDelete={(messageId) => appStore.deleteUserMessage(messageId)}
+        onShare={onShare}
+        onRegenerate={(messageId) => appStore.regenerateAssistantMessage(messageId)}
+        onBranch={(messageId, options) => appStore.branchFromMessage(messageId, options)}
+        onFeedback={(messageId, rating) => appStore.sendMessageFeedback(messageId, rating)}
         onIterate={(text) => appStore.setDraft(text)}
         highlight={searchActive ? searchQuery : undefined}
       />
     ),
-    [lastAssistantIndex, searchActive, searchQuery]
+    [lastAssistantIndex, onShare, searchActive, searchQuery]
   );
 
   const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
