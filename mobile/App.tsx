@@ -35,6 +35,7 @@ import { ArtifactPreviewScreen } from './src/screens/ArtifactPreviewScreen';
 import { ChatScreen } from './src/screens/ChatScreen';
 import { EmbeddedWebScreen } from './src/screens/EmbeddedWebScreen';
 import { ExamScreen } from './src/screens/ExamScreen';
+import { DisplaySettingsScreen } from './src/screens/DisplaySettingsScreen';
 import { MoreScreen } from './src/screens/MoreScreen';
 import { NewChatScreen } from './src/screens/NewChatScreen';
 import { PluginsScreen } from './src/screens/PluginsScreen';
@@ -161,6 +162,11 @@ function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof Root
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
+          options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
+        />
+        <Stack.Screen
+          name="Display"
+          component={DisplaySettingsScreen}
           options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }}
         />
         <Stack.Screen name="Search" component={SearchScreen} />
