@@ -20,7 +20,7 @@ import type { Message } from '@socrates/contracts';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { useAppDrawer } from '../components/AppDrawer';
-import { ModelPickerModal } from '../components/ModelPickerModal';
+import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
 import { MessageBubble } from '../components/MessageBubble';
 import { Composer } from '../components/Composer';
 import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
@@ -49,6 +49,7 @@ export function ChatScreen({ navigation }: Props) {
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
   const insets = useSafeAreaInsets();
   /* frontend `.new-reply-pill`: `bottom: calc(96px + safe-area + 12px)`
    * above the composer. 96 covers the composer + wrap; add the device
@@ -200,7 +201,7 @@ export function ChatScreen({ navigation }: Props) {
         conversationActive
         title={state.activeSession?.title || (state.activeSession?.mode === 'tutor' ? 'Tutor' : 'Chat')}
         activeModelName={currentModelName}
-        onOpenModelPicker={() => setModelPickerOpen(true)}
+        onOpenModelPicker={(anchor) => { setModelPickerAnchor(anchor || null); setModelPickerOpen(true); }}
         onShare={() => { void onShare(); }}
         onMore={openDrawer}
         onSearchInSession={() => {
@@ -392,6 +393,8 @@ export function ChatScreen({ navigation }: Props) {
       <ModelPickerModal
         visible={modelPickerOpen}
         providers={state.providers}
+        anchor={modelPickerAnchor}
+        variant="chat"
         selectedId={state.selectedModel}
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
