@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
@@ -17,22 +17,22 @@ import { isValidLoginCode, normalizeLoginCode } from '../data/auth/loginCode';
 type AuthView = 'signin' | 'register' | 'verifySent' | 'verifyFailed' | 'verifying' | 'forgot' | 'forgotSent' | 'reset' | 'resetSuccess' | 'code';
 
 function AuthField({ label, ...props }: TextInputProps & { label: string }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, radius, typography, fontScale } = useTheme();
   return (
     <View style={styles.field}>
-      <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium, fontSize: 11 * fontScale }]}>{label}</Text>
       <TextInput
         {...props}
         accessibilityLabel={label}
         placeholderTextColor={colors.textSubtle}
-        style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.sm, fontFamily: typography.body }, props.style]}
+        style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.sm, fontFamily: typography.body, fontSize: 14 * fontScale }, props.style]}
       />
     </View>
   );
 }
 
 function AuthButton({ label, busy, secondary = false, icon, onPress, disabled, testID }: { label: string; busy?: boolean; secondary?: boolean; icon?: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; disabled?: boolean; testID?: string }) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, radius, typography, fontScale } = useTheme();
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -41,10 +41,10 @@ function AuthButton({ label, busy, secondary = false, icon, onPress, disabled, t
       onPress={onPress}
       style={[styles.button, { borderRadius: radius.sm }, secondary ? { borderColor: colors.border, borderWidth: 1, backgroundColor: 'transparent' } : { backgroundColor: colors.accent }]}
     >
-      {busy ? <ActivityIndicator color={secondary ? colors.text : colors.white} /> : (
+      {busy ? <ActivityIndicator color={secondary ? colors.text : colors.textInverse} /> : (
         <View style={styles.buttonCopy}>
           {icon ? <Ionicons name={icon} size={19} color={secondary ? colors.text : colors.white} /> : null}
-          <Text style={[styles.buttonText, { color: secondary ? colors.text : colors.white, fontFamily: typography.medium }]}>{label}</Text>
+          <Text style={[styles.buttonText, { color: secondary ? colors.text : colors.textInverse, fontFamily: typography.medium, fontSize: 14 * fontScale }]}>{label}</Text>
         </View>
       )}
     </AnimatedPressable>
@@ -58,7 +58,9 @@ function StateIcon({ name, success = false, warning = false }: { name: React.Com
 }
 
 export function AuthScreen() {
-  const { colors, radius, typography, shadows } = useTheme();
+  const { colors, radius, typography, shadows, fontScale } = useTheme();
+  const { width } = useWindowDimensions();
+  const compact = width <= 600;
   const t = useT();
   const [view, setView] = useState<AuthView>('signin');
   const [email, setEmail] = useState('');
@@ -202,7 +204,7 @@ export function AuthScreen() {
   const guestControl = (
     <AnimatedPressable accessibilityRole="checkbox" accessibilityState={{ checked: guest }} onPress={() => setGuest((value) => !value)} style={styles.guestRow}>
       <View style={[styles.checkbox, { borderColor: guest ? colors.accent : colors.borderStrong, backgroundColor: guest ? colors.accent : 'transparent' }]}>{guest ? <Ionicons name="checkmark" size={14} color={colors.textInverse} /> : null}</View>
-      <Text style={[styles.guestText, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.guestMode')}</Text>
+      <Text style={[styles.guestText, { color: colors.textMuted, fontFamily: typography.body, fontSize: 12.5 * fontScale }]}>{t('auth.guestMode')}</Text>
     </AnimatedPressable>
   );
 
@@ -213,7 +215,7 @@ export function AuthScreen() {
         <View style={[styles.tabs, { borderBottomColor: colors.border }]}> 
           {(['signin', 'register'] as const).map((tab) => (
             <AnimatedPressable key={tab} accessibilityRole="tab" accessibilityState={{ selected: view === tab }} onPress={() => show(tab)} style={styles.tab}>
-              <Text style={[styles.tabText, { color: view === tab ? colors.text : colors.textMuted, fontFamily: typography.medium }]}>{tab === 'signin' ? t('auth.signIn') : t('auth.createAccount')}</Text>
+              <Text style={[styles.tabText, { color: view === tab ? colors.text : colors.textMuted, fontFamily: typography.medium, fontSize: 13 * fontScale }]}>{tab === 'signin' ? t('auth.signIn') : t('auth.createAccount')}</Text>
               {view === tab ? <View style={[styles.activeLine, { backgroundColor: colors.accent }]} /> : null}
             </AnimatedPressable>
           ))}
@@ -222,14 +224,14 @@ export function AuthScreen() {
           <>
             <AuthField testID="auth-email-input" label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" placeholder="you@example.com" />
             <AuthField label={t('auth.password')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="current-password" placeholder="••••••••" />
-            <AnimatedPressable onPress={() => show('forgot')} style={styles.inlineRight}><Text style={[styles.inlineLink, { color: colors.accent, fontFamily: typography.body }]}>{t('auth.forgotPassword')}</Text></AnimatedPressable>
+            <AnimatedPressable onPress={() => show('forgot')} style={styles.inlineRight}><Text style={[styles.inlineLink, { color: colors.accent, fontFamily: typography.body, fontSize: 12 * fontScale }]}>{t('auth.forgotPassword')}</Text></AnimatedPressable>
             {error ? <Text style={[styles.error, { color: colors.danger, fontFamily: typography.body }]}>{error}</Text> : null}
             {guestControl}
             <AuthButton testID="auth-sign-in-button" label={t('auth.signIn')} busy={busy} onPress={() => { void submitSignIn(); }} />
-            <View style={styles.separator}><View style={[styles.separatorLine, { backgroundColor: colors.border }]} /><Text style={[styles.separatorText, { color: colors.textSubtle, fontFamily: typography.body }]}>{t('auth.or')}</Text><View style={[styles.separatorLine, { backgroundColor: colors.border }]} /></View>
+            <View style={styles.separator}><View style={[styles.separatorLine, { backgroundColor: colors.border }]} /><Text style={[styles.separatorText, { color: colors.textSubtle, fontFamily: typography.body, fontSize: 11 * fontScale }]}>{t('auth.or')}</Text><View style={[styles.separatorLine, { backgroundColor: colors.border }]} /></View>
             <AuthButton label={t('auth.github')} busy={busy} secondary icon="logo-github" onPress={() => { void signInWithGithub(); }} />
             <AnimatedPressable onPress={() => show('code')} style={styles.centerLink}><Text style={[styles.inlineLink, { color: colors.accent, fontFamily: typography.body }]}>{t('auth.codeLogin')}</Text></AnimatedPressable>
-            <Text style={[styles.foot, { color: colors.textSubtle, fontFamily: typography.body }]}>{t('auth.noAccount')} <Text onPress={() => show('register')} style={{ color: colors.accent }}>{t('auth.createOne')}</Text></Text>
+            <Text style={[styles.foot, { color: colors.textSubtle, fontFamily: typography.body, fontSize: 12 * fontScale }]}>{t('auth.noAccount')} <Text onPress={() => show('register')} style={{ color: colors.accent }}>{t('auth.createOne')}</Text></Text>
           </>
         ) : (
           <>
@@ -264,11 +266,11 @@ export function AuthScreen() {
          * `.auth-gate { background-image: linear-gradient(... 32px grid)` */}
         <AuthGridBackground lineColor={colors.source.border.default} />
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-          <View style={[styles.card, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 18 }, shadows.authCard]}>
-            <View style={styles.brand}><BrandMark size={25} /><Text style={[styles.brandText, { color: colors.text, fontFamily: typography.semibold }]}>Socrates</Text></View>
+          <View style={[styles.card, compact && styles.cardCompact, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 18 }, shadows.authCard]}>
+            <View style={styles.brand}><BrandMark size={25} /><Text style={[styles.brandText, { color: colors.text, fontFamily: typography.semibold, fontSize: 17 * fontScale }]}>Socrates</Text></View>
             {content}
           </View>
-          <Text style={[styles.footnote, { color: colors.textSubtle, fontFamily: typography.body }]}>{t('auth.footnote')}</Text>
+          <Text style={[styles.footnote, { color: colors.textSubtle, fontFamily: typography.body, fontSize: 11.5 * fontScale, lineHeight: 16 * fontScale }]}>{t('auth.footnote')}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -280,6 +282,7 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 12, paddingVertical: 24 },
   /* frontend `.auth-card { padding: 32px 28px; border-radius: 18px }`. */
   card: { width: '100%', maxWidth: 420, alignSelf: 'center', borderWidth: 1, paddingHorizontal: 28, paddingTop: 32, paddingBottom: 32 },
+  cardCompact: { paddingHorizontal: 16, paddingVertical: 24 },
   brand: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 24 },
   brandText: { fontSize: 18 },
   tabs: { height: 52, flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, marginBottom: 22 },
