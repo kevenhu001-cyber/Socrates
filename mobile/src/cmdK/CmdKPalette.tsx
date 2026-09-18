@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,6 +66,7 @@ export function CmdKPalette() {
   const inputRef = useRef<TextInput>(null);
   const keyboardHeight = useRef(0);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const { height: windowHeight } = useWindowDimensions();
 
   useEffect(() => {
     return cmdKStore.subscribe((next) => {
@@ -112,6 +114,9 @@ export function CmdKPalette() {
       { id: 'nav.projects', kind: 'nav', title: t('sidebar.nav.projects') || 'Projects', icon: 'cube-outline', run: () => navigate('Projects') },
       { id: 'nav.scheduled', kind: 'nav', title: t('sidebar.nav.scheduled') || 'Scheduled', icon: 'time-outline', run: () => navigate('Scheduled') },
       { id: 'nav.plugins', kind: 'nav', title: t('sidebar.nav.plugins') || 'Plugins', icon: 'extension-puzzle-outline', run: () => navigate('Plugins') },
+      { id: 'nav.knowledge', kind: 'nav', title: t('drawer.knowledge') || 'Knowledge map', icon: 'map-outline', run: () => navigate('Knowledge') },
+      { id: 'nav.mistakes', kind: 'nav', title: t('drawer.mistakes') || 'Mistake book', icon: 'book-outline', run: () => navigate('Mistakes') },
+      { id: 'nav.more', kind: 'nav', title: t('sidebar.nav.more') || 'More', icon: 'ellipsis-horizontal', run: () => navigate('More') },
       {
         id: 'nav.settings',
         kind: 'nav',
@@ -262,7 +267,7 @@ export function CmdKPalette() {
       <Pressable
         accessibilityLabel="Close command palette"
         onPress={() => cmdKStore.close()}
-        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+        style={[styles.backdrop, { backgroundColor: colors.scrimModal }]}
       >
         <KeyboardAvoidingViewWrapper offset={keyboardOffset}>
           <Pressable
@@ -270,7 +275,7 @@ export function CmdKPalette() {
             style={[
               styles.panel,
               {
-                backgroundColor: colors.surface,
+                backgroundColor: colors.background,
                 borderColor: colors.border,
                 borderRadius: 14,
               },
@@ -312,7 +317,8 @@ export function CmdKPalette() {
               data={filtered}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
-              style={{ maxHeight: 360 }}
+              style={{ maxHeight: windowHeight * 0.6 }}
+              contentContainerStyle={{ paddingHorizontal: 6 }}
               renderItem={({ item, index }) => {
                 const active = index === selected;
                 return (
@@ -324,6 +330,7 @@ export function CmdKPalette() {
                       {
                         backgroundColor: active ? colors.surfaceHover : 'transparent',
                         paddingHorizontal: spacing.md,
+                        borderRadius: 8,
                       },
                     ]}
                   >
@@ -338,8 +345,8 @@ export function CmdKPalette() {
                         style={[
                           styles.rowTitle,
                           {
-                            color: active ? colors.text : colors.text,
-                            fontFamily: active ? typography.semibold : typography.body,
+                            color: colors.text,
+                            fontFamily: typography.medium,
                             fontSize: fs(14),
                           },
                         ]}

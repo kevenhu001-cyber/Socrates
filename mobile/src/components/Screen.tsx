@@ -37,8 +37,22 @@ export function Screen({ children, scroll = false, keyboard = false, style, ...p
     displayPrefsStore.get,
     displayPrefsStore.get,
   );
+  /* `style` describes the content box in both modes: on the scroll path it
+   * belongs on `contentContainerStyle` (the ScrollView itself is the flex
+   * child). Remaining ViewProps (testID, accessibility, pointerEvents, …) were
+   * previously dropped whenever `scroll` was set — spread them on the
+   * ScrollView so the two modes accept the same props. */
   const content = scroll
-    ? <ScrollView contentContainerStyle={[styles.scroll, style]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+    ? (
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={[styles.scroll, style]}
+        keyboardShouldPersistTaps="handled"
+        {...props}
+      >
+        {children}
+      </ScrollView>
+    )
     : <View style={[styles.content, style]} {...props}>{children}</View>;
 
   /* React Native's built-in KeyboardAvoidingView only receives

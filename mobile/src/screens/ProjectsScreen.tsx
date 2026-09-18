@@ -10,7 +10,7 @@ import { Icon } from '../components/Icon';
 import { AppHeader } from '../components/AppHeader';
 import { Screen } from '../components/Screen';
 import { useTheme } from '../theme/ThemeProvider';
-import { colors as themeColors, withAlpha } from '../theme/theme';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore } from '../stores/appStore';
 import { useResponsive } from '../theme/responsive';
@@ -19,7 +19,26 @@ import type { RootStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<RootStackParamList, 'Projects'>;
 type Draft = { name: string; description: string; systemPrompt: string; color: string };
 
-const EMPTY_DRAFT: Draft = { name: '', description: '', systemPrompt: '', color: themeColors.accent };
+const EMPTY_DRAFT: Draft = { name: '', description: '', systemPrompt: '', color: '' };
+
+/* Preset swatches for the project editor colour row — brand-neutral set
+ * matching the web editor's project colour picker. */
+const PROJECT_COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#64748b'];
+
+/* `projectMeta` twin (`WorkspacePage.tsx:38-46`): short month+day of the
+ * latest timestamp, falling back to the description when undated. */
+function projectMeta(project: Project): string {
+  const record = project as Project & { created_at?: string | number; updated_at?: string | number };
+  const rawDate = project.updatedAt || record.updated_at || project.createdAt || record.created_at;
+  if (rawDate) {
+    const date = new Date(rawDate);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+  }
+  return project.description || '';
+}
+
 
 export function ProjectsScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
@@ -53,7 +72,7 @@ export function ProjectsScreen({ navigation }: Props) {
       name: project?.name || '',
       description: project?.description || '',
       systemPrompt: project?.systemPrompt || '',
-      color: project?.color || themeColors.accent,
+      color: project?.color || colors.accent,
     });
   };
 
@@ -61,7 +80,7 @@ export function ProjectsScreen({ navigation }: Props) {
     if (!draft.name.trim() || busy) return;
     setBusy(true);
     try {
-      const payload = { ...draft, name: draft.name.trim() };
+      const payload = { ...draft, name: draft.name.trim(), color: draft.color || colors.accent };
       const saved = editing ? await projectsApi.update(editing.id, payload) : await projectsApi.create(payload);
       setProjects((current) => editing ? current.map((item) => item.id === saved.id ? saved : item) : [saved, ...current]);
       void appStore.refreshProjects().catch(() => undefined);
@@ -175,6 +194,9 @@ export function ProjectsScreen({ navigation }: Props) {
                   return <AnimatedPressable key={value} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => setScope(value)} style={[styles.filterTab, active && { backgroundColor: colors.surfaceHover, borderRadius: radius.pill }]}><Text style={[styles.filterText, { color: active ? colors.text : colors.textMuted, fontFamily: active ? typography.semibold : typography.medium }]}>{label}</Text></AnimatedPressable>;
                 })}
               </View>
+              {/* `.projects-list-heading` — 'Name' column label above rows
+               * (`WorkspacePage.tsx:306`). */}
+              <Text style={[styles.listLabel, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('projects.name')}</Text>
             </>
           )}
           renderItem={({ item }) => (
@@ -185,7 +207,7 @@ export function ProjectsScreen({ navigation }: Props) {
                 </View>
                 <View style={styles.copy}>
                   <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{item.name}</Text>
-                  <Text numberOfLines={2} style={[styles.rowDescription, { color: colors.textMuted, fontFamily: typography.body }]}>{item.description || text('projects.emptyBody', 'Projects keep related chats, files, and instructions together.')}</Text>
+                  <Text numberOfLines={2} style={[styles.rowDescription, { color: colors.textMuted, fontFamily: typography.body }]}>{projectMeta(item) || text('projects.emptyBody', 'Projects keep related chats, files, and instructions together.')}</Text>
                 </View>
               </AnimatedPressable>
               <AnimatedPressable accessibilityLabel={t('projects.edit')} onPress={() => openEditor(item)} style={[styles.action, { backgroundColor: colors.surfaceHover, borderRadius: radius.pill }]}>
@@ -208,6 +230,30 @@ export function ProjectsScreen({ navigation }: Props) {
               <Field label={t('projects.name')} value={draft.name} placeholder={t('projects.namePlaceholder')} onChangeText={(value) => setDraft({ ...draft, name: value })} colors={colors} radius={radius} />
               <Field label={t('projects.description')} value={draft.description} placeholder={t('projects.descriptionPlaceholder')} onChangeText={(value) => setDraft({ ...draft, description: value })} colors={colors} radius={radius} />
               <Field label={t('projects.instructions')} value={draft.systemPrompt} placeholder={t('projects.instructionsPlaceholder')} onChangeText={(value) => setDraft({ ...draft, systemPrompt: value })} colors={colors} radius={radius} multiline />
+              {/* Project colour — preset swatch row (web project editor
+               * exposes the same colour field the list icon reads). */}
+              <Text style={[styles.label, { color: colors.textMuted }]}>{text('projects.color', 'Colour')}</Text>
+              <View style={styles.swatchRow}>
+                {PROJECT_COLORS.map((color) => {
+                  const active = draft.color === color;
+                  return (
+                    <AnimatedPressable
+                      key={color}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={`${text('projects.color', 'Colour')} ${color}`}
+                      onPress={() => setDraft({ ...draft, color })}
+                      style={[
+                        styles.swatch,
+                        {
+                          backgroundColor: color,
+                          borderColor: active ? colors.text : 'transparent',
+                        },
+                      ]}
+                    />
+                  );
+                })}
+              </View>
               <View style={styles.modalActions}>
                 {editing ? <AnimatedPressable onPress={() => { closeEditor(); remove(editing); }} style={styles.deleteAction}><Text style={{ color: colors.danger }}>{t('projects.delete')}</Text></AnimatedPressable> : <View />}
                 <AnimatedPressable onPress={closeEditor} style={styles.secondary}><Text style={{ color: colors.textMuted }}>{t('common.cancel')}</Text></AnimatedPressable>
@@ -259,10 +305,11 @@ const styles = StyleSheet.create({
   createMobile: { width: 65, minWidth: 65, marginLeft: 'auto', marginRight: -8, paddingHorizontal: 0 },
   createDesktop: { minWidth: 69 },
   createText: { fontSize: 14 },
-  filterTabs: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  filterTabsMobile: { minHeight: 41, marginTop: 32, marginBottom: 0 },
-  filterTabsDesktop: { minHeight: 56, marginTop: 32, marginBottom: 0 },
+  filterTabs: { borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 18 },
+  filterTabsMobile: { minHeight: 41, marginTop: 32 },
+  filterTabsDesktop: { minHeight: 56, marginTop: 32 },
   filterTab: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16 },
+  listLabel: { fontSize: 11, letterSpacing: 0.55, textTransform: 'uppercase', marginBottom: 6 },
   filterText: { fontSize: 16 },
   row: { minHeight: 82, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 12 },
   main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 16, minWidth: 0, paddingVertical: 10 },
@@ -286,5 +333,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 7 },
   input: { minHeight: 46, borderWidth: 1, paddingHorizontal: 12, fontSize: 14 },
   multiline: { minHeight: 92, textAlignVertical: 'top', paddingTop: 12 },
+  swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  swatch: { width: 26, height: 26, borderRadius: 13, borderWidth: 2 },
   modalActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
 });

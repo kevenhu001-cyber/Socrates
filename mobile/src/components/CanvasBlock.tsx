@@ -12,6 +12,10 @@ import { readCanvasEdit, saveCanvasEdit } from '../data/offline/sqlite';
 
 type CanvasMode = 'view-original' | 'view-edited' | 'edit';
 
+/** Matches `styles.originalScroll.maxHeight`; the inner scroller only engages
+ * when the source actually exceeds it. */
+const ORIGINAL_MAX_HEIGHT = 480;
+
 export function CanvasBlock({
   originalText,
   initialEditedText,
@@ -32,6 +36,7 @@ export function CanvasBlock({
   const [editedText, setEditedText] = useState(initialEditedText || originalText);
   const [hasEdited, setHasEdited] = useState(Boolean(initialEditedText));
   const [fullscreen, setFullscreen] = useState(false);
+  const [originalOverflows, setOriginalOverflows] = useState(false);
 
   useEffect(() => {
     const persisted = persistKey ? readCanvasEdit(persistKey) : '';
@@ -78,7 +83,17 @@ export function CanvasBlock({
           style={[styles.editor, { color: colors.text, borderColor: withAlpha(colors.accent, 0.45), fontFamily: typography.body }]}
         />
       ) : mode === 'view-original' ? (
-        <ScrollView style={styles.originalScroll} nestedScrollEnabled>
+        /* Same-direction scroll inside a FlatList row is a gesture fight on
+         * Android. `nestedScrollEnabled` hands the drag back to the list once
+         * the inner view hits its boundary, and `scrollEnabled` stays off while
+         * the source fits inside the 480px cap, so short originals never
+         * capture the gesture at all. */
+        <ScrollView
+          style={styles.originalScroll}
+          nestedScrollEnabled
+          scrollEnabled={originalOverflows}
+          onContentSizeChange={(_w, h) => setOriginalOverflows(h > ORIGINAL_MAX_HEIGHT)}
+        >
           <Text selectable style={[styles.original, { color: colors.textMuted, backgroundColor: colors.toolCardBgSunken, fontFamily: typography.mono }]}>{originalText}</Text>
         </ScrollView>
       ) : (
@@ -122,7 +137,7 @@ const styles = StyleSheet.create({
   button: { height: 28, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, justifyContent: 'center' }, buttonText: { fontSize: 12.5 },
   markdown: { minHeight: 48, paddingHorizontal: 16, paddingVertical: 14 },
   editor: { minHeight: 160, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, lineHeight: 23, borderWidth: 2 },
-  originalScroll: { maxHeight: 480 }, original: { paddingHorizontal: 16, paddingVertical: 14, fontSize: 12.5, lineHeight: 19 },
+  originalScroll: { maxHeight: ORIGINAL_MAX_HEIGHT }, original: { paddingHorizontal: 16, paddingVertical: 14, fontSize: 12.5, lineHeight: 19 },
   editedBadge: { alignSelf: 'flex-start', marginLeft: 14, marginBottom: 8, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 999, borderWidth: 1, fontSize: 11.5 },
   fullscreenScrim: { flex: 1, padding: 24, justifyContent: 'center' }, fullscreenBody: { flex: 1, justifyContent: 'center' },
   fullscreenClose: { position: 'absolute', top: 8, right: 8, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

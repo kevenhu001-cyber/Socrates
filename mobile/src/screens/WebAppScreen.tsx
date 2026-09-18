@@ -16,7 +16,6 @@ import { BrandMark } from '../components/BrandMark';
 import { API_BASE_URL, WEB_BASE_URL } from '../data/api/config';
 import { isExternalScheme, parseMobileBootstrap, parseNativeWebMessage, type WebThemeMode } from './webAppPolicy';
 import { getThemePalette } from '@socrates/theme';
-import { colors as themeColors } from '../theme/theme';
 
 const INITIAL_LOAD_TIMEOUT_MS = 20_000;
 const BOOTSTRAP_TIMEOUT_MS = 10_000;
@@ -201,7 +200,7 @@ export function WebAppScreen() {
           <BrandMark size={72} />
           {loadState === 'loading' ? (
             <>
-              <ActivityIndicator style={styles.spinner} color={themeColors.accent} />
+              <ActivityIndicator style={styles.spinner} color={palette.accent.strong} />
               <Text style={[styles.loadingText, { color: muted }]}>正在加载 Socrates…</Text>
             </>
           ) : (
@@ -211,7 +210,7 @@ export function WebAppScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={retry}
-                style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+                style={({ pressed }) => [styles.retryButton, { backgroundColor: palette.accent.strong }, pressed && styles.retryButtonPressed]}
               >
                 <Text style={[styles.retryText, { color: text }]}>重新加载</Text>
               </Pressable>
@@ -247,7 +246,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 23,
-    backgroundColor: themeColors.accent,
     paddingHorizontal: 24,
   },
   retryButtonPressed: { opacity: 0.82 },

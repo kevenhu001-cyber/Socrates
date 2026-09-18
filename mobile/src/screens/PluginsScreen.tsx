@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SvgXml } from 'react-native-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProjectConnector } from '@socrates/contracts';
 import { projectConnectorsApi } from '../data/api/client';
@@ -13,11 +14,27 @@ import { useT } from '../i18n';
 import { appStore } from '../stores/appStore';
 import { native } from '../native/native';
 import { Icon } from '../components/Icon';
+import { getConnectorIconMarkup } from '../components/connectorMarks';
 import { useResponsive } from '../theme/responsive';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Plugins'>;
 type CredentialDraft = Record<string, string>;
+
+/* Brand mark tile for a connector. Mirrors `ConnectorMark` in
+ * `frontend/src/react/pages/workspace/WorkspacePage.tsx`: real vendor SVG
+ * when the id resolves in `connectorMarks`, monogram fallback otherwise. */
+function ConnectorMark({ id, name, size }: { id: string; name: string; size: number }) {
+  const { colors, radius, typography } = useTheme();
+  const markup = getConnectorIconMarkup(id) || getConnectorIconMarkup(name);
+  return (
+    <View style={[styles.mark, { width: size, height: size, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}>
+      {markup
+        ? <SvgXml xml={markup} width={Math.round(size * 0.62)} height={Math.round(size * 0.62)} />
+        : <Text style={[styles.markText, { color: colors.accent, fontFamily: typography.semibold }]}>{name.slice(0, 2).toUpperCase()}</Text>}
+    </View>
+  );
+}
 
 export function PluginsScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
@@ -90,6 +107,20 @@ export function PluginsScreen({ navigation }: Props) {
     return value === key ? fallback : value;
   };
 
+  /* Web splits the directory into `plugins.popular` (first 6) and
+   * `plugins.new` (the rest) sections (`WorkspacePage.tsx:424-466`).
+   * While searching, results render as a single unlabelled section. */
+  const searching = Boolean(query.trim());
+  const sections = useMemo(() => {
+    if (searching || visibleConnectors.length <= 6) {
+      return [{ title: '', data: visibleConnectors }];
+    }
+    return [
+      { title: text('plugins.popular', 'Popular'), data: visibleConnectors.slice(0, 6) },
+      { title: text('plugins.new', 'New and notable'), data: visibleConnectors.slice(6) },
+    ];
+  }, [searching, visibleConnectors]); // eslint-disable-line react-hooks/exhaustive-deps -- `text` closes over t/scope
+
   const renderAction = (connector: ProjectConnector) => {
     const connection = connector.connection;
     if (connection?.status === 'connected') {
@@ -110,10 +141,13 @@ export function PluginsScreen({ navigation }: Props) {
       <AppHeader showNavigation={isCompact} showIncognito={false} onNewChat={() => { appStore.startNewSession('chat'); navigation.navigate('Home'); }} />
       {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
       {loading ? <Text style={[styles.state, { color: colors.textMuted }]}>{t('app.loading')}</Text> : (
-        <FlatList
-          data={visibleConnectors}
+        <SectionList
+          sections={sections}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          renderSectionHeader={({ section }) => (
+            section.title ? <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>{section.title}</Text> : null
+          )}
           ListHeaderComponent={(
             <>
               <View style={styles.head}>
@@ -136,13 +170,13 @@ export function PluginsScreen({ navigation }: Props) {
                     />
                     {query ? <AnimatedPressable onPress={() => setQuery('')} style={styles.clearSearch}><Icon name="close" size={16} color={colors.textSubtle} /></AnimatedPressable> : null}
                   </View>
-                  <AnimatedPressable accessibilityLabel={text('plugins.add', 'Add plugin')} onPress={() => { void load(); }} style={[styles.add, { borderColor: colors.border, backgroundColor: colors.surface, borderRadius: radius.pill }]}><Icon name="plus" size={22} color={colors.text} /></AnimatedPressable>
+                  <AnimatedPressable accessibilityLabel={text('plugins.refreshStatus', 'Refresh')} onPress={() => { void load(); }} style={[styles.add, { borderColor: colors.border, backgroundColor: colors.surface, borderRadius: radius.pill }]}><Icon name="refresh" size={18} color={colors.text} /></AnimatedPressable>
                 </View>
               </View>
               {installed.length ? (
                 <AnimatedPressable accessibilityRole="button" accessibilityLabel={text('plugins.installed', 'Installed')} onPress={() => setScope('personal')} style={styles.installedStrip}>
                   <View style={styles.installedLabel}><Text style={[styles.installedTitle, { color: colors.textMuted, fontFamily: typography.medium }]}>{text('plugins.installed', 'Installed')}</Text><Ionicons name="chevron-forward" size={15} color={colors.textSubtle} /></View>
-                  <View style={styles.installedIcons}>{installed.map((connector) => <View key={connector.id} style={[styles.installedIcon, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}><Text style={[styles.markText, { color: colors.accent, fontFamily: typography.semibold }]}>{connector.name.slice(0, 2).toUpperCase()}</Text></View>)}</View>
+                  <View style={styles.installedIcons}>{installed.map((connector) => <ConnectorMark key={connector.id} id={connector.id} name={connector.name} size={42} />)}</View>
                 </AnimatedPressable>
               ) : null}
               <View style={styles.scopeTabs}>
@@ -161,7 +195,7 @@ export function PluginsScreen({ navigation }: Props) {
             const connected = connection?.status === 'connected';
             const pending = connection?.status === 'initiated';
             return <View style={[styles.row, { borderBottomColor: colors.border }]}>
-              <View style={[styles.mark, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}><Text style={[styles.markText, { color: colors.accent, fontFamily: typography.semibold }]}>{item.name.slice(0, 2).toUpperCase()}</Text></View>
+              <ConnectorMark id={item.id} name={item.name} size={42} />
               <View style={styles.copy}><Text style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{item.name}</Text><Text numberOfLines={2} style={[styles.description, { color: colors.textMuted, fontFamily: typography.body }]}>{connected ? `${t('plugins.connected')}${connection?.displayName ? ` · ${connection.displayName}` : ''}` : pending ? t('plugins.refresh') : item.description || ''}</Text></View>
               <View style={styles.rowAction}>{renderAction(item)}</View>
             </View>;
@@ -197,12 +231,12 @@ const styles = StyleSheet.create({
   installedLabel: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 10 },
   installedTitle: { fontSize: 13 },
   installedIcons: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  installedIcon: { width: 42, height: 42, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontSize: 15, marginTop: 8, marginBottom: 6 },
   scopeTabs: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 48, marginBottom: 10 },
   scopeTab: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 18 },
   scopeText: { fontSize: 14 },
   row: { minHeight: 76, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  mark: { width: 42, height: 42, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  mark: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   markText: { fontSize: 12, letterSpacing: 0.3 },
   copy: { flex: 1, minWidth: 0, gap: 4 },
   title: { fontSize: 14 },

@@ -6,7 +6,8 @@
  * Frontend ground truth:
  *   DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375] default 1.125 (M)
  *   DISPLAY_WIDTH_STEPS = [0.85, 1, 1.3, 1.7]    default 1 (M)
- *   content column      = 58rem * widthScale (928px at scale 1)
+ *   content column      = 48rem * widthScale (768px at scale 1;
+ *   `--conversation-content-width` in the web workspace)
  *   bg pickers          = free hex, defaults #000000 / #ffffff
  *   grid                = showGrid false default
  * See `frontend/src/displayPrefs.js:10-17`,
@@ -20,8 +21,9 @@ export const DISPLAY_FONT_STEPS = [1, 1.125, 1.25, 1.375] as const;
 export const DISPLAY_WIDTH_STEPS = [0.85, 1, 1.3, 1.7] as const;
 export const FONT_LABELS = ['S', 'M', 'L', 'XL'] as const;
 export const WIDTH_LABELS = ['S', 'M', 'L', 'XL'] as const;
-/** 58rem content column at 16px root (`styles.css:1050`). */
-export const BASE_CONTENT_WIDTH = 928;
+/** 48rem content column at 16px root — the web workspace's
+ * `--conversation-content-width: 768px`. */
+export const BASE_CONTENT_WIDTH = 768;
 
 export function widthScaleToPx(scale: number): number {
   return Math.round(BASE_CONTENT_WIDTH * scale);

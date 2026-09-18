@@ -1,11 +1,13 @@
 import React, { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { Attachment } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useI18n, useT } from '../i18n';
 import { toast } from './Toast';
 import { AnimatedPressable } from './AnimatedPressable';
+import { AttachmentChip } from './AttachmentChip';
 import { ReasoningEffortPicker, type EffortPickerAnchor } from './ReasoningEffortPicker';
 import { useResponsive } from '../theme/responsive';
 import { useVoiceInput, type VoiceInputErrorCode, type VoiceInputStatus } from '../native/voiceInput';
@@ -16,6 +18,10 @@ export interface ComposerProps {
   value: string;
   disabled?: boolean;
   hasAttachments?: boolean;
+  /** Pending attachments — rendered as the web `.attachment-chips` strip
+   *  (typed icon + truncated name + remove) above the editor rows. */
+  attachments?: Attachment[];
+  onRemoveAttachment?: (attachmentId: string) => void;
   reasoningEffort?: ReasoningEffort;
   webSearchEnabled?: boolean;
   onChangeText: (value: string) => void;
@@ -123,9 +129,13 @@ function VoiceRecordingBar({
       ? t('chat.voiceStarting')
       : t('chat.voiceListening');
 
+  /* web `.voice-recording-*` paints the whole bar in the neutral text ramp,
+   * not the accent blue — voiceBlue stays reserved for AttachmentChip. */
+  const voiceColor = colors.text;
+
   return (
     <View style={styles.voiceBar} testID="voice-recording-bar" accessibilityLiveRegion="polite">
-      <View style={[styles.voiceIndicator, { backgroundColor: colors.voiceBlue }]} />
+      <View style={[styles.voiceIndicator, { backgroundColor: voiceColor }]} />
       <View style={styles.voiceCopy}>
         <View style={styles.voiceLabelRow}>
           <Text style={[styles.voiceLabel, { color: colors.text, fontFamily: typography.semibold }]}>{label}</Text>
@@ -135,15 +145,15 @@ function VoiceRecordingBar({
           {transcript || t('chat.voiceSpeak')}
         </Text>
       </View>
-      <VoiceWaveBars color={colors.voiceBlue} level={volume} />
+      <VoiceWaveBars color={voiceColor} level={volume} />
       <AnimatedPressable
         accessibilityRole="button"
         accessibilityLabel={t('chat.voiceStop')}
         disabled={status === 'stopping'}
         onPress={status === 'stopping' ? undefined : onStop}
-        style={[styles.voiceStop, { backgroundColor: withAlpha(colors.voiceBlue, 0.14), borderColor: withAlpha(colors.voiceBlue, 0.35) }]}
+        style={[styles.voiceStop, { backgroundColor: withAlpha(voiceColor, 0.14), borderColor: withAlpha(voiceColor, 0.35) }]}
       >
-        <Ionicons name="stop" size={14} color={colors.voiceBlue} />
+        <Ionicons name="stop" size={14} color={voiceColor} />
       </AnimatedPressable>
     </View>
   );
@@ -153,6 +163,8 @@ export function Composer({
   value,
   disabled = false,
   hasAttachments = false,
+  attachments = [],
+  onRemoveAttachment,
   reasoningEffort = 'medium',
   onChangeText,
   onSend,
@@ -244,6 +256,12 @@ export function Composer({
   const sendIdleBg = colors.surfaceHover;
   const sendIdleFg = colors.textMuted;
   const voiceRecording = voice.status !== 'idle';
+  /* frontend `.chat-input-wrap` card fill. `conversationSurface` is the
+   * canonical token (added by the P0 tokens agent); fall back to the
+   * literal web values until it lands. */
+  const composerSurface =
+    (colors as { conversationSurface?: string }).conversationSurface
+    ?? (mode === 'dark' ? '#212121' : '#f2f2f2');
 
   return (
     <>
@@ -251,15 +269,15 @@ export function Composer({
       style={[
         voiceRecording ? styles.containerVoice : isExpanded ? styles.containerExpanded : styles.containerCapsule,
         {
-          /* `--surface-input` / modal surfaces in frontend all resolve to
-           * `--bg-000`, so the composer sits on the overlay token. */
-          backgroundColor: colors.surfaceRaised,
+          /* `--surface-input` / the conversation composer card — web resolves
+           * it to #212121 dark / #f2f2f2 light via `conversationSurface`. */
+          backgroundColor: composerSurface,
           /* frontend: `border-color: hsl(var(--border-300)/0.24)` at rest.
            * chat-surface.css (final authority) focuses with a neutral ring —
            * dark `rgb(255 255 255 / 23%)`, light `rgb(0 0 0 / 20%)` — not the
            * accent. */
           borderColor: voiceRecording
-            ? withAlpha(colors.voiceBlue, 0.55)
+            ? withAlpha(colors.text, 0.55)
             : focused
             ? withAlpha(mode === 'dark' ? colors.white : colors.black, mode === 'dark' ? 0.23 : 0.2)
             : withAlpha(colors.border, 0.24),
@@ -288,6 +306,24 @@ export function Composer({
           : null,
       ]}
     >
+      {/* `.attachment-chips` — web renders the pending-file strip as
+       * grid-row:1 *inside* `.chat-input-wrap`, so the card owns it. */}
+      {attachments.length ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.attachmentChips}
+          keyboardShouldPersistTaps="handled"
+        >
+          {attachments.map((attachment) => (
+            <AttachmentChip
+              key={attachment.id}
+              attachment={attachment}
+              onRemove={onRemoveAttachment}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
       {voiceRecording ? (
         <VoiceRecordingBar
           status={voice.status === 'idle' ? 'starting' : voice.status}
@@ -397,7 +433,7 @@ export function Composer({
             autoFocus={autoFocus}
             onContentSizeChange={(event) => {
               if (!isCompact) return;
-              const next = Math.max(50, Math.min(220, Math.ceil(event.nativeEvent.contentSize.height)));
+              const next = Math.max(50, Math.min(180, Math.ceil(event.nativeEvent.contentSize.height)));
               setEditorHeight((current) => current === next ? current : next);
             }}
             returnKeyType="default"
@@ -430,12 +466,12 @@ export function Composer({
                   accessibilityRole="button"
                   accessibilityLabel={activeExtensionLabel}
                   onPress={onRemoveActiveExtension}
-                  style={styles.contextChip}
+                  style={[styles.contextChip, { backgroundColor: colors.accentSoft }]}
                 >
-                  <Text numberOfLines={1} style={[styles.contextChipText, { fontFamily: typography.medium }]}>
+                  <Text numberOfLines={1} style={[styles.contextChipText, { color: colors.accent, fontFamily: typography.medium }]}>
                     {activeExtensionLabel}
                   </Text>
-                  {onRemoveActiveExtension ? <Ionicons name="close" size={14} color="#9bcbff" /> : null}
+                  {onRemoveActiveExtension ? <Ionicons name="close" size={14} color={colors.accent} /> : null}
                 </AnimatedPressable>
               ) : null}
               {selectedPlugins.map((plugin) => (
@@ -444,12 +480,12 @@ export function Composer({
                   accessibilityRole="button"
                   accessibilityLabel={plugin.name}
                   onPress={onRemovePlugin ? () => onRemovePlugin(plugin.id) : undefined}
-                  style={styles.contextChip}
+                  style={[styles.contextChip, { backgroundColor: colors.accentSoft }]}
                 >
-                  <Text numberOfLines={1} style={[styles.contextChipText, { fontFamily: typography.medium }]}>
+                  <Text numberOfLines={1} style={[styles.contextChipText, { color: colors.accent, fontFamily: typography.medium }]}>
                     {plugin.name}
                   </Text>
-                  {onRemovePlugin ? <Ionicons name="close" size={14} color="#9bcbff" /> : null}
+                  {onRemovePlugin ? <Ionicons name="close" size={14} color={colors.accent} /> : null}
                 </AnimatedPressable>
               ))}
             </ScrollView>
@@ -519,6 +555,15 @@ export function Composer({
 }
 
 const styles = StyleSheet.create({
+  /* frontend `.attachment-chips`: grid-row:1 inside the input wrap, flex
+   * wrap gap 6px, padding 8px 12px 0 — the RN strip scrolls horizontally. */
+  attachmentChips: {
+    gap: 6,
+    paddingHorizontal: 4,
+    paddingTop: 8,
+    paddingBottom: 6,
+    alignItems: 'center',
+  },
   /* P2-2 alignment: `maxWidth` is a fallback only — the inline style
    * overrides it with the live `contentWidth` displayPref (frontend's
    * `.chat-input-wrap { max-width: 720px }`). `alignSelf: 'center'` is
@@ -606,13 +651,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  /* frontend `#chatInputArea` inherits the 14px body size at
-   * line-height 1.45 → 20px. The previous 16/22 was oversized and made
-   * the resting capsule taller than the web composer. */
+  /* web mobile `#chatInputArea` renders at 17px. */
   singleInput: {
     flex: 1,
     height: 52,
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 24,
     paddingHorizontal: 0,
     paddingVertical: 0,
@@ -627,7 +670,8 @@ const styles = StyleSheet.create({
   },
   expandedInput: {
     minHeight: 40,
-    maxHeight: 220,
+    /* web mobile caps the growing editor at 180px (was 220). */
+    maxHeight: 180,
     fontSize: 17,
     lineHeight: 24,
     paddingHorizontal: 4,
@@ -662,14 +706,12 @@ const styles = StyleSheet.create({
     maxWidth: 160,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: '#064d9e',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
   },
   contextChipText: {
     maxWidth: 125,
-    color: '#9bcbff',
     fontSize: 12,
     lineHeight: 16,
   },

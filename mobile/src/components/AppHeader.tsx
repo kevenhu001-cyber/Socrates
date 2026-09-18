@@ -232,39 +232,33 @@ export function AppHeader({
       <View style={styles.rightGroup}>
         {headerAction ? <View style={styles.headerAction}>{headerAction}</View> : null}
         {conversationActive ? (
-          <View
-            style={[
-              styles.actionPill,
-              {
-                borderColor: colors.border,
-                backgroundColor: circleBg,
-              },
-            ]}
-          >
+          /* Web `.top-bar-right` renders separate `.find-btn` / `.share-btn`
+           * square hairline buttons (28px, 6px radius) — not a joined pill. */
+          <View style={styles.actionGroup}>
             {onSearchInSession ? (
               <AnimatedPressable
                 accessibilityLabel="Find in conversation"
                 onPress={onSearchInSession}
-                style={styles.pillBtn}
+                style={[styles.actionBtn, { borderColor: colors.border }]}
               >
-                <Ionicons name="search-outline" size={18} color={colors.text} />
+                <Ionicons name="search-outline" size={15} color={colors.textMuted} />
               </AnimatedPressable>
             ) : null}
             {onShare ? (
               <AnimatedPressable
                 accessibilityLabel={t('common.share') || 'Share'}
                 onPress={onShare}
-                style={styles.pillBtn}
+                style={[styles.actionBtn, { borderColor: colors.border }]}
               >
-                <Ionicons name="share-outline" size={18} color={colors.text} />
+                <Ionicons name="share-outline" size={15} color={colors.textMuted} />
               </AnimatedPressable>
             ) : null}
             <AnimatedPressable
               accessibilityLabel={t('common.more') || 'More'}
               onPress={onMore || openDrawer}
-              style={styles.pillBtn}
+              style={[styles.actionBtn, { borderColor: colors.border }]}
             >
-              <Ionicons name="ellipsis-horizontal" size={18} color={colors.text} />
+              <Ionicons name="ellipsis-horizontal" size={15} color={colors.textMuted} />
             </AnimatedPressable>
           </View>
         ) : (
@@ -333,8 +327,7 @@ const styles = StyleSheet.create({
   },
   /* P2-1 alignment: outer pill/circle buttons drop from 38 → 32 to
    * match `frontend`'s `.icon-btn` (32 × 32). The 38 value was a
-   * pre-align touch-target overshoot. The inner `pillBtn` was already
-   * 32 so its size is unchanged. */
+   * pre-align touch-target overshoot. */
   /* frontend `.icon-btn`: 32x32 with an 8px radius (rounded square,
    * not a pill). */
   circleBtn: {
@@ -448,19 +441,21 @@ const styles = StyleSheet.create({
     maxWidth: 160,
     minHeight: 32,
   },
-  actionPill: {
+  actionGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 32,
-    borderRadius: 16,
-    paddingHorizontal: 3,
-    borderWidth: 1,
+    gap: 6,
   },
-  pillBtn: {
+  /* frontend `.find-btn` / `.share-btn` (styles.css:957-960,
+   * .top-bar-right overrides:9231-9239): 28x28, 6px radius, hairline
+   * border, transparent fill, muted glyph. */
+  actionBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
 });

@@ -38,12 +38,12 @@ Total Screen-budget: ~ 33 engineer-days. Phase 2 reviews generally need 2 extra 
 
 | Component | Status | Frontend reference | Notes |
 |---|---|---|---|
-| [`Composer.tsx`](../../mobile/src/components/Composer.tsx) | 🔴 | `src/ui/composerAutoHeight.js` · `src/ui/composerTools.js` | Drop the "separate mic" introduced in `d2216ab`; restore the attach + text + send layout that frontend uses. |
-| [`AppDrawer.tsx`](../../mobile/src/components/AppDrawer.tsx) | 🔴 | `src/react/sidebar/Sidebar.tsx` (desktop) · `src/ui/sidebar.js` (mobile drawer) | Convert to `Sidebar.tsx`: persistent `<aside>` on `width ≥ 1080`, modal drawer otherwise. |
+| [`Composer.tsx`](../../mobile/src/components/Composer.tsx) | 🟡 | `src/ui/composerAutoHeight.js` · `src/ui/composerTools.js` | Attach + text + send capsule restored; `attachments`/`onRemoveAttachment` props render the `.attachment-chips` strip (`AttachmentChip`), live `contentWidth` maxWidth, focus border + send/stop states aligned. Remaining: auto-resize glide animation, voice-input integration pending `expo-speech-recognition`. |
+| [`AppDrawer.tsx`](../../mobile/src/components/AppDrawer.tsx) | 🟡 | `src/react/sidebar/Sidebar.tsx` (desktop) · `src/ui/sidebar.js` (mobile drawer) | Nav order now mirrors `#sidebarNav` (Home/Projects/Library/Scheduled/Plugins/More) + `activeRoute` highlight + session time-group headers + translateX slide-in. Remaining: permanent `<aside>` variant and resize handle. |
 | [`AppHeader.tsx`](../../mobile/src/components/AppHeader.tsx) | 🟡 | `index.html` topbar · `src/ui/effortPicker.js` | Add model picker chip + profile button. |
 | [`AnimatedPressable.tsx`](../../mobile/src/components/AnimatedPressable.tsx) | ✅ | — | Keep — velocity easing matches `easing.out`. |
 | [`BrandMark.tsx`](../../mobile/src/components/BrandMark.tsx) | ✅ | — | Keep — already references the right asset. |
-| [`MessageBubble.tsx`](../../mobile/src/components/MessageBubble.tsx) | 🟡 | `src/react/message-list/MessageItem.tsx` · `src/ui/toolCards.js` | Add `{cite}` superscript, drop chatGPT-style polish on the bubble radius. |
+| [`MessageBubble.tsx`](../../mobile/src/components/MessageBubble.tsx) | 🟡 | `src/react/message-list/MessageItem.tsx` · `src/ui/toolCards.js` | Bubble metrics aligned to `chat-surface.css` (15px radius, 11×16, `userBubble` fill, `min(86%,620px)`); toolbar action set now matches `MessageToolbar`. Remaining: `{cite}` superscript, hover-reveal semantics, `.shimmer-text`. |
 | [`Screen.tsx`](../../mobile/src/components/Screen.tsx) | 🟡 | `src/styles/layout/app-shell.css` | Convert to flex `app-shell` (sidebar slot + main slot + composer slot). |
 | [`ToolCard.tsx`](../../mobile/src/components/ToolCard.tsx) | 🟡 | `src/ui/toolCards.js` | Match frontend's expanded/collapsed visuals + source/reload/expand/fullscreen row. |
 | [`ArtifactWebView.tsx`](../../mobile/src/components/ArtifactWebView.tsx) | ✅ | `src/render/viz.js` iframe sandbox | Keep — already used for `viz` fences. |
@@ -60,7 +60,7 @@ Total Screen-budget: ~ 33 engineer-days. Phase 2 reviews generally need 2 extra 
 | CmdK | 🔴 | `src/react/cmdk/` · `src/ui/cmdK.js` | `mobile/src/modals/CmdKModal.tsx` (modal, not route) |
 | SettingsOverlay | 🔴 | `src/react/settings/` | `mobile/src/modals/SettingsOverlay.tsx` |
 | ConfirmDialog | 🔴 | `src/react/confirm/` | `mobile/src/modals/ConfirmDialog.tsx` |
-| ShareModal | 🔴 | `src/react/shareModal/` | replaces `mobile/src/screens/ShareScreen.tsx` |
+| ShareModal | 🟡 | `src/react/shareModal/` | `mobile/src/components/ShareModal.tsx` exists (copy + native share); visibility radios + revoke deferred (backend `sharesApi` lacks them) |
 | ProfileModal | 🔴 | `src/react/profileModal/` | `mobile/src/modals/ProfileModal.tsx` |
 | UsageModal | 🔴 | `src/react/usageModal/` | `mobile/src/modals/UsageModal.tsx` |
 | PromptTemplatesModal | 🔴 | `src/react/promptTemplatesModal/` | `mobile/src/modals/PromptTemplatesModal.tsx` |
@@ -72,7 +72,7 @@ Mount spec — every modal registers through `mobile/src/modals/index.tsx` so th
 
 | Render surface | Status | Reference | mobile landing |
 |---|---|---|---|
-| Markdown prose / lists / tables / quote / hr / code | ✅ | `frontend/src/render/markdown.ts` | already in `mobile/src/render/MarkdownView.tsx` |
+| Markdown prose / lists / tables / quote / hr / code | ✅ | `frontend/src/render/markdown.ts` | `mobile/src/render/MarkdownView.tsx`; code blocks now render the web card (28px header + lang + Copy), `preprocessLite`/`stripChatArtifacts` ported |
 | Code syntax highlight | 🟡 | `highlight.js` (frontend) | keep `react-native-syntax-highlighter` adoption deferred — see Risk 5 in `reversal-risks.md` |
 | Math (KaTeX) | ✅ | katex | already via `RichBlock` |
 | Mermaid | ✅ | mermaid | already via `RichBlock` |
@@ -87,7 +87,7 @@ Mount spec — every modal registers through `mobile/src/modals/index.tsx` so th
 |---|---|---|---|
 | Auth bootstrap (cached user + `authApi.me()`) | ✅ | `main.js` | `mobile/src/stores/appStore.ts` already matches |
 | Network status + AppState resume | ✅ | `main.js` | matches via `subscribeToNetworkStatus` |
-| Theme resolution (mode/preference) | 🔴 | `displayPrefs.js` | `ThemeProvider.tsx` currently locked to dark — see Phase 1.2 |
+| Theme resolution (mode/preference) | 🟡 | `displayPrefs.js` | `ThemeProvider` hydrates `displayPrefsStore` (fontScale/contentWidth/bg overrides); mode toggle lives in `AppDrawer` footer. Remaining: accent hue presets (mobile still `null`) |
 | Sidebar / composer / modal mount | 🟡 | `bootstrap.tsx` (`frontend/src/react/bootstrap.tsx`) | mobile uses RN Navigation; convert to side-by-side persistent sidebar at width ≥ 1080 |
 | Pre-paint background | n/a | `index.html` Capacitor hook | n/a on RN; `mobile/app.json` controls splash instead |
 
@@ -105,3 +105,52 @@ Mount spec — every modal registers through `mobile/src/modals/index.tsx` so th
 1. Do we keep mobile's Inter / Newsreader / Noto Sans SC triple-font setup, or fold into `frontend`'s font fingerprint? (mobile today uses all three; matches except for the dropped Plus Jakarta Sans.)
 2. Does the new theme keep an `action` blue chip for primary buttons? frontend doesn't have one — the gold accent plays that role. If we drop it, every `<AnimatedPressable action={...} />` needs a follow-up migration.
 3. Does mobile keep the legacy `codexAgent` agent-side operations, or fold them into the larger unified chat flow that frontend is now heading toward?
+
+## 2026-09-18 status sync (Batch F — see `ui-gap-audit.md` for the per-item detail)
+
+Fixed in the working tree by this batch: scroll dead-zones inside `RichBlock`/`CanvasBlock`, `useAppStore` selector subscriptions + streaming/draft batching in `appStore`, hardcoded colors → palette tokens (`Mistakes`, `Composer` chips, `AppDrawer` backdrop, `Knowledge` scrim, `Projects`, `WebApp`, `ErrorBoundary`), three-tier scrim (`scrimModal/scrimConfirm/scrimDrawer`), `motionEasing` tokens wired into presses/slides/panels, new `AttachmentChip` + composer `attachments` strip, message toolbar/bubble metrics per `chat-surface.css`, fenced-code header card (lang + Copy), `RecentsScreen` session meta/mode dot/filter chips/time-group headers, `ExamScreen` review-option visuals, `markdown.ts` `preprocessLite`/`stripChatArtifacts` port, `RichBlock showActions` (source/reload/expand), `Screen scroll` prop pass-through, `Overlay` height cap + scrollable `ProfileOverlay`, `ToolCard` running-open/terminal-collapsed state machine, `CmdK` panel sizing, `AppDrawer` nav order corrected to `#sidebarNav`, `Toast` queue.
+
+Stale claims corrected by that audit: nav order "matches web" (it didn't — now fixed), scrim tier system "done" (now real), `contentWidth` 928 "unified" (now 768 per `--conversation-content-width`).
+
+Still open (recorded so the next batch picks them up): ShareModal visibility radios + revoke (needs `sharesApi` extensions), `StorageOverlay` archived-sessions domain, `UsageOverlay` 53×7 heatmap, `WorkspaceScreen` Tiptap canvas, tldraw/three.js in `RichBlock`, syntax highlighting, Android WebView pinch-zoom, plugin marketplace bridge, `ChatScreen` still renders its own inline pending-attachment chips instead of the new `Composer.attachments` prop, and several `viz.*`/`tool.*`/`common.copied` i18n keys still fall back to English.
+
+## Deferred features assessment (2026-09-18, read-only)
+
+Feasibility pass over the four remaining parity gaps. Verdicts first; evidence cites web and mobile files so the estimates are auditable.
+
+### (a) Workspace Tiptap canvas — ~2–3 days, WebView island recommended
+
+What the web actually ships is **not** a Tiptap workspace editor. The canvas is `frontend/src/react/canvas/CanvasBlock.tsx` — a sanitized-HTML `contentEditable` div with toolbar (orig/edit/copy/iterate/fullscreen), plus Tiptap only in the chat composer (`frontend/src/react/composer-input/RichComposer.tsx`). Mobile already has `mobile/src/components/CanvasBlock.tsx` with the full toolbar; the gap is that its edit mode is a plain `TextInput` storing markdown, while web edits **rendered HTML** (`innerHTML` in/out, persisted as `editedText`).
+
+Options:
+
+- **Recommended — RichBlock-style WebView island.** Extend `RichBlock`'s page template with a contentEditable body + sanitize-on-commit + `postMessage` bridge (`edited` html → native persists via existing `readCanvasEdit`/`saveCanvasEdit` in `data/offline/sqlite`). Reuses the proven auto-height/ready/fallback machinery; keeps RN gestures intact because edit mode can be confined to the Expand overlay (`interactive` prop already exists). Est. **2–3 days** including DOMPurify-equivalent sanitization parity (`frontend/src/react/canvas/sanitize.ts`) and tests.
+- Full `EmbeddedWebScreen` SPA route: **not recommended.** The canvas is a per-message inline block, not a standalone route — there is no SPA URL for it, so `mobile_target` cannot deep-link into it. Would require inventing a web route anyway.
+- Native Tiptap/ProseMirror port: **rejected** — DOM-bound (see `reversal-risks.md` R5); `@tiptap/react` cannot run outside a DOM.
+
+### (b) tldraw + three.js viz — ~1 day (three.js) / ~3–4 days (tldraw), WebView
+
+The gap is real but narrower than the doc claims: mobile `vizKindFor` (`mobile/src/render/markdown.ts:386`) only maps `mermaid`/`plot`/`html` fences, and `ToolCard`'s `VisualizationCard` (`mobile/src/components/ToolCard.tsx:235`) falls back to a bullet list for any template outside `line…histogram`/`flowchart…concept_map`. Web adapters live in `frontend/src/render/visualizationAdapters.js`: `mountThree` (~50 lines, `geometry_3d`), `mountWhiteboard` (tldraw, `whiteboard`), `mountGeoGebra` (`math_construction`), `mountPlotly` (`function`/`paper_chart`).
+
+- **`geometry_3d` → recommended, ~1 day.** Add a `'three'` entry to `RichBlock`'s `CDN` map (three UMD from jsdelivr), port `mountThree`'s ~50 lines into the bridge script, parse the spec JSON, and hook it in `vizKindFor`/`VisualizationCard`. WebGL works in `react-native-webview`; orbit interaction is confined to the Expand overlay, same trade-off as echarts tooltips.
+- **`whiteboard` (tldraw) → defer or scope to read-only, ~3–4 days if done.** tldraw v5 has no UMD bundle — it is ESM-only and needs bundling (`esbuild` a self-contained asset into `mobile/assets/` or a build step). Interactive editing also fights the FlatList touch model; a pragmatic ship is seeds-rendered, interactive only inside the Expand overlay, `domStorageEnabled` on for `persistenceKey`. A native port is off the table (no RN tldraw).
+- **`math_construction` (GeoGebra) → ~0.5 day** once a script-tag loader exists — web already loads it from the GeoGebra CDN at runtime, which a WebView can do identically.
+- **`function`/`paper_chart` → ~0.5–1 day** — either extend `chartOption` to emit echarts for these payloads or load plotly UMD (self-hosted copy exists at `frontend/src/vendor-files/plotly.min.js`).
+- Native port via `expo-gl`/`react-native-three`: **rejected** — days of new infra for a spec surface that already renders perfectly in a WebView.
+
+### (c) Plugin marketplace bridge — ~1–1.5 days, native REST (no WebView needed)
+
+`window.openPluginMarketplace` is a stub: `frontend/src/sidebar/nav.js:1102` — it just calls `renderPlugins()`, i.e. the directory itself *is* the marketplace. Mobile `PluginsScreen` already lists/connects/refreshes via `projectConnectorsApi` (`mobile/src/data/api/client.ts:277`). The real residual gaps, all already-exposed server routes:
+
+- `GET/PUT /api/project-connectors/:id/oauth-config` — web's `prepareOpenConnectorOAuth`/`openOAuthAppDialog` flow (`nav.js:622-679`) for user-supplied `oc_` OAuth apps; mobile skips it entirely. Add `oauthConfig` methods to `projectConnectorsApi` + a credentials overlay. (~0.5–1 day)
+- `DELETE /api/project-connectors/:id` — `disconnectConnector` (`nav.js:1097`); mobile has no disconnect. (~0.25 day)
+- `GET /api/connectors/arxiv/papers`, `POST /api/connectors/zotero`, `GET /api/connectors/zotero/items` — arXiv/Zotero dialogs (`nav.js:1050-1095`). Nice-to-have, ~0.5 day each.
+
+So: do **not** embed the SPA via `EmbeddedWebScreen` (the `plugins` target deliberately routes to the native screen — `embeddedBridge.ts:15`). Port the three endpoint groups natively instead.
+
+### (d) Syntax highlight — ~0.5–1 day, client-side only
+
+No server-rendered HTML path exists. `publicShares.ts` returns raw `content`/`rawText` and lets the client re-render; hljs runs exclusively in the browser (`frontend/src/vendor-files/highlight.min.js`). So a server-side HTML endpoint would be *new* infrastructure — rejected.
+
+- **Recommended:** `highlight.js@^11.9.0` is already in `mobile/package.json` (declared, unused). Run `hljs.highlight(code, {language})` in `CodeBlock` (`MarkdownView.tsx:543`) and map `hljs-*` token classes to palette colors via nested `<Text>` spans. Pure RN, offline, no WebView. Est. ~0.5–1 day including a token-color map matching the web theme.
+- Alternative for pixel-exact output: load the vendored `highlight.min.js` inside `RichBlock` — works but costs a WebView per code block; only worth it if token colors must be identical.

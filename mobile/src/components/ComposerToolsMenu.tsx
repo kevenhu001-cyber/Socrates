@@ -223,7 +223,7 @@ export function ComposerToolsMenu({
       ? Math.min(620, viewportWidth - 16)
       : Math.min(280, viewportWidth - 16);
   const maxHeight = Math.max(120, Math.min(viewportHeight / 2, 560));
-  const estimatedHeight = Math.min(maxHeight, 52 + filteredRows.length * (compact ? 46 : 40));
+  const estimatedHeight = Math.min(maxHeight, 52 + filteredRows.length * 52);
   const target = anchor || {
     x: 20,
     y: Math.max(8, viewportHeight - 118),
@@ -278,13 +278,13 @@ export function ComposerToolsMenu({
               <View style={styles.iconWrap}>
                 {item.customThinking ? (
                   <ThinkDeeperGlyph
-                    size={22}
+                    size={24}
                     color={item.active ? colors.accent : colors.textMuted}
                   />
                 ) : (
                   <Ionicons
                     name={item.icon}
-                    size={compact ? 22 : 18}
+                    size={24}
                     color={item.active ? colors.accent : colors.textMuted}
                   />
                 )}
@@ -297,7 +297,7 @@ export function ComposerToolsMenu({
                     {
                       color: item.active ? colors.accent : colors.text,
                       fontFamily: typography.medium,
-                      fontSize: compact ? 14 : 13.5,
+                      fontSize: 16,
                     },
                   ]}
                 >
@@ -361,17 +361,17 @@ const styles = StyleSheet.create({
   },
   item: {
     width: '100%',
-    minHeight: 44,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   iconWrap: {
-    width: 26,
-    height: 26,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

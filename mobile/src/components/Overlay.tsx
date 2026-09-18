@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Animated,
-  Easing,
   Modal,
   Pressable,
   StyleSheet,
@@ -10,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionEasing, withAlpha } from '../theme/theme';
 
 export type OverlayPresentation = 'center' | 'bottom';
 
@@ -22,6 +21,9 @@ export interface OverlayProps {
   maxWidth?: number;
   testID?: string;
   dismissOnBackdrop?: boolean;
+  /** Scrim tier override — defaults to `colors.scrimModal`; confirm dialogs
+   * pass `colors.scrimConfirm`. */
+  scrimColor?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -40,9 +42,10 @@ export function Overlay({
   maxWidth = 560,
   testID,
   dismissOnBackdrop = true,
+  scrimColor,
   style,
 }: OverlayProps) {
-  const { colors, radius } = useTheme();
+  const { colors, radius, shadows } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   const translate = useRef(new Animated.Value(presentation === 'bottom' ? 28 : 12)).current;
 
@@ -54,13 +57,13 @@ export function Overlay({
       Animated.timing(opacity, {
         toValue: 1,
         duration: 180,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        easing: motionEasing.out,
         useNativeDriver: true,
       }),
       Animated.timing(translate, {
         toValue: 0,
         duration: 220,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        easing: motionEasing.out,
         useNativeDriver: true,
       }),
     ]);
@@ -83,7 +86,7 @@ export function Overlay({
             accessibilityLabel="Close"
             disabled={!dismissOnBackdrop}
             onPress={dismissOnBackdrop ? onClose : undefined}
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: scrimColor ?? colors.scrimModal }]}
           />
         </Animated.View>
         <Animated.View
@@ -91,10 +94,11 @@ export function Overlay({
           style={[
             styles.surface,
             presentation === 'bottom' ? styles.bottomSurface : styles.centerSurface,
+            presentation === 'center' && shadows.modal,
             {
               backgroundColor: colors.surfaceRaised,
               borderColor: withAlpha(colors.border, 0.35),
-              borderRadius: radius.lg,
+              borderRadius: presentation === 'bottom' ? radius.lg : radius.xl,
               maxWidth,
               opacity,
               transform: [{ translateY: translate }],
@@ -133,7 +137,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   centerSurface: {
+    /* flexShrink alone does not bound a child that measures taller than the
+     * screen — cap the sheet so tall content (profile rows, pickers) clips to
+     * an inner ScrollView instead of overflowing the viewport. */
     flexShrink: 1,
+    maxHeight: '85%',
   },
   bottomSurface: {
     maxHeight: '92%',

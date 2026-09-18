@@ -6,7 +6,7 @@ import { toast } from '../components/Toast';
 import { apiKeysApi, type ApiProvider } from '../data/api/client';
 import { TONE_PRESETS, type TonePreset } from '../data/chat/tonePresets';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionEasing, withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 
@@ -56,7 +56,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (value: boolean
   const { colors } = useTheme();
   const translate = useRef(new Animated.Value(value ? 16 : 0)).current;
   useEffect(() => {
-    Animated.timing(translate, { toValue: value ? 16 : 0, duration: 150, useNativeDriver: true }).start();
+    Animated.timing(translate, { toValue: value ? 16 : 0, duration: 150, easing: motionEasing.out, useNativeDriver: true }).start();
   }, [translate, value]);
   return (
     <Pressable
@@ -77,7 +77,8 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (value: boolean
 }
 
 export function SettingsScreen({ navigation }: { navigation: { goBack: () => void } }) {
-  const { colors, typography } = useTheme();
+  const { colors, typography, mode } = useTheme();
+  const isDark = mode === 'dark';
   const t = useT();
   const appState = useAppStore();
   const [settings, setSettings] = useState<ApiSettings>(() => fromProviders(appState.providers, appState.selectedModel, appState.tone));
@@ -243,7 +244,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
   const builtIn = appState.providers.find((provider) => provider.isBuiltIn || provider.id === 'beagle-built-in');
 
   return (
-    <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
+    <View style={[styles.overlay, { backgroundColor: colors.scrimModal }]}>
       <Pressable accessibilityLabel={t('common.close')} onPress={navigation.goBack} style={StyleSheet.absoluteFill} />
       <View style={[styles.modal, { backgroundColor: colors.surfaceRaised, borderColor: withAlpha(colors.borderStrong, 0.35) }]}>
         <View style={[styles.header, { borderBottomColor: withAlpha(colors.borderStrong, 0.12) }]}>
@@ -254,16 +255,18 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
         </View>
 
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <View style={styles.hero}>
-            <Text style={[styles.heroTitle, { color: colors.text, fontFamily: typography.semibold }]}>
-              Application configuration
-            </Text>
-            <Text style={[styles.heroSubtitle, { color: colors.textMuted, fontFamily: typography.body }]}>
-              Manage model routing, tone, and runtime behavior.
-            </Text>
-          </View>
+          {!isDark ? (
+            <View style={styles.hero}>
+              <Text style={[styles.heroTitle, { color: colors.text, fontFamily: typography.semibold }]}>
+                Application configuration
+              </Text>
+              <Text style={[styles.heroSubtitle, { color: colors.textMuted, fontFamily: typography.body }]}>
+                Manage model routing, tone, and runtime behavior.
+              </Text>
+            </View>
+          ) : null}
 
-          <View style={styles.section}>
+          <View style={[styles.section, isDark && { borderTopColor: withAlpha(colors.border, 0.5), borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14 }]}>
             <View style={styles.sectionHead}>
               <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>Connection</Text>
               <Text style={[styles.sectionDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
@@ -276,7 +279,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
             </Pressable>
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, isDark && { borderTopColor: withAlpha(colors.border, 0.5), borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14 }]}>
             <View style={styles.sectionHead}>
               <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>Model providers</Text>
               <Text style={[styles.sectionDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
@@ -286,7 +289,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
 
             <View style={styles.labelRow}>
               <Text style={[styles.label, { color: colors.textMuted }]}>{t('settings.models')}</Text>
-              <AnimatedPressable onPress={addProvider} style={[styles.miniButton, { backgroundColor: colors.surfaceHover }]}>
+              <AnimatedPressable onPress={addProvider} style={[styles.miniButton, { borderColor: withAlpha(colors.borderStrong, 0.5) }]}>
                 <Text style={[styles.miniButtonText, { color: colors.text }]}>+ {t('settings.addProvider')}</Text>
               </AnimatedPressable>
             </View>
@@ -308,9 +311,14 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
                   </Text>
                 </AnimatedPressable>
                 <View style={styles.providerFields}>
-                  <Text style={[styles.builtinLabel, { color: colors.text, fontFamily: typography.semibold }]}>
-                    {builtIn.label || 'Beagle'}
-                  </Text>
+                  <View style={styles.builtinRow}>
+                    <Text style={[styles.builtinLabel, { color: colors.text, fontFamily: typography.semibold }]}>
+                      {builtIn.label || 'Beagle'}
+                    </Text>
+                    <View style={[styles.builtinPill, { backgroundColor: withAlpha(colors.accent, 0.12), borderColor: withAlpha(colors.accent, 0.4) }]}>
+                      <Text style={[styles.builtinPillText, { color: colors.accent }]}>{t('settings.builtIn') === 'settings.builtIn' ? 'Built-in' : t('settings.builtIn')}</Text>
+                    </View>
+                  </View>
                   <Text style={[styles.hint, { color: colors.textSubtle }]}>
                     {builtIn.model || (t('settings.builtInHint') || 'Built-in AI')}
                   </Text>
@@ -318,7 +326,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
               </View>
             ) : null}
 
-            {settings.providers.map((provider) => (
+            {settings.externalApiOn && settings.providers.map((provider) => (
               <View
                 key={provider.id}
                 style={[
@@ -359,14 +367,14 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
                 </AnimatedPressable>
               </View>
             ))}
-            {settings.providers.length === 0 ? (
+            {settings.externalApiOn && settings.providers.length === 0 ? (
               <View style={[styles.emptyBox, { borderColor: colors.border }]}>
                 <Text style={[styles.empty, { color: colors.textMuted }]}>{t('settings.noCustomProviders')}</Text>
               </View>
             ) : null}
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, isDark && { borderTopColor: withAlpha(colors.border, 0.5), borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14 }]}>
             <View style={styles.sectionHead}>
               <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>Assistant tone</Text>
               <Text style={[styles.sectionDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
@@ -462,13 +470,16 @@ const styles = StyleSheet.create({
   labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   label: { fontSize: 12, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.48 },
   hint: { fontSize: 11, lineHeight: 15.4 },
-  miniButton: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7 },
+  miniButton: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 7, borderWidth: StyleSheet.hairlineWidth, backgroundColor: 'transparent' },
   miniButtonText: { fontSize: 12, fontWeight: '600' },
   provider: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 4, padding: 10, borderWidth: 0.5, borderRadius: 10 },
   radioButton: { paddingTop: 4 },
   radio: { fontSize: 16, lineHeight: 20 },
   providerFields: { flex: 1, gap: 7 },
   builtinLabel: { fontSize: 13 },
+  builtinRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  builtinPill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth },
+  builtinPillText: { fontSize: 10, fontWeight: '600', letterSpacing: 0.3 },
   input: { width: '100%', minHeight: 40, borderRadius: 10, borderWidth: 0.5, paddingHorizontal: 14, paddingVertical: 9, fontSize: 14 },
   visionRow: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 28 },
   visionText: { fontSize: 11 },

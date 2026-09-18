@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
+import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from '../components/AnimatedPressable';
@@ -17,7 +17,7 @@ import { isValidLoginCode, normalizeLoginCode } from '../data/auth/loginCode';
 type AuthView = 'signin' | 'register' | 'verifySent' | 'verifyFailed' | 'verifying' | 'forgot' | 'forgotSent' | 'reset' | 'resetSuccess' | 'code';
 
 function AuthField({ label, ...props }: TextInputProps & { label: string }) {
-  const { colors, radius, typography, fontScale } = useTheme();
+  const { colors, typography, fontScale } = useTheme();
   return (
     <View style={styles.field}>
       <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium, fontSize: 11 * fontScale }]}>{label}</Text>
@@ -25,21 +25,21 @@ function AuthField({ label, ...props }: TextInputProps & { label: string }) {
         {...props}
         accessibilityLabel={label}
         placeholderTextColor={colors.textSubtle}
-        style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.border, borderRadius: radius.sm, fontFamily: typography.body, fontSize: 14 * fontScale }, props.style]}
+        style={[styles.input, { color: colors.text, backgroundColor: colors.background, borderColor: colors.borderSubtle, borderRadius: 10, fontFamily: typography.body, fontSize: 14 * fontScale }, props.style]}
       />
     </View>
   );
 }
 
 function AuthButton({ label, busy, secondary = false, icon, onPress, disabled, testID }: { label: string; busy?: boolean; secondary?: boolean; icon?: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void; disabled?: boolean; testID?: string }) {
-  const { colors, radius, typography, fontScale } = useTheme();
+  const { colors, typography, fontScale } = useTheme();
   return (
     <AnimatedPressable
       accessibilityRole="button"
       testID={testID}
       disabled={busy || disabled}
       onPress={onPress}
-      style={[styles.button, { borderRadius: radius.sm }, secondary ? { borderColor: colors.border, borderWidth: 1, backgroundColor: 'transparent' } : { backgroundColor: colors.accent }]}
+      style={[styles.button, { borderRadius: 10 }, secondary ? { borderColor: colors.border, borderWidth: 1, backgroundColor: 'transparent' } : { backgroundColor: colors.accent }]}
     >
       {busy ? <ActivityIndicator color={secondary ? colors.text : colors.textInverse} /> : (
         <View style={styles.buttonCopy}>
@@ -256,7 +256,7 @@ export function AuthScreen() {
   } else if (view === 'reset' || view === 'resetSuccess') {
     content = view === 'reset' ? <><StateIcon name="lock-open-outline" success /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.setNewPassword')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.setNewPasswordBody')}</Text><AuthField label={t('auth.newPassword')} value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" placeholder={t('auth.atLeastEight')} /><AuthField label={t('auth.confirmPassword')} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoComplete="new-password" placeholder={t('auth.repeatPassword')} />{error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}<AuthButton label={t('auth.resetPassword')} busy={busy} onPress={() => { void submitReset(); }} /></> : <><StateIcon name="checkmark" success /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.passwordUpdated')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.passwordUpdatedBody')}</Text><AuthButton label={t('auth.signIn')} onPress={() => show('signin')} /></>;
   } else {
-    content = <>{backLink}<StateIcon name="keypad-outline" /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.emailCodeLogin')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.emailCodeLede')}</Text><AuthField testID="auth-code-email-input" label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />{codeSent ? <><AuthField testID="auth-login-code-input" label={t('auth.sixDigitCode')} value={code} onChangeText={(value) => setCode(normalizeLoginCode(value))} autoCapitalize="characters" autoCorrect={false} autoComplete="one-time-code" maxLength={8} placeholder="ABCD2345" style={styles.codeInput} /><Text style={[styles.codeMessage, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.codeSentBody', { email })}</Text></> : null}{error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}{guestControl}<AuthButton testID="auth-code-submit-button" label={codeSent ? t('auth.logIn') : t('auth.sendCode')} busy={busy} onPress={() => { void (codeSent ? submitCode() : sendCode()); }} />{codeSent ? <AnimatedPressable onPress={() => { void sendCode(); }} style={styles.centerLink}><Text style={[styles.inlineLink, { color: colors.accent }]}>{t('auth.resendCode')}</Text></AnimatedPressable> : null}</>;
+    content = <>{backLink}<StateIcon name="keypad-outline" /><Text style={[styles.stateTitle, { color: colors.text, fontFamily: typography.display }]}>{t('auth.emailCodeLogin')}</Text><Text style={[styles.lede, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.emailCodeLede')}</Text><AuthField testID="auth-code-email-input" label={t('auth.email')} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />{codeSent ? <><AuthField testID="auth-login-code-input" label={t('auth.sixDigitCode')} value={code} onChangeText={(value) => setCode(normalizeLoginCode(value))} autoCapitalize="characters" autoCorrect={false} autoComplete="one-time-code" maxLength={8} placeholder="ABCD2345" style={[styles.codeInput, { fontFamily: typography.mono }]} /><Text style={[styles.codeMessage, { color: colors.textMuted, fontFamily: typography.body }]}>{t('auth.codeSentBody', { email })}</Text></> : null}{error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}{guestControl}<AuthButton testID="auth-code-submit-button" label={codeSent ? t('auth.logIn') : t('auth.sendCode')} busy={busy} onPress={() => { void (codeSent ? submitCode() : sendCode()); }} />{codeSent ? <AnimatedPressable onPress={() => { void sendCode(); }} style={styles.centerLink}><Text style={[styles.inlineLink, { color: colors.accent }]}>{t('auth.resendCode')}</Text></AnimatedPressable> : null}</>;
   }
 
   return (
@@ -264,7 +264,7 @@ export function AuthScreen() {
       <KeyboardAvoidingView style={styles.safe} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {/* Auth grid background — mirrors `frontend/src/styles.css`
          * `.auth-gate { background-image: linear-gradient(... 32px grid)` */}
-        <AuthGridBackground lineColor={colors.source.border.default} />
+        <AuthGridBackground lineColor={colors.surface} />
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
           <View style={[styles.card, compact && styles.cardCompact, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 18 }, shadows.authCard]}>
             <View style={styles.brand}><BrandMark size={25} /><Text style={[styles.brandText, { color: colors.text, fontFamily: typography.semibold, fontSize: 17 * fontScale }]}>Socrates</Text></View>
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 42, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, fontSize: 14 },
   inlineRight: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center' },
   inlineLink: { fontSize: 12 },
-  guestRow: { alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  guestRow: { alignSelf: 'flex-start', minHeight: 44, marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkbox: { width: 17, height: 17, borderRadius: 3, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   guestText: { fontSize: 13 },
   button: { minHeight: 42, marginTop: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
@@ -337,32 +337,6 @@ function AuthGridBackground({ lineColor }: { lineColor: string }) {
           </Pattern>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#authGrid)" />
-      </Svg>
-      {/* Subtle vignette so the card floats above the grid; matches
-       * the radial gradient the web app layers behind the auth card. */}
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'transparent',
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          top: '20%',
-          left: '20%',
-          right: '20%',
-          bottom: '20%',
-          backgroundColor: 'transparent',
-          borderRadius: 200,
-        }}
-      />
-      <Svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0 }}>
-        <Circle cx="50%" cy="50%" r="40%" fill="transparent" />
       </Svg>
     </View>
   );

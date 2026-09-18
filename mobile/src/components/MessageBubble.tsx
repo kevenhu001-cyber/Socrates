@@ -4,11 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionEasing, withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { Markdown, type TutorPracticeAnswer, type TutorQuizAnswer } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
 import { AnimatedPressable } from './AnimatedPressable';
+import { AttachmentChip } from './AttachmentChip';
 import { CanvasBlock } from './CanvasBlock';
 import { setClipboardText } from '../native/clipboard';
 import * as Speech from '../native/speech';
@@ -161,29 +162,51 @@ function HighlightedPlainText({ text, highlightKey, style }: { text: string; hig
  * the same glyph spins via an Animated loop on the same timing. */
 function StreamingIcon({ color }: { color: string }) {
   const spin = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
     const animation = Animated.loop(
       Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
     );
+    /* web `.thinking` pulses the spinner's center dot while it rotates. */
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.4, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
     animation.start();
+    pulseLoop.start();
     return () => {
       animation.stop();
+      pulseLoop.stop();
     };
-  }, [spin]);
+  }, [pulse, spin]);
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   return (
-    <Animated.View style={{ transform: [{ rotate }], width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
-      <View
+    <View style={{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={{ transform: [{ rotate }], width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
+        <View
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 7,
+            borderWidth: 1.5,
+            borderColor: withAlpha(color, 0.18),
+            borderTopColor: color,
+          }}
+        />
+      </Animated.View>
+      <Animated.View
         style={{
-          width: 14,
-          height: 14,
-          borderRadius: 7,
-          borderWidth: 1.5,
-          borderColor: withAlpha(color, 0.18),
-          borderTopColor: color,
+          position: 'absolute',
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: color,
+          opacity: pulse,
         }}
       />
-    </Animated.View>
+    </View>
   );
 }
 
@@ -229,7 +252,7 @@ function ThinkingPanel({
       Animated.timing(progress, {
         toValue: 1,
         duration: mobile ? 280 : 240,
-        easing: Easing.bezier(0.22, 1, 0.36, 1),
+        easing: motionEasing.out,
         useNativeDriver: true,
       }),
     ]);
@@ -320,13 +343,13 @@ function ThinkingPanel({
       onRequestClose={onClose}
     >
       {mobile ? (
-        <Animated.View style={[styles.thinkingBackdrop, { backgroundColor: 'rgba(0,0,0,0.45)', opacity: backdrop }]}>
+        <Animated.View style={[styles.thinkingBackdrop, { backgroundColor: withAlpha(colors.black, 0.55), opacity: backdrop }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close thinking panel" />
         </Animated.View>
       ) : (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: backdrop }]}>
           <BlurView tint="dark" intensity={18} style={StyleSheet.absoluteFill}>
-            <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} onPress={onClose} accessibilityLabel="Close thinking panel" />
+            <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.black, 0.55) }]} onPress={onClose} accessibilityLabel="Close thinking panel" />
           </BlurView>
         </Animated.View>
       )}
@@ -366,8 +389,36 @@ export const MessageBubble = React.memo(function MessageBubble({
   const [thinkingPanelOpen, setThinkingPanelOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
+  const speakPulse = useRef(new Animated.Value(0.6)).current;
+  /* web `.msg { animation: msgIn .22s }` — one-shot fade-in on mount,
+   * assistant rows only. */
+  const enterOpacity = useRef(new Animated.Value(isUser ? 1 : 0.45)).current;
 
   useEffect(() => () => { void Speech.stop(); }, []);
+  useEffect(() => {
+    if (isUser) return;
+    Animated.timing(enterOpacity, {
+      toValue: 1,
+      duration: 220,
+      easing: motionEasing.out,
+      useNativeDriver: true,
+    }).start();
+  }, [enterOpacity, isUser]);
+  useEffect(() => {
+    if (!speaking) {
+      speakPulse.setValue(0.6);
+      return;
+    }
+    /* web `.msg-toolbar-btn.is-speaking`: 1.4s breathing pulse while TTS plays. */
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(speakPulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(speakPulse, { toValue: 0.6, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [speakPulse, speaking]);
   useEffect(() => {
     if (!editing) setEditValue(text);
   }, [editing, text]);
@@ -420,12 +471,36 @@ export const MessageBubble = React.memo(function MessageBubble({
     return null;
   }
 
+  const hasAttachments = Boolean(message.attachments?.length);
+  /* Toolbar visibility mirrors the SPA: non-last assistant rows keep their
+   * actions but at 0.7 opacity; last-assistant and user rows show full. */
+  const toolbarOpacity = !isUser && !isLastAssistant ? 0.7 : 1;
+
   return (
-    <View style={[styles.row, { justifyContent: isUser ? 'flex-end' : 'flex-start' }]}>
-      <View
+    <View style={[styles.row, { alignItems: isUser ? 'flex-end' : 'flex-start' }]}>
+      {/* `.msg-attachment-chips` sits on the page background ABOVE the
+       * bubble (not inside it), right-aligned for user rows. */}
+      {hasAttachments ? (
+        <View style={[styles.attachments, isUser && styles.attachmentsUser]}>
+          {message.attachments?.map((attachment) =>
+            attachment.kind === 'image' && attachment.dataUrl ? (
+              <View key={attachment.id} style={[styles.imageAttachment, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Image accessibilityLabel={attachment.name} source={{ uri: attachment.dataUrl }} style={styles.image} resizeMode="contain" />
+                <Text numberOfLines={1} style={[styles.attachmentText, { color: colors.textMuted }]}>
+                  {attachment.name}
+                </Text>
+              </View>
+            ) : (
+              <AttachmentChip key={attachment.id} attachment={attachment} />
+            )
+          )}
+        </View>
+      ) : null}
+      <Animated.View
         style={[
           styles.bubble,
           {
+            opacity: isUser ? 1 : enterOpacity,
             /* Final authority is chat-surface.css (loaded after the older
              * stylesheets): user bubbles are 15px radius, 11x16 padding,
              * filled with `--conversation-user` (#2c2c2c dark / #e9e9e9
@@ -434,10 +509,10 @@ export const MessageBubble = React.memo(function MessageBubble({
             backgroundColor: isUser ? colors.userBubble : 'transparent',
             borderColor: 'transparent',
             borderWidth: 0,
-            borderRadius: isUser ? 15 : 0,
+            borderRadius: isUser ? (editing ? 20 : 15) : 0,
             paddingHorizontal: isUser ? 16 : 0,
             paddingVertical: isUser ? 11 : 0,
-            maxWidth: isUser ? Math.min(windowWidth * 0.86, 620) : '100%',
+            maxWidth: isUser && !editing ? Math.min(windowWidth * 0.86, 620) : '100%',
           },
         ]}
       >
@@ -467,25 +542,6 @@ export const MessageBubble = React.memo(function MessageBubble({
           />
         ) : null}
 
-        {/* Attachments */}
-        {message.attachments?.map((attachment) =>
-          attachment.kind === 'image' && attachment.dataUrl ? (
-            <View key={attachment.id} style={[styles.imageAttachment, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Image accessibilityLabel={attachment.name} source={{ uri: attachment.dataUrl }} style={styles.image} resizeMode="contain" />
-              <Text numberOfLines={1} style={[styles.attachmentText, { color: colors.textMuted }]}>
-                {attachment.name}
-              </Text>
-            </View>
-          ) : (
-            <View key={attachment.id} style={[styles.attachment, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Ionicons name="document-text-outline" size={16} color={colors.accent} />
-              <Text numberOfLines={1} style={[styles.attachmentText, { color: colors.textMuted }]}>
-                {attachment.name}
-              </Text>
-            </View>
-          )
-        )}
-
         {/* Tool Call Cards */}
         {message.toolCalls?.map((tool) => <ToolCard key={tool.id} call={tool} />)}
 
@@ -503,7 +559,6 @@ export const MessageBubble = React.memo(function MessageBubble({
                 styles.editArea,
                 {
                   color: colors.text,
-                  borderColor: withAlpha(colors.border, 0.35),
                   backgroundColor: 'transparent',
                   fontFamily: typography.body,
                 },
@@ -536,9 +591,10 @@ export const MessageBubble = React.memo(function MessageBubble({
         {isUser && linkPreview ? <LinkPreviewCards preview={linkPreview} /> : null}
 
 
-        {/* Action Toolbar — same action set/order as SPA MessageToolbar. */}
-        {!streaming && text && !isCanvas ? (
-          <View style={[styles.toolbar, isUser && styles.toolbarUser]}>
+        {/* Action Toolbar — same action set/order as SPA MessageToolbar.
+         * Attachment-only user messages still get the toolbar. */}
+        {!streaming && (text || hasAttachments) && !isCanvas ? (
+          <View style={[styles.toolbar, isUser && styles.toolbarUser, { opacity: toolbarOpacity }]}>
             <AnimatedPressable accessibilityLabel="Copy" onPress={copyText} style={styles.toolbarButton}>
               <Ionicons
                 name={copied ? 'checkmark-circle-outline' : 'copy-outline'}
@@ -603,35 +659,48 @@ export const MessageBubble = React.memo(function MessageBubble({
                 <AnimatedPressable
                   accessibilityLabel={speaking ? 'Stop reading' : 'Read aloud'}
                   onPress={toggleSpeech}
-                  style={styles.toolbarButton}
+                  style={[
+                    styles.toolbarButton,
+                    speaking ? { backgroundColor: colors.accent, opacity: speakPulse } : null,
+                  ]}
                 >
-                  <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'} size={18} color={speaking ? colors.accent : colors.textSubtle} />
+                  <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'} size={16} color={speaking ? colors.textInverse : colors.textSubtle} />
                 </AnimatedPressable>
               </>
             )}
           </View>
         ) : null}
-      </View>
+      </Animated.View>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  /* frontend `.msg-list { gap: var(--chat-msg-gap) }` with
-   * `--chat-msg-gap: 20px`; RN emulates the flex gap with symmetric
-   * vertical margin on each row. */
-  row: { flexDirection: 'row', marginVertical: 10 },
+  /* frontend `.msg-list { gap: 12px }` plus `.msg { padding: 6px }` gives
+   * ~24px between rows; column direction stacks the page-background
+   * attachment chips above the bubble. */
+  row: { flexDirection: 'column', marginVertical: 6, paddingVertical: 6 },
   bubble: {},
+  /* `.msg-attachment-chips`: lives on the page background above the bubble. */
+  attachments: {
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    gap: 8,
+    alignSelf: 'stretch',
+  },
+  attachmentsUser: {
+    alignItems: 'flex-end',
+  },
   /* frontend `.msg-body`: font-size 15px, line-height 1.625 (~24). */
   text: { fontSize: 15, lineHeight: 24 },
+  /* frontend `.msg-edit-area`: borderless transparent textarea, min-height
+   * ~60px; the surrounding bubble takes radius 20 / maxWidth 100%. */
   editArea: {
-    minWidth: 180,
-    maxWidth: 520,
-    minHeight: 40,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    width: '100%',
+    minHeight: 60,
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     fontSize: 15,
     lineHeight: 24,
   },
@@ -723,17 +792,6 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
   },
   thinkingPanelEmpty: { lineHeight: 20 },
-  attachment: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginBottom: 8,
-    maxWidth: 200,
-  },
   imageAttachment: {
     borderWidth: 1,
     borderRadius: 8,

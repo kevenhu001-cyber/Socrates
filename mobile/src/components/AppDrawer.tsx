@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { EmbeddedTarget, Session } from '@socrates/contracts';
 import { useTheme, useThemeController } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionEasing, withAlpha } from '../theme/theme';
 import { mobileDrawerWidth, useResponsive } from '../theme/responsive';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -60,6 +60,8 @@ export type NativeDestination =
 type Props = {
   onNavigate: (route: NativeDestination) => void;
   onOpenEmbedded: (target: EmbeddedTarget, title: string) => void;
+  /** Current navigator route name — drives the active primary-item highlight. */
+  activeRoute?: string | null;
 };
 
 /* Lightweight module-scoped signal so DrawerSurface can ask the
@@ -107,21 +109,97 @@ const DRAWER_LABELS = {
   settings: 'more.settings',
 } as const;
 
-/* Mirrors the final web sidebar's visible order. Exam and Skills are hidden
- * behind Customize on the web, so they remain available from More instead of
- * being promoted to extra primary rows in the native drawer. */
+/* Mirrors the final web sidebar's visible order (frontend/index.html
+ * `#sidebarNav`): New chat / Projects / Library / Scheduled / Plugins / More.
+ * Exam and Skills are hidden behind Customize on the web, so they remain
+ * available from More instead of being promoted to extra primary rows in the
+ * native drawer. */
 const PRIMARY_ITEMS: DrawerItem[] = [
-  { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'add-circle-outline' },
-  { route: 'Library', label: DRAWER_LABELS.library, icon: 'library-outline' },
+  { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'create-outline' },
   { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
+  { route: 'Library', label: DRAWER_LABELS.library, icon: 'library-outline' },
   { route: 'Scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
   { route: 'Plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
   { route: 'More', label: DRAWER_LABELS.more, icon: 'ellipsis-horizontal' },
 ];
 
-export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/* Mirrors `frontend/src/react/session-list/SessionList.tsx:timeGroupLabel` —
+ * the same helper exists locally in `RecentsScreen` but is not exported. */
+function sessionTimeGroup(session: Session, now: Date): string {
+  if (session.pinned) return 'Pinned';
+  const raw = session.updatedAt || session.createdAt || Date.now();
+  const d = new Date(raw);
+  const ts = d.getTime();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (ts >= startOfDay) return 'Today';
+  if (ts >= startOfDay - 86400000) return 'Yesterday';
+  if (ts >= startOfDay - 7 * 86400000) return 'Previous 7 days';
+  if (ts >= startOfDay - 30 * 86400000) return 'Previous 30 days';
+  if (d.getFullYear() === now.getFullYear()) return MONTH_NAMES[d.getMonth()];
+  return String(d.getFullYear());
+}
+
+/* Mirrors `frontend/src/react/session-list/sessionList.bridge.ts:formatRelativeTime`
+ * (the compact variant used inside `RecentsScreen`). */
+function formatRelativeTime(rawDate: unknown): string {
+  if (!rawDate) return '';
+  const ts = new Date(String(rawDate)).getTime();
+  if (Number.isNaN(ts)) return '';
+  const diff = Date.now() - ts;
+  if (diff < 0) return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(ts);
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(ts);
+}
+
+/* Mirrors `SessionList.tsx:buildMeta`: relative time + "N Qs" + a
+ * Branched / Re-explained marker when the session forks another. */
+function sessionMeta(session: Session): string {
+  const parts: string[] = [];
+  const rel = formatRelativeTime(session.updatedAt || session.createdAt);
+  if (rel) parts.push(rel);
+  const qCount = session.totalQ;
+  if (typeof qCount === 'number' && qCount > 0) parts.push(`${qCount} Qs`);
+  const branched = session.branchedFrom;
+  if (branched && typeof branched === 'object' && !Array.isArray(branched)) {
+    parts.push((branched as { reExplain?: boolean }).reExplain ? 'Re-explained' : 'Branched');
+  }
+  return parts.join(' · ');
+}
+
+type SessionListItem =
+  | { kind: 'header'; label: string; key: string }
+  | { kind: 'row'; session: Session; key: string };
+
+function groupSessionsByTime(sessions: Session[]): SessionListItem[] {
+  const now = new Date();
+  const items: SessionListItem[] = [];
+  let prevGroup: string | null = null;
+  for (const session of sessions) {
+    const group = sessionTimeGroup(session, now);
+    if (group !== prevGroup) {
+      items.push({ kind: 'header', label: group, key: `g-${group}` });
+      prevGroup = group;
+    }
+    items.push({ kind: 'row', session, key: session.id });
+  }
+  return items;
+}
+
+export function AppDrawer({ onNavigate, onOpenEmbedded, activeRoute }: Props) {
   const { open, closeDrawer } = useAppDrawer();
   const { sidebarWidth } = useResponsive();
+  const { colors } = useTheme();
   const t = useT();
   /* Cmd+K and the drawer publish these signals. The root app renders the
    * native overlays above both the drawer and the active screen. */
@@ -143,7 +221,7 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
       Animated.timing(slideAnim, {
         toValue: 1,
         duration: 300,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
+        easing: motionEasing.out,
         useNativeDriver: true,
       }).start();
     } else {
@@ -154,7 +232,7 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   const permanent = sidebarWidth !== null;
   if (permanent) {
     return (
-      <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />
+      <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} activeRoute={activeRoute} permanent />
     );
   }
 
@@ -164,23 +242,25 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   return (
     <Modal visible={open} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
       <View style={styles.overlay}>
-        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, backgroundColor: colors.scrimDrawer }]}>
           <Pressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={StyleSheet.absoluteFill} />
         </Animated.View>
         <Animated.View style={{ transform: [{ translateX: slideX }], height: '100%' }}>
-          <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} />
+          <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} activeRoute={activeRoute} />
         </Animated.View>
       </View>
     </Modal>
   );
 }
 
-function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props & { permanent?: boolean }) {
+function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = false }: Props & { permanent?: boolean }) {
   const { closeDrawer } = useAppDrawer();
   const { colors, radius, typography } = useTheme();
   const { sidebarWidth, isCompact, isDesktop } = useResponsive();
   const { mode: themeMode, toggle: toggleTheme } = useThemeController();
-  const state = useAppStore();
+  const sessions = useAppStore((s) => s.sessions);
+  const activeSessionId = useAppStore((s) => s.activeSession?.id);
+  const user = useAppStore((s) => s.user);
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [renameId, setRenameId] = useState<string | null>(null);
@@ -260,49 +340,67 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
   };
 
   const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return state.sessions;
+    if (!searchQuery.trim()) return sessions;
     const q = searchQuery.toLowerCase();
-    return state.sessions.filter(
+    return sessions.filter(
       (s) =>
         (s.title && s.title.toLowerCase().includes(q)) ||
         (s.topic && s.topic.toLowerCase().includes(q))
     );
-  }, [searchQuery, state.sessions]);
+  }, [searchQuery, sessions]);
 
-  const renderItem = (item: DrawerItem) => (
-    <AnimatedPressable
-      key={item.route || item.target}
-      accessibilityRole="button"
-      accessibilityLabel={t(item.label)}
-      onPress={() => activate(item)}
-      style={[
-        styles.item,
-        isDesktop ? styles.itemDesktop : styles.itemCompact,
-        item.route === 'Home' ? { backgroundColor: colors.surfaceHover } : null,
-        { borderRadius: 8 },
-      ]}
-    >
-      <Ionicons name={item.icon} size={16} color={colors.textMuted} />
-      <Text
+  /* Pinned first (web `timeGroupLabel` gives them their own leading
+   * "Pinned" group), then newest-first within each group. */
+  const sessionListItems = useMemo(() => {
+    const sorted = [...filteredSessions].sort((a, b) => {
+      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+      const at = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      const bt = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      return bt - at;
+    });
+    return groupSessionsByTime(sorted.slice(0, 30));
+  }, [filteredSessions]);
+
+  const renderItem = (item: DrawerItem) => {
+    const isActive = item.route != null && item.route === activeRoute;
+    return (
+      <AnimatedPressable
+        key={item.route || item.target}
+        accessibilityRole="button"
+        accessibilityLabel={t(item.label)}
+        onPress={() => activate(item)}
         style={[
-          styles.itemText,
-          {
-            color: colors.text,
-            fontFamily: typography.medium,
-          },
+          styles.item,
+          isDesktop ? styles.itemDesktop : styles.itemCompact,
+          isActive ? { backgroundColor: colors.surfaceHover } : null,
+          { borderRadius: 8 },
         ]}
       >
-        {t(item.label)}
-      </Text>
-    </AnimatedPressable>
-  );
+        <Ionicons name={item.icon} size={16} color={isActive ? colors.text : colors.textMuted} />
+        <Text
+          style={[
+            styles.itemText,
+            {
+              color: colors.text,
+              fontFamily: isActive ? typography.medium : typography.body,
+            },
+          ]}
+        >
+          {t(item.label)}
+        </Text>
+      </AnimatedPressable>
+    );
+  };
 
-  const name = state.user?.displayName || state.user?.email?.split('@')[0] || t('more.learner') || 'Learner';
-  const plan = state.user?.plan || state.user?.tier || 'Free plan';
+  const name = user?.displayName || user?.email?.split('@')[0] || t('more.learner') || 'Learner';
+  const plan = user?.plan || user?.tier || 'Free plan';
 
   const isDark = colors.mode === 'dark';
-  const panelBackground = permanent && colors.mode === 'dark'
-    ? '#1a1a1a'
+  /* Permanent desktop rail uses the dedicated `rail` token
+   * (web sidebar #171717 / #f7f7f5). The temporary drawer keeps the
+   * translucent overlay tint under the BlurView. */
+  const panelBackground = permanent
+    ? colors.rail
     : withAlpha(colors.source.bg.overlay, 0.72);
   return (
     <BlurView
@@ -319,7 +417,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.panelSafe}>
       {/* Brand Header */}
       <View style={[styles.brandRow, isDesktop ? styles.brandRowDesktop : null, { borderBottomColor: colors.border }]}>
-        <BrandMark size={18} />
+        <BrandMark size={20} />
         <Text style={[styles.brand, { color: colors.text, fontFamily: typography.semibold }]}>Socrates</Text>
         {!permanent ? (
           <View style={styles.brandActions}>
@@ -331,7 +429,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
               <Ionicons name="create-outline" size={20} color={colors.textMuted} />
             </AnimatedPressable>
             <AnimatedPressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.headerAction}>
-              <Ionicons name="albums-outline" size={20} color={colors.textMuted} />
+              <Ionicons name="close-outline" size={20} color={colors.textMuted} />
             </AnimatedPressable>
           </View>
         ) : null}
@@ -342,8 +440,9 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
         {/* Navigation list */}
         <View style={[styles.group, isDesktop ? styles.groupDesktop : null]}>{PRIMARY_ITEMS.map(renderItem)}</View>
 
-        {/* Frontend places search after the primary destinations. */}
-        <View style={[styles.searchWrap, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 16 }]}>
+        {/* Frontend places search after the primary destinations. Web box:
+         * 8px radius, 32px high, hairline border on the bg-200 surface. */}
+        <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 8 }]}>
           <Ionicons name="search-outline" size={16} color={colors.textMuted} />
           <TextInput
             value={searchQuery}
@@ -363,25 +462,38 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        {/* Recents Session List */}
+        {/* Recents Session List — 10–11px medium uppercase header, no count
+         * (web `.recents-header` dropped the tally with the session list
+         * redesign). */}
         <View style={styles.recentsHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted, fontFamily: typography.semibold }]}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted, fontFamily: typography.medium }]}>
             {t('sidebar.recentSessions') || 'Recent chats'}
           </Text>
-          <Text style={[styles.sessionCount, { color: colors.textSubtle }]}>{filteredSessions.length}</Text>
         </View>
 
         <View style={styles.sessionList}>
-          {filteredSessions.length === 0 ? (
+          {sessionListItems.length === 0 ? (
             <Text style={[styles.emptySessions, { color: colors.textMuted }]}>
               {searchQuery ? (t('search.noMatches') || 'No matching chats') : (t('chat.emptyHistory') || 'No recent chats yet')}
             </Text>
           ) : (
-            filteredSessions.slice(0, 30).map((session) => {
-              const isCurrent = state.activeSession?.id === session.id;
+            sessionListItems.map((item) => {
+              if (item.kind === 'header') {
+                return (
+                  <Text
+                    key={item.key}
+                    style={[styles.sessionGroupLabel, { color: colors.textSubtle, fontFamily: typography.medium }]}
+                  >
+                    {item.label}
+                  </Text>
+                );
+              }
+              const session = item.session;
+              const isCurrent = activeSessionId === session.id;
+              const meta = sessionMeta(session);
               return (
                 <AnimatedPressable
-                  key={session.id}
+                  key={item.key}
                   onPress={() => void openSession(session)}
                   onLongPress={() => handleSessionAction(session)}
                   style={[
@@ -402,18 +514,38 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
                     size={16}
                     color={isCurrent ? colors.text : colors.textMuted}
                   />
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.sessionTitle,
-                      {
-                        color: colors.text,
-                        fontFamily: isCurrent ? typography.semibold : typography.body,
-                      },
-                    ]}
-                  >
-                    {session.title || session.topic || t('chat.newConversation') || 'Untitled chat'}
-                  </Text>
+                  <View style={styles.sessionCopy}>
+                    <View style={styles.sessionTitleRow}>
+                      {session.pinned ? (
+                        <Ionicons
+                          name="pin"
+                          size={10}
+                          color={colors.textSubtle}
+                          style={styles.sessionPinIcon}
+                        />
+                      ) : null}
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.sessionTitle,
+                          {
+                            color: colors.text,
+                            fontFamily: isCurrent ? typography.semibold : typography.body,
+                          },
+                        ]}
+                      >
+                        {session.title || session.topic || t('chat.newConversation') || 'Untitled chat'}
+                      </Text>
+                    </View>
+                    {meta ? (
+                      <Text
+                        numberOfLines={1}
+                        style={[styles.sessionMeta, { color: colors.textMuted, fontFamily: typography.body }]}
+                      >
+                        {meta}
+                      </Text>
+                    ) : null}
+                  </View>
                 </AnimatedPressable>
               );
             })
@@ -422,14 +554,18 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       </ScrollView>
 
       {/* Footer Profile & Preferences */}
-      <View style={[styles.profile, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
+      {/* Web `.sidebar-footer` keeps only the hairline top border — the row
+       * sits on the panel surface, not a separate band. */}
+      <View style={[styles.profile, { borderTopColor: colors.border }]}>
         <AnimatedPressable
           accessibilityLabel={t('profile.heading') || 'Account'}
           onPress={() => profileOverlay.open()}
           style={styles.profileTap}
         >
-          <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-            <Text style={[styles.avatarText, { color: colors.textInverse, fontFamily: typography.bold }]}>
+          {/* Web `.user-avatar`: 32px neutral circle, page-colored glyph
+           * (text-200 bg / bg-100 fg). */}
+          <View style={[styles.avatar, { backgroundColor: colors.textMuted }]}>
+            <Text style={[styles.avatarText, { color: colors.background, fontFamily: typography.semibold }]}>
               {name.slice(0, 1).toUpperCase()}
             </Text>
           </View>
@@ -452,7 +588,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           <Ionicons
             name={themeMode === 'dark' ? 'sunny-outline' : 'moon-outline'}
             size={20}
-            color={colors.accent}
+            color={colors.textMuted}
           />
         </AnimatedPressable>
 
@@ -482,7 +618,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       </View>
       {/* Rename dialog — same card as `RecentsScreen` rename modal. */}
       <Modal visible={renameId !== null} transparent animationType="fade" onRequestClose={() => setRenameId(null)}>
-        <View style={[styles.renameBackdrop, { backgroundColor: colors.scrim }]}>
+        <View style={[styles.renameBackdrop, { backgroundColor: colors.scrimModal }]}>
           <View style={[styles.renameCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
             <Text style={[styles.renameTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('library.rename')}</Text>
             <TextInput
@@ -537,7 +673,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
  * deterministic fallback when the native blur implementation is unavailable. */
 const styles = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row' },
-  backdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.64)' },
+  backdrop: { position: 'absolute', inset: 0 },
   /* Web mobile/tablet drawer: 300px. */
   panel: { width: '86%', maxWidth: mobileDrawerWidth, height: '100%', flex: 1, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   panelCompact: { width: mobileDrawerWidth, maxWidth: mobileDrawerWidth },
@@ -561,10 +697,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 8,
     paddingHorizontal: 10,
-    height: 34,
-    borderWidth: 1,
+    height: 32,
+    borderWidth: StyleSheet.hairlineWidth,
     gap: 8,
-    borderRadius: 16,
+    borderRadius: 8,
   },
   searchInput: {
     flex: 1,
@@ -596,15 +732,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  sessionCount: {
-    fontSize: 11,
-  },
   sessionList: {
     gap: 2,
+  },
+  /* Web `.recents-time-label` — same 10–11px medium uppercase treatment as
+   * the section header, pinned above each time group. */
+  sessionGroupLabel: {
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 4,
   },
   emptySessions: {
     fontSize: 12,
@@ -621,9 +764,25 @@ const styles = StyleSheet.create({
     gap: 10,
     borderWidth: 0,
   },
+  sessionCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
+  sessionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sessionPinIcon: {
+    marginTop: 1,
+  },
   sessionTitle: {
     fontSize: 12,
     flex: 1,
+  },
+  sessionMeta: {
+    fontSize: 11,
   },
   profile: {
     minHeight: 64,
@@ -637,8 +796,8 @@ const styles = StyleSheet.create({
    * `flex: 1` lets the avatar + copy fill the available width while
    * the theme / sign-out icon buttons stay pinned to the right. */
   profileTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 14 },
+  avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 12 },
   profileCopy: { flex: 1, minWidth: 0 },
   profileName: { fontSize: 13 },
   profilePlan: { fontSize: 11, marginTop: 1 },

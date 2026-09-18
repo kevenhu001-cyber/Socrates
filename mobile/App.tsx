@@ -135,10 +135,10 @@ function LoadingScreen() {
 }
 
 function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof RootStackParamList | null) => void }) {
-  const state = useAppStore();
+  const authStatus = useAppStore((s) => s.authStatus);
   const { colors } = useTheme();
-  if (state.authStatus === 'booting') return <LoadingScreen />;
-  if (state.authStatus === 'signedOut') return <AuthScreen />;
+  if (authStatus === 'booting') return <LoadingScreen />;
+  if (authStatus === 'signedOut') return <AuthScreen />;
 
   const baseNavTheme = colors.statusBarStyle === 'light' ? DarkTheme : DefaultTheme;
   const navigationTheme = {
@@ -193,7 +193,8 @@ function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof Root
 }
 
 function NativeApp() {
-  const state = useAppStore();
+  const authStatus = useAppStore((s) => s.authStatus);
+  const user = useAppStore((s) => s.user);
   const { open: drawerOpen, closeDrawer } = useAppDrawer();
   const { colors } = useTheme();
   const [currentRoute, setCurrentRoute] = useState<keyof RootStackParamList | null>('Home');
@@ -313,7 +314,7 @@ function NativeApp() {
 
   return (
     <View style={[styles.root, styles.appFrame, { backgroundColor: colors.background }]}>
-      {state.authStatus === 'signedIn' && !embeddedActive ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} /> : null}
+      {authStatus === 'signedIn' && !embeddedActive ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} activeRoute={currentRoute} /> : null}
       <View
         style={[
           styles.mainPane,
@@ -334,7 +335,7 @@ function NativeApp() {
       <ToastHost />
       <ProfileOverlay
         visible={profileOpen}
-        user={state.user}
+        user={user}
         onClose={() => profileOverlay.close()}
       />
       <UsageOverlay

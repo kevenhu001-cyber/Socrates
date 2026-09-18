@@ -55,6 +55,84 @@ export function stripCitationMarkers(s: string): string {
   return t.replace(/\uE000CITE(\d+)\uE000/g, (_m, id: string) => stash[Number(id)]);
 }
 
+/* Port of `frontend/src/util/stripChatArtifacts.js` — removes the
+ * chat-template tokens some reasoning / instruct-tuned models leak into
+ * the stream (`<|im_start|>…<|im_end|>`, `<s>`, `[INST]`, `<<SYS>>`).
+ * Also drops `<think>…</think>` (the web routes closed blocks to the
+ * thinking panel; on mobile the panel lives outside the markdown, so the
+ * tags must never reach the parser) and `<mistake>…</mistake>` blocks —
+ * the web routes those to the mistake book, a feature gap on mobile, so
+ * for now they are hidden rather than rendered as raw XML. */
+export function stripChatArtifacts(t: string): string {
+  if (!t) return t;
+  if (!/[<[]|[ \t]\n|\n{3,}/.test(t)) return t;
+  t = t.replace(/<\|im_start\|>[\s\S]*?<\|im_end\|>/g, '');
+  t = t.replace(/<\|[a-z_]+\|>/gi, '');
+  t = t.replace(/<\/?s>/g, '');
+  t = t.replace(/\[INST\]|\[\/INST\]|<<SYS>>|<<\/SYS>>/g, '');
+  t = t.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  t = t.replace(/<think>[\s\S]*$/gi, '');
+  t = t.replace(/<mistake>[\s\S]*?<\/mistake>/gi, '');
+  t = t.replace(/<mistake>[\s\S]*$/gi, '');
+  return t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+}
+
+/* Cheap line-level preprocessors ported from
+ * `frontend/src/render/preprocess.ts` (the heavier math/fence-repair
+ * rules stay web-only):
+ *  - odd bullet glyphs (`•‣◦・·`) → `- `
+ *  - `fixMarkdownTableSeparators`: realign a divider row whose cell
+ *    count or trailing pipe is off so the table still parses
+ *  - `---` directly under text is padded with a blank line so it always
+ *    reads as a rule instead of a setext h2 underline
+ *  - a lone `$…$` line is promoted to `$$…$$` display math
+ * Fenced code and inline code spans are stashed first so none of the
+ * rules rewrite code. Idempotent — safe on every streaming frame. */
+export function preprocessLite(source: string): string {
+  let s = String(source ?? '');
+  if (!s) return s;
+  const stash: string[] = [];
+  const keep = (html: string): string => {
+    const id = stash.length;
+    stash.push(html);
+    return '\u0001PP' + id + '\u0001';
+  };
+  s = s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, (m) => keep(m));
+  s = s.replace(/`[^`\n]+`/g, (m) => keep(m));
+
+  // `text\n---` → `text\n\n---` (thematic break, not setext heading).
+  s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
+  // Promote a lone inline-math line to display math.
+  s = s.replace(/(^|\n)\$([^$\n]+)\$(\s*\n|$)/g, (_m, lead: string, math: string, tail: string) =>
+    `${lead}$$${math}$$${tail}`);
+  // Odd bullet glyphs weak models emit.
+  s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
+  // Divider row with the wrong cell count or a missing trailing pipe
+  // (`fixMarkdownTableSeparators` in `frontend/src/render/helpers.ts`).
+  const lines = s.split('\n');
+  for (let i = 1; i < lines.length; i += 1) {
+    const prev = lines[i - 1];
+    const cur = lines[i];
+    if (!/\|/.test(prev)) continue;
+    if (!/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(cur)) continue;
+    const headerCells = prev.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').length;
+    const sepCells = cur.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|');
+    if (sepCells.length === headerCells) {
+      if (!/\|\s*$/.test(cur)) lines[i] = cur.replace(/\s*$/, '') + ' |';
+      continue;
+    }
+    if (sepCells.length < headerCells) {
+      while (sepCells.length < headerCells) sepCells.push(' --- ');
+      lines[i] = '| ' + sepCells.join(' | ').trim() + ' |';
+      continue;
+    }
+    lines[i] = '| ' + sepCells.slice(0, headerCells).join(' | ').trim() + ' |';
+  }
+  s = lines.join('\n');
+
+  return s.replace(/\u0001PP(\d+)\u0001/g, (_m, id: string) => stash[Number(id)]);
+}
+
 export interface ListItem {
   inline: InlineNode[];
   depth: number;
@@ -75,7 +153,8 @@ export type WidgetKind =
   | 'theorem'
   | 'proof'
   | 'derivation'
-  | 'key-point';
+  | 'key-point'
+  | 'step';
 
 export interface QuizOption {
   letter: string;
@@ -117,6 +196,8 @@ export type Block =
       proof: string;
       /** `<practice correct="…">` answer key (grading deferred). */
       answerKey: string;
+      /** `<step n="…">` explicit number; 0 means auto-number. */
+      stepNumber: number;
       /** Full matched source, used for the plain-text fallback. */
       raw: string;
     };
@@ -130,7 +211,7 @@ const TABLE_DIVIDER_RE = /^ {0,3}\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?
 
 /** Block-level tutor widgets (`<quiz>`…`<key-point>`), mirroring the tag
  *  set scanned by `renderAssistantHTML` in `frontend/src/main.js`. */
-const WIDGET_RE = /^ {0,3}<(quiz|example|practice|definition|flashcard|theorem|proof|derivation|key-point)\b([^>]*)>/i;
+const WIDGET_RE = /^ {0,3}<(quiz|example|practice|definition|flashcard|theorem|proof|derivation|key-point|step)\b([^>]*)>/i;
 
 /** Decode the HTML entities models emit inside widget markup. Ports
  *  `decodeEntities` in `frontend/src/render/helpers.ts`. */
@@ -172,6 +253,7 @@ const WIDGET_EMPTY = {
   statement: '',
   proof: '',
   answerKey: '',
+  stepNumber: 0,
 };
 
 /* Field rules port `parseQuizInner` / `parseExampleInner` /
@@ -271,6 +353,15 @@ function readWidget(lines: string[], start: number): { block: Block; next: numbe
       if (!body) return null;
       return done({ body });
     }
+    case 'step': {
+      /* `<step n="3">body</step>` — a numbered reasoning row like the web
+       * `.inline-step` (scaffoldPipeline.js `stepRe`). Body keeps raw
+       * markdown so nested emphasis/links still parse. */
+      const body = decodeWidgetEntities(inner.trim());
+      if (!body) return null;
+      const n = parseInt(widgetAttr(attrs, 'n'), 10);
+      return done({ body, stepNumber: Number.isFinite(n) && n > 0 ? n : 0 });
+    }
     default:
       return null;
   }
@@ -281,7 +372,7 @@ function readWidget(lines: string[], start: number): { block: Block; next: numbe
  * serves the same role. Idempotent; closed sources pass through. */
 export function hideUnclosedWidgetTail(source: string): string {
   const text = String(source ?? '');
-  const openRe = /<(quiz|example|practice|definition|flashcard|theorem|proof|derivation|key-point)\b[^>]*>/gi;
+  const openRe = /<(quiz|example|practice|definition|flashcard|theorem|proof|derivation|key-point|step)\b[^>]*>/gi;
   let m: RegExpExecArray | null;
   let last: { kind: string; index: number } | null = null;
   while ((m = openRe.exec(text)) !== null) {
@@ -304,7 +395,7 @@ function vizKindFor(lang: string, body: string): VizKind | null {
 }
 
 export function parseMarkdown(source: string | null | undefined): Block[] {
-  const text = String(source ?? '').replace(/\r\n?/g, '\n');
+  const text = preprocessLite(String(source ?? '').replace(/\r\n?/g, '\n'));
   if (!text.trim()) return [];
   return parseBlocks(text.split('\n'));
 }
@@ -449,7 +540,9 @@ function readList(lines: string[], start: number): { block: Block; next: number 
   const items: ListItem[] = [];
   let ordered = false;
   let i = start;
-  let counter = 0;
+  /* Seeded from the first item's marker so `3.` renders 3,4,5 like the
+   * web (`<ol start="3">`) instead of renumbering from 1. */
+  let counter: number | null = null;
 
   while (i < lines.length) {
     const match = lines[i].match(LIST_RE);
@@ -483,11 +576,13 @@ function readList(lines: string[], start: number): { block: Block; next: number 
     }
 
     const depth = Math.min(3, Math.floor(indent / 2));
-    if (isOrdered && depth === 0) counter += 1;
+    if (isOrdered && depth === 0) {
+      counter = counter === null ? parseInt(marker, 10) || 1 : counter + 1;
+    }
     items.push({
       inline: parseInline(body),
       depth,
-      index: isOrdered ? (depth === 0 ? counter : parseInt(marker, 10) || 1) : undefined,
+      index: isOrdered ? (depth === 0 ? counter! : parseInt(marker, 10) || 1) : undefined,
       checked,
     });
     i += 1;
