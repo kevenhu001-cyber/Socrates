@@ -11,6 +11,7 @@ import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
 
 const TARGETS = new Set([
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
+  'profile', 'usage', 'storage',
 ]);
 
 function postToNative(message) {
@@ -58,6 +59,18 @@ export function openMobileTargetFromUrl() {
     } else if (target === 'api-settings') {
       if (typeof window.openSettings !== 'function') return false;
       window.openSettings();
+      opened = true;
+    } else if (target === 'profile') {
+      if (typeof window.openProfile !== 'function') return false;
+      window.openProfile();
+      opened = true;
+    } else if (target === 'usage') {
+      if (typeof window.openUsageModal !== 'function') return false;
+      window.openUsageModal();
+      opened = true;
+    } else if (target === 'storage') {
+      if (typeof window.openStorageModal !== 'function') return false;
+      window.openStorageModal();
       opened = true;
     }
   } catch (_) {
