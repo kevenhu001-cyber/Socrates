@@ -100,7 +100,7 @@ describe('mobile auth token contract', () => {
   });
 
   test('keeps the mobile WebView target allowlist exact', () => {
-    for (const target of ['projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings']) {
+    for (const target of ['projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings', 'profile', 'usage', 'storage']) {
       assert.equal(isEmbeddedMobileTarget(target), true, target);
     }
     for (const target of ['', 'project', 'settings', 'https://evil.example/', '../../projects', null, {}]) {
