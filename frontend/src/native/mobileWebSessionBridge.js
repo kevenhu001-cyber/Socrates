@@ -13,7 +13,7 @@ import { openCheatsheet } from '../ui/cheatsheet.js';
 
 const TARGETS = new Set([
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
-  'profile', 'usage', 'storage', 'display', 'shortcuts',
+  'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
 ]);
 
 function postToNative(message) {
@@ -93,7 +93,7 @@ export function openMobileTargetFromUrl() {
 
   let opened = false;
   try {
-    if (target === 'projects' || target === 'scheduled' || target === 'plugins') {
+    if (target === 'projects' || target === 'scheduled' || target === 'plugins' || target === 'library' || target === 'exam') {
       if (typeof window.openNav !== 'function') return false;
       window.openNav(target);
       opened = true;
