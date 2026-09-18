@@ -1,5 +1,6 @@
 import type {
   ApiErrorBody,
+  Attachment,
   ChatRequest,
   EmbeddedTarget,
   MobileTokenPair,
