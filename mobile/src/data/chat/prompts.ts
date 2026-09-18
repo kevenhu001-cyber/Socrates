@@ -1,3 +1,4 @@
+import { toneVoiceSuffix, type TonePreset } from './tonePresets';
 export type MobileExtensionKey = 'write' | 'explore' | 'analyze';
 export type MobileOutputMode = 'chat' | 'canvas';
 
@@ -98,6 +99,13 @@ export function languageDirectiveFor(text: string): string {
   }
 }
 
-export function buildAssistantModeInstruction(userText: string, effort: 'low' | 'medium' | 'high'): string {
-  return `[Assistant mode instructions]\n${languageDirectiveFor(userText)}${effort === 'high' ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT}`;
+export function buildAssistantModeInstruction(
+  userText: string,
+  effort: 'low' | 'medium' | 'high',
+  tone: TonePreset = 'default',
+): string {
+  const thinkingSuffix = effort === 'high'
+    ? '\n\nKeep the user-facing reply focused on the answer. Do not emit <think> blocks or reasoning_content in the user-facing message.'
+    : '';
+  return `[Assistant mode instructions]\n${languageDirectiveFor(userText)}${effort === 'high' ? CHAT_SYSTEM_PROMPT : CHAT_CONCISE_PROMPT}${toneVoiceSuffix(tone)}${thinkingSuffix}`;
 }
