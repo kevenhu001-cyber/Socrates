@@ -273,6 +273,15 @@ export const projectConnectorsApi = {
 
 export const knowledgeApi = {
   list: (status?: string) => apiRequest<{ items: KnowledgeNode[]; summary: Record<string, number> }>(`/knowledge-boundary${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  updateNode: (payload: {
+    sessionId: string;
+    nodeIndex: number;
+    confidenceScore?: number;
+    userNote?: string;
+  }) => apiRequest<KnowledgeNode>('/knowledge-boundary/node', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }),
 };
 
 export const mistakesApi = {
