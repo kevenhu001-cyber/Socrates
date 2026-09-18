@@ -718,15 +718,15 @@ class AppStore {
           history.push({ role: 'system', content: projectContext });
         }
       }
-      const lastHistory = history.at(-1);
-      if (lastHistory?.role === 'user' && referencedPageBlocks.length) {
+      const lastHistory = [...history].reverse().find((message) => message.role === 'user');
+      if (lastHistory && referencedPageBlocks.length) {
         const pagesText = `${modelUserText}\n\n${referencedPageBlocks.join('\n\n')}`;
         if (Array.isArray(lastHistory.content)) {
           lastHistory.content = [...lastHistory.content, { type: 'text', text: pagesText }];
         } else {
           lastHistory.content = pagesText;
         }
-      } else if (lastHistory?.role === 'user' && missingUrlMention) {
+      } else if (lastHistory && missingUrlMention) {
         const hintText = `${serializeSelectedPluginContext(this.state.selectedComposerPlugins, missingUrlMention)}\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents.`;
         if (Array.isArray(lastHistory.content)) {
           lastHistory.content = [...lastHistory.content, { type: 'text', text: hintText }];
