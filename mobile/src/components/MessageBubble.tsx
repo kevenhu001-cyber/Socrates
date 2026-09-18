@@ -12,6 +12,8 @@ import { AnimatedPressable } from './AnimatedPressable';
 import { CanvasBlock } from './CanvasBlock';
 import { setClipboardText } from '../native/clipboard';
 import * as Speech from '../native/speech';
+import { native } from '../native/native';
+import type { LinkPreviewState } from '../data/chat/webLinks';
 
 interface MessageBubbleProps {
   message: Message;
@@ -23,6 +25,7 @@ interface MessageBubbleProps {
   onRegenerate?: (messageId: string) => unknown | Promise<unknown>;
   onBranch?: (messageId: string, options?: { reExplain?: boolean }) => unknown | Promise<unknown>;
   onFeedback?: (messageId: string, rating: 'up' | 'down' | 'none') => unknown | Promise<unknown>;
+  linkPreview?: LinkPreviewState;
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
   onIterate?: (text: string) => void;
@@ -34,6 +37,99 @@ type CanvasMessage = Message & {
   editedText?: string | null;
   _extensionLabel?: string | null;
 };
+
+function LinkPreviewCards({ preview }: { preview: LinkPreviewState }) {
+  const { colors, typography, fontScale } = useTheme();
+  if (preview.noUrlHint) {
+    return (
+      <View style={styles.linkPreviews}>
+        <View style={[
+          styles.linkCard,
+          {
+            backgroundColor: colors.mode === 'dark' ? withAlpha(colors.danger, 0.12) : withAlpha(colors.danger, 0.06),
+            borderColor: withAlpha(colors.danger, colors.mode === 'dark' ? 0.4 : 0.28),
+          },
+        ]}>
+          <View style={styles.linkCardHead}>
+            <View style={styles.linkHostWrap}>
+              <Ionicons name="link-outline" size={14} color={colors.textMuted} />
+              <Text numberOfLines={1} style={[styles.linkHost, { color: colors.textMuted, fontFamily: typography.semibold, fontSize: 11 * fontScale }]}>
+                No URL detected
+              </Text>
+            </View>
+            <Text style={[styles.linkStatus, { color: colors.danger, fontSize: 10.5 * fontScale }]}>
+              awaiting full link
+            </Text>
+          </View>
+          <Text style={[styles.linkExcerpt, { color: colors.textSecondary, fontFamily: typography.body, fontSize: 11.5 * fontScale }]}>
+            You mentioned a site but the URL is missing or not in a form I can fetch. On your next turn, paste the full address including the https:// prefix.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!preview.urls.length) return null;
+  return (
+    <View style={styles.linkPreviews}>
+      {preview.urls.map((url, index) => {
+        const fetched = preview.results[index];
+        let host = url;
+        try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* keep URL */ }
+        const ok = fetched?.ok === true;
+        const title = fetched?.title || url;
+        const excerpt = fetched?.content
+          ? (fetched.content.length > 220 ? `${fetched.content.slice(0, 217)}…` : fetched.content)
+          : '';
+        const status = ok
+          ? (fetched.truncated ? `excerpt · ${fetched.chars || 0} chars` : `full · ${fetched.chars || 0} chars`)
+          : (fetched?.reason || 'fetch failed');
+        return (
+          <View
+            key={url}
+            style={[
+              styles.linkCard,
+              {
+                backgroundColor: ok
+                  ? colors.surface
+                  : colors.mode === 'dark'
+                    ? withAlpha(colors.danger, 0.12)
+                    : withAlpha(colors.danger, 0.06),
+                borderColor: ok
+                  ? withAlpha(colors.border, 0.4)
+                  : withAlpha(colors.danger, colors.mode === 'dark' ? 0.4 : 0.28),
+              },
+            ]}
+          >
+            <View style={styles.linkCardHead}>
+              <View style={styles.linkHostWrap}>
+                <Ionicons name="link-outline" size={14} color={colors.textMuted} />
+                <Text numberOfLines={1} style={[styles.linkHost, { color: colors.textMuted, fontFamily: typography.semibold, fontSize: 11 * fontScale }]}>
+                  {host}
+                </Text>
+              </View>
+              <Text numberOfLines={1} style={[styles.linkStatus, { color: ok ? colors.textMuted : colors.danger, fontSize: 10.5 * fontScale }]}>
+                {status}
+              </Text>
+            </View>
+            <Text
+              numberOfLines={2}
+              onPress={() => { void native.openBrowser(url); }}
+              style={[styles.linkTitle, { color: colors.accent, fontFamily: typography.medium, fontSize: 13 * fontScale }]}
+            >
+              {title}
+            </Text>
+            {excerpt ? (
+              <Text numberOfLines={2} style={[styles.linkExcerpt, { color: colors.textSecondary, fontFamily: typography.body, fontSize: 11.5 * fontScale }]}>
+                {excerpt}
+              </Text>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function HighlightedPlainText({ text, highlightKey, style }: { text: string; highlightKey?: string; style?: object }) {
   const { colors } = useTheme();
@@ -247,6 +343,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   onRegenerate,
   onBranch,
   onFeedback,
+  linkPreview,
   highlight,
   onIterate,
 }: MessageBubbleProps) {
@@ -425,6 +522,8 @@ export const MessageBubble = React.memo(function MessageBubble({
         ) : (
           <Markdown text={text} streaming={streaming} highlight={highlight} />
         )}
+        {isUser && linkPreview ? <LinkPreviewCards preview={linkPreview} /> : null}
+
 
         {/* Action Toolbar — same action set/order as SPA MessageToolbar. */}
         {!streaming && text && !isCanvas ? (
@@ -633,6 +732,38 @@ const styles = StyleSheet.create({
   },
   image: { width: 248, height: 170, borderRadius: 10, marginBottom: 4 },
   attachmentText: { fontSize: 12, fontWeight: '500' },
+  linkPreviews: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'flex-end',
+    gap: 6,
+    marginTop: 10,
+  },
+  linkCard: {
+    width: '100%',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  linkCardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  linkHostWrap: {
+    maxWidth: '60%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 0,
+  },
+  linkHost: { flexShrink: 1, letterSpacing: -0.1 },
+  linkStatus: { flexShrink: 1, textAlign: 'right' },
+  linkTitle: { lineHeight: 18 },
+  linkExcerpt: { lineHeight: 17, marginTop: 2 },
   /* frontend `.msg-toolbar`: height 28px, gap 2px, margin-top 2px,
    * margin-left 2px (assistant) / justify-content flex-end (user). */
   toolbar: {
