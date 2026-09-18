@@ -400,6 +400,37 @@ class AppStore {
     });
   }
 
+  async saveKnowledgeSnapshot() {
+    const session = this.state.activeSession;
+    if (!session || session.mode !== 'tutor') return null;
+    const nodes = tutorNodes(session);
+    if (!nodes.length) return null;
+
+    const counts = { internalized: 0, fuzzy: 0, blank: 0 };
+    nodes.forEach((node) => {
+      if (node.status === 'internalized') counts.internalized += 1;
+      else if (node.status === 'fuzzy') counts.fuzzy += 1;
+      else counts.blank += 1;
+    });
+    const snapshot = {
+      date: new Date().toISOString().slice(0, 10),
+      at: Date.now(),
+      summary: `I ${counts.internalized} · F ${counts.fuzzy} · B ${counts.blank}`,
+      counts,
+    };
+    const history = Array.isArray(session.boundariesHistory)
+      ? [...session.boundariesHistory, snapshot].slice(-30)
+      : [snapshot];
+    const nextSession: Session = {
+      ...session,
+      boundariesHistory: history,
+      updatedAt: new Date().toISOString(),
+    };
+    this.setState({ activeSession: nextSession });
+    await this.persistTutorInteraction(nextSession);
+    return snapshot;
+  }
+
   async jumpToTutorNode(sessionId: string, nodeIndex: number) {
     if (this.state.isStreaming) return false;
     try {
