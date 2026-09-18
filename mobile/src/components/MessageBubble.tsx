@@ -6,7 +6,7 @@ import type { Message } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
-import { Markdown } from '../render/MarkdownView';
+import { Markdown, type TutorPracticeAnswer, type TutorQuizAnswer } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
 import { AnimatedPressable } from './AnimatedPressable';
 import { CanvasBlock } from './CanvasBlock';
@@ -25,6 +25,8 @@ interface MessageBubbleProps {
   onRegenerate?: (messageId: string) => unknown | Promise<unknown>;
   onBranch?: (messageId: string, options?: { reExplain?: boolean }) => unknown | Promise<unknown>;
   onFeedback?: (messageId: string, rating: 'up' | 'down' | 'none') => unknown | Promise<unknown>;
+  onTutorQuizAnswer?: (answer: TutorQuizAnswer) => unknown | Promise<unknown>;
+  onTutorPracticeSubmit?: (answer: TutorPracticeAnswer) => unknown | Promise<unknown>;
   linkPreview?: LinkPreviewState;
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
@@ -343,6 +345,8 @@ export const MessageBubble = React.memo(function MessageBubble({
   onRegenerate,
   onBranch,
   onFeedback,
+  onTutorQuizAnswer,
+  onTutorPracticeSubmit,
   linkPreview,
   highlight,
   onIterate,
@@ -518,7 +522,13 @@ export const MessageBubble = React.memo(function MessageBubble({
             onIterate={onIterate}
           />
         ) : (
-          <Markdown text={text} streaming={streaming} highlight={highlight} />
+          <Markdown
+            text={text}
+            streaming={streaming}
+            highlight={highlight}
+            onQuizAnswer={onTutorQuizAnswer}
+            onPracticeSubmit={onTutorPracticeSubmit}
+          />
         )}
         {isUser && linkPreview ? <LinkPreviewCards preview={linkPreview} /> : null}
 
