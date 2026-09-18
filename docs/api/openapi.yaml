@@ -2177,7 +2177,7 @@ paths:
         - in: query
           name: token
           required: true
-          schema: { type: string, pattern: '^mw\\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings|profile|usage|storage|display|shortcuts)\\.[a-f0-9]{64}$' }
+          schema: { type: string, pattern: '^mw\\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings|profile|usage|storage|display|shortcuts|library|exam)\\.[a-f0-9]{64}$' }
       responses:
         '302': { description: Sets an HttpOnly sid cookie and redirects to an allow-listed SPA target }
   /api/auth/oauth/github/mobile/start:
