@@ -61,19 +61,11 @@ export interface KeyboardLiftOptions {
   root?: HTMLElement | null;
 }
 
-type CapacitorLike = {
-  isNativePlatform?: () => boolean;
-};
-
 let active: KeyboardLift | null = null;
 
 export function getKeyboardLift(): KeyboardLift | null {
   return active;
 }
-
-const now = (): number => (
-  typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
-);
 
 export function initKeyboardLift({
   inputs,
@@ -96,14 +88,7 @@ export function initKeyboardLift({
 
   const viewport = window.visualViewport as (ViewportLike & EventTarget & { width?: number }) | null;
   const insetListeners = new Set<(layoutInset: number) => void>();
-  const capacitor = (window as Window & { Capacitor?: CapacitorLike }).Capacitor;
-  const isCapacitorNative = (() => {
-    try { return Boolean(capacitor?.isNativePlatform?.()); }
-    catch { return false; }
-  })();
-
   let phase: KeyboardPhase = 'closed';
-  let mode: KeyboardMode = 'unknown';
   let sessionActive = false;
   let appliedInset = -1;
   let blurTimer: ReturnType<typeof setTimeout> | 0 = 0;
@@ -130,7 +115,6 @@ export function initKeyboardLift({
   };
 
   const setMode = (next: KeyboardMode) => {
-    mode = next;
     try { root.dataset.keyboardMode = next; } catch { /* detached */ }
   };
 
