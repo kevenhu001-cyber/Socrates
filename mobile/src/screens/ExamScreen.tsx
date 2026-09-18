@@ -6,7 +6,7 @@ import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
+import { ModelPickerModal } from '../components/ModelPickerModal';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
@@ -46,7 +46,8 @@ export function ExamScreen({ navigation }: { navigation: any }) {
   const t = useT();
   const examState = useAppStore();
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const currentModelName = AVAILABLE_MODELS.find((m) => m.id === examState.selectedModel)?.name || 'Model';
+  const currentProvider = examState.providers.find((provider) => provider.id === examState.selectedModel);
+  const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
   const [mode, setMode] = useState<Mode>('setup');
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('intermediate');
@@ -387,10 +388,11 @@ export function ExamScreen({ navigation }: { navigation: any }) {
       </View>
       <ModelPickerModal
         visible={modelPickerOpen}
+        providers={examState.providers}
         selectedId={examState.selectedModel}
-        onSelect={(modelId) => appStore.setSelectedModel(modelId)}
+        onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Settings')}
+        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('more.settings') || 'Settings' })}
       />
       </ScrollView>
     </Screen>
