@@ -205,11 +205,17 @@ export const chatApi = {
 
 export const apiKeysApi = {
   list: () => apiRequest<{ providers: ApiProvider[] }>('/api-key'),
+  create: (payload: Pick<ApiProvider, 'url' | 'model'> & Partial<Pick<ApiProvider, 'label' | 'isMultimodal'>> & { key: string }) =>
+    apiRequest<ApiProvider>('/api-key', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   patch: (id: string, payload: Partial<Pick<ApiProvider, 'label' | 'url' | 'model' | 'isActive' | 'isMultimodal'>> & { key?: string }) =>
     apiRequest<ApiProvider>(`/api-key/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  remove: (id: string) => apiRequest<void>(`/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
 export const usersApi = {
