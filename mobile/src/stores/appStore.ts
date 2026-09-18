@@ -333,7 +333,15 @@ class AppStore {
   async openSession(sessionId: string) {
     this.setState({ isLoading: true, error: null });
     const session = await sessionRepository.get(sessionId);
-    this.setState({ activeSession: session, draft: session ? readDraft(session.id) : '', pendingAttachments: [], linkPreviews: {}, isLoading: false });
+    this.setState({
+      activeSession: session,
+      draft: session ? readDraft(session.id) : '',
+      pendingAttachments: [],
+      activeExtension: null,
+      selectedComposerPlugins: [],
+      linkPreviews: {},
+      isLoading: false,
+    });
   }
 
   async renameSession(sessionId: string, title: string) {
@@ -398,6 +406,7 @@ class AppStore {
       activeSession: projectId ? { ...session, projectId } : session,
       draft: preserveComposer ? this.state.draft : '',
       pendingAttachments: preserveComposer ? this.state.pendingAttachments : [],
+      activeExtension: preserveComposer ? this.state.activeExtension : null,
       selectedComposerPlugins: preserveComposer ? this.state.selectedComposerPlugins : [],
       linkPreviews: {},
       error: null,
