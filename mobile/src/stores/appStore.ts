@@ -106,6 +106,38 @@ function isSubstantiveTutorAnswer(text: string): boolean {
   return text.length > 40 && text.trim().split(/\s+/).length > 8;
 }
 
+function widgetEscape(value: string) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function buildMistakeRedoWidget(input: {
+  source?: string | null;
+  question: string;
+  options?: Array<{ letter: string; text: string }>;
+  correctAnswer?: string | null;
+}) {
+  const question = widgetEscape(input.question);
+  const correct = String(input.correctAnswer || '').trim();
+  const options = Array.isArray(input.options) ? input.options.filter((option) => option.letter && option.text) : [];
+
+  if (input.source !== 'practice' && options.length >= 2) {
+    const opts = options.slice(0, 4)
+      .map((option) => `<o letter="${widgetEscape(option.letter.toUpperCase())}">${widgetEscape(option.text)}</o>`)
+      .join('\n');
+    const correctBlock = /^[A-D]$/i.test(correct)
+      ? `\n<correct>${correct.toUpperCase()}</correct>`
+      : '';
+    return `<quiz>\n<q>${question}</q>\n${opts}${correctBlock}\n</quiz>`;
+  }
+
+  const answerAttr = correct ? ` correct="${widgetEscape(correct)}"` : '';
+  return `<practice${answerAttr}>\n<title>Redo</title>\n<problem>${question}</problem>\n</practice>`;
+}
+
 class AppStore {
   private state = initialState;
   private listeners = new Set<() => void>();
@@ -1349,10 +1381,16 @@ class AppStore {
     this.setState({ activeSession: nextSession });
 
     if (!this.state.isIncognito) {
+      const persistedQuestion = input.source === 'quiz' && input.options?.length
+        ? [
+            input.question,
+            ...input.options.slice(0, 4).map((option) => `${option.letter.toUpperCase()}. ${option.text}`),
+          ].join('\n')
+        : input.question;
       void mistakesApi.create({
         sessionId: input.session.id,
         nodeName: node?.name || null,
-        questionContent: input.question,
+        questionContent: persistedQuestion,
         userAnswer: input.userAnswer,
         correctAnswer: input.correctAnswer,
         source: input.source,
@@ -1453,6 +1491,66 @@ class AppStore {
       ? 'My practice answer: '
       : tSync('tutor.practicePrefix');
     await this.sendMessage(`${prefix}${answer.answer}`, { tutorOrigin: 'practice' });
+  }
+
+  async openMistakeRedo(input: {
+    sessionId?: string | null;
+    source?: string | null;
+    question: string;
+    options?: Array<{ letter: string; text: string }>;
+    correctAnswer?: string | null;
+  }) {
+    if (this.state.isStreaming) return false;
+    let session: Session | null = null;
+
+    if (input.sessionId) {
+      try {
+        session = await sessionRepository.get(input.sessionId);
+      } catch {
+        session = null;
+      }
+    }
+    if (!session) {
+      session = createDraftSession(uuid(), 'tutor');
+      session = {
+        ...session,
+        topic: input.question.slice(0, 100),
+        title: tSync('mistakes.redo') === 'mistakes.redo' ? 'Mistake redo' : tSync('mistakes.redo'),
+        phase: 'chat',
+        kind: 'tutor',
+      };
+    }
+
+    const widget = buildMistakeRedoWidget(input);
+    const redoMessage: Message = {
+      clientId: id('assistant-redo'),
+      role: 'assistant',
+      rawText: widget,
+      content: widget,
+      type: 'assistant',
+    };
+    const messages = [...(session.messages || []), redoMessage];
+    const nextSession: Session = {
+      ...session,
+      mode: 'tutor',
+      phase: 'chat',
+      messages,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.setState({
+      activeSession: nextSession,
+      draft: '',
+      pendingAttachments: [],
+      isIncognito: false,
+      activeExtension: null,
+      selectedComposerPlugins: [],
+      tutorSubstantiveCount: 0,
+      tutorStuckCount: 0,
+      linkPreviews: {},
+      error: null,
+    });
+    return true;
   }
 
   async sendMessageFeedback(messageId: string, rating: 'up' | 'down' | 'none', reason?: string) {
