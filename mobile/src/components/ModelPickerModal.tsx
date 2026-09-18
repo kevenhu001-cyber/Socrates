@@ -4,113 +4,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
-
-export interface ModelItem {
-  id: string;
-  name: string;
-  provider: string;
-  description: string;
-  supportsReasoning?: boolean;
-  supportsVision?: boolean;
-}
-
-export const AVAILABLE_MODELS: ModelItem[] = [
-  {
-    id: 'beagle-built-in',
-    name: 'Socrates Default (Beagle)',
-    provider: 'Built-in',
-    description: 'System default optimized model with full tool and reasoning support',
-    supportsReasoning: true,
-    supportsVision: true,
-  },
-  {
-    id: 'gpt-4o',
-    name: 'GPT-4o',
-    provider: 'OpenAI',
-    description: 'High-intelligence flagship model for complex multi-step reasoning',
-    supportsVision: true,
-  },
-  {
-    id: 'gpt-4o-mini',
-    name: 'GPT-4o mini',
-    provider: 'OpenAI',
-    description: 'Fast, lightweight model for everyday chat and quick Q&A',
-    supportsVision: true,
-  },
-  {
-    id: 'claude-3-7-sonnet',
-    name: 'Claude 3.7 Sonnet',
-    provider: 'Anthropic',
-    description: 'Hybrid reasoning and high coding & prose fidelity',
-    supportsReasoning: true,
-    supportsVision: true,
-  },
-  {
-    id: 'claude-3-5-sonnet',
-    name: 'Claude 3.5 Sonnet',
-    provider: 'Anthropic',
-    description: 'Industry-leading nuanced reasoning and artifact generation',
-    supportsVision: true,
-  },
-  {
-    id: 'deepseek-reasoner',
-    name: 'DeepSeek-R1',
-    provider: 'DeepSeek',
-    description: 'Specialized deep reasoning model with transparent chain-of-thought',
-    supportsReasoning: true,
-  },
-  {
-    id: 'deepseek-chat',
-    name: 'DeepSeek-V3',
-    provider: 'DeepSeek',
-    description: 'State-of-the-art generalist conversational model',
-  },
-  {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    provider: 'Google',
-    description: 'Next-gen multimodal model with sub-second latency',
-    supportsVision: true,
-  },
-];
+import type { ApiProvider } from '../data/api/client';
 
 interface Props {
   visible: boolean;
+  providers: ApiProvider[];
   selectedId: string;
   onSelect: (modelId: string) => void;
   onClose: () => void;
   onManageSettings?: () => void;
 }
 
-export function ModelPickerModal({ visible, selectedId, onSelect, onClose, onManageSettings }: Props) {
+export function ModelPickerModal({ visible, providers, selectedId, onSelect, onClose, onManageSettings }: Props) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
   const [filter, setFilter] = useState('');
 
-  const filtered = AVAILABLE_MODELS.filter((m) =>
-    m.name.toLowerCase().includes(filter.toLowerCase()) ||
-    m.provider.toLowerCase().includes(filter.toLowerCase()) ||
-    m.description.toLowerCase().includes(filter.toLowerCase())
-  );
+  const sorted = providers.slice().sort((a, b) => Number(Boolean(b.isBuiltIn)) - Number(Boolean(a.isBuiltIn)));
+  const filtered = sorted.filter((provider) => {
+    const q = filter.toLowerCase();
+    return String(provider.label || '').toLowerCase().includes(q)
+      || String(provider.model || '').toLowerCase().includes(q)
+      || String(provider.url || '').toLowerCase().includes(q);
+  });
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
-        <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.borderStrong, borderRadius: radius.xl }]}>
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <View style={styles.headerTitleRow}>
-              <Ionicons name="sparkles" size={20} color={colors.accent} />
-              <Text style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>
-                {t('settings.model') || 'Choose Model'}
-              </Text>
-            </View>
-            <AnimatedPressable onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color={colors.textMuted} />
-            </AnimatedPressable>
-          </View>
-
-          <View style={[styles.searchBox, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}>
+        <View style={[styles.sheet, { backgroundColor: colors.background, borderColor: colors.borderStrong, borderRadius: 6 }]}>
+          {providers.length >= 4 ? <View style={[styles.searchBox, { backgroundColor: 'transparent', borderColor: colors.border, borderRadius: 4 }]}>
             <Ionicons name="search-outline" size={18} color={colors.textMuted} style={styles.searchIcon} />
             <TextInput
               value={filter}
@@ -122,7 +45,7 @@ export function ModelPickerModal({ visible, selectedId, onSelect, onClose, onMan
               autoCorrect={false}
               clearButtonMode="while-editing"
             />
-          </View>
+          </View> : null}
 
           <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
             {filtered.map((item) => {
@@ -144,39 +67,20 @@ export function ModelPickerModal({ visible, selectedId, onSelect, onClose, onMan
                   ]}
                 >
                   <View style={styles.itemHeader}>
-                    <Text style={[styles.itemName, { color: colors.text, fontFamily: typography.semibold }]}>
-                      {item.name}
+                    <Text style={[styles.itemName, { color: isSelected ? colors.accent : colors.textSecondary, fontFamily: typography.medium }]}>
+                      {(item.label && item.label !== 'Default') ? item.label : (item.model || item.label || 'Model')}
                     </Text>
-                    <View style={[styles.providerBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                      <Text style={[styles.providerText, { color: colors.accent, fontFamily: typography.medium }]}>
-                        {item.provider}
-                      </Text>
+                  </View>
+                  {!item.isBuiltIn ? (
+                    <Text numberOfLines={1} style={[styles.itemDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
+                      {item.model || item.url}
+                    </Text>
+                  ) : null}
+                  {isSelected ? (
+                    <View style={[styles.selectedCheck, { marginLeft: 'auto' }]}>
+                      <Ionicons name="checkmark" size={14} color={colors.accent} />
                     </View>
-                  </View>
-
-                  <Text numberOfLines={2} style={[styles.itemDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
-                    {item.description}
-                  </Text>
-
-                  <View style={styles.badgesRow}>
-                    {item.supportsReasoning ? (
-                      <View style={[styles.featureBadge, { backgroundColor: colors.accentSoft }]}>
-                        <Ionicons name="bulb-outline" size={12} color={colors.accent} />
-                        <Text style={[styles.featureText, { color: colors.accent }]}>Reasoning</Text>
-                      </View>
-                    ) : null}
-                    {item.supportsVision ? (
-                      <View style={[styles.featureBadge, { backgroundColor: colors.surface }]}>
-                        <Ionicons name="image-outline" size={12} color={colors.textMuted} />
-                        <Text style={[styles.featureText, { color: colors.textMuted }]}>Vision</Text>
-                      </View>
-                    ) : null}
-                    {isSelected ? (
-                      <View style={[styles.selectedCheck, { marginLeft: 'auto' }]}>
-                        <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
-                      </View>
-                    ) : null}
-                  </View>
+                  ) : null}
                 </AnimatedPressable>
               );
             })}
@@ -207,7 +111,10 @@ export function ModelPickerModal({ visible, selectedId, onSelect, onClose, onMan
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 62,
+    paddingRight: 8,
     backgroundColor: 'transparent',
   },
   backdrop: {
@@ -215,11 +122,18 @@ const styles = StyleSheet.create({
     inset: 0,
   },
   sheet: {
-    maxHeight: '80%',
-    marginHorizontal: 10,
-    marginBottom: 20,
+    width: 320,
+    minWidth: 220,
+    maxWidth: '92%',
+    maxHeight: 320,
     borderWidth: 1,
+    padding: 3,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 12,
   },
   header: {
     flexDirection: 'row',
@@ -246,12 +160,12 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    paddingHorizontal: 12,
+    marginHorizontal: 3,
+    marginTop: 3,
+    marginBottom: 3,
+    paddingHorizontal: 6,
     borderWidth: 1,
-    height: 40,
+    height: 32,
   },
   searchIcon: {
     marginRight: 8,
@@ -262,15 +176,17 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   list: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   listContent: {
-    paddingVertical: 8,
-    gap: 10,
+    paddingVertical: 0,
+    gap: 1,
   },
   item: {
-    padding: 14,
-    borderWidth: 1,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderWidth: 0,
+    borderRadius: 4,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -279,7 +195,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   itemName: {
-    fontSize: 15,
+    fontSize: 13,
   },
   providerBadge: {
     paddingHorizontal: 8,
@@ -291,9 +207,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   itemDesc: {
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 8,
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 1,
   },
   badgesRow: {
     flexDirection: 'row',
@@ -316,16 +232,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footer: {
-    padding: 14,
+    padding: 0,
+    marginTop: 3,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   manageBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    height: 42,
-    borderWidth: 1,
+    minHeight: 31,
+    paddingHorizontal: 9,
+    borderWidth: 0,
   },
   manageText: {
     fontSize: 13,
