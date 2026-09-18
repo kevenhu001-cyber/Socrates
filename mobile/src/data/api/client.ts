@@ -195,6 +195,14 @@ export const configApi = {
   get: () => apiRequest<{ hasBeagleKey: boolean; isReasoning: boolean }>('/config'),
 };
 
+export const chatApi = {
+  complete: (request: ChatRequest & { sessionId?: string; projectId?: string; ragSessionId?: string }) =>
+    apiRequest<{ content: string; reasoning_content?: string | null }>('/chat', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }),
+};
+
 export const apiKeysApi = {
   list: () => apiRequest<{ providers: ApiProvider[] }>('/api-key'),
   patch: (id: string, payload: Partial<Pick<ApiProvider, 'label' | 'url' | 'model' | 'isActive' | 'isMultimodal'>> & { key?: string }) =>
