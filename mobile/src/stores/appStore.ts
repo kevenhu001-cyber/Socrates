@@ -10,7 +10,7 @@ import { reduceToolEvent, settleToolCalls, type ToolEventKind } from '../data/to
 import { tSync } from '../i18n';
 import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite, type LinkPreviewState } from '../data/chat/webLinks';
 import { buildAssistantModeInstruction, MOBILE_EXTENSIONS, type MobileExtensionKey } from '../data/chat/prompts';
-import { connectedComposerPlugins, serializeSelectedPluginContext, type ComposerPluginSelection } from '../data/chat/plugins';
+import { catalogComposerPlugins, serializeSelectedPluginContext, type ComposerPluginSelection } from '../data/chat/plugins';
 import { unregisterPushNotifications } from '../native/push';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
@@ -251,8 +251,8 @@ class AppStore {
   async refreshComposerPlugins() {
     try {
       const response = await projectConnectorsApi.list();
-      const composerPlugins = connectedComposerPlugins(Array.isArray(response.connectors) ? response.connectors : []);
-      const availableIds = new Set(composerPlugins.map((plugin) => plugin.id));
+      const composerPlugins = catalogComposerPlugins(Array.isArray(response.connectors) ? response.connectors : []);
+      const availableIds = new Set(composerPlugins.filter((plugin) => plugin.connected).map((plugin) => plugin.id));
       this.setState({
         composerPlugins,
         selectedComposerPlugins: this.state.selectedComposerPlugins.filter((plugin) => availableIds.has(plugin.id)),
@@ -266,7 +266,7 @@ class AppStore {
 
   toggleComposerPlugin(pluginId: string) {
     const plugin = this.state.composerPlugins.find((item) => item.id === pluginId);
-    if (!plugin) return;
+    if (!plugin || !plugin.connected) return;
     const exists = this.state.selectedComposerPlugins.some((item) => item.id === pluginId);
     this.setState({
       selectedComposerPlugins: exists
