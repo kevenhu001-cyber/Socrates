@@ -1,7 +1,7 @@
 import type { Attachment, Memory, Message, Project, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
-import { ApiError, apiKeysApi, authApi, configApi, memoryApi, messagesApi, projectConnectorsApi, projectsApi, sessionsApi, type ApiProvider } from '../data/api/client';
+import { ApiError, apiKeysApi, authApi, configApi, memoryApi, messagesApi, mistakesApi, projectConnectorsApi, projectsApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
@@ -672,7 +672,7 @@ class AppStore {
     }
   }
 
-  async sendMessage(rawText: string) {
+  async sendMessage(rawText: string, options: { tutorOrigin?: 'quiz' | 'practice' } = {}) {
     const text = rawText.trim();
     const attachments = this.state.pendingAttachments;
     if ((!text && !attachments.length) || this.state.isStreaming) return;
@@ -694,13 +694,13 @@ class AppStore {
       if (node) {
         const previousStage = (session.teachingStage || 'motivate') as TutorTeachingStage;
         const substantive = isSubstantiveTutorAnswer(text);
-        const nextStage = substantive && previousStage !== 'check'
-          ? nextTeachingStage(previousStage)
-          : previousStage;
+        const mayAdvanceStage = substantive && previousStage !== 'check' && options.tutorOrigin !== 'quiz';
+        const nextStage = mayAdvanceStage ? nextTeachingStage(previousStage) : previousStage;
         let practiceAttempts = Number(session.practiceAttempts || 0);
         if (previousStage === 'exercise') practiceAttempts += 1;
         else if (nextStage === 'exercise') practiceAttempts = 0;
-        const tutorSubstantiveCount = this.state.tutorSubstantiveCount + (substantive ? 1 : 0);
+        const tutorSubstantiveCount = this.state.tutorSubstantiveCount
+          + (substantive && !options.tutorOrigin ? 1 : 0);
         const tutorStuckCount = this.state.tutorStuckCount + 1;
 
         session = {
@@ -712,7 +712,7 @@ class AppStore {
         this.setState({ tutorSubstantiveCount, tutorStuckCount });
 
         const reachedExercise = ['exercise', 'check'].includes(nextStage);
-        if (substantive && tutorSubstantiveCount >= 3 && reachedExercise) {
+        if (substantive && !options.tutorOrigin && tutorSubstantiveCount >= 3 && reachedExercise) {
           node = { ...node, status: 'internalized', questions: Number(node.questions || 0) + 1 };
           nodes[currentIndex] = node;
           const plan = buildTeachingPlan(nodes);
@@ -1215,6 +1215,160 @@ class AppStore {
       this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
       return null;
     }
+  }
+
+  private async persistTutorInteraction(session: Session) {
+    if (this.state.isIncognito) return;
+    try {
+      const messages = session.messages || [];
+      const saved = await sessionRepository.save(session, messages);
+      this.setState({
+        activeSession: this.state.activeSession?.id === session.id
+          ? { ...session, ...saved, messages }
+          : this.state.activeSession,
+        sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+      });
+    } catch (error) {
+      this.enqueueSession(session, id('tutor-state'));
+    }
+  }
+
+  private async recordTutorMistake(input: {
+    session: Session;
+    source: 'quiz' | 'practice';
+    question: string;
+    userAnswer: string;
+    correctAnswer: string | null;
+    options?: Array<{ letter: string; text: string }>;
+  }) {
+    const nodes = tutorNodes(input.session);
+    const currentIndex = Math.max(0, Math.min(Number(input.session.currentNode || 0), Math.max(0, nodes.length - 1)));
+    const node = nodes[currentIndex];
+    const localMistake = {
+      id: id('mistake'),
+      type: input.source,
+      topic: input.session.topic || '',
+      node: node?.name || '',
+      nodeIdx: currentIndex,
+      q: input.question,
+      options: input.options || [],
+      correct: input.correctAnswer,
+      userAnswer: input.userAnswer,
+      timestamp: Date.now(),
+      redoCount: 0,
+    };
+    const nextSession: Session = {
+      ...input.session,
+      mistakes: [localMistake, ...((input.session.mistakes || []) as unknown[]) ] as Session['mistakes'],
+      updatedAt: new Date().toISOString(),
+    };
+    this.setState({ activeSession: nextSession });
+
+    if (!this.state.isIncognito) {
+      void mistakesApi.create({
+        sessionId: input.session.id,
+        nodeName: node?.name || null,
+        questionContent: input.question,
+        userAnswer: input.userAnswer,
+        correctAnswer: input.correctAnswer,
+        source: input.source,
+      }).catch((error) => {
+        console.warn('[Tutor] Failed to persist mistake:', error);
+      });
+    }
+    return nextSession;
+  }
+
+  async handleTutorQuizAnswer(answer: {
+    q: string;
+    options: Array<{ letter: string; text: string }>;
+    correct: string | null;
+    picked: { letter: string; text: string };
+  }) {
+    let session = this.state.activeSession;
+    if (!session || session.mode !== 'tutor' || this.state.isStreaming) return;
+
+    const correct = answer.correct ? answer.correct.toUpperCase() : null;
+    const pickedLetter = answer.picked.letter.toUpperCase();
+    const isRight = correct ? pickedLetter === correct : null;
+    const stage = (session.teachingStage || 'motivate') as TutorTeachingStage;
+    let teachingStage: TutorTeachingStage = stage;
+    let practiceAttempts = Number(session.practiceAttempts || 0);
+
+    if (stage === 'exercise') {
+      if (isRight === true) {
+        teachingStage = 'check';
+        practiceAttempts = 0;
+      } else if (isRight === false) {
+        practiceAttempts += 1;
+      }
+    } else if (stage === 'check' && isRight !== null) {
+      practiceAttempts = isRight ? 0 : practiceAttempts + 1;
+    }
+
+    session = {
+      ...session,
+      teachingStage,
+      practiceAttempts,
+      updatedAt: new Date().toISOString(),
+    };
+    this.setState({ activeSession: session });
+
+    if (correct && isRight === false) {
+      session = await this.recordTutorMistake({
+        session,
+        source: 'quiz',
+        question: answer.q,
+        userAnswer: pickedLetter,
+        correctAnswer: correct,
+        options: answer.options,
+      });
+    }
+
+    // The SPA only requests a tutor follow-up for a wrong self-graded quiz.
+    if (correct && isRight === false) {
+      await this.persistTutorInteraction(session);
+      await this.sendMessage(
+        `I chose ${pickedLetter}. ${answer.picked.text} (Result: incorrect, correct is ${correct}.)`,
+        { tutorOrigin: 'quiz' },
+      );
+      return;
+    }
+
+    await this.persistTutorInteraction(session);
+  }
+
+  async handleTutorPracticeAnswer(answer: {
+    problem: string;
+    answer: string;
+    correct: string | null;
+    isCorrect: boolean | null;
+  }) {
+    let session = this.state.activeSession;
+    if (!session || session.mode !== 'tutor' || this.state.isStreaming) return;
+
+    if (answer.correct && answer.isCorrect === false) {
+      session = await this.recordTutorMistake({
+        session,
+        source: 'practice',
+        question: answer.problem,
+        userAnswer: answer.answer,
+        correctAnswer: answer.correct,
+      });
+      await this.persistTutorInteraction(session);
+    } else if (answer.isCorrect === true) {
+      session = {
+        ...session,
+        practiceAttempts: 0,
+        updatedAt: new Date().toISOString(),
+      };
+      this.setState({ activeSession: session });
+    }
+
+    const prefix = tSync('tutor.practicePrefix') === 'tutor.practicePrefix'
+      ? 'My practice answer: '
+      : tSync('tutor.practicePrefix');
+    await this.sendMessage(`${prefix}${answer.answer}`, { tutorOrigin: 'practice' });
   }
 
   async sendMessageFeedback(messageId: string, rating: 'up' | 'down' | 'none', reason?: string) {
