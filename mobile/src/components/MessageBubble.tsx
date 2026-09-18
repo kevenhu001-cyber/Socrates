@@ -17,12 +17,12 @@ interface MessageBubbleProps {
   message: Message;
   isLastAssistant?: boolean;
   onRetry?: () => void;
-  onEdit?: (messageId: string, text: string) => void | Promise<void>;
-  onDelete?: (messageId: string) => void | Promise<void>;
-  onShare?: () => void | Promise<void>;
-  onRegenerate?: (messageId: string) => void | Promise<void>;
-  onBranch?: (messageId: string, options?: { reExplain?: boolean }) => void | Promise<void>;
-  onFeedback?: (messageId: string, rating: 'up' | 'down' | 'none') => void | Promise<void>;
+  onEdit?: (messageId: string, text: string) => unknown | Promise<unknown>;
+  onDelete?: (messageId: string) => unknown | Promise<unknown>;
+  onShare?: () => unknown | Promise<unknown>;
+  onRegenerate?: (messageId: string) => unknown | Promise<unknown>;
+  onBranch?: (messageId: string, options?: { reExplain?: boolean }) => unknown | Promise<unknown>;
+  onFeedback?: (messageId: string, rating: 'up' | 'down' | 'none') => unknown | Promise<unknown>;
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
   onIterate?: (text: string) => void;
