@@ -1,6 +1,6 @@
 import type { Attachment, Memory, Message, Project, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
-import { useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { ApiError, apiKeysApi, authApi, configApi, memoryApi, messagesApi, mistakesApi, projectConnectorsApi, projectsApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
@@ -151,6 +151,11 @@ class AppStore {
   /** Coalesce high-frequency token/progress frames before touching React state. */
   private pendingAssistantPatches: Array<(assistant: Message) => Partial<Message>> = [];
   private streamFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Raw-text deltas accumulated since the last flush; joined once per commit. */
+  private streamDeltaChunks: string[] = [];
+  /** Draft writes batch to one trailing SQLite write instead of one per keystroke. */
+  private pendingDraftSave: { sessionId: string; draft: string } | null = null;
+  private draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
@@ -421,6 +426,7 @@ class AppStore {
   }
 
   async openSession(sessionId: string) {
+    this.flushDraftSave();
     this.setState({ isLoading: true, error: null });
     const session = await sessionRepository.get(sessionId);
     this.setState({
@@ -470,6 +476,7 @@ class AppStore {
 
   async jumpToTutorNode(sessionId: string, nodeIndex: number) {
     if (this.state.isStreaming) return false;
+    this.flushDraftSave();
     try {
       const loaded = await sessionRepository.get(sessionId);
       if (!loaded || loaded.mode !== 'tutor') return false;
@@ -555,6 +562,30 @@ class AppStore {
     });
   }
 
+  /* Archived-sessions manager (Storage overlay). Mirrors the web
+   * Storage modal contract in frontend/src/session/recents.js: the
+   * server keeps archived rows for ~30 days, Restore clears
+   * archivedAt, and Delete-forever issues the same DELETE /sessions/:id
+   * the Recents purge uses. */
+  async listArchivedSessions() {
+    const result = await sessionsApi.listArchived();
+    return (result.sessions || []).filter((session) => session.archivedAt != null);
+  }
+
+  async restoreSession(sessionId: string) {
+    await sessionsApi.unarchive(sessionId);
+    await this.refreshSessions().catch(() => undefined);
+  }
+
+  async purgeSession(sessionId: string) {
+    await sessionsApi.delete(sessionId);
+    this.setState({
+      sessions: this.state.sessions.filter((session) => session.id !== sessionId),
+      activeSession: this.state.activeSession?.id === sessionId ? null : this.state.activeSession,
+      error: null,
+    });
+  }
+
   async deleteSession(sessionId: string) {
     await sessionsApi.delete(sessionId);
     this.setState({
@@ -574,6 +605,7 @@ class AppStore {
   }
 
   startNewSession(mode: 'chat' | 'tutor' = 'chat', preserveComposer = false, projectId?: string | null) {
+    this.flushDraftSave();
     this.stopStream?.();
     this.stopStream = null;
     this.streamFinished = true;
@@ -594,9 +626,25 @@ class AppStore {
     });
   }
 
+  private queueDraftSave(sessionId: string, draft: string) {
+    this.pendingDraftSave = { sessionId, draft };
+    if (this.draftSaveTimer) return;
+    this.draftSaveTimer = setTimeout(() => this.flushDraftSave(), 400);
+  }
+
+  /* Called before any path that clears or replaces `draft`, so the last
+   * keystrokes are not lost when the debounce timer would outlive the draft. */
+  private flushDraftSave() {
+    if (this.draftSaveTimer) clearTimeout(this.draftSaveTimer);
+    this.draftSaveTimer = null;
+    const pending = this.pendingDraftSave;
+    this.pendingDraftSave = null;
+    if (pending) saveDraft(pending.sessionId, pending.draft);
+  }
+
   setDraft(draft: string) {
     const sessionId = this.state.activeSession?.id;
-    if (sessionId) saveDraft(sessionId, draft);
+    if (sessionId) this.queueDraftSave(sessionId, draft);
     this.setState({ draft });
   }
 
@@ -680,6 +728,7 @@ class AppStore {
      * temporary conversation; leaving it discards that conversation. The
      * flag is deliberately flipped together with the reset so no temporary
      * turn can race into the persisted session list. */
+    this.flushDraftSave();
     this.stopStream?.();
     this.stopStream = null;
     this.streamFinished = true;
@@ -719,6 +768,7 @@ class AppStore {
   ) {
     const topic = topicInput.trim();
     if (!topic || this.state.isStreaming) return false;
+    this.flushDraftSave();
     const attachments = this.state.pendingAttachments;
     const base = this.state.activeSession?.mode === 'tutor'
       ? this.state.activeSession
@@ -801,6 +851,7 @@ class AppStore {
   }
 
   async sendMessage(rawText: string, options: { tutorOrigin?: 'quiz' | 'practice' } = {}) {
+    this.flushDraftSave();
     const text = rawText.trim();
     const attachments = this.state.pendingAttachments;
     if ((!text && !attachments.length) || this.state.isStreaming) return;
@@ -1516,6 +1567,7 @@ class AppStore {
     correctAnswer?: string | null;
   }) {
     if (this.state.isStreaming) return false;
+    this.flushDraftSave();
     let session: Session | null = null;
 
     if (input.sessionId) {
@@ -1614,6 +1666,7 @@ class AppStore {
     if (this.streamFlushTimer) clearTimeout(this.streamFlushTimer);
     this.streamFlushTimer = null;
     this.pendingAssistantPatches = [];
+    this.streamDeltaChunks = [];
   }
 
   private queueAssistantPatch(generation: number, patch: (assistant: Message) => Partial<Message>) {
@@ -1621,9 +1674,9 @@ class AppStore {
     this.pendingAssistantPatches.push(patch);
     if (this.streamFlushTimer) return;
     // Rendering an entire markdown tree once per transport chunk is needlessly
-    // expensive. 32ms keeps the live response responsive while capping commits
-    // at roughly one per frame on 30fps devices.
-    this.streamFlushTimer = setTimeout(() => this.flushAssistantPatches(generation), 32);
+    // expensive. 64ms keeps the live response responsive while roughly halving
+    // full-state commits (each flush re-parses the whole streaming markdown).
+    this.streamFlushTimer = setTimeout(() => this.flushAssistantPatches(generation), 64);
   }
 
   private flushAssistantPatches(generation: number) {
@@ -1644,8 +1697,17 @@ class AppStore {
 
   private appendAssistant(delta: string, generation: number) {
     if (!delta) return;
+    if (generation !== this.streamGeneration || this.streamFinished) return;
+    this.streamDeltaChunks.push(delta);
+    // Each queued patch drains the shared chunk buffer, so only the first
+    // patch in a flush batch performs the join. Concatenating the full text
+    // per delta re-copied it once per SSE chunk (O(n²) across a batch); if a
+    // patch is dropped the undrained chunks are picked up by the next one.
     this.queueAssistantPatch(generation, (assistant) => {
-      const rawText = `${assistant.rawText || ''}${delta}`;
+      const chunks = this.streamDeltaChunks;
+      if (!chunks.length) return {};
+      this.streamDeltaChunks = [];
+      const rawText = `${assistant.rawText || ''}${chunks.join('')}`;
       return { rawText, content: rawText };
     });
   }
@@ -1713,6 +1775,25 @@ class AppStore {
 }
 
 export const appStore = new AppStore();
-export function useAppStore() {
-  return useSyncExternalStore(appStore.subscribe, appStore.getSnapshot, appStore.getSnapshot);
+/* `useAppStore()` with no selector keeps the original whole-state contract.
+ * With a selector, `getSnapshot` memoises the selected value against the last
+ * state/selector so `useSyncExternalStore` can bail out of unrelated store
+ * writes (the `useSyncExternalStoreWithSelector` pattern, inlined to avoid a
+ * `use-sync-external-store` dependency for one hook). */
+export function useAppStore(): AppState;
+export function useAppStore<T>(selector: (state: AppState) => T): T;
+export function useAppStore<T>(selector?: (state: AppState) => T): AppState | T {
+  const cacheRef = useRef<{ selector?: (state: AppState) => T; state?: AppState; value: unknown }>({ value: undefined });
+  const getSnapshot = useCallback(() => {
+    if (!selector) return appStore.getSnapshot();
+    const cache = cacheRef.current;
+    const state = appStore.getSnapshot();
+    if (Object.is(cache.state, state) && cache.selector === selector) return cache.value as T;
+    const value = selector(state);
+    cache.selector = selector;
+    cache.state = state;
+    cache.value = value;
+    return value;
+  }, [selector]);
+  return useSyncExternalStore(appStore.subscribe, getSnapshot, getSnapshot);
 }

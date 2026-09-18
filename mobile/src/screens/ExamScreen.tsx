@@ -1,5 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, BackHandler, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '../components/Screen';
@@ -35,11 +35,46 @@ const DIFFICULTIES: Array<[string, string]> = [
   ['expert', 'exam.difficultyExpert'],
 ];
 
-const QUESTION_TYPES: Array<['mc' | 'fb' | 'sa', string, string]> = [
-  ['mc', 'multiple-choice', 'exam.typeMc'],
-  ['fb', 'fill-blank', 'exam.typeFb'],
-  ['sa', 'short-answer', 'exam.typeSa'],
+const QUESTION_TYPES: Array<['mc' | 'fb' | 'sa', string, string, string]> = [
+  ['mc', 'multiple-choice', 'exam.typeMc', 'Choose one answer'],
+  ['fb', 'fill-blank', 'exam.typeFb', 'Recall key terms'],
+  ['sa', 'short-answer', 'exam.typeSa', 'Explain your reasoning'],
 ];
+
+/* i18n keys for the sectioned setup form are not in strings.ts yet; translate
+ * falls back to the key itself, so check before falling through to English. */
+function tt(t: (key: string, vars?: Record<string, string | number>) => string, key: string, fallback: string): string {
+  const value = t(key);
+  return value === key ? fallback : value;
+}
+
+/* Pulsing dots — mirrors `.loading span` in `frontend/src/styles.css` used by
+ * the exam generating view instead of a spinner orb. */
+function PulsingDots({ color }: { color: string }) {
+  const a = useRef(new Animated.Value(0.3)).current;
+  const b = useRef(new Animated.Value(0.3)).current;
+  const c = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const pulse = (v: Animated.Value, delay: number) => Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(v, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        Animated.delay(800 - delay),
+      ]),
+    );
+    const animations = Animated.parallel([pulse(a, 0), pulse(b, 160), pulse(c, 320)]);
+    animations.start();
+    return () => animations.stop();
+  }, [a, b, c]);
+  return (
+    <View style={styles.dots}>
+      {[a, b, c].map((v, i) => (
+        <Animated.View key={i} style={[styles.dot, { backgroundColor: color, opacity: v }]} />
+      ))}
+    </View>
+  );
+}
 
 export function ExamScreen({ navigation }: { navigation: any }) {
   const { colors, radius, spacing, typography } = useTheme();
@@ -146,10 +181,9 @@ export function ExamScreen({ navigation }: { navigation: any }) {
     <Screen style={styles.screen}>
       <AppHeader title={t('sidebar.nav.exam')} onNewChat={() => navigation.navigate('Home')} />
       <View style={styles.center}>
-      <View style={[styles.loadingOrb, { borderColor: colors.accent }]}><ActivityIndicator color={colors.accent} size="large" /></View>
-      <Text style={[styles.heading, { color: colors.text, fontFamily: typography.display }]}>{t('exam.buildingHeading')}</Text>
-      <Text style={[styles.body, { color: colors.textMuted }]}>{t('exam.buildingBody', { percent: progress })}</Text>
-      <View style={[styles.progressTrack, { backgroundColor: colors.surfaceRaised }]}><View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${Math.max(4, progress)}%` }]} /></View>
+      <PulsingDots color={colors.accent} />
+      <Text style={[styles.generatingMsg, { color: colors.textMuted }]}>{t('exam.buildingBody', { percent: progress })}</Text>
+      <View style={[styles.progressTrack, { backgroundColor: withAlpha(colors.border, 0.25) }]}><View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${Math.max(4, progress)}%` }]} /></View>
       <AnimatedPressable onPress={() => { abortRef.current?.abort(); setMode('setup'); }} style={[styles.secondaryButton, { borderColor: colors.border, borderRadius: radius.md }]}><Text style={{ color: colors.textMuted }}>{t('common.cancel')}</Text></AnimatedPressable>
       </View>
       <ConfirmDialog
@@ -192,13 +226,13 @@ export function ExamScreen({ navigation }: { navigation: any }) {
                 style={[
                   styles.navPill,
                   {
-                    borderColor: isCurrent ? colors.accent : colors.border,
-                    backgroundColor: isCurrent ? colors.accentSoft : isAnswered ? colors.surfaceRaised : 'transparent',
+                    borderColor: isCurrent ? colors.accent : isAnswered ? withAlpha(colors.success, 0.5) : colors.border,
+                    backgroundColor: isCurrent ? colors.accentSoft : isAnswered ? withAlpha(colors.success, 0.08) : 'transparent',
                     borderRadius: radius.pill,
                   },
                 ]}
               >
-                <Text style={[styles.navPillText, { color: isCurrent ? colors.accent : colors.textMuted }]}>{index + 1}</Text>
+                <Text style={[styles.navPillText, { color: isCurrent ? colors.accent : isAnswered ? colors.success : colors.textMuted }]}>{index + 1}{isAnswered && !isCurrent ? ' ·' : ''}</Text>
               </AnimatedPressable>
             );
           })}
@@ -242,7 +276,9 @@ export function ExamScreen({ navigation }: { navigation: any }) {
                 <Text style={[styles.optionText, { color: colors.text, fontFamily: typography.body }]}>{option.text}</Text>
               </AnimatedPressable>
             );
-          }) : (
+          }) : question.type === 'fill-blank' ? (
+            <TextInput value={answer} onChangeText={(value) => setAnswers({ ...answers, [current]: value })} placeholder={t('exam.placeholderAnswer')} placeholderTextColor={colors.textSubtle} style={[styles.answerInput, styles.answerInputSingle, { color: colors.text, borderColor: colors.border, borderRadius: radius.md }]} />
+          ) : (
             <TextInput multiline value={answer} onChangeText={(value) => setAnswers({ ...answers, [current]: value })} placeholder={t('exam.placeholderAnswer')} placeholderTextColor={colors.textSubtle} style={[styles.answerInput, { color: colors.text, borderColor: colors.border, borderRadius: radius.md }]} />
           )}
         </View>
@@ -275,14 +311,21 @@ export function ExamScreen({ navigation }: { navigation: any }) {
       <View style={styles.formContainer}>
       <Text style={[styles.kicker, { color: colors.accent }]}>{t('exam.kickerComplete')}</Text>
       <Text style={[styles.heading, { color: colors.text, fontFamily: typography.display }]}>{t('exam.resultsHeading')}</Text>
-      {/* 1:1 Parity with frontend `.exam-score` (styles.css:2567-2570) */}
-      <View style={[styles.score, { backgroundColor: colors.surface, borderColor: withAlpha(colors.border, 0.3), borderRadius: 16 }]}>
+      {/* 1:1 Parity with frontend `.exam-score` (styles.css:2658-2661) —
+       * plain block, no card chrome, "{pct}% correct" label. */}
+      <View style={styles.score}>
         <View style={styles.scoreValRow}>
           <Text style={[styles.scoreVal, { color: colors.text, fontFamily: typography.semibold }]}>{grade.correct}</Text>
           <Text style={[styles.scoreTotal, { color: colors.textMuted }]}> / {grade.total}</Text>
         </View>
-        <Text style={[styles.scoreLbl, { color: colors.textSubtle, fontFamily: typography.body }]}>{t('exam.correctAnswers') || 'Correct answers'}</Text>
+        <Text style={[styles.scoreLbl, { color: colors.textSubtle, fontFamily: typography.body }]}>
+          {grade.total > 0 ? Math.round(grade.correct / grade.total * 100) : 0}% {t('exam.correctAnswers')}
+        </Text>
       </View>
+      {/* 1:1 Parity with frontend results `.exam-q-card` (exam.js:1007-1036):
+       * full option list color-coded — green expected badge, red user's wrong
+       * pick, selected marker; fb/sa answers get green/red bordered readonly
+       * text with the expected answer below when wrong. */}
       {questions.map((question, index) => {
         const res = grade.results[index];
         const userAns = res?.answer || answers[index] || '';
@@ -290,21 +333,69 @@ export function ExamScreen({ navigation }: { navigation: any }) {
         return (
           <View key={`${question.q}-${index}`} style={[styles.review, { borderBottomColor: withAlpha(colors.border, 0.2) }]}>
             <Text style={[styles.reviewNumber, { color: res?.correct ? colors.success : colors.danger }]}>
-              {t('exam.questionN', { n: index + 1 })} · {res?.correct ? t('exam.correct') : t('exam.review')}
+              {t('exam.questionN', { n: index + 1 })} · {res?.correct ? t('exam.correct') : t('exam.review')} · {t(QUESTION_TYPE_KEY[question.type] || question.type)}
             </Text>
             <Text style={[styles.reviewText, { color: colors.text }]}>{question.q}</Text>
-            {/* frontend `exam.js:1030,1034` shows your answer + correct
-             * answer when wrong; previously only the stem rendered. */}
-            {userAns ? (
-              <Text style={[styles.reviewAnswer, { color: colors.textMuted }]}>
-                {t('exam.yourAnswer')}: {userAns}
-              </Text>
-            ) : null}
-            {!res?.correct && expectedList.length ? (
-              <Text style={[styles.reviewExpected, { color: colors.success }]}>
-                {t('exam.correctAnswer')}: {expectedList.join(', ')}
-              </Text>
-            ) : null}
+            {question.type === 'multiple-choice' && question.opts?.length ? (
+              <View style={styles.reviewOpts}>
+                {question.opts.map((option) => {
+                  const isExpected = question.answer === option.letter;
+                  const isUserPick = userAns === option.letter || userAns === option.text;
+                  const isWrongPick = isUserPick && !isExpected;
+                  const tone = isExpected ? colors.success : isWrongPick ? colors.danger : null;
+                  return (
+                    <View
+                      key={option.letter}
+                      style={[
+                        styles.reviewOpt,
+                        {
+                          borderColor: tone ? withAlpha(tone, 0.5) : withAlpha(colors.border, 0.4),
+                          backgroundColor: tone ? withAlpha(tone, 0.08) : 'transparent',
+                          borderRadius: 8,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.optionBadge,
+                          { borderColor: withAlpha(colors.textSubtle, 0.35) },
+                          tone && { backgroundColor: tone, borderColor: tone, borderWidth: 0 },
+                        ]}
+                      >
+                        <Text style={[styles.optionLetterText, { color: tone ? colors.background : colors.textMuted }]}>
+                          {option.letter}
+                        </Text>
+                      </View>
+                      <Text style={[styles.optionText, { color: tone || colors.text, fontFamily: typography.body }]}>
+                        {option.text}
+                        {isExpected ? `  ✓` : isUserPick ? `  ${tt(t, 'exam.yourPick', '· your pick')}` : ''}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <>
+                <View
+                  style={[
+                    styles.reviewAnswerBox,
+                    {
+                      borderColor: res?.correct ? withAlpha(colors.success, 0.5) : withAlpha(colors.danger, 0.5),
+                      borderRadius: radius.md,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: colors.text, fontFamily: typography.body, fontSize: 13, lineHeight: 19 }}>
+                    {userAns || '—'}
+                  </Text>
+                </View>
+                {!res?.correct && expectedList.length ? (
+                  <Text style={[styles.reviewExpected, { color: colors.success }]}>
+                    {t('exam.correctAnswer')}: {expectedList.join(', ')}
+                  </Text>
+                ) : null}
+              </>
+            )}
             {question.explanation ? <Text style={[styles.explanation, { color: colors.textMuted }]}>{question.explanation}</Text> : null}
           </View>
         );
@@ -320,13 +411,53 @@ export function ExamScreen({ navigation }: { navigation: any }) {
       <AppHeader title={t('sidebar.nav.exam')} onNewChat={() => navigation.navigate('Home')} />
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <View style={styles.formContainer}>
-      <Text style={[styles.kicker, { color: colors.textSubtle }]}>{t('exam.kickerPractice')}</Text>
+      {/* Editorial hero — mirrors `.exam-form-hero` (exam.js:256-260). */}
+      <Text style={[styles.heroEyebrow, { color: colors.accent }]}>{tt(t, 'exam.heroEyebrow', 'Assessment studio')}</Text>
       <Text style={[styles.heading, { color: colors.text, fontFamily: typography.display }]}>{t('exam.setupHeading')}</Text>
       <Text style={[styles.body, { color: colors.textMuted }]}>{t('exam.setupBody')}</Text>
-      {/* frontend `.exam-form-section { border-radius: 16px }` */}
+      {/* frontend `.exam-form-section` cards (styles.css:2461-2473): numbered
+       * index chip + title + description per section. */}
+      {(
+        [
+          ['01', t('exam.topic'), tt(t, 'exam.topicDesc', 'Name the subject or learning objective')],
+        ] as const
+      ).map(([index, title, desc]) => (
+        <View key={index} style={[styles.setupCard, { backgroundColor: colors.surface, borderColor: withAlpha(colors.border, 0.3), borderRadius: 16, padding: spacing.lg }]}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIndex, { backgroundColor: colors.accentSoft }]}>
+              <Text style={[styles.sectionIndexText, { color: colors.accent }]}>{index}</Text>
+            </View>
+            <View style={styles.sectionHeaderCopy}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+              <Text style={[styles.sectionDesc, { color: colors.textSubtle }]}>{desc}</Text>
+            </View>
+          </View>
+          <TextInput value={topic} onChangeText={setTopic} placeholder={t('exam.topicPlaceholder')} placeholderTextColor={colors.textSubtle} style={[styles.topicInput, { color: colors.text, borderColor: colors.border, borderRadius: radius.md }]} />
+        </View>
+      ))}
+
       <View style={[styles.setupCard, { backgroundColor: colors.surface, borderColor: withAlpha(colors.border, 0.3), borderRadius: 16, padding: spacing.lg }]}>
-        <Text style={[styles.label, { color: colors.textMuted }]}>{t('exam.topic')}</Text>
-        <TextInput value={topic} onChangeText={setTopic} placeholder={t('exam.topicPlaceholder')} placeholderTextColor={colors.textSubtle} style={[styles.topicInput, { color: colors.text, borderColor: colors.border, borderRadius: radius.md }]} />
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIndex, { backgroundColor: colors.accentSoft }]}>
+            <Text style={[styles.sectionIndexText, { color: colors.accent }]}>02</Text>
+          </View>
+          <View style={styles.sectionHeaderCopy}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{tt(t, 'exam.paperSettings', 'Paper settings')}</Text>
+            <Text style={[styles.sectionDesc, { color: colors.textSubtle }]}>{tt(t, 'exam.paperSettingsDesc', 'Select the model, difficulty, and length')}</Text>
+          </View>
+        </View>
+        {/* Model — mirrors frontend exam model dropdown
+         * (`exam.js:264-276`); generation uses the selected model. */}
+        <Text style={[styles.label, { color: colors.textMuted, marginTop: 0 }]}>{t('settings.model')}</Text>
+        <AnimatedPressable
+          accessibilityRole="button"
+          accessibilityLabel={currentModelName}
+          onPress={() => setModelPickerOpen(true)}
+          style={[styles.modelRow, { borderColor: colors.border, borderRadius: radius.md }]}
+        >
+          <Text numberOfLines={1} style={[styles.modelName, { color: colors.text }]}>{currentModelName}</Text>
+          <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+        </AnimatedPressable>
         <Text style={[styles.label, { color: colors.textMuted }]}>{t('exam.difficulty')}</Text>
         <View style={styles.difficultyGrid}>
           {DIFFICULTIES.map(([value, key]) => (
@@ -337,14 +468,29 @@ export function ExamScreen({ navigation }: { navigation: any }) {
           ))}
         </View>
         <Text style={[styles.label, { color: colors.textMuted }]}>{t('exam.questionsCount', { count })}</Text>
-        <View style={styles.stepper}>
-          <AnimatedPressable accessibilityLabel="Decrease question count" onPress={() => setCount(Math.max(1, count - 1))} style={[styles.stepperButton, { backgroundColor: colors.surfaceRaised, borderRadius: radius.pill }]}><Ionicons name="remove" size={20} color={colors.text} /></AnimatedPressable>
-          <Text style={[styles.count, { color: colors.text }]}>{count}</Text>
-          <AnimatedPressable accessibilityLabel="Increase question count" onPress={() => setCount(Math.min(50, count + 1))} style={[styles.stepperButton, { backgroundColor: colors.surfaceRaised, borderRadius: radius.pill }]}><Ionicons name="add" size={20} color={colors.text} /></AnimatedPressable>
+        {/* frontend `.exam-stepper` (styles.css:2508-2512): bordered pill
+         * container, ghost +/- buttons, tabular-nums value. */}
+        <View style={[styles.stepper, { borderColor: withAlpha(colors.border, 0.4), borderRadius: 9, backgroundColor: colors.surfaceRaised }]}>
+          <AnimatedPressable accessibilityLabel="Decrease question count" onPress={() => setCount(Math.max(1, count - 1))} style={styles.stepperButton}><Ionicons name="remove" size={18} color={colors.textMuted} /></AnimatedPressable>
+          <Text style={[styles.count, { color: colors.text, fontVariant: ['tabular-nums'] }]}>{count}</Text>
+          <AnimatedPressable accessibilityLabel="Increase question count" onPress={() => setCount(Math.min(50, count + 1))} style={styles.stepperButton}><Ionicons name="add" size={18} color={colors.textMuted} /></AnimatedPressable>
         </View>
-        <Text style={[styles.label, { color: colors.textMuted }]}>{t('exam.types')}</Text>
-        <View style={styles.segment}>
-          {QUESTION_TYPES.map(([key, , labelKey]) => {
+      </View>
+
+      <View style={[styles.setupCard, { backgroundColor: colors.surface, borderColor: withAlpha(colors.border, 0.3), borderRadius: 16, padding: spacing.lg }]}>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIndex, { backgroundColor: colors.accentSoft }]}>
+            <Text style={[styles.sectionIndexText, { color: colors.accent }]}>03</Text>
+          </View>
+          <View style={styles.sectionHeaderCopy}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('exam.types')}</Text>
+            <Text style={[styles.sectionDesc, { color: colors.textSubtle }]}>{tt(t, 'exam.typesDesc', 'Keep at least one response format')}</Text>
+          </View>
+        </View>
+        {/* frontend `.exam-form-toggle-card` (styles.css:2516-2556): dot +
+         * title + subtitle. */}
+        <View style={styles.typeGrid}>
+          {QUESTION_TYPES.map(([key, , labelKey, descFallback]) => {
             const selected = selectedTypes[key];
             return (
               <AnimatedPressable
@@ -352,14 +498,29 @@ export function ExamScreen({ navigation }: { navigation: any }) {
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: selected }}
                 onPress={() => toggleType(key)}
-                style={[styles.segmentButton, { borderColor: selected ? colors.accent : colors.border, backgroundColor: selected ? colors.accentSoft : 'transparent', borderRadius: 9 }]}
+                style={[styles.typeCard, { borderColor: selected ? withAlpha(colors.accent, 0.5) : colors.border, backgroundColor: selected ? colors.accentSoft : 'transparent', borderRadius: 11 }]}
               >
-                <Text style={{ color: colors.text }}>{t(labelKey)}</Text>
+                <View style={[styles.typeDot, { borderColor: selected ? colors.accent : colors.textSubtle, backgroundColor: selected ? colors.accent : 'transparent' }]} />
+                <View style={styles.typeCopy}>
+                  <Text style={[styles.typeTitle, { color: selected ? colors.accent : colors.text }]}>{t(labelKey)}</Text>
+                  <Text style={[styles.typeDesc, { color: colors.textSubtle }]}>{tt(t, `exam.type${key.toUpperCase()}Desc`, descFallback)}</Text>
+                </View>
               </AnimatedPressable>
             );
           })}
         </View>
-        <Text style={[styles.label, { color: colors.textMuted }]}>{t('exam.instructions')}</Text>
+      </View>
+
+      <View style={[styles.setupCard, { backgroundColor: colors.surface, borderColor: withAlpha(colors.border, 0.3), borderRadius: 16, padding: spacing.lg }]}>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIndex, { backgroundColor: colors.accentSoft }]}>
+            <Text style={[styles.sectionIndexText, { color: colors.accent }]}>04</Text>
+          </View>
+          <View style={styles.sectionHeaderCopy}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('exam.instructions')}</Text>
+            <Text style={[styles.sectionDesc, { color: colors.textSubtle }]}>{tt(t, 'exam.instructionsDesc', 'Optional constraints for the examiner')}</Text>
+          </View>
+        </View>
         <TextInput
           value={instructions}
           onChangeText={setInstructions}
@@ -370,18 +531,6 @@ export function ExamScreen({ navigation }: { navigation: any }) {
           textAlignVertical="top"
           style={[styles.instructionsInput, { color: colors.text, borderColor: colors.border, borderRadius: radius.md }]}
         />
-        {/* Model — mirrors frontend exam model dropdown
-         * (`exam.js:264-276`); generation uses the selected model. */}
-        <Text style={[styles.label, { color: colors.textMuted }]}>{t('settings.model')}</Text>
-        <AnimatedPressable
-          accessibilityRole="button"
-          accessibilityLabel={currentModelName}
-          onPress={() => setModelPickerOpen(true)}
-          style={[styles.modelRow, { borderColor: colors.border, borderRadius: radius.md }]}
-        >
-          <Text numberOfLines={1} style={[styles.modelName, { color: colors.text }]}>{currentModelName}</Text>
-          <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
-        </AnimatedPressable>
         {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
         <AnimatedPressable onPress={start} style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}><Text style={{ color: colors.background, fontWeight: '700' }}>{t('exam.generateSet')}</Text></AnimatedPressable>
       </View>
@@ -404,14 +553,28 @@ const styles = StyleSheet.create({
   page: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 28 },
   formContainer: { width: '100%', maxWidth: 720, alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  loadingOrb: { width: 80, height: 80, borderWidth: 1, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  dots: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  generatingMsg: { fontSize: 13, lineHeight: 20, marginTop: 18, textAlign: 'center' },
+  heroEyebrow: { fontSize: 10, letterSpacing: 1.4, fontWeight: '800', textTransform: 'uppercase', paddingTop: 14, marginBottom: 9 },
   kicker: { fontSize: 11, letterSpacing: 1.5, fontWeight: '700', paddingTop: 14 },
   heading: { fontSize: 32, lineHeight: 39, marginTop: 10 },
   body: { fontSize: 15, lineHeight: 23, marginTop: 10 },
-  setupCard: { borderWidth: 1, marginTop: 28 },
+  setupCard: { borderWidth: 1, marginTop: 16 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
+  sectionIndex: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  sectionIndexText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  sectionHeaderCopy: { flex: 1, gap: 2 },
+  sectionTitle: { fontSize: 14, fontWeight: '600', letterSpacing: -0.1 },
+  sectionDesc: { fontSize: 11, lineHeight: 15 },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  typeCard: { flexBasis: '48%', flexGrow: 1, borderWidth: 0.5, paddingHorizontal: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  typeDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, flexShrink: 0 },
+  typeCopy: { flex: 1, gap: 2 },
+  typeTitle: { fontSize: 12, fontWeight: '600' },
+  typeDesc: { fontSize: 10, lineHeight: 13 },
   label: { fontSize: 12, fontWeight: '700', marginTop: 16, marginBottom: 8 },
   topicInput: { minHeight: 52, borderWidth: 1, paddingHorizontal: 14, fontSize: 16 },
-  segment: { flexDirection: 'row', gap: 6 },
   difficultyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   segmentButton: { flex: 1, minHeight: 44, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   difficultyButton: { flexBasis: '48%', flexGrow: 1 },
@@ -421,13 +584,13 @@ const styles = StyleSheet.create({
   navPillText: { fontSize: 13, fontWeight: '700' },
   modelRow: { minHeight: 52, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14 },
   modelName: { flex: 1, fontSize: 15, marginRight: 8 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  count: { minWidth: 24, textAlign: 'center', fontSize: 18, fontWeight: '700' },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 2, borderWidth: 0.5, padding: 4, alignSelf: 'flex-start' },
+  stepperButton: { width: 34, height: 34, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  count: { minWidth: 46, textAlign: 'center', fontSize: 15, fontWeight: '600' },
   primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   secondaryButton: { minHeight: 50, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   error: { fontSize: 13, lineHeight: 19, marginVertical: 12 },
-  progressTrack: { width: '100%', height: 6, borderRadius: 3, marginTop: 24, overflow: 'hidden' },
+  progressTrack: { width: 260, maxWidth: '100%', height: 3, borderRadius: 2, marginTop: 16, overflow: 'hidden' },
   progressFill: { height: '100%' },
   questionCard: { borderWidth: 1, marginTop: 24 },
   questionType: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 },
@@ -449,14 +612,12 @@ const styles = StyleSheet.create({
   },
   optionText: { flex: 1, fontSize: 13, lineHeight: 19 },
   answerInput: { minHeight: 120, borderWidth: 1, marginTop: 18, padding: 14, fontSize: 15, textAlignVertical: 'top' },
+  answerInputSingle: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 10 },
   questionActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 18 },
   score: {
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: 4,
     marginTop: 20,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   scoreValRow: {
     flexDirection: 'row',
@@ -478,7 +639,9 @@ const styles = StyleSheet.create({
   review: { paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
   reviewNumber: { fontSize: 12, fontWeight: '700' },
   reviewText: { fontSize: 15, lineHeight: 22, marginTop: 6 },
-  reviewAnswer: { fontSize: 12, lineHeight: 18, marginTop: 6 },
-  reviewExpected: { fontSize: 12, lineHeight: 18, marginTop: 4, fontWeight: '700' },
+  reviewOpts: { gap: 8, marginTop: 12 },
+  reviewOpt: { borderWidth: 0.5, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  reviewAnswerBox: { borderWidth: 0.5, marginTop: 12, paddingHorizontal: 12, paddingVertical: 10 },
+  reviewExpected: { fontSize: 12, lineHeight: 18, marginTop: 8, fontWeight: '700' },
   explanation: { fontSize: 13, lineHeight: 20, marginTop: 6 },
 });

@@ -168,7 +168,7 @@
 `mobile/src/components/Composer.tsx` (433 行) vs `RichComposer.tsx` + `.chat-input-wrap/.topic-input-wrap` (`:1079,2078`)。
 - 对齐 ✅：胶囊 `radius:28` (`:145` vs `:2078`)；`padding:7/8` (`:340-341` vs `:4781`)；背景 `surfaceRaised` (= bg.overlay)；边框 `withAlpha(border,0.24)` vs web `border-300/.24` (`:2078`)。
 - Focus 边框 **MISMATCH**：mobile `accent @ .45` (`:141`)；frontend `:focus-within accent @ .6` (`:4783`)，且 web 有 `.34s cubic-bezier(.22,1,.36,1)` glide，mobile 瞬切。
-- `maxWidth:620` 硬编码 (`:336,351`) 与 `contentWidth:928` (`theme.ts:340` = `58rem` `:1050`) 冲突——1024px 平板上 620 胜出，composer 比 web 窄。
+- ~~`maxWidth:620` 硬编码 (`:336,351`) 与 `contentWidth:928` (`theme.ts:340` = `58rem` `:1050`) 冲突——1024px 平板上 620 胜出，composer 比 web 窄。~~ **2026-09-18 已修**：`BASE_CONTENT_WIDTH` 改 768（`--conversation-content-width`），Composer 内联 `maxWidth: contentWidth`，620 仅作 fallback。
 - 字号 bypass fontScale：`14/20` (`:374-375`) vs web `14 × 1.125 = 15.75, lh 1.5` (`:2103`)；展开行 (`:390-391`) 同。
 - Attach 按钮 mobile 38×38 (`:410-416`) vs web 28×28 (`:2111`)。注释称 frontend 38 是错的，以 `styles.css:2111` 为准。
 - 死代码：`micBtn` + `VoiceWaveBars` (`:30-54,418-424`) 注释说已删但样式保留；`shadowColor:'#000'` 应走 `colors.black`。
@@ -341,7 +341,7 @@ mobile 整屏 `SettingsScreen` vs web `.settings-modal`（440px，见 §3.2 同�
   7. `toolCardBgHover/Border/BorderStrong`：alpha 差 .04–.08（mobile `rn.ts:196,198,199` vs `styles.css:54-56,80-82`）。
 - ❌（mobile-only，无 web 等价）：
   - `brandSoft rgba(209,154,71,.16)`、`successSoft #1c3a2b`、`dangerSoft #3a1f1f` (`theme.ts:130-132`)；`scrollbar`、`codeBg/Fg/Border`、`reasoningBg/Fg`、`toolCardBgSunken`、`toolCardFocus` (`rn.ts:188-200`)；`warning` mobile 缺定义（web 行内 `hsl(38 90% 55%/.12)` `:1950`)。
-  - `scrim` mobile `.68` (`theme.ts:119`) 在 web 不存在；web 按面 `.55`（settings/profile/usage/share/exam `:2207-2603`）/ `.65`（confirm `:2289`）/ `.7`（sidebar backdrop `:2985`）/ `.52`（workspace `:588`）/ `.55` + blur（cmd-k `:1991`)。
+  - ~~`scrim` mobile `.68` (`theme.ts:119`) 在 web 不存在；web 按面 `.55`（settings/profile/usage/share/exam `:2207-2603`）/ `.65`（confirm `:2289`）/ `.7`（sidebar backdrop `:2985`）/ `.52`（workspace `:588`）/ `.55` + blur（cmd-k `:1991`)。~~ **2026-09-18 已修**：`theme.ts` 引入 `scrimModal .55 / scrimConfirm .65 / scrimDrawer .7` 三层（`scrim` = `.55` 别名），ConfirmDialog/CmdK/Settings/DisplaySettings 已接。
 
 ### 4.2 Color（light）—— ✅ 6 / ⚠️ 8
 - ✅：`surfaceHover #e3dfd9`、border/borderStrong、accent `#b18925`、accentSoft、danger。
@@ -368,8 +368,8 @@ mobile 整屏 `SettingsScreen` vs web `.settings-modal`（440px，见 §3.2 同�
 - 其余 ❌：mobile 只有 `card/sheet`；frontend 无 `--ui-shadow-*`，约 30 处行内（popover `0 12px 36px black/.35` `:302`、modal `0 8px 32px` `:2210`、cmd-k `0 24px 60px/.45` `:2012`、toast `0 6px 20px/.25` `:1929` 等）。Composer mobile `op .05 r 14` vs web `0 .35rem 1.8rem black/5%` (`:1079,2097`)——y 对 blur 减半近似。
 
 ### 4.7 Motion — 🔴 P0
-- `easing.out/spring` 在 `packages/theme/src/tokens.ts:142-147` 已导出，**mobile 从未 import**；mobile press 全走 `Animated.spring(18,260,0.7)`，web `cubic-bezier(.16,1,.3,1)` / `(.34,1.3,.64,1)` (`tokens.css:56-57`)。
-- Composer `cubic-bezier(.22,1,.36,1)` (`:1079` + `motion.js:51`) web-only；velocity planner（1800px/s，90–520ms，snap 24 `motion.js:47-50`）mobile 无。
+- ~~`easing.out/spring` 在 `packages/theme/src/tokens.ts:142-147` 已导出，**mobile 从未 import**；mobile press 全走 `Animated.spring(18,260,0.7)`，web `cubic-bezier(.16,1,.3,1)` / `(.34,1.3,.64,1)` (`tokens.css:56-57`)。~~ **2026-09-18 已修**：`theme.ts` 导出 `motionEasing`（`Easing.bezier` 包装），press/drawer/panel/toggle 全接入 timing。
+- Composer `cubic-bezier(.22,1,.36,1)` (`:1079` + `motion.js:51`) web-only；velocity planner（1800px/s，90–520ms，snap 24 `motion.js:47-50`）mobile 无（仍缺）。
 
 ### 4.8 Display prefs — ✅（2 处小差）
 - ✅：`fontScale 1.125`、steps `[1,1.125,1.25,1.375]`、width steps `[.85,1,1.3,1.7]`、labels S/M/L/XL、base 928（58rem）、grid 默认关。(`displayPrefsStore.ts:20-59` ↔ `displayPrefs.js:10-17` + `styles.css:1050`)。
@@ -1173,4 +1173,20 @@ _(§5 由 subagent `ses_f9959fd92ffesH6NpS96o8Fwd3` 生成，主 agent 转中文
 1. Composer focus 边框：mobile `accent @ .45` **正确**——frontend 有两条规则（`:2102` `.6` 与 `:4783` `.45`），后者同特异度靠后胜出。§2/§5.11 的"改 .6"作废。
 2. Pill `right:10`：mobile **正确**——对应的是 frontend ≤768px 断点规则（`:4346,4349` `right:10px`），`right:20` 是桌面规则。§5.14 的"改 20"作废。
 3. Attach 38px：mobile **正确**——composer footer 上下文 frontend 即 38px（`:4795,4999,7265`），28px 只是裸 `.attach-btn`（`:2111`）。§2 的"改 28"作废。
-4. Composer `maxWidth`（620 vs 928）：defer。frontend 会话内 composer 走 workbench 变体（`#chatInputWrap width:min(calc(100%-32px),640px)` `:8022`），landing 走 `.topic-input-wrap min(100%,620px)`，与 displayPrefs `contentWidth:928` 是两套体系，需产品定夺后再动；手机视口 <620 时两者无差别。
+4. Composer `maxWidth`（620 vs 928）：**已随 2026-09-18 批解决**——displayPrefs `BASE_CONTENT_WIDTH` 由 928 改为 768（48rem，对 `--conversation-content-width`），Composer 现在以内联 `maxWidth: contentWidth` 读取 live pref，`maxWidth:620` 降为 fallback。§2/§4.8 的相关描述已过时。
+
+### Batch F（2026-09-18，多 agent 并行 parity 收尾，文档回写时 typecheck 仅剩 8 条预存错误）
+已落地（本节取代上文 §1–§5 对应条目的"缺失"描述）：
+
+- **scroll dead-zone**：`RichBlock` 外层 `pointerEvents="none"`，消息列表内 WebView（公式/图表）不再吃掉滚动手势；Expand overlay 用 `interactive` 打开触摸（`RichBlock.tsx`）。`CanvasBlock` 原片预览仅在内容超过 480px cap 时才启用 inner scroll（`scrollEnabled={originalOverflows}`）。
+- **store selectors**：`useAppStore(selector)` 带 selector memoisation（内联 `useSyncExternalStoreWithSelector` 模式，`appStore.ts` 末尾）；`App.tsx`、`AppDrawer`、`StorageOverlay` 改按字段订阅。流式 patch 批处理 32→64ms，rawText delta 先攒 chunk buffer 再 join（去 O(n²) 拼接），draft 写 SQLite 改 400ms trailing debounce + 各切会话路径 `flushDraftSave`。
+- **hardcoded colors → tokens**：`MistakesScreen`（danger/success badge、optionRow、letterBadge 全走 `withAlpha(colors.*)`）、`Composer` context chips（`#064d9e/#9bcbff` → `accentSoft/accent`）、`AppDrawer` backdrop（`rgba(0,0,0,.64)` → `withAlpha(colors.black,.65)`）、`KnowledgeScreen` scrim+sheetHandle、`ProjectsScreen` 默认色、`WebAppScreen`、`RecentsScreen` hairline、`ErrorBoundary`（`import { colors }` → `palettes.dark`，该旧导出已删除）。
+- **scrim tiers**：`theme.ts` 新增 `scrimModal(.55)` / `scrimConfirm(.65)` / `scrimDrawer(.7)`，`scrim` 现为 `.55` 别名；`ConfirmDialog` 传 `scrimColor={colors.scrimConfirm}`，`CmdKPalette`/`SettingsScreen`/`DisplaySettingsScreen` 走 `scrimModal`。§4.1 的 `scrim` 无 web 等价描述已过时。
+- **motionEasing**：`theme.ts` 导出 `motionEasing = { out: bezier(.16,1,.3,1), spring: bezier(.34,1.3,.64,1) }`；`AnimatedPressable` press 由 spring 改 180ms timing（对 web CSS transition），`AppDrawer` slide、`MessageBubble` thinking panel、`SettingsScreen` toggle 全部接入。§4.7/§5.18 的"从未 import"已解决。
+- **AttachmentChip**（新组件 `src/components/AttachmentChip.tsx` + test）：`.attachment-chip` 端口——28px 圆形 icon well、按 kind/mime/extension 分派 `attachmentIconName`（office/pdf/image/media/text/code）、`truncated` 标注、可选 remove、`pending`/`progress`/`error` 态。`Composer` 新增 `attachments`/`onRemoveAttachment` props 渲染 `.attachment-chips` 条（NewChatScreen 已接入）；`MessageBubble` 非图片附件改走 chip（`.msg-attachment-chips`，置于 bubble 上方、user 右对齐）。
+- **msg toolbar/bubble**：user bubble 15px radius、11×16 padding、`colors.userBubble` 填充、`min(86%,620px)` 上限、编辑态 20px；toolbar 非末条 assistant 0.7 opacity、attachment-only 消息也出 toolbar、speaking 态 accent 填充 + speakPulse。§1.2/§2 MessageBubble 条目部分解决（字号 fontScale 已由 `fontScale` 在 MarkdownView 接入，`.msg-body` 仍 15/24 裸值）。
+- **code block headers**：`MarkdownView` 新增 `CodeBlock`——28px header（lang label + Copy→Copied）、radius 卡、12px mono、水平滚动；inline code 改真 padding/radius 替代空格 hack，字号走 `fontScale`。
+- **session meta（Recents）**：行级 meta `formatRelativeTime(updatedAt) · N Qs`、session mode 圆点（`modeDotColor`/`modeDotLabel`）、filter chips、time-group header、empty 态 `emptyAction`（返回 All / Retry）、hairline 走 token。§1.4 缺失项大部分解决。
+- **exam review（ExamScreen）**：结果页选项行（`reviewOpts/reviewOpt/reviewAnswerBox`）、生成中 `PulsingDots` + `generatingMsg` + 进度条、setup 表单 `sectionHeader/typeGrid/typeCard` 分段、heroEyebrow、填空 `answerInputSingle`。
+- **其它**：`Screen scroll` 模式 `{...props}` 透传到 ScrollView（修 scroll 模式吞 prop）；`Overlay` center surface `maxHeight:85%` + `ProfileOverlay` body 改 ScrollView；`Overlay`/`ConfirmDialog`/`ComposerToolsMenu`（52px 行、30px icon、16px 标签）视觉回填；`ToolCard` 状态机改"running 展开 / 终态折叠"（`toolCards.js:516`）+ state icon + status/duration 行 + Input/Output 分节 copy 键 + `RichBlock showActions`（status dot + source/reload/expand，`vizActions` 端口）；`markdown.ts` 新增 `stripChatArtifacts` + `preprocessLite`（bullet glyph、table separator、setext `---`、lone `$…$` → `$$`，移植自 `preprocess.ts`/`helpers.ts`）+ `<step>` widget + ordered-list `start` 重播种；`MarkdownView` MathParagraph memo 按内容 key（防流式重挂 WebView）；`Icon` 默认色走 `useTheme`；`AppDrawer` 导航顺序改为 Home/Projects/Library/Scheduled/Plugins/More（对 `index.html #sidebarNav`，此前文档声称已匹配是误报）、加 `activeRoute` 高亮、session 分组 header（Pinned/Today/Yesterday/7d/30d/月份）；`CmdKPalette` panel `background`、list `60vh`、行字 medium；`Toast` queue 上限 3 + exit 动画。
+- **残留已知缺口**（本次未做，需后续）：ShareModal visibility 三档 + revoke（后端 API 无）；StorageOverlay 域名（web archived 列表 + per-row restore）；UsageModal 53×7 heatmap（mobile 仍横条）；WorkspaceScreen Tiptap canvas；tldraw/three.js WebView；代码 syntax highlight；Android pinch-zoom（WebView）；plugin marketplace bridge；`ChatScreen` pending-attachments 条仍是旧行内 chip 样式（Composer 已收 `attachments` prop，迁移 ChatScreen 未做）；`viz.*`/`tool.*`/`common.copied` 若干 i18n key 走英文 fallback（strings.ts 由并行 agent 补充）。

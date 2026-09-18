@@ -1,5 +1,6 @@
 import React from 'react';
 import Svg, { Circle, Path, Polygon, Rect } from 'react-native-svg';
+import { useTheme } from '../theme/ThemeProvider';
 
 export type NativeIconName =
   | 'search'
@@ -40,10 +41,12 @@ type Props = {
  * Keep that vocabulary in RN instead of relying on platform font glyphs from
  * Ionicons, whose geometry changes between Android and web builds.
  */
-export function Icon({ name, size = 18, color = '#000000', strokeWidth = 1.8 }: Props) {
+export function Icon({ name, size = 18, color, strokeWidth = 1.8 }: Props) {
+  const { colors } = useTheme();
+  const resolvedColor = color ?? colors.text;
   const common = {
     fill: 'none' as const,
-    stroke: color,
+    stroke: resolvedColor,
     strokeWidth,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
@@ -55,7 +58,7 @@ export function Icon({ name, size = 18, color = '#000000', strokeWidth = 1.8 }: 
     case 'plus':
       return <Svg width={size} height={size} viewBox="0 0 24 24" {...common}><Path d="M12 5v14M5 12h14" /></Svg>;
     case 'more':
-      return <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}><Circle cx="5" cy="12" r="1.5" /><Circle cx="12" cy="12" r="1.5" /><Circle cx="19" cy="12" r="1.5" /></Svg>;
+      return <Svg width={size} height={size} viewBox="0 0 24 24" fill={resolvedColor}><Circle cx="5" cy="12" r="1.5" /><Circle cx="12" cy="12" r="1.5" /><Circle cx="19" cy="12" r="1.5" /></Svg>;
     case 'close':
       return <Svg width={size} height={size} viewBox="0 0 24 24" {...common}><Path d="M6 6l12 12M18 6 6 18" /></Svg>;
     case 'chevron-down':

@@ -12,6 +12,7 @@ import {
   widthScaleToPx,
 } from '../displayPrefs/displayPrefsStore';
 import { useTheme, useThemeController, type ThemePreference } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -93,9 +94,11 @@ export function DisplaySettingsScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
+    <View style={[styles.overlay, { backgroundColor: colors.scrimModal }]}>
       <Pressable style={StyleSheet.absoluteFill} onPress={navigation.goBack} accessibilityLabel={t('common.close') || 'Close'} />
-      <View style={[styles.popover, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 14 }]}>
+      {/* Bottom-sheet presentation — matches the web display popover
+       * anchored to the bottom of the phone viewport. */}
+      <View style={[styles.popover, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }]}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>
             {t('sidebar.more.display') === 'sidebar.more.display' ? 'Display & theme' : t('sidebar.more.display')}
@@ -108,7 +111,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <View style={styles.row}>
             <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: colors.text, fontFamily: typography.medium }]}>
+              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>
                 {t('display.theme') === 'display.theme' ? 'Theme' : t('display.theme')}
               </Text>
               <Text style={[styles.value, { color: colors.textSubtle, fontFamily: typography.mono }]}>
@@ -125,7 +128,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
 
           <View style={styles.row}>
             <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: colors.text, fontFamily: typography.medium }]}>Text size</Text>
+              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>Text size</Text>
               <Text style={[styles.value, { color: colors.textSubtle, fontFamily: typography.mono }]}>
                 {FONT_LABELS[Math.max(0, DISPLAY_FONT_STEPS.indexOf(prefs.fontScale as never))] || 'M'}
               </Text>
@@ -140,7 +143,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
 
           <View style={styles.row}>
             <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: colors.text, fontFamily: typography.medium }]}>Content width</Text>
+              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>Content width</Text>
               <Text style={[styles.value, { color: colors.textSubtle, fontFamily: typography.mono }]}>
                 {WIDTH_LABELS[
                   Math.max(
@@ -162,12 +165,12 @@ export function DisplaySettingsScreen({ navigation }: Props) {
             onPress={() => displayPrefsStore.set({ gridEnabled: !prefs.gridEnabled })}
             style={styles.toggleRow}
           >
-            <Text style={[styles.label, { color: colors.text, fontFamily: typography.medium }]}>Background grid</Text>
+            <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>Background grid</Text>
             <View
               style={[
                 styles.toggle,
                 {
-                  backgroundColor: prefs.gridEnabled ? colors.accent : colors.surface,
+                  backgroundColor: prefs.gridEnabled ? withAlpha(colors.accent, 0.35) : colors.surface,
                   borderColor: prefs.gridEnabled ? colors.accent : colors.border,
                 },
               ]}
@@ -176,7 +179,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
                 style={[
                   styles.knob,
                   {
-                    backgroundColor: colors.white,
+                    backgroundColor: prefs.gridEnabled ? colors.accent : colors.white,
                     transform: [{ translateX: prefs.gridEnabled ? 16 : 0 }],
                   },
                 ]}
@@ -238,7 +241,7 @@ function ColorRow({
   return (
     <View style={styles.row}>
       <View style={styles.labelRow}>
-        <Text style={[styles.label, { color: colors.text, fontFamily: typography.medium }]}>{label}</Text>
+        <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>{label}</Text>
         <View style={[styles.swatch, { backgroundColor: valid ? value : defaultValue, borderColor: colors.border }]} />
       </View>
       <View style={styles.colorControls}>
@@ -276,15 +279,15 @@ function ColorRow({
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  popover: { width: '100%', maxWidth: 360, maxHeight: '86%', borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', elevation: 18, shadowColor: '#000', shadowOpacity: 0.36, shadowRadius: 26, shadowOffset: { width: 0, height: 10 } },
+  overlay: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  popover: { width: '100%', maxWidth: 560, maxHeight: '86%', borderWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden', elevation: 18, shadowColor: '#000', shadowOpacity: 0.36, shadowRadius: 26, shadowOffset: { width: 0, height: -10 } },
   header: { minHeight: 50, paddingLeft: 16, paddingRight: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 15 },
   close: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: 14, paddingBottom: 16, gap: 2 },
   row: { paddingVertical: 12, gap: 8 },
   labelRow: { minHeight: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  label: { fontSize: 12 },
+  label: { fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase' },
   value: { fontSize: 10.5 },
   segments: { minHeight: 34, borderWidth: StyleSheet.hairlineWidth, padding: 2, flexDirection: 'row' },
   segment: { flex: 1, minHeight: 29, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },

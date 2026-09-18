@@ -149,6 +149,7 @@ export function RecentsScreen({ navigation }: Props) {
       navigation.navigate('ArtifactPreview', {
         artifactId: String(artifact.id),
         html: String(artifact.source || ''),
+        kind: String(artifact.kind || artifact.mimeType || 'text/html'),
       });
       return;
     }
@@ -207,18 +208,20 @@ export function RecentsScreen({ navigation }: Props) {
     <Screen style={styles.screen}>
       <AppHeader title={t('library.heading')} onNewChat={() => { appStore.startNewSession('chat'); navigation.navigate('Home'); }} />
 
-      {/* Tabs */}
-      <View style={[styles.tabs, { borderBottomColor: withAlpha(colors.border, 0.25) }]}> 
+      {/* Tabs — pill idiom shared with LibraryScreen */}
+      <View style={styles.tabs}>
         {([
           ['chats', t('library.chats')],
           ['uploads', t('library.uploads')],
           ['created', t('library.created')],
-        ] as Array<[Tab, string]>).map(([value, label]) => (
-          <AnimatedPressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={styles.tab}>
-            <Text style={[styles.tabText, { color: tab === value ? colors.text : colors.textMuted, fontFamily: typography.medium }]}>{label}</Text>
-            {tab === value ? <View style={[styles.tabLine, { backgroundColor: colors.accent }]} /> : null}
-          </AnimatedPressable>
-        ))}
+        ] as Array<[Tab, string]>).map(([value, label]) => {
+          const active = tab === value;
+          return (
+            <AnimatedPressable key={value} accessibilityRole="tab" accessibilityState={{ selected: active }} onPress={() => setTab(value)} style={[styles.tab, active && { backgroundColor: colors.surfaceHover, borderRadius: radius.pill }]}>
+              <Text style={[styles.tabText, { color: active ? colors.text : colors.textMuted, fontFamily: active ? typography.semibold : typography.medium }]}>{label}</Text>
+            </AnimatedPressable>
+          );
+        })}
         {tab === 'uploads' ? (
           <AnimatedPressable accessibilityLabel={t('library.upload')} onPress={() => { void upload(); }} disabled={uploading} style={styles.refresh}>
             <Ionicons name="cloud-upload-outline" size={21} color={uploading ? colors.textSubtle : colors.accent} />
@@ -302,12 +305,17 @@ export function RecentsScreen({ navigation }: Props) {
             const rowData = item.data;
             const kind = String(rowData._kind);
             const title = String(rowData.title || rowData.name || rowData.topic || t('library.untitled'));
+            const sessionMeta = kind === 'session'
+              ? [formatRelativeTime(rowData.updatedAt), typeof rowData.totalQ === 'number' && rowData.totalQ > 0 ? t('exam.questionCount', { n: rowData.totalQ }) : '']
+                  .filter(Boolean).join(' · ')
+              : '';
             const previewText = kind === 'session'
-              ? String(rowData.preview || rowData.topic || t('library.noMessages'))
+              ? (sessionMeta || String(rowData.preview || rowData.topic || t('library.noMessages')))
               : kind === 'file'
                 ? `${String(rowData.mimeType || t('library.upload'))} · ${formatBytes(Number(rowData.size || 0))}`
                 : `${String(rowData.type || t('library.artifact'))} · ${String(rowData.language || '')}`;
             const icon = kind === 'session' ? 'chatbubble-outline' : kind === 'file' ? 'document-outline' : 'sparkles-outline';
+            const modeBadgeColor = kind === 'session' ? modeDotColor(rowData, colors.mode === 'dark') : null;
 
             return (
               <AnimatedPressable
@@ -319,7 +327,15 @@ export function RecentsScreen({ navigation }: Props) {
                   <Ionicons name={icon} size={18} color={colors.textMuted} />
                 </View>
                 <View style={styles.copy}>
-                  <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{title}</Text>
+                  <View style={styles.titleRow}>
+                    {modeBadgeColor ? (
+                      <View
+                        accessibilityLabel={modeDotLabel(rowData)}
+                        style={[styles.modeDot, { backgroundColor: modeBadgeColor }]}
+                      />
+                    ) : null}
+                    <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{title}</Text>
+                  </View>
                   <Text numberOfLines={1} style={[styles.preview, { color: colors.textMuted, fontFamily: typography.body }]}>{previewText}</Text>
                 </View>
                 {kind === 'session' && rowData.pinned === true ? (
@@ -341,13 +357,30 @@ export function RecentsScreen({ navigation }: Props) {
               </AnimatedPressable>
             );
           }}
-          ListEmptyComponent={(
-            <View style={styles.empty}>
-              <Ionicons name="library-outline" size={34} color={colors.textSubtle} />
-              <Text style={[styles.emptyTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('library.emptyTitle')}</Text>
-              <Text style={[styles.preview, { color: colors.textMuted, fontFamily: typography.body }]}>{t('library.emptyBody')}</Text>
-            </View>
-          )}
+          ListEmptyComponent={(() => {
+            const filteredEmpty = tab === 'chats' && filterChip !== 'all' && state.sessions.length > 0;
+            return (
+              <View style={styles.empty}>
+                <Ionicons name="library-outline" size={34} color={colors.textSubtle} />
+                <Text style={[styles.emptyTitle, { color: colors.text, fontFamily: typography.semibold }]}>
+                  {filteredEmpty ? t('library.noMatch') : error ? t('library.refreshFailed') : t('library.emptyTitle')}
+                </Text>
+                <Text style={[styles.preview, { color: colors.textMuted, fontFamily: typography.body }]}>
+                  {filteredEmpty ? t('library.noMatchDesc') : error ? error : t('library.emptyBody')}
+                </Text>
+                {filteredEmpty ? (
+                  <AnimatedPressable onPress={() => setFilterChip('all')} style={[styles.emptyAction, { borderColor: colors.borderStrong, borderRadius: radius.pill }]}>
+                    <Text style={[styles.emptyActionText, { color: colors.text, fontFamily: typography.medium }]}>{t('sidebar.all')}</Text>
+                  </AnimatedPressable>
+                ) : null}
+                {error ? (
+                  <AnimatedPressable onPress={() => { void load(); }} style={[styles.emptyAction, { borderColor: colors.borderStrong, borderRadius: radius.pill }]}>
+                    <Text style={[styles.emptyActionText, { color: colors.text, fontFamily: typography.medium }]}>{t('common.retry') || 'Retry'}</Text>
+                  </AnimatedPressable>
+                ) : null}
+              </View>
+            );
+          })()}
         />
       )}
 
@@ -365,7 +398,7 @@ export function RecentsScreen({ navigation }: Props) {
               </AnimatedPressable>
             </View>
             <ScrollView style={styles.previewScroll} contentContainerStyle={styles.previewContent}>
-              <Text selectable style={[styles.previewText, { color: colors.text }]}>{preview?.text || t('library.previewUnavailable')}</Text>
+              <Text selectable style={[styles.previewText, { color: colors.text, fontFamily: typography.mono }]}>{preview?.text || t('library.previewUnavailable')}</Text>
             </ScrollView>
             {preview?.truncated ? <Text style={[styles.truncated, { color: colors.textMuted }]}>{t('library.previewTruncated')}</Text> : null}
           </View>
@@ -417,7 +450,7 @@ export function RecentsScreen({ navigation }: Props) {
               },
             ]}
           >
-            <View style={styles.actionMenuHeader}>
+            <View style={[styles.actionMenuHeader, { borderBottomColor: withAlpha(colors.border, 0.5) }]}>
               <Text numberOfLines={1} style={[styles.actionMenuTitle, { color: colors.text, fontFamily: typography.semibold }]}>
                 {String(actionSession?.title || actionSession?.topic || t('library.untitled'))}
               </Text>
@@ -537,18 +570,55 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/* Local fallback — no shared formatRelativeTime util exists in src/utils yet.
+ * Mirrors the web recents list: relative time for recent items, short date
+ * beyond a week. Replace with a shared util if one lands. */
+function formatRelativeTime(rawDate: unknown): string {
+  if (!rawDate) return '';
+  const ts = new Date(String(rawDate)).getTime();
+  if (Number.isNaN(ts)) return '';
+  const diff = Date.now() - ts;
+  if (diff < 0) return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(ts);
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(ts);
+}
+
+/* Session mode for the tinted 6px badge — exam kind wins, then mode.
+ * (.recent-mode-badge, styles.css:551-556) */
+function sessionMode(item: Record<string, unknown>): 'chat' | 'tutor' | 'exam' {
+  if (String(item.kind || '') === 'exam') return 'exam';
+  return String(item.mode || 'chat') === 'tutor' ? 'tutor' : 'chat';
+}
+
+function modeDotColor(item: Record<string, unknown>, isDark: boolean): string {
+  const mode = sessionMode(item);
+  if (isDark) {
+    return mode === 'chat' ? 'hsl(0, 0%, 88%)' : mode === 'tutor' ? 'hsl(0, 0%, 72%)' : 'hsl(0, 0%, 60%)';
+  }
+  return mode === 'chat' ? 'hsl(0, 0%, 20%)' : mode === 'tutor' ? 'hsl(0, 0%, 40%)' : 'hsl(0, 0%, 55%)';
+}
+
+function modeDotLabel(item: Record<string, unknown>): string {
+  const mode = sessionMode(item);
+  return mode === 'exam' ? 'Exam' : mode === 'tutor' ? 'Tutor' : 'Chat';
+}
+
 const styles = StyleSheet.create({
   screen: { paddingTop: 0 },
   tabs: {
     minHeight: 48,
     marginHorizontal: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
   },
-  tab: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center' },
+  tab: { minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   tabText: { fontSize: 13 },
-  tabLine: { position: 'absolute', left: 10, right: 10, bottom: -1, height: 2, borderRadius: 1 },
   refresh: { width: 44, height: 46, alignItems: 'center', justifyContent: 'center' },
   filterChipsRow: {
     paddingHorizontal: 16,
@@ -586,7 +656,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.3,
-    textTransform: 'uppercase',
   },
   row: {
     minHeight: 64,
@@ -598,11 +667,15 @@ const styles = StyleSheet.create({
   },
   icon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, minWidth: 0 },
-  title: { fontSize: 14 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  modeDot: { width: 6, height: 6, borderRadius: 3 },
+  title: { fontSize: 14, flexShrink: 1 },
   preview: { fontSize: 12, lineHeight: 17, marginTop: 3 },
   more: { width: 34, height: 38, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 100 },
   emptyTitle: { fontSize: 16, marginTop: 12 },
+  emptyAction: { marginTop: 14, minHeight: 34, paddingHorizontal: 14, borderWidth: 0.5, alignItems: 'center', justifyContent: 'center' },
+  emptyActionText: { fontSize: 13 },
   loadingRow: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12 },
   loadingCopy: { flex: 1, minWidth: 0, gap: 7 },
   error: { fontSize: 12, lineHeight: 18, marginHorizontal: 16, marginTop: 10 },
@@ -621,7 +694,7 @@ const styles = StyleSheet.create({
   close: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   previewScroll: { flex: 1 },
   previewContent: { paddingVertical: 10 },
-  previewText: { fontFamily: 'monospace', fontSize: 13, lineHeight: 20 },
+  previewText: { fontSize: 13, lineHeight: 20 },
   truncated: { fontSize: 11, lineHeight: 16, paddingTop: 12 },
   renameCard: { width: '100%', maxWidth: 380, borderWidth: 0.5, padding: 18 },
   renameTitle: { fontSize: 16, marginBottom: 12 },
@@ -643,7 +716,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   actionMenuTitle: {
     fontSize: 13,

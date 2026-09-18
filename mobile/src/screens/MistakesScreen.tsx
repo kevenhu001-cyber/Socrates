@@ -220,16 +220,17 @@ export function MistakesScreen({ navigation }: Props) {
                 style={[
                   styles.card,
                   {
-                    backgroundColor: resolved ? withAlpha(colors.surface, 0.4) : 'rgba(127, 29, 29, 0.16)',
-                    borderColor: resolved ? withAlpha(colors.border, 0.3) : 'rgba(220, 38, 38, 0.35)',
-                    borderLeftColor: resolved ? colors.success : colors.danger,
+                    backgroundColor: resolved ? withAlpha(colors.surface, 0.4) : withAlpha(colors.dangerSoft, 0.5),
+                    borderColor: resolved ? withAlpha(colors.border, 0.3) : withAlpha(colors.danger, 0.35),
+                    borderLeftColor: resolved ? withAlpha(colors.border, 0.4) : colors.danger,
                   },
+                  resolved && { opacity: 0.6 },
                 ]}
               >
                 {/* Meta line: TYPE / TOPIC / TIME / CONQUERED TAG */}
                 <View style={styles.metaRow}>
-                  <View style={[styles.typeBadge, { backgroundColor: resolved ? 'rgba(34, 197, 94, 0.25)' : 'rgba(220, 38, 38, 0.3)' }]}>
-                    <Text style={[styles.typeText, { color: resolved ? '#86efac' : '#fca5a5' }]}>
+                  <View style={[styles.typeBadge, { backgroundColor: resolved ? withAlpha(colors.success, 0.25) : withAlpha(colors.danger, 0.3) }]}>
+                    <Text style={[styles.typeText, { color: resolved ? colors.success : colors.danger }]}>
                       {item.source || 'QUIZ'}
                     </Text>
                   </View>
@@ -244,14 +245,14 @@ export function MistakesScreen({ navigation }: Props) {
                     </Text>
                   ) : null}
                   {resolved ? (
-                    <View style={styles.conqueredBadge}>
-                      <Text style={styles.conqueredText}>conquered</Text>
+                    <View style={[styles.conqueredBadge, { backgroundColor: withAlpha(colors.success, 0.2) }]}>
+                      <Text style={[styles.conqueredText, { color: colors.success }]}>conquered</Text>
                     </View>
                   ) : null}
                 </View>
 
-                {/* Question Stem */}
-                <Text style={[styles.questionStem, { color: colors.text, fontFamily: typography.body }]}>
+                {/* Question Stem — web mutes resolved mistakes */}
+                <Text style={[styles.questionStem, { color: colors.text, fontFamily: typography.body }, resolved && styles.questionStemResolved]}>
                   {stem}
                 </Text>
 
@@ -266,23 +267,23 @@ export function MistakesScreen({ navigation }: Props) {
                           key={`${opt.letter}-${optIdx}`}
                           style={[
                             styles.optionRow,
-                            isCorrect && styles.optionRowCorrect,
-                            isWrong && styles.optionRowWrong,
+                            isCorrect && { backgroundColor: withAlpha(colors.success, 0.12) },
+                            isWrong && { backgroundColor: withAlpha(colors.danger, 0.14) },
                           ]}
                         >
                           <View
                             style={[
                               styles.letterBadge,
                               { borderColor: withAlpha(colors.textSubtle, 0.4) },
-                              isCorrect && styles.letterBadgeCorrect,
-                              isWrong && styles.letterBadgeWrong,
+                              isCorrect && { borderColor: colors.success, backgroundColor: colors.success },
+                              isWrong && { borderColor: colors.danger, backgroundColor: colors.danger },
                             ]}
                           >
                             <Text
                               style={[
                                 styles.letterText,
                                 { color: colors.textMuted },
-                                (isCorrect || isWrong) && styles.letterTextActive,
+                                (isCorrect || isWrong) && { color: colors.white },
                               ]}
                             >
                               {opt.letter}
@@ -292,8 +293,8 @@ export function MistakesScreen({ navigation }: Props) {
                             style={[
                               styles.optionText,
                               { color: colors.text },
-                              isCorrect && styles.optionTextCorrect,
-                              isWrong && styles.optionTextWrong,
+                              isCorrect && { color: colors.success },
+                              isWrong && { color: colors.danger },
                             ]}
                           >
                             {opt.text}
@@ -436,18 +437,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
-    backgroundColor: 'rgba(34, 197, 94, 0.2)',
   },
   conqueredText: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#86efac',
     textTransform: 'uppercase',
   },
   questionStem: {
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 8,
+  },
+  questionStemResolved: {
+    textDecorationLine: 'line-through',
   },
   optionsList: {
     flexDirection: 'column',
@@ -462,12 +464,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
   },
-  optionRowCorrect: {
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-  },
-  optionRowWrong: {
-    backgroundColor: 'rgba(239, 68, 68, 0.14)',
-  },
   letterBadge: {
     width: 18,
     height: 18,
@@ -477,31 +473,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  letterBadgeCorrect: {
-    borderColor: '#22c55e',
-    backgroundColor: '#22c55e',
-  },
-  letterBadgeWrong: {
-    borderColor: '#ef4444',
-    backgroundColor: '#ef4444',
-  },
   letterText: {
     fontSize: 9,
     fontWeight: '600',
-  },
-  letterTextActive: {
-    color: '#ffffff',
   },
   optionText: {
     fontSize: 11.5,
     lineHeight: 16,
     flex: 1,
-  },
-  optionTextCorrect: {
-    color: '#4ade80',
-  },
-  optionTextWrong: {
-    color: '#f87171',
   },
   redoBtn: {
     width: '100%',

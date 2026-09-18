@@ -4,7 +4,6 @@ import {
   BackHandler,
   FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -31,7 +30,6 @@ import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { native } from '../native/native';
-import { sharesApi } from '../data/api/client';
 import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import type { RootStackParamList } from '../navigation/types';
 import { MOBILE_EXTENSIONS } from '../data/chat/prompts';
@@ -58,6 +56,14 @@ export function ChatScreen({ navigation }: Props) {
    * above the composer. 96 covers the composer + wrap; add the device
    * safe-area so the pill never sits under the home indicator. */
   const scrollBottomOffset = 96 + Math.max(insets.bottom, 0) + 12;
+  const selectedPluginChips = useMemo(
+    () => state.selectedComposerPlugins.map(({ id, name }) => ({ id, name })),
+    [state.selectedComposerPlugins],
+  );
+  const selectedPluginIds = useMemo(
+    () => state.selectedComposerPlugins.map((plugin) => plugin.id),
+    [state.selectedComposerPlugins],
+  );
   const currentProvider = state.providers.find((provider) => provider.id === state.selectedModel);
   const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
 
@@ -115,7 +121,21 @@ export function ChatScreen({ navigation }: Props) {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const isAtBottom = contentSize.height - layoutMeasurement.height - contentOffset.y <= BOTTOM_TOLERANCE;
     stickToBottom.current = isAtBottom;
-    setShowScrollBottom(!isAtBottom);
+    // Functional update: scroll events fire at scrollEventThrottle cadence, so
+    // only re-render when the pill's visibility actually flips.
+    setShowScrollBottom((shown) => (shown === !isAtBottom ? shown : !isAtBottom));
+  }, []);
+
+  /* Rows host auto-height WebViews, so scrollToIndex routinely fires before
+   * the target cell is measured. Jump near the estimated offset, then let
+   * layout settle and retry once — matching FlatList's own documented
+   * recovery pattern for unknown row heights. */
+  const onScrollToIndexFailed = useCallback((info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
+    const offset = info.averageItemLength * info.index;
+    listRef.current?.scrollToOffset({ offset, animated: false });
+    setTimeout(() => {
+      listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 });
+    }, 120);
   }, []);
 
   const jumpToBottom = () => {
@@ -148,19 +168,19 @@ export function ChatScreen({ navigation }: Props) {
     setToolsMenuOpen(true);
   }, []);
 
-  const onShare = useCallback(async () => {
-    const session = state.activeSession;
+  /* Read the session through getSnapshot so this stays a stable identity —
+   * activeSession gets a new object on every streaming flush, which would
+   * otherwise churn renderMessage and every MessageBubble prop downstream. */
+  const onShare = useCallback(() => {
+    const session = appStore.getSnapshot().activeSession;
     if (!session) return;
-    try {
-      const share = await sharesApi.create(session.id);
-      shareModal.open({
-        url: sharesApi.absoluteUrl(share.url),
-        title: session.title || (t('chat.newConversation') || 'Conversation'),
-      });
-    } catch (error) {
-      appStore.setError(error instanceof Error ? error.message : (t('share.failed') || 'Share failed'));
-    }
-  }, [state.activeSession, t]);
+    /* The modal owns the create/revoke flow — parity with the web
+     * `openShareModal`, which just resets state and shows the overlay. */
+    shareModal.open({
+      sessionId: session.id,
+      title: session.title || (t('chat.newConversation') || 'Conversation'),
+    });
+  }, [t]);
 
   const lastAssistantIndex = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -184,26 +204,45 @@ export function ChatScreen({ navigation }: Props) {
     }, [searchActive]),
   );
 
+  /* Hoisted once so React.memo on MessageBubble can actually bail: inline
+   * arrows here created 9 fresh callback props per render per row. */
+  const onRetry = useCallback(() => { void appStore.retryLastResponse(); }, []);
+  const onEdit = useCallback((messageId: string, text: string) => appStore.editUserMessage(messageId, text), []);
+  const onDelete = useCallback((messageId: string) => appStore.deleteUserMessage(messageId), []);
+  const onRegenerate = useCallback((messageId: string) => appStore.regenerateAssistantMessage(messageId), []);
+  const onBranch = useCallback((messageId: string, options?: { reExplain?: boolean }) => appStore.branchFromMessage(messageId, options), []);
+  const onFeedback = useCallback((messageId: string, rating: 'up' | 'down' | 'none') => appStore.sendMessageFeedback(messageId, rating), []);
+  const onTutorQuizAnswer = useCallback((answer: Parameters<typeof appStore.handleTutorQuizAnswer>[0]) => appStore.handleTutorQuizAnswer(answer), []);
+  const onTutorPracticeSubmit = useCallback((answer: Parameters<typeof appStore.handleTutorPracticeAnswer>[0]) => appStore.handleTutorPracticeAnswer(answer), []);
+  const onIterate = useCallback((text: string) => appStore.setDraft(text), []);
+  const bubbleShare = state.isIncognito ? undefined : onShare;
+  const highlight = searchActive ? searchQuery : undefined;
+
   const renderMessage = useCallback(
     ({ item, index }: { item: Message; index: number }) => (
       <MessageBubble
         message={item}
         isLastAssistant={index === lastAssistantIndex}
-        onRetry={() => { void appStore.retryLastResponse(); }}
-        onEdit={(messageId, text) => appStore.editUserMessage(messageId, text)}
-        onDelete={(messageId) => appStore.deleteUserMessage(messageId)}
-        onShare={state.isIncognito ? undefined : onShare}
-        onRegenerate={(messageId) => appStore.regenerateAssistantMessage(messageId)}
-        onBranch={(messageId, options) => appStore.branchFromMessage(messageId, options)}
-        onFeedback={(messageId, rating) => appStore.sendMessageFeedback(messageId, rating)}
-        onTutorQuizAnswer={(answer) => appStore.handleTutorQuizAnswer(answer)}
-        onTutorPracticeSubmit={(answer) => appStore.handleTutorPracticeAnswer(answer)}
+        onRetry={onRetry}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onShare={bubbleShare}
+        onRegenerate={onRegenerate}
+        onBranch={onBranch}
+        onFeedback={onFeedback}
+        onTutorQuizAnswer={onTutorQuizAnswer}
+        onTutorPracticeSubmit={onTutorPracticeSubmit}
         linkPreview={state.linkPreviews[String(item.clientId || item.id || '')]}
-        onIterate={(text) => appStore.setDraft(text)}
-        highlight={searchActive ? searchQuery : undefined}
+        onIterate={onIterate}
+        highlight={highlight}
       />
     ),
-    [lastAssistantIndex, onShare, searchActive, searchQuery, state.isIncognito, state.linkPreviews]
+    [
+      lastAssistantIndex, bubbleShare, highlight,
+      onRetry, onEdit, onDelete, onRegenerate, onBranch, onFeedback,
+      onTutorQuizAnswer, onTutorPracticeSubmit, onIterate,
+      state.linkPreviews,
+    ]
   );
 
   const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
@@ -304,7 +343,11 @@ export function ChatScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<View style={styles.empty} />}
-        onScrollToIndexFailed={() => {}}
+        onScrollToIndexFailed={onScrollToIndexFailed}
+        /* removeClippedSubviews intentionally left unset: rows contain WebView
+         * islands (RichBlock) which blank/flicker on Android when their cell
+         * is detached mid-gesture — the known clipping bug that makes this
+         * prop unsafe here. */
       />
 
       {/* Floating Scroll to Bottom Pill */}
@@ -345,39 +388,11 @@ export function ChatScreen({ navigation }: Props) {
        * sent the first turn; the previous hardcoded 3-chip strip caused
        * the "flicker during chat" the web client explicitly removed). */}
       <View style={[styles.composerWrap, { backgroundColor: colors.background }]}>
-        {state.pendingAttachments.length ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.attachments}
-            keyboardShouldPersistTaps="handled"
-          >
-            {state.pendingAttachments.map((attachment) => (
-              <AnimatedPressable
-                key={attachment.id}
-                onPress={() => appStore.removeAttachment(attachment.id)}
-                style={[
-                  styles.attachmentChip,
-                  {
-                    backgroundColor: colors.surfaceRaised,
-                    borderColor: colors.border,
-                    borderRadius: 18,
-                  },
-                ]}
-              >
-                <Ionicons name="document-outline" size={16} color={colors.accent} />
-                <Text numberOfLines={1} style={[styles.attachmentName, { color: colors.textMuted, fontFamily: typography.medium }]}>
-                  {attachment.name}
-                </Text>
-                <Ionicons name="close" size={16} color={colors.textSubtle} />
-              </AnimatedPressable>
-            ))}
-          </ScrollView>
-        ) : null}
-
         <Composer
           value={state.draft}
           hasAttachments={state.pendingAttachments.length > 0}
+          attachments={state.pendingAttachments}
+          onRemoveAttachment={(attachmentId) => appStore.removeAttachment(attachmentId)}
           disabled={state.isStreaming}
           reasoningEffort={state.reasoningEffort}
           webSearchEnabled={state.webSearchEnabled}
@@ -388,7 +403,7 @@ export function ChatScreen({ navigation }: Props) {
           onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
           onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
           activeExtensionLabel={state.activeExtension ? MOBILE_EXTENSIONS[state.activeExtension].label : null}
-          selectedPlugins={state.selectedComposerPlugins.map(({ id, name }) => ({ id, name }))}
+          selectedPlugins={selectedPluginChips}
           onRemoveActiveExtension={() => appStore.setActiveExtension(null)}
           onRemovePlugin={(pluginId) => appStore.clearComposerPlugin(pluginId)}
           placeholder={t('chat.inputPlaceholder')}
@@ -413,7 +428,7 @@ export function ChatScreen({ navigation }: Props) {
         onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={state.reasoningEffort === 'high'}
         plugins={state.composerPlugins}
-        selectedPluginIds={state.selectedComposerPlugins.map((plugin) => plugin.id)}
+        selectedPluginIds={selectedPluginIds}
         onTogglePlugin={(pluginId) => appStore.toggleComposerPlugin(pluginId)}
       />
 
@@ -558,17 +573,6 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 4,
   },
-  attachments: { gap: 8, paddingBottom: 8 },
-  attachmentChip: {
-    maxWidth: 250,
-    minHeight: 36,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-  },
-  attachmentName: { flexShrink: 1, fontSize: 12 },
 });
 
 /* P0-2: Web-only Ctrl/Cmd+F handler. Mounts a window keydown listener

@@ -1,17 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AnimatedPressable } from '../components/AnimatedPressable';
+import { Markdown } from '../render/MarkdownView';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import {
   applyDiagnosticResults,
+  buildFallbackDiagnosticQuestions,
   generateDiagnosticQuestions,
   generateTopicKnowledgeNodes,
   type TutorDiagnosticQuestion,
   type TutorKnowledgeNode,
+  type TutorKnowledgeStatus,
 } from '../data/tutor/tutorFlow';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -26,6 +30,17 @@ const STAGES = [
   ['exercise', 'tutor.stageExercise'],
   ['check', 'tutor.stageCheck'],
 ] as const;
+
+const STATUS_KEY: Record<TutorKnowledgeStatus, string> = {
+  internalized: 'knowledge.internalized',
+  fuzzy: 'knowledge.fuzzy',
+  blank: 'knowledge.blank',
+};
+
+function tt(t: (key: string) => string, key: string, fallback: string): string {
+  const value = t(key);
+  return value === key ? fallback : value;
+}
 
 function countKnowledge(nodes: TutorKnowledgeNode[]) {
   return nodes.reduce(
@@ -55,6 +70,12 @@ export function TutorScreen({ navigation, route }: Props) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   const [localError, setLocalError] = useState<string | null>(null);
+  /* Which generation was last attempted — drives the failure-state Retry
+   * button and the generating-phase Cancel affordance. */
+  const lastAction = React.useRef<'teach' | 'explore'>('teach');
+  /* Generation is not abortable at the API layer, so Cancel bumps a token;
+   * in-flight work still finishes but its results are discarded. */
+  const generationToken = React.useRef(0);
 
   useEffect(() => {
     if (!initialTopic) return;
@@ -99,17 +120,26 @@ export function TutorScreen({ navigation, route }: Props) {
     else setLocalError(state.error || t('chat.offline') || 'Unable to start Tutor.');
   };
 
+  const cancelGeneration = () => {
+    generationToken.current += 1;
+    setPhase('choice');
+  };
+
   const startWithoutQuestions = async () => {
     if (!topic) return;
+    lastAction.current = 'teach';
+    const token = ++generationToken.current;
     setPhase('generating');
     setLocalError(null);
     setGenerationProgress({ current: 0, total: 1 });
     try {
       const generatedNodes = await generateTopicKnowledgeNodes(topic, modelContext);
+      if (generationToken.current !== token) return;
       setNodes(generatedNodes);
       setGenerationProgress({ current: 1, total: 1 });
       await startTeaching(generatedNodes);
     } catch (error) {
+      if (generationToken.current !== token) return;
       setLocalError(error instanceof Error ? error.message : 'Unable to prepare the lesson.');
       setPhase('choice');
     }
@@ -117,11 +147,14 @@ export function TutorScreen({ navigation, route }: Props) {
 
   const startExploration = async () => {
     if (!topic) return;
+    lastAction.current = 'explore';
+    const token = ++generationToken.current;
     setPhase('generating');
     setLocalError(null);
     try {
       setGenerationProgress({ current: 0, total: questionCount + 1 });
       const generatedNodes = await generateTopicKnowledgeNodes(topic, modelContext);
+      if (generationToken.current !== token) return;
       setNodes(generatedNodes);
       setGenerationProgress({ current: 1, total: questionCount + 1 });
       const generatedQuestions = await generateDiagnosticQuestions(
@@ -130,13 +163,22 @@ export function TutorScreen({ navigation, route }: Props) {
         modelContext,
         (current, total) => setGenerationProgress({ current: current + 1, total: total + 1 }),
       );
+      if (generationToken.current !== token) return;
       setQuestions(generatedQuestions);
       setAnswers([]);
       setQuestionIndex(0);
       setPhase('questions');
     } catch (error) {
+      if (generationToken.current !== token) return;
+      /* tutorFlow already substitutes `buildFallbackDiagnosticQuestions`
+       * inside `generateDiagnosticQuestions`; a throw reaching here means a
+       * hard failure (e.g. node generation), so fall back to the built-in
+       * question set instead of dead-ending on the choice card. */
+      setQuestions(buildFallbackDiagnosticQuestions(topic, questionCount));
+      setAnswers([]);
+      setQuestionIndex(0);
       setLocalError(error instanceof Error ? error.message : 'Unable to generate the diagnostic.');
-      setPhase('choice');
+      setPhase('questions');
     }
   };
 
@@ -174,7 +216,7 @@ export function TutorScreen({ navigation, route }: Props) {
   if (phase === 'choice') {
     return (
       <Screen scroll style={styles.flowScreen}>
-        <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
+        <Text style={[styles.kicker, { color: colors.accent, fontFamily: typography.medium }]}>
           {t('tutor.kickerMode') || 'TUTOR MODE'}
         </Text>
         <Text style={[styles.topic, { color: colors.text, fontFamily: typography.display }]}>
@@ -221,7 +263,20 @@ export function TutorScreen({ navigation, route }: Props) {
             </View>
           </View>
 
-          {localError ? <Text style={[styles.error, { color: colors.danger }]}>{localError}</Text> : null}
+          {localError ? (
+            <View style={styles.errorRow}>
+              <Text style={[styles.error, { color: colors.danger }]}>{localError}</Text>
+              <AnimatedPressable
+                accessibilityRole="button"
+                onPress={() => void (lastAction.current === 'explore' ? startExploration() : startWithoutQuestions())}
+                style={[styles.retryButton, { borderColor: colors.border, borderRadius: radius.md }]}
+              >
+                <Text style={[styles.retryButtonText, { color: colors.text, fontFamily: typography.medium }]}>
+                  {t('common.retry') || 'Retry'}
+                </Text>
+              </AnimatedPressable>
+            </View>
+          ) : null}
 
           <View style={styles.dialogActions}>
             <AnimatedPressable
@@ -261,6 +316,14 @@ export function TutorScreen({ navigation, route }: Props) {
         <View style={[styles.progressTrack, { backgroundColor: colors.surfaceRaised }]}>
           <View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${Math.max(4, progress * 100)}%` }]} />
         </View>
+        <AnimatedPressable
+          onPress={cancelGeneration}
+          style={[styles.secondaryButton, { borderColor: colors.border, borderRadius: radius.md }]}
+        >
+          <Text style={[styles.secondaryButtonText, { color: colors.text, fontFamily: typography.medium }]}>
+            {t('common.cancel') || 'Cancel'}
+          </Text>
+        </AnimatedPressable>
       </Screen>
     );
   }
@@ -274,7 +337,7 @@ export function TutorScreen({ navigation, route }: Props) {
         </Text>
         <View style={styles.questionMeta}>
           <Text style={[styles.questionProgress, { color: colors.textSubtle, fontFamily: typography.medium }]}>
-            {questionIndex + 1} / {questions.length}
+            {tt(t, 'tutor.questionOf', 'Question {n} of {total}').replace('{n}', String(questionIndex + 1)).replace('{total}', String(questions.length))}
           </Text>
           <View style={[styles.questionProgressTrack, { backgroundColor: colors.surfaceRaised }]}>
             <View
@@ -285,49 +348,49 @@ export function TutorScreen({ navigation, route }: Props) {
             />
           </View>
         </View>
-        <Text style={[styles.questionText, { color: colors.text, fontFamily: typography.semibold }]}>
-          {currentQuestion.q}
-        </Text>
-        {currentQuestion.knowledgePoint ? (
-          <Text style={[styles.knowledgePoint, { color: colors.textMuted, fontFamily: typography.body }]}>
-            {currentQuestion.knowledgePoint}
-          </Text>
-        ) : null}
-        <View style={styles.options}>
-          {currentQuestion.opts.map((option, optionIndex) => {
-            const active = selected === optionIndex;
-            return (
-              <AnimatedPressable
-                key={option.letter}
-                onPress={() => selectOption(optionIndex)}
-                style={[
-                  styles.option,
-                  {
-                    borderColor: active ? colors.accent : colors.border,
-                    backgroundColor: active ? colors.accentSoft : colors.surface,
-                    borderRadius: radius.md,
-                  },
-                ]}
-              >
-                <View
+        <View style={[styles.questionCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+          <Markdown text={currentQuestion.q} />
+          {currentQuestion.knowledgePoint ? (
+            <Text style={[styles.knowledgePoint, { color: colors.textMuted, fontFamily: typography.body }]}>
+              {currentQuestion.knowledgePoint}
+            </Text>
+          ) : null}
+          <View style={styles.options}>
+            {currentQuestion.opts.map((option, optionIndex) => {
+              const active = selected === optionIndex;
+              return (
+                <AnimatedPressable
+                  key={option.letter}
+                  onPress={() => selectOption(optionIndex)}
                   style={[
-                    styles.optionLetter,
+                    styles.option,
                     {
-                      borderColor: active ? colors.accent : colors.borderStrong,
-                      backgroundColor: active ? colors.accent : 'transparent',
+                      borderColor: active ? colors.accent : colors.border,
+                      backgroundColor: active ? colors.accentSoft : 'transparent',
+                      borderRadius: radius.md,
                     },
                   ]}
                 >
-                  <Text style={{ color: active ? colors.textInverse : colors.textMuted, fontFamily: typography.semibold }}>
-                    {option.letter}
-                  </Text>
-                </View>
-                <Text style={[styles.optionText, { color: colors.text, fontFamily: typography.body }]}>
-                  {option.text}
-                </Text>
-              </AnimatedPressable>
-            );
-          })}
+                  <View
+                    style={[
+                      styles.optionLetter,
+                      {
+                        borderColor: active ? colors.accent : colors.borderStrong,
+                        backgroundColor: active ? colors.accent : 'transparent',
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: active ? colors.textInverse : colors.textMuted, fontFamily: typography.semibold, fontSize: 12 }}>
+                      {option.letter}
+                    </Text>
+                  </View>
+                  <View style={styles.optionTextWrap}>
+                    <Markdown text={option.text} />
+                  </View>
+                </AnimatedPressable>
+              );
+            })}
+          </View>
         </View>
         <View style={styles.questionActions}>
           <AnimatedPressable
@@ -384,35 +447,49 @@ export function TutorScreen({ navigation, route }: Props) {
         <Text style={[styles.body, { color: colors.textMuted, fontFamily: typography.body }]}>
           {t('tutor.boundaryReadyBody') || 'This diagnostic is only a baseline depth cue. Socrates will still teach every sub-topic from its foundation.'}
         </Text>
+        {/* Baseline-not-mastery notice — the diagnostic only sets depth cues;
+         * the tutor still teaches every sub-topic from its foundation. */}
+        <View style={[styles.notice, { backgroundColor: withAlpha(colors.accent, 0.08), borderColor: withAlpha(colors.accent, 0.3), borderRadius: radius.md }]}>
+          <Text style={[styles.noticeText, { color: colors.textMuted, fontFamily: typography.body }]}>
+            {tt(t, 'tutor.baselineNotice', 'Baseline, not mastery — even strong answers start from the core definition.')}
+          </Text>
+        </View>
         <View style={[styles.resultGrid, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
           <View style={styles.resultCell}>
             <Text style={[styles.resultValue, { color: colors.success }]}>{resultCounts.internalized}</Text>
-            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.internalized') || 'Strong baseline'}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.internalized')}</Text>
           </View>
           <View style={styles.resultCell}>
-            <Text style={[styles.resultValue, { color: colors.accent }]}>{resultCounts.fuzzy}</Text>
-            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.fuzzy') || 'Fuzzy'}</Text>
+            <Text style={[styles.resultValue, { color: colors.warning }]}>{resultCounts.fuzzy}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.fuzzy')}</Text>
           </View>
           <View style={styles.resultCell}>
             <Text style={[styles.resultValue, { color: colors.textSubtle }]}>{resultCounts.blank}</Text>
-            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.blank') || 'Blank'}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.blank')}</Text>
           </View>
         </View>
 
         <View style={styles.nodeList}>
-          {resultNodes.map((node) => (
+          {resultNodes.map((node, nodeIndex) => (
             <View key={node.name} style={[styles.nodeRow, { borderBottomColor: colors.border }]}>
+              <View style={[styles.nodeIndex, { borderColor: colors.border }]}>
+                <Text style={{ color: colors.textSubtle, fontSize: 10 }}>{nodeIndex + 1}</Text>
+              </View>
               <Text style={[styles.nodeName, { color: colors.text, fontFamily: typography.medium }]}>{node.name}</Text>
               <Text
                 style={[
                   styles.nodeStatus,
                   {
-                    color: node.status === 'blank' ? colors.textSubtle : colors.accent,
+                    color: node.status === 'internalized'
+                      ? colors.success
+                      : node.status === 'fuzzy'
+                        ? colors.warning
+                        : colors.textSubtle,
                     fontFamily: typography.medium,
                   },
                 ]}
               >
-                {node.status}
+                {t(STATUS_KEY[node.status] || 'knowledge.blank')}
               </Text>
             </View>
           ))}
@@ -443,7 +520,9 @@ export function TutorScreen({ navigation, route }: Props) {
         {t('tutor.body') || 'Build understanding from foundations through practice and checks.'}
       </Text>
 
-      <View style={styles.steps}>
+      {/* Six stages crammed into one row were illegible (~9.5px labels);
+       * a horizontal strip keeps every label readable. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.steps}>
         {STAGES.map(([id, labelKey], index) => (
           <View key={id} style={styles.step}>
             <View
@@ -462,7 +541,7 @@ export function TutorScreen({ navigation, route }: Props) {
             </Text>
           </View>
         ))}
-      </View>
+      </ScrollView>
 
       {existingNodes.length ? (
         <View style={[styles.resultGrid, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
@@ -656,10 +735,10 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 2,
   },
-  questionText: {
-    marginTop: 28,
-    fontSize: 22,
-    lineHeight: 31,
+  questionCard: {
+    marginTop: 22,
+    padding: 20,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   knowledgePoint: {
     marginTop: 10,
@@ -668,7 +747,7 @@ const styles = StyleSheet.create({
   },
   options: {
     gap: 10,
-    marginTop: 24,
+    marginTop: 20,
   },
   option: {
     minHeight: 64,
@@ -679,17 +758,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   optionLetter: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optionText: {
+  optionTextWrap: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 21,
   },
   questionActions: {
     flexDirection: 'row',
@@ -767,8 +844,9 @@ const styles = StyleSheet.create({
   },
   steps: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 30,
+    gap: 18,
+    paddingTop: 30,
+    paddingBottom: 4,
   },
   step: {
     alignItems: 'center',
@@ -783,14 +861,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepText: {
-    maxWidth: 48,
-    fontSize: 9.5,
+    fontSize: 11,
     textAlign: 'center',
     textTransform: 'capitalize',
   },
-  error: {
+  errorRow: {
     marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  error: {
+    flex: 1,
     fontSize: 12,
     lineHeight: 18,
+  },
+  retryButton: {
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryButtonText: {
+    fontSize: 12,
+  },
+  notice: {
+    marginTop: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  noticeText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  nodeIndex: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 });

@@ -243,6 +243,11 @@ export const sessionsApi = {
     method: 'PATCH', body: JSON.stringify(payload),
   }),
   archive: (id: string) => apiRequest(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'POST' }),
+  /* GET /sessions?archived=true returns every row including archived
+   * ones (server/src/routes/sessions.ts drops the `isNull(archivedAt)`
+   * condition); the archived subset is filtered client-side. */
+  listArchived: () => apiRequest<{ sessions: Session[]; nextCursor?: string | null }>('/sessions?limit=200&archived=true'),
+  unarchive: (id: string) => apiRequest(`/sessions/${encodeURIComponent(id)}/archive`, { method: 'DELETE' }),
   delete: (id: string) => apiRequest(`/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
@@ -338,10 +343,18 @@ export const messagesApi = {
     }),
 };
 
+/* Mirrors the web modal's two choices; the server whitelist also
+ * accepts 'unlisted' and treats it identically to 'public'. */
+export type ShareVisibility = 'public' | 'private';
+export type ShareVisibilityStored = ShareVisibility | 'unlisted';
+
 export const sharesApi = {
-  get: (sessionId: string) => apiRequest<{ token: string | null; url?: string; visibility: string }>(`/sessions/${encodeURIComponent(sessionId)}/share`),
-  create: (sessionId: string) => apiRequest<{ token: string; url: string; visibility: string }>(`/sessions/${encodeURIComponent(sessionId)}/share`, {
-    method: 'POST', body: JSON.stringify({ visibility: 'unlisted' }),
+  get: (sessionId: string) => apiRequest<{ token: string | null; url?: string; visibility: ShareVisibilityStored }>(`/sessions/${encodeURIComponent(sessionId)}/share`),
+  create: (sessionId: string, visibility: ShareVisibility = 'public') => apiRequest<{ token: string; url: string; visibility: ShareVisibilityStored }>(`/sessions/${encodeURIComponent(sessionId)}/share`, {
+    method: 'POST', body: JSON.stringify({ visibility }),
+  }),
+  revoke: (sessionId: string) => apiRequest<null>(`/sessions/${encodeURIComponent(sessionId)}/share`, {
+    method: 'DELETE',
   }),
   absoluteUrl: (url: string) => new URL(url, `${WEB_BASE_URL}/`).toString(),
 };
@@ -398,8 +411,11 @@ export const searchApi = {
 };
 
 export const usageApi = {
+  /* GET /api/usage/daily returns `{ days, entries: [{ day, tokens, messages }] }`
+   * — the same payload the web heatmap consumes
+   * (`server/src/routes/usage.ts`, `frontend/src/ui/usage.js`). */
   daily: (days: number) =>
-    apiRequest<{ days?: Array<{ date: string; tokens: number; requests: number }>; total?: number }>(`/usage/daily?days=${days}`),
+    apiRequest<{ days?: number; entries?: Array<{ day: string; tokens: number; messages: number }> }>(`/usage/daily?days=${days}`),
   limits: () => apiRequest<Record<string, unknown>>('/usage/limits'),
 };
 

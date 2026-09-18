@@ -15,7 +15,7 @@ export type RootStackParamList = {
   Knowledge: undefined;
   Mistakes: undefined;
   Embedded: { target: EmbeddedTarget; title: string };
-  ArtifactPreview: { artifactId: string; html: string };
+  ArtifactPreview: { artifactId: string; html: string; kind?: string };
 
   // Kept as a backwards-compatible deep-link alias. The web app has no
   // standalone Workspace page; WorkspaceScreen redirects to Library.

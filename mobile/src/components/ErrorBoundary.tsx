@@ -2,13 +2,15 @@ import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressable } from './AnimatedPressable';
-import { colors } from '../theme/theme';
+import { palettes } from '../theme/theme';
 
 /* Error fallback is intentionally dark-themed regardless of the app's
  * current mode — error screens read as "console output", and a global
  * token flip during a render crash would compound the confusion. The
  * values still come from the canonical palette so a token edit in
  * `@socrates/theme` propagates here. */
+
+const colors = palettes.dark;
 
 interface Props {
   children: ReactNode;

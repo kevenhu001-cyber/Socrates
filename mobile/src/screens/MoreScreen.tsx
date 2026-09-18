@@ -21,7 +21,6 @@ interface MenuItemSpec {
   labelKey: string;
   labelFallback: string;
   icon: keyof typeof Ionicons.glyphMap;
-  danger?: boolean;
 }
 
 /**
@@ -99,7 +98,6 @@ export function MoreScreen({ navigation }: Props) {
           >
             {ITEMS.map((item) => {
               const label = t(item.labelKey) || item.labelFallback;
-              const isDanger = Boolean(item.danger);
               return (
                 <AnimatedPressable
                   key={item.action}
@@ -107,22 +105,19 @@ export function MoreScreen({ navigation }: Props) {
                   accessibilityRole="button"
                   accessibilityLabel={label}
                   onPress={() => handleAction(item.action)}
-                  style={[
-                    styles.menuItem,
-                    isDanger && styles.menuItemDanger,
-                  ]}
+                  style={styles.menuItem}
                 >
                   <Ionicons
                     name={item.icon}
                     size={16}
-                    color={isDanger ? colors.danger : colors.textSubtle}
+                    color={colors.textSubtle}
                     style={styles.menuIcon}
                   />
                   <Text
                     style={[
                       styles.menuText,
                       {
-                        color: isDanger ? colors.danger : colors.text,
+                        color: colors.text,
                         fontFamily: typography.body,
                       },
                     ]}
@@ -234,9 +229,6 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 7,
     minHeight: 38,
-  },
-  menuItemDanger: {
-    marginTop: 4,
   },
   menuIcon: {
     width: 16,

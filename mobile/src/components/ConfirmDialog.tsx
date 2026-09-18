@@ -36,7 +36,14 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { colors, typography } = useTheme();
   return (
-    <Overlay visible={visible} onClose={onCancel} maxWidth={320} testID="confirm-dialog">
+    <Overlay
+      visible={visible}
+      onClose={onCancel}
+      maxWidth={320}
+      testID="confirm-dialog"
+      scrimColor={colors.scrimConfirm}
+      style={{ borderRadius: 14 }}
+    >
       <View
           accessibilityRole="alert"
           accessibilityLabel={title}

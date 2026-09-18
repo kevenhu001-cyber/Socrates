@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { WebView } from 'react-native-webview';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeProvider';
@@ -22,6 +22,7 @@ import { AppHeader } from '../components/AppHeader';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Overlay } from '../components/Overlay';
+import { ZoomableImage } from '../components/ZoomableImage';
 import { toast } from '../components/Toast';
 import { artifactsApi, filesApi } from '../data/api/client';
 import { native } from '../native/native';
@@ -41,6 +42,9 @@ const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', '
 const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'mkv', 'avi']);
 const AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac']);
 const TABLE_EXTENSIONS = new Set(['csv', 'tsv', 'xls', 'xlsx']);
+const SLIDE_EXTENSIONS = new Set(['ppt', 'pptx', 'key', 'odp']);
+const DOC_EXTENSIONS = new Set(['doc', 'docx', 'rtf', 'odt', 'md', 'markdown', 'txt']);
+const BOOK_EXTENSIONS = new Set(['epub', 'mobi', 'azw3']);
 
 function itemId(item: LibraryItem, index = 0) {
   return String(item.id || `item-${index}`);
@@ -64,17 +68,43 @@ function formatDate(value: unknown) {
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
 }
 
-function iconForItem(item: LibraryItem, tab: Tab): React.ComponentProps<typeof Ionicons>['name'] {
-  if (tab === 'artifacts') return 'sparkles-outline';
+function FileGlyph({ color, children }: { color: string; children: React.ReactNode }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </Svg>
+  );
+}
+
+/* Port of web `fileTypeGlyph` (WorkspacePage.tsx): `kind` first, then the
+ * filename extension, so records saved before `kind` existed still resolve. */
+function iconForItem(item: LibraryItem, tab: Tab, color: string): React.ReactNode {
+  if (tab === 'artifacts') return <Ionicons name="sparkles-outline" size={18} color={color} />;
   const kind = String(item.kind || '').toLowerCase();
-  const name = String(item.name || '').toLowerCase();
+  const name = String(item.name || item.title || '').toLowerCase();
   const ext = name.includes('.') ? name.split('.').pop() || '' : '';
-  if (kind === 'image' || IMAGE_EXTENSIONS.has(ext)) return 'image-outline';
-  if (kind === 'video' || VIDEO_EXTENSIONS.has(ext)) return 'videocam-outline';
-  if (kind === 'audio' || AUDIO_EXTENSIONS.has(ext)) return 'musical-notes-outline';
-  if (kind === 'xlsx' || TABLE_EXTENSIONS.has(ext)) return 'grid-outline';
-  if (kind === 'pdf') return 'document-text-outline';
-  return 'document-outline';
+  if (kind === 'image' || IMAGE_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Rect x="3" y="3" width="18" height="18" rx="2.5" /><Circle cx="8.6" cy="8.6" r="1.6" /><Path d="m21 15.5-4.5-4.5L5 22" /></FileGlyph>;
+  }
+  if (kind === 'video' || VIDEO_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Rect x="2.5" y="4.5" width="19" height="15" rx="2.5" /><Path d="m10 9 5 3-5 3z" /></FileGlyph>;
+  }
+  if (kind === 'audio' || AUDIO_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Path d="M9 18V5l12-2v13" /><Circle cx="6" cy="18" r="3" /><Circle cx="18" cy="16" r="3" /></FileGlyph>;
+  }
+  if (kind === 'xlsx' || TABLE_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Rect x="3" y="3" width="18" height="18" rx="2.5" /><Path d="M3 9h18M3 15h18M9 3v18M15 3v18" /></FileGlyph>;
+  }
+  if (kind === 'pptx' || SLIDE_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Rect x="3" y="3.5" width="18" height="12.5" rx="2" /><Path d="M12 16v5M8.5 21h7" /></FileGlyph>;
+  }
+  if (kind === 'epub' || BOOK_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><Path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></FileGlyph>;
+  }
+  if (kind === 'pdf' || kind === 'text' || kind === 'docx' || kind === 'rtf' || DOC_EXTENSIONS.has(ext)) {
+    return <FileGlyph color={color}><Path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z" /><Path d="M14 2.5V8h5.5" /><Path d="M8.5 13h7M8.5 17h4.5" /></FileGlyph>;
+  }
+  return <FileGlyph color={color}><Path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z" /><Path d="M14 2.5V8h5.5" /></FileGlyph>;
 }
 
 function mediaPreviewKind(item: LibraryItem): Exclude<Preview, { kind: 'text' }>['kind'] | null {
@@ -166,7 +196,7 @@ export function LibraryScreen({ navigation }: Props) {
     try {
       if (tab === 'artifacts') {
         const artifact = await artifactsApi.get(id);
-        navigation.navigate('ArtifactPreview', { artifactId: id, html: String(artifact.source || '') });
+        navigation.navigate('ArtifactPreview', { artifactId: id, html: String(artifact.source || ''), kind: String(artifact.kind || artifact.mimeType || 'text/html') });
         return;
       }
       const mediaKind = mediaPreviewKind(item);
@@ -274,7 +304,7 @@ export function LibraryScreen({ navigation }: Props) {
             {isCompact ? <Text style={[styles.description, { color: colors.textMuted, fontFamily: typography.body }]}>{description}</Text> : null}
           </View>
           <View style={[styles.headActions, isCompact && width < 600 ? styles.headActionsNarrow : styles.headActionsWide]}>
-            <View style={[styles.search, isCompact ? (width < 600 ? styles.searchCompactNarrow : styles.searchCompactWide) : styles.searchDesktop, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md }]}>
+            <View style={[styles.search, isCompact ? (width < 600 ? styles.searchCompactNarrow : styles.searchCompactWide) : styles.searchDesktop, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.pill }]}>
               <Ionicons name="search-outline" size={17} color={colors.textMuted} />
               <TextInput
                 accessibilityLabel={t('library.filterPlaceholder')}
@@ -289,15 +319,15 @@ export function LibraryScreen({ navigation }: Props) {
               {query ? <Pressable onPress={() => setQuery('')}><Ionicons name="close-circle" size={16} color={colors.textSubtle} /></Pressable> : null}
             </View>
             {tab === 'files' ? (
-              <AnimatedPressable accessibilityLabel={t('library.upload')} disabled={uploading} onPress={() => { void upload(); }} style={[styles.upload, isCompact && width < 600 ? styles.uploadCompact : null, { backgroundColor: colors.accent, borderRadius: radius.md, opacity: uploading ? 0.55 : 1 }]}>
-                <Ionicons name="add" size={18} color={colors.textInverse} />
-                <Text style={[styles.uploadText, { color: colors.textInverse, fontFamily: typography.semibold }]}>{t('library.upload')}</Text>
+              <AnimatedPressable accessibilityLabel={t('library.upload')} disabled={uploading} onPress={() => { void upload(); }} style={[styles.upload, isCompact && width < 600 ? styles.uploadCompact : null, { backgroundColor: colors.text, borderColor: colors.borderStrong, borderRadius: radius.pill, opacity: uploading ? 0.55 : 1 }]}>
+                <Ionicons name="add" size={18} color={colors.background} />
+                <Text style={[styles.uploadText, { color: colors.background, fontFamily: typography.semibold }]}>{t('library.upload')}</Text>
               </AnimatedPressable>
             ) : null}
           </View>
         </View>
 
-        <View style={[styles.tabs, isCompact ? styles.tabsCompact : styles.tabsDesktop, width >= 600 && isCompact ? styles.tabsCompactWide : null, { borderBottomColor: withAlpha(colors.border, 0.35) }]}>
+        <View style={[styles.tabs, isCompact ? styles.tabsCompact : styles.tabsDesktop, width >= 600 && isCompact ? styles.tabsCompactWide : null]}>
           {([
             ['files', t('library.files')],
             ['artifacts', t('library.artifacts')],
@@ -315,7 +345,7 @@ export function LibraryScreen({ navigation }: Props) {
         </View>
 
         {selectedItems.length ? (
-          <View style={[styles.selectionBar, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md }]}>
+          <View style={[styles.selectionBar, { backgroundColor: colors.surface, borderRadius: radius.md }]}>
             <AnimatedPressable accessibilityRole="checkbox" accessibilityState={{ checked: allSelected }} onPress={toggleSelectAll} style={styles.checkboxButton}>
               <Ionicons name={allSelected ? 'checkbox' : 'square-outline'} size={19} color={colors.accent} />
             </AnimatedPressable>
@@ -344,7 +374,7 @@ export function LibraryScreen({ navigation }: Props) {
             const name = itemName(item, t('library.untitled'));
             const date = formatDate(item.updatedAt || item.uploadedAt || item.createdAt);
             const meta = tab === 'files'
-              ? [String(item.mimeType || item.kind || ''), formatBytes(item.size, t('library.metaCreated'))].filter(Boolean).join(' · ')
+              ? [date, formatBytes(item.size, '')].filter(Boolean).join(' · ')
               : [String(item.type || t('library.artifact')), date].filter(Boolean).join(' · ');
             return (
               <View style={[styles.row, { borderBottomColor: withAlpha(colors.border, 0.18) }]}>
@@ -353,7 +383,7 @@ export function LibraryScreen({ navigation }: Props) {
                 </AnimatedPressable>
                 <AnimatedPressable onPress={() => { void openItem(item); }} style={styles.rowMain}>
                   <View style={[styles.iconBox, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.sm }]}>
-                    <Ionicons name={iconForItem(item, tab)} size={18} color={colors.accent} />
+                    {iconForItem(item, tab, colors.textMuted)}
                   </View>
                   <View style={styles.rowCopy}>
                     <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.text, fontFamily: typography.semibold }]}>{name}</Text>
@@ -394,9 +424,9 @@ export function LibraryScreen({ navigation }: Props) {
                 <Text selectable style={[styles.previewText, { color: colors.text, fontFamily: typography.body }]}>{preview.text || t('library.previewUnavailable')}</Text>
               </ScrollView>
             ) : preview?.kind === 'image' ? (
-              <ScrollView style={styles.previewScroll} contentContainerStyle={styles.imagePreviewContent} maximumZoomScale={4} minimumZoomScale={1}>
-                <Image source={{ uri: preview.uri, headers: preview.headers }} style={styles.imagePreview} resizeMode="contain" accessibilityLabel={preview.name} />
-              </ScrollView>
+              <View style={[styles.previewScroll, { backgroundColor: colors.surfaceHover, borderRadius: radius.md }]}>
+                <ZoomableImage source={{ uri: preview.uri, headers: preview.headers }} accessibilityLabel={preview.name} />
+              </View>
             ) : preview ? (
               <View style={styles.mediaPreview}>
                 <WebView
@@ -443,22 +473,22 @@ const styles = StyleSheet.create({
   headActions: { gap: 12 },
   headActionsNarrow: { flexDirection: 'column' },
   headActionsWide: { flexDirection: 'row', alignItems: 'flex-start' },
-  search: { minHeight: 42, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 },
+  search: { minHeight: 48, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 },
   searchCompactNarrow: { width: '100%' },
   searchCompactWide: { flex: 1, minWidth: 0 },
   searchDesktop: { width: 240 },
-  searchInput: { flex: 1, minHeight: 42, fontSize: 14, paddingVertical: 0 },
-  upload: { width: 76, minHeight: 42, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  searchInput: { flex: 1, minHeight: 48, fontSize: 14, paddingVertical: 0 },
+  upload: { width: 76, minHeight: 48, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   uploadCompact: { width: 115 },
-  uploadText: { fontSize: 13 },
-  tabs: { minHeight: 40, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center' },
+  uploadText: { fontSize: 14 },
+  tabs: { minHeight: 40, flexDirection: 'row', alignItems: 'center' },
   tabsCompact: { marginHorizontal: 24, marginTop: 27 },
   tabsCompactWide: { marginHorizontal: 28 },
   tabsDesktop: { marginHorizontal: 15, marginTop: 48 },
   tab: { minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   tabText: { fontSize: 13 },
   refresh: { marginLeft: 'auto', width: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
-  selectionBar: { minHeight: 44, marginHorizontal: 20, marginTop: 10, paddingHorizontal: 8, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  selectionBar: { minHeight: 44, marginHorizontal: 20, marginTop: 10, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
   checkboxButton: { width: 36, height: 40, alignItems: 'center', justifyContent: 'center' },
   selectionText: { flex: 1, fontSize: 13 },
   selectionDelete: { minHeight: 36, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -473,7 +503,7 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 8 },
   row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth },
   rowMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  iconBox: { width: 38, height: 38, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  iconBox: { width: 42, height: 42, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1, minWidth: 0 },
   rowTitle: { fontSize: 14 },
   rowMeta: { fontSize: 11.5, marginTop: 4 },
@@ -489,8 +519,6 @@ const styles = StyleSheet.create({
   closeButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   previewScroll: { marginTop: 12 },
   previewContent: { paddingVertical: 10 },
-  imagePreviewContent: { flexGrow: 1, minHeight: 320, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
-  imagePreview: { width: '100%', height: 420 },
   mediaPreview: { flex: 1, minHeight: 320, marginTop: 12, overflow: 'hidden', borderRadius: 10 },
   mediaWebView: { flex: 1, backgroundColor: 'transparent' },
   previewText: { fontSize: 14, lineHeight: 22 },

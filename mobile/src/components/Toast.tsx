@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionEasing, withAlpha, type Palette } from '../theme/theme';
 import { AnimatedPressable } from './AnimatedPressable';
 
 export type ToastType = 'success' | 'info' | 'warning' | 'error';
@@ -16,15 +16,32 @@ export interface ToastItem {
 
 type Listener = () => void;
 
-let current: ToastItem | null = null;
+/** Web parity: alerts stack bottom-center in a column, capped at 3 —
+ * the oldest entry is dropped when a fourth arrives. */
+const MAX_VISIBLE = 3;
+
+let queue: ToastItem[] = [];
 let nextId = 1;
-let timer: ReturnType<typeof setTimeout> | null = null;
+const timers = new Map<number, ReturnType<typeof setTimeout>>();
 const listeners = new Set<Listener>();
 
 function emit() {
   listeners.forEach((listener) => {
     listener();
   });
+}
+
+function removeToast(id: number) {
+  const timer = timers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    timers.delete(id);
+  }
+  const next = queue.filter((item) => item.id !== id);
+  if (next.length !== queue.length) {
+    queue = next;
+    emit();
+  }
 }
 
 /**
@@ -38,36 +55,46 @@ export function toastDuration(message: string, requested?: number): number {
 }
 
 export function showToast(message: string, type: ToastType = 'info', durationMs?: number): number {
-  if (timer) {
-    clearTimeout(timer);
-    timer = null;
-  }
   const duration = toastDuration(message, durationMs);
-  current = { id: nextId++, message, type };
+  const item: ToastItem = { id: nextId++, message, type };
+  queue = [...queue, item].slice(-MAX_VISIBLE);
+  /* A toast pushed out by the cap still has a live timer — clear it so the
+   * stale timeout cannot dismiss a newer item that reused the slot. */
+  for (const id of timers.keys()) {
+    if (!queue.some((entry) => entry.id === id)) {
+      clearTimeout(timers.get(id)!);
+      timers.delete(id);
+    }
+  }
   emit();
   if (duration > 0) {
-    timer = setTimeout(() => {
-      timer = null;
-      current = null;
-      emit();
-    }, duration);
+    timers.set(item.id, setTimeout(() => removeToast(item.id), duration));
   }
-  return current.id;
+  return item.id;
 }
 
 export function dismissToast(id?: number): void {
-  if (!current) return;
-  if (id !== undefined && id !== current.id) return;
-  if (timer) {
-    clearTimeout(timer);
-    timer = null;
+  if (id === undefined) {
+    for (const timer of timers.values()) clearTimeout(timer);
+    timers.clear();
+    if (queue.length) {
+      queue = [];
+      emit();
+    }
+    return;
   }
-  current = null;
-  emit();
+  removeToast(id);
 }
 
+/** Snapshot for `useSyncExternalStore` — new array reference per change. */
+export function getToasts(): ToastItem[] {
+  return queue;
+}
+
+/** Oldest visible toast — legacy single-toast accessor kept for callers
+ * and tests written before the queue. */
 export function getToast(): ToastItem | null {
-  return current;
+  return queue[0] ?? null;
 }
 
 export function subscribeToast(listener: Listener): () => void {
@@ -82,7 +109,7 @@ export const toast = {
   dismiss: dismissToast,
 };
 
-const TYPE_ICON: Record<ToastType, string> = {
+const TYPE_ICON: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
   success: 'checkmark-circle',
   info: 'information-circle',
   warning: 'warning',
@@ -96,72 +123,75 @@ const TYPE_ICON: Record<ToastType, string> = {
  * docks bottom-center inside the safe area instead of bottom-right.
  */
 export function ToastHost() {
-  const { colors, typography } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const item = useSyncExternalStore(subscribeToast, getToast, getToast);
-  const [rendered, setRendered] = useState<ToastItem | null>(null);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translate = useRef(new Animated.Value(8)).current;
+  const items = useSyncExternalStore(subscribeToast, getToasts, getToasts);
 
-  useEffect(() => {
-    let exit: Animated.CompositeAnimation | null = null;
-    if (item) {
-      setRendered(item);
-      Animated.parallel([
-        Animated.timing(opacity, { toValue: 1, duration: 300, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-        Animated.timing(translate, { toValue: 0, duration: 300, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-      ]).start();
-    } else if (rendered) {
-      const animation = Animated.parallel([
-        Animated.timing(opacity, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(translate, { toValue: 8, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]);
-      animation.start(({ finished }) => {
-        if (finished) setRendered(null);
-      });
-      exit = animation;
-    }
-    return () => {
-      exit?.stop();
-    };
-  }, [item, opacity, rendered, translate]);
-
-  if (!rendered) return null;
-  const tone = rendered.type === 'success'
-    ? colors.success
-    : rendered.type === 'warning'
-      ? colors.warning
-      : rendered.type === 'error'
-        ? colors.danger
-        : colors.accent;
-
+  if (!items.length) return null;
   return (
     <View pointerEvents="box-none" style={[styles.host, { bottom: Math.max(insets.bottom, 0) + 16 }]}>
-      <Animated.View
-        testID="toast"
-        style={[
-          styles.card,
-          {
-            backgroundColor: colors.surfaceRaised,
-            borderColor: withAlpha(tone, 0.35),
-            opacity,
-            transform: [{ translateY: translate }],
-          },
-        ]}
-      >
-        <Ionicons name={TYPE_ICON[rendered.type] as never} size={18} color={tone} />
-        <Text style={[styles.message, { color: tone, fontFamily: typography.body }]}>{rendered.message}</Text>
-        <AnimatedPressable
-          testID="toast-close"
-          accessibilityRole="button"
-          accessibilityLabel="Dismiss"
-          onPress={() => dismissToast(rendered.id)}
-          style={styles.close}
-        >
-          <Ionicons name="close" size={18} color={colors.textMuted} />
-        </AnimatedPressable>
-      </Animated.View>
+      {items.map((item) => (
+        <ToastCard key={item.id} item={item} colors={colors} />
+      ))}
     </View>
+  );
+}
+
+function toneFor(type: ToastType, colors: Palette): string {
+  return type === 'success'
+    ? colors.success
+    : type === 'warning'
+      ? colors.warning
+      : type === 'error'
+        ? colors.danger
+        : colors.accent;
+}
+
+/* Each card mounts with the web `alertSlideIn .3s var(--ease-out)` ramp
+ * (`motionEasing.out`) and unmounts on dismissal — per-card exit fades are
+ * skipped because the queue already keeps at most 3 items on screen. */
+function ToastCard({ item, colors }: { item: ToastItem; colors: Palette }) {
+  const { typography } = useTheme();
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translate = useRef(new Animated.Value(8)).current;
+  const tone = toneFor(item.type, colors);
+
+  useEffect(() => {
+    const animation = Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 300, easing: motionEasing.out, useNativeDriver: true }),
+      Animated.timing(translate, { toValue: 0, duration: 300, easing: motionEasing.out, useNativeDriver: true }),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [opacity, translate]);
+
+  return (
+    <Animated.View
+      testID="toast"
+      style={[
+        styles.card,
+        {
+          /* Frontend `.alert-item` tints the card itself with the tone
+           * rather than leaving it on the raised surface. */
+          backgroundColor: withAlpha(tone, 0.1),
+          borderColor: withAlpha(tone, 0.35),
+          opacity,
+          transform: [{ translateY: translate }],
+        },
+      ]}
+    >
+      <Ionicons name={TYPE_ICON[item.type]} size={18} color={tone} />
+      <Text style={[styles.message, { color: tone, fontFamily: typography.body }]}>{item.message}</Text>
+      <AnimatedPressable
+        testID="toast-close"
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
+        onPress={() => dismissToast(item.id)}
+        style={styles.close}
+      >
+        <Ionicons name="close" size={18} color={colors.textMuted} />
+      </AnimatedPressable>
+    </Animated.View>
   );
 }
 
@@ -171,6 +201,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     alignItems: 'center',
+    gap: 8,
     zIndex: 50,
   },
   card: {

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Animated, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
+import { motionEasing, withAlpha } from '../theme/theme';
 
 const AnimatedPressableBase = Animated.createAnimatedComponent(Pressable);
 
@@ -26,7 +26,11 @@ export function AnimatedPressable({ children, style, scale = 0.975, restingScale
   const { colors } = useTheme();
   const value = useRef(new Animated.Value(restingScale)).current;
   const [focused, setFocused] = useState(false);
-  const animate = (toValue: number) => Animated.spring(value, { toValue, useNativeDriver: true, damping: 18, stiffness: 260, mass: 0.7 }).start();
+  /* Web press feedback is a CSS transition, not a spring simulation —
+   * use the canonical `easing.spring` bezier (`cubic-bezier(0.34, 1.3,
+   * 0.64, 1)`, ~180ms reads the same as the old damped spring). */
+  const animate = (toValue: number) =>
+    Animated.timing(value, { toValue, duration: 180, easing: motionEasing.spring, useNativeDriver: true }).start();
   /* frontend `button:focus-visible, a:focus-visible { outline: 2px solid
    * hsl(var(--accent-000)/.85); outline-offset: 2px }`. RN has no focus
    * pseudo-class; emulate it for keyboard/TV/web focus. Unknown outline

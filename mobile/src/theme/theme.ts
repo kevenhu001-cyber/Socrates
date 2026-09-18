@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
-import { buildMappedPalette, type MappedPalette } from '@socrates/theme';
+import { Easing, Platform } from 'react-native';
+import { buildMappedPalette, easing, type MappedPalette } from '@socrates/theme';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -50,8 +50,19 @@ export interface Palette {
   action: string;
   /** Press-state action color. */
   actionPressed: string;
-  /** Modal scrim overlay */
+  /** Modal scrim overlay (default tier — alias of `scrimModal`). */
   scrim: string;
+  /** Standard modal scrim (web: rgba(0,0,0,.55) both modes). */
+  scrimModal: string;
+  /** Heavier scrim for destructive confirm dialogs. */
+  scrimConfirm: string;
+  /** Heaviest scrim — full-screen drawer / navigation rail backdrop. */
+  scrimDrawer: string;
+  /** Navigation rail surface (web sidebar: #171717 / #f7f7f5). Exported
+   * for the nav/drawer agent; not consumed by the theme itself. */
+  rail: string;
+  /** Conversation composer card surface (web: #212121 / #f2f2f2). */
+  conversationSurface: string;
   /** Mobile brand identity (distinct from functional accent). */
   brand: string;
   brandSoft: string;
@@ -107,7 +118,12 @@ function buildPalette(mode: ThemeMode): Palette {
     accentSoft: base.accent.soft,
     action: base.accent.strong,
     actionPressed: base.bg.hover,
-    scrim: isDark ? 'rgba(0, 0, 0, 0.68)' : 'rgba(0, 0, 0, 0.45)',
+    scrim: 'rgba(0, 0, 0, 0.55)',
+    scrimModal: 'rgba(0, 0, 0, 0.55)',
+    scrimConfirm: 'rgba(0, 0, 0, 0.65)',
+    scrimDrawer: 'rgba(0, 0, 0, 0.7)',
+    rail: isDark ? '#171717' : '#f7f7f5',
+    conversationSurface: isDark ? '#212121' : '#f2f2f2',
     voiceBlue: isDark ? '#2b7fff' : '#0a84ff',
     success: base.success,
     danger: base.danger,
@@ -147,8 +163,6 @@ export const palettes: Record<ThemeMode, Palette> = {
   light: buildPalette('light'),
 };
 
-export const colors = palettes.dark;
-
 /* These names are kept because screens use them directly. Their values are
  * the shared 4px rhythm from `@socrates/theme`, so native cards, sheets and
  * the web workspace use the same spacing ladder. */
@@ -162,8 +176,22 @@ export const spacing = {
   xxl: 32,
 };
 
+/* Canonical motion curves — `@socrates/theme`'s `easing` tokens mapped to
+ * `Easing.bezier` so JS-driven `Animated.timing` calls use the same
+ * cubic-bezier ramps the web transitions do.
+ *   out    — cubic-bezier(0.16, 1, 0.3, 1): exit/enter ramps.
+ *   spring — cubic-bezier(0.34, 1.3, 0.64, 1): popovers, modals, presses. */
+export const motionEasing = {
+  out: Easing.bezier(...easing.out),
+  spring: Easing.bezier(...easing.spring),
+};
+
 export const radius = {
   xs: 4,
+  /* `sm` stays 6 rather than matching the web's 4px step: the mobile
+   * codebase has ~30 `radius.sm` call sites authored against 6px pills and
+   * chips, and remapping the token globally is riskier than the one-step
+   * divergence it fixes. New 4px radii should use `radius.xs`. */
   sm: 6,
   md: 8,
   lg: 12,
@@ -233,25 +261,34 @@ export const typography = {
 
 export const shadows = {
   card: {
-    shadowColor: colors.black,
+    shadowColor: palettes.dark.black,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
     elevation: 5,
   },
   sheet: {
-    shadowColor: colors.black,
+    shadowColor: palettes.dark.black,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.25,
     shadowRadius: 22,
     elevation: 14,
   },
   authCard: {
-    shadowColor: colors.black,
+    shadowColor: palettes.dark.black,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 32,
+    elevation: 10,
+  },
+  /* Web `.modal` shadow: 0 8px 32px rgba(0,0,0,.5). Consumed by Overlay's
+   * center surface. */
+  modal: {
+    shadowColor: palettes.dark.black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 32,
+    elevation: 16,
   },
 };
 

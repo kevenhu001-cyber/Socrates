@@ -1,9 +1,17 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { useTheme } from '../theme/ThemeProvider';
 import { native } from '../native/native';
+import { useT } from '../i18n';
+import { Overlay } from '../components/Overlay';
 import { escapeHtml, safeHref } from './markdown';
+
+/* Mirrors the web half of `typography.body` (theme.ts) so formulas and
+ * model-authored HTML typeset in the same sans stack as the rest of the app
+ * instead of falling back to the WebView's system font. */
+const WEB_SANS_STACK = '"Plus Jakarta Sans",Inter,"Noto Sans SC",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
 
 // react-native-webview's exported ref type is narrower than the RN 0.86 JSX
 // definitions under strict mode; the alias keeps this boundary typed.
@@ -84,6 +92,13 @@ export interface RichBlockProps {
   initialHeight?: number;
   /** Center the content — right for standalone formulas and diagrams. */
   center?: boolean;
+  /** Show the web-parity action row (status dot + source/reload/expand). */
+  showActions?: boolean;
+  /** Let touches reach the WebView — used inside the Expand overlay, where
+   * the scroll dead-zone trade-off does not apply. */
+  interactive?: boolean;
+  /** Native Readable source for the Source toggle; defaults to the raw body. */
+  sourceText?: string;
 }
 
 interface BridgeMessage {
@@ -102,11 +117,31 @@ interface BridgeMessage {
  * keeps the fallback text visible until the page confirms it rendered, so a
  * failed CDN fetch degrades to readable LaTeX rather than a blank box.
  */
-export function RichBlock({ body, libs, fallbackText, initialHeight = 44, center = true }: RichBlockProps) {
+export const RichBlock = React.memo(function RichBlock({
+  body,
+  libs,
+  fallbackText,
+  initialHeight = 44,
+  center = true,
+  showActions = false,
+  interactive = false,
+  sourceText,
+}: RichBlockProps) {
   const { colors, typography } = useTheme();
+  const t = useT();
+  // `viz.*` keys are being added to strings.ts by a parallel change; fall back
+  // to the English copy when a key resolves to itself.
+  const label = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const [height, setHeight] = useState(initialHeight);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [showSource, setShowSource] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  // Remounts the WebView for the Reload action.
+  const [reloadKey, setReloadKey] = useState(0);
   const ref = useRef<any>(null);
 
   const source = useMemo(() => {
@@ -118,7 +153,7 @@ export function RichBlock({ body, libs, fallbackText, initialHeight = 44, center
 ${head}
 <style>
 html,body{margin:0;padding:0;background:transparent;color:${colors.text};
-  font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.5;
+  font-family:${WEB_SANS_STACK};font-size:16px;line-height:1.5;
   -webkit-text-size-adjust:100%}
 body{padding:2px 0;${center ? 'text-align:center;' : ''}overflow-x:auto}
 img,svg,canvas{max-width:100%;height:auto}
@@ -221,18 +256,21 @@ a{color:${colors.accent}}
     }
   };
 
-  if (failed && !ready) {
-    // Readable source beats an empty rectangle when the typesetter never loaded.
-    return (
-      <View style={[styles.fallback, { backgroundColor: colors.codeBg, borderColor: colors.codeBorder }]}>
-        <Text selectable style={[styles.fallbackText, { color: colors.codeFg, fontFamily: typography.mono }]}>{fallbackText}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.host, { height }]}>
+  const webview = (
+    /* The Android WebView claims every touch inside its bounds, so a drag that
+     * starts on a formula or diagram could not scroll the message list. These
+     * blocks are read-only, so the island opts out of touches entirely and the
+     * parent FlatList always wins the gesture. Trade-off: nothing inside the
+     * block is tappable — echarts tooltips, mermaid pan and rendered links are
+     * dead — but onShouldStartLoadWithRequest and the injected click bridge
+     * already routed link opens through `native.openBrowser`, which now only
+     * matters for `file://`-style navigations. Dead-zone-free scrolling wins.
+     * The postMessage auto-height flow is unaffected: JS still runs and
+     * `onMessage` still fires. The Expand overlay passes `interactive` to opt
+     * touches back in for that copy only. */
+    <View pointerEvents={interactive ? 'auto' : 'none'} accessible={false} style={[styles.host, { height }]}>
       <NativeWebView
+        key={reloadKey}
         ref={ref}
         originWhitelist={['https://localhost/']}
         source={{ html: source, baseUrl: 'https://localhost/' }}
@@ -263,7 +301,72 @@ a{color:${colors.accent}}
       ) : null}
     </View>
   );
-}
+
+  /* Web `vizActions` (render/viz.js:156): status dot + source/reload/expand. */
+  const actionRow = showActions ? (
+    <View style={styles.actions}>
+      <View style={styles.status}>
+        <View style={[styles.statusDot, { backgroundColor: ready ? colors.success : failed ? colors.danger : colors.textSubtle }]} />
+        <Text style={[styles.statusLabel, { color: colors.textSubtle }]}>
+          {ready ? label('viz.ready', 'Ready') : failed ? label('viz.failed', 'Failed') : label('viz.rendering', 'Rendering…')}
+        </Text>
+      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={label('viz.source', 'Source')} hitSlop={6} onPress={() => setShowSource((v) => !v)} style={styles.actionBtn}>
+        <Ionicons name="code-outline" size={15} color={showSource ? colors.accent : colors.textSubtle} />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={label('viz.reload', 'Reload')} hitSlop={6} onPress={() => { setReady(false); setFailed(false); setReloadKey((k) => k + 1); }} style={styles.actionBtn}>
+        <Ionicons name="reload-outline" size={15} color={colors.textSubtle} />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={label('viz.expand', 'Expand')} hitSlop={6} onPress={() => setExpanded(true)} style={styles.actionBtn}>
+        <Ionicons name="expand-outline" size={15} color={colors.textSubtle} />
+      </Pressable>
+    </View>
+  ) : null;
+
+  const rawSource = sourceText ?? body;
+
+  if (failed && !ready) {
+    // Readable source beats an empty rectangle when the typesetter never loaded.
+    return (
+      <View>
+        <View style={[styles.fallback, { backgroundColor: colors.codeBg, borderColor: colors.codeBorder }]}>
+          <Text selectable style={[styles.fallbackText, { color: colors.codeFg, fontFamily: typography.mono }]}>{fallbackText}</Text>
+        </View>
+        {actionRow}
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      {webview}
+      {showSource && showActions ? (
+        <ScrollView style={[styles.source, { backgroundColor: colors.codeBg, borderColor: colors.codeBorder }]}>
+          <Text selectable style={[styles.sourceText, { color: colors.codeFg, fontFamily: typography.mono }]}>{rawSource}</Text>
+        </ScrollView>
+      ) : null}
+      {actionRow}
+      {showActions ? (
+        <Overlay visible={expanded} onClose={() => setExpanded(false)} maxWidth={720}>
+          <ScrollView style={styles.expandedScroll} contentContainerStyle={styles.expandedContent}>
+            <RichBlock
+              body={body}
+              libs={libs}
+              fallbackText={fallbackText}
+              initialHeight={Math.max(initialHeight, 320)}
+              center={center}
+              interactive
+              sourceText={rawSource}
+            />
+          </ScrollView>
+          <Pressable accessibilityRole="button" accessibilityLabel={label('viz.close', 'Close')} hitSlop={8} onPress={() => setExpanded(false)} style={[styles.expandedClose, { backgroundColor: colors.surfaceRaised }]}>
+            <Ionicons name="close" size={18} color={colors.textSubtle} />
+          </Pressable>
+        </Overlay>
+      ) : null}
+    </View>
+  );
+});
 
 /** Wraps LaTeX for the math path. */
 export function mathBody(latex: string, display: boolean): string {
@@ -286,4 +389,17 @@ const styles = StyleSheet.create({
   spinner: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   fallback: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   fallbackText: { fontSize: 13, lineHeight: 19 },
+  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 2 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 5, marginRight: 'auto' },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusLabel: { fontSize: 10, lineHeight: 14 },
+  actionBtn: { padding: 5 },
+  source: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginTop: 4, maxHeight: 220 },
+  sourceText: { fontSize: 11, lineHeight: 16 },
+  expandedScroll: { maxHeight: '85%' },
+  expandedContent: { padding: 14 },
+  expandedClose: {
+    position: 'absolute', top: 10, right: 10, width: 30, height: 30, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
+  },
 });

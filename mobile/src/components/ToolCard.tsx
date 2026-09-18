@@ -1,9 +1,10 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { JsonValue, ToolCall } from '@socrates/contracts';
 import { filesApi } from '../data/api/client';
 import { native } from '../native/native';
+import { setClipboardText } from '../native/clipboard';
 import { chartBody, mermaidBody, RichBlock, type RichLib } from '../render/RichBlock';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha, type Palette } from '../theme/theme';
@@ -249,8 +250,8 @@ function VisualizationCard({ value }: { value: JsonValue }) {
       <Text style={[styles.visualTitle, { color: colors.text, fontFamily: typography.medium }]}>{visual.title}</Text>
       {/* Stage heights mirror `frontend/src/styles.css:509-513,527`:
        * chart 292 (phone stage), mermaid min-height 300. */}
-      {chart ? <RichBlock body={chartBody(JSON.stringify(chart))} libs={ECHARTS_LIBS} fallbackText={visual.summary || visual.title} initialHeight={292} /> : null}
-      {!chart && diagram ? <RichBlock body={mermaidBody(diagram)} libs={MERMAID_LIBS} fallbackText={visual.summary || visual.title} initialHeight={300} /> : null}
+      {chart ? <RichBlock body={chartBody(JSON.stringify(chart))} libs={ECHARTS_LIBS} fallbackText={visual.summary || visual.title} initialHeight={292} showActions sourceText={JSON.stringify(chart, null, 2)} /> : null}
+      {!chart && diagram ? <RichBlock body={mermaidBody(diagram)} libs={MERMAID_LIBS} fallbackText={visual.summary || visual.title} initialHeight={300} showActions sourceText={diagram} /> : null}
       {!chart && !diagram && visual.summary ? <Text style={[styles.visualSummary, { color: colors.textMuted }]}>{visual.summary}</Text> : null}
       {!chart && !diagram ? semanticItems.map((item, index) => <Text key={index} style={[styles.structuredItem, { color: colors.textMuted }]}>{`• ${item}`}</Text>) : null}
       {visual.caption ? <Text style={[styles.visualCaption, { color: colors.textSubtle }]}>{visual.caption}</Text> : null}
@@ -340,6 +341,11 @@ function getToolIcon(name: string): keyof typeof Ionicons.glyphMap {
   return 'construct-outline';
 }
 
+function statusFor(call: ToolCall | MobileToolCall): ToolStatus {
+  const mobile = call as MobileToolCall;
+  return mobile.status ?? (call.isError ? 'failed' : (call.output != null ? 'done' : 'running'));
+}
+
 /**
  * One card per tool call. The reducer retains every terminal payload, so this
  * component can render results, artifacts, plans/specs and visualisation data
@@ -348,12 +354,29 @@ function getToolIcon(name: string): keyof typeof Ionicons.glyphMap {
 export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | MobileToolCall }) {
   const { colors, typography } = useTheme();
   const t = useT();
-  const [open, setOpen] = useState(true);
+  // `tool.copy*`/`tool.input`/`tool.output` keys land with the i18n sweep;
+  // fall back to the English copy until then.
+  const label = (key: string, fallback: string) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
+  /* Web parity (toolCards.js:516-524): a running card opens so progress is
+   * visible; a terminal card starts collapsed so tool-heavy answers stay
+   * scannable. */
+  const [open, setOpen] = useState(() => statusFor(call) === 'running');
   const [expanded, setExpanded] = useState(false);
+  const [copiedSection, setCopiedSection] = useState<'input' | 'output' | null>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copySection = useCallback((section: 'input' | 'output', value: string) => {
+    if (!value) return;
+    void setClipboardText(value);
+    setCopiedSection(section);
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopiedSection(null), 1200);
+  }, []);
 
   const mobile = call as MobileToolCall;
-  const status: ToolStatus = mobile.status
-    ?? (call.isError ? 'failed' : (call.output != null ? 'done' : 'running'));
+  const status = statusFor(call);
   const statusLabel = status === 'failed' && mobile.progress == null && call.output == null
     ? t('tool.statusStopped')
     : t(STATUS_KEY[status]);
@@ -369,7 +392,6 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
   const lines = body ? body.split('\n') : [];
   const clipped = lines.length > PREVIEW_LINES;
   const shown = expanded || !clipped ? body : lines.slice(0, PREVIEW_LINES).join('\n');
-  const accent = status === 'failed' ? colors.danger : status === 'done' ? colors.success : colors.accent;
   const duration = displayDuration(mobile.durationMs);
 
   return (
@@ -382,6 +404,18 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
         onPress={() => setOpen((v) => !v)}
         style={styles.head}
       >
+        {/* .agent-tool-state-icon: spinner while running, checkmark/exclamation
+         * in terminal states (web `.agent-tool-status` icon slot). */}
+        <View style={styles.stateIcon}>
+          {status === 'running' ? (
+            <ActivityIndicator size={14} color={colors.textSubtle} />
+          ) : status === 'done' ? (
+            <Ionicons name="checkmark-circle" size={15} color={colors.success} />
+          ) : (
+            <Ionicons name="alert-circle" size={15} color={colors.danger} />
+          )}
+        </View>
+
         {/* .agent-tool-icon: 20x20, radius 5 */}
         <View style={[styles.toolIconBox, { backgroundColor: colors.surfaceRaised }]}>
           <Ionicons name={getToolIcon(call.name)} size={12} color={colors.textMuted} />
@@ -402,9 +436,10 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
           </Text>
         ) : null}
 
-        {status === 'running' ? (
-          <ActivityIndicator size="small" color={colors.textSubtle} style={styles.runningSpinner} />
-        ) : null}
+        {/* .agent-tool-status: status label + elapsed time (toolCards.js:429). */}
+        <Text numberOfLines={1} style={[styles.toolStatus, { color: status === 'failed' ? colors.danger : colors.textSubtle }]}>
+          {[statusLabel, duration].filter(Boolean).join(' · ')}
+        </Text>
 
         {/* .agent-tool-chev: 14px */}
         <Ionicons
@@ -418,19 +453,47 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
       {open ? (
         /* 1:1 Parity with frontend `.agent-tool-body` (styles.css:3535-3558) with 2px accent rail */
         <View style={[styles.bodyContainer, { borderLeftColor: withAlpha(colors.border, 0.5) }]}>
-          {mobile.progressPhase || duration ? (
-            <Text style={[styles.meta, { color: colors.textSubtle }]}>
-              {[mobile.progressPhase, duration].filter(Boolean).join(' · ')}
-            </Text>
+          {mobile.progressPhase ? (
+            <Text style={[styles.meta, { color: colors.textSubtle }]}>{mobile.progressPhase}</Text>
           ) : null}
           {details ? <Text selectable style={[styles.detail, { color: colors.danger }]}>{details}</Text> : null}
 
+          {args ? (
+            <View style={styles.section}>
+              <View style={styles.sectionHead}>
+                <Text style={[styles.sectionTitle, { color: colors.textSubtle, fontFamily: typography.medium }]}>{label('tool.input', 'Input')}</Text>
+                <Pressable accessibilityRole="button" hitSlop={6} onPress={() => copySection('input', args)} style={styles.sectionCopy}>
+                  <Ionicons name={copiedSection === 'input' ? 'checkmark-outline' : 'copy-outline'} size={12} color={copiedSection === 'input' ? colors.success : colors.textSubtle} />
+                  <Text style={[styles.sectionCopyText, { color: copiedSection === 'input' ? colors.success : colors.textSubtle }]}>
+                    {copiedSection === 'input' ? t('common.copied') : label('tool.copyCode', 'Copy code')}
+                  </Text>
+                </Pressable>
+              </View>
+              <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
+                <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>
+                  {args}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           {body ? (
-            /* .agent-tool-out: 11px mono, line-height: 1.5, max-height: 280 */
-            <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
-              <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>
-                {shown}
-              </Text>
+            <View style={styles.section}>
+              <View style={styles.sectionHead}>
+                <Text style={[styles.sectionTitle, { color: colors.textSubtle, fontFamily: typography.medium }]}>{label('tool.output', 'Output')}</Text>
+                <Pressable accessibilityRole="button" hitSlop={6} onPress={() => copySection('output', body)} style={styles.sectionCopy}>
+                  <Ionicons name={copiedSection === 'output' ? 'checkmark-outline' : 'copy-outline'} size={12} color={copiedSection === 'output' ? colors.success : colors.textSubtle} />
+                  <Text style={[styles.sectionCopyText, { color: copiedSection === 'output' ? colors.success : colors.textSubtle }]}>
+                    {copiedSection === 'output' ? t('common.copied') : label('tool.copyOutput', 'Copy output')}
+                  </Text>
+                </Pressable>
+              </View>
+              {/* .agent-tool-out: 11px mono, line-height: 1.5, max-height: 280 */}
+              <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
+                <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>
+                  {shown}
+                </Text>
+              </View>
             </View>
           ) : null}
 
@@ -460,16 +523,20 @@ const styles = StyleSheet.create({
   card: { marginTop: 8, borderRadius: 14, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8, paddingVertical: 6, minHeight: 32 },
   toolIconBox: { width: 20, height: 20, borderRadius: 5, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  stateIcon: { width: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   toolName: { fontSize: 12, flexShrink: 0, letterSpacing: -0.1 },
   pyTag: { fontSize: 10, fontWeight: '500' },
   toolInput: { flex: 1, fontSize: 11, opacity: 0.8 },
-  runningSpinner: { marginHorizontal: 4 },
-  chev: { marginLeft: 'auto', opacity: 0.6 },
+  toolStatus: { flexShrink: 1, fontSize: 10, opacity: 0.85 },
+  chev: { opacity: 0.6 },
   bodyContainer: { position: 'relative', borderLeftWidth: 2, marginLeft: 8, paddingLeft: 10, marginTop: 2, marginBottom: 6 },
-  args: { fontSize: 12, lineHeight: 17, marginTop: 6 },
+  section: { marginTop: 6 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  sectionCopy: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sectionCopyText: { fontSize: 10 },
   meta: { fontSize: 11, lineHeight: 15, marginTop: 4, textTransform: 'capitalize' },
   detail: { fontSize: 12, lineHeight: 17, marginTop: 6 },
-  output: { marginTop: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, maxHeight: 280 },
+  output: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, maxHeight: 280 },
   outputText: { fontSize: 11, lineHeight: 16.5 },
   noOutputText: { fontSize: 11, marginTop: 4 },
   toggle: { alignSelf: 'flex-start', paddingVertical: 6 },

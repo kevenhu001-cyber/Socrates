@@ -164,9 +164,15 @@ export function KnowledgeScreen({ navigation }: Props) {
 
   const graphWidth = Math.max(280, Math.min(700, viewportWidth - 28));
   const graphHeight = Math.max(250, Math.min(320, graphWidth * 0.72));
+  /* The card is centered inside the scroll content, which may be narrower
+   * than `viewportWidth - 28` (e.g. when a permanent drawer is docked).
+   * Measure the real width so the SVG never overflows the card. */
+  const [measuredGraphWidth, setMeasuredGraphWidth] = useState<number | null>(null);
+  const effectiveGraphWidth = Math.max(200, Math.min(graphWidth, measuredGraphWidth ?? graphWidth));
+  const effectiveGraphHeight = Math.max(250, Math.min(320, effectiveGraphWidth * 0.72));
   const graphPoints = useMemo(
-    () => buildGraphLayout(grouped.slice(0, 36), graphWidth, graphHeight),
-    [graphHeight, graphWidth, grouped],
+    () => buildGraphLayout(grouped.slice(0, 36), effectiveGraphWidth, effectiveGraphHeight),
+    [effectiveGraphHeight, effectiveGraphWidth, grouped],
   );
 
   const openDetail = (item: KnowledgeNode) => {
@@ -277,10 +283,15 @@ export function KnowledgeScreen({ navigation }: Props) {
           </View>
 
           <View
+            onLayout={(event) => {
+              const next = Math.floor(event.nativeEvent.layout.width);
+              if (next > 0 && next !== measuredGraphWidth) setMeasuredGraphWidth(next);
+            }}
             style={[
               styles.graphCard,
               {
-                width: graphWidth,
+                width: '100%',
+                maxWidth: graphWidth,
                 backgroundColor: colors.surface,
                 borderColor: withAlpha(colors.border, 0.4),
                 borderRadius: radius.lg,
@@ -292,7 +303,7 @@ export function KnowledgeScreen({ navigation }: Props) {
                 ? 'Knowledge map · color = mastery · size = questions'
                 : t('knowledge.graphCaption')}
             </Text>
-            <Svg width={graphWidth - 2} height={graphHeight}>
+            <Svg width={effectiveGraphWidth - 2} height={effectiveGraphHeight}>
               <G>
                 {graphPoints.slice(0, -1).map((point, index) => {
                   const next = graphPoints[index + 1];
@@ -353,14 +364,14 @@ export function KnowledgeScreen({ navigation }: Props) {
             onPress={openDetail}
           />
           <KnowledgeSection
-            title={t('tutor.kbSectionFuzzy') === 'tutor.kbSectionFuzzy' ? 'Fuzzy' : t('tutor.kbSectionFuzzy')}
+            title={t('tutor.kbSectionFuzzy') === 'tutor.kbSectionFuzzy' ? 'Exploring' : t('tutor.kbSectionFuzzy')}
             items={sections.fuzzy}
             colors={colors}
             typography={typography}
             onPress={openDetail}
           />
           <KnowledgeSection
-            title={t('tutor.kbSectionBlank') === 'tutor.kbSectionBlank' ? 'Not yet explored' : t('tutor.kbSectionBlank')}
+            title={t('tutor.kbSectionBlank') === 'tutor.kbSectionBlank' ? 'Not yet reached' : t('tutor.kbSectionBlank')}
             items={sections.blank}
             colors={colors}
             typography={typography}
@@ -400,7 +411,7 @@ export function KnowledgeScreen({ navigation }: Props) {
         onRequestClose={() => setSelected(null)}
       >
         <Pressable
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.48)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.black, 0.55) }]}
           onPress={() => setSelected(null)}
         />
         {selected ? (
@@ -415,7 +426,7 @@ export function KnowledgeScreen({ navigation }: Props) {
               },
             ]}
           >
-            <View style={styles.sheetHandle} />
+            <View style={[styles.sheetHandle, { backgroundColor: withAlpha(colors.textMuted, 0.45) }]} />
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <View style={styles.sheetHead}>
                 <View style={styles.sheetTitleWrap}>
@@ -618,7 +629,7 @@ function statusColor(
   return status === 'internalized'
     ? colors.success
     : status === 'fuzzy'
-      ? colors.accent
+      ? colors.warning
       : colors.textSubtle;
 }
 
@@ -653,7 +664,7 @@ const styles = StyleSheet.create({
   source: { fontSize: 11, lineHeight: 16, marginTop: 3 },
   questionCount: { fontSize: 10.5 },
   sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '84%', borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 18, paddingBottom: 24 },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(128,128,128,0.45)', alignSelf: 'center', marginTop: 8, marginBottom: 12 },
+  sheetHandle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 8, marginBottom: 12 },
   sheetHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   sheetTitleWrap: { flex: 1, gap: 7 },
   sheetTitle: { fontSize: 20, lineHeight: 27 },

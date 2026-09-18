@@ -149,6 +149,10 @@ export function ScheduledScreen({ navigation }: Props) {
             <>
               {isCompact ? (
                 <View style={[styles.head, styles.headMobile]}>
+                  {/* Workspace eyebrow — matches the web workspace section
+                   * kicker (`scheduled.workspaceEyebrow` already exists in
+                   * strings). */}
+                  <Text style={[styles.eyebrow, { color: colors.textSubtle, fontFamily: typography.medium }]}>{text('scheduled.workspaceEyebrow', 'Workspace')}</Text>
                   <AnimatedPressable accessibilityRole="button" accessibilityState={{ selected: activeOnly }} onPress={() => setActiveOnly((value) => !value)} style={[styles.filterButton, styles.filterButtonMobile, { borderColor: colors.border, backgroundColor: activeOnly ? colors.surfaceHover : colors.surface, borderRadius: radius.pill }]}>
                     <Icon name="filter" size={16} color={colors.textMuted} />
                     <Text style={[styles.filterText, { color: colors.textMuted, fontFamily: typography.medium }]}>{activeOnly ? text('scheduled.activeOnly', 'Active') : text('scheduled.allTasks', 'All tasks')}</Text>
@@ -158,6 +162,7 @@ export function ScheduledScreen({ navigation }: Props) {
               ) : (
                 <View style={[styles.head, styles.headDesktop]}>
                   <View style={styles.headCopy}>
+                    <Text style={[styles.eyebrow, { color: colors.textSubtle, fontFamily: typography.medium }]}>{text('scheduled.workspaceEyebrow', 'Workspace')}</Text>
                     <Text style={[styles.heading, { color: colors.text, fontFamily: typography.semibold }]}>{t('scheduled.heading')}</Text>
                   </View>
                   <AnimatedPressable accessibilityRole="button" accessibilityState={{ selected: activeOnly }} onPress={() => setActiveOnly((value) => !value)} style={[styles.filterButton, styles.filterButtonDesktop, { borderColor: colors.border, backgroundColor: activeOnly ? colors.surfaceHover : colors.surface, borderRadius: radius.pill }]}>
@@ -186,14 +191,18 @@ export function ScheduledScreen({ navigation }: Props) {
             const statusColor = item.status === 'failed' ? colors.danger : active ? colors.success : colors.warning;
             return <View style={[styles.row, { borderBottomColor: colors.border }]}>
               <View style={[styles.taskIcon, { backgroundColor: withAlpha(statusColor, 0.14), borderRadius: radius.md }]}><Icon name="calendar" size={20} color={statusColor} /></View>
-              <AnimatedPressable onPress={() => openEditor(item)} style={styles.main}>
-                <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{item.title}</Text>
-                <Text numberOfLines={2} style={[styles.meta, { color: colors.textMuted, fontFamily: typography.body }]}>{statusLabel(item, active, t)}</Text>
-              </AnimatedPressable>
-              <View style={styles.actions}>
-                <AnimatedPressable accessibilityLabel={t('scheduled.runNow')} disabled={busy} onPress={() => { void run(item); }} style={styles.action}><Text style={{ color: colors.accent, fontSize: 12 }}>{t('scheduled.runNow')}</Text></AnimatedPressable>
-                <AnimatedPressable accessibilityLabel={active ? t('scheduled.pause') : t('scheduled.resume')} onPress={() => { void toggle(item); }} style={styles.action}><Text style={{ color: colors.textMuted, fontSize: 12 }}>{active ? t('scheduled.pause') : t('scheduled.resume')}</Text></AnimatedPressable>
-                <AnimatedPressable accessibilityLabel={t('scheduled.delete')} onPress={() => remove(item)} style={styles.action}><Ionicons name="trash-outline" size={16} color={colors.textMuted} /></AnimatedPressable>
+              <View style={styles.main}>
+                <AnimatedPressable onPress={() => openEditor(item)}>
+                  <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{item.title}</Text>
+                  <Text numberOfLines={2} style={[styles.meta, { color: colors.textMuted, fontFamily: typography.body }]}>{statusLabel(item, active, t)}</Text>
+                </AnimatedPressable>
+                {/* Web rows surface run/pause/delete as a horizontal action
+                 * row under the meta line instead of a stacked side column. */}
+                <View style={styles.actions}>
+                  <AnimatedPressable accessibilityLabel={t('scheduled.runNow')} disabled={busy} onPress={() => { void run(item); }} style={styles.action}><Text style={{ color: colors.accent, fontSize: 12 }}>{t('scheduled.runNow')}</Text></AnimatedPressable>
+                  <AnimatedPressable accessibilityLabel={active ? t('scheduled.pause') : t('scheduled.resume')} onPress={() => { void toggle(item); }} style={styles.action}><Text style={{ color: colors.textMuted, fontSize: 12 }}>{active ? t('scheduled.pause') : t('scheduled.resume')}</Text></AnimatedPressable>
+                  <AnimatedPressable accessibilityLabel={t('scheduled.delete')} onPress={() => remove(item)} style={styles.action}><Ionicons name="trash-outline" size={16} color={colors.textMuted} /></AnimatedPressable>
+                </View>
               </View>
             </View>;
           }}
@@ -252,7 +261,7 @@ const styles = StyleSheet.create({
   headMobile: { paddingTop: 0, gap: 0 },
   headDesktop: { paddingTop: 0, paddingBottom: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headCopy: { flex: 1, minWidth: 0 },
-  eyebrow: { fontSize: 11, letterSpacing: 1.7 },
+  eyebrow: { fontSize: 11, letterSpacing: 1.7, textTransform: 'uppercase', marginBottom: 4 },
   heading: { fontSize: 30, lineHeight: 36, letterSpacing: -0.5 },
   subheading: { fontSize: 14, lineHeight: 21, marginTop: 8 },
   subheadingMobile: { fontSize: 17, lineHeight: 26, marginTop: 10 },
@@ -260,7 +269,9 @@ const styles = StyleSheet.create({
   filterButtonMobile: { marginTop: 9 },
   filterButtonDesktop: { minHeight: 36, paddingHorizontal: 12 },
   filterText: { fontSize: 13 },
-  composer: { borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 6 },
+  /* Soft composer shadow — the web quick-create pill floats above the
+   * list (`topic-input-wrap` light-mode shadow family). */
+  composer: { borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 4 },
   composerMobile: { minHeight: 84, marginTop: 22, marginBottom: 21 },
   composerDesktop: { minHeight: 58, marginTop: 32, marginBottom: 22 },
   composerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
@@ -281,7 +292,7 @@ const styles = StyleSheet.create({
   main: { flex: 1, minWidth: 0, justifyContent: 'center', gap: 4 },
   title: { fontSize: 14 },
   meta: { fontSize: 11, lineHeight: 17 },
-  actions: { alignItems: 'flex-end', gap: 2 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
   action: { minHeight: 30, justifyContent: 'center', paddingHorizontal: 3 },
   empty: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 30 },
   emptyTitle: { fontSize: 16, textAlign: 'center' },

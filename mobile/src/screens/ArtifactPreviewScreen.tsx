@@ -40,7 +40,10 @@ export function ArtifactPreviewScreen() {
   }, [route.params.html]);
 
   const title = route.params.artifactId || t('artifact.title') || 'Artifact';
-  const meta = 'text/html · Sandboxed HTML preview';
+  /* Header meta names the artifact kind when the opener supplied one —
+   * otherwise the HTML sandbox default. */
+  const kindLabel = route.params.kind ? String(route.params.kind).toLowerCase() : 'text/html';
+  const meta = `${kindLabel} · ${t('artifact.sandboxed') === 'artifact.sandboxed' ? 'Sandboxed preview' : t('artifact.sandboxed')}`;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: fullscreen ? 0 : insets.top }]}>
