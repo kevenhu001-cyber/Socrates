@@ -245,7 +245,9 @@ export type EmbeddedTarget =
   | 'usage'
   | 'storage'
   | 'display'
-  | 'shortcuts';
+  | 'shortcuts'
+  | 'library'
+  | 'exam';
 
 export interface MobileWebSessionRequest {
   target: EmbeddedTarget;
