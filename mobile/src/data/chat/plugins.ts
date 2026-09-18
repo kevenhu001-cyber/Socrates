@@ -6,6 +6,7 @@ export interface ComposerPluginSelection {
   description: string;
   capabilities: string[];
   directiveTemplate?: string;
+  connected?: boolean;
 }
 
 const DIRECTIVE_TEMPLATES: Record<string, string> = {
@@ -30,16 +31,15 @@ export function normalisePluginId(value: unknown): string {
   return String(value || '').toLowerCase().replace(/[_-]/g, '');
 }
 
-export function connectedComposerPlugins(connectors: ProjectConnector[]): ComposerPluginSelection[] {
-  return connectors
-    .filter((entry) => String(entry.connection?.status || '').toLowerCase() === 'connected')
-    .map((entry) => ({
-      id: entry.id,
-      name: entry.name || entry.id,
-      description: entry.description || '',
-      capabilities: Array.isArray(entry.capabilities) ? entry.capabilities.slice() : [],
-      directiveTemplate: DIRECTIVE_TEMPLATES[normalisePluginId(entry.id)],
-    }));
+export function catalogComposerPlugins(connectors: ProjectConnector[]): ComposerPluginSelection[] {
+  return connectors.map((entry) => ({
+    id: entry.id,
+    name: entry.name || entry.id,
+    description: entry.description || '',
+    capabilities: Array.isArray(entry.capabilities) ? entry.capabilities.slice() : [],
+    directiveTemplate: DIRECTIVE_TEMPLATES[normalisePluginId(entry.id)],
+    connected: String(entry.connection?.status || '').toLowerCase() === 'connected',
+  }));
 }
 
 export function pluginDirective(
