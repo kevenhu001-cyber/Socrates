@@ -28,6 +28,9 @@ export interface Palette {
   surface: string;
   /** One step above `surface` (raised surface — cards, popovers). */
   surfaceRaised: string;
+  /** User chat bubble fill — frontend `--conversation-user` (chat-surface.css).
+   * Fixed per mode, deliberately not derived from the custom-bg ramp. */
+  userBubble: string;
   /** Press-state surface (used for active state on tappable surfaces). */
   surfacePressed: string;
   /** Hover-state wash. */
@@ -116,6 +119,9 @@ function buildPalette(mode: ThemeMode): Palette {
     scrollbar: base.scrollbar,
     /* Mobile-local derived fields (aligned with frontend / ChatGPT tokens). */
     surfaceRaised: base.bg.overlay,
+    /* `--conversation-user: #2c2c2c` (dark) / `#e9e9e9` (light) — a fixed
+     * token in chat-surface.css, independent of `bg.overlay`. */
+    userBubble: isDark ? '#2c2c2c' : '#e9e9e9',
     surfacePressed: base.bg.hover,
     accentStrong: isDark ? '#ffffff' : '#111111',
     brand: isDark ? '#d4d4d4' : '#1a1a1a',

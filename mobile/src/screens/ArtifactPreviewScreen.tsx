@@ -24,6 +24,7 @@ export function ArtifactPreviewScreen() {
   const [mode, setMode] = useState<ViewMode>('preview');
   const [reloadKey, setReloadKey] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const onArtifactMessage = useCallback((message: ArtifactMessage) => {
     if (message.type === 'openLink') void native.openBrowser(message.url);
@@ -42,8 +43,9 @@ export function ArtifactPreviewScreen() {
   const meta = 'text/html · Sandboxed HTML preview';
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: fullscreen ? 0 : insets.top }]}>
       {/* 1:1 Parity with frontend `.artifact-preview-header` (styles.css:7636-7650) */}
+      {!fullscreen ? (
       <View style={[styles.header, { borderBottomColor: withAlpha(colors.border, 0.42), backgroundColor: colors.surface }]}>
         <View style={[styles.headerIcon, { backgroundColor: withAlpha(colors.accent, 0.12) }]}>
           <Ionicons name="code-slash" size={15} color={colors.accent} />
@@ -67,8 +69,10 @@ export function ArtifactPreviewScreen() {
           </Text>
         </AnimatedPressable>
       </View>
+      ) : null}
 
       {/* Control bar: Source / Preview toggle + reload + copy */}
+      {!fullscreen ? (
       <View style={[styles.controlBar, { borderBottomColor: withAlpha(colors.border, 0.2), backgroundColor: colors.surface }]}>
         <View style={[styles.toggleSegment, { backgroundColor: colors.surfaceRaised, borderColor: withAlpha(colors.border, 0.25) }]}>
           <AnimatedPressable
@@ -133,8 +137,20 @@ export function ArtifactPreviewScreen() {
               {copied ? (t('common.copied') || 'Copied') : t('artifact.copySource')}
             </Text>
           </AnimatedPressable>
+          <AnimatedPressable
+            accessibilityRole="button"
+            accessibilityLabel={t('artifact.fullscreen')}
+            onPress={() => setFullscreen(true)}
+            style={[styles.actionBtn, { borderColor: withAlpha(colors.border, 0.4), borderRadius: radius.sm }]}
+          >
+            <Ionicons name="expand-outline" size={14} color={colors.textMuted} />
+            <Text style={[styles.actionText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+              {t('artifact.fullscreen')}
+            </Text>
+          </AnimatedPressable>
         </View>
       </View>
+      ) : null}
 
       {/* Main content: Preview WebView or Monospace Source View */}
       {mode === 'preview' ? (
@@ -153,6 +169,29 @@ export function ArtifactPreviewScreen() {
           </View>
         </ScrollView>
       )}
+
+      {/* Fullscreen exit — floats over the artifact like the web overlay's
+       * chrome-free canvas with a pill close. */}
+      {fullscreen ? (
+        <AnimatedPressable
+          accessibilityRole="button"
+          accessibilityLabel={t('artifact.exitFullscreen')}
+          onPress={() => setFullscreen(false)}
+          style={[
+            styles.exitFullscreen,
+            {
+              top: insets.top + 10,
+              backgroundColor: withAlpha(colors.surfaceRaised, 0.9),
+              borderColor: withAlpha(colors.border, 0.5),
+            },
+          ]}
+        >
+          <Ionicons name="contract-outline" size={15} color={colors.textMuted} />
+          <Text style={[styles.exitFullscreenText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+            {t('artifact.exitFullscreen')}
+          </Text>
+        </AnimatedPressable>
+      ) : null}
     </View>
   );
 }
@@ -263,5 +302,19 @@ const styles = StyleSheet.create({
   sourceText: {
     fontSize: 12,
     lineHeight: 18,
+  },
+  exitFullscreen: {
+    position: 'absolute',
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  exitFullscreenText: {
+    fontSize: 12,
   },
 });
