@@ -7,6 +7,7 @@ export type RootStackParamList = {
   Library: undefined;
   ExamSession: undefined;
   Settings: undefined;
+  Display: undefined;
   Search: undefined;
   Projects: undefined;
   Scheduled: undefined;
