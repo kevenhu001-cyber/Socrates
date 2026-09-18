@@ -196,6 +196,8 @@ export function ChatScreen({ navigation }: Props) {
         onRegenerate={(messageId) => appStore.regenerateAssistantMessage(messageId)}
         onBranch={(messageId, options) => appStore.branchFromMessage(messageId, options)}
         onFeedback={(messageId, rating) => appStore.sendMessageFeedback(messageId, rating)}
+        onTutorQuizAnswer={(answer) => appStore.handleTutorQuizAnswer(answer)}
+        onTutorPracticeSubmit={(answer) => appStore.handleTutorPracticeAnswer(answer)}
         linkPreview={state.linkPreviews[String(item.clientId || item.id || '')]}
         onIterate={(text) => appStore.setDraft(text)}
         highlight={searchActive ? searchQuery : undefined}
