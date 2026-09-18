@@ -299,7 +299,8 @@ export function ChatScreen({ navigation }: Props) {
         maxToRenderPerBatch={8}
         updateCellsBatchingPeriod={50}
         windowSize={9}
-        contentContainerStyle={[styles.messages, { paddingHorizontal: spacing.sm }]}
+        /* chat-surface.css `#msgList { padding-inline: 16px }` on ≤768px. */
+        contentContainerStyle={[styles.messages, { paddingHorizontal: spacing.lg }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<View style={styles.empty} />}

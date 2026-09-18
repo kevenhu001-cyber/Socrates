@@ -166,7 +166,7 @@ export function Composer({
   placeholder,
   autoFocus = false,
 }: ComposerProps) {
-  const { colors, typography, contentWidth } = useTheme();
+  const { colors, typography, contentWidth, mode } = useTheme();
   const { isCompact } = useResponsive();
   const t = useT();
   const { language } = useI18n();
@@ -254,12 +254,14 @@ export function Composer({
           /* `--surface-input` / modal surfaces in frontend all resolve to
            * `--bg-000`, so the composer sits on the overlay token. */
           backgroundColor: colors.surfaceRaised,
-          /* frontend: `border-color: hsl(var(--border-300)/0.24)` at rest,
-           * brightening to the accent at 45% when focused. */
+          /* frontend: `border-color: hsl(var(--border-300)/0.24)` at rest.
+           * chat-surface.css (final authority) focuses with a neutral ring —
+           * dark `rgb(255 255 255 / 23%)`, light `rgb(0 0 0 / 20%)` — not the
+           * accent. */
           borderColor: voiceRecording
             ? withAlpha(colors.voiceBlue, 0.55)
             : focused
-            ? withAlpha(colors.accent, 0.6)
+            ? withAlpha(mode === 'dark' ? colors.white : colors.black, mode === 'dark' ? 0.23 : 0.2)
             : withAlpha(colors.border, 0.24),
           /* frontend `.chat-input-wrap` / `.topic-input-wrap` both use a
            * 28px pill radius. The previous 16 was a pre-align value. */
@@ -269,6 +271,21 @@ export function Composer({
            * the user's display preference. */
           maxWidth: contentWidth,
         },
+        /* chat-surface.css swaps the resting drop shadow for a 1px halo on
+         * focus (`0 0 0 1px` white/8% dark, black/7% light). `boxShadow`
+         * takes precedence over the legacy `shadow*` props while focused. */
+        focused && !voiceRecording
+          ? {
+              boxShadow: `0 0 0 1px ${withAlpha(
+                mode === 'dark' ? colors.white : colors.black,
+                mode === 'dark' ? 0.08 : 0.07,
+              )}`,
+              /* Android draws the resting shadow via `elevation`, which
+               * `boxShadow` does not replace — zero it out while the
+               * focus ring owns the outline. */
+              elevation: 0,
+            }
+          : null,
       ]}
     >
       {voiceRecording ? (
@@ -502,11 +519,11 @@ export function Composer({
 }
 
 const styles = StyleSheet.create({
-  /* P2-2 alignment: `maxWidth: 620` mirrors `frontend`'s
-   * `#chatInputWrap { width: min(100%, 620px) }` so on tablet/landscape
-   * phones the composer stays centered instead of stretching to
-   * viewport edge. `alignSelf: 'center'` is RN's mechanism for the
-   * same horizontal centering the `min(100%, 620px)` provides. */
+  /* P2-2 alignment: `maxWidth` is a fallback only — the inline style
+   * overrides it with the live `contentWidth` displayPref (frontend's
+   * `.chat-input-wrap { max-width: 720px }`). `alignSelf: 'center'` is
+   * RN's mechanism for the same horizontal centering `margin: 0 auto`
+   * provides on tablet/landscape. */
   /* Both containers mirror frontend `.chat-input-wrap`:
    *   padding: 7px 8px; border-radius: 28px;
    *   box-shadow: 0 .35rem 1.8rem hsl(var(--always-black)/5%);

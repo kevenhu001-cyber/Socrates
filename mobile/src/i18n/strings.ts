@@ -606,6 +606,8 @@ export const STRINGS = {
     'artifact.preview': 'Preview',
     'artifact.reload': 'Reload',
     'artifact.copySource': 'Copy source',
+    'artifact.fullscreen': 'Fullscreen',
+    'artifact.exitFullscreen': 'Exit fullscreen',
   },
   zh: {
     // --- shared with frontend/src/i18n.js ---
@@ -1203,6 +1205,8 @@ export const STRINGS = {
     'artifact.preview': '预览',
     'artifact.reload': '重新加载',
     'artifact.copySource': '复制源码',
+    'artifact.fullscreen': '全屏',
+    'artifact.exitFullscreen': '退出全屏',
   },
 } as const;
 

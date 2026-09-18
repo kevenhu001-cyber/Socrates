@@ -353,6 +353,7 @@ export const MessageBubble = React.memo(function MessageBubble({
 }: MessageBubbleProps) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
+  const { width: windowWidth } = useWindowDimensions();
   const isUser = message.role === 'user';
   const text = message.rawText || message.content || '';
   const messageId = String(message.id || message.clientId || '');
@@ -426,15 +427,17 @@ export const MessageBubble = React.memo(function MessageBubble({
           styles.bubble,
           {
             /* Final authority is chat-surface.css (loaded after the older
-             * stylesheets): user bubbles are 15px radius, 11x16 padding and
-             * capped at 86% of the conversation width. */
-            backgroundColor: isUser ? colors.surfaceRaised : 'transparent',
+             * stylesheets): user bubbles are 15px radius, 11x16 padding,
+             * filled with `--conversation-user` (#2c2c2c dark / #e9e9e9
+             * light — `colors.userBubble`, not `surfaceRaised`), and capped
+             * at `min(86%, 620px)` of the conversation width. */
+            backgroundColor: isUser ? colors.userBubble : 'transparent',
             borderColor: 'transparent',
             borderWidth: 0,
             borderRadius: isUser ? 15 : 0,
             paddingHorizontal: isUser ? 16 : 0,
             paddingVertical: isUser ? 11 : 0,
-            maxWidth: isUser ? '86%' : '100%',
+            maxWidth: isUser ? Math.min(windowWidth * 0.86, 620) : '100%',
           },
         ]}
       >
