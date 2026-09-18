@@ -31,6 +31,51 @@ export function notifyEmbeddedAuthExpired() {
   postToNative({ type: 'authExpired' });
 }
 
+/* When Android opens an exact SPA modal, the SPA remains the owner of the
+ * close button/backdrop semantics. Reflect that close back to the native
+ * navigation stack instead of leaving the user on the underlying SPA shell.
+ * Dynamic portal modals (storage/prompt templates) are considered open while
+ * their element exists; static overlays are open while `hidden` is absent. */
+const EMBEDDED_MODAL_SELECTORS = {
+  'api-settings': '#settingsOverlay',
+  profile: '#profileOverlay',
+  usage: '#usageOverlay',
+  storage: '#storageModalOverlay',
+  skills: '#promptTemplatesOverlay',
+};
+
+function watchEmbeddedModalClose(target) {
+  if (!window.ReactNativeWebView) return;
+  const selector = EMBEDDED_MODAL_SELECTORS[target];
+  if (!selector || typeof MutationObserver === 'undefined') return;
+
+  const isOpen = () => {
+    const el = document.querySelector(selector);
+    if (!el) return false;
+    return !el.classList.contains('hidden');
+  };
+  let seenOpen = isOpen();
+  let closed = false;
+  const observer = new MutationObserver(() => {
+    if (closed) return;
+    const open = isOpen();
+    if (open) {
+      seenOpen = true;
+      return;
+    }
+    if (seenOpen) {
+      closed = true;
+      observer.disconnect();
+      postToNative({ type: 'close' });
+    }
+  });
+  observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  /* React portals may mount after the open action publishes its state. */
+  window.setTimeout(() => {
+    if (!closed && isOpen()) seenOpen = true;
+  }, 0);
+}
+
 /**
  * Open an explicitly allow-listed web workspace after a native hand-off.
  * Query cleanup intentionally keeps unrelated state such as ?chat=… or
@@ -78,6 +123,7 @@ export function openMobileTargetFromUrl() {
   }
 
   if (opened) {
+    watchEmbeddedModalClose(target);
     /* Some targets (projects/scheduled/plugins) update the SPA history while
      * opening.  Remove the hand-off parameter from the *current* URL rather
      * than the pre-navigation URL, otherwise this cleanup silently replaces
