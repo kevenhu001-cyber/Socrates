@@ -119,7 +119,6 @@ const PRIMARY_ITEMS: DrawerItem[] = [
 
 export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   const { open, closeDrawer } = useAppDrawer();
-  const state = useAppStore();
   const { sidebarWidth } = useResponsive();
   const t = useT();
   /* Strict parity: account/data overlays use the SPA itself as the single
@@ -475,7 +474,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           accessibilityLabel={t('more.settings') || 'Settings'}
           onPress={() => {
             closeDrawer();
-            onNavigate('Settings');
+            onOpenEmbedded('api-settings', t('more.settings') || 'Settings');
           }}
           style={[styles.footerIconBtn, { borderRadius: radius.md }]}
         >
