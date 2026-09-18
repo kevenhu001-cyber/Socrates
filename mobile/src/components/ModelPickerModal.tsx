@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 import type { ApiProvider } from '../data/api/client';
@@ -16,7 +17,7 @@ interface Props {
 }
 
 export function ModelPickerModal({ visible, providers, selectedId, onSelect, onClose, onManageSettings }: Props) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const t = useT();
   const [filter, setFilter] = useState('');
 
@@ -30,7 +31,7 @@ export function ModelPickerModal({ visible, providers, selectedId, onSelect, onC
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
+      <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
         <View style={[styles.sheet, { backgroundColor: colors.background, borderColor: colors.borderStrong, borderRadius: 6 }]}>
           {providers.length >= 4 ? <View style={[styles.searchBox, { backgroundColor: 'transparent', borderColor: colors.border, borderRadius: 4 }]}>
@@ -59,23 +60,21 @@ export function ModelPickerModal({ visible, providers, selectedId, onSelect, onC
                   }}
                   style={[
                     styles.item,
-                    {
-                      backgroundColor: isSelected ? colors.surfacePressed : colors.surfaceRaised,
-                      borderColor: isSelected ? colors.accent : colors.border,
-                      borderRadius: radius.lg,
-                    },
+                    { backgroundColor: isSelected ? withAlpha(colors.accent, 0.08) : 'transparent' },
                   ]}
                 >
-                  <View style={styles.itemHeader}>
+                  <Ionicons name={item.isBuiltIn ? 'compass-outline' : 'hardware-chip-outline'} size={18} color={isSelected ? colors.accent : colors.textMuted} />
+                  <View style={styles.itemMain}>
                     <Text style={[styles.itemName, { color: isSelected ? colors.accent : colors.textSecondary, fontFamily: typography.medium }]}>
                       {(item.label && item.label !== 'Default') ? item.label : (item.model || item.label || 'Model')}
                     </Text>
                   </View>
-                  {!item.isBuiltIn ? (
-                    <Text numberOfLines={1} style={[styles.itemDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
-                      {item.model || item.url}
-                    </Text>
-                  ) : null}
+                    {!item.isBuiltIn ? (
+                      <Text numberOfLines={1} style={[styles.itemDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
+                        {item.model || item.url}
+                      </Text>
+                    ) : null}
+                  </View>
                   {isSelected ? (
                     <View style={[styles.selectedCheck, { marginLeft: 'auto' }]}>
                       <Ionicons name="checkmark" size={14} color={colors.accent} />
@@ -93,11 +92,10 @@ export function ModelPickerModal({ visible, providers, selectedId, onSelect, onC
                   onClose();
                   onManageSettings();
                 }}
-                style={[styles.manageBtn, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.md }]}
+                style={styles.manageBtn}
               >
-                <Ionicons name="settings-outline" size={16} color={colors.text} />
-                <Text style={[styles.manageText, { color: colors.text, fontFamily: typography.medium }]}>
-                  {t('settings.manage') || 'API & Custom Endpoints...'}
+                <Text style={[styles.manageText, { color: colors.textMuted, fontFamily: typography.body }]}>
+                  {providers.length ? 'Manage models…' : 'Add a model…'}
                 </Text>
               </AnimatedPressable>
             </View>
@@ -183,17 +181,17 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   item: {
+    width: '100%',
+    minHeight: 38,
     paddingHorizontal: 9,
     paddingVertical: 6,
     borderWidth: 0,
     borderRadius: 4,
-  },
-  itemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    gap: 8,
   },
+  itemMain: { flex: 1, minWidth: 0, gap: 1 },
   itemName: {
     fontSize: 13,
   },
@@ -243,7 +241,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   manageText: {
-    fontSize: 13,
+    fontSize: 12,
   },
 });
 
