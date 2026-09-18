@@ -8,6 +8,7 @@ import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, sav
 import { sessionRepository } from '../data/repositories/sessionRepository';
 import { reduceToolEvent, settleToolCalls, type ToolEventKind } from '../data/tools/toolState';
 import { tSync } from '../i18n';
+import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite, type LinkPreviewState } from '../data/chat/webLinks';
 import { unregisterPushNotifications } from '../native/push';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
@@ -21,6 +22,7 @@ export interface AppState {
   activeSession: Session | null;
   draft: string;
   pendingAttachments: Attachment[];
+  linkPreviews: Record<string, LinkPreviewState>;
   providers: ApiProvider[];
   selectedModel: string;
   reasoningEffort: ReasoningEffort;
@@ -39,6 +41,7 @@ const initialState: AppState = {
   activeSession: null,
   draft: '',
   pendingAttachments: [],
+  linkPreviews: {},
   providers: [],
   selectedModel: 'beagle-built-in',
   reasoningEffort: 'medium',
@@ -289,7 +292,7 @@ class AppStore {
   async openSession(sessionId: string) {
     this.setState({ isLoading: true, error: null });
     const session = await sessionRepository.get(sessionId);
-    this.setState({ activeSession: session, draft: session ? readDraft(session.id) : '', pendingAttachments: [], isLoading: false });
+    this.setState({ activeSession: session, draft: session ? readDraft(session.id) : '', pendingAttachments: [], linkPreviews: {}, isLoading: false });
   }
 
   async renameSession(sessionId: string, title: string) {
@@ -354,6 +357,7 @@ class AppStore {
       activeSession: projectId ? { ...session, projectId } : session,
       draft: preserveComposer ? this.state.draft : '',
       pendingAttachments: preserveComposer ? this.state.pendingAttachments : [],
+      linkPreviews: {},
       error: null,
       isStreaming: false,
     });
@@ -457,7 +461,8 @@ class AppStore {
     }
     if (!session) return;
 
-    const nextMessages = [...(session.messages || []), { ...userMessage(text), attachments: attachments.length ? attachments : undefined }];
+    const nextUser: Message = { ...userMessage(text), attachments: attachments.length ? attachments : undefined };
+    const nextMessages = [...(session.messages || []), nextUser];
     session = {
       ...session,
       topic: session.topic || text.slice(0, 100) || attachments[0]?.name || tSync('chat.newConversation'),
@@ -468,16 +473,38 @@ class AppStore {
     this.setState({ activeSession: session, draft: '', pendingAttachments: [], error: null });
 
     if (!this.state.isOnline) {
-      this.enqueueSession(session, nextMessages.at(-1)?.clientId || id('client'));
+      this.enqueueSession(session, nextUser.clientId || id('client'));
       this.setState({ error: tSync('chat.queued') });
       return;
+    }
+
+    let referencedPageBlocks: string[] = [];
+    const urls = extractHttpUrls(text);
+    if (urls.length) {
+      const fetched = await fetchPagesForContext(urls);
+      referencedPageBlocks = fetched.blocks;
+      if (nextUser.clientId) {
+        this.setState({
+          linkPreviews: {
+            ...this.state.linkPreviews,
+            [nextUser.clientId]: { urls, results: fetched.results },
+          },
+        });
+      }
+    } else if (looksLikeUserMentionedSite(text) && nextUser.clientId) {
+      this.setState({
+        linkPreviews: {
+          ...this.state.linkPreviews,
+          [nextUser.clientId]: { urls: [], results: [], noUrlHint: true },
+        },
+      });
     }
 
     try {
       const saved = await sessionRepository.save(session, nextMessages);
       session = { ...session, ...saved, messages: nextMessages };
       this.setState({ activeSession: session });
-      await this.startAssistantStream(session, nextMessages);
+      await this.startAssistantStream(session, nextMessages, referencedPageBlocks, looksLikeUserMentionedSite(text) && urls.length === 0 ? text : undefined);
     } catch (error) {
       this.enqueueSession(session, nextMessages.at(-1)?.clientId || id('client'));
       this.setState({ isOnline: false, error: error instanceof Error ? error.message : tSync('chat.offline') });
@@ -496,7 +523,12 @@ class AppStore {
     });
   }
 
-  private async startAssistantStream(session: Session, nextMessages: Message[]) {
+  private async startAssistantStream(
+    session: Session,
+    nextMessages: Message[],
+    referencedPageBlocks: string[] = [],
+    missingUrlMention?: string,
+  ) {
     if (this.state.isStreaming) return;
     const assistant: Message = { clientId: id('assistant'), role: 'assistant', rawText: '', content: '', type: 'streaming' };
     const generation = this.streamGeneration + 1;
@@ -506,8 +538,26 @@ class AppStore {
     const streamingSession = { ...session, messages: [...nextMessages, assistant] };
     this.setState({ activeSession: streamingSession, isStreaming: true, error: null });
     try {
+      const history = buildChatHistory(nextMessages);
+      const finalUser = nextMessages.at(-1);
+      const lastHistory = history.at(-1);
+      if (lastHistory?.role === 'user' && referencedPageBlocks.length) {
+        const pagesText = `${String(finalUser?.rawText || finalUser?.content || '')}\n\n${referencedPageBlocks.join('\n\n')}`;
+        if (Array.isArray(lastHistory.content)) {
+          lastHistory.content = [...lastHistory.content, { type: 'text', text: pagesText }];
+        } else {
+          lastHistory.content = pagesText;
+        }
+      } else if (lastHistory?.role === 'user' && missingUrlMention) {
+        const hintText = `${missingUrlMention}\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents.`;
+        if (Array.isArray(lastHistory.content)) {
+          lastHistory.content = [...lastHistory.content, { type: 'text', text: hintText }];
+        } else {
+          lastHistory.content = hintText;
+        }
+      }
       const stop = await startChatStream(session.id, {
-        messages: buildChatHistory(nextMessages),
+        messages: history,
         mode: session.mode,
         reasoning_effort: this.state.reasoningEffort,
       }, {
