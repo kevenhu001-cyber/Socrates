@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, BackHandler, Keyboard, Platform, StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -124,7 +124,7 @@ function LoadingScreen() {
   );
 }
 
-function NativeStack() {
+function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof RootStackParamList | null) => void }) {
   const state = useAppStore();
   const { colors } = useTheme();
   if (state.authStatus === 'booting') return <LoadingScreen />;
@@ -145,7 +145,12 @@ function NativeStack() {
   };
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+      onReady={() => onRouteChange?.(navigationRef.getCurrentRoute()?.name ?? null)}
+      onStateChange={() => onRouteChange?.(navigationRef.getCurrentRoute()?.name ?? null)}
+    >
       <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false, animation: 'fade' }}>
         <Stack.Screen name="Home" component={NewChatScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
@@ -176,6 +181,8 @@ function NativeApp() {
   const state = useAppStore();
   const { open: drawerOpen, closeDrawer } = useAppDrawer();
   const { colors } = useTheme();
+  const [currentRoute, setCurrentRoute] = useState<keyof RootStackParamList | null>('Home');
+  const embeddedActive = currentRoute === 'Embedded';
 
   // Keep system UI background dynamically in sync with the active theme color
   useEffect(() => {
@@ -265,14 +272,14 @@ function NativeApp() {
 
   return (
     <View style={[styles.root, styles.appFrame, { backgroundColor: colors.background }]}>
-      {state.authStatus === 'signedIn' ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} /> : null}
+      {state.authStatus === 'signedIn' && !embeddedActive ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} /> : null}
       <View
         style={[
           styles.mainPane,
-          sidebarWidth ? { marginLeft: sidebarWidth } : null,
+          sidebarWidth && !embeddedActive ? { marginLeft: sidebarWidth } : null,
         ]}
       >
-        <NativeStack />
+        <NativeStack onRouteChange={setCurrentRoute} />
       </View>
       {/* P0 1:1: frontend-style `.share-modal` + `.alert-container`.
        *  Mounted at the root so they overlay any screen or drawer route. */}
