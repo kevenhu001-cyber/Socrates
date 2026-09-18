@@ -13,6 +13,7 @@ import { buildAssistantModeInstruction, MOBILE_EXTENSIONS, type MobileExtensionK
 import { catalogComposerPlugins, serializeSelectedPluginContext, type ComposerPluginSelection } from '../data/chat/plugins';
 import { applyDiagnosticResults, buildTeachingPlan, buildTutorApplicationPrompt, firstTeachingNodeIndex, nextTeachingStage, type TutorDiagnosticQuestion, type TutorKnowledgeNode, type TutorTeachingStage } from '../data/tutor/tutorFlow';
 import { unregisterPushNotifications } from '../native/push';
+import { loadTonePreset, persistTonePreset, type TonePreset } from '../data/chat/tonePresets';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
 
@@ -34,6 +35,7 @@ export interface AppState {
   selectedModel: string;
   activeExtension: MobileExtensionKey | null;
   reasoningEffort: ReasoningEffort;
+  tone: TonePreset;
   webSearchEnabled: boolean;
   isIncognito: boolean;
   tutorSubstantiveCount: number;
@@ -60,6 +62,7 @@ const initialState: AppState = {
   selectedModel: 'beagle-built-in',
   activeExtension: null,
   reasoningEffort: 'medium',
+  tone: 'default',
   webSearchEnabled: true,
   isIncognito: false,
   tutorSubstantiveCount: 0,
@@ -167,6 +170,8 @@ class AppStore {
 
   async bootstrap() {
     try {
+      const tone = await loadTonePreset();
+      this.setState({ tone });
       let cachedUser: User | null = null;
       try {
         cachedUser = await readCachedUser();
@@ -505,6 +510,7 @@ class AppStore {
         {
           first: true,
           diagnosticNotes: tutorDiagnosticNotes(node),
+          tone: this.state.tone,
         },
       );
       await this.persistTutorInteraction(session);
@@ -658,6 +664,11 @@ class AppStore {
 
   setReasoningEffort(reasoningEffort: ReasoningEffort) {
     this.setState({ reasoningEffort });
+  }
+
+  async setTone(tone: TonePreset) {
+    this.setState({ tone });
+    await persistTonePreset(tone);
   }
 
   setWebSearchEnabled(webSearchEnabled: boolean) {
@@ -863,6 +874,7 @@ class AppStore {
             tutorApplicationPrompt = buildTutorApplicationPrompt(session.topic || session.domain || '', nextNode, 'motivate', {
               first: true,
               diagnosticNotes: tutorDiagnosticNotes(nextNode),
+              tone: this.state.tone,
             });
           } else {
             const complete: Message = {
@@ -907,6 +919,7 @@ class AppStore {
               first: false,
               latestAnswer: text,
               diagnosticNotes: tutorDiagnosticNotes(node),
+              tone: this.state.tone,
             },
           );
         }
@@ -1046,13 +1059,14 @@ class AppStore {
               first: false,
               latestAnswer: userText,
               diagnosticNotes: tutorDiagnosticNotes(node),
+              tone: this.state.tone,
             },
           );
         }
       }
       history.unshift({
         role: 'system',
-        content: effectiveApplicationPrompt || buildAssistantModeInstruction(userText, this.state.reasoningEffort),
+        content: effectiveApplicationPrompt || buildAssistantModeInstruction(userText, this.state.reasoningEffort, this.state.tone),
       });
       if (this.state.user?.customInstructions?.trim()) {
         history.splice(1, 0, {
