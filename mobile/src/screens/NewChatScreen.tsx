@@ -7,7 +7,7 @@ import { AppHeader } from '../components/AppHeader';
 import { Composer } from '../components/Composer';
 import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
-import { ModelPickerModal } from '../components/ModelPickerModal';
+import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
 import { useTheme } from '../theme/ThemeProvider';
 import { useI18n, useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -92,6 +92,7 @@ export function NewChatScreen({ navigation, route }: Props) {
   const { isCompact } = useResponsive();
   const mode = state.activeSession?.mode || 'chat';
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -170,7 +171,7 @@ export function NewChatScreen({ navigation, route }: Props) {
         isIncognito={state.isIncognito}
         onModeChange={changeMode}
         onNewChat={newChat}
-        onOpenModelPicker={() => setModelPickerOpen(true)}
+        onOpenModelPicker={(anchor) => { setModelPickerAnchor(anchor || null); setModelPickerOpen(true); }}
         onToggleIncognito={() => appStore.toggleIncognito()}
       />
 
@@ -301,6 +302,8 @@ export function NewChatScreen({ navigation, route }: Props) {
       <ModelPickerModal
         visible={modelPickerOpen}
         providers={state.providers}
+        anchor={modelPickerAnchor}
+        variant="landing"
         selectedId={state.selectedModel}
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
