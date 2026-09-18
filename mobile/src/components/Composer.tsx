@@ -6,6 +6,8 @@ import { withAlpha } from '../theme/theme';
 import { useI18n, useT } from '../i18n';
 import { toast } from './Toast';
 import { AnimatedPressable } from './AnimatedPressable';
+import { ReasoningEffortPicker, type EffortPickerAnchor } from './ReasoningEffortPicker';
+import { useResponsive } from '../theme/responsive';
 import { useVoiceInput, type VoiceInputErrorCode, type VoiceInputStatus } from '../native/voiceInput';
 
 export type ReasoningEffort = 'low' | 'medium' | 'high';
@@ -19,9 +21,13 @@ export interface ComposerProps {
   onChangeText: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
-  onAttach: () => void;
+  onAttach: (anchor?: { x: number; y: number; width: number; height: number }) => void;
   onChangeReasoningEffort?: (effort: ReasoningEffort) => void;
   onToggleWebSearch?: () => void;
+  activeExtensionLabel?: string | null;
+  selectedPlugins?: Array<{ id: string; name: string }>;
+  onRemoveActiveExtension?: () => void;
+  onRemovePlugin?: (pluginId: string) => void;
   placeholder?: string;
   autoFocus?: boolean;
 }
@@ -40,6 +46,14 @@ export function VoiceWaveBars({ color, level = 0.16 }: { color: string; level?: 
         />
       ))}
     </View>
+    <ReasoningEffortPicker
+      visible={effortPickerOpen}
+      value={reasoningEffort}
+      anchor={effortAnchor}
+      onChange={(effort) => onChangeReasoningEffort?.(effort)}
+      onClose={() => setEffortPickerOpen(false)}
+    />
+    </>
   );
 }
 
@@ -155,14 +169,23 @@ export function Composer({
   onAttach,
   onChangeReasoningEffort,
   onToggleWebSearch,
+  activeExtensionLabel = null,
+  selectedPlugins = [],
+  onRemoveActiveExtension,
+  onRemovePlugin,
   placeholder,
   autoFocus = false,
 }: ComposerProps) {
   const { colors, typography, contentWidth, fontScale } = useTheme();
+  const { isCompact } = useResponsive();
   const t = useT();
   const { language } = useI18n();
   const ref = useRef<TextInput>(null);
+  const attachAnchorRef = useRef<View>(null);
+  const effortAnchorRef = useRef<View>(null);
   const [focused, setFocused] = useState(false);
+  const [effortPickerOpen, setEffortPickerOpen] = useState(false);
+  const [effortAnchor, setEffortAnchor] = useState<EffortPickerAnchor | null>(null);
   const canSend = (value.trim().length > 0 || hasAttachments) && !disabled;
 
   const handleVoiceError = (code: VoiceInputErrorCode) => {
@@ -183,12 +206,33 @@ export function Composer({
     onError: handleVoiceError,
   });
 
-  // An expanded 2-row layout is shown when the user focuses, types multi-line, or enters text
-  const isExpanded = focused || value.includes('\n') || value.length > 30;
+  // The current SPA phone composer is always a two-row 104px card:
+  // editor on top, controls on the bottom. Desktop keeps the compact resting
+  // pill and expands only when the draft/focus requires it.
+  const hasContextChips = Boolean(activeExtensionLabel) || selectedPlugins.length > 0;
+  const isExpanded = isCompact || focused || value.includes('\n') || value.length > 30 || hasContextChips;
 
-  const toggleThinkDeeper = () => {
+  const openAttachMenu = () => {
+    const node = attachAnchorRef.current;
+    if (!node) {
+      onAttach();
+      return;
+    }
+    node.measureInWindow((x, y, width, height) => onAttach({ x, y, width, height }));
+  };
+
+  const openEffortPicker = () => {
     if (!onChangeReasoningEffort) return;
-    onChangeReasoningEffort(reasoningEffort === 'high' ? 'medium' : 'high');
+    const node = effortAnchorRef.current;
+    if (!node) {
+      setEffortAnchor(null);
+      setEffortPickerOpen(true);
+      return;
+    }
+    node.measureInWindow((x, y, width, height) => {
+      setEffortAnchor({ x, y, width, height });
+      setEffortPickerOpen(true);
+    });
   };
 
   const inputPlaceholder = t('chat.inputPlaceholder');
@@ -211,6 +255,7 @@ export function Composer({
   const voiceRecording = voice.status !== 'idle';
 
   return (
+    <>
     <View
       style={[
         voiceRecording ? styles.containerVoice : isExpanded ? styles.containerExpanded : styles.containerCapsule,
@@ -249,14 +294,16 @@ export function Composer({
          * SpeechRecognizer and swaps this row for the live recording bar. */
         <View style={styles.singleRow}>
           {/* Plus button */}
-          <AnimatedPressable
-            onPress={onAttach}
-            accessibilityRole="button"
-            accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-            style={styles.circleBtn}
-          >
-            <Ionicons name="add" size={20} color={iconColor} />
-          </AnimatedPressable>
+          <View ref={attachAnchorRef} collapsable={false}>
+            <AnimatedPressable
+              onPress={openAttachMenu}
+              accessibilityRole="button"
+              accessibilityLabel={t('chat.attach') || 'Add tools and files'}
+              style={styles.circleBtn}
+            >
+              <Ionicons name="add" size={20} color={iconColor} />
+            </AnimatedPressable>
+          </View>
 
           {/* Text Input */}
           <TextInput
@@ -343,71 +390,92 @@ export function Composer({
             blurOnSubmit={false}
           />
 
-          {/* Bottom control row */}
+          {/* Current SPA mobile control rail:
+           * +  [workflow/plugin chips]  effort  mic  send */}
           <View style={styles.expandedFooter}>
-            {/* Left: Plus button */}
-            <AnimatedPressable
-              onPress={onAttach}
-              accessibilityRole="button"
-              accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-              style={styles.circleBtn}
-            >
-              <Ionicons name="add" size={20} color={iconColor} />
-            </AnimatedPressable>
-
-            {/* Right actions: Think deeper + Web search + Voice + Send.
-             * Mirrors the expanded composer toolbar (effort + search
-             * live here, not as floating buttons). */}
-            <View style={styles.expandedRightRow}>
-              {/* Think deeper dome glyph */}
+            <View ref={attachAnchorRef} collapsable={false}>
               <AnimatedPressable
+                onPress={openAttachMenu}
                 accessibilityRole="button"
-                accessibilityLabel="Think deeper"
-                accessibilityState={{ selected: reasoningEffort === 'high' }}
-                onPress={toggleThinkDeeper}
-                style={styles.circleBtn}
+                accessibilityLabel={t('chat.attach') || 'Add tools and files'}
+                style={[styles.circleBtn, { backgroundColor: colors.surfaceHover }]}
               >
-                <ThinkDeeperGlyph
-                  size={20}
-                  color={reasoningEffort === 'high' ? colors.accent : iconColor}
-                />
+                <Ionicons name="add" size={21} color={iconColor} />
               </AnimatedPressable>
+            </View>
 
-              {/* Web search toggle */}
-              {onToggleWebSearch ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.contextChips}
+              style={styles.contextChipScroller}
+              keyboardShouldPersistTaps="handled"
+            >
+              {activeExtensionLabel ? (
                 <AnimatedPressable
                   accessibilityRole="button"
-                  accessibilityLabel="Web search"
-                  accessibilityState={{ selected: webSearchEnabled }}
-                  onPress={onToggleWebSearch}
-                  style={styles.circleBtn}
+                  accessibilityLabel={activeExtensionLabel}
+                  onPress={onRemoveActiveExtension}
+                  style={styles.contextChip}
                 >
-                  <Ionicons
-                    name="globe-outline"
-                    size={19}
-                    color={webSearchEnabled ? colors.accent : iconColor}
-                  />
+                  <Text numberOfLines={1} style={[styles.contextChipText, { fontFamily: typography.medium }]}>
+                    {activeExtensionLabel}
+                  </Text>
+                  {onRemoveActiveExtension ? <Ionicons name="close" size={14} color="#9bcbff" /> : null}
                 </AnimatedPressable>
               ) : null}
+              {selectedPlugins.map((plugin) => (
+                <AnimatedPressable
+                  key={plugin.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={plugin.name}
+                  onPress={onRemovePlugin ? () => onRemovePlugin(plugin.id) : undefined}
+                  style={styles.contextChip}
+                >
+                  <Text numberOfLines={1} style={[styles.contextChipText, { fontFamily: typography.medium }]}>
+                    {plugin.name}
+                  </Text>
+                  {onRemovePlugin ? <Ionicons name="close" size={14} color="#9bcbff" /> : null}
+                </AnimatedPressable>
+              ))}
+            </ScrollView>
+
+            <View style={styles.expandedRightRow}>
+              <View ref={effortAnchorRef} collapsable={false}>
+                <AnimatedPressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('effort.label') || 'Reasoning effort'}
+                  onPress={openEffortPicker}
+                  style={[styles.effortPill, { backgroundColor: colors.surfaceHover }]}
+                >
+                  <Text style={[styles.effortLabel, { color: colors.text, fontFamily: typography.medium }]}>
+                    {reasoningEffort === 'high'
+                      ? (t('effort.high') || 'High')
+                      : reasoningEffort === 'low'
+                        ? (t('effort.low') || 'Low')
+                        : (t('effort.medium') || 'Medium')}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color={colors.text} />
+                </AnimatedPressable>
+              </View>
 
               <AnimatedPressable
                 accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
                 accessibilityState={{ selected: voiceRecording }}
                 onPress={voice.start}
-                style={[styles.circleBtn, voiceRecording ? { backgroundColor: colors.accentSoft } : null]}
+                style={[styles.circleBtn, { backgroundColor: colors.surfaceHover }]}
               >
-                <Ionicons name="mic-outline" size={20} color={iconColor} />
+                <Ionicons name="mic-outline" size={21} color={iconColor} />
               </AnimatedPressable>
 
-              {/* Send / Stop */}
               {disabled ? (
                 <AnimatedPressable
                   accessibilityLabel={t('chat.stopGenerating') || 'Stop generating'}
                   onPress={onStop}
                   scale={0.92}
-                  style={[styles.actionBtn, { backgroundColor: sendIdleBg }]}
+                  style={[styles.actionBtn, { backgroundColor: colors.text }]}
                 >
-                  <Ionicons name="stop" size={14} color={sendIdleFg} />
+                  <Ionicons name="stop" size={14} color={colors.background} />
                 </AnimatedPressable>
               ) : (
                 <AnimatedPressable
@@ -415,14 +483,9 @@ export function Composer({
                   accessibilityState={{ disabled: !canSend }}
                   onPress={canSend ? onSend : undefined}
                   scale={0.92}
-                  restingScale={canSend ? 1.05 : 1}
-                  style={[
-                    styles.actionBtn,
-                    { backgroundColor: canSend ? colors.accent : sendIdleBg },
-                    canSend ? [styles.sendGlow, { shadowColor: colors.accent }] : null,
-                  ]}
+                  style={[styles.actionBtn, { backgroundColor: colors.text }]}
                 >
-                  <Ionicons name="arrow-up" size={16} color={canSend ? colors.textInverse : sendIdleFg} />
+                  <Ionicons name="arrow-up" size={20} color={colors.background} />
                 </AnimatedPressable>
               )}
             </View>
@@ -464,11 +527,11 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 620,
     alignSelf: 'center',
-    minHeight: 118,
+    minHeight: 104,
     borderWidth: 1,
-    paddingTop: 8,
-    paddingBottom: 6,
-    paddingHorizontal: 8,
+    paddingTop: 10,
+    paddingBottom: 8,
+    paddingHorizontal: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
@@ -542,48 +605,89 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expandedInput: {
-    minHeight: 56,
-    maxHeight: 140,
-    fontSize: 14,
-    lineHeight: 20,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 8,
+    minHeight: 42,
+    maxHeight: 220,
+    fontSize: 17,
+    lineHeight: 24,
+    paddingHorizontal: 4,
+    paddingTop: 8,
+    paddingBottom: 5,
     textAlignVertical: 'top',
   },
   expandedFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
     paddingTop: 4,
   },
   expandedRightRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    marginLeft: 'auto',
+  },
+  contextChipScroller: {
+    flex: 1,
+    minWidth: 0,
+  },
+  contextChips: {
+    minHeight: 30,
+    alignItems: 'center',
+    gap: 6,
+    paddingRight: 2,
+  },
+  contextChip: {
+    minHeight: 30,
+    maxWidth: 160,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    backgroundColor: '#064d9e',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  contextChipText: {
+    maxWidth: 125,
+    color: '#9bcbff',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  effortPill: {
+    height: 40,
+    minHeight: 40,
+    paddingHorizontal: 13,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  effortLabel: {
+    fontSize: 15,
+    lineHeight: 20,
   },
   /* Attach / think-deeper icon buttons — frontend sizes these at 38px
    * with a 20px glyph. */
   circleBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /* Mic sits one step smaller on the web (30px button, 16px glyph). */
   micBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /* frontend `.send-btn`: 28px circle, 50% radius, 16px glyph. */
   actionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
