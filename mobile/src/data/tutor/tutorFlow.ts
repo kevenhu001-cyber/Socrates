@@ -1,5 +1,6 @@
 import { chatApi } from '../api/client';
 import { detectLanguage, languageDirectiveFor } from '../chat/prompts';
+import { toneVoiceSuffix, type TonePreset } from '../chat/tonePresets';
 
 export type TutorKnowledgeStatus = 'internalized' | 'fuzzy' | 'blank';
 export type TutorTeachingStage = 'motivate' | 'define' | 'develop' | 'illustrate' | 'exercise' | 'check';
@@ -432,7 +433,7 @@ export function buildTutorApplicationPrompt(
   topic: string,
   node: TutorKnowledgeNode,
   stage: TutorTeachingStage,
-  options: { first: boolean; latestAnswer?: string; diagnosticNotes?: string[] } = { first: false },
+  options: { first: boolean; latestAnswer?: string; diagnosticNotes?: string[]; tone?: TonePreset } = { first: false },
 ): string {
   const stageText = stageInstruction(stage);
   const knowledgeNotes = options.diagnosticNotes?.length
@@ -461,5 +462,5 @@ export function buildTutorApplicationPrompt(
     .replace('{level}', BASELINE_LEVEL)
     .replace('{context}', turnContext);
 
-  return `[Assistant mode instructions]\n${languageDirectiveFor(options.latestAnswer || topic)}${prompt}${TUTOR_SEARCH_POLICY_PROMPT}`;
+  return `[Assistant mode instructions]\n${languageDirectiveFor(options.latestAnswer || topic)}${prompt}${TUTOR_SEARCH_POLICY_PROMPT}${toneVoiceSuffix(options.tone || 'default')}\n\nKeep the user-facing reply focused on the answer. Do not emit <think> blocks or reasoning_content in the user-facing message.`;
 }
