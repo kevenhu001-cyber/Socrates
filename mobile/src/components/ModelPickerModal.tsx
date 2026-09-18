@@ -1,9 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +13,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
+import { Popover } from './Popover';
 
 export interface ModelPickerAnchor {
   x: number;
@@ -66,31 +63,11 @@ export function ModelPickerModal({
   const t = useT();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const [filter, setFilter] = useState('');
-  const opacity = useRef(new Animated.Value(0)).current;
-  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return;
     setFilter('');
-    opacity.setValue(0);
-    progress.setValue(0);
-    const animation = Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 140,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: 220,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
-        useNativeDriver: true,
-      }),
-    ]);
-    animation.start();
-    return () => animation.stop();
-  }, [opacity, progress, visible]);
+  }, [visible]);
 
   const sorted = useMemo(
     () => providers.slice().sort((a, b) => Number(Boolean(b.isBuiltIn)) - Number(Boolean(a.isBuiltIn))),
@@ -119,34 +96,24 @@ export function ModelPickerModal({
   const desiredTop = anchor ? anchor.y + anchor.height + 4 : 62;
   const top = Math.max(8, Math.min(desiredTop, Math.max(8, viewportHeight - 328)));
 
-  const translateY = progress.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] });
-  const scale = progress.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] });
-
   return (
-    <Modal
+    <Popover
       visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={onClose}
+      onClose={onClose}
+      maxWidth={menuWidth}
+      testID="model-picker"
+      style={[
+        styles.menu,
+        {
+          top,
+          left,
+          width: menuWidth,
+          maxHeight: Math.min(320, viewportHeight - top - 8),
+          backgroundColor: colors.background,
+          borderColor: withAlpha(colors.border, 0.4),
+        },
+      ]}
     >
-      <Pressable accessibilityLabel={t('common.close') || 'Close'} onPress={onClose} style={StyleSheet.absoluteFill} />
-      <Animated.View
-        style={[
-          styles.menu,
-          {
-            top,
-            left,
-            width: menuWidth,
-            maxHeight: Math.min(320, viewportHeight - top - 8),
-            backgroundColor: colors.background,
-            borderColor: withAlpha(colors.border, 0.4),
-            opacity,
-            transform: [{ translateY }, { scale }],
-          },
-        ]}
-      >
         {sorted.length >= 4 ? (
           <View style={[styles.filter, { borderBottomColor: withAlpha(colors.border, 0.25) }]}>
             <Ionicons name="search-outline" size={12} color={colors.textSubtle} />
@@ -229,8 +196,7 @@ export function ModelPickerModal({
             {providers.length ? 'Manage models…' : 'Add a model…'}
           </Text>
         </AnimatedPressable>
-      </Animated.View>
-    </Modal>
+    </Popover>
   );
 }
 

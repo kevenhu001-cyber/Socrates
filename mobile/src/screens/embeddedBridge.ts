@@ -5,6 +5,42 @@ export const EMBEDDED_TARGETS: readonly EmbeddedTarget[] = [
   'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
 ];
 
+/** Product surfaces remain in the shared contract for older clients, but the
+ * native client must route them into RN screens instead of opening a full SPA
+ * WebView. `undefined` means the target is an intentionally controlled web
+ * surface (currently Skills, OAuth, or an external flow). */
+export const NATIVE_EMBEDDED_ROUTES = {
+  projects: 'Projects',
+  scheduled: 'Scheduled',
+  plugins: 'Plugins',
+  knowledge: 'Knowledge',
+  mistakes: 'Mistakes',
+  'api-settings': 'Settings',
+  display: 'Display',
+  library: 'Library',
+  exam: 'ExamSession',
+  shortcuts: 'More',
+} as const;
+
+export type NativeEmbeddedRoute = (typeof NATIVE_EMBEDDED_ROUTES)[keyof typeof NATIVE_EMBEDDED_ROUTES];
+
+export function nativeRouteForEmbeddedTarget(target: EmbeddedTarget): NativeEmbeddedRoute | null {
+  return NATIVE_EMBEDDED_ROUTES[target as keyof typeof NATIVE_EMBEDDED_ROUTES] || null;
+}
+
+/** Legacy bridge targets that are now rendered by the root native overlay host. */
+export const NATIVE_EMBEDDED_OVERLAYS = {
+  profile: 'profile',
+  usage: 'usage',
+  storage: 'storage',
+} as const;
+
+export type NativeEmbeddedOverlay = (typeof NATIVE_EMBEDDED_OVERLAYS)[keyof typeof NATIVE_EMBEDDED_OVERLAYS];
+
+export function nativeOverlayForEmbeddedTarget(target: EmbeddedTarget): NativeEmbeddedOverlay | null {
+  return NATIVE_EMBEDDED_OVERLAYS[target as keyof typeof NATIVE_EMBEDDED_OVERLAYS] || null;
+}
+
 export function isEmbeddedTarget(value: unknown): value is EmbeddedTarget {
   return typeof value === 'string' && (EMBEDDED_TARGETS as readonly string[]).includes(value);
 }

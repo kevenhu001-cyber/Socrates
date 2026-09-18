@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
+import { Overlay } from './Overlay';
 import { appStore } from '../stores/appStore';
 import type { User } from '@socrates/contracts';
 
@@ -71,143 +72,91 @@ function buildRows(user: User | null, t: (key: string) => string): Row[] {
 }
 
 export function ProfileOverlay({ visible, onClose, user }: ProfileOverlayProps) {
-  const { colors, radius, typography, spacing } = useTheme();
+  const { colors, radius, typography } = useTheme();
   const t = useT();
   const rows = buildRows(user, t);
-
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (visible) {
-      slideAnim.setValue(0);
-      Animated.timing(slideAnim, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.bezier(0.16, 1, 0.3, 1),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible, slideAnim]);
-
-  const translateY = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
   const displayName = user?.displayName || user?.email?.split('@')[0] || t('more.learner') || 'Learner';
   const initial = (displayName || 'U')[0].toUpperCase();
 
   return (
-    <Modal
+    <Overlay
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
+      onClose={onClose}
+      maxWidth={360}
+      testID="profile-overlay"
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}
     >
-      <Pressable
-        accessibilityLabel="Close account details"
-        onPress={onClose}
-        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
-      >
-        <View style={styles.center}>
-          <Pressable
-            onPress={(e) => e.stopPropagation?.()}
-            style={{ width: '100%', maxWidth: 360 }}
-          >
-            <Animated.View
+      <View style={[styles.header, { backgroundColor: colors.surfaceRaised }]}>
+        <View style={[styles.avatar, { backgroundColor: colors.textSecondary }]}>
+          <Text style={[styles.avatarText, { color: colors.background, fontFamily: typography.semibold }]}>
+            {initial}
+          </Text>
+        </View>
+        <Text style={[styles.name, { color: colors.text, fontFamily: typography.semibold }]}>
+          {displayName}
+        </Text>
+        <Text style={[styles.email, { color: colors.textMuted }]}>
+          {user?.email || t('profile.signedOutHint') || 'Signed out'}
+        </Text>
+      </View>
+
+      <View style={styles.body}>
+        {rows.length === 0 ? (
+          <Text style={[styles.empty, { color: colors.textMuted }]}>
+            {t('profile.empty') || 'No account data available'}
+          </Text>
+        ) : (
+          rows.map((row, index) => (
+            <View
+              key={`${row.label}-${index}`}
               style={[
-                styles.card,
+                styles.row,
                 {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  borderRadius: 16,
-                  transform: [{ translateY }],
+                  borderBottomColor: colors.borderSubtle,
+                  borderBottomWidth: index === rows.length - 1 ? 0 : StyleSheet.hairlineWidth,
                 },
               ]}
             >
-              {/* Header with 64px avatar */}
-              <View style={[styles.header, { backgroundColor: colors.surfaceRaised }]}>
-                <View style={[styles.avatar, { backgroundColor: colors.textSecondary }]}>
-                  <Text style={[styles.avatarText, { color: colors.background, fontFamily: typography.semibold }]}>
-                    {initial}
-                  </Text>
-                </View>
-                <Text style={[styles.name, { color: colors.text, fontFamily: typography.semibold }]}>
-                  {displayName}
-                </Text>
-                <Text style={[styles.email, { color: colors.textMuted }]}>
-                  {user?.email || t('profile.signedOutHint') || 'Signed out'}
-                </Text>
-              </View>
+              <Text style={[styles.rowLabel, { color: colors.textMuted }]}>{row.label}</Text>
+              <Text style={[styles.rowValue, { color: colors.text, fontFamily: typography.medium }]}>
+                {row.value}
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
 
-              {/* Space-between metadata rows */}
-              <View style={styles.body}>
-                {rows.length === 0 ? (
-                  <Text style={[styles.empty, { color: colors.textMuted }]}>
-                    {t('profile.empty') || 'No account data available'}
-                  </Text>
-                ) : (
-                  rows.map((row, index) => (
-                    <View
-                      key={`${row.label}-${index}`}
-                      style={[
-                        styles.row,
-                        {
-                          borderBottomColor: colors.borderSubtle,
-                          borderBottomWidth: index === rows.length - 1 ? 0 : StyleSheet.hairlineWidth,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.rowLabel, { color: colors.textMuted }]}>{row.label}</Text>
-                      <Text style={[styles.rowValue, { color: colors.text, fontFamily: typography.medium }]}>
-                        {row.value}
-                      </Text>
-                    </View>
-                  ))
-                )}
-              </View>
-
-              {/* Actions */}
-              <View style={styles.actions}>
-                <AnimatedPressable
-                  accessibilityLabel={t('common.signOut') || 'Sign out'}
-                  onPress={() => {
-                    onClose();
-                    void appStore.logout();
-                  }}
-                  style={[
-                    styles.btn,
-                    { backgroundColor: colors.surfaceHover },
-                  ]}
-                >
-                  <Text style={[styles.btnText, { color: colors.danger, fontFamily: typography.medium }]}>
-                    {t('common.signOut') || 'Sign out'}
-                  </Text>
-                </AnimatedPressable>
-                <AnimatedPressable
-                  accessibilityLabel={t('common.close') || 'Close'}
-                  onPress={onClose}
-                  style={[
-                    styles.btn,
-                    { backgroundColor: colors.surfaceRaised },
-                  ]}
-                >
-                  <Text style={[styles.btnText, { color: colors.textMuted, fontFamily: typography.medium }]}>
-                    {t('common.close') || 'Close'}
-                  </Text>
-                </AnimatedPressable>
-              </View>
-            </Animated.View>
-          </Pressable>
-        </View>
-      </Pressable>
-    </Modal>
+      <View style={styles.actions}>
+        <AnimatedPressable
+          accessibilityLabel={t('common.signOut') || 'Sign out'}
+          onPress={() => {
+            onClose();
+            void appStore.logout();
+          }}
+          style={[styles.btn, { backgroundColor: colors.surfaceHover }]}
+        >
+          <Text style={[styles.btnText, { color: colors.danger, fontFamily: typography.medium }]}>
+            {t('common.signOut') || 'Sign out'}
+          </Text>
+        </AnimatedPressable>
+        <AnimatedPressable
+          accessibilityLabel={t('common.close') || 'Close'}
+          onPress={onClose}
+          style={[styles.btn, { backgroundColor: colors.surfaceRaised }]}
+        >
+          <Text style={[styles.btnText, { color: colors.textMuted, fontFamily: typography.medium }]}>
+            {t('common.close') || 'Close'}
+          </Text>
+        </AnimatedPressable>
+      </View>
+    </Overlay>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   /* frontend `.profile-modal`: max-width 360px, border-radius 16px. */
   card: {
     width: '100%',
-    maxWidth: 360,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },

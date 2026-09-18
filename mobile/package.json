@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
     "test:e2e": "detox test -c android.debug",
+    "check:parity": "node scripts/check-parity-manifest.mjs",
+    "check:theme": "node scripts/check-theme-drift.mjs",
     "verify:apk": "node scripts/verify-apk.mjs"
   },
   "dependencies": {

@@ -10,6 +10,13 @@ import { useResponsive } from '../theme/responsive';
 
 type Props = {
   title?: string;
+  /** Compact directory pages place their heading beside the hamburger. */
+  leadingTitle?: string;
+  /** Optional action rendered in the top bar's trailing slot. */
+  headerAction?: React.ReactNode;
+  /** Hide the compact navigation affordance when the permanent rail owns it. */
+  showNavigation?: boolean;
+  showIncognito?: boolean;
   mode?: 'chat' | 'tutor';
   showModeSwitch?: boolean;
   conversationActive?: boolean;
@@ -49,6 +56,10 @@ const headerStyles = StyleSheet.create({
 
 export function AppHeader({
   title,
+  leadingTitle,
+  headerAction,
+  showNavigation = true,
+  showIncognito = true,
   mode = 'chat',
   showModeSwitch = false,
   conversationActive = false,
@@ -108,22 +119,39 @@ export function AppHeader({
       ]}
     >
       {/* Left Action: Navigation Drawer (Two-line hamburger matching cur-mobile-home.png) */}
-      <AnimatedPressable
-        accessibilityLabel={t('common.openNavigation') || 'Open navigation'}
-        onPress={openDrawer}
-        hitSlop={isCompact ? 8 : undefined}
-        scale={isCompact ? 0.94 : 0.92}
-        style={[
-          styles.circleBtn,
-          isCompact ? styles.circleBtnCompact : null,
-          {
-            borderColor: isCompact ? 'transparent' : colors.border,
-            backgroundColor: isCompact ? 'transparent' : circleBg,
-          },
-        ]}
-      >
-        <HamburgerLines color={colors.text} />
-      </AnimatedPressable>
+      {showNavigation ? (
+        leadingTitle && isCompact ? (
+          <View style={styles.leadingGroup}>
+            <AnimatedPressable
+              accessibilityLabel={t('common.openNavigation') || 'Open navigation'}
+              onPress={openDrawer}
+              hitSlop={8}
+              scale={0.94}
+              style={[styles.circleBtn, styles.circleBtnCompact, { borderColor: 'transparent', backgroundColor: 'transparent' }]}
+            >
+              <HamburgerLines color={colors.text} />
+            </AnimatedPressable>
+            <Text numberOfLines={1} style={[styles.leadingTitle, { color: colors.text, fontFamily: typography.semibold }]}>{leadingTitle}</Text>
+          </View>
+        ) : (
+          <AnimatedPressable
+            accessibilityLabel={t('common.openNavigation') || 'Open navigation'}
+            onPress={openDrawer}
+            hitSlop={isCompact ? 8 : undefined}
+            scale={isCompact ? 0.94 : 0.92}
+            style={[
+              styles.circleBtn,
+              isCompact ? styles.circleBtnCompact : null,
+              {
+                borderColor: isCompact ? 'transparent' : colors.border,
+                backgroundColor: isCompact ? 'transparent' : circleBg,
+              },
+            ]}
+          >
+            <HamburgerLines color={colors.text} />
+          </AnimatedPressable>
+        )
+      ) : <View style={styles.circleBtn} />}
 
       {/* Center: Mode segmented switch or Title */}
       {renderModeSwitch ? (
@@ -202,6 +230,7 @@ export function AppHeader({
 
       {/* Right Actions */}
       <View style={styles.rightGroup}>
+        {headerAction ? <View style={styles.headerAction}>{headerAction}</View> : null}
         {conversationActive ? (
           <View
             style={[
@@ -258,7 +287,7 @@ export function AppHeader({
                 </AnimatedPressable>
               </View>
             ) : null}
-            <AnimatedPressable
+            {showIncognito ? <AnimatedPressable
               accessibilityLabel={isIncognito ? 'Incognito active' : (t('sidebar.nav.new') || 'Conversation')}
               onPress={onToggleIncognito || onNewChat}
               hitSlop={isCompact ? 8 : undefined}
@@ -277,7 +306,7 @@ export function AppHeader({
               ]}
             >
               <Ionicons name="glasses-outline" size={isCompact ? 16 : 19} color={isIncognito ? colors.accent : colors.textMuted} />
-            </AnimatedPressable>
+            </AnimatedPressable> : null}
           </View>
         )}
       </View>
@@ -387,6 +416,21 @@ const styles = StyleSheet.create({
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  leadingGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minWidth: 0,
+  },
+  leadingTitle: {
+    fontSize: 30,
+    lineHeight: 36,
+    letterSpacing: -0.5,
+    flexShrink: 1,
+  },
+  headerAction: {
+    alignItems: 'flex-end',
   },
   landingActions: {
     flexDirection: 'row',

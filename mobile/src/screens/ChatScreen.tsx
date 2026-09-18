@@ -425,7 +425,7 @@ export function ChatScreen({ navigation }: Props) {
         selectedId={state.selectedModel}
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('settings.title') || 'Settings' })}
+        onManageSettings={() => navigation.navigate('Settings')}
       />
     </Screen>
   );

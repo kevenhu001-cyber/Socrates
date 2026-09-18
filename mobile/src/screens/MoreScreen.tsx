@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { AnimatedPressable } from '../components/AnimatedPressable';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Overlay } from '../components/Overlay';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
-import { appStore, useAppStore } from '../stores/appStore';
+import { useAppStore } from '../stores/appStore';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'More'>;
 
-type MoreItemAction = 'plugins' | 'exam' | 'skills' | 'settings' | 'display' | 'shortcuts' | 'signout';
+type MoreItemAction = 'exam' | 'skills' | 'shortcuts';
 
 interface MenuItemSpec {
   action: MoreItemAction;
@@ -26,17 +26,14 @@ interface MenuItemSpec {
 
 /**
  * 1:1 Parity with frontend `frontend/src/react/morePopover/MorePopover.tsx:39-47`.
- * Plugins and Exam live here because the desktop sidebar nav is trimmed to
- * five entries; they sit above the settings group.
+ * Exam and Skills are hidden behind Customize in the web sidebar. Plugins,
+ * API settings, display/theme, and account actions keep their own primary or
+ * footer affordances and therefore are not duplicated in this menu.
  */
 const ITEMS: MenuItemSpec[] = [
-  { action: 'plugins', labelKey: 'sidebar.nav.plugins', labelFallback: 'Plugins', icon: 'extension-puzzle-outline' },
   { action: 'exam', labelKey: 'sidebar.nav.exam', labelFallback: 'Exam', icon: 'clipboard-outline' },
   { action: 'skills', labelKey: 'sidebar.more.skills', labelFallback: 'Skills & shortcuts', icon: 'sparkles-outline' },
-  { action: 'settings', labelKey: 'sidebar.more.settings', labelFallback: 'API settings', icon: 'settings-outline' },
-  { action: 'display', labelKey: 'sidebar.more.display', labelFallback: 'Display & theme', icon: 'options-outline' },
   { action: 'shortcuts', labelKey: 'sidebar.more.shortcuts', labelFallback: 'Keyboard shortcuts', icon: 'keypad-outline' },
-  { action: 'signout', labelKey: 'sidebar.more.signOut', labelFallback: 'Sign out', icon: 'log-out-outline', danger: true },
 ];
 
 const SHORTCUTS_LIST = [
@@ -52,15 +49,11 @@ export function MoreScreen({ navigation }: Props) {
   const t = useT();
   const state = useAppStore();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [signoutArmed, setSignoutArmed] = useState(false);
 
   const handleAction = (action: MoreItemAction) => {
     switch (action) {
-      case 'plugins':
-        navigation.navigate('Embedded', { target: 'plugins', title: t('sidebar.nav.plugins') || 'Plugins' });
-        break;
       case 'exam':
-        navigation.navigate('Embedded', { target: 'exam', title: t('sidebar.nav.exam') || 'Exam' });
+        navigation.navigate('ExamSession');
         break;
       case 'skills':
         navigation.navigate('Embedded', {
@@ -68,17 +61,8 @@ export function MoreScreen({ navigation }: Props) {
           title: t('sidebar.more.skills') || 'Skills & shortcuts',
         });
         break;
-      case 'settings':
-        navigation.navigate('Embedded', { target: 'api-settings', title: t('sidebar.more.settings') || 'API settings' });
-        break;
-      case 'display':
-        navigation.navigate('Display');
-        break;
       case 'shortcuts':
-        navigation.navigate('Embedded', { target: 'shortcuts', title: t('sidebar.more.shortcuts') || 'Keyboard shortcuts' });
-        break;
-      case 'signout':
-        setSignoutArmed(true);
+        setShortcutsOpen(true);
         break;
     }
   };
@@ -153,27 +137,13 @@ export function MoreScreen({ navigation }: Props) {
       </ScrollView>
 
       {/* Keyboard shortcuts modal */}
-      <Modal
+      <Overlay
         visible={shortcutsOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShortcutsOpen(false)}
+        onClose={() => setShortcutsOpen(false)}
+        maxWidth={380}
+        testID="keyboard-shortcuts-dialog"
       >
-        <Pressable
-          accessibilityLabel={t('common.close') || 'Close'}
-          onPress={() => setShortcutsOpen(false)}
-          style={[styles.modalBackdrop, { backgroundColor: colors.scrim }]}
-        >
-          <View
-            style={[
-              styles.shortcutsModal,
-              {
-                backgroundColor: colors.surface,
-                borderColor: withAlpha(colors.border, 0.25),
-                borderRadius: 14,
-              },
-            ]}
-          >
+        <View style={styles.shortcutsModal}>
             <View style={styles.shortcutsHeader}>
               <Text style={[styles.shortcutsTitle, { color: colors.text, fontFamily: typography.semibold }]}>
                 {t('sidebar.more.shortcuts') || 'Keyboard shortcuts'}
@@ -209,24 +179,9 @@ export function MoreScreen({ navigation }: Props) {
                 </View>
               ))}
             </View>
-          </View>
-        </Pressable>
-      </Modal>
+        </View>
+      </Overlay>
 
-      {/* Sign out confirmation dialog */}
-      <ConfirmDialog
-        visible={signoutArmed}
-        title={t('sidebar.more.signOut') || 'Sign out'}
-        message={t('auth.signOutConfirm') || 'Are you sure you want to sign out?'}
-        confirmLabel={t('sidebar.more.signOut') || 'Sign out'}
-        cancelLabel={t('common.cancel') || 'Cancel'}
-        danger
-        onCancel={() => setSignoutArmed(false)}
-        onConfirm={() => {
-          setSignoutArmed(false);
-          void appStore.logout();
-        }}
-      />
     </Screen>
   );
 }
@@ -291,16 +246,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
   },
-  modalBackdrop: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
   shortcutsModal: {
-    width: '100%',
-    maxWidth: 380,
-    borderWidth: 0.5,
     padding: 18,
   },
   shortcutsHeader: {

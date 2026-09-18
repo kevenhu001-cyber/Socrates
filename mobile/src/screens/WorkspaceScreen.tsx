@@ -1,38 +1,34 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AppHeader } from '../components/AppHeader';
-import { CanvasBlock } from '../components/CanvasBlock';
 import { Screen } from '../components/Screen';
-import { appStore } from '../stores/appStore';
-import { useT } from '../i18n';
+import { useTheme } from '../theme/ThemeProvider';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Workspace'>;
 
 export function WorkspaceScreen({ navigation }: Props) {
-  const t = useT();
+  const { colors } = useTheme();
+
+  /* The web information architecture has no standalone Workspace hub. Its
+   * workspace entry points are Library, Projects, and Plugins, while the
+   * remaining destinations are separate sidebar pages. Keep this route only
+   * as a backwards-compatible deep-link alias and land on the first real
+   * workspace directory instead of rendering a mobile-only card dashboard. */
+  useEffect(() => {
+    navigation.replace('Library');
+  }, [navigation]);
+
   return (
     <Screen style={styles.screen}>
-      <AppHeader title={t('workspace.canvasTitle')} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.canvasWrap}>
-          <CanvasBlock
-            label={t('composer.write')}
-            originalText={t('workspace.canvasStarter')}
-            onIterate={(text) => {
-              appStore.setDraft(text);
-              navigation.navigate('Home');
-            }}
-          />
-        </View>
-      </ScrollView>
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { paddingTop: 0 },
-  content: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
-  canvasWrap: { width: '100%', maxWidth: 768, alignSelf: 'center' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

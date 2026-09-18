@@ -162,6 +162,8 @@ jobs:
         run: |
           npm ci
           npm run typecheck
+          npm run check:parity
+          npm run check:theme
           npm test
           npx expo-doctor
 

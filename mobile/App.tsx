@@ -12,12 +12,12 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { EmbeddedTarget } from '@socrates/contracts';
-import { AppDrawer, AppDrawerProvider, useAppDrawer, type NativeDestination } from './src/components/AppDrawer';
+import { AppDrawer, AppDrawerProvider, profileOverlay, useAppDrawer, type NativeDestination } from './src/components/AppDrawer';
+import { usageOverlay, storageOverlay } from './src/cmdK/overlayStores';
 import { I18nProvider, useT } from './src/i18n';
 import { appStore, useAppStore } from './src/stores/appStore';
 import { getNetworkStatus, subscribeToNetworkStatus } from './src/native/network';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
-import { useResponsive } from './src/theme/responsive';
 import { useFonts } from 'expo-font';
 import {
   PlusJakartaSans_400Regular,
@@ -31,6 +31,10 @@ import { NotoSansSC_400Regular } from '@expo-google-fonts/noto-sans-sc';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { ShareModal } from './src/components/ShareModal';
 import { ToastHost } from './src/components/Toast';
+import { ProfileOverlay } from './src/components/ProfileOverlay';
+import { UsageOverlay } from './src/components/UsageOverlay';
+import { StorageOverlay } from './src/components/StorageOverlay';
+import { nativeOverlayForEmbeddedTarget, nativeRouteForEmbeddedTarget } from './src/screens/embeddedBridge';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { ArtifactPreviewScreen } from './src/screens/ArtifactPreviewScreen';
 import { ChatScreen } from './src/screens/ChatScreen';
@@ -82,6 +86,9 @@ function navigateToDestination(
       break;
     case 'Settings':
       ref.navigate('Settings');
+      break;
+    case 'Display':
+      ref.navigate('Display');
       break;
     case 'Search':
       ref.navigate('Search');
@@ -191,6 +198,20 @@ function NativeApp() {
   const { colors } = useTheme();
   const [currentRoute, setCurrentRoute] = useState<keyof RootStackParamList | null>('Home');
   const embeddedActive = currentRoute === 'Embedded';
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
+  const [storageOpen, setStorageOpen] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeProfile = profileOverlay.subscribe(setProfileOpen);
+    const unsubscribeUsage = usageOverlay.subscribe(setUsageOpen);
+    const unsubscribeStorage = storageOverlay.subscribe(setStorageOpen);
+    return () => {
+      unsubscribeProfile();
+      unsubscribeUsage();
+      unsubscribeStorage();
+    };
+  }, []);
 
   // Keep system UI background dynamically in sync with the active theme color
   useEffect(() => {
@@ -257,6 +278,12 @@ function NativeApp() {
         closeDrawer();
         return true;
       }
+      if (profileOpen || usageOpen || storageOpen) {
+        if (profileOpen) profileOverlay.close();
+        if (usageOpen) usageOverlay.close();
+        if (storageOpen) storageOverlay.close();
+        return true;
+      }
       if (navigationRef.isReady() && navigationRef.canGoBack()) {
         navigationRef.goBack();
         return true;
@@ -264,7 +291,7 @@ function NativeApp() {
       return false;
     });
     return () => subscription.remove();
-  }, [closeDrawer, drawerOpen]);
+  }, [closeDrawer, drawerOpen, profileOpen, storageOpen, usageOpen]);
 
   const navigate = useCallback((route: NativeDestination) => {
     navigateToDestination(navigationRef, route);
@@ -272,11 +299,17 @@ function NativeApp() {
 
   const openEmbedded = useCallback((target: EmbeddedTarget, title: string) => {
     if (navigationRef.isReady()) {
-      navigationRef.navigate('Embedded', { target, title });
+      const nativeRoute = nativeRouteForEmbeddedTarget(target);
+      if (nativeRoute) navigationRef.navigate(nativeRoute);
+      else {
+        const nativeOverlay = nativeOverlayForEmbeddedTarget(target);
+        if (nativeOverlay === 'profile') profileOverlay.open();
+        if (nativeOverlay === 'usage') usageOverlay.open();
+        if (nativeOverlay === 'storage') storageOverlay.open();
+        if (!nativeOverlay) navigationRef.navigate('Embedded', { target, title });
+      }
     }
   }, []);
-
-  const { sidebarWidth } = useResponsive();
 
   return (
     <View style={[styles.root, styles.appFrame, { backgroundColor: colors.background }]}>
@@ -284,7 +317,13 @@ function NativeApp() {
       <View
         style={[
           styles.mainPane,
-          sidebarWidth && !embeddedActive ? { marginLeft: sidebarWidth } : null,
+          /*
+           * The permanent drawer participates in the root flex row and
+           * already owns its 260dp column. Adding a second margin here
+           * doubled the desktop/tablet inset (drawer + 260dp blank gutter),
+           * which made every directory page drift from the web shell.
+           */
+          null,
         ]}
       >
         <NativeStack onRouteChange={setCurrentRoute} />
@@ -293,6 +332,19 @@ function NativeApp() {
        *  Mounted at the root so they overlay any screen or drawer route. */}
       <ShareModal />
       <ToastHost />
+      <ProfileOverlay
+        visible={profileOpen}
+        user={state.user}
+        onClose={() => profileOverlay.close()}
+      />
+      <UsageOverlay
+        visible={usageOpen}
+        onClose={() => usageOverlay.close()}
+      />
+      <StorageOverlay
+        visible={storageOpen}
+        onClose={() => storageOverlay.close()}
+      />
     </View>
   );
 }

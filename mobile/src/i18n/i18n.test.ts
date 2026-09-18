@@ -15,15 +15,17 @@ describe('translate', () => {
   });
 
   it('interpolates named placeholders', () => {
-    /* 1:1 with `frontend/src/i18n.js:46-52,963-969`. */
-    expect(translate('en', 'greeting.chat', { name: 'Ada' })).toBe('Welcome back, Ada!');
-    expect(translate('zh', 'greeting.chat', { name: 'Ada' })).toBe('欢迎回来，Ada！');
-    expect(translate('en', 'greeting.chat.morning', { name: 'Ada' })).toBe('Good morning, Ada!');
+    /* Greetings intentionally match the current web landing copy and no
+     * longer interpolate a user name. Keep the placeholder assertion on a
+     * string that actually has a named variable. */
+    expect(translate('en', 'greeting.chat', { name: 'Ada' })).toBe('Ready when you are');
+    expect(translate('zh', 'greeting.chat', { name: 'Ada' })).toBe('准备好了，随时开始');
+    expect(translate('en', 'greeting.chat.morning', { name: 'Ada' })).toBe('Ready when you are');
     expect(translate('en', 'exam.questionN', { n: 3 })).toBe('Question 3');
   });
 
   it('leaves unknown placeholders intact rather than printing undefined', () => {
-    expect(translate('en', 'greeting.chat', { other: 'x' })).toBe('Welcome back, {name}!');
+    expect(translate('en', 'greeting.chat', { other: 'x' })).toBe('Ready when you are');
   });
 
   it('never renders "undefined" for an unknown key', () => {

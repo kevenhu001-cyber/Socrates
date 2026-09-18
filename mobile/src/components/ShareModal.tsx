@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Animated, Easing, Modal, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
+import { Overlay } from './Overlay';
 import { toast } from './Toast';
 import { setClipboardText } from '../native/clipboard';
 import { native } from '../native/native';
@@ -60,8 +61,6 @@ export function ShareModal() {
   const t = useT();
   const payload = useSyncExternalStore(subscribeShare, getShare, getShare);
   const [rendered, setRendered] = useState<SharePayload | null>(null);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translate = useRef(new Animated.Value(12)).current;
 
   useEffect(() => {
     if (!payload) {
@@ -69,17 +68,8 @@ export function ShareModal() {
       return undefined;
     }
     setRendered(payload);
-    opacity.setValue(0);
-    translate.setValue(12);
-    const animation = Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 200, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-      Animated.timing(translate, { toValue: 0, duration: 200, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-    ]);
-    animation.start();
-    return () => {
-      animation.stop();
-    };
-  }, [opacity, payload, translate]);
+    return undefined;
+  }, [payload]);
 
   if (!rendered) return null;
 
@@ -89,20 +79,13 @@ export function ShareModal() {
   };
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={closeShare} statusBarTranslucent>
-      <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
-        <Animated.View
-          testID="share-modal"
-          style={[
-            styles.modal,
-            {
-              backgroundColor: colors.surfaceRaised,
-              borderColor: withAlpha(colors.border, 0.15),
-              opacity,
-              transform: [{ translateY: translate }],
-            },
-          ]}
-        >
+    <Overlay
+      visible
+      onClose={closeShare}
+      maxWidth={400}
+      testID="share-modal"
+      style={[styles.modal, { backgroundColor: colors.surfaceRaised, borderColor: withAlpha(colors.border, 0.15) }]}
+    >
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>
               {t('share.title') || 'Share conversation'}
@@ -149,21 +132,12 @@ export function ShareModal() {
               </Text>
             </AnimatedPressable>
           </View>
-        </Animated.View>
-      </View>
-    </Modal>
+    </Overlay>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   modal: {
-    width: '90%',
-    maxWidth: 400,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 16,
     paddingTop: 24,

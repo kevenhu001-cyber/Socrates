@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "webBaseline": "ae3e4dff52c3a84be507b14a510954679d52736b",
+  "baselineNote": "Freeze the current web rendering at ae3e4dff; update this manifest with any later UI change.",
+  "viewports": [
+    { "name": "phone-compact", "width": 390, "height": 844, "densityIndependent": true },
+    { "name": "phone-large", "width": 412, "height": 915, "densityIndependent": true },
+    { "name": "tablet", "width": 768, "height": 1024, "densityIndependent": true }
+  ],
+  "themes": ["dark", "light", "system"],
+  "locales": ["en", "zh"],
+  "states": ["loading", "empty", "data", "error", "offline", "streaming", "complete"],
+  "nativeSurfaces": [
+    { "id": "auth", "route": "Auth", "coverage": ["loading", "error", "complete"], "webReference": "login/register/reset/oauth" },
+    { "id": "home", "route": "Home", "coverage": ["empty", "data", "offline"], "webReference": "chat-landing" },
+    { "id": "chat", "route": "Chat", "coverage": ["empty", "data", "streaming", "error", "offline", "complete"], "webReference": "chat-workbench" },
+    { "id": "tutor", "route": "Tutor", "coverage": ["loading", "data", "error", "complete"], "webReference": "tutor" },
+    { "id": "library", "route": "Library", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/library" },
+    { "id": "projects", "route": "Projects", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/projects" },
+    { "id": "scheduled", "route": "Scheduled", "coverage": ["loading", "empty", "data", "error"], "webReference": "scheduled" },
+    { "id": "plugins", "route": "Plugins", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/plugins" },
+    { "id": "knowledge", "route": "Knowledge", "coverage": ["loading", "empty", "data", "error"], "webReference": "knowledge" },
+    { "id": "mistakes", "route": "Mistakes", "coverage": ["loading", "empty", "data", "error"], "webReference": "mistakes" },
+    { "id": "exam", "route": "ExamSession", "coverage": ["loading", "empty", "data", "error", "complete"], "webReference": "exam" },
+    { "id": "search", "route": "Search", "coverage": ["loading", "empty", "data", "error"], "webReference": "search" },
+    { "id": "settings", "route": "Settings", "coverage": ["loading", "data", "error", "complete"], "webReference": "settings" },
+    { "id": "display", "route": "Display", "coverage": ["data", "complete"], "webReference": "display-preferences" },
+    { "id": "more", "route": "More", "coverage": ["data"], "webReference": "more" }
+  ],
+  "nativeOverlays": [
+    { "id": "drawer", "implementation": "AppDrawer", "presentation": "slide-in", "backDismiss": true },
+    { "id": "profile", "implementation": "ProfileOverlay", "presentation": "dialog", "backDismiss": true },
+    { "id": "usage", "implementation": "UsageOverlay", "presentation": "dialog", "backDismiss": true },
+    { "id": "storage", "implementation": "StorageOverlay", "presentation": "dialog", "backDismiss": true },
+    { "id": "share", "implementation": "ShareModal", "presentation": "dialog", "backDismiss": true },
+    { "id": "confirm", "implementation": "ConfirmDialog", "presentation": "dialog", "backDismiss": true },
+    { "id": "cmd-k", "implementation": "CmdKPalette", "presentation": "popover", "backDismiss": true },
+    { "id": "find", "implementation": "ChatScreen", "presentation": "popover", "backDismiss": true }
+  ],
+  "controlledWebViews": [
+    { "id": "html-artifact", "component": "ArtifactWebView", "reason": "HTML, chart, 3D and rich visualization rendering" },
+    { "id": "skills", "component": "EmbeddedWebScreen", "reason": "third-party/HTML skills surface" },
+    { "id": "oauth", "component": "EmbeddedWebScreen", "reason": "provider authorization and external web flows" }
+  ],
+  "androidDifferences": ["system-back", "keyboard", "status-bar", "navigation-bar", "permissions", "haptics", "system-share"]
+}

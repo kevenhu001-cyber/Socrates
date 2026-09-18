@@ -101,6 +101,8 @@ export const radius = {
   sm: 4,
   md: 8,
   lg: 12,
+  /** Dialogs and cards in the web workspace use a 16px outer radius. */
+  xl: 16,
   pill: 999,
 } as const;
 
@@ -186,10 +188,10 @@ export const darkPalette: ThemePalette = {
     default: '0 0% 22%',
     strong: '0 0% 22%',
   },
-  danger: '0 65% 62%',
-  success: '145 50% 50%',
+  danger: '0 60% 55%',
+  success: '142 60% 50%',
   muted: '0 0% 55%',
-  onAccent: '0 0% 10%',
+  onAccent: '0 0% 8%',
 };
 
 export const lightPalette: ThemePalette = {
@@ -214,12 +216,12 @@ export const lightPalette: ThemePalette = {
     disabled: '0 0% 52%',
   },
   border: {
-    subtle: '0 0% 88%',
-    default: '0 0% 80%',
-    strong: '0 0% 74%',
+    subtle: '0 0% 90%',
+    default: '0 0% 76%',
+    strong: '0 0% 70%',
   },
   danger: '0 60% 45%',
-  success: '152 50% 35%',
+  success: '142 50% 35%',
   muted: '0 0% 52%',
   onAccent: '0 0% 100%',
 };

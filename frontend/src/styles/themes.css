@@ -28,27 +28,27 @@
   --ui-accent-strong: 0 0% 100%;
   --ui-accent-soft: 0 0% 20%;
   --ui-accent-surface: 0 0% 20%;
-  --ui-on-accent: 0 0% 100%;
+  --ui-on-accent: 0 0% 8%;
 
-  --ui-bg-page: #212121;
-  --ui-bg-raised: 0 0% 13%;
-  --ui-bg-overlay: 0 0% 16%;
+  --ui-bg-page: 0 0% 13%;
+  --ui-bg-raised: 0 0% 16%;
+  --ui-bg-overlay: 0 0% 5%;
   --ui-bg-hover: 0 0% 21%;
-  --ui-bg-sunken: 0 0% 8%;
+  --ui-bg-sunken: 0 0% 2%;
 
   --ui-text-primary: 0 0% 100%;
   --ui-text-secondary: 0 0% 80%;
   --ui-text-tertiary: 0 0% 65%;
   --ui-text-muted: 0 0% 55%;
-  --ui-text-disabled: 0 0% 45%;
+  --ui-text-disabled: 0 0% 55%;
 
   --ui-border-subtle: 0 0% 22%;
   --ui-border-default: 0 0% 22%;
-  --ui-border-strong: 0 0% 32%;
+  --ui-border-strong: 0 0% 22%;
 
   --ui-danger: 0 60% 55%;
   --ui-success: 142 60% 50%;
-  --ui-muted: 0 0% 50%;
+  --ui-muted: 0 0% 55%;
 }
 
 /* Light mode — primary palette. */
@@ -58,25 +58,25 @@
   --ui-accent-surface: 0 0% 90%;
   --ui-on-accent: 0 0% 100%;
 
-  --ui-bg-page: #ffffff;
-  --ui-bg-raised: 0 0% 98%;
-  --ui-bg-overlay: 0 0% 95%;
+  --ui-bg-page: 0 0% 98%;
+  --ui-bg-raised: 0 0% 95%;
+  --ui-bg-overlay: 0 0% 100%;
   --ui-bg-hover: 0 0% 91%;
   --ui-bg-sunken: 0 0% 100%;
 
-  --ui-text-primary: 0 0% 8%;
+  --ui-text-primary: 0 0% 13%;
   --ui-text-secondary: 0 0% 27%;
-  --ui-text-tertiary: 0 0% 36%;
-  --ui-text-muted: 0 0% 44%;
+  --ui-text-tertiary: 0 0% 44%;
+  --ui-text-muted: 0 0% 52%;
   --ui-text-disabled: 0 0% 52%;
 
   --ui-border-subtle: 0 0% 90%;
-  --ui-border-default: 0 0% 84%;
-  --ui-border-strong: 0 0% 76%;
+  --ui-border-default: 0 0% 76%;
+  --ui-border-strong: 0 0% 70%;
 
   --ui-danger: 0 60% 45%;
   --ui-success: 142 50% 35%;
-  --ui-muted: 0 0% 50%;
+  --ui-muted: 0 0% 52%;
 }
 
 /* ============================================================

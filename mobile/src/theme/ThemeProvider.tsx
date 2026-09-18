@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, useWindowDimensions } from 'react-native';
 import { buildTheme, type Theme, type ThemeMode } from './theme';
 import { getItem, setItem } from '../platform/secureStorage';
 import { setAppStatusBarStyle } from '../native/statusBar';
@@ -125,6 +125,7 @@ function deriveBgRamp(overrideHex: string, mode: ThemeMode): {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemColorScheme = useColorScheme();
+  const { width } = useWindowDimensions();
   const [preference, setPreferenceState] = useState<ThemePreference>('dark');
   const [ready, setReady] = React.useState(false);
   const [displayPrefs, setDisplayPrefs] = useState(displayPrefsStore.get());
@@ -154,10 +155,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useMemo(() => {
     const base = buildTheme(mode);
     const bgOverride = mode === 'dark' ? displayPrefs.bgDark : displayPrefs.bgLight;
+    const darkCanvas = mode === 'dark' && !bgOverride;
     if (!bgOverride) {
       /* No color overrides — still inject fontScale + contentWidth so
        * consumers can read them off the theme object. */
-      return { ...base, fontScale: displayPrefs.fontScale, contentWidth: displayPrefs.contentWidth };
+      return {
+        ...base,
+        fontScale: displayPrefs.fontScale,
+        contentWidth: displayPrefs.contentWidth,
+        ...(darkCanvas
+          ? {
+              colors: {
+                ...base.colors,
+                /* The final web conversation/workspace surface is pure black
+                 * at every viewport. Keep the Android surface identical; the
+                 * permanent desktop rail is overridden by AppDrawer. */
+                background: '#000000',
+                backgroundSunken: '#000000',
+              },
+            }
+          : {}),
+      };
     }
     const bgRamp = bgOverride ? deriveBgRamp(bgOverride, mode) : null;
     const bgPatch = bgRamp
@@ -178,7 +196,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ...bgPatch,
       },
     };
-  }, [mode, displayPrefs]);
+  }, [mode, displayPrefs, width]);
 
   useEffect(() => {
     try {

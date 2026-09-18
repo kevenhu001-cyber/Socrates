@@ -58,6 +58,21 @@ test('React Native web shell renders the authenticated navigation for each viewp
       body: JSON.stringify({ sessions: [] }),
     });
   });
+  for (const [path, body] of [
+    ['/api/v2/api-key', { providers: [] }],
+    ['/api/v2/project-connectors', { configured: false, connectors: [] }],
+    ['/api/v2/config', { hasBeagleKey: false, isReasoning: false }],
+    ['/api/v2/memory?limit=100&includeDisabled=true', { memories: [], nextCursor: null }],
+    ['/api/v2/projects', { projects: [] }],
+  ]) {
+    await page.route(`**${path}`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
+    });
+  }
 
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible();

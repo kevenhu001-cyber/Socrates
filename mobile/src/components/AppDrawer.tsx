@@ -5,7 +5,8 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { EmbeddedTarget, Session } from '@socrates/contracts';
 import { useTheme, useThemeController } from '../theme/ThemeProvider';
-import { useResponsive } from '../theme/responsive';
+import { withAlpha } from '../theme/theme';
+import { mobileDrawerWidth, useResponsive } from '../theme/responsive';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { BrandMark } from './BrandMark';
@@ -47,6 +48,7 @@ export type NativeDestination =
   | 'Search'
   | 'ExamSession'
   | 'Settings'
+  | 'Display'
   | 'More'
   | 'Workspace'
   | 'Projects'
@@ -95,6 +97,7 @@ const DRAWER_LABELS = {
   projects: 'drawer.projects',
   scheduled: 'drawer.scheduled',
   plugins: 'drawer.plugins',
+  more: 'sidebar.nav.more',
   exam: 'sidebar.nav.exam',
   search: 'more.search',
   knowledge: 'drawer.knowledge',
@@ -104,52 +107,36 @@ const DRAWER_LABELS = {
   settings: 'more.settings',
 } as const;
 
-/* P2 1:1 — mirrors frontend `#sidebarNav` order
- * (new|projects|library|scheduled|plugins|exam|skills). Skills opens
- * the embedded skills surface, matching `index.html` skills iframe. */
+/* Mirrors the final web sidebar's visible order. Exam and Skills are hidden
+ * behind Customize on the web, so they remain available from More instead of
+ * being promoted to extra primary rows in the native drawer. */
 const PRIMARY_ITEMS: DrawerItem[] = [
   { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'add-circle-outline' },
-  { target: 'projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
-  { target: 'library', label: DRAWER_LABELS.library, icon: 'library-outline' },
-  { target: 'scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
-  { target: 'plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
-  { target: 'exam', label: DRAWER_LABELS.exam, icon: 'document-text-outline' },
-  { target: 'skills', label: DRAWER_LABELS.skills, icon: 'sparkles-outline' },
+  { route: 'Library', label: DRAWER_LABELS.library, icon: 'library-outline' },
+  { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
+  { route: 'Scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
+  { route: 'Plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
+  { route: 'More', label: DRAWER_LABELS.more, icon: 'ellipsis-horizontal' },
 ];
 
 export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   const { open, closeDrawer } = useAppDrawer();
   const { sidebarWidth } = useResponsive();
   const t = useT();
-  /* Strict parity: account/data overlays use the SPA itself as the single
-   * implementation. This removes the native look-alike copies that had
-   * drifted from ProfileModal/UsageModal/StorageModal. The Android shell
-   * still owns navigation/back/system UI; the surface inside is the exact
-   * authenticated SPA modal via the one-time web-session hand-off. */
+  /* Cmd+K and the drawer publish these signals. The root app renders the
+   * native overlays above both the drawer and the active screen. */
   useEffect(() => profileOverlay.subscribe((open) => {
     if (!open) return;
     closeDrawer();
-    profileOverlay.close();
-    onOpenEmbedded('profile', t('profile.heading') || 'Account');
-  }), [closeDrawer, onOpenEmbedded, t]);
+  }), [closeDrawer]);
   useEffect(() => usageOverlay.subscribe((open) => {
     if (!open) return;
     closeDrawer();
-    usageOverlay.close();
-    onOpenEmbedded('usage', t('usage.heading') || 'Token usage');
-  }), [closeDrawer, onOpenEmbedded, t]);
+  }), [closeDrawer]);
   useEffect(() => storageOverlay.subscribe((open) => {
     if (!open) return;
     closeDrawer();
-    storageOverlay.close();
-    onOpenEmbedded('storage', t('storage.heading') || 'Storage');
-  }), [closeDrawer, onOpenEmbedded, t]);
-  const permanent = sidebarWidth !== null;
-  if (permanent) {
-    return (
-      <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />
-    );
-  }
+  }), [closeDrawer]);
   const slideAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (open) {
@@ -164,7 +151,14 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
     }
   }, [open, slideAnim]);
 
-  const slideX = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [-288, 0] });
+  const permanent = sidebarWidth !== null;
+  if (permanent) {
+    return (
+      <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />
+    );
+  }
+
+  const slideX = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [-mobileDrawerWidth, 0] });
   const backdropOpacity = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
 
   return (
@@ -184,7 +178,7 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
 function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props & { permanent?: boolean }) {
   const { closeDrawer } = useAppDrawer();
   const { colors, radius, typography } = useTheme();
-  const { sidebarWidth, isCompact } = useResponsive();
+  const { sidebarWidth, isCompact, isDesktop } = useResponsive();
   const { mode: themeMode, toggle: toggleTheme } = useThemeController();
   const state = useAppStore();
   const t = useT();
@@ -283,6 +277,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       onPress={() => activate(item)}
       style={[
         styles.item,
+        isDesktop ? styles.itemDesktop : styles.itemCompact,
         item.route === 'Home' ? { backgroundColor: colors.surfaceHover } : null,
         { borderRadius: 8 },
       ]}
@@ -306,21 +301,24 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
   const plan = state.user?.plan || state.user?.tier || 'Free plan';
 
   const isDark = colors.mode === 'dark';
+  const panelBackground = permanent && colors.mode === 'dark'
+    ? '#1a1a1a'
+    : withAlpha(colors.source.bg.overlay, 0.72);
   return (
     <BlurView
       tint={isDark ? 'dark' : 'light'}
       intensity={Platform.OS === 'web' ? 0 : 18}
       style={[
         styles.panel,
-        permanent ? { width: sidebarWidth ?? 288, maxWidth: sidebarWidth ?? 288, flex: 1 } : null,
+        permanent ? { width: sidebarWidth ?? mobileDrawerWidth, maxWidth: sidebarWidth ?? mobileDrawerWidth, flex: 1 } : null,
         !permanent && isCompact ? styles.panelCompact : null,
-        { backgroundColor: isDark ? PANEL_FROSTED_DARK : PANEL_FROSTED_LIGHT, borderRightColor: colors.border },
+        { backgroundColor: panelBackground, borderRightColor: colors.border },
       ]}
     >
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? PANEL_FROSTED_DARK : PANEL_FROSTED_LIGHT }]} />
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: panelBackground }]} />
       <SafeAreaView edges={['top', 'bottom', 'left']} style={styles.panelSafe}>
       {/* Brand Header */}
-      <View style={[styles.brandRow, { borderBottomColor: colors.border }]}>
+      <View style={[styles.brandRow, isDesktop ? styles.brandRowDesktop : null, { borderBottomColor: colors.border }]}>
         <BrandMark size={18} />
         <Text style={[styles.brand, { color: colors.text, fontFamily: typography.semibold }]}>Socrates</Text>
         {!permanent ? (
@@ -342,7 +340,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       {/* Main Scroll Content */}
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Navigation list */}
-        <View style={styles.group}>{PRIMARY_ITEMS.map(renderItem)}</View>
+        <View style={[styles.group, isDesktop ? styles.groupDesktop : null]}>{PRIMARY_ITEMS.map(renderItem)}</View>
 
         {/* Frontend places search after the primary destinations. */}
         <View style={[styles.searchWrap, { backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: 16 }]}>
@@ -424,7 +422,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
       </ScrollView>
 
       {/* Footer Profile & Preferences */}
-      <View style={[styles.profile, { borderTopColor: colors.border, backgroundColor: isDark ? '#121212' : colors.surface }]}>
+      <View style={[styles.profile, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
         <AnimatedPressable
           accessibilityLabel={t('profile.heading') || 'Account'}
           onPress={() => profileOverlay.open()}
@@ -462,7 +460,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           accessibilityLabel={t('sidebar.more.display') || 'Display & theme'}
           onPress={() => {
             closeDrawer();
-            onOpenEmbedded('display', t('sidebar.more.display') || 'Display & theme');
+            onNavigate('Display');
           }}
           style={[styles.footerIconBtn, { borderRadius: radius.md }]}
         >
@@ -474,7 +472,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           accessibilityLabel={t('more.settings') || 'Settings'}
           onPress={() => {
             closeDrawer();
-            onOpenEmbedded('api-settings', t('more.settings') || 'Settings');
+            onNavigate('Settings');
           }}
           style={[styles.footerIconBtn, { borderRadius: radius.md }]}
         >
@@ -535,22 +533,14 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
 
 /* P1-3 → P2 follow-up: replaced the previous alpha-layering
  * approximation with a real `<BlurView tint=… intensity=18>` from
- * `expo-blur` (now installed). The legacy `PANEL_FROSTED_*` constants
- * are kept as a CSS fallback for platforms where the blur runtime is
- * unavailable (e.g. legacy Android without the BlurView native
- * implementation) — DrawerSurface still references them as a final
- * background tint, so the frosted look survives an exception. */
-/* frontend `.sidebar { background: hsl(var(--bg-000)/0.72); backdrop-filter: blur(12px) }`
- * — the frosted tint is the overlay token at 72% alpha in BOTH modes. */
-const PANEL_FROSTED_DARK = '#121212';
-const PANEL_FROSTED_LIGHT = '#fafafa';
-
+ * `expo-blur` (now installed). The token-derived panel tint remains a
+ * deterministic fallback when the native blur implementation is unavailable. */
 const styles = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row' },
   backdrop: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.64)' },
-  /* frontend `.sidebar { width: var(--app-sidebar-width, 18rem) }` = 288px. */
-  panel: { width: '86%', maxWidth: 288, height: '100%', flex: 1, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  panelCompact: { width: 260, maxWidth: 260 },
+  /* Web mobile/tablet drawer: 300px. */
+  panel: { width: '86%', maxWidth: mobileDrawerWidth, height: '100%', flex: 1, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  panelCompact: { width: mobileDrawerWidth, maxWidth: mobileDrawerWidth },
   panelSafe: { flex: 1 },
   brandRow: {
     height: 48,
@@ -560,6 +550,7 @@ const styles = StyleSheet.create({
     gap: 10,
     borderBottomWidth: 0,
   },
+  brandRowDesktop: { height: 60 },
   brand: { fontSize: 16, flex: 1 },
   brandActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   headerAction: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
@@ -582,13 +573,15 @@ const styles = StyleSheet.create({
   },
   scroll: { paddingHorizontal: 8, paddingBottom: 18 },
   group: { gap: 0, paddingTop: 4 },
+  groupDesktop: { paddingTop: 7 },
   item: {
-    minHeight: 36,
     paddingHorizontal: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
+  itemCompact: { minHeight: 44 },
+  itemDesktop: { minHeight: 36 },
   itemText: { fontSize: 14 },
   divider: {
     height: StyleSheet.hairlineWidth,

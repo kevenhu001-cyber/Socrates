@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-import { withAlpha } from '../theme/theme';
 import { AnimatedPressable } from './AnimatedPressable';
+import { Overlay } from './Overlay';
 
 export interface ConfirmDialogProps {
   visible: boolean;
@@ -35,40 +35,12 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const { colors, typography } = useTheme();
-  /* frontend `.confirm-box { animation: slideUp .15s var(--ease-out) }`
-   * (`styles.css:2291`): 12px → 0, opacity 0 → 1. Re-runs on every
-   * open since the effect keys off `visible`. */
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translate = useRef(new Animated.Value(12)).current;
-  useEffect(() => {
-    if (!visible) return undefined;
-    opacity.setValue(0);
-    translate.setValue(12);
-    const animation = Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 150, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-      Animated.timing(translate, { toValue: 0, duration: 150, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }),
-    ]);
-    animation.start();
-    return () => {
-      animation.stop();
-    };
-  }, [opacity, translate, visible]);
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={[styles.overlay, { backgroundColor: colors.scrim }]}>
-        <Pressable accessibilityLabel={cancelLabel} onPress={onCancel} style={styles.backdrop} />
-        <Animated.View
+    <Overlay visible={visible} onClose={onCancel} maxWidth={320} testID="confirm-dialog">
+      <View
           accessibilityRole="alert"
           accessibilityLabel={title}
-          style={[
-            styles.box,
-            {
-              backgroundColor: colors.surfaceRaised,
-              borderColor: withAlpha(colors.border, 0.15),
-              opacity,
-              transform: [{ translateY: translate }],
-            },
-          ]}
+          style={styles.box}
         >
           <Text style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>
             {title}
@@ -118,33 +90,14 @@ export function ConfirmDialog({
               </Text>
             </AnimatedPressable>
           </View>
-        </Animated.View>
-      </View>
-    </Modal>
+        </View>
+    </Overlay>
   );
 }
 
 const styles = StyleSheet.create({
-  /* frontend `.confirm-dialog`: fixed inset-0, rgba(0,0,0,.65), centered. */
-  overlay: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  /* frontend `.confirm-box`: bg-000, 0.5px border, radius 14,
-   * width 90% max 320, padding 24/20/16. */
+  /* The surrounding Overlay owns the surface, scrim and animation. */
   box: {
-    width: '90%',
-    maxWidth: 320,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 14,
     paddingTop: 24,
     paddingHorizontal: 20,
     paddingBottom: 16,

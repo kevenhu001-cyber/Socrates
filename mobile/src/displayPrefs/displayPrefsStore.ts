@@ -7,7 +7,7 @@
  *   DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375] default 1.125 (M)
  *   DISPLAY_WIDTH_STEPS = [0.85, 1, 1.3, 1.7]    default 1 (M)
  *   content column      = 58rem * widthScale (928px at scale 1)
- *   bg pickers          = free hex, defaults #212121 / #ffffff
+ *   bg pickers          = free hex, defaults #000000 / #ffffff
  *   grid                = showGrid false default
  * See `frontend/src/displayPrefs.js:10-17`,
  * `frontend/src/styles.css:1050`, `frontend/index.html:410-424`. */
@@ -98,6 +98,10 @@ export const displayPrefsStore = {
          * palette; drop any persisted value so it cannot resurface. */
         delete parsed.accentColor;
         prefs = { ...defaults, ...parsed };
+        /* The pre-parity mobile build exposed the old page gray as the dark
+         * default. It was never a user customization, so migrate that value
+         * to the new pure-black canvas instead of preserving the drift. */
+        if (prefs.bgDark?.toLowerCase() === '#212121') prefs.bgDark = null;
         /* Migrate pre-P0 values to the canonical web steps so users
          * on the old mobile-only ladder (font 0.9/1/1.1/1.2,
          * width px 620/720/860/1024) land on the nearest web step

@@ -1,4 +1,4 @@
-import { isEmbeddedTarget, parseBridgeMessage } from './embeddedBridge';
+import { isEmbeddedTarget, nativeOverlayForEmbeddedTarget, nativeRouteForEmbeddedTarget, parseBridgeMessage } from './embeddedBridge';
 
 describe('embedded WebView bridge', () => {
   it('accepts only typed first-party messages', () => {
@@ -15,5 +15,11 @@ describe('embedded WebView bridge', () => {
     expect(isEmbeddedTarget('api-settings')).toBe(true);
     expect(isEmbeddedTarget('../projects')).toBe(false);
     expect(isEmbeddedTarget(null)).toBe(false);
+    expect(nativeRouteForEmbeddedTarget('projects')).toBe('Projects');
+    expect(nativeRouteForEmbeddedTarget('library')).toBe('Library');
+    expect(nativeRouteForEmbeddedTarget('skills')).toBeNull();
+    expect(nativeOverlayForEmbeddedTarget('profile')).toBe('profile');
+    expect(nativeOverlayForEmbeddedTarget('usage')).toBe('usage');
+    expect(nativeOverlayForEmbeddedTarget('skills')).toBeNull();
   });
 });

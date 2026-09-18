@@ -99,27 +99,12 @@ export function NewChatScreen({ navigation, route }: Props) {
   const currentProvider = state.providers.find((provider) => provider.id === state.selectedModel);
   const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
 
-  /* P1 1:1 — time-aware personalized greeting mirrors
-   * `frontend/src/ui/greeting.js:renderGreeting` writing into
-   * `#topicTitle`. First token of displayName/email, else guest. */
-  const greeting = (() => {
-    const raw = state.user?.displayName || state.user?.email || t('greeting.guest');
-    const name = String(raw || t('greeting.guest')).trim().split(/\s+/)[0] || t('greeting.guest');
-    let key = 'greeting.chat';
-    if (mode === 'tutor') {
-      key = 'greeting.tutor';
-    } else {
-      const hour = new Date().getHours();
-      if (hour >= 5 && hour < 12) key = 'greeting.chat.morning';
-      else if (hour >= 12 && hour < 17) key = 'greeting.chat.afternoon';
-      else if (hour >= 17 && hour < 22) key = 'greeting.chat.evening';
-      else key = 'greeting.chat.late';
-    }
-    const tmpl = t(key) === key
-      ? (mode === 'tutor' ? "Let's explore, {name}." : 'Welcome back, {name}!')
-      : t(key);
-    return tmpl.replace('{name}', name);
-  })();
+  /* The current SPA landing is a static mode greeting. Older native code
+   * personalized it by time and account name, which diverged from the web
+   * renderer and changed the landing geometry from one session to another. */
+  const greeting = mode === 'tutor'
+    ? (t('greeting.tutor') === 'greeting.tutor' ? "Let's explore." : t('greeting.tutor'))
+    : (t('greeting.chat') === 'greeting.chat' ? 'Ready when you are' : t('greeting.chat'));
 
   return (
     <Screen keyboard style={styles.screen}>
@@ -243,7 +228,7 @@ export function NewChatScreen({ navigation, route }: Props) {
         selectedId={state.selectedModel}
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('settings.title') || 'Settings' })}
+        onManageSettings={() => navigation.navigate('Settings')}
       />
     </Screen>
   );

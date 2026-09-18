@@ -392,7 +392,7 @@ export function ExamScreen({ navigation }: { navigation: any }) {
         selectedId={examState.selectedModel}
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('more.settings') || 'Settings' })}
+        onManageSettings={() => navigation.navigate('Settings')}
       />
       </ScrollView>
     </Screen>
