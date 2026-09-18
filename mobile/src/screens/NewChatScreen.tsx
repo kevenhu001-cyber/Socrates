@@ -9,7 +9,7 @@ import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
 import { useTheme } from '../theme/ThemeProvider';
-import { useI18n, useT } from '../i18n';
+import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import { native } from '../native/native';
@@ -17,46 +17,6 @@ import type { RootStackParamList } from '../navigation/types';
 import { useResponsive } from '../theme/responsive';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
-
-interface SuggestionCard {
-  id: string;
-  icon: React.ComponentProps<typeof Ionicons>['name'];
-  title: string;
-  promptZh: string;
-  promptEn: string;
-}
-
-/* P4 1:1 — prompt library ported from
- * `frontend/src/ui/suggestions.js:37-136` (same 14 ids, same zh/en
- * copy). The web row renders two chips at a session-stable offset
- * (`pickFromLibrary`: firstIdx = offset % n, second = +3); mobile
- * derives the offset from the session id hash so the pair is stable
- * within a session and rotates across sessions. Icons map the web
- * glyph set onto Ionicons. */
-const PROMPT_LIBRARY: SuggestionCard[] = [
-  { id: 'daily-briefing', icon: 'briefcase-outline', title: 'briefing', promptZh: '给我一份晨间简报 — 列出今天最该知道的三件事', promptEn: 'Give me a morning briefing — top three things I should know today' },
-  { id: 'inbox-triage', icon: 'mail-outline', title: 'inbox', promptZh: '帮我分一下收件箱：有一堆未读邮件需要一份处理计划', promptEn: 'Help me triage my inbox: I have a stack of unread emails and need a plan' },
-  { id: 'meeting-notes', icon: 'document-text-outline', title: 'notes', promptZh: '把会议笔记整理成一份干净的纪要，附上待办事项', promptEn: 'Turn my meeting notes into a clean recap with action items' },
-  { id: 'code-review', icon: 'code-slash-outline', title: 'code', promptZh: '审查这段代码，找 bug 并给出可执行的改进建议', promptEn: 'Review this code for bugs and suggest concrete improvements' },
-  { id: 'sql-explainer', icon: 'server-outline', title: 'database', promptZh: '逐行解释这条 SQL 在做什么', promptEn: 'Explain what this SQL query does, step by step' },
-  { id: 'regex-builder', icon: 'text-outline', title: 'regex', promptZh: '帮我写一条匹配 …… 的正则表达式', promptEn: 'Help me write a regex that matches …' },
-  { id: 'concept-teach', icon: 'school-outline', title: 'teach', promptZh: '像给好奇的青少年讲 [topic] 一样教我 — 先讲直觉', promptEn: 'Teach me [topic] like I am a curious teenager — start with the intuition' },
-  { id: 'quiz-me', icon: 'help-circle-outline', title: 'quiz', promptZh: '考考我 [topic] — 给我五道题，并批改我的回答', promptEn: 'Quiz me on [topic] — give me five questions and grade my answers' },
-  { id: 'compare', icon: 'git-compare-outline', title: 'compare', promptZh: '对比 [A] 与 [B] — 各自优缺点，以及什么时候该选哪个', promptEn: 'Compare [A] vs [B] — pros, cons, and when to pick each' },
-  { id: 'summarize', icon: 'list-outline', title: 'summarize', promptZh: '把附件文档压缩成五条要点', promptEn: 'Summarize the attached document into five bullet points' },
-  { id: 'brainstorm', icon: 'bulb-outline', title: 'spark', promptZh: '围绕 …… 给我十个短篇故事的切入角度', promptEn: 'Brainstorm ten angles for a short story about …' },
-  { id: 'rewrite', icon: 'pencil-outline', title: 'pen', promptZh: '把这段话改写得更自信、更精炼', promptEn: 'Rewrite this paragraph to sound more confident and concise' },
-  { id: 'translate-tone', icon: 'globe-outline', title: 'globe', promptZh: '把这段文字翻译成自然、地道的中文', promptEn: 'Translate this passage into natural, idiomatic English' },
-  { id: 'decision-frame', icon: 'scale-outline', title: 'scale', promptZh: '我在两个选项之间犹豫 — 帮我搭一个简单的决策框架', promptEn: 'I am weighing two options — help me build a simple decision frame' },
-];
-
-function hashString(value: string): number {
-  let h = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    h = (h * 31 + value.charCodeAt(i)) | 0;
-  }
-  return Math.abs(h);
-}
 
 /* Landing entrance: frontend staggers greeting → subtitle → composer
  * with `emptyStateIn .4s var(--ease-out)` at 0/70/140ms
@@ -77,16 +37,8 @@ function Enter({ delay = 0, children }: { delay?: number; children: React.ReactN
   return <Animated.View style={{ opacity, transform: [{ translateY: translate }] }}>{children}</Animated.View>;
 }
 
-function pickLibraryPair(sessionKey: string): SuggestionCard[] {
-  const n = PROMPT_LIBRARY.length;
-  const firstIdx = hashString(sessionKey || 'landing') % n;
-  const secondIdx = (firstIdx + 3) % n;
-  return [PROMPT_LIBRARY[firstIdx], PROMPT_LIBRARY[secondIdx === firstIdx ? (firstIdx + 1) % n : secondIdx]];
-}
-
 export function NewChatScreen({ navigation, route }: Props) {
-  const { colors, radius, typography } = useTheme();
-  const { language } = useI18n();
+  const { colors, typography } = useTheme();
   const t = useT();
   const state = useAppStore();
   const { isCompact } = useResponsive();
@@ -131,14 +83,8 @@ export function NewChatScreen({ navigation, route }: Props) {
     await appStore.sendMessage(state.draft);
   };
 
-  const selectIdea = (idea: SuggestionCard) => {
-    const text = language === 'zh' ? idea.promptZh : idea.promptEn;
-    appStore.setDraft(text);
-  };
-
   const currentProvider = state.providers.find((provider) => provider.id === state.selectedModel);
   const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
-  const ideas = pickLibraryPair(state.activeSession?.id || 'landing');
 
   /* P1 1:1 — time-aware personalized greeting mirrors
    * `frontend/src/ui/greeting.js:renderGreeting` writing into
@@ -180,60 +126,23 @@ export function NewChatScreen({ navigation, route }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Spacious empty area 1:1 matching cur-mobile-home.png */}
-        <View style={styles.spacer} />
-
-        {/* Greeting — mirrors `#topicTitle.topic-title.greeting`
-         * (`frontend/index.html:568`, `styles.css:1074`). */}
-        {!isCompact ? <Enter delay={0}>
-          <Text
-            accessibilityRole="header"
-            style={[styles.greeting, { color: colors.textMuted, fontFamily: typography.display }]}
-          >
-            {greeting}
-          </Text>
-        </Enter> : null}
-
-        {/* Starter ideas — two chips at a session-stable offset from
-         * the shared library, with the `home.ideasLabel` heading
-         * (`frontend/index.html:635-636`, `suggestions.js:274-287`). */}
-        {!isCompact ? <Enter delay={70}>
-          <Text style={[styles.ideasLabel, { color: colors.textMuted, fontFamily: typography.semibold }]}>
-            {t('home.ideasLabel') || (language === 'zh' ? '灵感' : 'Ideas for you')}
-          </Text>
-        </Enter> : null}
-        <Enter delay={70}>
-          <View style={[styles.ideasSection, isCompact ? styles.ideasSectionCompact : null]}>
-          {ideas.slice(0, 2).map((idea) => (
-            <AnimatedPressable
-              key={idea.id}
-              onPress={() => selectIdea(idea)}
+        {/* Current SPA landing: greeting + composer only. The old
+         * heuristic Ideas/prompt library and home quick-actions are hidden by
+         * the final chat-surface.css layer, so native must not resurrect them. */}
+        <View style={styles.heroRegion}>
+          <Enter delay={0}>
+            <Text
+              accessibilityRole="header"
               style={[
-                styles.ideaPill,
-                isCompact ? styles.ideaPillCompact : null,
-                {
-                  backgroundColor: 'transparent',
-                  borderColor: colors.borderSubtle,
-                },
+                styles.greeting,
+                isCompact ? styles.greetingCompact : null,
+                { color: colors.text, fontFamily: typography.body },
               ]}
             >
-              <View style={[styles.ideaIcon, isCompact ? styles.ideaIconCompact : null]}>
-                <Ionicons name={idea.icon} size={isCompact ? 20 : 15} color={isCompact ? colors.text : colors.accent} />
-              </View>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.ideaPillText,
-                  isCompact ? styles.ideaPillTextCompact : null,
-                  { color: colors.textSecondary, fontFamily: typography.body },
-                ]}
-              >
-                {language === 'zh' ? idea.promptZh : idea.promptEn}
-              </Text>
-            </AnimatedPressable>
-          ))}
-          </View>
-        </Enter>
+              {greeting}
+            </Text>
+          </Enter>
+        </View>
 
         {/* Central Composer Capsule */}
         <Enter delay={140}>
@@ -293,7 +202,13 @@ export function NewChatScreen({ navigation, route }: Props) {
         onPickCamera={() => void attach('camera')}
         onPickPhotos={() => void attach('image')}
         onPickFiles={() => void attach('file')}
-        onPickPlugins={() => navigation.navigate('Plugins')}
+        onPickPlugins={() => navigation.navigate('Embedded', { target: 'plugins', title: t('sidebar.nav.plugins') || 'Plugins' })}
+        onPickWrite={() => appStore.setActiveExtension(state.activeExtension === 'write' ? null : 'write')}
+        onPickExplore={() => appStore.setActiveExtension(state.activeExtension === 'explore' ? null : 'explore')}
+        onPickAnalyze={() => appStore.setActiveExtension(state.activeExtension === 'analyze' ? null : 'analyze')}
+        onPickExam={() => navigation.navigate('Embedded', { target: 'exam', title: t('sidebar.nav.exam') || 'Exam' })}
+        onPickSkills={() => navigation.navigate('Embedded', { target: 'skills', title: t('sidebar.more.skills') || 'Skills & shortcuts' })}
+        activeExtension={state.activeExtension}
         onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={state.reasoningEffort === 'high'}
       />
@@ -324,9 +239,9 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   scrollContentCompact: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 16,
     paddingTop: 0,
-    paddingBottom: 24,
+    paddingBottom: 16,
   },
   offline: {
     marginHorizontal: 14,
@@ -339,74 +254,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   offlineText: { fontSize: 12 },
-  spacer: {
+  heroRegion: {
     flex: 1,
-    minHeight: 120,
-  },
-  /* frontend `.topic-title`: display serif, clamp(1.8rem–2.5rem),
-   * centered, `text-200` muted-ink. 32px lands mid-clamp. */
-  greeting: {
-    fontSize: 32,
-    lineHeight: 38,
-    textAlign: 'center',
-    marginBottom: 18,
-    paddingHorizontal: 12,
-    maxWidth: 576,
-    alignSelf: 'center',
-  },
-  ideasSection: {
-    marginBottom: 20,
-    gap: 8,
-    paddingHorizontal: 2,
-  },
-  ideasSectionCompact: {
-    marginBottom: 16,
-    marginHorizontal: -6,
-    gap: 8,
-    paddingHorizontal: 12,
-  },
-  ideasLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    paddingHorizontal: 2,
-  },
-  ideaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 0.5,
-  },
-  ideaPillCompact: {
-    minHeight: 44,
-    paddingVertical: 7,
-    paddingHorizontal: 0,
-    gap: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  ideaIcon: {
-    width: 16,
-    height: 16,
+    minHeight: 180,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ideaIconCompact: {
-    width: 24,
-    height: 24,
+  greeting: {
+    fontSize: 30,
+    lineHeight: 38,
+    textAlign: 'center',
+    paddingHorizontal: 12,
+    maxWidth: 620,
+    alignSelf: 'center',
+    fontWeight: '400',
+    letterSpacing: -0.3,
   },
-  ideaPillText: {
-    fontSize: 13,
-    lineHeight: 18,
-    flexShrink: 1,
-  },
-  ideaPillTextCompact: {
-    fontSize: 16,
-    lineHeight: 22,
+  greetingCompact: {
+    fontSize: 28,
+    lineHeight: 35,
   },
   composerCardWrap: {
     marginBottom: 0,
