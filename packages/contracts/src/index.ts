@@ -243,7 +243,9 @@ export type EmbeddedTarget =
   | 'api-settings'
   | 'profile'
   | 'usage'
-  | 'storage';
+  | 'storage'
+  | 'display'
+  | 'shortcuts';
 
 export interface MobileWebSessionRequest {
   target: EmbeddedTarget;
