@@ -46,14 +46,6 @@ export function VoiceWaveBars({ color, level = 0.16 }: { color: string; level?: 
         />
       ))}
     </View>
-    <ReasoningEffortPicker
-      visible={effortPickerOpen}
-      value={reasoningEffort}
-      anchor={effortAnchor}
-      onChange={(effort) => onChangeReasoningEffort?.(effort)}
-      onClose={() => setEffortPickerOpen(false)}
-    />
-    </>
   );
 }
 
@@ -491,6 +483,14 @@ export function Composer({
         </View>
       )}
     </View>
+    <ReasoningEffortPicker
+      visible={effortPickerOpen}
+      value={reasoningEffort}
+      anchor={effortAnchor}
+      onChange={(effort) => onChangeReasoningEffort?.(effort)}
+      onClose={() => setEffortPickerOpen(false)}
+    />
+    </>
   );
 }
 
