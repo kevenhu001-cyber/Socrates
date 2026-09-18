@@ -36,7 +36,6 @@ import { appendLocalMemory } from '../storage/localMemory.js';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
-import { withElementSwapTransition } from '../ui/viewTransitions.ts';
 
 function _t(key, fallback) {
   try {
