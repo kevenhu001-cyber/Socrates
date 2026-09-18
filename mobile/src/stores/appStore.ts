@@ -697,11 +697,9 @@ class AppStore {
         const nextStage = substantive && previousStage !== 'check'
           ? nextTeachingStage(previousStage)
           : previousStage;
-        const practiceAttempts = previousStage === 'exercise'
-          ? Number(session.practiceAttempts || 0) + 1
-          : nextStage === 'exercise' && previousStage !== 'exercise'
-            ? 0
-            : Number(session.practiceAttempts || 0);
+        let practiceAttempts = Number(session.practiceAttempts || 0);
+        if (previousStage === 'exercise') practiceAttempts += 1;
+        else if (nextStage === 'exercise') practiceAttempts = 0;
         const tutorSubstantiveCount = this.state.tutorSubstantiveCount + (substantive ? 1 : 0);
         const tutorStuckCount = this.state.tutorStuckCount + 1;
 
