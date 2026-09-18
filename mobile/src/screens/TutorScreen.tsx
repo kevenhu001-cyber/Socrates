@@ -1,16 +1,23 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
+import {
+  applyDiagnosticResults,
+  generateDiagnosticQuestions,
+  generateTopicKnowledgeNodes,
+  type TutorDiagnosticQuestion,
+  type TutorKnowledgeNode,
+} from '../data/tutor/tutorFlow';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Tutor'>;
+type FlowPhase = 'overview' | 'choice' | 'generating' | 'questions' | 'results';
 
-/** Teaching stage id (as the server reports it) paired with its label key. */
 const STAGES = [
   ['motivate', 'tutor.stageMotivate'],
   ['define', 'tutor.stageDefine'],
@@ -20,69 +27,770 @@ const STAGES = [
   ['check', 'tutor.stageCheck'],
 ] as const;
 
-export function TutorScreen({ navigation }: Props) {
-  const { colors, radius, spacing } = useTheme();
-  const t = useT();
-  const state = useAppStore();
-  const stage = state.activeSession?.teachingStage || 'motivate';
-  const openTutorChat = () => { if (!state.activeSession || state.activeSession.mode !== 'tutor') appStore.startNewSession('tutor'); navigation.navigate('Chat'); };
-  /* Knowledge summary — mirrors the web three-section KB view
-   * (internalized / fuzzy / blank) in `tutorSocratic.js:226-247`.
-   * Counts only; the force-graph stays web-only. */
-  const kbRaw = state.activeSession?.kbNodes;
-  const kbCounts = Array.isArray(kbRaw) ? (kbRaw as Array<{ status?: string }>).reduce(
+function countKnowledge(nodes: TutorKnowledgeNode[]) {
+  return nodes.reduce(
     (acc, node) => {
-      const s = String(node?.status || 'blank');
-      if (s === 'internalized') acc.internalized += 1;
-      else if (s === 'fuzzy') acc.fuzzy += 1;
+      if (node.status === 'internalized') acc.internalized += 1;
+      else if (node.status === 'fuzzy') acc.fuzzy += 1;
       else acc.blank += 1;
       return acc;
     },
     { internalized: 0, fuzzy: 0, blank: 0 },
-  ) : null;
+  );
+}
+
+export function TutorScreen({ navigation, route }: Props) {
+  const { colors, radius, spacing, typography } = useTheme();
+  const t = useT();
+  const state = useAppStore();
+  const initialTopic = String(route.params?.initialTopic || '').trim();
+  const existingTopic = String(state.activeSession?.topic || state.activeSession?.domain || '').trim();
+  const topic = initialTopic || existingTopic;
+
+  const [phase, setPhase] = useState<FlowPhase>(initialTopic ? 'choice' : 'overview');
+  const [questionCount, setQuestionCount] = useState(5);
+  const [nodes, setNodes] = useState<TutorKnowledgeNode[]>([]);
+  const [questions, setQuestions] = useState<TutorDiagnosticQuestion[]>([]);
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialTopic) return;
+    if (!state.activeSession || state.activeSession.mode !== 'tutor') {
+      appStore.startNewSession('tutor', true);
+    }
+    setPhase('choice');
+    setQuestionCount(5);
+    setNodes([]);
+    setQuestions([]);
+    setAnswers([]);
+    setQuestionIndex(0);
+    setLocalError(null);
+  }, [initialTopic]);
+
+  const modelContext = useMemo(() => ({
+    customInstructions: state.user?.customInstructions,
+    reasoningEffort: state.reasoningEffort,
+  }), [state.reasoningEffort, state.user?.customInstructions]);
+
+  const existingNodes = useMemo(
+    () => Array.isArray(state.activeSession?.kbNodes)
+      ? state.activeSession!.kbNodes as unknown as TutorKnowledgeNode[]
+      : [],
+    [state.activeSession?.kbNodes],
+  );
+
+  const resultNodes = useMemo(
+    () => questions.length ? applyDiagnosticResults(nodes, questions, answers) : nodes,
+    [answers, nodes, questions],
+  );
+  const resultCounts = useMemo(() => countKnowledge(resultNodes), [resultNodes]);
+
+  const startTeaching = async (
+    sourceNodes: TutorKnowledgeNode[],
+    sourceQuestions: TutorDiagnosticQuestion[] = [],
+    sourceAnswers: number[] = [],
+  ) => {
+    setLocalError(null);
+    const ok = await appStore.beginTutorTeaching(topic, sourceNodes, sourceQuestions, sourceAnswers);
+    if (ok) navigation.replace('Chat');
+    else setLocalError(state.error || t('chat.offline') || 'Unable to start Tutor.');
+  };
+
+  const startWithoutQuestions = async () => {
+    if (!topic) return;
+    setPhase('generating');
+    setLocalError(null);
+    setGenerationProgress({ current: 0, total: 1 });
+    try {
+      const generatedNodes = await generateTopicKnowledgeNodes(topic, modelContext);
+      setNodes(generatedNodes);
+      setGenerationProgress({ current: 1, total: 1 });
+      await startTeaching(generatedNodes);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Unable to prepare the lesson.');
+      setPhase('choice');
+    }
+  };
+
+  const startExploration = async () => {
+    if (!topic) return;
+    setPhase('generating');
+    setLocalError(null);
+    try {
+      setGenerationProgress({ current: 0, total: questionCount + 1 });
+      const generatedNodes = await generateTopicKnowledgeNodes(topic, modelContext);
+      setNodes(generatedNodes);
+      setGenerationProgress({ current: 1, total: questionCount + 1 });
+      const generatedQuestions = await generateDiagnosticQuestions(
+        topic,
+        questionCount,
+        modelContext,
+        (current, total) => setGenerationProgress({ current: current + 1, total: total + 1 }),
+      );
+      setQuestions(generatedQuestions);
+      setAnswers([]);
+      setQuestionIndex(0);
+      setPhase('questions');
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Unable to generate the diagnostic.');
+      setPhase('choice');
+    }
+  };
+
+  const selectOption = (index: number) => {
+    setAnswers((current) => {
+      const next = current.slice();
+      next[questionIndex] = index;
+      return next;
+    });
+  };
+
+  const moveNext = () => {
+    if (answers[questionIndex] === undefined) return;
+    if (questionIndex >= questions.length - 1) {
+      setPhase('results');
+      return;
+    }
+    setQuestionIndex((index) => index + 1);
+  };
+
+  const skipQuestion = () => {
+    setAnswers((current) => {
+      const next = current.slice();
+      next[questionIndex] = -1;
+      return next;
+    });
+    if (questionIndex >= questions.length - 1) setPhase('results');
+    else setQuestionIndex((index) => index + 1);
+  };
+
+  const stage = state.activeSession?.teachingStage || 'motivate';
+  const currentQuestion = questions[questionIndex];
+  const existingCounts = countKnowledge(existingNodes);
+
+  if (phase === 'choice') {
+    return (
+      <Screen scroll contentContainerStyle={styles.flowScreen}>
+        <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
+          {t('tutor.kickerMode') || 'TUTOR MODE'}
+        </Text>
+        <Text style={[styles.topic, { color: colors.text, fontFamily: typography.display }]}>
+          {topic}
+        </Text>
+        <View style={[styles.dialogCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 20 }]}>
+          <Text style={[styles.dialogKicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
+            {t('tutor.optionalStart') || 'Optional starting point'}
+          </Text>
+          <Text style={[styles.dialogTitle, { color: colors.text, fontFamily: typography.semibold }]}>
+            {t('tutor.exploreBoundaryTitle') || 'Explore your knowledge boundary first?'}
+          </Text>
+          <Text style={[styles.body, { color: colors.textMuted, fontFamily: typography.body }]}>
+            {t('tutor.exploreBoundaryBody') || 'A short multiple-choice exploration helps the tutor choose a starting point. You can also skip it and begin learning.'}
+          </Text>
+
+          <View style={[styles.countRow, { borderColor: colors.border, borderRadius: radius.md }]}>
+            <View style={styles.countCopy}>
+              <Text style={[styles.countTitle, { color: colors.text, fontFamily: typography.medium }]}>
+                {t('tutor.questionCount') || 'Number of questions'}
+              </Text>
+              <Text style={[styles.countHint, { color: colors.textSubtle, fontFamily: typography.body }]}>
+                {t('tutor.questionCountHint') || '1 to 10, all multiple choice'}
+              </Text>
+            </View>
+            <View style={styles.stepper}>
+              <AnimatedPressable
+                accessibilityLabel="Decrease question count"
+                onPress={() => setQuestionCount((value) => Math.max(1, value - 1))}
+                style={[styles.stepperButton, { backgroundColor: colors.surfaceRaised }]}
+              >
+                <Text style={[styles.stepperGlyph, { color: colors.text }]}>−</Text>
+              </AnimatedPressable>
+              <Text style={[styles.countValue, { color: colors.text, fontFamily: typography.semibold }]}>
+                {questionCount}
+              </Text>
+              <AnimatedPressable
+                accessibilityLabel="Increase question count"
+                onPress={() => setQuestionCount((value) => Math.min(10, value + 1))}
+                style={[styles.stepperButton, { backgroundColor: colors.surfaceRaised }]}
+              >
+                <Text style={[styles.stepperGlyph, { color: colors.text }]}>+</Text>
+              </AnimatedPressable>
+            </View>
+          </View>
+
+          {localError ? <Text style={[styles.error, { color: colors.danger }]}>{localError}</Text> : null}
+
+          <View style={styles.dialogActions}>
+            <AnimatedPressable
+              onPress={() => void startWithoutQuestions()}
+              style={[styles.secondaryButton, { borderColor: colors.border, borderRadius: radius.md }]}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.text, fontFamily: typography.medium }]}>
+                {t('tutor.startWithoutQuestions') || 'Start without questions'}
+              </Text>
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => void startExploration()}
+              style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}
+            >
+              <Text style={[styles.primaryButtonText, { color: colors.background, fontFamily: typography.semibold }]}>
+                {t('tutor.startExploration') || 'Start exploration'}
+              </Text>
+            </AnimatedPressable>
+          </View>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (phase === 'generating') {
+    const total = Math.max(1, generationProgress.total);
+    const progress = Math.min(1, generationProgress.current / total);
+    return (
+      <Screen contentContainerStyle={styles.centerScreen}>
+        <ActivityIndicator color={colors.accent} size="small" />
+        <Text style={[styles.generatingTitle, { color: colors.text, fontFamily: typography.semibold }]}>
+          {t('tutor.analyzingTopic') || 'Preparing your learning path…'}
+        </Text>
+        <Text style={[styles.generatingHint, { color: colors.textMuted, fontFamily: typography.body }]}>
+          {generationProgress.current}/{total}
+        </Text>
+        <View style={[styles.progressTrack, { backgroundColor: colors.surfaceRaised }]}>
+          <View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${Math.max(4, progress * 100)}%` }]} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (phase === 'questions' && currentQuestion) {
+    const selected = answers[questionIndex];
+    return (
+      <Screen scroll contentContainerStyle={styles.flowScreen}>
+        <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
+          {t('tutor.knowledgeBoundary') || 'KNOWLEDGE BOUNDARY'}
+        </Text>
+        <View style={styles.questionMeta}>
+          <Text style={[styles.questionProgress, { color: colors.textSubtle, fontFamily: typography.medium }]}>
+            {questionIndex + 1} / {questions.length}
+          </Text>
+          <View style={[styles.questionProgressTrack, { backgroundColor: colors.surfaceRaised }]}>
+            <View
+              style={[
+                styles.questionProgressFill,
+                { backgroundColor: colors.accent, width: `${((questionIndex + 1) / questions.length) * 100}%` },
+              ]}
+            />
+          </View>
+        </View>
+        <Text style={[styles.questionText, { color: colors.text, fontFamily: typography.semibold }]}>
+          {currentQuestion.q}
+        </Text>
+        {currentQuestion.knowledgePoint ? (
+          <Text style={[styles.knowledgePoint, { color: colors.textMuted, fontFamily: typography.body }]}>
+            {currentQuestion.knowledgePoint}
+          </Text>
+        ) : null}
+        <View style={styles.options}>
+          {currentQuestion.opts.map((option, optionIndex) => {
+            const active = selected === optionIndex;
+            return (
+              <AnimatedPressable
+                key={option.letter}
+                onPress={() => selectOption(optionIndex)}
+                style={[
+                  styles.option,
+                  {
+                    borderColor: active ? colors.accent : colors.border,
+                    backgroundColor: active ? colors.accentSoft : colors.surface,
+                    borderRadius: radius.md,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.optionLetter,
+                    {
+                      borderColor: active ? colors.accent : colors.borderStrong,
+                      backgroundColor: active ? colors.accent : 'transparent',
+                    },
+                  ]}
+                >
+                  <Text style={{ color: active ? colors.textInverse : colors.textMuted, fontFamily: typography.semibold }}>
+                    {option.letter}
+                  </Text>
+                </View>
+                <Text style={[styles.optionText, { color: colors.text, fontFamily: typography.body }]}>
+                  {option.text}
+                </Text>
+              </AnimatedPressable>
+            );
+          })}
+        </View>
+        <View style={styles.questionActions}>
+          <AnimatedPressable
+            onPress={questionIndex > 0 ? () => setQuestionIndex((index) => index - 1) : undefined}
+            style={[styles.textButton, questionIndex === 0 ? styles.disabled : null]}
+          >
+            <Text style={[styles.textButtonLabel, { color: colors.textMuted, fontFamily: typography.medium }]}>
+              {t('common.previous') || 'Previous'}
+            </Text>
+          </AnimatedPressable>
+          <AnimatedPressable onPress={skipQuestion} style={styles.textButton}>
+            <Text style={[styles.textButtonLabel, { color: colors.textMuted, fontFamily: typography.medium }]}>
+              {t('common.skip') || 'Skip'}
+            </Text>
+          </AnimatedPressable>
+          <AnimatedPressable
+            onPress={selected === undefined ? undefined : moveNext}
+            style={[
+              styles.nextButton,
+              {
+                backgroundColor: selected === undefined ? colors.surfaceRaised : colors.text,
+                borderRadius: radius.md,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.nextButtonLabel,
+                {
+                  color: selected === undefined ? colors.textSubtle : colors.background,
+                  fontFamily: typography.semibold,
+                },
+              ]}
+            >
+              {questionIndex === questions.length - 1
+                ? (t('common.finish') || 'Finish')
+                : (t('common.next') || 'Next')}
+            </Text>
+          </AnimatedPressable>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (phase === 'results') {
+    return (
+      <Screen scroll contentContainerStyle={styles.flowScreen}>
+        <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
+          {t('tutor.boundaryResult') || 'YOUR STARTING POINT'}
+        </Text>
+        <Text style={[styles.resultTitle, { color: colors.text, fontFamily: typography.display }]}>
+          {t('tutor.boundaryReady') || 'Your learning path is ready'}
+        </Text>
+        <Text style={[styles.body, { color: colors.textMuted, fontFamily: typography.body }]}>
+          {t('tutor.boundaryReadyBody') || 'This diagnostic is only a baseline depth cue. Socrates will still teach every sub-topic from its foundation.'}
+        </Text>
+        <View style={[styles.resultGrid, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+          <View style={styles.resultCell}>
+            <Text style={[styles.resultValue, { color: colors.success }]}>{resultCounts.internalized}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.internalized') || 'Strong baseline'}</Text>
+          </View>
+          <View style={styles.resultCell}>
+            <Text style={[styles.resultValue, { color: colors.accent }]}>{resultCounts.fuzzy}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.fuzzy') || 'Fuzzy'}</Text>
+          </View>
+          <View style={styles.resultCell}>
+            <Text style={[styles.resultValue, { color: colors.textSubtle }]}>{resultCounts.blank}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.blank') || 'Blank'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.nodeList}>
+          {resultNodes.map((node) => (
+            <View key={node.name} style={[styles.nodeRow, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.nodeName, { color: colors.text, fontFamily: typography.medium }]}>{node.name}</Text>
+              <Text
+                style={[
+                  styles.nodeStatus,
+                  {
+                    color: node.status === 'blank' ? colors.textSubtle : colors.accent,
+                    fontFamily: typography.medium,
+                  },
+                ]}
+              >
+                {node.status}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {localError ? <Text style={[styles.error, { color: colors.danger }]}>{localError}</Text> : null}
+        <AnimatedPressable
+          onPress={() => void startTeaching(nodes, questions, answers)}
+          style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}
+        >
+          <Text style={[styles.primaryButtonText, { color: colors.background, fontFamily: typography.semibold }]}>
+            {t('tutor.beginTeaching') || 'Begin teaching'}
+          </Text>
+        </AnimatedPressable>
+      </Screen>
+    );
+  }
+
   return (
-    <Screen scroll>
-      <Text style={[styles.kicker, { color: colors.accent }]}>{t('tutor.kickerMode')}</Text>
-      <Text style={[styles.heading, { color: colors.text }]}>{t('tutor.heading')}</Text>
-      <Text style={[styles.body, { color: colors.textMuted }]}>{t('tutor.body')}</Text>
+    <Screen scroll contentContainerStyle={styles.flowScreen}>
+      <Text style={[styles.kicker, { color: colors.accent, fontFamily: typography.medium }]}>
+        {t('tutor.kickerMode') || 'TUTOR MODE'}
+      </Text>
+      <Text style={[styles.heading, { color: colors.text, fontFamily: typography.display }]}>
+        {topic || t('tutor.heading') || 'Learn with Socrates'}
+      </Text>
+      <Text style={[styles.body, { color: colors.textMuted, fontFamily: typography.body }]}>
+        {t('tutor.body') || 'Build understanding from foundations through practice and checks.'}
+      </Text>
+
       <View style={styles.steps}>
         {STAGES.map(([id, labelKey], index) => (
           <View key={id} style={styles.step}>
-            <View style={[styles.stepDot, { backgroundColor: id === stage ? colors.accent : colors.surfaceRaised, borderColor: id === stage ? colors.accent : colors.border }]}>
+            <View
+              style={[
+                styles.stepDot,
+                {
+                  backgroundColor: id === stage ? colors.accent : colors.surfaceRaised,
+                  borderColor: id === stage ? colors.accent : colors.border,
+                },
+              ]}
+            >
               <Text style={{ color: id === stage ? colors.background : colors.textSubtle, fontSize: 11 }}>{index + 1}</Text>
             </View>
-            <Text style={[styles.stepText, { color: id === stage ? colors.text : colors.textSubtle }]}>{t(labelKey)}</Text>
+            <Text style={[styles.stepText, { color: id === stage ? colors.text : colors.textSubtle }]}>
+              {t(labelKey)}
+            </Text>
           </View>
         ))}
       </View>
-      {kbCounts && (kbCounts.internalized + kbCounts.fuzzy + kbCounts.blank) > 0 ? (
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>{t('tutor.kbHeading') || 'Knowledge map'}</Text>
-          <View style={styles.kbRow}>
-            <View style={styles.kbCell}>
-              <Text style={[styles.kbValue, { color: colors.success }]}>{kbCounts.internalized}</Text>
-              <Text style={[styles.kbLabel, { color: colors.textMuted }]}>{t('knowledge.internalized')}</Text>
-            </View>
-            <View style={styles.kbCell}>
-              <Text style={[styles.kbValue, { color: colors.accent }]}>{kbCounts.fuzzy}</Text>
-              <Text style={[styles.kbLabel, { color: colors.textMuted }]}>{t('knowledge.fuzzy')}</Text>
-            </View>
-            <View style={styles.kbCell}>
-              <Text style={[styles.kbValue, { color: colors.textSubtle }]}>{kbCounts.blank}</Text>
-              <Text style={[styles.kbLabel, { color: colors.textMuted }]}>{t('knowledge.blank')}</Text>
-            </View>
+
+      {existingNodes.length ? (
+        <View style={[styles.resultGrid, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+          <View style={styles.resultCell}>
+            <Text style={[styles.resultValue, { color: colors.success }]}>{existingCounts.internalized}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.internalized')}</Text>
+          </View>
+          <View style={styles.resultCell}>
+            <Text style={[styles.resultValue, { color: colors.accent }]}>{existingCounts.fuzzy}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.fuzzy')}</Text>
+          </View>
+          <View style={styles.resultCell}>
+            <Text style={[styles.resultValue, { color: colors.textSubtle }]}>{existingCounts.blank}</Text>
+            <Text style={[styles.resultLabel, { color: colors.textMuted }]}>{t('knowledge.blank')}</Text>
           </View>
         </View>
       ) : null}
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.lg }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>{t('tutor.boundary')}</Text>
-        <Text style={[styles.body, { color: colors.textMuted }]}>{t('tutor.boundaryBody')}</Text>
-        <AnimatedPressable onPress={openTutorChat} style={[styles.button, { backgroundColor: colors.accent, borderRadius: radius.md }]}>
-          <Text style={{ color: colors.textInverse, fontWeight: '700' }}>{t('tutor.beginDiagnosis')}</Text>
+
+      {state.activeSession?.mode === 'tutor' && state.activeSession.messages?.length ? (
+        <AnimatedPressable
+          onPress={() => navigation.navigate('Chat')}
+          style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}
+        >
+          <Text style={[styles.primaryButtonText, { color: colors.background, fontFamily: typography.semibold }]}>
+            {t('tutor.continue') || 'Continue teaching'}
+          </Text>
         </AnimatedPressable>
-      </View>
+      ) : (
+        <AnimatedPressable
+          onPress={() => {
+            appStore.startNewSession('tutor', true);
+            navigation.navigate('Home');
+          }}
+          style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}
+        >
+          <Text style={[styles.primaryButtonText, { color: colors.background, fontFamily: typography.semibold }]}>
+            {t('tutor.chooseTopic') || 'Choose a topic'}
+          </Text>
+        </AnimatedPressable>
+      )}
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({ kicker: { fontSize: 11, letterSpacing: 1.5, fontWeight: '700', paddingTop: 14 }, heading: { fontSize: 30, lineHeight: 38, marginTop: 10, fontWeight: '700' }, body: { fontSize: 14, lineHeight: 22, marginTop: 9 }, steps: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 30 }, step: { alignItems: 'center', gap: 8 }, stepDot: { width: 29, height: 29, borderRadius: 15, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }, stepText: { fontSize: 10, textTransform: 'capitalize' }, card: { borderWidth: 1, marginTop: 34 }, cardTitle: { fontSize: 18, fontWeight: '700' }, button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', marginTop: 24 }, kbRow: { flexDirection: 'row', marginTop: 16, gap: 12 }, kbCell: { flex: 1, alignItems: 'center' }, kbValue: { fontSize: 24, fontWeight: '800' }, kbLabel: { fontSize: 11, marginTop: 4, textAlign: 'center' } });
+const styles = StyleSheet.create({
+  flowScreen: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 32,
+  },
+  centerScreen: {
+    flex: 1,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kicker: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+    fontWeight: '600',
+  },
+  heading: {
+    fontSize: 30,
+    lineHeight: 38,
+    marginTop: 10,
+    fontWeight: '400',
+  },
+  topic: {
+    marginTop: 12,
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: '400',
+  },
+  body: {
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 9,
+  },
+  dialogCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 34,
+    padding: 20,
+  },
+  dialogKicker: {
+    fontSize: 11,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+  dialogTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    marginTop: 8,
+  },
+  countRow: {
+    minHeight: 68,
+    marginTop: 22,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  countCopy: {
+    flex: 1,
+  },
+  countTitle: {
+    fontSize: 14,
+  },
+  countHint: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  stepperButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperGlyph: {
+    fontSize: 21,
+    lineHeight: 24,
+  },
+  countValue: {
+    width: 22,
+    textAlign: 'center',
+    fontSize: 15,
+  },
+  dialogActions: {
+    marginTop: 24,
+    gap: 10,
+  },
+  primaryButton: {
+    minHeight: 48,
+    marginTop: 24,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
+    fontSize: 14,
+  },
+  secondaryButton: {
+    minHeight: 48,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+  },
+  generatingTitle: {
+    marginTop: 18,
+    fontSize: 18,
+  },
+  generatingHint: {
+    marginTop: 6,
+    fontSize: 12,
+  },
+  progressTrack: {
+    width: '72%',
+    height: 3,
+    borderRadius: 2,
+    marginTop: 18,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 3,
+    borderRadius: 2,
+  },
+  questionMeta: {
+    marginTop: 18,
+  },
+  questionProgress: {
+    fontSize: 12,
+  },
+  questionProgressTrack: {
+    height: 3,
+    marginTop: 8,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  questionProgressFill: {
+    height: 3,
+    borderRadius: 2,
+  },
+  questionText: {
+    marginTop: 28,
+    fontSize: 22,
+    lineHeight: 31,
+  },
+  knowledgePoint: {
+    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  options: {
+    gap: 10,
+    marginTop: 24,
+  },
+  option: {
+    minHeight: 64,
+    borderWidth: 1,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  optionLetter: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  questionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 26,
+    gap: 8,
+  },
+  textButton: {
+    minHeight: 42,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textButtonLabel: {
+    fontSize: 13,
+  },
+  nextButton: {
+    minWidth: 92,
+    minHeight: 42,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 'auto',
+  },
+  nextButtonLabel: {
+    fontSize: 13,
+  },
+  disabled: {
+    opacity: 0.35,
+  },
+  resultTitle: {
+    marginTop: 12,
+    fontSize: 28,
+    lineHeight: 36,
+  },
+  resultGrid: {
+    minHeight: 96,
+    marginTop: 26,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  resultCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  resultValue: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  resultLabel: {
+    marginTop: 4,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  nodeList: {
+    marginTop: 22,
+  },
+  nodeRow: {
+    minHeight: 48,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  nodeName: {
+    flex: 1,
+    fontSize: 13,
+  },
+  nodeStatus: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+  },
+  steps: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 30,
+  },
+  step: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepDot: {
+    width: 29,
+    height: 29,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepText: {
+    maxWidth: 48,
+    fontSize: 9.5,
+    textAlign: 'center',
+    textTransform: 'capitalize',
+  },
+  error: {
+    marginTop: 14,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+});
