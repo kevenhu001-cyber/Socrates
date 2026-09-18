@@ -178,6 +178,31 @@ export const embeddedApi = {
   }),
 };
 
+export interface ApiProvider {
+  id: string;
+  label: string;
+  url: string;
+  model: string;
+  keyHint?: string | null;
+  isActive?: boolean;
+  isBuiltIn?: boolean;
+  isMultimodal?: boolean;
+  hasKey?: boolean;
+}
+
+export const configApi = {
+  get: () => apiRequest<{ hasBeagleKey: boolean; isReasoning: boolean }>('/config'),
+};
+
+export const apiKeysApi = {
+  list: () => apiRequest<{ providers: ApiProvider[] }>('/api-key'),
+  patch: (id: string, payload: Partial<Pick<ApiProvider, 'label' | 'url' | 'model' | 'isActive' | 'isMultimodal'>> & { key?: string }) =>
+    apiRequest<ApiProvider>(`/api-key/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+};
+
 export const usersApi = {
   updateMe: (payload: Partial<Pick<User, 'displayName' | 'customInstructions' | 'preferences' | 'defaultModel'>>) => apiRequest<User>('/users/me', {
     method: 'PATCH', body: JSON.stringify(payload),
