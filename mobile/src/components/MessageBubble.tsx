@@ -25,8 +25,8 @@ interface MessageBubbleProps {
   onRegenerate?: (messageId: string) => unknown | Promise<unknown>;
   onBranch?: (messageId: string, options?: { reExplain?: boolean }) => unknown | Promise<unknown>;
   onFeedback?: (messageId: string, rating: 'up' | 'down' | 'none') => unknown | Promise<unknown>;
-  onTutorQuizAnswer?: (answer: TutorQuizAnswer) => unknown | Promise<unknown>;
-  onTutorPracticeSubmit?: (answer: TutorPracticeAnswer) => unknown | Promise<unknown>;
+  onTutorQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
+  onTutorPracticeSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
   linkPreview?: LinkPreviewState;
   /** In-session find query — highlights matches like frontend findInSession. */
   highlight?: string;
