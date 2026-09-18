@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { isEmbeddedTarget, parseBridgeMessage } from './embeddedBridge';
-import { Screen } from '../components/Screen';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
 import { embeddedApi, WEB_BASE_URL } from '../data/api/client';
@@ -79,16 +78,7 @@ export function EmbeddedWebScreen({ route, navigation }: Props) {
   };
 
   return (
-    <Screen style={styles.screen}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}> 
-        <AnimatedPressable accessibilityLabel="Back" onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </AnimatedPressable>
-        <Text numberOfLines={1} style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>{route.params.title}</Text>
-        <AnimatedPressable accessibilityLabel="Reload" onPress={() => { if (url) webRef.current?.reload(); else void load(); }} style={styles.headerButton}>
-          <Ionicons name="refresh-outline" size={22} color={colors.textMuted} />
-        </AnimatedPressable>
-      </View>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       {error ? (
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={38} color={colors.textSubtle} />
@@ -121,15 +111,12 @@ export function EmbeddedWebScreen({ route, navigation }: Props) {
           {loading ? <View style={[styles.loading, { backgroundColor: colors.background }]}><ActivityIndicator color={colors.accent} /></View> : null}
         </View>
       ) : <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>}
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingTop: 0 },
-  header: { height: 58, borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
-  headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', fontSize: 16 },
+  screen: { flex: 1 },
   webWrap: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
   error: { textAlign: 'center', fontSize: 14, lineHeight: 21, marginTop: 16 },
