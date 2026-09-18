@@ -112,7 +112,16 @@ export function CmdKPalette() {
       { id: 'nav.projects', kind: 'nav', title: t('sidebar.nav.projects') || 'Projects', icon: 'cube-outline', run: () => navigate('Projects') },
       { id: 'nav.scheduled', kind: 'nav', title: t('sidebar.nav.scheduled') || 'Scheduled', icon: 'time-outline', run: () => navigate('Scheduled') },
       { id: 'nav.plugins', kind: 'nav', title: t('sidebar.nav.plugins') || 'Plugins', icon: 'extension-puzzle-outline', run: () => navigate('Plugins') },
-      { id: 'nav.settings', kind: 'nav', title: t('more.settings') || 'Settings', icon: 'settings-outline', run: () => navigate('Settings') },
+      {
+        id: 'nav.settings',
+        kind: 'nav',
+        title: t('more.settings') || 'Settings',
+        icon: 'settings-outline',
+        run: () => {
+          cmdKStore.close();
+          nav.navigate('Embedded', { target: 'api-settings', title: t('more.settings') || 'Settings' });
+        },
+      },
     ],
     // The translation hook fires on language switch; refresh titles on t change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
