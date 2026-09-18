@@ -788,6 +788,7 @@ class AppStore {
       const applicationPrompt = buildTutorApplicationPrompt(topic, node, 'motivate', {
         first: true,
         diagnosticNotes: tutorDiagnosticNotes(node),
+        tone: this.state.tone,
       });
       await this.startAssistantStream(session, messages, [], undefined, applicationPrompt);
       return true;
