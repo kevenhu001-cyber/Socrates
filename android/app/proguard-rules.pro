@@ -1,0 +1,2 @@
+-dontwarn org.slf4j.**
+-keepclassmembers class * { @kotlinx.serialization.Serializable <fields>; }
