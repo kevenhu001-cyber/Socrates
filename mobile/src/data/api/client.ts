@@ -277,6 +277,17 @@ export const knowledgeApi = {
 
 export const mistakesApi = {
   list: (resolved?: boolean) => apiRequest<{ items: Mistake[]; total: number }>(`/mistakes?limit=100${resolved === undefined ? '' : `&resolved=${resolved}`}`),
+  create: (payload: {
+    sessionId?: string | null;
+    nodeName?: string | null;
+    questionContent: string;
+    userAnswer?: string | null;
+    correctAnswer?: string | null;
+    source?: 'quiz' | 'practice' | 'manual';
+  }) => apiRequest<Mistake>('/mistakes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
   resolve: (id: string, isResolved: boolean) => apiRequest<Mistake>(`/mistakes/${encodeURIComponent(id)}`, {
     method: 'PATCH', body: JSON.stringify({ isResolved }),
   }),
