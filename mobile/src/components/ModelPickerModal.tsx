@@ -65,10 +65,9 @@ export function ModelPickerModal({ visible, providers, selectedId, onSelect, onC
                 >
                   <Ionicons name={item.isBuiltIn ? 'compass-outline' : 'hardware-chip-outline'} size={18} color={isSelected ? colors.accent : colors.textMuted} />
                   <View style={styles.itemMain}>
-                    <Text style={[styles.itemName, { color: isSelected ? colors.accent : colors.textSecondary, fontFamily: typography.medium }]}>
+                    <Text numberOfLines={1} style={[styles.itemName, { color: isSelected ? colors.accent : colors.textSecondary, fontFamily: typography.medium }]}>
                       {(item.label && item.label !== 'Default') ? item.label : (item.model || item.label || 'Model')}
                     </Text>
-                  </View>
                     {!item.isBuiltIn ? (
                       <Text numberOfLines={1} style={[styles.itemDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
                         {item.model || item.url}
