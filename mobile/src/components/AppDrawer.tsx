@@ -462,7 +462,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           accessibilityLabel={t('sidebar.more.display') || 'Display & theme'}
           onPress={() => {
             closeDrawer();
-            onOpenEmbedded('api-settings', t('more.settings') || 'Settings');
+            onOpenEmbedded('display', t('sidebar.more.display') || 'Display & theme');
           }}
           style={[styles.footerIconBtn, { borderRadius: radius.md }]}
         >
