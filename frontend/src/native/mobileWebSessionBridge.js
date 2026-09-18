@@ -1,4 +1,6 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
+import { toggleDisplayPrefs } from '../displayPrefs.js';
+import { openCheatsheet } from '../ui/cheatsheet.js';
 /*
  * Narrow bridge used only by the React Native embedded-workspace flow.
  *
@@ -11,7 +13,7 @@ import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
 
 const TARGETS = new Set([
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
-  'profile', 'usage', 'storage',
+  'profile', 'usage', 'storage', 'display', 'shortcuts',
 ]);
 
 function postToNative(message) {
@@ -42,6 +44,8 @@ const EMBEDDED_MODAL_SELECTORS = {
   usage: '#usageOverlay',
   storage: '#storageModalOverlay',
   skills: '#promptTemplatesOverlay',
+  display: '#displayPrefsPopover',
+  shortcuts: '#cheatsheetOverlay',
 };
 
 function watchEmbeddedModalClose(target) {
@@ -116,6 +120,14 @@ export function openMobileTargetFromUrl() {
     } else if (target === 'storage') {
       if (typeof window.openStorageModal !== 'function') return false;
       window.openStorageModal();
+      opened = true;
+    } else if (target === 'display') {
+      if (typeof toggleDisplayPrefs !== 'function') return false;
+      toggleDisplayPrefs();
+      opened = true;
+    } else if (target === 'shortcuts') {
+      if (typeof openCheatsheet !== 'function') return false;
+      openCheatsheet();
       opened = true;
     }
   } catch (_) {
