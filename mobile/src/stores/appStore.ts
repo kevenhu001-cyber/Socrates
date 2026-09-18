@@ -11,6 +11,7 @@ import { tSync } from '../i18n';
 import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite, type LinkPreviewState } from '../data/chat/webLinks';
 import { buildAssistantModeInstruction, MOBILE_EXTENSIONS, type MobileExtensionKey } from '../data/chat/prompts';
 import { catalogComposerPlugins, serializeSelectedPluginContext, type ComposerPluginSelection } from '../data/chat/plugins';
+import { applyDiagnosticResults, buildTeachingPlan, buildTutorApplicationPrompt, firstTeachingNodeIndex, nextTeachingStage, type TutorDiagnosticQuestion, type TutorKnowledgeNode, type TutorTeachingStage } from '../data/tutor/tutorFlow';
 import { unregisterPushNotifications } from '../native/push';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
@@ -35,6 +36,8 @@ export interface AppState {
   reasoningEffort: ReasoningEffort;
   webSearchEnabled: boolean;
   isIncognito: boolean;
+  tutorSubstantiveCount: number;
+  tutorStuckCount: number;
   isLoading: boolean;
   isStreaming: boolean;
   isOnline: boolean;
@@ -59,6 +62,8 @@ const initialState: AppState = {
   reasoningEffort: 'medium',
   webSearchEnabled: true,
   isIncognito: false,
+  tutorSubstantiveCount: 0,
+  tutorStuckCount: 0,
   isLoading: false,
   isStreaming: false,
   isOnline: true,
@@ -80,6 +85,25 @@ function userMessage(text: string): Message {
 
 function messageKey(message: Message | null | undefined): string {
   return String(message?.id || message?.clientId || '');
+}
+
+function tutorNodes(session: Session | null | undefined): TutorKnowledgeNode[] {
+  return Array.isArray(session?.kbNodes)
+    ? (session!.kbNodes as unknown as TutorKnowledgeNode[]).map((node) => ({ ...node }))
+    : [];
+}
+
+function tutorDiagnosticNotes(node: TutorKnowledgeNode): string[] {
+  const note = String(node.system_note || '');
+  return note
+    .split('Tested knowledge point:')
+    .slice(1)
+    .map((part) => part.split('(baseline:')[0].trim())
+    .filter(Boolean);
+}
+
+function isSubstantiveTutorAnswer(text: string): boolean {
+  return text.length > 40 && text.trim().split(/\s+/).length > 8;
 }
 
 class AppStore {
@@ -370,6 +394,8 @@ class AppStore {
       activeExtension: null,
       selectedComposerPlugins: [],
       linkPreviews: {},
+      tutorSubstantiveCount: 0,
+      tutorStuckCount: 0,
       isLoading: false,
     });
   }
@@ -439,6 +465,8 @@ class AppStore {
       activeExtension: preserveComposer ? this.state.activeExtension : null,
       selectedComposerPlugins: preserveComposer ? this.state.selectedComposerPlugins : [],
       linkPreviews: {},
+      tutorSubstantiveCount: 0,
+      tutorStuckCount: 0,
       error: null,
       isStreaming: false,
     });
@@ -556,6 +584,94 @@ class AppStore {
     void this.finishStream(undefined, generation);
   }
 
+  async beginTutorTeaching(
+    topicInput: string,
+    nodesInput: TutorKnowledgeNode[],
+    questions: TutorDiagnosticQuestion[] = [],
+    answers: number[] = [],
+  ) {
+    const topic = topicInput.trim();
+    if (!topic || this.state.isStreaming) return false;
+    const attachments = this.state.pendingAttachments;
+    const base = this.state.activeSession?.mode === 'tutor'
+      ? this.state.activeSession
+      : createDraftSession(uuid(), 'tutor');
+    if (!base) return false;
+
+    const kbNodes = questions.length
+      ? applyDiagnosticResults(nodesInput, questions, answers)
+      : nodesInput.map((node) => ({ ...node, status: node.status || 'blank' }));
+    const teachingPlan = buildTeachingPlan(kbNodes);
+    const currentNode = firstTeachingNodeIndex(kbNodes, teachingPlan);
+    const firstUser: Message = {
+      ...userMessage(topic),
+      attachments: attachments.length ? attachments : undefined,
+    };
+    const messages = [firstUser];
+    let session: Session = {
+      ...base,
+      topic,
+      title: base.title || topic.slice(0, 54),
+      domain: topic,
+      mode: 'tutor',
+      kind: 'tutor',
+      phase: 'chat',
+      messages,
+      kbNodes: kbNodes as unknown as Session['kbNodes'],
+      currentNode,
+      teachingStage: 'motivate',
+      currentExampleIdx: 0,
+      practiceAttempts: 0,
+      practicePhase: 'foundation',
+      teachingPlan: teachingPlan as unknown as Session['teachingPlan'],
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.setState({
+      activeSession: session,
+      draft: '',
+      pendingAttachments: [],
+      activeExtension: null,
+      tutorSubstantiveCount: 0,
+      tutorStuckCount: 0,
+      error: null,
+    });
+
+    if (!this.state.isOnline) {
+      if (!this.state.isIncognito) {
+        this.enqueueSession(session, firstUser.clientId || id('tutor'));
+        this.setState({ error: tSync('chat.queued') });
+      } else {
+        this.setState({ error: tSync('chat.offline') });
+      }
+      return false;
+    }
+
+    try {
+      if (!this.state.isIncognito) {
+        const saved = await sessionRepository.save(session, messages);
+        session = { ...session, ...saved, messages };
+        this.setState({
+          activeSession: session,
+          sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+        });
+      }
+      const node = kbNodes[currentNode] || kbNodes[0];
+      if (!node) return false;
+      const applicationPrompt = buildTutorApplicationPrompt(topic, node, 'motivate', {
+        first: true,
+        diagnosticNotes: tutorDiagnosticNotes(node),
+      });
+      await this.startAssistantStream(session, messages, [], undefined, applicationPrompt);
+      return true;
+    } catch (error) {
+      this.setState({
+        error: error instanceof Error ? error.message : tSync('chat.offline'),
+      });
+      return false;
+    }
+  }
+
   async sendMessage(rawText: string) {
     const text = rawText.trim();
     const attachments = this.state.pendingAttachments;
@@ -568,7 +684,121 @@ class AppStore {
     if (!session) return;
 
     const nextUser: Message = { ...userMessage(text), attachments: attachments.length ? attachments : undefined };
-    const nextMessages = [...(session.messages || []), nextUser];
+    let nextMessages = [...(session.messages || []), nextUser];
+    let tutorApplicationPrompt: string | undefined;
+
+    if (session.mode === 'tutor' && session.phase === 'chat') {
+      const nodes = tutorNodes(session);
+      const currentIndex = Math.max(0, Math.min(Number(session.currentNode || 0), Math.max(0, nodes.length - 1)));
+      let node = nodes[currentIndex];
+      if (node) {
+        const previousStage = (session.teachingStage || 'motivate') as TutorTeachingStage;
+        const substantive = isSubstantiveTutorAnswer(text);
+        const nextStage = substantive && previousStage !== 'check'
+          ? nextTeachingStage(previousStage)
+          : previousStage;
+        const practiceAttempts = previousStage === 'exercise'
+          ? Number(session.practiceAttempts || 0) + 1
+          : nextStage === 'exercise' && previousStage !== 'exercise'
+            ? 0
+            : Number(session.practiceAttempts || 0);
+        const tutorSubstantiveCount = this.state.tutorSubstantiveCount + (substantive ? 1 : 0);
+        const tutorStuckCount = this.state.tutorStuckCount + 1;
+
+        session = {
+          ...session,
+          teachingStage: nextStage,
+          practiceAttempts,
+          practicePhase: nextStage === 'exercise' ? (session.practicePhase || 'foundation') : session.practicePhase,
+        };
+        this.setState({ tutorSubstantiveCount, tutorStuckCount });
+
+        const reachedExercise = ['exercise', 'check'].includes(nextStage);
+        if (substantive && tutorSubstantiveCount >= 3 && reachedExercise) {
+          node = { ...node, status: 'internalized', questions: Number(node.questions || 0) + 1 };
+          nodes[currentIndex] = node;
+          const plan = buildTeachingPlan(nodes);
+          const planSubs = plan?.subtopics || [];
+          const currentPlanIndex = planSubs.findIndex((item) => item.name === node!.name);
+          const nextSubtopic = planSubs.slice(Math.max(0, currentPlanIndex + 1)).find((item) => item.status !== 'internalized');
+          const nextIndex = nextSubtopic
+            ? nodes.findIndex((item) => item.name === nextSubtopic.name)
+            : -1;
+
+          if (nextIndex >= 0) {
+            const nextNode = nodes[nextIndex];
+            const transition: Message = {
+              clientId: id('assistant'),
+              role: 'assistant',
+              rawText: `Good depth on **${node.name}**. Let's move to the next area: **${nextNode.name}**.`,
+              content: `Good depth on **${node.name}**. Let's move to the next area: **${nextNode.name}**.`,
+              type: 'assistant',
+            };
+            nextMessages = [...nextMessages, transition];
+            session = {
+              ...session,
+              kbNodes: nodes as unknown as Session['kbNodes'],
+              teachingPlan: plan as unknown as Session['teachingPlan'],
+              currentNode: nextIndex,
+              teachingStage: 'motivate',
+              currentExampleIdx: 0,
+              practiceAttempts: 0,
+              practicePhase: 'foundation',
+            };
+            this.setState({ tutorSubstantiveCount: 0, tutorStuckCount: 0 });
+            tutorApplicationPrompt = buildTutorApplicationPrompt(session.topic || session.domain || '', nextNode, 'motivate', {
+              first: true,
+              diagnosticNotes: tutorDiagnosticNotes(nextNode),
+            });
+          } else {
+            const complete: Message = {
+              clientId: id('assistant'),
+              role: 'assistant',
+              rawText: `Nice work — you've explored all the key areas of ${session.domain || session.topic}. Feel free to revisit any area or start a new topic.`,
+              content: `Nice work — you've explored all the key areas of ${session.domain || session.topic}. Feel free to revisit any area or start a new topic.`,
+              type: 'assistant',
+            };
+            nextMessages = [...nextMessages, complete];
+            session = {
+              ...session,
+              kbNodes: nodes as unknown as Session['kbNodes'],
+              teachingPlan: plan as unknown as Session['teachingPlan'],
+            };
+            this.setState({
+              activeSession: { ...session, messages: nextMessages },
+              draft: '',
+              pendingAttachments: [],
+              tutorSubstantiveCount: 0,
+              tutorStuckCount: 0,
+              error: null,
+            });
+            if (!this.state.isIncognito) {
+              try {
+                const saved = await sessionRepository.save(session, nextMessages);
+                this.setState({
+                  sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+                });
+              } catch (error) {
+                this.enqueueSession({ ...session, messages: nextMessages }, nextUser.clientId || id('tutor-save'));
+              }
+            }
+            return;
+          }
+        } else {
+          tutorApplicationPrompt = buildTutorApplicationPrompt(
+            session.topic || session.domain || '',
+            node,
+            nextStage,
+            {
+              first: false,
+              latestAnswer: text,
+              diagnosticNotes: tutorDiagnosticNotes(node),
+            },
+          );
+        }
+      }
+    }
+
     session = {
       ...session,
       topic: session.topic || text.slice(0, 100) || attachments[0]?.name || tSync('chat.newConversation'),
@@ -616,7 +846,13 @@ class AppStore {
         session = { ...session, ...saved, messages: nextMessages };
         this.setState({ activeSession: session });
       }
-      await this.startAssistantStream(session, nextMessages, referencedPageBlocks, looksLikeUserMentionedSite(text) && urls.length === 0 ? text : undefined);
+      await this.startAssistantStream(
+        session,
+        nextMessages,
+        referencedPageBlocks,
+        looksLikeUserMentionedSite(text) && urls.length === 0 ? text : undefined,
+        tutorApplicationPrompt,
+      );
     } catch (error) {
       if (!this.state.isIncognito) {
         this.enqueueSession(session, nextMessages.at(-1)?.clientId || id('client'));
@@ -642,6 +878,7 @@ class AppStore {
     nextMessages: Message[],
     referencedPageBlocks: string[] = [],
     missingUrlMention?: string,
+    applicationPrompt?: string,
   ) {
     if (this.state.isStreaming) return;
     const extension = this.state.activeExtension ? MOBILE_EXTENSIONS[this.state.activeExtension] : null;
@@ -663,7 +900,7 @@ class AppStore {
     this.setState({ activeSession: streamingSession, isStreaming: true, error: null });
     try {
       const history = buildChatHistory(nextMessages);
-      const finalUser = nextMessages.at(-1);
+      const finalUser = [...nextMessages].reverse().find((message) => message.role === 'user');
       const userText = String(finalUser?.rawText || finalUser?.content || '');
       const modelUserText = serializeSelectedPluginContext(this.state.selectedComposerPlugins, userText);
       const lastModelUser = history.at(-1);
@@ -681,9 +918,27 @@ class AppStore {
           lastModelUser.content = modelUserText;
         }
       }
+      let effectiveApplicationPrompt = applicationPrompt;
+      if (!effectiveApplicationPrompt && session.mode === 'tutor') {
+        const nodes = tutorNodes(session);
+        const nodeIndex = Math.max(0, Math.min(Number(session.currentNode || 0), Math.max(0, nodes.length - 1)));
+        const node = nodes[nodeIndex];
+        if (node) {
+          effectiveApplicationPrompt = buildTutorApplicationPrompt(
+            session.topic || session.domain || '',
+            node,
+            (session.teachingStage || 'motivate') as TutorTeachingStage,
+            {
+              first: false,
+              latestAnswer: userText,
+              diagnosticNotes: tutorDiagnosticNotes(node),
+            },
+          );
+        }
+      }
       history.unshift({
         role: 'system',
-        content: buildAssistantModeInstruction(userText, this.state.reasoningEffort),
+        content: effectiveApplicationPrompt || buildAssistantModeInstruction(userText, this.state.reasoningEffort),
       });
       if (this.state.user?.customInstructions?.trim()) {
         history.splice(1, 0, {
