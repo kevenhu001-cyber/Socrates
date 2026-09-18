@@ -192,11 +192,12 @@ export function ChatScreen({ navigation }: Props) {
         onRegenerate={(messageId) => appStore.regenerateAssistantMessage(messageId)}
         onBranch={(messageId, options) => appStore.branchFromMessage(messageId, options)}
         onFeedback={(messageId, rating) => appStore.sendMessageFeedback(messageId, rating)}
+        linkPreview={state.linkPreviews[String(item.clientId || item.id || '')]}
         onIterate={(text) => appStore.setDraft(text)}
         highlight={searchActive ? searchQuery : undefined}
       />
     ),
-    [lastAssistantIndex, onShare, searchActive, searchQuery]
+    [lastAssistantIndex, onShare, searchActive, searchQuery, state.linkPreviews]
   );
 
   const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
