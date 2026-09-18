@@ -173,7 +173,7 @@ export function TutorScreen({ navigation, route }: Props) {
 
   if (phase === 'choice') {
     return (
-      <Screen scroll contentContainerStyle={styles.flowScreen}>
+      <Screen scroll style={styles.flowScreen}>
         <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
           {t('tutor.kickerMode') || 'TUTOR MODE'}
         </Text>
@@ -250,7 +250,7 @@ export function TutorScreen({ navigation, route }: Props) {
     const total = Math.max(1, generationProgress.total);
     const progress = Math.min(1, generationProgress.current / total);
     return (
-      <Screen contentContainerStyle={styles.centerScreen}>
+      <Screen style={styles.centerScreen}>
         <ActivityIndicator color={colors.accent} size="small" />
         <Text style={[styles.generatingTitle, { color: colors.text, fontFamily: typography.semibold }]}>
           {t('tutor.analyzingTopic') || 'Preparing your learning path…'}
@@ -268,7 +268,7 @@ export function TutorScreen({ navigation, route }: Props) {
   if (phase === 'questions' && currentQuestion) {
     const selected = answers[questionIndex];
     return (
-      <Screen scroll contentContainerStyle={styles.flowScreen}>
+      <Screen scroll style={styles.flowScreen}>
         <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
           {t('tutor.knowledgeBoundary') || 'KNOWLEDGE BOUNDARY'}
         </Text>
@@ -374,7 +374,7 @@ export function TutorScreen({ navigation, route }: Props) {
 
   if (phase === 'results') {
     return (
-      <Screen scroll contentContainerStyle={styles.flowScreen}>
+      <Screen scroll style={styles.flowScreen}>
         <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
           {t('tutor.boundaryResult') || 'YOUR STARTING POINT'}
         </Text>
@@ -432,7 +432,7 @@ export function TutorScreen({ navigation, route }: Props) {
   }
 
   return (
-    <Screen scroll contentContainerStyle={styles.flowScreen}>
+    <Screen scroll style={styles.flowScreen}>
       <Text style={[styles.kicker, { color: colors.accent, fontFamily: typography.medium }]}>
         {t('tutor.kickerMode') || 'TUTOR MODE'}
       </Text>
