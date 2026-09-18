@@ -162,13 +162,11 @@ export function Composer({
   disabled = false,
   hasAttachments = false,
   reasoningEffort = 'medium',
-  webSearchEnabled = false,
   onChangeText,
   onSend,
   onStop,
   onAttach,
   onChangeReasoningEffort,
-  onToggleWebSearch,
   activeExtensionLabel = null,
   selectedPlugins = [],
   onRemoveActiveExtension,
@@ -176,7 +174,7 @@ export function Composer({
   placeholder,
   autoFocus = false,
 }: ComposerProps) {
-  const { colors, typography, contentWidth, fontScale } = useTheme();
+  const { colors, typography, contentWidth } = useTheme();
   const { isCompact } = useResponsive();
   const t = useT();
   const { language } = useI18n();
