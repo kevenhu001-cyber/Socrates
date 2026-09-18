@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { Composer } from '../components/Composer';
-import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
+import { ComposerToolsMenu, type ComposerToolsAnchor } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
 import { useTheme } from '../theme/ThemeProvider';
@@ -15,6 +15,7 @@ import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/atta
 import { native } from '../native/native';
 import type { RootStackParamList } from '../navigation/types';
 import { useResponsive } from '../theme/responsive';
+import { MOBILE_EXTENSIONS } from '../data/chat/prompts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -46,6 +47,7 @@ export function NewChatScreen({ navigation, route }: Props) {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [toolsMenuAnchor, setToolsMenuAnchor] = useState<ComposerToolsAnchor | null>(null);
 
   useEffect(() => {
     const projectId = route.params?.projectId || null;
@@ -74,7 +76,10 @@ export function NewChatScreen({ navigation, route }: Props) {
     }
   };
 
-  const onAttach = () => setToolsMenuOpen(true);
+  const onAttach = (anchor?: ComposerToolsAnchor) => {
+    setToolsMenuAnchor(anchor || null);
+    setToolsMenuOpen(true);
+  };
 
   const send = async () => {
     if (!state.draft.trim() && !state.pendingAttachments.length) return;
@@ -189,6 +194,10 @@ export function NewChatScreen({ navigation, route }: Props) {
             onAttach={onAttach}
             onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
             onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
+            activeExtensionLabel={state.activeExtension ? MOBILE_EXTENSIONS[state.activeExtension].label : null}
+            selectedPlugins={state.selectedComposerPlugins.map(({ id, name }) => ({ id, name }))}
+            onRemoveActiveExtension={() => appStore.setActiveExtension(null)}
+            onRemovePlugin={(pluginId) => appStore.clearComposerPlugin(pluginId)}
             placeholder={t('chat.inputPlaceholder')}
           />
         </View>
@@ -198,19 +207,23 @@ export function NewChatScreen({ navigation, route }: Props) {
       {/* Tools Menu Modal 1:1 matching cur-mobile-menu.png */}
       <ComposerToolsMenu
         visible={toolsMenuOpen}
+        surface="topic"
+        anchor={toolsMenuAnchor}
         onClose={() => setToolsMenuOpen(false)}
         onPickCamera={() => void attach('camera')}
         onPickPhotos={() => void attach('image')}
         onPickFiles={() => void attach('file')}
-        onPickPlugins={() => navigation.navigate('Embedded', { target: 'plugins', title: t('sidebar.nav.plugins') || 'Plugins' })}
-        onPickWrite={() => appStore.setActiveExtension(state.activeExtension === 'write' ? null : 'write')}
-        onPickExplore={() => appStore.setActiveExtension(state.activeExtension === 'explore' ? null : 'explore')}
-        onPickAnalyze={() => appStore.setActiveExtension(state.activeExtension === 'analyze' ? null : 'analyze')}
-        onPickExam={() => navigation.navigate('Embedded', { target: 'exam', title: t('sidebar.nav.exam') || 'Exam' })}
+        onPickWrite={() => appStore.setActiveExtension('write')}
+        onPickExplore={() => appStore.setActiveExtension('explore')}
+        onPickAnalyze={() => appStore.setActiveExtension('analyze')}
+        onPickExam={() => navigation.navigate('ExamSession')}
         onPickSkills={() => navigation.navigate('Embedded', { target: 'skills', title: t('sidebar.more.skills') || 'Skills & shortcuts' })}
         activeExtension={state.activeExtension}
         onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={state.reasoningEffort === 'high'}
+        plugins={state.composerPlugins}
+        selectedPluginIds={state.selectedComposerPlugins.map((plugin) => plugin.id)}
+        onTogglePlugin={(pluginId) => appStore.toggleComposerPlugin(pluginId)}
       />
 
       {/* Model Picker Modal */}
