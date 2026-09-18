@@ -7,7 +7,7 @@ import { AppHeader } from '../components/AppHeader';
 import { Composer } from '../components/Composer';
 import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
-import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
+import { ModelPickerModal } from '../components/ModelPickerModal';
 import { useTheme } from '../theme/ThemeProvider';
 import { useI18n, useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -135,7 +135,8 @@ export function NewChatScreen({ navigation, route }: Props) {
     appStore.setDraft(text);
   };
 
-  const currentModelName = AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.name || 'Model';
+  const currentProvider = state.providers.find((provider) => provider.id === state.selectedModel);
+  const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
   const ideas = pickLibraryPair(state.activeSession?.id || 'landing');
 
   /* P1 1:1 — time-aware personalized greeting mirrors
@@ -299,10 +300,11 @@ export function NewChatScreen({ navigation, route }: Props) {
       {/* Model Picker Modal */}
       <ModelPickerModal
         visible={modelPickerOpen}
+        providers={state.providers}
         selectedId={state.selectedModel}
-        onSelect={(modelId) => appStore.setSelectedModel(modelId)}
+        onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Settings')}
+        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('settings.title') || 'Settings' })}
       />
     </Screen>
   );
