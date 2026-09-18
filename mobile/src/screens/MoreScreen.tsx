@@ -69,11 +69,13 @@ export function MoreScreen({ navigation }: Props) {
         });
         break;
       case 'settings':
+        navigation.navigate('Embedded', { target: 'api-settings', title: t('sidebar.more.settings') || 'API settings' });
+        break;
       case 'display':
-        navigation.navigate('Settings');
+        navigation.navigate('Embedded', { target: 'display', title: t('sidebar.more.display') || 'Display & theme' });
         break;
       case 'shortcuts':
-        setShortcutsOpen(true);
+        navigation.navigate('Embedded', { target: 'shortcuts', title: t('sidebar.more.shortcuts') || 'Keyboard shortcuts' });
         break;
       case 'signout':
         setSignoutArmed(true);
