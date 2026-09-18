@@ -23,7 +23,7 @@ import { useAppDrawer } from '../components/AppDrawer';
 import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
 import { MessageBubble } from '../components/MessageBubble';
 import { Composer } from '../components/Composer';
-import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
+import { ComposerToolsMenu, type ComposerToolsAnchor } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { shareModal } from '../components/ShareModal';
 import { useTheme } from '../theme/ThemeProvider';
@@ -34,6 +34,7 @@ import { native } from '../native/native';
 import { sharesApi } from '../data/api/client';
 import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import type { RootStackParamList } from '../navigation/types';
+import { MOBILE_EXTENSIONS } from '../data/chat/prompts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 const EMPTY_MESSAGES: Message[] = [];
@@ -49,6 +50,7 @@ export function ChatScreen({ navigation }: Props) {
   const { openDrawer } = useAppDrawer();
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [toolsMenuAnchor, setToolsMenuAnchor] = useState<ComposerToolsAnchor | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
   const insets = useSafeAreaInsets();
@@ -141,7 +143,8 @@ export function ChatScreen({ navigation }: Props) {
     }
   }, [state.activeSession?.id, t]);
 
-  const onAttach = useCallback(() => {
+  const onAttach = useCallback((anchor?: ComposerToolsAnchor) => {
+    setToolsMenuAnchor(anchor || null);
     setToolsMenuOpen(true);
   }, []);
 
@@ -381,6 +384,10 @@ export function ChatScreen({ navigation }: Props) {
           onAttach={onAttach}
           onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
           onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
+          activeExtensionLabel={state.activeExtension ? MOBILE_EXTENSIONS[state.activeExtension].label : null}
+          selectedPlugins={state.selectedComposerPlugins.map(({ id, name }) => ({ id, name }))}
+          onRemoveActiveExtension={() => appStore.setActiveExtension(null)}
+          onRemovePlugin={(pluginId) => appStore.clearComposerPlugin(pluginId)}
           placeholder={t('chat.inputPlaceholder')}
         />
       </View>
@@ -388,13 +395,23 @@ export function ChatScreen({ navigation }: Props) {
       {/* Tools Menu Modal */}
       <ComposerToolsMenu
         visible={toolsMenuOpen}
+        surface="chat"
+        anchor={toolsMenuAnchor}
         onClose={() => setToolsMenuOpen(false)}
         onPickCamera={() => void attach('camera')}
         onPickPhotos={() => void attach('image')}
         onPickFiles={() => void attach('file')}
-        onPickPlugins={() => navigation.navigate('Plugins')}
+        onPickWrite={() => appStore.setActiveExtension('write')}
+        onPickExplore={() => appStore.setActiveExtension('explore')}
+        onPickAnalyze={() => appStore.setActiveExtension('analyze')}
+        onPickExam={() => navigation.navigate('ExamSession')}
+        onPickSkills={() => navigation.navigate('Embedded', { target: 'skills', title: t('sidebar.more.skills') || 'Skills & shortcuts' })}
+        activeExtension={state.activeExtension}
         onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={state.reasoningEffort === 'high'}
+        plugins={state.composerPlugins}
+        selectedPluginIds={state.selectedComposerPlugins.map((plugin) => plugin.id)}
+        onTogglePlugin={(pluginId) => appStore.toggleComposerPlugin(pluginId)}
       />
 
       {/* Model Picker Modal — mirrors frontend `.model-picker` menu */}
