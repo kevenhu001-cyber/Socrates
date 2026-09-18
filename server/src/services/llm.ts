@@ -52,7 +52,7 @@ function combineSignals(...candidates: Array<AbortSignal | null | undefined>): A
  * at 32K, but use a conservative default when the caller did not choose a
  * budget explicitly.  Operators can raise this for a known-compatible
  * provider without changing the API contract. */
-const DEFAULT_MAX_TOKENS = Math.max(256, Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '8192', 10) || 8192);
+const DEFAULT_MAX_TOKENS = Math.max(256, Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '16384', 10) || 16384);
 
 interface ChatCompletionRequestOptions {
   apiBase: string;
@@ -103,10 +103,11 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
 
 function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean) {
   const { model, messages, maxTokens, temperature = stream ? 0.7 : 0.3, reasoning_effort, response_speed, extra_body, tools, tool_choice } = opts;
+  const resolvedMaxTokens = maxTokens || (reasoning_effort === 'high' ? Math.max(DEFAULT_MAX_TOKENS, 32768) : (reasoning_effort ? Math.max(DEFAULT_MAX_TOKENS, 16384) : DEFAULT_MAX_TOKENS));
   const base = {
     model,
     messages: normalizeProviderMessages(messages),
-    max_tokens: maxTokens || DEFAULT_MAX_TOKENS,
+    max_tokens: resolvedMaxTokens,
     temperature,
     stream,
     ...(reasoning_effort ? { reasoning_effort } : {}),

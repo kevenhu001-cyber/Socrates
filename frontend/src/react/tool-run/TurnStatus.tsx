@@ -47,7 +47,7 @@ function ThinkingSpinner() {
 
 function WaitingLine({ status, messageId }: TurnStatusProps) {
   const clickable = status.clickable !== false;
-  const elapsed = status.elapsedSec && status.elapsedSec >= 12 ? `${status.elapsedSec}s` : '';
+  const elapsed = (typeof status.elapsedSec === 'number' && status.elapsedSec >= 5) ? `${status.elapsedSec}s` : '';
   return (
     <div className="thinking-placeholder">
       <span
@@ -68,11 +68,13 @@ function WaitingLine({ status, messageId }: TurnStatusProps) {
 }
 
 function ReasoningLine({ status, messageId }: TurnStatusProps) {
+  const elapsed = (typeof status.elapsedSec === 'number' && status.elapsedSec >= 5) ? `${status.elapsedSec}s` : '';
   return (
     <span
-      className="thinking-status thinking-status-clickable"
+      className={`thinking-status thinking-status-clickable${elapsed ? ' thinking-elapsed-shown' : ''}`}
       data-mode="tool"
       data-state={status.state || undefined}
+      data-elapsed={elapsed || undefined}
       role="button"
       tabIndex={0}
       aria-label={i18n('think.openPanel', 'View thinking process')}

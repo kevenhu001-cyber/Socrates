@@ -95,7 +95,7 @@ interface StreamController {
    plugin context). Falling back to the bare userText here used to drop that
    content on every error-bubble Retry. */
 function handleChatApiResult(
-  result: { cancelled?: boolean; text?: string } | null,
+  result: { cancelled?: boolean; text?: string; semanticActivity?: boolean } | null,
   ctl: StreamController,
   userText: string,
   retry?: () => unknown,
@@ -104,7 +104,9 @@ function handleChatApiResult(
     ctl.abort();
     return;
   }
-  if (result && result.text && typeof result.text === 'string' && result.text.trim()) {
+  const hasText = !!(result && result.text && typeof result.text === 'string' && result.text.trim());
+  const hasSemantic = !!(result && (result.semanticActivity || hasText));
+  if (hasText || hasSemantic) {
     stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
     ctl.finish();
   } else {

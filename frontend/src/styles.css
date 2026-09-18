@@ -3453,7 +3453,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    it reads as a "live indicator" rather than a stray inline label. */
 .thinking-dot,
 .thinking-status{display:inline-flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 6px;margin:0;line-height:1.3;border-radius:7px;transition:color .15s ease,background-color .15s ease;user-select:none}
-.thinking-dot.thinking-elapsed-shown::after{content:attr(data-elapsed);font-size:11px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;opacity:0;animation:thinking-elapsed-in .6s ease forwards}
+.thinking-dot.thinking-elapsed-shown::after,
+.thinking-status.thinking-elapsed-shown::after{content:attr(data-elapsed);font-size:11px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;opacity:0;animation:thinking-elapsed-in .6s ease forwards}
 @keyframes thinking-elapsed-in{to{opacity:1}}
 .thinking-dot[data-mode="chat"],
 .thinking-status[data-mode="tool"]{color:hsl(var(--text-300))}

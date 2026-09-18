@@ -24,6 +24,8 @@ export interface AIRequestOptions {
   /** Test-only seam; production callers use five seconds. */
   delayMs?: number;
   source?: AIRetrySource;
+  /** When true, semantic output (text or reasoning) has arrived; turns must not be replayed. */
+  semanticActivity?: boolean;
 }
 
 const RETRYABLE_STATUS = new Set([408, 425, 429]);
@@ -174,7 +176,7 @@ export async function waitForAIRetry(
 ): Promise<boolean> {
   const maxRetries = Math.max(0, options.maxRetries ?? AI_MAX_RETRIES);
   const maxAttempts = maxRetries + 1;
-  if (attempt >= maxAttempts || !isRetryableAIError(error, false, options.signal)) return false;
+  if (attempt >= maxAttempts || !isRetryableAIError(error, options.semanticActivity ?? false, options.signal)) return false;
 
   const notice: AIRetryNotice = {
     retryNumber: attempt,

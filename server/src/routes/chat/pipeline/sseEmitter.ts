@@ -77,14 +77,17 @@ export class SseEmitter {
 
   /** Error frame + terminal DONE + end (upstream error path). */
   fatal(error: Error): void {
-    console.error('[chat/stream] LLM error:', error.message);
+    const errorMsg = error && typeof error.message === 'string' && error.message.trim()
+      ? error.message.trim()
+      : (typeof error === 'string' ? error : 'LLM upstream error');
+    console.error('[chat/stream] LLM error:', errorMsg);
     // Never forward raw upstream bodies to the client — they may
     // contain provider-specific details. Map to a status-only message;
     // the full body stays in the server log above.
-    const status = (error as Error & { status?: number }).status;
+    const status = (error as Error & { status?: number })?.status;
     const safeMessage = typeof status === 'number'
       ? `LLM request failed (upstream ${status}). Try again or switch model.`
-      : error.message;
+      : errorMsg;
     try {
       this.writeRaw(`event: error\ndata: ${JSON.stringify({ error: safeMessage, message: safeMessage })}\n\n`);
       this.response.write('data: [DONE]\n\n');

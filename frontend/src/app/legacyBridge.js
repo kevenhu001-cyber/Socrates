@@ -47,6 +47,8 @@ import { formatMsgProgressive } from '../render/markdown.js';
 import { stripCitationMarkers } from '../render/helpers.js';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.js';
 import { publishThinkingPanelEvent } from '../ui/messageSnapshot.js';
+import { stateStore } from '../state/store.js';
+import { combineThinkingText } from '../chat/thinkExtract.ts';
 import { retryLiveTurn, decideLiveApproval } from '../chat/liveTurn.js';
 import { startSession } from '../chat/sessionBootstrap.js';
 import { submitChatMessage } from '../chat/sendPipeline.js';
@@ -282,6 +284,22 @@ window.__socratesLegacy = {
      addStreamingMessage for why the closure, not the row, has to act. */
   thinking: {
     openPanel: function (messageId) {
+      if (messageId) {
+        try {
+          var msgs = stateStore ? stateStore.read("messages") : null;
+          if (Array.isArray(msgs)) {
+            var target = msgs.find(function(m){ return m && (m.clientId === messageId || m.id === messageId); });
+            if (target) {
+              var text = combineThinkingText(target.reasoningContent || '', target.rawText || '');
+              if (text && text.trim()) {
+                publishThinkingPanelEvent({ type: "thinking-start", messageId: messageId });
+                publishThinkingPanelEvent({ type: "thinking-delta", messageId: messageId, text: text });
+                publishThinkingPanelEvent({ type: "thinking-end", messageId: messageId });
+              }
+            }
+          }
+        } catch (_) {}
+      }
       publishThinkingPanelEvent({ type: "panel-open", messageId: messageId || null });
     },
   },

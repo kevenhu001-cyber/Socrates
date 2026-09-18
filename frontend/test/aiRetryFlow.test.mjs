@@ -107,3 +107,27 @@ test('stream does not retry terminal quota errors', async () => {
   assert.equal(result, null);
   assert.equal(env.calls(), 1);
 });
+
+test('stream treats reasoning tokens as semantic output and does not retry', async () => {
+  const env = installStreamEnvironment([
+    { chunks: [
+      'data: {"choices":[{"delta":{"reasoning_content":"thinking deeply..."}}]}\n\n',
+      'data: [DONE]\n\n',
+    ] },
+    { chunks: ['data: {"choices":[{"delta":{"content":"should never be called"}}]}\n\n'] },
+  ]);
+
+  let thinkingReceived = '';
+  const { callAPIStream } = await import('../src/chat/stream.js');
+  const result = await callAPIStream(
+    [{ role: 'user', content: 'reasoning question' }],
+    256,
+    () => {},
+    (t) => { thinkingReceived += t; },
+    { maxAttempts: 2, sleep: async () => {} },
+  );
+
+  assert.equal(thinkingReceived, 'thinking deeply...');
+  assert.equal(result?.semanticActivity, true);
+  assert.equal(env.calls(), 1, 'turn must not be replayed when reasoning was delivered');
+});

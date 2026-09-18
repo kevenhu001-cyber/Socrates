@@ -403,15 +403,21 @@ export function addStreamingMessage(opts){
        retires it. */
     var _owner=liveMessage();
     var _prev=_owner&&_owner._liveStatus;
-    if(_prev&&_prev.phase==="thinking")return;
-    /* The elapsed cue is quantized to 5s steps so the pill's width only
-       changes rarely and predictably, instead of ticking every second. */
-    var _elapsedQ=sec>=12?Math.max(10,Math.floor(sec/5)*5):undefined;
+    var _elapsedQ=sec>=5?Math.max(5,Math.floor(sec/5)*5):undefined;
+    if(_prev&&_prev.phase==="thinking"){
+      if(_prev.elapsedSec!==_elapsedQ){
+        setLiveStatus(Object.assign({},_prev,{elapsedSec:_elapsedQ}));
+      }
+      return;
+    }
     setLiveStatus({phase:"waiting",label:waitingCopyFor(sec),mode:_appMode(),
       clickable:_appMode()==="chat",elapsedSec:_elapsedQ});
   }
   function stampThinking(){
     if(!reactLive||statusIsBusy())return;
+    var _owner=liveMessage();
+    var _prev=_owner&&_owner._liveStatus;
+    if(_prev&&_prev.phase==="thinking")return;
     setLiveStatus({phase:"thinking",label:_t("think.thinking"),
       clickable:_appMode()==="chat"});
   }
@@ -574,6 +580,7 @@ export function addStreamingMessage(opts){
         if(!fullReasoning)_publishThinkingPanelStart();
         fullReasoning+=delta;
         _publishThinkingPanelLive();
+        patchOwnedMessage({reasoningContent:fullReasoning},true);
       }
       if(toolRuntime&&typeof toolRuntime.hasActiveTools==="function"&&toolRuntime.hasActiveTools())return;
       try{ensureThinkCtl().append(delta||"")}catch(_){}
@@ -1060,7 +1067,8 @@ export function addStreamingMessage(opts){
         .replace(/<think>[\s\S]*?<\/think>/gi,"")
         .replace(/<think>[\s\S]*$/gi,"")
         .trim();
-      var hasPartial=!!(abortedMessage&&visibleStoppedRaw);
+      var hasReasoning=!!((fullReasoning&&fullReasoning.trim())||(abortedMessage&&abortedMessage.reasoningContent&&String(abortedMessage.reasoningContent).trim()));
+      var hasPartial=!!(abortedMessage&&(visibleStoppedRaw||hasReasoning));
       if(abortedMessage&&!hasPartial&&abortedMessage.type==="streaming"){
         /* P_supersede-stable — removing the empty placeholder also removes
            the turn's viewport reserve, collapsing the scroll range on the
@@ -1103,8 +1111,9 @@ export function addStreamingMessage(opts){
           '<button type="button" class="msg-retry-btn chat-resend-btn" data-chat-resend>'+esc(_t("chat.resend")||"Resend")+'</button>'+
           '</div>';
         stoppedHtml=stoppedHtml+resendHtml;
+        var stoppedReasoning=(fullReasoning&&fullReasoning.trim())||(abortedMessage&&abortedMessage.reasoningContent)||null;
         abortedMessage=patchOwnedMessage({
-          rawText:stoppedRaw,html:stoppedHtml,type:"assistant",state:"stopped"
+          rawText:stoppedRaw,reasoningContent:stoppedReasoning,html:stoppedHtml,type:"assistant",state:"stopped"
         })||abortedMessage;
         /* The declarative renderer has no host for the html-resend
            affordance, so the stopped line is data. */
@@ -1167,7 +1176,8 @@ export function addStreamingMessage(opts){
              `html`. The placeholder `btn` (just an id, no addEventListener)
              triggers the delegation branch below for click handling. */
           if(ownsMessageSlot()){
-            var _errorMessage=patchOwnedMessage({html:errHtml,type:"assistant"});
+            var currentReasoning=(fullReasoning&&fullReasoning.trim())||null;
+            var _errorMessage=patchOwnedMessage({html:errHtml,type:"assistant",reasoningContent:currentReasoning});
             if(_errorMessage){
               var _errCopy=String(errMsg||'Generation failed');
               setReactLiveStatus(_errorMessage,{
@@ -1239,7 +1249,8 @@ export function addStreamingMessage(opts){
             }
           }
        }catch {
-         patchOwnedMessage({html:'<p>'+esc(errMsg||'Generation failed')+'</p>',type:"assistant"});
+         var currentReasoningFb=(fullReasoning&&fullReasoning.trim())||null;
+         patchOwnedMessage({html:'<p>'+esc(errMsg||'Generation failed')+'</p>',type:"assistant",reasoningContent:currentReasoningFb});
        }
        updateChatStats();
        /* Restore the send button — even error paths end the stream.

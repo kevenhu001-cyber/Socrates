@@ -115,7 +115,8 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
   };
   var retryWaitOptions=Object.assign({},retryOptions,{signal:turnAbort.signal});
   var waitForRetry=async function(retryAttempt,error){
-    try{return await waitForAIRetry(retryAttempt,error,retryWaitOptions)}
+    var currentWaitOptions=Object.assign({},retryWaitOptions,{semanticActivity:semanticActivity});
+    try{return await waitForAIRetry(retryAttempt,error,currentWaitOptions)}
     catch(e){
       if(isUserAbort(e,turnAbort.signal)||isUserAbort(e,retryOptions.signal))return false;
       throw e;
@@ -725,6 +726,10 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        event:error SSE frames instead of overwriting it with the
        generic "empty stream". */
     if(!gotAnyData&&!full&&!formattedHtml){
+      if(semanticActivity){
+        finishTurn();
+        return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false,semanticActivity:true};
+      }
       lastErr=makeStreamError("empty stream ("+bytesReceived+" bytes received)");
       if(await waitForRetry(attempt,lastErr)){
         console.warn("[API stream]",lastErr.message+", retrying");
@@ -740,6 +745,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
       return null;
     }
     if(!full&&!formattedHtml){
+      /* If semantic output has already arrived (reasoning tokens were streamed
+         or tools were invoked), this is NOT an empty stream — the AI completed
+         or was halted after its thinking phase without final prose. Retrying
+         here would discard the entire thinking process and replay the turn! */
+      if(semanticActivity){
+        finishTurn();
+        return {text:full||"",html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false,semanticActivity:true};
+      }
       lastErr=makeStreamError("empty stream (server returned no content)");
       if(await waitForRetry(attempt,lastErr)){
         console.warn("[API stream]",lastErr.message+", retrying");
@@ -758,7 +771,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        a future "session-switch" or "user-stop" call doesn't fire
        a closure that pins this call's AbortController. */
     finishTurn();
-    return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false};
+    return {text:full,html:formattedHtml&&formattedHtml.html||null,widgets:formattedHtml&&formattedHtml.widgets||[],cancelled:false,semanticActivity:semanticActivity};
   }
   /* All six attempts failed with the same retryable condition.
      Ensure lastCallError is always set even if lastErr is
