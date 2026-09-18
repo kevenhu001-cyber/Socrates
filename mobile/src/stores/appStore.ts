@@ -1,7 +1,7 @@
 import type { Attachment, Message, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
-import { ApiError, authApi, sessionsApi } from '../data/api/client';
+import { ApiError, apiKeysApi, authApi, configApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
@@ -21,6 +21,7 @@ export interface AppState {
   activeSession: Session | null;
   draft: string;
   pendingAttachments: Attachment[];
+  providers: ApiProvider[];
   selectedModel: string;
   reasoningEffort: ReasoningEffort;
   webSearchEnabled: boolean;
@@ -38,6 +39,7 @@ const initialState: AppState = {
   activeSession: null,
   draft: '',
   pendingAttachments: [],
+  providers: [],
   selectedModel: 'beagle-built-in',
   reasoningEffort: 'medium',
   webSearchEnabled: true,
@@ -114,7 +116,7 @@ class AppStore {
           error: tSync('chat.offlineBanner'),
         });
       }
-      await Promise.allSettled([this.refreshSessions(), this.syncOutbox()]);
+      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.syncOutbox()]);
     } catch (criticalError) {
       console.error('[AppStore] Fatal bootstrap failure, unlocking loading screen:', criticalError);
       this.setState({ authStatus: 'signedOut', user: null, isLoading: false });
@@ -126,7 +128,7 @@ class AppStore {
     try {
       const user = await authApi.login(email, password);
       this.setState({ authStatus: 'signedIn', user, isLoading: false });
-      await Promise.allSettled([this.refreshSessions(), this.syncOutbox()]);
+      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.syncOutbox()]);
     } catch (error) {
       this.setState({ isLoading: false, error: error instanceof Error ? error.message : tSync('auth.cannotSignIn') });
       throw error;
@@ -135,7 +137,7 @@ class AppStore {
 
   async loginWithUser(user: User) {
     this.setState({ authStatus: 'signedIn', user, isLoading: false, error: null });
-    await Promise.allSettled([this.refreshSessions(), this.syncOutbox()]);
+    await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.syncOutbox()]);
   }
 
   async logout() {
@@ -189,6 +191,45 @@ class AppStore {
         pendingAttachments: [],
         error: null,
       });
+    }
+  }
+
+  async refreshProviders() {
+    try {
+      const [providerResult, config] = await Promise.all([
+        apiKeysApi.list(),
+        configApi.get(),
+      ]);
+      const customProviders = Array.isArray(providerResult.providers)
+        ? providerResult.providers.filter((provider) => provider.id !== 'beagle-built-in')
+        : [];
+      const providers: ApiProvider[] = config.hasBeagleKey
+        ? [{
+            id: 'beagle-built-in',
+            label: 'Beagle',
+            url: '/api/minimax/v1',
+            model: '',
+            isActive: !customProviders.some((provider) => provider.isActive === true),
+            isBuiltIn: true,
+            isMultimodal: true,
+            hasKey: true,
+          }, ...customProviders]
+        : customProviders;
+      const active = providers.find((provider) => provider.isActive)
+        || providers.find((provider) => provider.id === this.state.selectedModel)
+        || providers[0]
+        || null;
+      this.setState({
+        providers,
+        selectedModel: active?.id || '',
+        error: null,
+      });
+      return providers;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 0) {
+        this.setState({ isOnline: false });
+      }
+      throw error;
     }
   }
 
@@ -291,7 +332,7 @@ class AppStore {
 
   async resumeForeground() {
     const sessionId = this.state.activeSession?.id;
-    const tasks: Promise<unknown>[] = [this.refreshSessions(), this.syncOutbox()];
+    const tasks: Promise<unknown>[] = [this.refreshSessions(), this.refreshProviders(), this.syncOutbox()];
     if (sessionId) tasks.push(sessionRepository.get(sessionId).then((session) => {
       if (session) this.setState({ activeSession: session });
     }));
@@ -343,8 +384,39 @@ class AppStore {
     });
   }
 
-  setSelectedModel(selectedModel: string) {
-    this.setState({ selectedModel });
+  async setSelectedModel(selectedModel: string) {
+    if (!selectedModel || selectedModel === this.state.selectedModel) return;
+    const target = this.state.providers.find((provider) => provider.id === selectedModel);
+    if (!target) {
+      this.setState({ error: tSync('settings.modelUnavailable') || 'Model is no longer available.' });
+      return;
+    }
+    const previous = this.state.selectedModel;
+    this.setState({ selectedModel, error: null });
+    try {
+      if (target.isBuiltIn || selectedModel === 'beagle-built-in') {
+        const activeCustom = this.state.providers.find((provider) => !provider.isBuiltIn && provider.isActive);
+        if (activeCustom) await apiKeysApi.patch(activeCustom.id, { isActive: false });
+      } else {
+        await apiKeysApi.patch(target.id, { isActive: true });
+      }
+      this.setState({
+        providers: this.state.providers.map((provider) => ({
+          ...provider,
+          isActive: provider.id === selectedModel
+            ? true
+            : provider.isBuiltIn
+              ? selectedModel === 'beagle-built-in'
+              : false,
+        })),
+      });
+    } catch (error) {
+      this.setState({
+        selectedModel: previous,
+        error: error instanceof Error ? error.message : (tSync('settings.modelSwitchFailed') || 'Failed to switch model.'),
+      });
+      throw error;
+    }
   }
 
   setReasoningEffort(reasoningEffort: ReasoningEffort) {
