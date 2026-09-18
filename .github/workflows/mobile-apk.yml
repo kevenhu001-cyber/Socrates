@@ -34,7 +34,7 @@ env:
 
 jobs:
   build-apk:
-    name: Build installable debug APK
+    name: Build installable release APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -98,16 +98,21 @@ jobs:
           NODE_ENV: production
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon --console=plain \
+          # Release, not debug: debuggableVariants skips JS bundling for the
+          # debug variant, so a debug APK waits for Metro forever and the app
+          # sits on the splash screen. Release embeds the bundle via
+          # `export:embed` and signs with the debug keystore when no
+          # ANDROID_KEYSTORE_* env is provided.
+          ./gradlew :app:assembleRelease --no-daemon --console=plain \
             -PreactNativeArchitectures="$RN_ARCHITECTURES"
 
       - name: Verify and package APK
         env:
-          APK_SOURCE: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          APK_SOURCE: mobile/android/app/build/outputs/apk/release/app-release.apk
         run: |
           set -euo pipefail
           APP_VERSION=$(node -p "require('./mobile/app.json').expo.version")
-          APK_NAME="socrates-android-${APP_VERSION}-${GITHUB_SHA::7}-debug.apk"
+          APK_NAME="socrates-android-${APP_VERSION}-${GITHUB_SHA::7}-release.apk"
           mkdir -p mobile/dist
           cp "$APK_SOURCE" "mobile/dist/$APK_NAME"
 
