@@ -179,6 +179,13 @@ export interface KnowledgeNode {
   status: KnowledgeNodeStatus;
   sessionId: string;
   sessionTitle: string | null;
+  nodeIndex?: number;
+  questions?: number;
+  verifiedCount?: number;
+  confidenceScore?: number;
+  systemNote?: string | null;
+  userNote?: string | null;
+  history?: JsonValue[];
 }
 
 export interface Mistake {
