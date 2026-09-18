@@ -366,6 +366,7 @@ class AppStore {
       activeSession: session,
       draft: session ? readDraft(session.id) : '',
       pendingAttachments: [],
+      isIncognito: false,
       activeExtension: null,
       selectedComposerPlugins: [],
       linkPreviews: {},
@@ -520,7 +521,28 @@ class AppStore {
   }
 
   toggleIncognito() {
-    this.setState({ isIncognito: !this.state.isIncognito });
+    /* Match frontend lifecycle semantics: entering incognito starts a fresh
+     * temporary conversation; leaving it discards that conversation. The
+     * flag is deliberately flipped together with the reset so no temporary
+     * turn can race into the persisted session list. */
+    this.stopStream?.();
+    this.stopStream = null;
+    this.streamFinished = true;
+    this.streamGeneration += 1;
+    this.clearPendingAssistantPatches();
+    const nextIncognito = !this.state.isIncognito;
+    const session = createDraftSession(uuid(), 'chat');
+    this.setState({
+      isIncognito: nextIncognito,
+      activeSession: session,
+      draft: '',
+      pendingAttachments: [],
+      activeExtension: null,
+      selectedComposerPlugins: [],
+      linkPreviews: {},
+      error: null,
+      isStreaming: false,
+    });
   }
 
   stopGenerating() {
@@ -557,8 +579,12 @@ class AppStore {
     this.setState({ activeSession: session, draft: '', pendingAttachments: [], error: null });
 
     if (!this.state.isOnline) {
-      this.enqueueSession(session, nextUser.clientId || id('client'));
-      this.setState({ error: tSync('chat.queued') });
+      if (!this.state.isIncognito) {
+        this.enqueueSession(session, nextUser.clientId || id('client'));
+        this.setState({ error: tSync('chat.queued') });
+      } else {
+        this.setState({ error: tSync('chat.offline') });
+      }
       return;
     }
 
@@ -585,12 +611,16 @@ class AppStore {
     }
 
     try {
-      const saved = await sessionRepository.save(session, nextMessages);
-      session = { ...session, ...saved, messages: nextMessages };
-      this.setState({ activeSession: session });
+      if (!this.state.isIncognito) {
+        const saved = await sessionRepository.save(session, nextMessages);
+        session = { ...session, ...saved, messages: nextMessages };
+        this.setState({ activeSession: session });
+      }
       await this.startAssistantStream(session, nextMessages, referencedPageBlocks, looksLikeUserMentionedSite(text) && urls.length === 0 ? text : undefined);
     } catch (error) {
-      this.enqueueSession(session, nextMessages.at(-1)?.clientId || id('client'));
+      if (!this.state.isIncognito) {
+        this.enqueueSession(session, nextMessages.at(-1)?.clientId || id('client'));
+      }
       this.setState({ isOnline: false, error: error instanceof Error ? error.message : tSync('chat.offline') });
     }
   }
@@ -765,16 +795,22 @@ class AppStore {
     this.setState({ activeSession: nextSession, error: null });
 
     if (!this.state.isOnline) {
-      this.enqueueSession(nextSession, messageKey(edited) || id('edit'));
-      this.setState({ error: tSync('chat.queued') });
+      if (!this.state.isIncognito) {
+        this.enqueueSession(nextSession, messageKey(edited) || id('edit'));
+        this.setState({ error: tSync('chat.queued') });
+      } else {
+        this.setState({ error: tSync('chat.offline') });
+      }
       return true;
     }
 
     try {
-      await messagesApi.edit(messageId, nextText, session.id, {
-        discardFollowing: true,
-        attachments: edited.attachments,
-      });
+      if (!this.state.isIncognito) {
+        await messagesApi.edit(messageId, nextText, session.id, {
+          discardFollowing: true,
+          attachments: edited.attachments,
+        });
+      }
     } catch (error) {
       /* A just-created local message can legitimately predate its DB row.
        * The next full session save will persist it; other failures stay
@@ -805,7 +841,9 @@ class AppStore {
       error: null,
     });
     try {
-      await messagesApi.remove(messageId, session.id);
+      if (!this.state.isIncognito) {
+        await messagesApi.remove(messageId, session.id);
+      }
     } catch (error) {
       if (!(error instanceof ApiError && error.status === 404)) {
         this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
@@ -843,10 +881,12 @@ class AppStore {
     this.setState({ activeSession: nextSession, error: null });
 
     try {
-      await messagesApi.edit(userId, userText, session.id, {
-        discardFollowing: true,
-        attachments: user.attachments,
-      });
+      if (!this.state.isIncognito) {
+        await messagesApi.edit(userId, userText, session.id, {
+          discardFollowing: true,
+          attachments: user.attachments,
+        });
+      }
     } catch (error) {
       if (!(error instanceof ApiError && error.status === 404)) {
         this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
@@ -893,15 +933,26 @@ class AppStore {
     };
 
     try {
-      const saved = await sessionRepository.save(branchSession, branchMessages);
-      const active = { ...branchSession, ...saved, messages: branchMessages };
-      this.setState({
-        activeSession: active,
-        sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
-        draft: '',
-        pendingAttachments: [],
-        error: null,
-      });
+      let active: Session;
+      if (this.state.isIncognito) {
+        active = branchSession;
+        this.setState({
+          activeSession: active,
+          draft: '',
+          pendingAttachments: [],
+          error: null,
+        });
+      } else {
+        const saved = await sessionRepository.save(branchSession, branchMessages);
+        active = { ...branchSession, ...saved, messages: branchMessages };
+        this.setState({
+          activeSession: active,
+          sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+          draft: '',
+          pendingAttachments: [],
+          error: null,
+        });
+      }
       if (options.reExplain) {
         const prompt = 'Please re-explain that from a different angle. Use a different approach, analogy, or teaching method to help me understand better.';
         await this.sendMessage(prompt);
@@ -915,7 +966,7 @@ class AppStore {
 
   async sendMessageFeedback(messageId: string, rating: 'up' | 'down' | 'none', reason?: string) {
     const sessionId = this.state.activeSession?.id || null;
-    if (!messageId) return;
+    if (!messageId || this.state.isIncognito) return;
     await messagesApi.feedback(messageId, rating, reason, sessionId);
   }
 
@@ -1031,6 +1082,12 @@ class AppStore {
     });
     const finalSession = { ...session, messages, updatedAt: new Date().toISOString() };
     this.setState({ activeSession: finalSession, isStreaming: false, error: error || null });
+    if (this.state.isIncognito) {
+      // Incognito conversations are intentionally memory-only. They still
+      // support the full live response/tool UI, but never enter Recents,
+      // SQLite/server session storage, or the offline outbox.
+      return;
+    }
     // A stopped or interrupted answer is still useful. Persist it just like a
     // completed answer, and queue the write when connectivity disappeared.
     try {
