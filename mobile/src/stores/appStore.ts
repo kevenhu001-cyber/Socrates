@@ -1,7 +1,7 @@
 import type { Attachment, Message, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
-import { ApiError, apiKeysApi, authApi, configApi, messagesApi, sessionsApi, type ApiProvider } from '../data/api/client';
+import { ApiError, apiKeysApi, authApi, configApi, messagesApi, projectConnectorsApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
@@ -10,6 +10,7 @@ import { reduceToolEvent, settleToolCalls, type ToolEventKind } from '../data/to
 import { tSync } from '../i18n';
 import { extractHttpUrls, fetchPagesForContext, looksLikeUserMentionedSite, type LinkPreviewState } from '../data/chat/webLinks';
 import { buildAssistantModeInstruction, MOBILE_EXTENSIONS, type MobileExtensionKey } from '../data/chat/prompts';
+import { connectedComposerPlugins, serializeSelectedPluginContext, type ComposerPluginSelection } from '../data/chat/plugins';
 import { unregisterPushNotifications } from '../native/push';
 
 export type AuthStatus = 'booting' | 'signedOut' | 'signedIn';
@@ -25,6 +26,8 @@ export interface AppState {
   pendingAttachments: Attachment[];
   linkPreviews: Record<string, LinkPreviewState>;
   providers: ApiProvider[];
+  composerPlugins: ComposerPluginSelection[];
+  selectedComposerPlugins: ComposerPluginSelection[];
   selectedModel: string;
   activeExtension: MobileExtensionKey | null;
   reasoningEffort: ReasoningEffort;
@@ -45,6 +48,8 @@ const initialState: AppState = {
   pendingAttachments: [],
   linkPreviews: {},
   providers: [],
+  composerPlugins: [],
+  selectedComposerPlugins: [],
   selectedModel: 'beagle-built-in',
   activeExtension: null,
   reasoningEffort: 'medium',
@@ -126,7 +131,7 @@ class AppStore {
           error: tSync('chat.offlineBanner'),
         });
       }
-      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.syncOutbox()]);
+      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()]);
     } catch (criticalError) {
       console.error('[AppStore] Fatal bootstrap failure, unlocking loading screen:', criticalError);
       this.setState({ authStatus: 'signedOut', user: null, isLoading: false });
@@ -138,7 +143,7 @@ class AppStore {
     try {
       const user = await authApi.login(email, password);
       this.setState({ authStatus: 'signedIn', user, isLoading: false });
-      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.syncOutbox()]);
+      await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()]);
     } catch (error) {
       this.setState({ isLoading: false, error: error instanceof Error ? error.message : tSync('auth.cannotSignIn') });
       throw error;
@@ -147,7 +152,7 @@ class AppStore {
 
   async loginWithUser(user: User) {
     this.setState({ authStatus: 'signedIn', user, isLoading: false, error: null });
-    await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.syncOutbox()]);
+    await Promise.allSettled([this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()]);
   }
 
   async logout() {
@@ -241,6 +246,39 @@ class AppStore {
       }
       throw error;
     }
+  }
+
+  async refreshComposerPlugins() {
+    try {
+      const response = await projectConnectorsApi.list();
+      const composerPlugins = connectedComposerPlugins(Array.isArray(response.connectors) ? response.connectors : []);
+      const availableIds = new Set(composerPlugins.map((plugin) => plugin.id));
+      this.setState({
+        composerPlugins,
+        selectedComposerPlugins: this.state.selectedComposerPlugins.filter((plugin) => availableIds.has(plugin.id)),
+      });
+      return composerPlugins;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 0) this.setState({ isOnline: false });
+      throw error;
+    }
+  }
+
+  toggleComposerPlugin(pluginId: string) {
+    const plugin = this.state.composerPlugins.find((item) => item.id === pluginId);
+    if (!plugin) return;
+    const exists = this.state.selectedComposerPlugins.some((item) => item.id === pluginId);
+    this.setState({
+      selectedComposerPlugins: exists
+        ? this.state.selectedComposerPlugins.filter((item) => item.id !== pluginId)
+        : [...this.state.selectedComposerPlugins, plugin],
+    });
+  }
+
+  clearComposerPlugin(pluginId: string) {
+    this.setState({
+      selectedComposerPlugins: this.state.selectedComposerPlugins.filter((item) => item.id !== pluginId),
+    });
   }
 
   async refreshSessions() {
@@ -342,7 +380,7 @@ class AppStore {
 
   async resumeForeground() {
     const sessionId = this.state.activeSession?.id;
-    const tasks: Promise<unknown>[] = [this.refreshSessions(), this.refreshProviders(), this.syncOutbox()];
+    const tasks: Promise<unknown>[] = [this.refreshSessions(), this.refreshProviders(), this.refreshComposerPlugins(), this.syncOutbox()];
     if (sessionId) tasks.push(sessionRepository.get(sessionId).then((session) => {
       if (session) this.setState({ activeSession: session });
     }));
@@ -360,6 +398,7 @@ class AppStore {
       activeSession: projectId ? { ...session, projectId } : session,
       draft: preserveComposer ? this.state.draft : '',
       pendingAttachments: preserveComposer ? this.state.pendingAttachments : [],
+      selectedComposerPlugins: preserveComposer ? this.state.selectedComposerPlugins : [],
       linkPreviews: {},
       error: null,
       isStreaming: false,
@@ -558,6 +597,22 @@ class AppStore {
       const history = buildChatHistory(nextMessages);
       const finalUser = nextMessages.at(-1);
       const userText = String(finalUser?.rawText || finalUser?.content || '');
+      const modelUserText = serializeSelectedPluginContext(this.state.selectedComposerPlugins, userText);
+      const lastModelUser = history.at(-1);
+      if (lastModelUser?.role === 'user' && modelUserText !== userText) {
+        if (Array.isArray(lastModelUser.content)) {
+          const parts = lastModelUser.content.slice();
+          const textIndex = parts.findIndex((part) => part && typeof part === 'object' && (part as { type?: string }).type === 'text');
+          if (textIndex >= 0) {
+            parts[textIndex] = { ...(parts[textIndex] as object), type: 'text', text: modelUserText };
+          } else {
+            parts.push({ type: 'text', text: modelUserText });
+          }
+          lastModelUser.content = parts;
+        } else {
+          lastModelUser.content = modelUserText;
+        }
+      }
       history.unshift({
         role: 'system',
         content: buildAssistantModeInstruction(userText, this.state.reasoningEffort),
@@ -576,14 +631,14 @@ class AppStore {
       }
       const lastHistory = history.at(-1);
       if (lastHistory?.role === 'user' && referencedPageBlocks.length) {
-        const pagesText = `${String(finalUser?.rawText || finalUser?.content || '')}\n\n${referencedPageBlocks.join('\n\n')}`;
+        const pagesText = `${modelUserText}\n\n${referencedPageBlocks.join('\n\n')}`;
         if (Array.isArray(lastHistory.content)) {
           lastHistory.content = [...lastHistory.content, { type: 'text', text: pagesText }];
         } else {
           lastHistory.content = pagesText;
         }
       } else if (lastHistory?.role === 'user' && missingUrlMention) {
-        const hintText = `${missingUrlMention}\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents.`;
+        const hintText = `${serializeSelectedPluginContext(this.state.selectedComposerPlugins, missingUrlMention)}\n\n[System] The user appears to be referring to a website, but no complete URL was provided in this turn (the system only auto-fetches text that contains a full http(s):// link or a recognizable bare domain like example.com / www.foo.bar). Reply briefly asking them to paste the full URL — including the https:// prefix — so you can read the page. Do NOT invent or guess the page contents.`;
         if (Array.isArray(lastHistory.content)) {
           lastHistory.content = [...lastHistory.content, { type: 'text', text: hintText }];
         } else {
