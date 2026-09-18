@@ -274,14 +274,33 @@ export const mistakesApi = {
   remove: (id: string) => apiRequest<void>(`/mistakes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };
 
+function messageApiPath(id: string, sessionId?: string | null, suffix = '') {
+  const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
+  return `/messages/${encodeURIComponent(id)}${suffix}${query}`;
+}
+
 export const messagesApi = {
-  edit: (id: string, content: string, regenerate = false) => apiRequest(`/messages/${encodeURIComponent(id)}`, {
-    method: 'PATCH', body: JSON.stringify({ content, regenerate }),
+  edit: (
+    id: string,
+    content: string,
+    sessionId?: string | null,
+    options: { regenerate?: boolean; discardFollowing?: boolean; attachments?: Attachment[] } = {},
+  ) => apiRequest(messageApiPath(id, sessionId), {
+    method: 'PATCH',
+    body: JSON.stringify({
+      content,
+      regenerate: options.regenerate === true,
+      discardFollowing: options.discardFollowing === true,
+      ...(options.attachments ? { attachments: options.attachments } : {}),
+    }),
   }),
-  regenerate: (id: string) => apiRequest(`/messages/${encodeURIComponent(id)}/regenerate`, { method: 'POST' }),
-  feedback: (id: string, rating: 'up' | 'down' | 'none', reason?: string) => apiRequest(`/messages/${encodeURIComponent(id)}/feedback`, {
-    method: 'PUT', body: JSON.stringify({ rating, reason }),
-  }),
+  remove: (id: string, sessionId?: string | null) =>
+    apiRequest<void>(messageApiPath(id, sessionId), { method: 'DELETE' }),
+  feedback: (id: string, rating: 'up' | 'down' | 'none', reason?: string, sessionId?: string | null) =>
+    apiRequest(messageApiPath(id, sessionId, '/feedback'), {
+      method: 'PUT',
+      body: JSON.stringify({ rating, reason }),
+    }),
 };
 
 export const sharesApi = {
