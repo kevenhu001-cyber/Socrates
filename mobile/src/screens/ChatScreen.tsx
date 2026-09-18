@@ -192,7 +192,7 @@ export function ChatScreen({ navigation }: Props) {
         onRetry={() => { void appStore.retryLastResponse(); }}
         onEdit={(messageId, text) => appStore.editUserMessage(messageId, text)}
         onDelete={(messageId) => appStore.deleteUserMessage(messageId)}
-        onShare={onShare}
+        onShare={state.isIncognito ? undefined : onShare}
         onRegenerate={(messageId) => appStore.regenerateAssistantMessage(messageId)}
         onBranch={(messageId, options) => appStore.branchFromMessage(messageId, options)}
         onFeedback={(messageId, rating) => appStore.sendMessageFeedback(messageId, rating)}
@@ -201,7 +201,7 @@ export function ChatScreen({ navigation }: Props) {
         highlight={searchActive ? searchQuery : undefined}
       />
     ),
-    [lastAssistantIndex, onShare, searchActive, searchQuery, state.linkPreviews]
+    [lastAssistantIndex, onShare, searchActive, searchQuery, state.isIncognito, state.linkPreviews]
   );
 
   const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
@@ -213,7 +213,7 @@ export function ChatScreen({ navigation }: Props) {
         title={state.activeSession?.title || (state.activeSession?.mode === 'tutor' ? 'Tutor' : 'Chat')}
         activeModelName={currentModelName}
         onOpenModelPicker={(anchor) => { setModelPickerAnchor(anchor || null); setModelPickerOpen(true); }}
-        onShare={() => { void onShare(); }}
+        onShare={state.isIncognito ? undefined : () => { void onShare(); }}
         onMore={openDrawer}
         onSearchInSession={() => {
           setSearchActive(true);
