@@ -1924,6 +1924,21 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
 /* UI-align: the newest assistant reply keeps its action row visible
    (open-webui shows the last response's toolbar by default). */
 .msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
+/* P_finish-stream-boundary — while a bubble is still streaming, hide its
+   toolbar (opacity 0 + pointer-events none) regardless of hover state.
+   `data-stream-settled="true"` is set by MessageItem once finish() has
+   produced the final html, and `withElementSwapTransition` has cross-faded
+   the bubble. From that frame on the toolbar is visible without a remount
+   and without the page-level flicker that came from unmounting the live
+   AssistantTurn and mounting MessageToolbar at the same time. The fade
+   is animated so the swap reads as a single continuous transition. */
+.msg.assistant:not([data-stream-settled]) .msg-toolbar{opacity:0!important;pointer-events:none}
+.msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity .18s ease}
+.msg.assistant[data-stream-settled] .stream-cursor{opacity:0;transition:opacity .15s ease}
+/* The streaming status line (`TurnStatus`) is data drawn from
+   `_liveStatus`. Once `data-stream-settled` is set, the live status is
+   already cleared by finish(); the bubble never mounts a status line
+   after that. */
 .msg-toolbar-btn{position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
 .msg-toolbar-btn:hover{background:hsl(var(--text-000)/0.06);color:hsl(var(--text-100))}
 /* UI-align: dark floating tooltip (open-webui/tippy look) driven by

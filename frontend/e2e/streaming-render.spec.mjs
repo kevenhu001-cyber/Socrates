@@ -136,7 +136,12 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
   await waitForStreamHandoff(page);
   await expect(bubble).toContainText('Stable heading');
   await expect(bubble).toContainText('The final Markdown remains correct.');
-  await expect(bubble.locator('.stream-cursor')).toHaveCount(0);
+  /* P_finish-stream-boundary — the bubble tree stays mounted across the
+     finish() handoff; the cursor is removed (not just hidden) once
+     `isLive` flips, but the test also allows a brief cross-fade window
+     during which the row still has the cursor in the DOM with opacity 0. */
+  await expect.poll(() => bubble.locator('.stream-cursor').count(), { timeout: 600 })
+    .toBe(0);
   expect(await page.evaluate(() => {
     const id = window.stateStore.read("messages").at(-1)?.clientId;
     const current = id ? document.querySelector(`[data-client-id="${id}"]`) : null;

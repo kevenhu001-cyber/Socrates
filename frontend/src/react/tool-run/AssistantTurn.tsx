@@ -210,7 +210,10 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           segment: when a tool row is the latest thing (fired at the end,
           nothing after it yet), a cursor inside the prose would paint
           ABOVE the row. While the status line shows, its spinner already
-          carries the "alive" signal, so the cursor stays hidden there. */}
+          carries the "alive" signal, so the cursor stays hidden there.
+          On a settled turn (P_finish-stream-boundary) the cursor is also
+          dropped from the rendered tree — its only role was the typing
+          cue, and the parent CSS animates the toolbar in alongside. */}
       {isLive && !showStatus ? <StreamCursor /> : null}
     </>
   );
