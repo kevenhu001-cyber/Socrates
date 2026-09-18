@@ -240,7 +240,10 @@ export type EmbeddedTarget =
   | 'knowledge'
   | 'mistakes'
   | 'skills'
-  | 'api-settings';
+  | 'api-settings'
+  | 'profile'
+  | 'usage'
+  | 'storage';
 
 export interface MobileWebSessionRequest {
   target: EmbeddedTarget;
