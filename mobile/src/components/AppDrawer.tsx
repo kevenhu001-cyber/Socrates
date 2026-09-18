@@ -11,9 +11,6 @@ import { appStore, useAppStore } from '../stores/appStore';
 import { BrandMark } from './BrandMark';
 import { AnimatedPressable } from './AnimatedPressable';
 import { ConfirmDialog } from './ConfirmDialog';
-import { ProfileOverlay } from './ProfileOverlay';
-import { UsageOverlay } from './UsageOverlay';
-import { StorageOverlay } from './StorageOverlay';
 import { usageOverlay, storageOverlay } from '../cmdK/overlayStores';
 
 type DrawerContextValue = {
@@ -124,25 +121,34 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
   const { open, closeDrawer } = useAppDrawer();
   const state = useAppStore();
   const { sidebarWidth } = useResponsive();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [usageOpen, setUsageOpen] = useState(false);
-  const [storageOpen, setStorageOpen] = useState(false);
-  useEffect(() => profileOverlay.subscribe(setProfileOpen), []);
-  useEffect(() => usageOverlay.subscribe(setUsageOpen), []);
-  useEffect(() => storageOverlay.subscribe(setStorageOpen), []);
+  const t = useT();
+  /* Strict parity: account/data overlays use the SPA itself as the single
+   * implementation. This removes the native look-alike copies that had
+   * drifted from ProfileModal/UsageModal/StorageModal. The Android shell
+   * still owns navigation/back/system UI; the surface inside is the exact
+   * authenticated SPA modal via the one-time web-session hand-off. */
+  useEffect(() => profileOverlay.subscribe((open) => {
+    if (!open) return;
+    closeDrawer();
+    profileOverlay.close();
+    onOpenEmbedded('profile', t('profile.heading') || 'Account');
+  }), [closeDrawer, onOpenEmbedded, t]);
+  useEffect(() => usageOverlay.subscribe((open) => {
+    if (!open) return;
+    closeDrawer();
+    usageOverlay.close();
+    onOpenEmbedded('usage', t('usage.heading') || 'Token usage');
+  }), [closeDrawer, onOpenEmbedded, t]);
+  useEffect(() => storageOverlay.subscribe((open) => {
+    if (!open) return;
+    closeDrawer();
+    storageOverlay.close();
+    onOpenEmbedded('storage', t('storage.heading') || 'Storage');
+  }), [closeDrawer, onOpenEmbedded, t]);
   const permanent = sidebarWidth !== null;
   if (permanent) {
     return (
-      <>
-        <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />
-        <ProfileOverlay
-          visible={profileOpen}
-          onClose={() => profileOverlay.close()}
-          user={state.user}
-        />
-        <UsageOverlay visible={usageOpen} onClose={() => usageOverlay.close()} />
-        <StorageOverlay visible={storageOpen} onClose={() => storageOverlay.close()} />
-      </>
+      <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} permanent />
     );
   }
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -172,13 +178,6 @@ export function AppDrawer({ onNavigate, onOpenEmbedded }: Props) {
           <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} />
         </Animated.View>
       </View>
-      <ProfileOverlay
-        visible={profileOpen}
-        onClose={() => profileOverlay.close()}
-        user={state.user}
-      />
-      <UsageOverlay visible={usageOpen} onClose={() => usageOverlay.close()} />
-      <StorageOverlay visible={storageOpen} onClose={() => storageOverlay.close()} />
     </Modal>
   );
 }
@@ -464,7 +463,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, permanent = false }: Props 
           accessibilityLabel={t('sidebar.more.display') || 'Display & theme'}
           onPress={() => {
             closeDrawer();
-            onNavigate('Settings');
+            onOpenEmbedded('api-settings', t('more.settings') || 'Settings');
           }}
           style={[styles.footerIconBtn, { borderRadius: radius.md }]}
         >
