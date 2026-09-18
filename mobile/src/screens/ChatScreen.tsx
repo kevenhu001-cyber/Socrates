@@ -232,7 +232,7 @@ export function ChatScreen({ navigation }: Props) {
 
       {/* In-session Search Bar */}
       {searchActive ? (
-        <View style={[styles.searchBarWrap, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.searchBarWrap, { backgroundColor: colors.background, borderColor: withAlpha(colors.border, 0.35) }]}>
           <Ionicons name="search-outline" size={18} color={colors.textMuted} />
           <TextInput
             value={searchQuery}
@@ -414,12 +414,23 @@ export function ChatScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screen: { paddingTop: 0 },
   searchBarWrap: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    zIndex: 60,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 12,
   },
   searchInput: {
     flex: 1,
@@ -435,14 +446,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   searchNavBtn: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   searchCloseBtn: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
