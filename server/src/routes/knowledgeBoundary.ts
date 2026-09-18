@@ -45,7 +45,8 @@ router.get('/', async (req, res, next) => {
 
     for (const row of rows) {
       const nodes = Array.isArray(row.kbNodes) ? row.kbNodes : [];
-      for (const node of nodes) {
+      for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+        const node = nodes[nodeIndex];
         if (!node || typeof node !== 'object') continue;
         const nodeStatus = typeof node.status === 'string' ? node.status : 'blank';
         const nodeName = typeof node.name === 'string' ? node.name : (typeof node.nodeName === 'string' ? node.nodeName : null);
@@ -54,6 +55,15 @@ router.get('/', async (req, res, next) => {
           status: nodeStatus,
           sessionId: row.id,
           sessionTitle: row.title || null,
+          nodeIndex,
+          questions: typeof node.questions === 'number' ? node.questions : 0,
+          verifiedCount: typeof node.verifiedCount === 'number' ? node.verifiedCount : 0,
+          confidenceScore: typeof node.confidence_score === 'number'
+            ? Math.max(0, Math.min(5, node.confidence_score))
+            : 0,
+          systemNote: typeof node.system_note === 'string' ? node.system_note : null,
+          userNote: typeof node.user_note === 'string' ? node.user_note : null,
+          history: Array.isArray(node.history) ? node.history.slice(-30) : [],
         };
         summary.total += 1;
         if (summary[nodeStatus] !== undefined) summary[nodeStatus] += 1;
