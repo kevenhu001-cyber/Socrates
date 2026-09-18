@@ -1,7 +1,7 @@
 import type { Attachment, Message, Session, User } from '@socrates/contracts';
 import { buildChatHistory, createDraftSession } from '@socrates/core';
 import { useSyncExternalStore } from 'react';
-import { ApiError, apiKeysApi, authApi, configApi, sessionsApi, type ApiProvider } from '../data/api/client';
+import { ApiError, apiKeysApi, authApi, configApi, messagesApi, sessionsApi, type ApiProvider } from '../data/api/client';
 import { readCachedUser } from '../data/api/tokenStore';
 import { startChatStream } from '../data/sse/sseClient';
 import { enqueue, incrementOutboxRetry, readDraft, readOutbox, removeOutbox, saveDraft } from '../data/offline/sqlite';
@@ -61,6 +61,10 @@ function uuid() {
 
 function userMessage(text: string): Message {
   return { clientId: id('user'), role: 'user', rawText: text, content: text, type: 'user' };
+}
+
+function messageKey(message: Message | null | undefined): string {
+  return String(message?.id || message?.clientId || '');
 }
 
 class AppStore {
@@ -528,6 +532,193 @@ class AppStore {
       await this.finishStream(error instanceof Error ? error.message : tSync('chat.offline'), generation);
       throw error;
     }
+  }
+
+  private cancelActiveTurnForMutation() {
+    if (!this.state.isStreaming) return;
+    this.stopStream?.();
+    this.stopStream = null;
+    this.streamFinished = true;
+    this.streamGeneration += 1;
+    this.clearPendingAssistantPatches();
+    this.setState({ isStreaming: false });
+  }
+
+  async editUserMessage(messageId: string, rawText: string) {
+    const nextText = rawText.trim();
+    const session = this.state.activeSession;
+    if (!session || !nextText) return false;
+    const messages = session.messages || [];
+    const index = messages.findIndex((message) => messageKey(message) === messageId);
+    const target = index >= 0 ? messages[index] : null;
+    if (!target || target.role !== 'user') return false;
+    if ((target.rawText || target.content || '').trim() === nextText) return true;
+
+    this.cancelActiveTurnForMutation();
+
+    const edited: Message = { ...target, rawText: nextText, content: nextText };
+    const nextMessages = messages.slice(0, index + 1);
+    nextMessages[index] = edited;
+    const nextSession: Session = {
+      ...session,
+      messages: nextMessages,
+      updatedAt: new Date().toISOString(),
+    };
+    this.setState({ activeSession: nextSession, error: null });
+
+    if (!this.state.isOnline) {
+      this.enqueueSession(nextSession, messageKey(edited) || id('edit'));
+      this.setState({ error: tSync('chat.queued') });
+      return true;
+    }
+
+    try {
+      await messagesApi.edit(messageId, nextText, session.id, {
+        discardFollowing: true,
+        attachments: edited.attachments,
+      });
+    } catch (error) {
+      /* A just-created local message can legitimately predate its DB row.
+       * The next full session save will persist it; other failures stay
+       * visible but do not block replaying the edited turn. */
+      if (!(error instanceof ApiError && error.status === 404)) {
+        this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      }
+    }
+
+    try {
+      await this.startAssistantStream(nextSession, nextMessages);
+      return true;
+    } catch (error) {
+      this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      return false;
+    }
+  }
+
+  async deleteUserMessage(messageId: string) {
+    const session = this.state.activeSession;
+    if (!session) return false;
+    const messages = session.messages || [];
+    const index = messages.findIndex((message) => messageKey(message) === messageId);
+    if (index < 0 || messages[index].role !== 'user') return false;
+    const nextMessages = messages.filter((_, i) => i !== index);
+    this.setState({
+      activeSession: { ...session, messages: nextMessages, updatedAt: new Date().toISOString() },
+      error: null,
+    });
+    try {
+      await messagesApi.remove(messageId, session.id);
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 404)) {
+        this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      }
+    }
+    return true;
+  }
+
+  async regenerateAssistantMessage(messageId: string) {
+    if (!this.state.isOnline) {
+      this.setState({ error: tSync('chat.offline') });
+      return false;
+    }
+    const session = this.state.activeSession;
+    if (!session) return false;
+    const messages = session.messages || [];
+    const assistantIndex = messages.findIndex((message) => messageKey(message) === messageId);
+    if (assistantIndex < 0 || messages[assistantIndex].role !== 'assistant') return false;
+    let userIndex = assistantIndex - 1;
+    while (userIndex >= 0 && messages[userIndex].role !== 'user') userIndex -= 1;
+    if (userIndex < 0) return false;
+    const user = messages[userIndex];
+    const userId = messageKey(user);
+    const userText = String(user.rawText || user.content || '').trim();
+    if (!userId || !userText) return false;
+
+    this.cancelActiveTurnForMutation();
+
+    const nextMessages = messages.slice(0, userIndex + 1);
+    const nextSession: Session = {
+      ...session,
+      messages: nextMessages,
+      updatedAt: new Date().toISOString(),
+    };
+    this.setState({ activeSession: nextSession, error: null });
+
+    try {
+      await messagesApi.edit(userId, userText, session.id, {
+        discardFollowing: true,
+        attachments: user.attachments,
+      });
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 404)) {
+        this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      }
+    }
+
+    try {
+      await this.startAssistantStream(nextSession, nextMessages);
+      return true;
+    } catch (error) {
+      this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      return false;
+    }
+  }
+
+  async branchFromMessage(messageId: string, options: { reExplain?: boolean } = {}) {
+    const source = this.state.activeSession;
+    if (!source) return null;
+    const messages = source.messages || [];
+    const index = messages.findIndex((message) => messageKey(message) === messageId);
+    if (index < 0) return null;
+
+    this.cancelActiveTurnForMutation();
+
+    const branchMessages = messages.slice(0, index + 1).map((message) => ({
+      ...message,
+      attachments: message.attachments ? message.attachments.slice(0, 20) : undefined,
+      toolCalls: message.toolCalls ? message.toolCalls.slice(0, 20) : undefined,
+    }));
+    const base = createDraftSession(uuid(), source.mode);
+    const branchSession: Session = {
+      ...base,
+      topic: source.topic,
+      title: `${source.title || source.topic || tSync('chat.newConversation')} (branch)`,
+      phase: source.phase,
+      projectId: source.projectId || null,
+      messages: branchMessages,
+      branchedFrom: {
+        sessionId: source.id,
+        messageId,
+        reExplain: options.reExplain === true,
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      const saved = await sessionRepository.save(branchSession, branchMessages);
+      const active = { ...branchSession, ...saved, messages: branchMessages };
+      this.setState({
+        activeSession: active,
+        sessions: [saved, ...this.state.sessions.filter((item) => item.id !== saved.id)],
+        draft: '',
+        pendingAttachments: [],
+        error: null,
+      });
+      if (options.reExplain) {
+        const prompt = 'Please re-explain that from a different angle. Use a different approach, analogy, or teaching method to help me understand better.';
+        await this.sendMessage(prompt);
+      }
+      return active.id;
+    } catch (error) {
+      this.setState({ error: error instanceof Error ? error.message : tSync('chat.offline') });
+      return null;
+    }
+  }
+
+  async sendMessageFeedback(messageId: string, rating: 'up' | 'down' | 'none', reason?: string) {
+    const sessionId = this.state.activeSession?.id || null;
+    if (!messageId) return;
+    await messagesApi.feedback(messageId, rating, reason, sessionId);
   }
 
   async retryLastResponse() {
