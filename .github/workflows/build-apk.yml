@@ -633,33 +633,48 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: |
-            mobile/package-lock.json
-            desktop/electron/package-lock.json
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Detect Electron desktop shell
+        id: electron-shell
+        shell: pwsh
+        run: |
+          if (Test-Path 'desktop/electron/package.json') {
+            'present=true' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } else {
+            'present=false' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host 'desktop/electron is not part of this repository; skipping legacy Electron EXE build.'
+          }
 
       - name: Install mobile dependencies
+        if: steps.electron-shell.outputs.present == 'true'
         working-directory: mobile
         run: npm ci
 
       - name: Export Expo Web desktop bundle
+        if: steps.electron-shell.outputs.present == 'true'
         working-directory: mobile
         run: npx expo export --platform web --output-dir ../desktop/dist
 
       - name: Install Electron build dependencies
+        if: steps.electron-shell.outputs.present == 'true'
         working-directory: desktop/electron
         run: npm ci
 
       - name: Stage web bundle into Electron app
+        if: steps.electron-shell.outputs.present == 'true'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path desktop/electron/dist | Out-Null
           Copy-Item -Path desktop/dist/* -Destination desktop/electron/dist -Recurse -Force
 
       - name: Build EXE installer
+        if: steps.electron-shell.outputs.present == 'true'
         working-directory: desktop/electron
         run: npx electron-builder --win nsis --publish never
 
       - name: Upload EXE installer
+        if: steps.electron-shell.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: socrates-desktop-exe-${{ github.sha }}

@@ -106,13 +106,22 @@ export function CmdKPalette() {
       { id: 'nav.home', kind: 'nav', title: t('sidebar.nav.chat') || 'Chat', icon: 'chatbubble-outline', run: () => navigate('Home') },
       { id: 'nav.chat', kind: 'nav', title: t('sidebar.nav.new') || 'New chat', icon: 'add-circle-outline', run: () => navigate('Home') },
       { id: 'nav.tutor', kind: 'nav', title: t('sidebar.nav.tutor') || 'Tutor', icon: 'school-outline', run: () => navigate('Tutor') },
-      { id: 'nav.library', kind: 'nav', title: t('sidebar.nav.library') || 'Library', icon: 'folder-outline', run: () => navigate('Library') },
-      { id: 'nav.exam', kind: 'nav', title: t('sidebar.nav.exam') || 'Exam', icon: 'document-text-outline', run: () => navigate('ExamSession') },
+      { id: 'nav.library', kind: 'nav', title: t('sidebar.nav.library') || 'Library', icon: 'folder-outline', run: () => { cmdKStore.close(); nav.navigate('Embedded', { target: 'library', title: t('sidebar.nav.library') || 'Library' }); } },
+      { id: 'nav.exam', kind: 'nav', title: t('sidebar.nav.exam') || 'Exam', icon: 'document-text-outline', run: () => { cmdKStore.close(); nav.navigate('Embedded', { target: 'exam', title: t('sidebar.nav.exam') || 'Exam' }); } },
       { id: 'nav.search', kind: 'nav', title: t('sidebar.nav.search') || 'Search', icon: 'search-outline', run: () => navigate('Search') },
-      { id: 'nav.projects', kind: 'nav', title: t('sidebar.nav.projects') || 'Projects', icon: 'cube-outline', run: () => navigate('Projects') },
-      { id: 'nav.scheduled', kind: 'nav', title: t('sidebar.nav.scheduled') || 'Scheduled', icon: 'time-outline', run: () => navigate('Scheduled') },
-      { id: 'nav.plugins', kind: 'nav', title: t('sidebar.nav.plugins') || 'Plugins', icon: 'extension-puzzle-outline', run: () => navigate('Plugins') },
-      { id: 'nav.settings', kind: 'nav', title: t('more.settings') || 'Settings', icon: 'settings-outline', run: () => navigate('Settings') },
+      { id: 'nav.projects', kind: 'nav', title: t('sidebar.nav.projects') || 'Projects', icon: 'cube-outline', run: () => { cmdKStore.close(); nav.navigate('Embedded', { target: 'projects', title: t('sidebar.nav.projects') || 'Projects' }); } },
+      { id: 'nav.scheduled', kind: 'nav', title: t('sidebar.nav.scheduled') || 'Scheduled', icon: 'time-outline', run: () => { cmdKStore.close(); nav.navigate('Embedded', { target: 'scheduled', title: t('sidebar.nav.scheduled') || 'Scheduled' }); } },
+      { id: 'nav.plugins', kind: 'nav', title: t('sidebar.nav.plugins') || 'Plugins', icon: 'extension-puzzle-outline', run: () => { cmdKStore.close(); nav.navigate('Embedded', { target: 'plugins', title: t('sidebar.nav.plugins') || 'Plugins' }); } },
+      {
+        id: 'nav.settings',
+        kind: 'nav',
+        title: t('more.settings') || 'Settings',
+        icon: 'settings-outline',
+        run: () => {
+          cmdKStore.close();
+          nav.navigate('Embedded', { target: 'api-settings', title: t('more.settings') || 'Settings' });
+        },
+      },
     ],
     // The translation hook fires on language switch; refresh titles on t change.
     // eslint-disable-next-line react-hooks/exhaustive-deps

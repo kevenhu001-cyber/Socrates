@@ -185,6 +185,13 @@ export interface LegacyChatMessage {
    * declarative turn renders at most one, from here.
    */
   _liveStatus?: LiveTurnStatus | null;
+  /**
+   * Set true on the streaming entry when finish() has produced the final
+   * html. `type` flips to "assistant" one microtask later; this flag keeps
+   * the same React tree mounted across the boundary so the bubble does not
+   * remount and the page does not reload-and-flicker at end of stream.
+   */
+  _streamSettled?: boolean;
 }
 
 /**

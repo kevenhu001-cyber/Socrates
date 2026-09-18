@@ -1,4 +1,6 @@
 import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
+import { toggleDisplayPrefs } from '../displayPrefs.js';
+import { openCheatsheet } from '../ui/cheatsheet.js';
 /*
  * Narrow bridge used only by the React Native embedded-workspace flow.
  *
@@ -11,6 +13,7 @@ import { openPromptTemplatesModal } from '../ui/promptTemplates.js';
 
 const TARGETS = new Set([
   'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
+  'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
 ]);
 
 function postToNative(message) {
@@ -30,6 +33,53 @@ export function notifyEmbeddedAuthExpired() {
   postToNative({ type: 'authExpired' });
 }
 
+/* When Android opens an exact SPA modal, the SPA remains the owner of the
+ * close button/backdrop semantics. Reflect that close back to the native
+ * navigation stack instead of leaving the user on the underlying SPA shell.
+ * Dynamic portal modals (storage/prompt templates) are considered open while
+ * their element exists; static overlays are open while `hidden` is absent. */
+const EMBEDDED_MODAL_SELECTORS = {
+  'api-settings': '#settingsOverlay',
+  profile: '#profileOverlay',
+  usage: '#usageOverlay',
+  storage: '#storageModalOverlay',
+  skills: '#promptTemplatesOverlay',
+  display: '#displayPrefsPopover',
+  shortcuts: '#cheatsheetOverlay',
+};
+
+function watchEmbeddedModalClose(target) {
+  if (!window.ReactNativeWebView) return;
+  const selector = EMBEDDED_MODAL_SELECTORS[target];
+  if (!selector || typeof MutationObserver === 'undefined') return;
+
+  const isOpen = () => {
+    const el = document.querySelector(selector);
+    if (!el) return false;
+    return !el.classList.contains('hidden');
+  };
+  let seenOpen = isOpen();
+  let closed = false;
+  const observer = new MutationObserver(() => {
+    if (closed) return;
+    const open = isOpen();
+    if (open) {
+      seenOpen = true;
+      return;
+    }
+    if (seenOpen) {
+      closed = true;
+      observer.disconnect();
+      postToNative({ type: 'close' });
+    }
+  });
+  observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  /* React portals may mount after the open action publishes its state. */
+  window.setTimeout(() => {
+    if (!closed && isOpen()) seenOpen = true;
+  }, 0);
+}
+
 /**
  * Open an explicitly allow-listed web workspace after a native hand-off.
  * Query cleanup intentionally keeps unrelated state such as ?chat=… or
@@ -43,7 +93,7 @@ export function openMobileTargetFromUrl() {
 
   let opened = false;
   try {
-    if (target === 'projects' || target === 'scheduled' || target === 'plugins') {
+    if (target === 'projects' || target === 'scheduled' || target === 'plugins' || target === 'library' || target === 'exam') {
       if (typeof window.openNav !== 'function') return false;
       window.openNav(target);
       opened = true;
@@ -59,12 +109,33 @@ export function openMobileTargetFromUrl() {
       if (typeof window.openSettings !== 'function') return false;
       window.openSettings();
       opened = true;
+    } else if (target === 'profile') {
+      if (typeof window.openProfile !== 'function') return false;
+      window.openProfile();
+      opened = true;
+    } else if (target === 'usage') {
+      if (typeof window.openUsageModal !== 'function') return false;
+      window.openUsageModal();
+      opened = true;
+    } else if (target === 'storage') {
+      if (typeof window.openStorageModal !== 'function') return false;
+      window.openStorageModal();
+      opened = true;
+    } else if (target === 'display') {
+      if (typeof toggleDisplayPrefs !== 'function') return false;
+      toggleDisplayPrefs();
+      opened = true;
+    } else if (target === 'shortcuts') {
+      if (typeof openCheatsheet !== 'function') return false;
+      openCheatsheet();
+      opened = true;
     }
   } catch (_) {
     return false;
   }
 
   if (opened) {
+    watchEmbeddedModalClose(target);
     /* Some targets (projects/scheduled/plugins) update the SPA history while
      * opening.  Remove the hand-off parameter from the *current* URL rather
      * than the pre-navigation URL, otherwise this cleanup silently replaces

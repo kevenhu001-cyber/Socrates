@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressable } from './AnimatedPressable';
@@ -8,17 +8,21 @@ import { toast } from './Toast';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
+import { readCanvasEdit, saveCanvasEdit } from '../data/offline/sqlite';
 
 type CanvasMode = 'view-original' | 'view-edited' | 'edit';
 
 export function CanvasBlock({
   originalText,
   initialEditedText,
+  persistKey,
   label,
   onIterate,
 }: {
   originalText: string;
   initialEditedText?: string | null;
+  /** Stable message/canvas id used for device-local edits. */
+  persistKey?: string;
   label?: string;
   onIterate?: (text: string) => void;
 }) {
@@ -29,14 +33,23 @@ export function CanvasBlock({
   const [hasEdited, setHasEdited] = useState(Boolean(initialEditedText));
   const [fullscreen, setFullscreen] = useState(false);
 
+  useEffect(() => {
+    const persisted = persistKey ? readCanvasEdit(persistKey) : '';
+    const next = initialEditedText || persisted || originalText;
+    setEditedText(next);
+    setHasEdited(next !== originalText);
+  }, [initialEditedText, originalText, persistKey]);
+
   const toggleEdit = useCallback(() => {
     if (mode === 'edit') {
-      setHasEdited(editedText !== originalText);
+      const nextHasEdited = editedText !== originalText;
+      setHasEdited(nextHasEdited);
+      if (persistKey) saveCanvasEdit(persistKey, nextHasEdited ? editedText : '');
       setMode('view-edited');
     } else {
       setMode('edit');
     }
-  }, [editedText, mode, originalText]);
+  }, [editedText, mode, originalText, persistKey]);
 
   const content = mode === 'view-original' ? originalText : editedText;
   const body = (

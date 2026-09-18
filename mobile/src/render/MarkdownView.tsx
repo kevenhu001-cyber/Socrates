@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
+import { StyleSheet, Text, TextInput, View, type StyleProp, type TextStyle } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from '../components/AnimatedPressable';
@@ -142,12 +142,27 @@ function Disclosure({
  * marked selected + correct/wrong, the right answer is revealed, and a
  * feedback line reads `tutor.quizCorrect/quizWrong/quizRecorded`.
  * Mistake-book recording + AI follow-up are deferred (tutor phase). */
-function QuizWidget({ q, options, correct, interactive, highlight }: {
+export interface TutorQuizAnswer {
+  q: string;
+  options: QuizOption[];
+  correct: string | null;
+  picked: QuizOption;
+}
+
+export interface TutorPracticeAnswer {
+  problem: string;
+  answer: string;
+  correct: string | null;
+  isCorrect: boolean | null;
+}
+
+function QuizWidget({ q, options, correct, interactive, highlight, onAnswer }: {
   q: string;
   options: QuizOption[];
   correct: string | null;
   interactive: boolean;
   highlight?: string;
+  onAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
 }) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
@@ -176,7 +191,10 @@ function QuizWidget({ q, options, correct, interactive, highlight }: {
               accessibilityRole="button"
               accessibilityState={{ selected: isPicked, disabled: locked }}
               disabled={locked}
-              onPress={() => setPicked(o.letter)}
+              onPress={() => {
+                setPicked(o.letter);
+                void Promise.resolve(onAnswer?.({ q, options, correct, picked: o }));
+              }}
               style={[
                 styles.quizOpt,
                 {
@@ -198,6 +216,132 @@ function QuizWidget({ q, options, correct, interactive, highlight }: {
       </View>
       {feedback ? (
         <Text style={[styles.quizFeedback, { color: picked === correct || !correct ? colors.success : colors.danger }]}>
+          {feedback}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function normalizePracticeAnswer(value: string) {
+  return String(value || '').toLowerCase().replace(/[\s.,;:!?()[\]'"]+/g, '').trim();
+}
+
+function PracticeWidget({
+  title,
+  problem,
+  hint,
+  correct,
+  highlight,
+  onSubmit,
+}: {
+  title: string;
+  problem: string;
+  hint: string;
+  correct: string | null;
+  highlight?: string;
+  onSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
+}) {
+  const { colors, radius, typography } = useTheme();
+  const t = useT();
+  const [answer, setAnswer] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+
+  const trimmed = answer.trim();
+  const isCorrect = correct
+    ? normalizePracticeAnswer(trimmed) === normalizePracticeAnswer(correct)
+    : null;
+  const feedback = !submitted
+    ? null
+    : correct
+      ? isCorrect
+        ? (t('tutor.practiceSelfCorrect') || 'Correct.')
+        : (t('tutor.practiceSelfWrong') || 'Not quite.') + ` ${correct}`
+      : (t('tutor.practiceSent') || 'Answer sent to Socrates.');
+
+  const submit = () => {
+    if (!trimmed || submitted || revealed) return;
+    setSubmitted(true);
+    void Promise.resolve(onSubmit?.({
+      problem,
+      answer: trimmed,
+      correct,
+      isCorrect,
+    }));
+  };
+
+  return (
+    <View>
+      <Text style={[styles.widgetTitle, { color: colors.text, fontFamily: typography.semibold }]}>{title}</Text>
+      <Markdown text={problem} highlight={highlight} />
+      {hint ? (
+        <Disclosure
+          showLabel={t('tutor.showHint') || 'Show hint'}
+          hideLabel={t('tutor.hideHint') || 'Hide hint'}
+        >
+          <Markdown text={hint} highlight={highlight} />
+        </Disclosure>
+      ) : null}
+      <TextInput
+        value={answer}
+        onChangeText={setAnswer}
+        editable={!submitted && !revealed}
+        multiline
+        placeholder={t('tutor.practicePlaceholder') || 'Write your answer…'}
+        placeholderTextColor={colors.textSubtle}
+        style={[
+          styles.practiceInput,
+          {
+            color: colors.text,
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+            borderRadius: radius.sm,
+            fontFamily: typography.body,
+          },
+        ]}
+      />
+      <View style={styles.practiceActions}>
+        {correct ? (
+          <AnimatedPressable
+            disabled={submitted || revealed}
+            onPress={() => setRevealed(true)}
+            style={styles.practiceTextButton}
+          >
+            <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: typography.medium }}>
+              {t('tutor.revealAnswer') || 'Reveal answer'}
+            </Text>
+          </AnimatedPressable>
+        ) : null}
+        <AnimatedPressable
+          disabled={!trimmed || submitted || revealed}
+          onPress={submit}
+          style={[
+            styles.practiceSubmit,
+            {
+              backgroundColor: trimmed && !submitted && !revealed ? colors.text : colors.surfaceRaised,
+              borderRadius: radius.sm,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              color: trimmed && !submitted && !revealed ? colors.background : colors.textSubtle,
+              fontSize: 12,
+              fontFamily: typography.semibold,
+            }}
+          >
+            {t('tutor.submitAnswer') || 'Submit answer'}
+          </Text>
+        </AnimatedPressable>
+      </View>
+      {revealed && correct ? (
+        <View style={[styles.practiceReveal, { borderTopColor: colors.border }]}>
+          <Markdown text={correct} highlight={highlight} />
+        </View>
+      ) : null}
+      {feedback ? (
+        <Text style={[styles.quizFeedback, { color: isCorrect === false ? colors.danger : colors.success }]}>
           {feedback}
         </Text>
       ) : null}
@@ -228,7 +372,17 @@ function FlashcardWidget({ front, back, highlight }: { front: string; back: stri
   );
 }
 
-function WidgetView({ block, highlight }: { block: Extract<Block, { type: 'widget' }>; highlight?: string }) {
+function WidgetView({
+  block,
+  highlight,
+  onQuizAnswer,
+  onPracticeSubmit,
+}: {
+  block: Extract<Block, { type: 'widget' }>;
+  highlight?: string;
+  onQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
+  onPracticeSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
+}) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
   const card = [styles.widgetCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.sm }];
@@ -236,7 +390,14 @@ function WidgetView({ block, highlight }: { block: Extract<Block, { type: 'widge
     case 'quiz':
       return (
         <View style={card}>
-          <QuizWidget q={block.q} options={block.options} correct={block.correct} interactive={block.interactive !== false} highlight={highlight} />
+          <QuizWidget
+            q={block.q}
+            options={block.options}
+            correct={block.correct}
+            interactive={block.interactive !== false}
+            highlight={highlight}
+            onAnswer={onQuizAnswer}
+          />
         </View>
       );
     case 'flashcard':
@@ -261,20 +422,16 @@ function WidgetView({ block, highlight }: { block: Extract<Block, { type: 'widge
         </View>
       );
     case 'practice':
-      /* Answer submission + AI grading ride the tutor diagnostic phase;
-       * this round renders problem + hint only. */
       return (
         <View style={card}>
-          <Text style={[styles.widgetTitle, { color: colors.text, fontFamily: typography.semibold }]}>{block.title}</Text>
-          <Markdown text={block.problem} highlight={highlight} />
-          {block.hint ? (
-            <Disclosure
-              showLabel={t('tutor.showHint') || 'Show hint'}
-              hideLabel={t('tutor.hideHint') || 'Hide hint'}
-            >
-              <Markdown text={block.hint} highlight={highlight} />
-            </Disclosure>
-          ) : null}
+          <PracticeWidget
+            title={block.title}
+            problem={block.problem}
+            hint={block.hint}
+            correct={block.answerKey || null}
+            highlight={highlight}
+            onSubmit={onPracticeSubmit}
+          />
         </View>
       );
     case 'definition':
@@ -348,7 +505,19 @@ function MathParagraph({ nodes, fontSize }: { nodes: InlineNode[]; fontSize: num
   return <RichBlock body={html} libs={KATEX_ONLY} fallbackText={inlineToText(nodes)} center={false} initialHeight={fontSize * 1.6} />;
 }
 
-function BlockView({ block, index, highlight }: { block: Block; index: number; highlight?: string }) {
+function BlockView({
+  block,
+  index,
+  highlight,
+  onQuizAnswer,
+  onPracticeSubmit,
+}: {
+  block: Block;
+  index: number;
+  highlight?: string;
+  onQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
+  onPracticeSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
+}) {
   const { colors, radius, spacing, typography } = useTheme();
   const sizes = typography.sizes;
 
@@ -452,7 +621,16 @@ function BlockView({ block, index, highlight }: { block: Block; index: number; h
     case 'quote':
       return (
         <View style={[styles.quote, { borderLeftColor: colors.accent, paddingLeft: spacing.sm }]}>
-          {block.blocks.map((child, childIndex) => <BlockView key={childIndex} block={child} index={childIndex} highlight={highlight} />)}
+          {block.blocks.map((child, childIndex) => (
+            <BlockView
+              key={childIndex}
+              block={child}
+              index={childIndex}
+              highlight={highlight}
+              onQuizAnswer={onQuizAnswer}
+              onPracticeSubmit={onPracticeSubmit}
+            />
+          ))}
         </View>
       );
 
@@ -460,7 +638,14 @@ function BlockView({ block, index, highlight }: { block: Block; index: number; h
       return <View style={[styles.hr, { backgroundColor: colors.border }]} />;
 
     case 'widget':
-      return <WidgetView block={block} highlight={highlight} />;
+      return (
+        <WidgetView
+          block={block}
+          highlight={highlight}
+          onQuizAnswer={onQuizAnswer}
+          onPracticeSubmit={onPracticeSubmit}
+        />
+      );
 
     case 'table': {
       const columns = Math.max(block.header.length, ...block.rows.map((row) => row.length), 1);
@@ -494,6 +679,8 @@ function BlockView({ block, index, highlight }: { block: Block; index: number; h
 
 export interface MarkdownProps {
   text: string;
+  onQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
+  onPracticeSubmit?: (answer: TutorPracticeAnswer) => void | Promise<void>;
   /** Appends a caret to the last block while the message is still arriving. */
   streaming?: boolean;
   /** In-session find query — matching substrings get an accent wash,
@@ -506,7 +693,13 @@ export interface MarkdownProps {
  * and only math/diagram blocks mount a WebView. Memoised on the raw text so a
  * streaming delta reparses once per update rather than once per child.
  */
-export const Markdown = React.memo(function Markdown({ text, streaming, highlight }: MarkdownProps) {
+export const Markdown = React.memo(function Markdown({
+  text,
+  streaming,
+  highlight,
+  onQuizAnswer,
+  onPracticeSubmit,
+}: MarkdownProps) {
   const { colors } = useTheme();
   /* P_strip-citations 1:1 — strip search-citation markers before parsing,
    * matching `renderAssistantHTML` in `frontend/src/main.js:7695`.
@@ -527,7 +720,16 @@ export const Markdown = React.memo(function Markdown({ text, streaming, highligh
   }
   return (
     <View>
-      {blocks.map((block, index) => <BlockView key={index} block={block} index={index} highlight={highlight} />)}
+      {blocks.map((block, index) => (
+        <BlockView
+          key={index}
+          block={block}
+          index={index}
+          highlight={highlight}
+          onQuizAnswer={onQuizAnswer}
+          onPracticeSubmit={onPracticeSubmit}
+        />
+      ))}
       {streaming ? <Text style={{ color: colors.textSubtle, fontSize: 16, lineHeight: 20 }}>{CARET}</Text> : null}
     </View>
   );
@@ -549,6 +751,11 @@ const styles = StyleSheet.create({
   quizLetter: { fontSize: 13, minWidth: 18, textAlign: 'center' },
   quizOptText: { fontSize: 13, lineHeight: 19 },
   quizFeedback: { fontSize: 12, lineHeight: 18, marginTop: 8 },
+  practiceInput: { minHeight: 82, marginTop: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, lineHeight: 19, textAlignVertical: 'top' },
+  practiceActions: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10 },
+  practiceTextButton: { minHeight: 34, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
+  practiceSubmit: { minHeight: 34, minWidth: 94, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  practiceReveal: { marginTop: 10, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
   /* frontend `.inline-flashcard-back`: dashed rule above the back face. */
   flashBack: { borderTopWidth: 1, borderStyle: 'dashed', marginTop: 8, paddingTop: 8 },
   keyPointCard: { flexDirection: 'row', gap: 8 },

@@ -7,7 +7,11 @@ module.exports = {
     'android.debug': {
       type: 'android.apk',
       binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: `cd android && ${gradleCommand} assembleDebug assembleAndroidTest -DtestBuildType=debug`,
+      // Detox only runs the application instrumentation APK. Building the
+      // root assembleAndroidTest task also assembles androidTest APKs for
+      // every native dependency (Expo modules, Reanimated, Worklets, etc.),
+      // wasting disk/CPU and eventually exhausting the CI runner.
+      build: `cd android && ${gradleCommand} :app:assembleDebug :app:assembleAndroidTest -DtestBuildType=debug -PreactNativeArchitectures=x86_64`,
     },
   },
   devices: { emulator: { type: 'android.emulator', device: { avdName } } },

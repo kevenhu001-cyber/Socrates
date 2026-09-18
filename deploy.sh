@@ -783,14 +783,21 @@ else
   GATE_RESULTS+=("  admin.config $ADMIN_GATE_CODE  ← FAIL")
 fi
 
-# 4.5f. Workspace agent — the Pi binary must be present, and the durable
-# run API must be mounted (401 = route exists behind auth; 404 = missing).
-if [[ "$PI_AGENT_ENABLED_VALUE" == "1" && -n "$PI_AGENT_BIN_RESOLVED" && -x "$PI_AGENT_BIN_RESOLVED" ]]; then
-  GATE_RESULTS+=("  pi.agent $(basename "$PI_AGENT_BIN_RESOLVED") ok")
+# 4.5f. Workspace agent — when Pi is enabled, the resolved binary must be
+# executable. Hosts without Pi are a supported configuration: write_agent_dropin
+# explicitly disables the runtime, so the deploy gate must not contradict that
+# fail-closed state. The durable run API must still be mounted (401 = route
+# exists behind auth; 404 = missing).
+if [[ "$PI_AGENT_ENABLED_VALUE" == "1" ]]; then
+  if [[ -n "$PI_AGENT_BIN_RESOLVED" && -x "$PI_AGENT_BIN_RESOLVED" ]]; then
+    GATE_RESULTS+=("  pi.agent $(basename "$PI_AGENT_BIN_RESOLVED") ok")
+  else
+    echo "GATE FAIL: Pi runtime enabled without an executable binary" >&2
+    GATE_FAILED=1
+    GATE_RESULTS+=("  pi.agent MISSING  ← FAIL")
+  fi
 else
-  echo "GATE FAIL: pi binary missing while the agent runtime reports enabled" >&2
-  GATE_FAILED=1
-  GATE_RESULTS+=("  pi.agent MISSING  ← FAIL")
+  GATE_RESULTS+=("  pi.agent disabled (binary unavailable)")
 fi
 PI_AGENT_API_CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:3037/api/agent-runs/capabilities || echo 000)
 if [[ "$PI_AGENT_API_CODE" == "401" ]]; then

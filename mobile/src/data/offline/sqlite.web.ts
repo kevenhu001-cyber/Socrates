@@ -34,6 +34,10 @@ function outbox() {
   return read<OutboxItem[]>(`${prefix}outbox`, []);
 }
 
+function canvasEdits() {
+  return read<Record<string, string>>(`${prefix}canvas-edits`, {});
+}
+
 export function cacheSession(session: Session) {
   const next = sessions().filter((item) => item.id !== session.id);
   next.push({ ...session, updatedAt: session.updatedAt || new Date().toISOString() });
@@ -54,6 +58,20 @@ export function saveDraft(sessionId: string, content: string) {
 
 export function readDraft(sessionId: string) {
   return drafts()[sessionId] || '';
+}
+
+/** Local-only Canvas edits mirror the web client's in-memory editedText.
+ * They are intentionally device-scoped and never replace the original
+ * assistant message sent to the server. */
+export function saveCanvasEdit(canvasId: string, content: string) {
+  const edits = canvasEdits();
+  if (content) edits[canvasId] = content;
+  else delete edits[canvasId];
+  write(`${prefix}canvas-edits`, edits);
+}
+
+export function readCanvasEdit(canvasId: string) {
+  return canvasEdits()[canvasId] || '';
 }
 
 export function enqueue(item: OutboxItem) {

@@ -21,6 +21,17 @@
       "./plugins/withDetoxE2E",
       "expo-secure-store",
       "expo-sqlite",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Socrates to use your microphone for voice input.",
+          "speechRecognitionPermission": "Allow Socrates to convert your voice into text.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.as"
+          ]
+        }
+      ],
       "expo-document-picker",
       "expo-image-picker",
       "expo-notifications",

@@ -49,7 +49,7 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
   /* The streaming pipeline no longer paints its own bubble when React owns
      #msgList: this entry IS the live answer, laid out from the same
      `rawText` + `toolCalls` as a finalized one. */
-  const isLive = role === 'assistant' && message.type === 'streaming';
+  const isLive = role === 'assistant' && message.type === 'streaming' && message._streamSettled !== true;
   const clientId = typeof message.clientId === 'string' ? message.clientId
     : typeof message.id === 'string' ? message.id
     : '';
@@ -67,14 +67,13 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
     marginTop: turnAnchorMarginTop ? `${turnAnchorMarginTop}px` : undefined,
   } : undefined;
   const attachments = Array.isArray(message.attachments) ? message.attachments : [];
-  /* True when this turn's tool calls can be laid out from data — i.e. every
-     candidate call has an id, a name, and a textOffset inside rawText. Turns
-     with no such calls (plain prose, or a session saved before offsets were
-     recorded) keep the html path, which now carries prose only. A live turn
-     always takes the declarative path: there is no finished html to fall
-     back to. */
+  /* True when this turn's tool calls can be laid out from data or when
+     rawText is present. Keeping declarative mode active across the finish
+     boundary ensures the DOM container and component tree remain mounted
+     seamlessly, preventing remount-driven visual flickers. */
   const declarative = role === 'assistant'
     && (isLive
+      || (typeof message.rawText === 'string' && message.rawText.length > 0)
       || hasTurnStructure(
         typeof message.rawText === 'string' ? message.rawText : '',
         message.toolCalls as ToolCallRecord[] | undefined,
@@ -125,6 +124,11 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
     ? { ...(turnAnchorStyle || {}), contentVisibility: 'visible' as const }
     : turnAnchorStyle;
 
+  /* P_finish-stream-boundary — the bubble is "settled" as soon as finish()
+     runs (cursor is going, toolbar is coming). The CSS uses this attribute
+     to fade the toolbar in / cursor out without a remount. */
+  const streamSettled = !isLive && role === 'assistant';
+
   return (
     <div
       className={`msg ${role}${hasTurnAnchor ? ' turn-viewport-anchor' : ''}`}
@@ -135,6 +139,7 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
       data-viewport-target={hasTurnAnchor && liveMessage._turnViewportTarget != null
         ? String(liveMessage._turnViewportTarget)
         : undefined}
+      data-stream-settled={streamSettled ? 'true' : undefined}
     >
       {role === 'user' && attachments.length > 0 ? (
         <div className="msg-attachment-chips" aria-label="Attachments">
@@ -206,10 +211,16 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
       ) : (
         <div className="msg-body" dangerouslySetInnerHTML={{ __html: html }} />
       )}
-      {/* While an answer is still arriving there is nothing to copy, branch
-          from, or give feedback on; the toolbar appears at finish(). */}
-      {isLive ? null : (
-        <MessageToolbar message={message} role={role === 'user' ? 'user' : 'assistant'} />
+      {/* P_finish-stream-boundary — keep the toolbar in the same React tree
+          on every render. During streaming a CSS rule hides it (opacity 0,
+          pointer-events none) and the `data-stream-settled` attribute on the
+          bubble fades it in once finish() has produced the final html. The
+          cursor and the toolbar never coexist on screen and the row never
+          remounts, so end-of-stream is one continuous frame. */}
+      {role === 'user' ? (
+        <MessageToolbar message={message} role="user" />
+      ) : (
+        <MessageToolbar message={message} role="assistant" />
       )}
     </div>
   );

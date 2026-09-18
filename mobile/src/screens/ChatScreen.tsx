@@ -20,20 +20,21 @@ import type { Message } from '@socrates/contracts';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { useAppDrawer } from '../components/AppDrawer';
-import { ModelPickerModal, AVAILABLE_MODELS } from '../components/ModelPickerModal';
+import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
 import { MessageBubble } from '../components/MessageBubble';
 import { Composer } from '../components/Composer';
-import { ComposerToolsMenu } from '../components/ComposerToolsMenu';
+import { ComposerToolsMenu, type ComposerToolsAnchor } from '../components/ComposerToolsMenu';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { shareModal } from '../components/ShareModal';
-import { toast } from '../components/Toast';
 import { useTheme } from '../theme/ThemeProvider';
+import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
 import { native } from '../native/native';
 import { sharesApi } from '../data/api/client';
 import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/attachments';
 import type { RootStackParamList } from '../navigation/types';
+import { MOBILE_EXTENSIONS } from '../data/chat/prompts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 const EMPTY_MESSAGES: Message[] = [];
@@ -49,13 +50,16 @@ export function ChatScreen({ navigation }: Props) {
   const { openDrawer } = useAppDrawer();
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
+  const [toolsMenuAnchor, setToolsMenuAnchor] = useState<ComposerToolsAnchor | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
   const insets = useSafeAreaInsets();
   /* frontend `.new-reply-pill`: `bottom: calc(96px + safe-area + 12px)`
    * above the composer. 96 covers the composer + wrap; add the device
    * safe-area so the pill never sits under the home indicator. */
   const scrollBottomOffset = 96 + Math.max(insets.bottom, 0) + 12;
-  const currentModelName = AVAILABLE_MODELS.find((m) => m.id === state.selectedModel)?.name || 'Model';
+  const currentProvider = state.providers.find((provider) => provider.id === state.selectedModel);
+  const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
 
   // In-session search state
   const [searchActive, setSearchActive] = useState(false);
@@ -139,7 +143,8 @@ export function ChatScreen({ navigation }: Props) {
     }
   }, [state.activeSession?.id, t]);
 
-  const onAttach = useCallback(() => {
+  const onAttach = useCallback((anchor?: ComposerToolsAnchor) => {
+    setToolsMenuAnchor(anchor || null);
     setToolsMenuOpen(true);
   }, []);
 
@@ -185,11 +190,20 @@ export function ChatScreen({ navigation }: Props) {
         message={item}
         isLastAssistant={index === lastAssistantIndex}
         onRetry={() => { void appStore.retryLastResponse(); }}
+        onEdit={(messageId, text) => appStore.editUserMessage(messageId, text)}
+        onDelete={(messageId) => appStore.deleteUserMessage(messageId)}
+        onShare={state.isIncognito ? undefined : onShare}
+        onRegenerate={(messageId) => appStore.regenerateAssistantMessage(messageId)}
+        onBranch={(messageId, options) => appStore.branchFromMessage(messageId, options)}
+        onFeedback={(messageId, rating) => appStore.sendMessageFeedback(messageId, rating)}
+        onTutorQuizAnswer={(answer) => appStore.handleTutorQuizAnswer(answer)}
+        onTutorPracticeSubmit={(answer) => appStore.handleTutorPracticeAnswer(answer)}
+        linkPreview={state.linkPreviews[String(item.clientId || item.id || '')]}
         onIterate={(text) => appStore.setDraft(text)}
         highlight={searchActive ? searchQuery : undefined}
       />
     ),
-    [lastAssistantIndex, searchActive, searchQuery]
+    [lastAssistantIndex, onShare, searchActive, searchQuery, state.isIncognito, state.linkPreviews]
   );
 
   const keyForMessage = useCallback((item: Message, index: number) => item.clientId || item.id || String(index), []);
@@ -200,8 +214,8 @@ export function ChatScreen({ navigation }: Props) {
         conversationActive
         title={state.activeSession?.title || (state.activeSession?.mode === 'tutor' ? 'Tutor' : 'Chat')}
         activeModelName={currentModelName}
-        onOpenModelPicker={() => setModelPickerOpen(true)}
-        onShare={() => { void onShare(); }}
+        onOpenModelPicker={(anchor) => { setModelPickerAnchor(anchor || null); setModelPickerOpen(true); }}
+        onShare={state.isIncognito ? undefined : () => { void onShare(); }}
         onMore={openDrawer}
         onSearchInSession={() => {
           setSearchActive(true);
@@ -224,7 +238,7 @@ export function ChatScreen({ navigation }: Props) {
 
       {/* In-session Search Bar */}
       {searchActive ? (
-        <View style={[styles.searchBarWrap, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={[styles.searchBarWrap, { backgroundColor: colors.background, borderColor: withAlpha(colors.border, 0.35) }]}>
           <Ionicons name="search-outline" size={18} color={colors.textMuted} />
           <TextInput
             value={searchQuery}
@@ -372,7 +386,10 @@ export function ChatScreen({ navigation }: Props) {
           onAttach={onAttach}
           onChangeReasoningEffort={(effort) => appStore.setReasoningEffort(effort)}
           onToggleWebSearch={() => appStore.setWebSearchEnabled(!state.webSearchEnabled)}
-          onVoiceInput={() => toast.show(t('chat.voiceUnavailable') || 'Voice input is not available on this device yet.', 'info')}
+          activeExtensionLabel={state.activeExtension ? MOBILE_EXTENSIONS[state.activeExtension].label : null}
+          selectedPlugins={state.selectedComposerPlugins.map(({ id, name }) => ({ id, name }))}
+          onRemoveActiveExtension={() => appStore.setActiveExtension(null)}
+          onRemovePlugin={(pluginId) => appStore.clearComposerPlugin(pluginId)}
           placeholder={t('chat.inputPlaceholder')}
         />
       </View>
@@ -380,22 +397,35 @@ export function ChatScreen({ navigation }: Props) {
       {/* Tools Menu Modal */}
       <ComposerToolsMenu
         visible={toolsMenuOpen}
+        surface="chat"
+        anchor={toolsMenuAnchor}
         onClose={() => setToolsMenuOpen(false)}
         onPickCamera={() => void attach('camera')}
         onPickPhotos={() => void attach('image')}
         onPickFiles={() => void attach('file')}
-        onPickPlugins={() => navigation.navigate('Plugins')}
+        onPickWrite={() => appStore.setActiveExtension('write')}
+        onPickExplore={() => appStore.setActiveExtension('explore')}
+        onPickAnalyze={() => appStore.setActiveExtension('analyze')}
+        onPickExam={() => navigation.navigate('ExamSession')}
+        onPickSkills={() => navigation.navigate('Embedded', { target: 'skills', title: t('sidebar.more.skills') || 'Skills & shortcuts' })}
+        activeExtension={state.activeExtension}
         onToggleThinkDeeper={() => appStore.setReasoningEffort(state.reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={state.reasoningEffort === 'high'}
+        plugins={state.composerPlugins}
+        selectedPluginIds={state.selectedComposerPlugins.map((plugin) => plugin.id)}
+        onTogglePlugin={(pluginId) => appStore.toggleComposerPlugin(pluginId)}
       />
 
       {/* Model Picker Modal — mirrors frontend `.model-picker` menu */}
       <ModelPickerModal
         visible={modelPickerOpen}
+        providers={state.providers}
+        anchor={modelPickerAnchor}
+        variant="chat"
         selectedId={state.selectedModel}
-        onSelect={(modelId) => appStore.setSelectedModel(modelId)}
+        onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
-        onManageSettings={() => navigation.navigate('Settings')}
+        onManageSettings={() => navigation.navigate('Embedded', { target: 'api-settings', title: t('settings.title') || 'Settings' })}
       />
     </Screen>
   );
@@ -404,12 +434,23 @@ export function ChatScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screen: { paddingTop: 0 },
   searchBarWrap: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    zIndex: 60,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
+    elevation: 12,
   },
   searchInput: {
     flex: 1,
@@ -425,14 +466,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   searchNavBtn: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   searchCloseBtn: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -10,6 +10,7 @@
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter.js';
+import { MAX_TOOL_ARGUMENT_CHARS } from '../src/services/toolCallSafety.js';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';
@@ -69,9 +70,9 @@ describe('codeInterpreter.execute — input guard rails', () => {
     assert.equal(res.artifactCount, 0);
   });
 
-  test('CODE_INTERPRETER_TOOL schema exposes the same code length cap', () => {
+  test('CODE_INTERPRETER_TOOL schema stays within the transport argument cap', () => {
     const params = CODE_INTERPRETER_TOOL.function.parameters;
-    assert.equal(params.properties.code.maxLength, 200000);
+    assert.equal(params.properties.code.maxLength, MAX_TOOL_ARGUMENT_CHARS - 8192);
     assert.deepEqual(params.required, ['code']);
   });
 });

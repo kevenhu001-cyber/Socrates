@@ -145,8 +145,9 @@ test('progressive viewport samples keep the composer attached to the rising keyb
      the keyboard is still rising. We record the painted inset on every
      animation frame while stepping the fake viewport through the stream,
      then assert on the whole trajectory. */
-  const frames = await page.evaluate(async ({ bottom, insets }) => new Promise((resolve) => {
+  const motion = await page.evaluate(async ({ bottom, insets }) => new Promise((resolve) => {
     const painted = [];
+    let sawFallback = false;
     let stepIndex = 0;
     const step = () => {
       if (stepIndex < insets.length) {
@@ -159,12 +160,19 @@ test('progressive viewport samples keep the composer attached to the rising keyb
       painted.push(Number.parseFloat(
         document.documentElement.style.getPropertyValue('--keyboard-inset'),
       ) || 0);
+      sawFallback ||= document.documentElement.dataset.keyboardMotion === 'web-fallback-opening';
       if (painted.length < 30) requestAnimationFrame(sample);
-      else resolve(painted);
+      else resolve({ painted, sawFallback });
     };
     step();
     requestAnimationFrame(sample);
   }), { bottom: appBottom, insets: desiredInsets });
+  const frames = motion.painted;
+
+  /* 60px viewport steps are progressive IME samples, not a coarse jump.
+     Starting the fallback here would combine two motion timelines and make
+     the composer lurch as the later samples arrive. */
+  expect(motion.sawFallback).toBe(false);
 
   /* Monotonic rise — direct writes to rising targets never reverse
      against an opening keyboard (1px tolerance for integer rounding). */
