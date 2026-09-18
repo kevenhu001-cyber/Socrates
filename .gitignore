@@ -113,3 +113,4 @@ frontend/debug/
 
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md
+!android/app/src/main/res/**/*.png
