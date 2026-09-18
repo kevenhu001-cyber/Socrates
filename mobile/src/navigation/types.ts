@@ -17,8 +17,8 @@ export type RootStackParamList = {
   Embedded: { target: EmbeddedTarget; title: string };
   ArtifactPreview: { artifactId: string; html: string };
 
-  // Workspace remains a native route so the drawer can expose the full
-  // product surface while complex workspace modules are being migrated.
+  // Kept as a backwards-compatible deep-link alias. The web app has no
+  // standalone Workspace page; WorkspaceScreen redirects to Library.
   More: undefined;
   Workspace: undefined;
 };

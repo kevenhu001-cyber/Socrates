@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
+import { Overlay } from './Overlay';
 import { usageApi } from '../data/api/client';
 
 export interface UsageOverlayProps {
@@ -53,36 +54,25 @@ export function UsageOverlay({ visible, onClose }: UsageOverlayProps) {
   const maxTokens = days.reduce((m, d) => Math.max(m, d.tokens || 0), 0);
 
   return (
-    <Modal
+    <Overlay
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
+      onClose={onClose}
+      maxWidth={Math.min(720, contentWidth)}
+      testID="usage-overlay"
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderRadius: 16,
+          paddingHorizontal: spacing.md,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.sm,
+          /* frontend `.usage-modal { width: min(720px, 94vw) }`
+           * (`styles.css:2311`). */
+        },
+      ]}
     >
-      <Pressable
-        accessibilityLabel="Close usage"
-        onPress={onClose}
-        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
-      >
-        <View style={styles.center}>
-          <Pressable
-            onPress={(e) => e.stopPropagation?.()}
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 16,
-                paddingHorizontal: spacing.md,
-                paddingTop: spacing.md,
-                paddingBottom: spacing.sm,
-                /* frontend `.usage-modal { width: min(720px, 94vw) }`
-                 * (`styles.css:2311`). */
-                maxWidth: Math.min(720, contentWidth),
-              },
-            ]}
-          >
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text, fontFamily: typography.display }]}>
                 {t('usage.heading') || 'Token usage'}
@@ -200,16 +190,11 @@ export function UsageOverlay({ visible, onClose }: UsageOverlayProps) {
                 ) : null}
               </ScrollView>
             )}
-          </Pressable>
-        </View>
-      </Pressable>
-    </Modal>
+    </Overlay>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   /* frontend `.usage-modal`: width min(720px, 94vw), radius 16px. */
   card: { width: '100%', maxWidth: 720, borderWidth: StyleSheet.hairlineWidth },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

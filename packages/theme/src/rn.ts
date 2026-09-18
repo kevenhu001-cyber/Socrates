@@ -104,7 +104,7 @@ const darkHex: ThemePaletteHex = {
   success: '#40bf75',
   muted: '#8c8c8c',
   /* glyph color on the now-white active send button */
-  onAccent: '#1a1a1a',
+  onAccent: '#141414',
 };
 
 const lightHex: ThemePaletteHex = {
@@ -130,8 +130,8 @@ const lightHex: ThemePaletteHex = {
   },
   border: {
     subtle: '#e0e0e0',
-    default: '#cccccc',
-    strong: '#bdbdbd',
+    default: '#c2c2c2',
+    strong: '#b3b3b3',
   },
   danger: '#b82e2e',
   success: '#2d865c',

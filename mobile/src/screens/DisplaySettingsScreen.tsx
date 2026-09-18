@@ -70,12 +70,12 @@ export function DisplaySettingsScreen({ navigation }: Props) {
   const { preference, setPreference } = useThemeController();
   const t = useT();
   const [prefs, setPrefs] = useState(displayPrefsStore.get());
-  const [darkDraft, setDarkDraft] = useState(prefs.bgDark || '#212121');
+  const [darkDraft, setDarkDraft] = useState(prefs.bgDark || '#000000');
   const [lightDraft, setLightDraft] = useState(prefs.bgLight || '#ffffff');
 
   useEffect(() => displayPrefsStore.subscribe((next) => {
     setPrefs(next);
-    setDarkDraft(next.bgDark || '#212121');
+    setDarkDraft(next.bgDark || '#000000');
     setLightDraft(next.bgLight || '#ffffff');
   }), []);
 
@@ -187,7 +187,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
           <ColorRow
             label="Dark mode BG"
             value={darkDraft}
-            defaultValue="#212121"
+            defaultValue="#000000"
             onChange={setDarkDraft}
             onCommit={() => commitHex('bgDark', darkDraft)}
             onReset={() => displayPrefsStore.set({ bgDark: null })}

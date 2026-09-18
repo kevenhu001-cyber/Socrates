@@ -22,6 +22,36 @@
   --conversation-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
+/* Desktop dark-canvas parity. This file is loaded after the legacy shell
+   layers, so the desktop override also wins the intentional !important
+   surface rules below. The compact <=768px shell keeps the layered palette
+   and mobile drawer treatment. */
+@media (min-width: 769px) {
+  html[data-theme="socrates"][data-mode="dark"] {
+    --conversation-page: #000000;
+    --cg-page: #000000;
+    --cg-rail: #1a1a1a;
+    --cowork-page: 0 0% 0%;
+    --cowork-sidebar: 0 0% 10%;
+  }
+
+  html[data-theme="socrates"][data-mode="dark"] body,
+  html[data-theme="socrates"][data-mode="dark"] #appShell,
+  html[data-theme="socrates"][data-mode="dark"] #appShell .main,
+  html[data-theme="socrates"][data-mode="dark"] #appShell .main-content,
+  html[data-theme="socrates"][data-mode="dark"] #appShell .main-bg,
+  html[data-theme="socrates"][data-mode="dark"] #appShell .top-bar {
+    background: #000000 !important;
+    background-color: #000000 !important;
+  }
+
+  html[data-theme="socrates"][data-mode="dark"] #appShell .sidebar {
+    background: #1a1a1a !important;
+    background-color: #1a1a1a !important;
+    background-image: none !important;
+  }
+}
+
 [data-mode="light"] {
   --conversation-page: #fff;
   --conversation-surface: #f2f2f2;
@@ -834,5 +864,16 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
   /* The composer fade must land on the active page colour in either mode. */
   body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .chat-input-bar {
     background: linear-gradient(to bottom, transparent, var(--conversation-page) 24px) !important;
+  }
+}
+
+/* Final desktop dark-canvas assertion. The legacy sidebar rule above is
+   intentionally `!important`; keep this assertion after it so the requested
+   desktop palette is deterministic in the real cascade. */
+@media (min-width: 769px) {
+  html[data-theme="socrates"][data-mode="dark"] #appShell#appShell .sidebar {
+    background: #1a1a1a !important;
+    background-color: #1a1a1a !important;
+    background-image: none !important;
   }
 }

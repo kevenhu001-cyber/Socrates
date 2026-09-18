@@ -121,6 +121,7 @@ export const radius = {
   sm: 4,
   md: 8,
   lg: 12,
+  xl: 16,
   pill: 999,
 } as const;
 
@@ -175,28 +176,28 @@ export const darkPalette: ThemePalette = {
     surface: '0 0% 20%',
   },
   bg: {
-    page: '#212121',
-    raised: '0 0% 13%',
-    overlay: '0 0% 16%',
+    page: '0 0% 13%',
+    raised: '0 0% 16%',
+    overlay: '0 0% 5%',
     hover: '0 0% 21%',
-    sunken: '0 0% 8%',
+    sunken: '0 0% 2%',
   },
   text: {
     primary: '0 0% 100%',
     secondary: '0 0% 80%',
     tertiary: '0 0% 65%',
     muted: '0 0% 55%',
-    disabled: '0 0% 45%',
+    disabled: '0 0% 55%',
   },
   border: {
     subtle: '0 0% 22%',
     default: '0 0% 22%',
-    strong: '0 0% 32%',
+    strong: '0 0% 22%',
   },
   danger: '0 60% 55%',
   success: '142 60% 50%',
-  muted: '0 0% 50%',
-  onAccent: '0 0% 100%',
+  muted: '0 0% 55%',
+  onAccent: '0 0% 8%',
 };
 
 export const lightPalette: ThemePalette = {
@@ -207,27 +208,27 @@ export const lightPalette: ThemePalette = {
     surface: '0 0% 90%',
   },
   bg: {
-    page: '#ffffff',
-    raised: '0 0% 98%',
-    overlay: '0 0% 95%',
+    page: '0 0% 98%',
+    raised: '0 0% 95%',
+    overlay: '0 0% 100%',
     hover: '0 0% 91%',
     sunken: '0 0% 100%',
   },
   text: {
-    primary: '0 0% 8%',
+    primary: '0 0% 13%',
     secondary: '0 0% 27%',
-    tertiary: '0 0% 36%',
-    muted: '0 0% 44%',
+    tertiary: '0 0% 44%',
+    muted: '0 0% 52%',
     disabled: '0 0% 52%',
   },
   border: {
     subtle: '0 0% 90%',
-    default: '0 0% 84%',
-    strong: '0 0% 76%',
+    default: '0 0% 76%',
+    strong: '0 0% 70%',
   },
   danger: '0 60% 45%',
   success: '142 50% 35%',
-  muted: '0 0% 50%',
+  muted: '0 0% 52%',
   onAccent: '0 0% 100%',
 };
 
@@ -251,5 +252,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
  * drifts.
  */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? lightPalette.bg.page : darkPalette.bg.page;
+  return mode === 'light' ? '#fafafa' : '#212121';
 }

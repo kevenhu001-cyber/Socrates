@@ -12,9 +12,10 @@ export type ThemeMode = 'light' | 'dark';
  * components have always imported. They cascade from the canonical palette
  * so a single token change in `@socrates/theme` propagates here.
  *
- * Spacing / radius / typography sizes are still local — see TODO below for
- * the alignment plan. Until those align, components must continue to use
- * the existing field names; only the color *values* change.
+ * The flat field names are retained for component compatibility, but their
+ * values now resolve directly to the shared web roles. ThemeProvider applies
+ * the web app's pure-black page canvas at runtime; the permanent desktop
+ * shell gives the navigation rail its separate deep-gray surface.
  */
 
 export interface Palette {
@@ -87,22 +88,22 @@ function buildPalette(mode: ThemeMode): Palette {
     source: base,
     /* Flat aliases of the nested `MappedPalette` — keep component code
      * reading `colors.background` instead of `colors.source.bg.page`. */
-    background: isDark ? '#000000' : base.bg.page,
-    backgroundSunken: isDark ? '#000000' : base.bg.sunken,
-    surface: isDark ? '#141414' : base.bg.raised,
-    surfaceHover: isDark ? '#262626' : base.bg.hover,
-    border: isDark ? 'rgba(255, 255, 255, 0.10)' : base.border.default,
+    background: base.bg.page,
+    backgroundSunken: base.bg.sunken,
+    surface: base.bg.raised,
+    surfaceHover: base.bg.hover,
+    border: base.border.default,
     borderSubtle: base.border.subtle,
-    borderStrong: isDark ? 'rgba(255, 255, 255, 0.18)' : base.border.strong,
+    borderStrong: base.border.strong,
     text: base.text.primary,
     textSecondary: base.text.secondary,
-    textMuted: isDark ? '#8c8c8c' : base.text.muted,
-    textSubtle: isDark ? '#666666' : base.text.tertiary,
+    textMuted: base.text.muted,
+    textSubtle: base.text.tertiary,
     textInverse: base.onAccent,
     accent: base.accent.strong,
     accentSoft: base.accent.soft,
     action: base.accent.strong,
-    actionPressed: isDark ? '#d4d4d4' : '#333333',
+    actionPressed: base.bg.hover,
     scrim: isDark ? 'rgba(0, 0, 0, 0.68)' : 'rgba(0, 0, 0, 0.45)',
     voiceBlue: isDark ? '#2b7fff' : '#0a84ff',
     success: base.success,
@@ -114,8 +115,8 @@ function buildPalette(mode: ThemeMode): Palette {
     statusBarStyle: base.statusBarStyle,
     scrollbar: base.scrollbar,
     /* Mobile-local derived fields (aligned with frontend / ChatGPT tokens). */
-    surfaceRaised: isDark ? '#212121' : '#f2f2f2',
-    surfacePressed: isDark ? '#2f2f2f' : '#e8e8e8',
+    surfaceRaised: base.bg.overlay,
+    surfacePressed: base.bg.hover,
     accentStrong: isDark ? '#ffffff' : '#111111',
     brand: isDark ? '#d4d4d4' : '#1a1a1a',
     brandSoft: isDark ? '#2a2a2a' : '#e6e6e6',
@@ -142,45 +143,25 @@ export const palettes: Record<ThemeMode, Palette> = {
 
 export const colors = palettes.dark;
 
-/* Mobile spacing is now aligned with `@socrates/theme`'s 4 px ramp:
- *   xs (4) / sm (8) / md (16) / lg (24) / xl (32) / xxl (40).
- * - `xs`/`sm` map onto frontend `xs`/`sm`.
- * - `md` keeps 16 (already aligned with frontend `lg`; `md` in
- *   mobile code refers to standard card padding, which is the
- *   most common size and matches the React Native ecosystem
- *   baseline).
- * - `lg` shifts from 22 → 24 to match frontend `xl`.
- * - `xl`/`xxl` are dead tokens (zero call sites) but kept with
- *   aligned values so future code can adopt them without a
- *   second migration.
- * Names are preserved on purpose — the migration is value-only.
- *
- * `radius` and `typography.sizes` remain local: the 4 px radius
- * scale tops at `lg=12` which is too small for mobile's larger
- * touch-target UI, and the font ramp carries mobile-specific
- * roles (micro/caption/meta/small/body/bodyLg/input/h1-h4/display
- * with explicit line-heights) that don't map 1:1 onto
- * frontend's 7-step `fontSize` ladder. Forcing alignment here
- * would break the existing visual identity instead of
- * cross-client parity — the goal of UI/functional alignment,
- * not pixel-perfect matching. Reopen when mobile decides to
- * adopt a denser web-style layout. */
+/* These names are kept because screens use them directly. Their values are
+ * the shared 4px rhythm from `@socrates/theme`, so native cards, sheets and
+ * the web workspace use the same spacing ladder. */
 
 export const spacing = {
   xs: 4,
   sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 40,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
 };
 
 export const radius = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 20,
-  xl: 26,
+  xs: 4,
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
   pill: 999,
 };
 

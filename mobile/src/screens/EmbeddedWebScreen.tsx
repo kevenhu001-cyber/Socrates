@@ -3,15 +3,27 @@ import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { isEmbeddedTarget, parseBridgeMessage } from './embeddedBridge';
+import type { EmbeddedTarget } from '@socrates/contracts';
+import { isEmbeddedTarget, nativeOverlayForEmbeddedTarget, nativeRouteForEmbeddedTarget, parseBridgeMessage } from './embeddedBridge';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { useTheme } from '../theme/ThemeProvider';
 import { embeddedApi, WEB_BASE_URL } from '../data/api/client';
 import { native } from '../native/native';
 import { appStore } from '../stores/appStore';
+import { profileOverlay } from '../components/AppDrawer';
+import { usageOverlay, storageOverlay } from '../cmdK/overlayStores';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Embedded'>;
+
+function openNativeOverlay(target: EmbeddedTarget): boolean {
+  const overlay = nativeOverlayForEmbeddedTarget(target);
+  if (!overlay) return false;
+  if (overlay === 'profile') profileOverlay.open();
+  if (overlay === 'usage') usageOverlay.open();
+  if (overlay === 'storage') storageOverlay.open();
+  return true;
+}
 
 export function EmbeddedWebScreen({ route, navigation }: Props) {
   const { colors, typography } = useTheme();
@@ -34,7 +46,18 @@ export function EmbeddedWebScreen({ route, navigation }: Props) {
     }
   };
 
-  useEffect(() => { void load(); }, [route.params.target]);
+  useEffect(() => {
+    const nativeRoute = nativeRouteForEmbeddedTarget(route.params.target);
+    if (nativeRoute) {
+      navigation.replace(nativeRoute);
+      return;
+    }
+    if (openNativeOverlay(route.params.target)) {
+      navigation.goBack();
+      return;
+    }
+    void load();
+  }, [navigation, route.params.target]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -74,7 +97,12 @@ export function EmbeddedWebScreen({ route, navigation }: Props) {
         if (new URL(message.url).protocol === 'https:') void native.openBrowser(message.url);
       } catch { /* reject malformed or non-HTTPS URLs */ }
     }
-    if (message.type === 'navigate' && isEmbeddedTarget(message.target)) navigation.replace('Embedded', { target: message.target, title: message.target });
+    if (message.type === 'navigate' && isEmbeddedTarget(message.target)) {
+      const nativeRoute = nativeRouteForEmbeddedTarget(message.target);
+      if (nativeRoute) navigation.replace(nativeRoute);
+      else if (openNativeOverlay(message.target)) navigation.goBack();
+      else navigation.replace('Embedded', { target: message.target, title: message.target });
+    }
   };
 
   return (

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Overlay } from './Overlay';
 import { useAppStore } from '../stores/appStore';
 import { appStore } from '../stores/appStore';
 
@@ -98,34 +99,24 @@ export function StorageOverlay({ visible, onClose }: StorageOverlayProps) {
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <Pressable
-        accessibilityLabel="Close storage"
-        onPress={onClose}
-        style={[styles.backdrop, { backgroundColor: colors.scrim }]}
+    <>
+      <Overlay
+        visible={visible}
+        onClose={onClose}
+        maxWidth={Math.min(460, contentWidth)}
+        testID="storage-overlay"
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderRadius: 14,
+            paddingHorizontal: spacing.md,
+            paddingTop: spacing.md,
+            paddingBottom: spacing.sm,
+          },
+        ]}
       >
-        <View style={styles.center}>
-          <Pressable
-            onPress={(e) => e.stopPropagation?.()}
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: 14,
-                paddingHorizontal: spacing.md,
-                paddingTop: spacing.md,
-                paddingBottom: spacing.sm,
-                maxWidth: Math.min(460, contentWidth),
-              },
-            ]}
-          >
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text, fontFamily: typography.display }]}>
                 {t('storage.heading') || 'Storage'}
@@ -205,9 +196,7 @@ export function StorageOverlay({ visible, onClose }: StorageOverlayProps) {
                 </Text>
               </AnimatedPressable>
             </View>
-          </Pressable>
-        </View>
-      </Pressable>
+      </Overlay>
       <ConfirmDialog
         visible={clearArmed}
         title={t('storage.clearConfirmTitle') || 'Clear local cache?'}
@@ -218,13 +207,11 @@ export function StorageOverlay({ visible, onClose }: StorageOverlayProps) {
         onCancel={() => setClearArmed(false)}
         onConfirm={() => { void confirmClearCache(); }}
       />
-    </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   /* frontend storage dialog: width min(560px, 92vw), radius 14px. */
   card: { width: '100%', maxWidth: 560, borderWidth: StyleSheet.hairlineWidth },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

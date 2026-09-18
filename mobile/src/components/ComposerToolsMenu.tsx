@@ -1,9 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +15,7 @@ import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 import { ThinkDeeperGlyph } from './Composer';
+import { Popover } from './Popover';
 
 export interface ComposerToolsAnchor {
   x: number;
@@ -84,21 +81,12 @@ export function ComposerToolsMenu({
   const t = useT();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const [query, setQuery] = useState('');
-  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return undefined;
     setQuery('');
-    progress.setValue(0);
-    const animation = Animated.timing(progress, {
-      toValue: 1,
-      duration: 220,
-      easing: Easing.bezier(0.16, 1, 0.3, 1),
-      useNativeDriver: true,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [progress, visible]);
+    return undefined;
+  }, [visible]);
 
   const runAndClose = (action?: () => void) => {
     if (!action) return;
@@ -256,43 +244,23 @@ export function ComposerToolsMenu({
   const top = Math.max(8, Math.min(rawTop, viewportHeight - estimatedHeight - 8));
 
   return (
-    <Modal
+    <Popover
       visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-      statusBarTranslucent
-      navigationBarTranslucent
+      onClose={onClose}
+      maxWidth={menuWidth}
+      testID="composer-tools-menu"
+      style={[
+        styles.card,
+        {
+          top,
+          left,
+          width: menuWidth,
+          maxHeight,
+          backgroundColor: withAlpha(colors.surface, 0.98),
+          borderColor: colors.border,
+        },
+      ]}
     >
-      <Pressable onPress={onClose} style={StyleSheet.absoluteFill} />
-      <Animated.View
-        style={[
-          styles.card,
-          {
-            top,
-            left,
-            width: menuWidth,
-            maxHeight,
-            backgroundColor: withAlpha(colors.surface, 0.98),
-            borderColor: colors.border,
-            opacity: progress,
-            transform: [
-              {
-                translateY: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [7, 0],
-                }),
-              },
-              {
-                scale: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.985, 1],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -371,8 +339,7 @@ export function ComposerToolsMenu({
             style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
           />
         </View>
-      </Animated.View>
-    </Modal>
+    </Popover>
   );
 }
 

@@ -10,11 +10,12 @@ export const breakpoints = {
 
 export type BreakpointToken = keyof typeof breakpoints;
 
-/** Drawer permanent-mode width. P0 1:1 — frontend
- * `.sidebar { width: var(--app-sidebar-width, 18rem) }` = 288px
- * (`frontend/src/styles.css:176,956`) on every viewport where the
- * sidebar is permanent. No tablet/desktop split. */
-const PERMANENT_DRAWER_WIDTH = 288;
+/* The web shell has three geometry tiers: 300px for the compact/tablet
+ * sidebar, 260px for the wide desktop sidebar, and the same 300px panel when
+ * the mobile drawer is presented over the page. */
+const MOBILE_DRAWER_WIDTH = 300;
+const TABLET_DRAWER_WIDTH = 300;
+const DESKTOP_DRAWER_WIDTH = 260;
 
 export interface ResponsiveValue {
   isCompact: boolean;
@@ -30,13 +31,14 @@ export interface ResponsiveValue {
 
 /**
  * Single source of truth for screen-size-derived layout decisions. Mirrors
- * frontend's `@media` ladder so the same `<768 / ≥769`
+ * frontend's @media ladder so the same <=768 / >768
  * breakpoints produce the same shell across both clients
  * (`frontend/src/styles.css:956`
- * `@media(min-width:769px){.main{padding-left:var(--app-sidebar-width,18rem)}}`).
+ * @media(min-width:769px) uses the compact 300px sidebar until the wide
+ * desktop shell switches to 260px.
  *
  * Behaviour notes:
- *  - Permanent vs modal is width-only (`width >= 768`), matching the
+ *  - Permanent vs modal is width-only (width > 768), matching the
  *    web shell. The previous Android-only-modal exception broke 1:1
  *    on tablets and has been removed.
  *  - The returned `sidebarWidth` is `null` when the modal drawer should
@@ -45,10 +47,17 @@ export interface ResponsiveValue {
 export function useResponsive(): ResponsiveValue {
   const { width, height } = useWindowDimensions();
   const isDesktop = width >= breakpoints.lg;
-  const isTablet = width >= breakpoints.md && width < breakpoints.lg;
-  const isCompact = width < breakpoints.md;
+  /* frontend uses max-width:768px for the mobile shell; keep 768 itself
+   * compact so the boundary does not render a permanent sidebar one client
+   * and an overlay drawer in the other. */
+  const isCompact = width <= breakpoints.md;
+  const isTablet = width > breakpoints.md && width < breakpoints.lg;
 
-  const sidebarWidth: number | null = isCompact ? null : PERMANENT_DRAWER_WIDTH;
+  const sidebarWidth: number | null = isCompact
+    ? null
+    : isDesktop
+      ? DESKTOP_DRAWER_WIDTH
+      : TABLET_DRAWER_WIDTH;
 
   return {
     isCompact,
@@ -60,6 +69,8 @@ export function useResponsive(): ResponsiveValue {
     sidebarWidth,
   };
 }
+
+export const mobileDrawerWidth = MOBILE_DRAWER_WIDTH;
 
 /** Style helper: applies `paddingLeft = sidebarWidth` on tablet/desktop. */
 export function sidebarInsetStyle(sidebarWidth: number | null) {

@@ -1,9 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  Animated,
-  Easing,
-  Modal,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -14,6 +10,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
+import { Popover } from './Popover';
 import type { ReasoningEffort } from './Composer';
 
 export interface EffortPickerAnchor {
@@ -41,21 +38,6 @@ export function ReasoningEffortPicker({
   const { colors, typography } = useTheme();
   const t = useT();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
-  const progress = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!visible) return undefined;
-    progress.setValue(0);
-    const animation = Animated.timing(progress, {
-      toValue: 1,
-      duration: 180,
-      easing: Easing.bezier(0.16, 1, 0.3, 1),
-      useNativeDriver: true,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [progress, visible]);
-
   const rows: Array<{ value: ReasoningEffort; label: string }> = [
     { value: 'high', label: t('effort.high') || 'High' },
     { value: 'medium', label: t('effort.medium') || 'Medium' },
@@ -72,34 +54,22 @@ export function ReasoningEffortPicker({
   const top = Math.max(8, Math.min(viewportHeight - menuHeight - 8, desiredTop));
 
   return (
-    <Modal
+    <Popover
       visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={onClose}
+      onClose={onClose}
+      maxWidth={menuWidth}
+      testID="reasoning-effort-picker"
+      style={[
+        styles.menu,
+        {
+          top,
+          left,
+          width: menuWidth,
+          backgroundColor: colors.background,
+          borderColor: withAlpha(colors.border, 0.4),
+        },
+      ]}
     >
-      <Pressable onPress={onClose} style={StyleSheet.absoluteFill} />
-      <Animated.View
-        style={[
-          styles.menu,
-          {
-            top,
-            left,
-            width: menuWidth,
-            backgroundColor: colors.background,
-            borderColor: withAlpha(colors.border, 0.4),
-            opacity: progress,
-            transform: [{
-              translateY: progress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [5, 0],
-              }),
-            }],
-          },
-        ]}
-      >
         {rows.map((row) => {
           const selected = row.value === value;
           return (
@@ -133,8 +103,7 @@ export function ReasoningEffortPicker({
             </AnimatedPressable>
           );
         })}
-      </Animated.View>
-    </Modal>
+    </Popover>
   );
 }
 
