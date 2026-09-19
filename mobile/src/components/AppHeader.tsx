@@ -159,7 +159,7 @@ export function AppHeader({
           style={[
             styles.modeSegment,
             {
-              backgroundColor: circleBg,
+              backgroundColor: isCompact ? colors.modeTabsBg : circleBg,
               borderColor: colors.border,
             },
           ]}
@@ -189,8 +189,8 @@ export function AppHeader({
                     isCompact ? styles.modeTextCompact : null,
                     {
                       color: selected ? colors.text : colors.textMuted,
-                      fontFamily: selected ? typography.bold : typography.medium,
-                      fontWeight: selected ? '700' : '500',
+                      fontFamily: typography.medium,
+                      fontWeight: '500',
                     },
                   ]}
                 >
@@ -320,10 +320,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 10,
   },
+  /* Web mobile `.top-bar`: min-height 56px, padding 8px 10px
+   * (mobile-parity.css:533-536). */
   headerCompact: {
-    minHeight: 64,
-    paddingHorizontal: 14,
-    paddingBottom: 10,
+    minHeight: 56,
+    paddingHorizontal: 10,
+    paddingBottom: 8,
   },
   /* P2-1 alignment: outer pill/circle buttons drop from 38 → 32 to
    * match `frontend`'s `.icon-btn` (32 × 32). The 38 value was a
@@ -338,26 +340,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* Web mobile forces the top-bar affordances to 40px transparent rounded
+   * squares (mobile-parity.css:557-587). */
   circleBtnCompact: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 0,
     backgroundColor: 'transparent',
   },
+  /* Web mobile `.top-mode-tabs`: 168x40, radius 999, 2px padding, #131313
+   * pill (mobile-parity.css:538-555). */
   modeSegment: {
     flexDirection: 'row',
     height: 40,
-    width: 172,
-    borderRadius: 20,
-    padding: 3,
+    width: 168,
+    borderRadius: 999,
+    padding: 2,
     borderWidth: 1,
     alignItems: 'center',
   },
   modeButton: {
     flex: 1,
-    height: 34,
-    borderRadius: 17,
+    height: 36,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -369,11 +375,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  /* Web mobile `.app-mode-toggle`: 15px, weight 500 (mobile-parity.css:554). */
   modeText: {
-    fontSize: 14.5,
+    fontSize: 15,
   },
   modeTextCompact: {
-    fontSize: 16,
+    fontSize: 15,
   },
   titleContainer: {
     flex: 1,

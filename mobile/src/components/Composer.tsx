@@ -343,7 +343,7 @@ export function Composer({
               onPress={openAttachMenu}
               accessibilityRole="button"
               accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-              style={styles.circleBtn}
+              style={[styles.circleBtn, { backgroundColor: colors.controlFill }]}
             >
               <Ionicons name="add" size={20} color={iconColor} />
             </AnimatedPressable>
@@ -376,7 +376,7 @@ export function Composer({
               accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
               accessibilityState={{ selected: voiceRecording }}
               onPress={voice.start}
-              style={[styles.micBtn, voiceRecording ? { backgroundColor: colors.accentSoft } : null]}
+              style={[styles.micBtn, { backgroundColor: voiceRecording ? colors.accentSoft : colors.controlFill }]}
             >
               <Ionicons name="mic-outline" size={20} color={iconColor} />
             </AnimatedPressable>
@@ -449,7 +449,7 @@ export function Composer({
                 onPress={openAttachMenu}
                 accessibilityRole="button"
                 accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-                style={[styles.circleBtn, { backgroundColor: colors.surfaceHover }]}
+                style={[styles.circleBtn, { backgroundColor: colors.controlFill }]}
               >
                 <Ionicons name="add" size={21} color={iconColor} />
               </AnimatedPressable>
@@ -497,7 +497,7 @@ export function Composer({
                   accessibilityRole="button"
                   accessibilityLabel={t('effort.label') || 'Reasoning effort'}
                   onPress={openEffortPicker}
-                  style={[styles.effortPill, { backgroundColor: colors.surfaceHover }]}
+                  style={[styles.effortPill, { backgroundColor: colors.controlFill }]}
                 >
                   <Text style={[styles.effortLabel, { color: colors.text, fontFamily: typography.medium }]}>
                     {reasoningEffort === 'high'
@@ -514,7 +514,7 @@ export function Composer({
                 accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
                 accessibilityState={{ selected: voiceRecording }}
                 onPress={voice.start}
-                style={[styles.circleBtn, { backgroundColor: colors.surfaceHover }]}
+                style={[styles.circleBtn, { backgroundColor: colors.controlFill }]}
               >
                 <Ionicons name="mic-outline" size={21} color={iconColor} />
               </AnimatedPressable>

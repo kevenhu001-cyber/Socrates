@@ -658,7 +658,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
                 onPress={() => { void saveRename(); }}
                 style={[styles.renameButton, { backgroundColor: colors.accent, borderRadius: radius.sm }]}
               >
-                <Text style={[styles.renameButtonText, { color: colors.white, fontFamily: typography.medium }]}>{t('library.saveName')}</Text>
+                <Text style={[styles.renameButtonText, { color: colors.textInverse, fontFamily: typography.medium }]}>{t('library.saveName')}</Text>
               </AnimatedPressable>
             </View>
           </View>
