@@ -163,9 +163,15 @@ function shell({ preheader, title, body }: { preheader?: string; title: string; 
 /* Primary button. Solid ink, white label, 8 px radius, weight 500.
  * Sized to match the lobehub `--lobe-control` (36 px tall): 11 px
  * vertical padding around a 14 px label gives ~36 px rendered height
- * in clients that honour line-height. */
+ * in clients that honour line-height.
+ * NOTE: deliberately NO `align` attribute on the outer table — some
+ * mobile clients treat `align="left"` as `float:left`, which makes
+ * the fallback-URL paragraphs wrap up beside the button instead of
+ * stacking below it. A bare table is block-level, so the following
+ * content always drops to a new line; the column is left-aligned
+ * already, so the button still hugs the left edge. */
 function ctaButton(label: string, href: string) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="left" style="margin:32px 0 8px">
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 8px">
     <tr>
       <td align="center" bgcolor="#080808" style="border-radius:8px">
         <a href="${href}" target="_blank" style="display:inline-block;padding:11px 24px;font-family:'Inter',-apple-system,sans-serif;font-size:14px;line-height:1.4;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.005em;border-radius:8px">${label}</a>
