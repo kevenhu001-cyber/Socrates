@@ -19,7 +19,7 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { statusMonitorEvents, statusSubscribers } from '../db/schema.js';
 import { getStatus as getPubsubStatus } from '../lib/pubsub.js';
-import { sendEmail } from './email.js';
+import { sendStatusIncidentEmail } from './email.js';
 
 const PROBE_INTERVAL_MS = 30_000;
 const STATUS_BASE_URL = process.env.STATUS_URL || 'https://status.topodrive.top';
@@ -194,12 +194,13 @@ async function tick() {
         await recordTransition(component, prev, state, result.detail);
         lastState.set(component, state);
         console.log(`[status-monitor] ${component}: ${prev} → ${state}`);
-        /* Send notification to all confirmed subscribers on non-ok transitions */
-        if (state !== 'ok') {
-          notifySubscribers(component, prev, state).catch(function (err) {
-            console.warn('[status-monitor] notify failed:', err.message);
-          });
-        }
+        /* Notify confirmed subscribers on every transition — down,
+           degraded, and recovered alike. The confirmation email
+           promises alerts "when a service goes down or recovers", so
+           swallowing the →ok edge here would break that promise. */
+        notifySubscribers(component, prev, state).catch(function (err) {
+          console.warn('[status-monitor] notify failed:', err.message);
+        });
       } catch (err) {
         console.warn(`[status-monitor] failed to record ${component}:`, (err as Error).message);
       }
@@ -212,12 +213,14 @@ async function notifySubscribers(component: string, from: string, to: string) {
   var rows = await db.select().from(statusSubscribers)
     .where(sql`${statusSubscribers.confirmedAt} IS NOT NULL`);
   if (!rows.length) return;
-  var subject = '[Topodrive Status] ' + component + ' is ' + (to === 'down' ? 'DOWN' : 'degraded');
-  var text = 'Component: ' + component + '\nStatus: ' + to + ' (was ' + from + ')\nTime: ' + new Date().toISOString() + '\n\nView status page: ' + STATUS_BASE_URL + '/';
-  var html = '<h2>' + component + '</h2><p>Status: <strong>' + to + '</strong> (was ' + from + ')</p><p>Time: ' + new Date().toISOString() + '</p><p><a href="' + STATUS_BASE_URL + '/">View status page</a></p>';
   for (var i = 0; i < rows.length; i++) {
     try {
-      await sendEmail({ to: rows[i].email, subject: subject, text: text, html: html });
+      await sendStatusIncidentEmail(rows[i].email, {
+        component: component,
+        from: from,
+        to: to,
+        statusUrl: STATUS_BASE_URL + '/',
+      });
     } catch (_) { /* individual send failure is non-fatal */ }
   }
 }
