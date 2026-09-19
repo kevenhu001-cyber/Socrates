@@ -509,7 +509,9 @@ export const MessageBubble = React.memo(function MessageBubble({
             backgroundColor: isUser ? colors.userBubble : 'transparent',
             borderColor: 'transparent',
             borderWidth: 0,
-            borderRadius: isUser ? (editing ? 20 : 15) : 0,
+            /* Web phone bumps the user bubble to radius 22
+             * (mobile-parity.css:301-308); desktop/tablet keeps 15. */
+            borderRadius: isUser ? (editing ? 20 : windowWidth <= 768 ? 22 : 15) : 0,
             paddingHorizontal: isUser ? 16 : 0,
             paddingVertical: isUser ? 11 : 0,
             maxWidth: isUser && !editing ? Math.min(windowWidth * 0.86, 620) : '100%',

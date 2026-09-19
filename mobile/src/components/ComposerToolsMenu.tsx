@@ -77,7 +77,7 @@ export function ComposerToolsMenu({
   selectedPluginIds = [],
   onTogglePlugin,
 }: ComposerToolsMenuProps) {
-  const { colors, typography } = useTheme();
+  const { colors, typography, mode } = useTheme();
   const t = useT();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const [query, setQuery] = useState('');
@@ -263,8 +263,10 @@ export function ComposerToolsMenu({
           left,
           width: menuWidth,
           maxHeight,
-          backgroundColor: withAlpha(colors.surface, 0.98),
-          borderColor: colors.border,
+          /* Web mobile menu card: #1b1b1b @ 10% white border
+           * (mobile-parity.css:731-734). */
+          backgroundColor: withAlpha(compact ? colors.menuBg : colors.surface, 0.98),
+          borderColor: withAlpha(mode === 'dark' ? colors.white : colors.black, 0.1),
         },
       ]}
     >
@@ -282,17 +284,22 @@ export function ComposerToolsMenu({
               onPress={item.onPress}
               style={[styles.item, !compact ? styles.itemDesktop : null]}
             >
-              <View style={styles.iconWrap}>
+              {/* Web mobile: 40px circular icon wells, #2a2a2a fill
+               * (mobile-parity.css:742-751). */}
+              <View style={[
+                styles.iconWrap,
+                compact ? [styles.iconWrapCompact, { backgroundColor: colors.controlFill }] : null,
+              ]}>
                 {item.customThinking ? (
                   <ThinkDeeperGlyph
                     size={24}
-                    color={item.active ? colors.accent : colors.textMuted}
+                    color={item.active ? colors.accent : compact ? colors.text : colors.textMuted}
                   />
                 ) : (
                   <Ionicons
                     name={item.icon}
                     size={24}
-                    color={item.active ? colors.accent : colors.textMuted}
+                    color={item.active ? colors.accent : compact ? colors.text : colors.textMuted}
                   />
                 )}
               </View>
@@ -375,13 +382,15 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 10,
+    /* Web mobile rows: radius 12 (mobile-parity.css:739). */
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
   },
   itemDesktop: {
     width: '50%',
+    borderRadius: 10,
   },
   iconWrap: {
     width: 30,
@@ -389,6 +398,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  iconWrapCompact: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   copy: {
     flex: 1,

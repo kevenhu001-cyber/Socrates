@@ -79,18 +79,22 @@ const darkHex: ThemePaletteHex = {
   },
   /* --bg-100 / --bg-200 / --bg-000 / --bg-300 / --bg-400 */
   bg: {
-    page: '#212121',
+    /* Web phone canvas is #000 (chat-surface.css:31-44, mobile-parity.css:530);
+     * desktop web stays #212121 — Android matches the phone reference frame. */
+    page: '#000000',
     raised: '#292929',
     overlay: '#0d0d0d',
     hover: '#363636',
     sunken: '#050505',
   },
   /* --text-100 / --text-200 / --text-400 / --text-500 */
+  /* Web conversation tokens: --conversation-text #f5f5f5 /
+   * --conversation-text-muted #a9a9a9 (chat-surface.css:16-17). */
   text: {
-    primary: '#ffffff',
+    primary: '#f5f5f5',
     secondary: '#cccccc',
     tertiary: '#a6a6a6',
-    muted: '#8c8c8c',
+    muted: '#a9a9a9',
     disabled: '#8c8c8c',
   },
   /* --border-100 / --border-300 / --border-400 */
@@ -115,17 +119,19 @@ const lightHex: ThemePaletteHex = {
     surface: '#e6e6e6',
   },
   bg: {
-    page: '#fafafa',
+    /* Web phone light canvas is #fff (chat-surface.css:57). */
+    page: '#ffffff',
     raised: '#f2f2f2',
     overlay: '#ffffff',
     hover: '#e8e8e8',
     sunken: '#ffffff',
   },
   text: {
-    primary: '#212121',
+    /* Web conversation tokens: #171717 / #717171 (chat-surface.css:61-62). */
+    primary: '#171717',
     secondary: '#454545',
     tertiary: '#707070',
-    muted: '#858585',
+    muted: '#717171',
     disabled: '#858585',
   },
   border: {

@@ -63,6 +63,16 @@ export interface Palette {
   rail: string;
   /** Conversation composer card surface (web: #212121 / #f2f2f2). */
   conversationSurface: string;
+  /** Circular control fill inside the composer/tools menu — web mobile
+   * `#2a2a2a` (mobile-parity.css:692,749) / light `#e5e5e5`
+   * (--conversation-control, chat-surface.css:58). */
+  controlFill: string;
+  /** Composer tools menu card — web mobile `#1b1b1b`
+   * (mobile-parity.css:733); light stays `--conversation-control` `#e5e5e5`
+   * contrasted on the white canvas is too dim, so use the raised overlay. */
+  menuBg: string;
+  /** Top-bar mode tab pill — web mobile `#131313` (mobile-parity.css:545). */
+  modeTabsBg: string;
   /** Mobile brand identity (distinct from functional accent). */
   brand: string;
   brandSoft: string;
@@ -124,6 +134,9 @@ function buildPalette(mode: ThemeMode): Palette {
     scrimDrawer: 'rgba(0, 0, 0, 0.7)',
     rail: isDark ? '#171717' : '#f7f7f5',
     conversationSurface: isDark ? '#212121' : '#f2f2f2',
+    controlFill: isDark ? '#2a2a2a' : '#e5e5e5',
+    menuBg: isDark ? '#1b1b1b' : '#ffffff',
+    modeTabsBg: isDark ? '#131313' : '#f2f2f2',
     voiceBlue: isDark ? '#2b7fff' : '#0a84ff',
     success: base.success,
     danger: base.danger,
