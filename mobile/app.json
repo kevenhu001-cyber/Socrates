@@ -17,6 +17,7 @@
       }
     },
     "plugins": [
+      "./plugins/withEdgeToEdge",
       "./plugins/withReleaseSigning",
       "./plugins/withDetoxE2E",
       "expo-secure-store",

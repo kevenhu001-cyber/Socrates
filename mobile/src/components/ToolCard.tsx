@@ -430,6 +430,10 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
    * visible; a terminal card starts collapsed so tool-heavy answers stay
    * scannable. */
   const [open, setOpen] = useState(() => statusFor(call) === 'running');
+  /* Secondary disclosure inside the body, mirroring the web tool row's
+     "Technical details" toggle (ToolRunDetail.tsx): raw arguments and run
+     metadata sit behind it so the visible body stays a summary. */
+  const [techOpen, setTechOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [copiedSection, setCopiedSection] = useState<'input' | 'output' | null>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -452,9 +456,12 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
     typeof call.output === 'string' ? call.output : summarise(call.output),
     mobile.stderr ? `${t('tool.stderr')}:\n${mobile.stderr}` : null,
   ].filter((part): part is string => Boolean(part && part.trim())).join('\n');
-  const details = [mobile.userMessage, mobile.errorText, mobile.detail]
+  /* Error-facing lines stay visible in the body; `detail` is diagnostic
+     * metadata and moves under Technical details (web putDetailToggleFact). */
+  const details = [mobile.userMessage, mobile.errorText]
     .filter((part, index, values): part is string => Boolean(part && values.indexOf(part) === index))
     .join('\n');
+  const techFacts = [mobile.detail].filter((part): part is string => Boolean(part)).join('\n');
   const lines = body ? body.split('\n') : [];
   const clipped = lines.length > PREVIEW_LINES;
   const shown = expanded || !clipped ? body : lines.slice(0, PREVIEW_LINES).join('\n');
@@ -526,25 +533,6 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
           ) : null}
           {details ? <Text selectable style={[styles.detail, { color: colors.danger }]}>{details}</Text> : null}
 
-          {args ? (
-            <View style={styles.section}>
-              <View style={styles.sectionHead}>
-                <Text style={[styles.sectionTitle, { color: colors.textSubtle, fontFamily: typography.medium }]}>{label('tool.input', 'Input')}</Text>
-                <Pressable accessibilityRole="button" hitSlop={6} onPress={() => copySection('input', args)} style={styles.sectionCopy}>
-                  <Ionicons name={copiedSection === 'input' ? 'checkmark-outline' : 'copy-outline'} size={12} color={copiedSection === 'input' ? colors.success : colors.textSubtle} />
-                  <Text style={[styles.sectionCopyText, { color: copiedSection === 'input' ? colors.success : colors.textSubtle }]}>
-                    {copiedSection === 'input' ? t('common.copied') : label('tool.copyCode', 'Copy code')}
-                  </Text>
-                </Pressable>
-              </View>
-              <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
-                <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>
-                  {args}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
           {body ? (
             <View style={styles.section}>
               <View style={styles.sectionHead}>
@@ -571,6 +559,47 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
           {call.results?.length ? <SourceResults results={call.results} /> : null}
           {call.artifacts?.length ? <Artifacts artifacts={call.artifacts} /> : null}
           {call.approval ? <ApprovalPanel approval={call.approval} /> : null}
+
+          {/* P_tool-order-details — "Technical details" disclosure row: raw
+           * arguments and run diagnostics behind a second-level toggle,
+           * identical affordance to the web `.agent-tool-tech` details. */}
+          {args || techFacts ? (
+            <View style={[styles.sources, { borderTopColor: colors.toolCardBorder }]}>
+              <AnimatedPressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: techOpen }}
+                accessibilityLabel={t('tools.techDetails')}
+                onPress={() => setTechOpen((v) => !v)}
+                style={styles.techRow}
+              >
+                <Ionicons name={techOpen ? 'chevron-up' : 'chevron-down'} size={12} color={colors.textSubtle} />
+                <Text style={[styles.techLabel, { color: colors.textSubtle }]}>{t('tools.techDetails')}</Text>
+              </AnimatedPressable>
+              {techOpen ? (
+                <View style={styles.section}>
+                  {args ? (
+                    <>
+                      <View style={styles.sectionHead}>
+                        <Text style={[styles.sectionTitle, { color: colors.textSubtle, fontFamily: typography.medium }]}>{label('tool.input', 'Input')}</Text>
+                        <Pressable accessibilityRole="button" hitSlop={6} onPress={() => copySection('input', args)} style={styles.sectionCopy}>
+                          <Ionicons name={copiedSection === 'input' ? 'checkmark-outline' : 'copy-outline'} size={12} color={copiedSection === 'input' ? colors.success : colors.textSubtle} />
+                          <Text style={[styles.sectionCopyText, { color: copiedSection === 'input' ? colors.success : colors.textSubtle }]}>
+                            {copiedSection === 'input' ? t('common.copied') : label('tool.copyCode', 'Copy code')}
+                          </Text>
+                        </Pressable>
+                      </View>
+                      <View style={[styles.output, { backgroundColor: colors.toolCardBgSunken }]}>
+                        <Text selectable style={[styles.outputText, { color: colors.textMuted, fontFamily: typography.mono }]}>
+                          {args}
+                        </Text>
+                      </View>
+                    </>
+                  ) : null}
+                  {techFacts ? <Text selectable style={[styles.detail, { color: colors.textSubtle }]}>{techFacts}</Text> : null}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
 
           {!body && status !== 'running' && !details && !call.plan && !call.spec && !call.visualization && !call.results?.length && !call.artifacts?.length ? (
             <Text style={[styles.noOutputText, { color: colors.textSubtle }]}>{t('tool.noOutput')}</Text>
@@ -610,6 +639,8 @@ const styles = StyleSheet.create({
   noOutputText: { fontSize: 11, marginTop: 4 },
   toggle: { alignSelf: 'flex-start', paddingVertical: 6 },
   toggleText: { fontSize: 11, fontWeight: '700' },
+  techRow: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingVertical: 3 },
+  techLabel: { fontSize: 11, fontWeight: '600' },
   structured: { borderWidth: 1, marginTop: 8, padding: 9, borderRadius: 14 },
   structuredTitle: { fontSize: 12, lineHeight: 17 },
   structuredIntro: { fontSize: 12, lineHeight: 17, marginTop: 3 },

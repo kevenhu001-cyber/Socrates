@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -27,6 +28,12 @@ function openNativeOverlay(target: EmbeddedTarget): boolean {
 
 export function EmbeddedWebScreen({ route, navigation }: Props) {
   const { colors, typography } = useTheme();
+  /* P0 android-edge-to-edge: this screen has no AppHeader — the embedded
+   * web page paints its own top bar, which would slide under the Android
+   * status bar now that the window draws edge-to-edge. Pad the host by the
+   * status-bar height so the web content starts below it, with the themed
+   * background filling the strip behind the status bar icons. */
+  const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(true);
@@ -106,7 +113,7 @@ export function EmbeddedWebScreen({ route, navigation }: Props) {
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {error ? (
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={38} color={colors.textSubtle} />

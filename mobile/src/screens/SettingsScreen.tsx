@@ -80,18 +80,22 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
   const { colors, typography, mode } = useTheme();
   const isDark = mode === 'dark';
   const t = useT();
-  const appState = useAppStore();
-  const [settings, setSettings] = useState<ApiSettings>(() => fromProviders(appState.providers, appState.selectedModel, appState.tone));
+  /* P0 perf — focused selectors so this modal does not re-render on every
+   * ChatScreen commit. */
+  const providers = useAppStore((s) => s.providers);
+  const selectedModel = useAppStore((s) => s.selectedModel);
+  const tone = useAppStore((s) => s.tone);
+  const [settings, setSettings] = useState<ApiSettings>(() => fromProviders(providers, selectedModel, tone));
   const [saving, setSaving] = useState(false);
   const initialIds = useRef(
-    appState.providers
+    providers
       .filter((provider) => !provider.isBuiltIn && provider.id !== 'beagle-built-in')
       .map((provider) => provider.id),
   );
 
   useEffect(() => {
-    setSettings(fromProviders(appState.providers, appState.selectedModel, appState.tone));
-    initialIds.current = appState.providers
+    setSettings(fromProviders(providers, selectedModel, tone));
+    initialIds.current = providers
       .filter((provider) => !provider.isBuiltIn && provider.id !== 'beagle-built-in')
       .map((provider) => provider.id);
   }, []);
@@ -241,7 +245,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
     }
   };
 
-  const builtIn = appState.providers.find((provider) => provider.isBuiltIn || provider.id === 'beagle-built-in');
+  const builtIn = providers.find((provider) => provider.isBuiltIn || provider.id === 'beagle-built-in');
 
   return (
     <View style={[styles.overlay, { backgroundColor: colors.scrimModal }]}>

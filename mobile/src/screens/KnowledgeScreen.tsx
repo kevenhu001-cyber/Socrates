@@ -120,7 +120,11 @@ function historyEntries(history: JsonValue[] | undefined) {
 export function KnowledgeScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
-  const appState = useAppStore();
+  /* P0 perf — only subscribe to the slices this screen reads (the active
+   * tutor session's kbNodes + boundariesHistory). */
+  const sessionMode = useAppStore((s) => s.activeSession?.mode ?? null);
+  const kbNodes = useAppStore((s) => s.activeSession?.kbNodes ?? null);
+  const boundariesHistory = useAppStore((s) => s.activeSession?.boundariesHistory ?? null);
   const { width: viewportWidth } = useWindowDimensions();
   const [items, setItems] = useState<KnowledgeNode[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
@@ -259,7 +263,7 @@ export function KnowledgeScreen({ navigation }: Props) {
                   {t('knowledge.total', { count: summary.total || grouped.length })}
                 </Text>
               </View>
-              {appState.activeSession?.mode === 'tutor' && Array.isArray(appState.activeSession.kbNodes) && appState.activeSession.kbNodes.length ? (
+              {sessionMode === 'tutor' && Array.isArray(kbNodes) && kbNodes.length ? (
                 <AnimatedPressable
                   onPress={() => { void appStore.saveKnowledgeSnapshot(); }}
                   style={[styles.snapshotButton, { borderColor: colors.border, borderRadius: radius.sm }]}
@@ -377,12 +381,12 @@ export function KnowledgeScreen({ navigation }: Props) {
             typography={typography}
             onPress={openDetail}
           />
-          {appState.activeSession?.mode === 'tutor' && Array.isArray(appState.activeSession.boundariesHistory) && appState.activeSession.boundariesHistory.length ? (
+          {sessionMode === 'tutor' && Array.isArray(boundariesHistory) && boundariesHistory.length ? (
             <View style={styles.snapshotHistory}>
               <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>
                 {t('tutor.kbHistory') === 'tutor.kbHistory' ? 'Snapshot history' : t('tutor.kbHistory')}
               </Text>
-              {appState.activeSession.boundariesHistory.slice(-8).reverse().map((entry, index) => {
+              {boundariesHistory.slice(-8).reverse().map((entry, index) => {
                 const item = entry && typeof entry === 'object' && !Array.isArray(entry)
                   ? entry as Record<string, JsonValue>
                   : {};
@@ -412,6 +416,8 @@ export function KnowledgeScreen({ navigation }: Props) {
       >
         <Pressable
           style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.black, 0.55) }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
           onPress={() => setSelected(null)}
         />
         {selected ? (
@@ -444,7 +450,7 @@ export function KnowledgeScreen({ navigation }: Props) {
                     </Text>
                   </View>
                 </View>
-                <AnimatedPressable onPress={() => setSelected(null)} style={styles.closeButton}>
+                <AnimatedPressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setSelected(null)} style={styles.closeButton}>
                   <Text style={{ color: colors.textMuted, fontSize: 22 }}>×</Text>
                 </AnimatedPressable>
               </View>

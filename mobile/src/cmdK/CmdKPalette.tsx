@@ -20,16 +20,22 @@ import { useThemeController } from '../theme/ThemeProvider';
 import { cmdKStore } from './cmdKStore';
 import { profileOverlay } from '../components/AppDrawer';
 import { usageOverlay, storageOverlay } from './overlayStores';
-import type { EmbeddedTarget } from '@socrates/contracts';
+import { searchApi } from '../data/api/client';
+import type { EmbeddedTarget, Session } from '@socrates/contracts';
 import type { NativeDestination } from '../components/AppDrawer';
 
-type CmdKind = 'nav' | 'session' | 'theme' | 'skills' | 'settings';
+const EMPTY_SESSIONS: Session[] = [];
+
+type CmdKind = 'nav' | 'session' | 'theme' | 'skills' | 'settings' | 'remote';
 
 interface Command {
   id: string;
   kind: CmdKind;
   title: string;
   hint?: string;
+  /* Right-edge meta label for remote hits (Message / Chat / Tutor), matching
+   * the web `.cmd-k-row-meta` text. */
+  meta?: string;
   icon: keyof typeof Ionicons.glyphMap;
   run: () => void | Promise<void>;
 }
@@ -59,9 +65,12 @@ export function CmdKPalette({
   const fs = (n: number) => Math.round(n * fontScale);
   const t = useT();
   const { mode: themeMode, setPreference: setThemePreference } = useThemeController();
-  const state = useAppStore();
-  const sessions = state.sessions;
   const [open, setOpen] = useState(cmdKStore.isOpen());
+  /* P0 perf — read the sessions slice only while the palette is open. It is
+   * mounted at the app root, and `sessions` gets a new array on every save,
+   * so an unconditional subscription re-ran the command list's fuzzy scoring
+   * while the user was typing in a closed overlay. */
+  const sessions = useAppStore((s) => (open ? s.sessions : EMPTY_SESSIONS));
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const listRef = useRef<FlatList<Command>>(null);
@@ -69,6 +78,10 @@ export function CmdKPalette({
   const keyboardHeight = useRef(0);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const { height: windowHeight } = useWindowDimensions();
+  const [remoteHits, setRemoteHits] = useState<Command[]>([]);
+  /* Latest trimmed query, read by the remote-search response handler as a
+   * stale-response guard (same contract as `frontend/src/ui/cmdK.js`). */
+  const queryRef = useRef('');
 
   useEffect(() => {
     return cmdKStore.subscribe((next) => {
@@ -262,9 +275,79 @@ export function CmdKPalette({
     return scored.map((entry) => entry.item);
   }, [all, query]);
 
+  /* Remote session/message hits — ports the web `onCmdKInput` POST /api/search
+   * path (frontend/src/ui/cmdK.js:133-160): debounced per-keystroke query,
+   * stale-response guard against the latest input, deduped against rows
+   * already produced by local fuzzy matching, appended after local results. */
   useEffect(() => {
-    if (selected >= filtered.length) setSelected(0);
-  }, [filtered, selected]);
+    const q = query.trim();
+    queryRef.current = q;
+    if (!open || !q) {
+      setRemoteHits([]);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      searchApi
+        .query({ q, scope: 'all', limit: 20 })
+        .then((r) => {
+          if (queryRef.current !== q) return;
+          const hits = Array.isArray(r?.hits) ? r.hits : [];
+          const seen = new Set(sessions.map((s) => s.id));
+          const next: Command[] = [];
+          for (const h of hits) {
+            const id = String(h.id || '');
+            const sessionId = String(h.sessionId || (h.kind === 'session' ? id : ''));
+            if (!sessionId || seen.has(id) || seen.has(sessionId)) continue;
+            seen.add(id);
+            seen.add(sessionId);
+            const isMessage = h.kind === 'message';
+            const isTutor = h.mode === 'tutor';
+            next.push({
+              id: `remote.${id || sessionId}`,
+              kind: 'remote',
+              title: String(h.title || h.name || h.snippet || q),
+              hint: String(h.snippet || h.preview || ''),
+              meta: isMessage
+                ? t('cmdK.messageLabel') || 'Message'
+                : isTutor
+                  ? t('sidebar.nav.tutor') || 'Tutor'
+                  : t('sidebar.nav.chat') || 'Chat',
+              icon: (isMessage
+                ? 'chatbox-ellipses-outline'
+                : isTutor
+                  ? 'school-outline'
+                  : 'chatbubble-outline') as keyof typeof Ionicons.glyphMap,
+              run: async () => {
+                cmdKStore.close();
+                try {
+                  await appStore.openSession(sessionId);
+                  onNavigate('Chat');
+                } catch {
+                  /* ignore — surface in toast later */
+                }
+              },
+            });
+          }
+          setRemoteHits(next);
+        })
+        .catch(() => {
+          /* offline or 404 — ignore */
+        });
+    }, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, open, sessions, onNavigate, t]);
+
+  /* Server hits are already ranked — append them unscored after the local
+   * fuzzy results, the same order the web palette uses. */
+  const visible: Command[] = useMemo(
+    () => (query.trim() ? [...filtered, ...remoteHits] : filtered),
+    [filtered, remoteHits, query]
+  );
+
+  useEffect(() => {
+    if (selected >= visible.length) setSelected(0);
+  }, [visible, selected]);
 
   const execute = (item: Command) => {
     setOpen(false);
@@ -332,7 +415,7 @@ export function CmdKPalette({
             </View>
             <FlatList
               ref={listRef}
-              data={filtered}
+              data={visible}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
               style={{ maxHeight: windowHeight * 0.6 }}
@@ -387,6 +470,10 @@ export function CmdKPalette({
                     ) : item.kind === 'theme' ? (
                       <Text style={[styles.rowKind, { color: colors.textSubtle, fontSize: fs(11) }]}>
                         {(t('cmdK.themeLabel') as string) || 'theme'}
+                      </Text>
+                    ) : item.kind === 'remote' ? (
+                      <Text style={[styles.rowKind, { color: colors.textSubtle, fontSize: fs(11) }]}>
+                        {item.meta || (t('cmdK.remoteLabel') as string) || 'search'}
                       </Text>
                     ) : null}
                   </Pressable>

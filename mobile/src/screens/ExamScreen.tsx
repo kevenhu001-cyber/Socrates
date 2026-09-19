@@ -79,9 +79,13 @@ function PulsingDots({ color }: { color: string }) {
 export function ExamScreen({ navigation }: { navigation: any }) {
   const { colors, radius, spacing, typography } = useTheme();
   const t = useT();
-  const examState = useAppStore();
+  /* P0 perf — focused selectors. The previous `useAppStore()` subscription
+   * re-rendered this screen on every keystroke or streaming token committed
+   * by the chat tutor. */
+  const providers = useAppStore((s) => s.providers);
+  const selectedModel = useAppStore((s) => s.selectedModel);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
-  const currentProvider = examState.providers.find((provider) => provider.id === examState.selectedModel);
+  const currentProvider = providers.find((provider) => provider.id === selectedModel);
   const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
   const [mode, setMode] = useState<Mode>('setup');
   const [topic, setTopic] = useState('');
@@ -92,7 +96,9 @@ export function ExamScreen({ navigation }: { navigation: any }) {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [current, setCurrent] = useState(0);
-  const [progress, setProgress] = useState(0);
+  /* Questions finished so far while generating (null = still preparing).
+   * Mirrors web `updateProgress(i)` (`exam.js:500-512`). */
+  const [genDone, setGenDone] = useState<number | null>(null);
   const [grade, setGrade] = useState<{ correct: number; total: number; results: Array<{ index: number; correct: boolean; answer: string; expected: string[] }> } | null>(null);
   const [error, setError] = useState('');
   const [abandonArmed, setAbandonArmed] = useState(false);
@@ -138,12 +144,16 @@ export function ExamScreen({ navigation }: { navigation: any }) {
 
   const start = async () => {
     if (!topic.trim()) { setError(t('exam.needTopic')); return; }
+    /* P_exam-noprovider — mirrors `exam.js:405-414`: gate generation on a
+     * usable active provider instead of entering the loading view and
+     * failing there. */
+    if (!currentProvider) { setError(t('exam.noProvider')); return; }
     if (!activeTypes.length) { setError(t('exam.needType') || 'Select at least one question type'); return; }
-    setError(''); setMode('generating'); setProgress(0);
+    setError(''); setMode('generating'); setGenDone(null);
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const generated = await generateExam({ topic: topic.trim(), count, difficulty, types: activeTypes, instructions: instructions.trim() || undefined, onProgress: (done, total) => setProgress(Math.round(done / total * 100)), signal: controller.signal });
+      const generated = await generateExam({ topic: topic.trim(), count, difficulty, types: activeTypes, instructions: instructions.trim() || undefined, onProgress: (done) => setGenDone(done), signal: controller.signal });
       sessionId.current = generated.sessionId;
       setQuestions(generated.questions); setAnswers({}); setCurrent(0); setMode('answering');
       await native.vibrate('success');
@@ -182,8 +192,14 @@ export function ExamScreen({ navigation }: { navigation: any }) {
       <AppHeader title={t('sidebar.nav.exam')} onNewChat={() => navigation.navigate('Home')} />
       <View style={styles.center}>
       <PulsingDots color={colors.accent} />
-      <Text style={[styles.generatingMsg, { color: colors.textMuted }]}>{t('exam.buildingBody', { percent: progress })}</Text>
-      <View style={[styles.progressTrack, { backgroundColor: withAlpha(colors.border, 0.25) }]}><View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${Math.max(4, progress)}%` }]} /></View>
+      {/* 1:1 Parity with the web generating card (`exam.js:459-465`,
+       * `updateProgress` at `exam.js:500-512`): title, real per-question
+       * progress bar (92 * done / count), a step label, and a sub message —
+       * no fabricated percentage. */}
+      <Text style={[styles.generatingMsg, { color: colors.textMuted }]}>{t('exam.generating')}</Text>
+      <View style={[styles.progressTrack, { backgroundColor: withAlpha(colors.border, 0.25) }]}><View style={[styles.progressFill, { backgroundColor: colors.accent, width: `${genDone != null ? Math.round(92 * genDone / Math.max(1, count)) : 0}%` }]} /></View>
+      <Text style={[styles.genStep, { color: colors.text }]}>{genDone == null ? t('exam.genPreparing') : t('exam.genStep', { n: genDone + 1 })}</Text>
+      <Text style={[styles.genSub, { color: colors.textSubtle }]}>{genDone == null ? t('exam.genSubPrep') : t('exam.genSub', { n: genDone + 1, count })}</Text>
       <AnimatedPressable onPress={() => { abortRef.current?.abort(); setMode('setup'); }} style={[styles.secondaryButton, { borderColor: colors.border, borderRadius: radius.md }]}><Text style={{ color: colors.textMuted }}>{t('common.cancel')}</Text></AnimatedPressable>
       </View>
       <ConfirmDialog
@@ -532,13 +548,17 @@ export function ExamScreen({ navigation }: { navigation: any }) {
           style={[styles.instructionsInput, { color: colors.text, borderColor: colors.border, borderRadius: radius.md }]}
         />
         {error ? <Text style={[styles.error, { color: colors.danger }]}>{error}</Text> : null}
-        <AnimatedPressable onPress={start} style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}><Text style={{ color: colors.background, fontWeight: '700' }}>{t('exam.generateSet')}</Text></AnimatedPressable>
+        {/* Web parity (`exam.js:405-414`): without an active provider the
+         * generate action is disabled and the user is told to configure a
+         * model in Settings first. */}
+        {!currentProvider ? <Text style={[styles.error, { color: colors.textMuted }]}>{t('exam.noProvider')}</Text> : null}
+        <AnimatedPressable onPress={start} disabled={!currentProvider} disabledOpacity={0.5} style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}><Text style={{ color: colors.background, fontWeight: '700' }}>{t('exam.generateSet')}</Text></AnimatedPressable>
       </View>
       </View>
       <ModelPickerModal
         visible={modelPickerOpen}
-        providers={examState.providers}
-        selectedId={examState.selectedModel}
+        providers={providers}
+        selectedId={selectedModel}
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
         onManageSettings={() => navigation.navigate('Settings')}
@@ -556,6 +576,10 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4 },
   generatingMsg: { fontSize: 13, lineHeight: 20, marginTop: 18, textAlign: 'center' },
+  /* `.exam-progress-step` / `.exam-loading-sub` (styles.css, used by
+   * `exam.js:462-464`). */
+  genStep: { fontSize: 12, fontWeight: '600', marginTop: 12, textAlign: 'center' },
+  genSub: { fontSize: 12, lineHeight: 18, marginTop: 6, textAlign: 'center' },
   heroEyebrow: { fontSize: 10, letterSpacing: 1.4, fontWeight: '800', textTransform: 'uppercase', paddingTop: 14, marginBottom: 9 },
   kicker: { fontSize: 11, letterSpacing: 1.5, fontWeight: '700', paddingTop: 14 },
   heading: { fontSize: 32, lineHeight: 39, marginTop: 10 },

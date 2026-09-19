@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
 import { AnimatedPressable } from '../components/AnimatedPressable';
@@ -16,6 +17,7 @@ import {
   type TutorDiagnosticQuestion,
   type TutorKnowledgeNode,
   type TutorKnowledgeStatus,
+  type TutorTeachingPlan,
 } from '../data/tutor/tutorFlow';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -57,9 +59,27 @@ function countKnowledge(nodes: TutorKnowledgeNode[]) {
 export function TutorScreen({ navigation, route }: Props) {
   const { colors, radius, spacing, typography } = useTheme();
   const t = useT();
-  const state = useAppStore();
+  /* P0 perf — focused selectors for the slices this screen reads. */
+  const activeSessionTopic = useAppStore((s) => s.activeSession?.topic ?? null);
+  const activeSessionDomain = useAppStore((s) => s.activeSession?.domain ?? null);
+  const activeSessionMode = useAppStore((s) => s.activeSession?.mode ?? null);
+  const activeSessionKbNodes = useAppStore((s) => s.activeSession?.kbNodes ?? null);
+  const activeSessionTeachingStage = useAppStore((s) => s.activeSession?.teachingStage ?? null);
+  const teachingPlan = useAppStore((s) => (s.activeSession?.teachingPlan ?? null) as TutorTeachingPlan | null);
+  const practicePhase = useAppStore((s) => s.activeSession?.practicePhase ?? null);
+  const practiceAttempts = useAppStore((s) => s.activeSession?.practiceAttempts ?? 0);
+  const substantiveCount = useAppStore((s) => s.tutorSubstantiveCount);
+  const activeSessionMessagesLength = useAppStore((s) => s.activeSession?.messages?.length ?? 0);
+  const user = useAppStore((s) => s.user);
+  const reasoningEffort = useAppStore((s) => s.reasoningEffort);
+  const storeError = useAppStore((s) => s.error);
+  /* P0 android-edge-to-edge: this flow has no AppHeader, so it owns the top
+   * safe-area inset itself — otherwise the kicker/progress bar slides under
+   * the Android status bar now that the window draws edge-to-edge. */
+  const insets = useSafeAreaInsets();
+  const flowTopPad = { paddingTop: insets.top + 18 };
   const initialTopic = String(route.params?.initialTopic || '').trim();
-  const existingTopic = String(state.activeSession?.topic || state.activeSession?.domain || '').trim();
+  const existingTopic = String(activeSessionTopic || activeSessionDomain || '').trim();
   const topic = initialTopic || existingTopic;
 
   const [phase, setPhase] = useState<FlowPhase>(initialTopic ? 'choice' : 'overview');
@@ -79,7 +99,7 @@ export function TutorScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     if (!initialTopic) return;
-    if (!state.activeSession || state.activeSession.mode !== 'tutor') {
+    if (!activeSessionMode || activeSessionMode !== 'tutor') {
       appStore.startNewSession('tutor', true);
     }
     setPhase('choice');
@@ -92,15 +112,15 @@ export function TutorScreen({ navigation, route }: Props) {
   }, [initialTopic]);
 
   const modelContext = useMemo(() => ({
-    customInstructions: state.user?.customInstructions,
-    reasoningEffort: state.reasoningEffort,
-  }), [state.reasoningEffort, state.user?.customInstructions]);
+    customInstructions: user?.customInstructions,
+    reasoningEffort,
+  }), [reasoningEffort, user?.customInstructions]);
 
   const existingNodes = useMemo(
-    () => Array.isArray(state.activeSession?.kbNodes)
-      ? state.activeSession!.kbNodes as unknown as TutorKnowledgeNode[]
+    () => Array.isArray(activeSessionKbNodes)
+      ? (activeSessionKbNodes as unknown as TutorKnowledgeNode[])
       : [],
-    [state.activeSession?.kbNodes],
+    [activeSessionKbNodes],
   );
 
   const resultNodes = useMemo(
@@ -117,7 +137,7 @@ export function TutorScreen({ navigation, route }: Props) {
     setLocalError(null);
     const ok = await appStore.beginTutorTeaching(topic, sourceNodes, sourceQuestions, sourceAnswers);
     if (ok) navigation.replace('Chat');
-    else setLocalError(state.error || t('chat.offline') || 'Unable to start Tutor.');
+    else setLocalError(storeError || t('chat.offline') || 'Unable to start Tutor.');
   };
 
   const cancelGeneration = () => {
@@ -209,13 +229,13 @@ export function TutorScreen({ navigation, route }: Props) {
     else setQuestionIndex((index) => index + 1);
   };
 
-  const stage = state.activeSession?.teachingStage || 'motivate';
+  const stage = activeSessionTeachingStage || 'motivate';
   const currentQuestion = questions[questionIndex];
   const existingCounts = countKnowledge(existingNodes);
 
   if (phase === 'choice') {
     return (
-      <Screen scroll style={styles.flowScreen}>
+      <Screen scroll style={[styles.flowScreen, flowTopPad]}>
         <Text style={[styles.kicker, { color: colors.accent, fontFamily: typography.medium }]}>
           {t('tutor.kickerMode') || 'TUTOR MODE'}
         </Text>
@@ -305,7 +325,7 @@ export function TutorScreen({ navigation, route }: Props) {
     const total = Math.max(1, generationProgress.total);
     const progress = Math.min(1, generationProgress.current / total);
     return (
-      <Screen style={styles.centerScreen}>
+      <Screen style={[styles.centerScreen, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accent} size="small" />
         <Text style={[styles.generatingTitle, { color: colors.text, fontFamily: typography.semibold }]}>
           {t('tutor.analyzingTopic') || 'Preparing your learning path…'}
@@ -331,7 +351,7 @@ export function TutorScreen({ navigation, route }: Props) {
   if (phase === 'questions' && currentQuestion) {
     const selected = answers[questionIndex];
     return (
-      <Screen scroll style={styles.flowScreen}>
+      <Screen scroll style={[styles.flowScreen, flowTopPad]}>
         <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
           {t('tutor.knowledgeBoundary') || 'KNOWLEDGE BOUNDARY'}
         </Text>
@@ -437,7 +457,7 @@ export function TutorScreen({ navigation, route }: Props) {
 
   if (phase === 'results') {
     return (
-      <Screen scroll style={styles.flowScreen}>
+      <Screen scroll style={[styles.flowScreen, flowTopPad]}>
         <Text style={[styles.kicker, { color: colors.textMuted, fontFamily: typography.medium }]}>
           {t('tutor.boundaryResult') || 'YOUR STARTING POINT'}
         </Text>
@@ -509,7 +529,7 @@ export function TutorScreen({ navigation, route }: Props) {
   }
 
   return (
-    <Screen scroll style={styles.flowScreen}>
+    <Screen scroll style={[styles.flowScreen, flowTopPad]}>
       <Text style={[styles.kicker, { color: colors.accent, fontFamily: typography.medium }]}>
         {t('tutor.kickerMode') || 'TUTOR MODE'}
       </Text>
@@ -543,6 +563,53 @@ export function TutorScreen({ navigation, route }: Props) {
         ))}
       </ScrollView>
 
+      {/* Web `.teaching-plan` (`tutorSocratic.js:519-570`): progress, per
+       * sub-topic status, the live stage, and the 3-answer depth counter that
+       * actually gates advancement — without it progress looks arbitrary. */}
+      {teachingPlan?.subtopics?.length ? (() => {
+        const planDone = teachingPlan.subtopics.filter((subtopic) => subtopic.status === 'internalized').length;
+        const planPct = Math.round((planDone / teachingPlan.subtopics.length) * 100);
+        return (
+        <View style={[styles.planCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+          <Text style={[styles.planTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('tutor.planTitle')}</Text>
+          <View style={styles.planProgressRow}>
+            <View style={[styles.planTrack, { backgroundColor: colors.surfaceRaised }]}>
+              <View style={[styles.planFill, { backgroundColor: colors.accent, width: `${planPct}%` }]} />
+            </View>
+            <Text style={[styles.planProgressText, { color: colors.textMuted }]}>
+              {`${planDone} / ${teachingPlan.subtopics.length} (${planPct}%)`}
+            </Text>
+          </View>
+          {teachingPlan.subtopics.map((subtopic, index) => {
+            const done = subtopic.status === 'internalized';
+            const current = index === teachingPlan.currentSubtopicIdx && !done;
+            const stageKey = STAGES.find(([id]) => id === stage)?.[1] || 'tutor.stageMotivate';
+            return (
+              <View key={`${subtopic.name}-${index}`} style={styles.planRow}>
+                <Text style={[styles.planMarker, { color: done ? colors.success : current ? colors.accent : colors.textSubtle }]}>
+                  {done ? t('tutor.done') : current ? '>' : '·'}
+                </Text>
+                <Text numberOfLines={1} style={[styles.planName, { color: done || current ? colors.text : colors.textMuted, fontFamily: typography.medium }]}>
+                  {subtopic.name}
+                </Text>
+                <Text style={[styles.planStatus, { color: subtopic.status === 'internalized' ? colors.success : subtopic.status === 'fuzzy' ? colors.warning : colors.textSubtle }]}>
+                  {t(STATUS_KEY[subtopic.status] || 'knowledge.blank')}
+                </Text>
+                {current ? (
+                  <Text style={[styles.planStage, { color: colors.textSubtle }]}>{`${t(stageKey)} · ${Math.min(substantiveCount, 3)}/3`}</Text>
+                ) : null}
+              </View>
+            );
+          })}
+          {practicePhase ? (
+            <Text style={[styles.practiceChip, { color: colors.textMuted, backgroundColor: colors.surfaceRaised, borderRadius: radius.pill }]}>
+              {`${t(practicePhase === 'foundation' ? 'tutor.practiceFoundation' : 'tutor.practiceTransfer')} · ${practiceAttempts}`}
+            </Text>
+          ) : null}
+        </View>
+        );
+      })() : null}
+
       {existingNodes.length ? (
         <View style={[styles.resultGrid, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
           <View style={styles.resultCell}>
@@ -560,7 +627,7 @@ export function TutorScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      {state.activeSession?.mode === 'tutor' && state.activeSession.messages?.length ? (
+      {activeSessionMode === 'tutor' && activeSessionMessagesLength ? (
         <AnimatedPressable
           onPress={() => navigation.navigate('Chat')}
           style={[styles.primaryButton, { backgroundColor: colors.text, borderRadius: radius.md }]}
@@ -842,6 +909,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textTransform: 'uppercase',
   },
+  planCard: { marginTop: 16, padding: 14, borderWidth: StyleSheet.hairlineWidth, gap: 8 },
+  planTitle: { fontSize: 12, letterSpacing: 0.4, textTransform: 'uppercase' },
+  planProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  planTrack: { flex: 1, height: 4, borderRadius: 2, overflow: 'hidden' },
+  planFill: { height: 4, borderRadius: 2 },
+  planProgressText: { fontSize: 11 },
+  planRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
+  planMarker: { fontSize: 11, minWidth: 34, textAlign: 'left' },
+  planName: { fontSize: 13, flex: 1, minWidth: 0 },
+  planStatus: { fontSize: 11 },
+  planStage: { fontSize: 11 },
+  practiceChip: { alignSelf: 'flex-start', fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, marginTop: 4 },
   steps: {
     flexDirection: 'row',
     gap: 18,

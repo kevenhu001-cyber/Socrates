@@ -55,6 +55,127 @@ export const MOBILE_EXTENSIONS: Record<MobileExtensionKey, MobileExtensionSpec> 
   analyze: { key: 'analyze', label: 'Analyze data', systemPrompt: DATA_ANALYSIS_SYSTEM_PROMPT, outputMode: 'chat' },
 };
 
+/* ── Prompt templates (slash commands) ────────────────────────────────
+ * Port of frontend/src/chat/promptTemplates.js BUILTIN_TEMPLATES. The web
+ * home/chat composers open a slash-command palette when the draft starts
+ * with `/`; picking a row replaces the `/query` chunk with the template
+ * body and activates the template's systemPrompt for the session. Custom
+ * (user-defined) templates are not synced to mobile yet — only the six
+ * built-ins ship here. `icon` is an Ionicons name standing in for the
+ * web's inline SVG. */
+export interface MobilePromptTemplate {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  shortcut: string;
+  body: string;
+  systemPrompt: string;
+}
+
+const TPL_PROMPT_SUMMARIZE = `You are a precise summarization specialist. Condense the user's passage into clear bullets that preserve supported facts, names, numbers, dates, and conclusions.
+
+Rules:
+- Match the source language. Do not translate.
+- Scale the number of bullets to the passage. Use about 5 for a paragraph and more for a long passage when each bullet adds a distinct idea.
+- Preserve technical terms, proper nouns, numbers, and units faithfully.
+- Make every bullet understandable without rereading the source.
+- Output only the summary bullets, with no preamble or meta-commentary.`;
+
+const TPL_PROMPT_TRANSLATE = `You are a professional translator into English. Translate the user's text naturally while preserving meaning, tone, register, formatting, and technical precision.
+
+Rules:
+- Adapt idioms to natural English rather than translating them literally.
+- Preserve proper nouns, brand names, and technical terms when English usage keeps the original form.
+- Casual, formal, technical, and creative source text should keep its corresponding register.
+- If the source is already English, return it unchanged unless the user explicitly asks for refinement.
+- Output only the translation, with no explanations, footnotes, alternatives, or preamble.`;
+
+const TPL_PROMPT_EXPLAIN_CODE = `You are a patient code mentor. Explain the user's code, its data flow, and its design choices.
+
+Rules:
+- Begin with a one-sentence summary of what the code does.
+- Walk through the code in execution order. Explain individual lines when they matter and group related lines when that is clearer.
+- Call out subtle bugs, edge cases, performance risks, security concerns, and surprising behavior that are supported by the snippet.
+- Match the user's apparent level. Do not pad a simple snippet or over-explain fundamentals for an advanced one.
+- Use headings, inline code, and fenced code blocks when they improve clarity.`;
+
+const TPL_PROMPT_DEBUG = `You are a senior debugger. The user will provide code and the expected and actual behavior. Diagnose the most likely cause and propose the smallest useful fix.
+
+Workflow:
+1. State the best-guess root cause in one sentence.
+2. Identify the relevant line or condition, using line numbers when available.
+3. Explain why the behavior follows from that code and what assumption is wrong.
+4. Show the corrected snippet and explain why it fixes the problem.
+5. Give one quick verification step.
+
+If multiple independent causes are plausible, address the most likely one first and label the others as secondary. If the issue is in a dependency or environment, say so explicitly. Be direct and avoid filler.`;
+
+const TPL_PROMPT_QUIZ = `You are a quiz master. The user will provide a topic. Generate exactly 5 questions, with 1 easy recall question, 2 medium application or comparison questions, and 2 hard analysis, synthesis, or edge-case questions.
+
+For each question, provide exactly 3 options labeled A, B, and C. Make distractors plausible misconceptions. Mark the correct option and give one sentence explaining the answer. Use this format:
+
+Q1. <question>
+A) <option>  B) <option>  C) <option>
+Correct: <letter> | <one-sentence reason>
+
+Repeat through Q5, then stop. Do not ask the user to begin. Match the user's language.`;
+
+const TPL_PROMPT_SOCRATIC = `You are a Socratic tutor. Help the user reason toward a sound answer through focused questions and explanations.
+
+Rules:
+- Start by identifying what the user already understands when that information is missing.
+- Ask at most one guiding question at a time and target the next specific gap in reasoning.
+- Move from a concrete case to the general idea when that improves understanding.
+- If the user is stuck or asks directly for the answer, give a proportionate hint or explanation. Do not withhold useful help indefinitely.
+- Confirm what is correct, name the specific misconception when something is wrong, and give a clear next step.
+- Match the user's language and technical vocabulary. Do not bundle multiple independent exercises into one reply.`;
+
+export const MOBILE_PROMPT_TEMPLATES: MobilePromptTemplate[] = [
+  { id: 'tpl-summarize', title: 'Summarize', description: 'Condense the pasted text into bullet points.', icon: 'list', shortcut: '/summarize', body: 'Paste the text you want summarized:\n\n', systemPrompt: TPL_PROMPT_SUMMARIZE },
+  { id: 'tpl-translate', title: 'Translate to English', description: 'Translate the input into natural English.', icon: 'globe-outline', shortcut: '/translate', body: 'Paste the text to translate into English:\n\n', systemPrompt: TPL_PROMPT_TRANSLATE },
+  { id: 'tpl-explain-code', title: 'Explain this code', description: 'Walk through the snippet in execution order.', icon: 'code-slash', shortcut: '/explain', body: 'Paste the code you want explained:\n\n```\n\n```\n', systemPrompt: TPL_PROMPT_EXPLAIN_CODE },
+  { id: 'tpl-debug', title: 'Debug this', description: 'Find the bug, propose a fix, explain why it worked.', icon: 'bug-outline', shortcut: '/debug', body: 'Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n', systemPrompt: TPL_PROMPT_DEBUG },
+  { id: 'tpl-quiz', title: 'Quiz me', description: 'Generate 5 questions on a topic.', icon: 'help-circle-outline', shortcut: '/quiz', body: 'Topic to be quizzed on:\n', systemPrompt: TPL_PROMPT_QUIZ },
+  { id: 'tpl-socratic', title: 'Socratic me', description: 'Work toward the answer through focused questions.', icon: 'chatbox-ellipses-outline', shortcut: '/socratic', body: 'Problem to work through:\n', systemPrompt: TPL_PROMPT_SOCRATIC },
+];
+
+/* Port of templateSlash.js `_currentSlashQuery`: null unless the draft
+ * starts with `/`; otherwise the `/query` chunk plus the tail the user
+ * may have typed after the first whitespace (kept on insert). */
+export function parseSlashQuery(value: string): { query: string; tail: string } | null {
+  if (!value || value.charAt(0) !== '/') return null;
+  let i = 1;
+  while (i < value.length && !/\s/.test(value.charAt(i))) i += 1;
+  return { query: value.slice(1, i).toLowerCase(), tail: value.slice(i) };
+}
+
+/* Port of `_filterSlashList`: substring match on shortcut/title/
+ * description. Mobile has no connected-apps list, so templates only. */
+export function filterPromptTemplates(query: string): MobilePromptTemplate[] {
+  const list = [...MOBILE_PROMPT_TEMPLATES].sort((a, b) => a.title.localeCompare(b.title));
+  if (!query) return list;
+  return list.filter((tpl) =>
+    tpl.shortcut.toLowerCase().includes(query)
+    || tpl.title.toLowerCase().includes(query)
+    || tpl.description.toLowerCase().includes(query));
+}
+
+/* Port of templateSlash.js `stripTemplateBodyPrefix`: while a template is
+ * active its `body` sits in the composer as a placeholder, but the model
+ * (and the stored user turn) should only see what the user actually typed.
+ * Matches the largest surviving body prefix, so a partially-deleted
+ * placeholder still strips cleanly. */
+export function stripTemplateBodyPrefix(text: string, template: MobilePromptTemplate | null): string {
+  if (!template || !template.body) return text;
+  const body = template.body.replace(/\s+$/, '');
+  if (!body) return text;
+  let i = 0;
+  while (i < body.length && i < text.length && text.charAt(i) === body.charAt(i)) i += 1;
+  if (i === 0) return text;
+  return text.slice(i).replace(/^\s+/, '');
+}
+
 export function detectLanguage(text: string): 'zh' | 'ja' | 'ko' | 'ru' | 'ar' | 'en' {
   if (!text) return 'en';
   let run = 0;

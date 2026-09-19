@@ -12,13 +12,6 @@ function getDb() {
     payload TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
-  CREATE TABLE IF NOT EXISTS cached_messages (
-    id TEXT PRIMARY KEY NOT NULL,
-    session_id TEXT NOT NULL,
-    client_id TEXT,
-    payload TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  );
   CREATE TABLE IF NOT EXISTS drafts (
     session_id TEXT PRIMARY KEY NOT NULL,
     content TEXT NOT NULL,
@@ -38,6 +31,10 @@ function getDb() {
     content TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS kv_store (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL
+  );
 `);
   database = db;
   return db;
@@ -46,12 +43,10 @@ function getDb() {
 export function cacheSession(session: Session) {
   const db = getDb();
   const updatedAt = session.updatedAt || new Date().toISOString();
+  /* One transaction per session: the whole payload is a single row, so the
+   * old 1 + N statement loop meant one fsync per message and a visible hitch
+   * exactly when a reply finished. */
   db.runSync('INSERT OR REPLACE INTO cached_sessions (id, payload, updated_at) VALUES (?, ?, ?)', session.id, JSON.stringify(session), updatedAt);
-  for (const message of session.messages || []) {
-    const id = message.id || message.clientId;
-    if (!id) continue;
-    db.runSync('INSERT OR REPLACE INTO cached_messages (id, session_id, client_id, payload, created_at) VALUES (?, ?, ?, ?, ?)', id, session.id, message.clientId || null, JSON.stringify(message), message.createdAt || updatedAt);
-  }
 }
 
 export function readCachedSessions() {
@@ -116,4 +111,17 @@ export function removeOutbox(id: string) {
 export function incrementOutboxRetry(id: string) {
   const db = getDb();
   db.runSync('UPDATE outbox SET retry_count = retry_count + 1 WHERE id = ?', id);
+}
+
+/* Generic key/value rows for payloads too large or too structured for
+ * SecureStore's 2KB ceiling (e.g. custom prompt templates). */
+export function readKeyValue(key: string): string | null {
+  const db = getDb();
+  const row = db.getFirstSync<{ value: string }>('SELECT value FROM kv_store WHERE key = ?', key);
+  return row?.value ?? null;
+}
+
+export function writeKeyValue(key: string, value: string) {
+  const db = getDb();
+  db.runSync('INSERT OR REPLACE INTO kv_store (key, value) VALUES (?, ?)', key, value);
 }
