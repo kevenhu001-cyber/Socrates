@@ -394,6 +394,7 @@ export function Composer({
               <AnimatedPressable
                 accessibilityLabel={t('chat.send') || 'Send message'}
                 accessibilityState={{ disabled: !canSend }}
+                disabled={!canSend}
                 onPress={canSend ? onSend : undefined}
                 scale={0.92}
                 restingScale={canSend ? 1.05 : 1}
@@ -523,7 +524,7 @@ export function Composer({
                   accessibilityLabel={t('chat.stopGenerating') || 'Stop generating'}
                   onPress={onStop}
                   scale={0.92}
-                  style={[styles.actionBtn, { backgroundColor: colors.text }]}
+                style={[styles.actionBtn, { backgroundColor: colors.text }]}
                 >
                   <Ionicons name="stop" size={14} color={colors.background} />
                 </AnimatedPressable>
@@ -531,11 +532,16 @@ export function Composer({
                 <AnimatedPressable
                   accessibilityLabel={t('chat.send') || 'Send message'}
                   accessibilityState={{ disabled: !canSend }}
+                  disabled={!canSend}
                   onPress={canSend ? onSend : undefined}
                   scale={0.92}
-                  style={[styles.actionBtn, { backgroundColor: colors.text }]}
+                  style={[
+                    styles.actionBtn,
+                    { backgroundColor: canSend ? colors.text : colors.surfaceHover },
+                    !canSend ? styles.actionDisabled : null,
+                  ]}
                 >
-                  <Ionicons name="arrow-up" size={20} color={colors.background} />
+                  <Ionicons name="arrow-up" size={20} color={canSend ? colors.background : colors.textMuted} />
                 </AnimatedPressable>
               )}
             </View>
@@ -753,6 +759,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionDisabled: {
+    opacity: 0.56,
   },
   /* frontend `.send-btn.active` glow (`0 2px 10px accent/.22,
    * `0 4px 18px accent/.12`). RN has no CSS transition, so the swap

@@ -222,31 +222,38 @@ export function ComposerToolsMenu({
     : surface === 'topic'
       ? Math.min(620, viewportWidth - 16)
       : Math.min(280, viewportWidth - 16);
-  const maxHeight = Math.max(120, Math.min(viewportHeight / 2, 560));
-  const estimatedHeight = Math.min(maxHeight, 52 + filteredRows.length * 52);
   const target = anchor || {
     x: 20,
     y: Math.max(8, viewportHeight - 118),
     width: 40,
     height: 40,
   };
-  const desiredLeft = compact ? target.x - 12 : target.x;
+  // On phones the trigger sits in the composer's bottom control row. Anchor
+  // against the card's top edge so the menu clears the whole Composer rather
+  // than merely clearing the + button.
+  const placementTarget = compact ? { ...target, y: Math.max(8, target.y - 54), height: 0 } : target;
+  const viewportCap = Math.min(viewportHeight / 2, 560);
+  const maxHeight = Math.max(120, Math.min(viewportCap, placementTarget.y - 16));
+  const rowCount = compact ? filteredRows.length : Math.ceil(filteredRows.length / 2);
+  const estimatedHeight = Math.min(maxHeight, 70 + rowCount * 52);
+  const desiredLeft = compact ? placementTarget.x - 12 : placementTarget.x;
   const left = Math.max(8, Math.min(desiredLeft, viewportWidth - menuWidth - 8));
-  const belowTop = target.y + target.height + 8;
-  const aboveTop = target.y - estimatedHeight - 8;
+  const belowTop = placementTarget.y + placementTarget.height + 8;
+  const aboveTop = placementTarget.y - estimatedHeight - 8;
   const belowSpace = viewportHeight - belowTop - 8;
-  const aboveSpace = target.y - 8;
-  const rawTop = belowSpace >= estimatedHeight
-    ? belowTop
-    : aboveSpace >= estimatedHeight
+  const aboveSpace = placementTarget.y - 8;
+  const rawTop = aboveSpace >= estimatedHeight
       ? aboveTop
-      : Math.max(8, target.y - estimatedHeight - 8);
+    : belowSpace >= estimatedHeight
+      ? belowTop
+      : Math.max(8, placementTarget.y - estimatedHeight - 8);
   const top = Math.max(8, Math.min(rawTop, viewportHeight - estimatedHeight - 8));
 
   return (
     <Popover
       visible={visible}
       onClose={onClose}
+      scrimColor="transparent"
       maxWidth={menuWidth}
       testID="composer-tools-menu"
       style={[
@@ -264,7 +271,7 @@ export function ComposerToolsMenu({
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, !compact ? styles.listDesktop : null]}
         >
           {filteredRows.map((item) => (
             <AnimatedPressable
@@ -273,7 +280,7 @@ export function ComposerToolsMenu({
               accessibilityLabel={item.label}
               accessibilityState={{ selected: Boolean(item.active) }}
               onPress={item.onPress}
-              style={styles.item}
+              style={[styles.item, !compact ? styles.itemDesktop : null]}
             >
               <View style={styles.iconWrap}>
                 {item.customThinking ? (
@@ -327,7 +334,7 @@ export function ComposerToolsMenu({
           ) : null}
         </ScrollView>
 
-        <View style={[styles.searchRow, { borderTopColor: withAlpha(colors.border, 0.3) }]}>
+        {!compact ? <View style={[styles.searchRow, { borderTopColor: withAlpha(colors.border, 0.3) }]}>
           <Ionicons name="search-outline" size={16} color={colors.textMuted} />
           <TextInput
             value={query}
@@ -338,7 +345,7 @@ export function ComposerToolsMenu({
             autoCorrect={false}
             style={[styles.searchInput, { color: colors.text, fontFamily: typography.body }]}
           />
-        </View>
+        </View> : null}
     </Popover>
   );
 }
@@ -359,6 +366,10 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 2,
   },
+  listDesktop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   item: {
     width: '100%',
     minHeight: 52,
@@ -368,6 +379,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+  itemDesktop: {
+    width: '50%',
   },
   iconWrap: {
     width: 30,

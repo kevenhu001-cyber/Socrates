@@ -1,6 +1,54 @@
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 
+export interface Citation {
+  id: string;
+  url: string;
+  title?: string | null;
+  snippet?: string | null;
+  source?: string | null;
+}
+
+export interface ToolRun {
+  id: string;
+  tool: string;
+  phase: string;
+  startedAt: number;
+  endedAt?: number;
+  durationMs?: number;
+  elapsedMs?: number;
+}
+
+export type ToolApprovalDecision = 'accept' | 'acceptForSession' | 'decline' | 'interrupt';
+
+export interface ToolApproval {
+  id?: string;
+  runId: string;
+  approvalId: string;
+  requestId?: string;
+  kind?: string;
+  reason?: string | null;
+  command?: string | null;
+  cwd?: string | null;
+  changes?: JsonValue;
+  availableDecisions?: ToolApprovalDecision[];
+  status?: string;
+}
+
+export type ComposerCommand = 'attach' | 'write' | 'explore' | 'analyze' | 'exam' | 'skills' | 'prompt-templates';
+
+export interface PromptTemplate {
+  id: string;
+  name: string;
+  shortcut: string;
+  prompt: string;
+  description?: string | null;
+  builtIn?: boolean;
+  updatedAt?: string;
+}
+
+export type ArtifactKind = 'html' | 'markdown' | 'chart' | 'mermaid' | 'tldraw' | 'three' | 'code' | string;
+
 export interface User {
   id: string;
   email: string;
@@ -51,6 +99,7 @@ export interface ToolCall {
   results?: Array<Record<string, JsonValue>>;
   textOffset?: number;
   visualization?: JsonValue;
+  approval?: ToolApproval;
 }
 
 export interface Message {
@@ -64,6 +113,7 @@ export interface Message {
   reasoningContent?: string | null;
   attachments?: Attachment[];
   toolCalls?: ToolCall[];
+  citations?: Citation[];
   createdAt?: string | null;
 }
 
@@ -229,6 +279,7 @@ export interface ChatSseHandlers {
   onToolProgress?: (payload: JsonValue) => void;
   onToolCallDelta?: (payload: JsonValue) => void;
   onExecutionStart?: (payload: JsonValue) => void;
+  onToolApproval?: (payload: ToolApproval) => void;
   onError?: (message: string) => void;
   onDone?: () => void;
 }
@@ -291,7 +342,7 @@ export interface OutboxItem {
   createdAt: string;
 }
 
-export type ArtifactMessage =
+export type ArtifactBridgeMessage =
   | { type: 'ready'; artifactId: string }
   | { type: 'resize'; height: number }
   | { type: 'openLink'; url: string }
@@ -299,10 +350,14 @@ export type ArtifactMessage =
   | { type: 'share'; title: string; content: string }
   | { type: 'error'; message: string };
 
+/** @deprecated Use ArtifactBridgeMessage. */
+export type ArtifactMessage = ArtifactBridgeMessage;
+
 export type ChatSseEventName =
   | 'tool_use'
   | 'tool_result'
   | 'tool_progress'
   | 'tool_call_delta'
   | 'execution_start'
+  | 'tool_approval'
   | 'error';

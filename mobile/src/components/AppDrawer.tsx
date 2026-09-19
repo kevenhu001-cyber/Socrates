@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { EmbeddedTarget, Session } from '@socrates/contracts';
 import { useTheme, useThemeController } from '../theme/ThemeProvider';
-import { motionEasing, withAlpha } from '../theme/theme';
+import { motionEasing } from '../theme/theme';
 import { mobileDrawerWidth, useResponsive } from '../theme/responsive';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -13,6 +13,7 @@ import { BrandMark } from './BrandMark';
 import { AnimatedPressable } from './AnimatedPressable';
 import { ConfirmDialog } from './ConfirmDialog';
 import { usageOverlay, storageOverlay } from '../cmdK/overlayStores';
+import { cmdKStore } from '../cmdK/cmdKStore';
 
 type DrawerContextValue = {
   open: boolean;
@@ -376,10 +377,11 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
           { borderRadius: 8 },
         ]}
       >
-        <Ionicons name={item.icon} size={16} color={isActive ? colors.text : colors.textMuted} />
+        <Ionicons name={item.icon} size={isDesktop ? 16 : 20} color={isActive ? colors.text : colors.textMuted} />
         <Text
           style={[
             styles.itemText,
+            !isDesktop ? styles.itemTextCompact : null,
             {
               color: colors.text,
               fontFamily: isActive ? typography.medium : typography.body,
@@ -399,13 +401,11 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
   /* Permanent desktop rail uses the dedicated `rail` token
    * (web sidebar #171717 / #f7f7f5). The temporary drawer keeps the
    * translucent overlay tint under the BlurView. */
-  const panelBackground = permanent
-    ? colors.rail
-    : withAlpha(colors.source.bg.overlay, 0.72);
+  const panelBackground = colors.rail;
   return (
     <BlurView
       tint={isDark ? 'dark' : 'light'}
-      intensity={Platform.OS === 'web' ? 0 : 18}
+      intensity={0}
       style={[
         styles.panel,
         permanent ? { width: sidebarWidth ?? mobileDrawerWidth, maxWidth: sidebarWidth ?? mobileDrawerWidth, flex: 1 } : null,
@@ -422,6 +422,16 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
         {!permanent ? (
           <View style={styles.brandActions}>
             <AnimatedPressable
+              accessibilityLabel={t('cmdK.placeholder')}
+              onPress={() => {
+                closeDrawer();
+                cmdKStore.open();
+              }}
+              style={styles.headerAction}
+            >
+              <Ionicons name="search-outline" size={20} color={colors.textMuted} />
+            </AnimatedPressable>
+            <AnimatedPressable
               accessibilityLabel={t('sidebar.nav.new') || 'New chat'}
               onPress={() => activate(PRIMARY_ITEMS[0])}
               style={styles.headerAction}
@@ -432,7 +442,15 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
               <Ionicons name="close-outline" size={20} color={colors.textMuted} />
             </AnimatedPressable>
           </View>
-        ) : null}
+        ) : (
+          <AnimatedPressable
+            accessibilityLabel={t('cmdK.placeholder')}
+            onPress={() => cmdKStore.open()}
+            style={styles.headerAction}
+          >
+            <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+          </AnimatedPressable>
+        )}
       </View>
 
       {/* Main Scroll Content */}
@@ -676,7 +694,12 @@ const styles = StyleSheet.create({
   backdrop: { position: 'absolute', inset: 0 },
   /* Web mobile/tablet drawer: 300px. */
   panel: { width: '86%', maxWidth: mobileDrawerWidth, height: '100%', flex: 1, borderRightWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  panelCompact: { width: mobileDrawerWidth, maxWidth: mobileDrawerWidth },
+  panelCompact: {
+    width: mobileDrawerWidth,
+    maxWidth: mobileDrawerWidth,
+    borderTopRightRadius: 18,
+    borderBottomRightRadius: 18,
+  },
   panelSafe: { flex: 1 },
   brandRow: {
     height: 48,
@@ -697,10 +720,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 8,
     paddingHorizontal: 10,
-    height: 32,
+    height: 40,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 8,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   searchInput: {
     flex: 1,
@@ -716,9 +739,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  itemCompact: { minHeight: 44 },
+  itemCompact: { minHeight: 44, paddingHorizontal: 10, gap: 14, borderRadius: 12 },
   itemDesktop: { minHeight: 36 },
   itemText: { fontSize: 14 },
+  itemTextCompact: { fontSize: 15 },
   divider: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 8,

@@ -16,5 +16,6 @@ describe('Skeleton', () => {
       height: 14,
       borderRadius: 7,
     }));
+    act(() => tree!.unmount());
   });
 });

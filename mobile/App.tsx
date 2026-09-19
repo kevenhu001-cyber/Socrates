@@ -14,6 +14,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { EmbeddedTarget } from '@socrates/contracts';
 import { AppDrawer, AppDrawerProvider, profileOverlay, useAppDrawer, type NativeDestination } from './src/components/AppDrawer';
 import { usageOverlay, storageOverlay } from './src/cmdK/overlayStores';
+import { CmdKPalette } from './src/cmdK/CmdKPalette';
+import { cmdKStore } from './src/cmdK/cmdKStore';
 import { I18nProvider, useT } from './src/i18n';
 import { appStore, useAppStore } from './src/stores/appStore';
 import { getNetworkStatus, subscribeToNetworkStatus } from './src/native/network';
@@ -271,6 +273,10 @@ function NativeApp() {
   useEffect(() => {
     if (Platform.OS !== 'android') return undefined;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (cmdKStore.isOpen()) {
+        cmdKStore.close();
+        return true;
+      }
       if (Keyboard.isVisible()) {
         Keyboard.dismiss();
         return true;
@@ -329,6 +335,7 @@ function NativeApp() {
       >
         <NativeStack onRouteChange={setCurrentRoute} />
       </View>
+      {authStatus === 'signedIn' ? <CmdKPalette onNavigate={navigate} onOpenEmbedded={openEmbedded} /> : null}
       {/* P0 1:1: frontend-style `.share-modal` + `.alert-container`.
        *  Mounted at the root so they overlay any screen or drawer route. */}
       <ShareModal />

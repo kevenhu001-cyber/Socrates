@@ -56,7 +56,8 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
     tool_progress: handlers.onToolProgress,
     tool_call_delta: handlers.onToolCallDelta,
     execution_start: handlers.onExecutionStart,
-  }[event as 'tool_use' | 'tool_result' | 'tool_progress' | 'tool_call_delta' | 'execution_start'];
+    tool_approval: handlers.onToolApproval,
+  }[event as 'tool_use' | 'tool_result' | 'tool_progress' | 'tool_call_delta' | 'execution_start' | 'tool_approval'];
   if (toolHandler) {
     toolHandler(parsed as never);
     return;
