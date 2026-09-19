@@ -128,8 +128,8 @@ export function NewChatScreen({ navigation, route }: Props) {
          * `.topic-setup` uses two shrinkable spacers (2:1, top capped at
          * 200px) that seat the group ~42% down the surface rather than at
          * the optical centre. */}
-        <View style={styles.heroSpacer} />
-        <View style={styles.heroRegion}>
+        <View style={[styles.heroSpacer, isCompact ? styles.heroSpacerCompact : null]} />
+        <View style={[styles.heroRegion, isCompact ? styles.heroRegionCompact : null]}>
           <Enter delay={0}>
             <Text
               accessibilityRole="header"
@@ -151,7 +151,7 @@ export function NewChatScreen({ navigation, route }: Props) {
 
         {/* Central Composer Capsule */}
         <Enter delay={140}>
-        <View style={styles.composerCardWrap}>
+        <View style={[styles.composerCardWrap, isCompact ? styles.composerCardWrapCompact : null]}>
           <Composer
             value={state.draft}
             hasAttachments={state.pendingAttachments.length > 0}
@@ -174,7 +174,7 @@ export function NewChatScreen({ navigation, route }: Props) {
           />
         </View>
         </Enter>
-        <View style={styles.heroSpacerAfter} />
+        <View style={[styles.heroSpacerAfter, isCompact ? styles.heroSpacerAfterCompact : null]} />
       </ScrollView>
 
       {/* Tools Menu Modal 1:1 matching cur-mobile-menu.png */}
@@ -231,6 +231,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 0,
     paddingBottom: 16,
+    justifyContent: 'flex-end',
+    position: 'relative',
   },
   offline: {
     marginHorizontal: 14,
@@ -251,16 +253,28 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     maxHeight: 200,
   },
+  heroSpacerCompact: {
+    display: 'none',
+  },
   heroSpacerAfter: {
     /* `.topic-setup::after` — flex-grow 1, same collapse behaviour. */
     flexGrow: 1,
     flexShrink: 1,
     flexBasis: 0,
   },
+  heroSpacerAfterCompact: {
+    display: 'none',
+  },
   heroRegion: {
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  heroRegionCompact: {
+    position: 'absolute',
+    top: '39%',
+    left: 16,
+    right: 16,
   },
   greeting: {
     fontSize: 30,
@@ -278,5 +292,8 @@ const styles = StyleSheet.create({
   },
   composerCardWrap: {
     marginBottom: 0,
+  },
+  composerCardWrapCompact: {
+    width: '100%',
   },
 });

@@ -1181,6 +1181,7 @@ class AppStore {
         onToolProgress: (payload) => this.addToolEvent('tool_progress', payload, generation),
         onToolCallDelta: (payload) => this.addToolEvent('tool_call_delta', payload, generation),
         onExecutionStart: (payload) => this.addToolEvent('execution_start', payload, generation),
+        onToolApproval: (payload) => this.addToolEvent('tool_approval', payload, generation),
         onError: (message) => { void this.finishStream(message, generation); },
         onDone: () => { void this.finishStream(undefined, generation); },
       });

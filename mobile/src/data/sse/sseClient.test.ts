@@ -78,6 +78,14 @@ describe('SSE adapter', () => {
     expect(done).toBe(1);
   });
 
+  it('routes approval requests without reducing them to generic tool progress', () => {
+    const approvals: unknown[] = [];
+    dispatchSseFrame('event: tool_approval\ndata: {"runId":"r","approvalId":"a"}\n\n', {
+      onToolApproval: (payload) => approvals.push(payload),
+    });
+    expect(approvals).toEqual([{ runId: 'r', approvalId: 'a' }]);
+  });
+
   it('surfaces structured errors', () => {
     let message = '';
     dispatchSseFrame('event: error\ndata: {"message":"No connection"}\n\n', {

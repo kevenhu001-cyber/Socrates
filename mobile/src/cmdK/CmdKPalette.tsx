@@ -20,11 +20,8 @@ import { useThemeController } from '../theme/ThemeProvider';
 import { cmdKStore } from './cmdKStore';
 import { profileOverlay } from '../components/AppDrawer';
 import { usageOverlay, storageOverlay } from './overlayStores';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types';
-
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+import type { EmbeddedTarget } from '@socrates/contracts';
+import type { NativeDestination } from '../components/AppDrawer';
 
 type CmdKind = 'nav' | 'session' | 'theme' | 'skills' | 'settings';
 
@@ -51,11 +48,16 @@ function score(item: Command, q: string): number {
   return i === needle.length ? 20 : 0;
 }
 
-export function CmdKPalette() {
+export function CmdKPalette({
+  onNavigate,
+  onOpenEmbedded,
+}: {
+  onNavigate: (route: NativeDestination) => void;
+  onOpenEmbedded: (target: EmbeddedTarget, title: string) => void;
+}) {
   const { colors, radius, spacing, typography, contentWidth, fontScale } = useTheme();
   const fs = (n: number) => Math.round(n * fontScale);
   const t = useT();
-  const nav = useNavigation<Nav>();
   const { mode: themeMode, setPreference: setThemePreference } = useThemeController();
   const state = useAppStore();
   const sessions = state.sessions;
@@ -82,6 +84,22 @@ export function CmdKPalette() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return undefined;
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        cmdKStore.toggle();
+      }
+      if (event.key === 'Escape' && cmdKStore.isOpen()) {
+        event.preventDefault();
+        cmdKStore.close();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
     const show = (e: KeyboardEvent) => {
       keyboardHeight.current = e.endCoordinates?.height ?? 0;
       setKeyboardOffset(keyboardHeight.current);
@@ -98,9 +116,9 @@ export function CmdKPalette() {
     };
   }, []);
 
-  const navigate = (route: keyof RootStackParamList) => {
+  const navigate = (route: NativeDestination) => {
     cmdKStore.close();
-    setTimeout(() => nav.navigate(route as never), 0);
+    setTimeout(() => onNavigate(route), 0);
   };
 
   const navItems: Command[] = useMemo(
@@ -142,7 +160,7 @@ export function CmdKPalette() {
           cmdKStore.close();
           try {
             await appStore.openSession(session.id);
-            nav.navigate('Chat');
+            onNavigate('Chat');
           } catch {
             /* ignore — surface in toast later */
           }
@@ -182,7 +200,7 @@ export function CmdKPalette() {
         icon: 'flash-outline',
         run: () => {
           cmdKStore.close();
-          (nav.navigate as (route: string, params: unknown) => void)('Embedded', { target: 'skills', title: 'skills' });
+          onOpenEmbedded('skills', t('sidebar.more.skills'));
         },
       },
       {
@@ -295,7 +313,7 @@ export function CmdKPalette() {
                 ref={inputRef}
                 value={query}
                 onChangeText={setQuery}
-                placeholder={t('search.placeholder') || 'Search anything…'}
+                placeholder={t('cmdK.placeholder') || 'Search anything…'}
                 placeholderTextColor={colors.textMuted}
                 style={[styles.input, { color: colors.text, fontFamily: typography.body, fontSize: fs(15) }]}
                 autoCorrect={false}

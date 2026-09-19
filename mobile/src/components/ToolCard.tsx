@@ -1,8 +1,8 @@
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { JsonValue, ToolCall } from '@socrates/contracts';
-import { filesApi } from '../data/api/client';
+import type { JsonValue, ToolApproval, ToolApprovalDecision, ToolCall } from '@socrates/contracts';
+import { agentRunsApi, filesApi } from '../data/api/client';
 import { native } from '../native/native';
 import { setClipboardText } from '../native/clipboard';
 import { chartBody, mermaidBody, RichBlock, type RichLib } from '../render/RichBlock';
@@ -20,6 +20,7 @@ const MERMAID_LIBS: RichLib[] = ['mermaid'];
 
 const STATUS_KEY: Record<ToolStatus, string> = {
   running: 'tool.statusRunning',
+  awaiting: 'tool.awaitingApproval',
   done: 'tool.statusDone',
   failed: 'tool.statusFailed',
 };
@@ -346,6 +347,71 @@ function statusFor(call: ToolCall | MobileToolCall): ToolStatus {
   return mobile.status ?? (call.isError ? 'failed' : (call.output != null ? 'done' : 'running'));
 }
 
+function ApprovalPanel({ approval }: { approval: ToolApproval }) {
+  const { colors, typography } = useTheme();
+  const t = useT();
+  const [busy, setBusy] = useState<ToolApprovalDecision | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pending = (approval.status || 'pending') === 'pending' && !result;
+  const decide = useCallback(async (decision: ToolApprovalDecision) => {
+    setBusy(decision);
+    setError(null);
+    try {
+      if (decision === 'interrupt') await agentRunsApi.interrupt(approval.runId);
+      else await agentRunsApi.decideApproval(approval.runId, approval.approvalId, decision);
+      setResult(decision === 'decline'
+        ? t('tool.approvalDeclined')
+        : decision === 'interrupt'
+          ? t('tool.statusStopped')
+          : t('tool.approvalAccepted'));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t('tool.approvalFailed'));
+    } finally {
+      setBusy(null);
+    }
+  }, [approval.approvalId, approval.runId, t]);
+
+  const facts = [
+    approval.command ? [t('tool.command'), approval.command] : null,
+    approval.cwd ? [t('tool.workingDirectory'), approval.cwd] : null,
+    approval.reason ? [t('tool.reason'), approval.reason] : null,
+  ].filter((fact): fact is string[] => Boolean(fact));
+
+  return (
+    <View style={[styles.approval, { backgroundColor: colors.toolCardBgSunken, borderColor: colors.warning }]}>
+      <View style={styles.approvalHeading}>
+        <Ionicons name="shield-checkmark-outline" size={18} color={colors.warning} />
+        <Text style={[styles.approvalTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('tool.codexApproval')}</Text>
+      </View>
+      {facts.map(([name, value]) => (
+        <View key={name} style={styles.approvalFact}>
+          <Text style={[styles.approvalLabel, { color: colors.textSubtle }]}>{name}</Text>
+          <Text selectable style={[styles.approvalValue, { color: colors.textMuted, fontFamily: typography.mono }]}>{value}</Text>
+        </View>
+      ))}
+      {result ? <Text style={[styles.approvalStatus, { color: colors.success }]}>{result}</Text> : null}
+      {error ? <Text style={[styles.approvalStatus, { color: colors.danger }]}>{error}</Text> : null}
+      {pending ? (
+        <View style={styles.approvalActions}>
+          <AnimatedPressable disabled={busy !== null} onPress={() => { void decide('accept'); }} style={[styles.approvalButton, { backgroundColor: colors.accent }]}>
+            <Text style={[styles.approvalButtonText, { color: colors.textInverse, fontFamily: typography.medium }]}>{t('tool.approveOnce')}</Text>
+          </AnimatedPressable>
+          <AnimatedPressable disabled={busy !== null} onPress={() => { void decide('acceptForSession'); }} style={[styles.approvalButton, { borderColor: colors.border, borderWidth: 1 }]}>
+            <Text style={[styles.approvalButtonText, { color: colors.text, fontFamily: typography.medium }]}>{t('tool.approveRun')}</Text>
+          </AnimatedPressable>
+          <AnimatedPressable disabled={busy !== null} onPress={() => { void decide('decline'); }} style={styles.approvalButton}>
+            <Text style={[styles.approvalButtonText, { color: colors.danger, fontFamily: typography.medium }]}>{t('tool.decline')}</Text>
+          </AnimatedPressable>
+          <AnimatedPressable disabled={busy !== null} onPress={() => { void decide('interrupt'); }} style={styles.approvalButton}>
+            <Text style={[styles.approvalButtonText, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('tool.interrupt')}</Text>
+          </AnimatedPressable>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 /**
  * One card per tool call. The reducer retains every terminal payload, so this
  * component can render results, artifacts, plans/specs and visualisation data
@@ -409,6 +475,8 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
         <View style={styles.stateIcon}>
           {status === 'running' ? (
             <ActivityIndicator size={14} color={colors.textSubtle} />
+          ) : status === 'awaiting' ? (
+            <Ionicons name="shield-checkmark-outline" size={15} color={colors.warning} />
           ) : status === 'done' ? (
             <Ionicons name="checkmark-circle" size={15} color={colors.success} />
           ) : (
@@ -437,7 +505,7 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
         ) : null}
 
         {/* .agent-tool-status: status label + elapsed time (toolCards.js:429). */}
-        <Text numberOfLines={1} style={[styles.toolStatus, { color: status === 'failed' ? colors.danger : colors.textSubtle }]}>
+        <Text numberOfLines={1} style={[styles.toolStatus, { color: status === 'failed' ? colors.danger : status === 'awaiting' ? colors.warning : colors.textSubtle }]}>
           {[statusLabel, duration].filter(Boolean).join(' · ')}
         </Text>
 
@@ -502,6 +570,7 @@ export const ToolCard = memo(function ToolCard({ call }: { call: ToolCall | Mobi
           {call.visualization ? <VisualizationCard value={call.visualization} /> : null}
           {call.results?.length ? <SourceResults results={call.results} /> : null}
           {call.artifacts?.length ? <Artifacts artifacts={call.artifacts} /> : null}
+          {call.approval ? <ApprovalPanel approval={call.approval} /> : null}
 
           {!body && status !== 'running' && !details && !call.plan && !call.spec && !call.visualization && !call.results?.length && !call.artifacts?.length ? (
             <Text style={[styles.noOutputText, { color: colors.textSubtle }]}>{t('tool.noOutput')}</Text>
@@ -561,4 +630,14 @@ const styles = StyleSheet.create({
   artifact: { minHeight: 45, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 8 },
   artifactText: { flex: 1, minWidth: 0 },
   artifactError: { fontSize: 11, lineHeight: 16 },
+  approval: { borderWidth: 1, borderRadius: 12, padding: 12, marginTop: 8, gap: 8 },
+  approvalHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  approvalTitle: { fontSize: 13, flex: 1 },
+  approvalFact: { gap: 3 },
+  approvalLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  approvalValue: { fontSize: 11, lineHeight: 16 },
+  approvalStatus: { fontSize: 12, lineHeight: 17 },
+  approvalActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
+  approvalButton: { minHeight: 36, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  approvalButtonText: { fontSize: 12 },
 });

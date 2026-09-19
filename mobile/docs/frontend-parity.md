@@ -1,156 +1,55 @@
-# Frontend → Mobile Parity Map
+# Web → Expo Android parity matrix
 
-Ground truth for the reverse-align plan (see [inherited-munching-book.md](../../../../../../Users/Jiacheng/.claude/plans/inherited-munching-book.md)). Each row maps a mobile Screen to its frontend counterpart (or to a frontend visual cluster that may not exist as a Screen per se). Every Phase 2 PR uses this table as its acceptance target.
+This file records the current, executable parity contract. The Vite app is the
+end-user reference; Android may differ only where the platform requires safe
+areas, system back, permissions, notifications, haptics, or system sharing.
 
-## Conventions
+The machine-readable source is [`parity-manifest.json`](./parity-manifest.json).
+Run `npm run check:parity` whenever navigation, overlays, translations, or the
+Web UI changes. The check reads the real navigator, mounted components, source
+translation calls, and latest commit touching `frontend/`; this document alone
+is never evidence of parity.
 
-- **Status legend**: ✅ matched · 🟡 partial — gap to close · 🔴 no current equivalent — new build
-- **Frontend reference column**: paths are repo-relative to `frontend/`. `…js` is the legacy 10K-line `main.js` unless prefixed `src/`.
-- **`alignment-budget` column**: rough estimate (1 / 2 / 3 = half-day / 1 day / 2-3 days) for an engineer familiar with the mobile codebase. These are *rough* — they swell once a modal ecosystem gets wired up.
-- **`parity-test` column**: existing Playwright spec in `frontend/e2e/` that the mobile e2e must reproduce, or **NEW** when mobile needs to mint a new spec because frontend never had one.
-
-## Screen parity (Phase 2)
-
-| # | mobile Screen | Status | Frontend reference | alignment-budget | parity-test |
+| Surface | Feature | State | Visual | Platform exception | Acceptance |
 |---|---|---|---|---|---|
-| 1 | [`NewChatScreen.tsx`](../../mobile/src/screens/NewChatScreen.tsx) | 🟡 | `src/ui/greeting.js` · `src/ui/homeIdeas.js` · `index.html` Home · `src/react/sidebar/Sidebar.tsx` | 3 | NEW (home / recent chats / model picker) |
-| 2 | [`ChatScreen.tsx`](../../mobile/src/screens/ChatScreen.tsx) | 🟡 | `index.html` chat · `src/render/markdown.ts` · `src/ui/toolCards.js` · `src/ui/composerTools.js` | 2 (tool cards) + 3 (composer) | `frontend/e2e/chat-streaming.spec.mjs` |
-| 3 | [`TutorScreen.tsx`](../../mobile/src/screens/TutorScreen.tsx) | 🟡 | `src/tutor/` · `src/tutorSocratic.js` · `index.html` tutor | 3 | NEW |
-| 4 | [`RecentsScreen.tsx`](../../mobile/src/screens/RecentsScreen.tsx) (Library) | 🟡 | `src/ui/sidebar.js` · `src/react/sidebar/SessionList.tsx` | 2 | `frontend/e2e/session-list.spec.mjs` (if exists) |
-| 5 | [`ProjectsScreen.tsx`](../../mobile/src/screens/ProjectsScreen.tsx) | 🟡 | `src/ui/projects.js` · sidebar 项 | 2 | NEW |
-| 6 | [`ScheduledScreen.tsx`](../../mobile/src/screens/ScheduledScreen.tsx) | 🟡 | `src/ui/scheduled.js` · `index.html` | 2 | NEW |
-| 7 | [`PluginsScreen.tsx`](../../mobile/src/screens/PluginsScreen.tsx) | 🟡 | `src/extensions/` · `src/react/extensions/` | 2 | NEW |
-| 8 | [`ExamScreen.tsx`](../../mobile/src/screens/ExamScreen.tsx) | 🟡 | `src/ui/exam.js` · `src/react/exam/` | 3 | NEW (exam e2e still mostly manual) |
-| 9 | [`SearchScreen.tsx`](../../mobile/src/screens/SearchScreen.tsx) | 🟡 | `src/ui/findInSession.js` · `src/react/find-in-session/` | 2 | NEW |
-| 10 | [`KnowledgeScreen.tsx`](../../mobile/src/screens/KnowledgeScreen.tsx) | 🟡 | `src/kb/` 边界 / 记忆树 | 3 | NEW |
-| 11 | [`MistakesScreen.tsx`](../../mobile/src/screens/MistakesScreen.tsx) | 🟡 | `src/ui/mistakeBook.js` · `test/mistakeBook.test.mjs` | 2 | NEW |
-| 12 | [`SettingsScreen.tsx`](../../mobile/src/screens/SettingsScreen.tsx) | 🟡 | `src/ui/settings.js` · `src/react/settings/` | 3 | `frontend/e2e/settings-modal.spec.mjs` |
-| 13 | [`WorkspaceScreen.tsx`](../../mobile/src/screens/WorkspaceScreen.tsx) | 🔴 | `src/ui/canvas.js` · `src/react/canvas/` (Tiptap — DOM-bound) | 5 (mostly documentation + controlled WebView bridge) | NEW (`mobile/docs/workspace-tiptap.md`) |
-| 14 | [`EmbeddedWebScreen.tsx`](../../mobile/src/screens/EmbeddedWebScreen.tsx) | ✅ | `index.html` skills · apiSettings iframe | 1 | keep existing |
-| 15 | [`ShareScreen.tsx`](../../mobile/src/screens/ShareScreen.tsx) | 🔴 | `src/ui/share.js` · `src/react/shareModal/` | 1 — converts to a modal | NEW |
-| 16 | [`ArtifactPreviewScreen.tsx`](../../mobile/src/screens/ArtifactPreviewScreen.tsx) | 🟡 | `src/render/viz.js` (source/reload/expand/fullscreen) | 3 | NEW |
-| 17 | [`MoreScreen.tsx`](../../mobile/src/screens/MoreScreen.tsx) | 🔴 | `src/react/morePopover/` | 1 — converts to a popover | NEW |
-| 18 | [`AuthScreen.tsx`](../../mobile/src/screens/AuthScreen.tsx) | 🟡 | `src/auth/` · `index.html` auth | 2 | `frontend/e2e/auth-*.spec.mjs` |
+| Auth | email/password, code, OAuth handoff, guest mode | implemented | partial | native secure storage/browser handoff | Android auth Detox + error/offline states |
+| Home | greeting, mode switch, model/incognito, composer | implemented | phone P0 geometry fixed; desktop pending final diff | IME/safe area | 390×844, 412×915, 768×1024, 1440×900 screenshots |
+| Drawer | nav, grouped sessions, search, account/footer | implemented | P1 token/geometry alignment in progress | Android back dismisses | phone/tablet screenshots + navigation test |
+| Composer | attachments, effort, voice, send/stop, growth | implemented | disabled state and phone geometry aligned | native TextInput/SpeechRecognizer | empty/focused/multiline/streaming/IME tests |
+| Composer tools | files, workflows, exam, skills, plugins | implemented | anchored above composer; no page scrim | native pickers | ordering, scroll, outside/Escape dismiss |
+| Chat | streaming, stop/retry, attachments, message actions | implemented | partial | native scroll/IME | reducer fixtures + Android full turn |
+| Tool runs | progress, result, error, artifacts, visualizations | implemented | partial | sandbox WebView islands | tool reducer + artifact bridge tests |
+| Tool approval | command/path/risk, allow once/run, decline, interrupt | implemented client contract/UI | partial | system back | SSE fixture + API decision integration |
+| Rich content | Markdown/table/code | native | close | — | render unit tests |
+| Rich islands | KaTeX, Mermaid, ECharts, HTML artifact | controlled WebView | partial | WebView required | CSP/bridge/fallback tests |
+| Tutor | diagnosis, boundary, teaching stages, chat | implemented | partial | deep link may enter dedicated screen | diagnosis→teaching Detox |
+| Library | files/artifacts CRUD and preview | implemented | partial | native file/share sheets | loading/empty/data/error CRUD |
+| Projects | filters and CRUD | implemented | close, P1 spacing remains | — | CRUD + visual matrix |
+| Scheduled | templates, filters and CRUD | implemented | close, P1 hierarchy remains | notifications | CRUD + visual matrix |
+| Plugins | directory/connect/manage | implemented | partial | OAuth browser handoff | connect/error/refresh states |
+| Exam | generate, answer, grade, retry | implemented | partial | — | full exam Detox |
+| Knowledge | graph/list/details/notes | implemented | partial | graph island allowed | data/empty/error and note save |
+| Mistakes | filters, resolve/reopen/delete/redo | implemented | partial | — | CRUD + redo flow |
+| Search | global search | implemented | partial | hardware keyboard shortcut | empty/data/error + navigation |
+| In-chat find | current conversation only | implemented | close | Ctrl/⌘F on hardware keyboard | next/previous/close |
+| CmdK | global nav/session/theme/settings commands | mounted and reachable | partial | Ctrl/⌘K plus drawer trigger | keyboard, touch, Android back |
+| Settings/display/profile/usage/storage/share | fields and actions | implemented | partial | complex phone UI may be full-screen native | overlay registration + state tests |
+| Prompt templates | shared contract exists | missing native repository/manager | missing | Android storage adapter required | CRUD, shortcut selection, persistence |
 
-Total Screen-budget: ~ 33 engineer-days. Phase 2 reviews generally need 2 extra reviewers because the changes cut across most of the app shell.
+## Controlled WebView registry
 
-## Component parity (Phase 1 / 2)
+Only the entries in `parity-manifest.json` are allowed. Product pages may not
+fall back to a full-page WebView. Every entry declares its routes, bridge
+version, CSP policy, and native error fallback.
 
-| Component | Status | Frontend reference | Notes |
-|---|---|---|---|
-| [`Composer.tsx`](../../mobile/src/components/Composer.tsx) | 🟡 | `src/ui/composerAutoHeight.js` · `src/ui/composerTools.js` | Attach + text + send capsule restored; `attachments`/`onRemoveAttachment` props render the `.attachment-chips` strip (`AttachmentChip`), live `contentWidth` maxWidth, focus border + send/stop states aligned. Remaining: auto-resize glide animation, voice-input integration pending `expo-speech-recognition`. |
-| [`AppDrawer.tsx`](../../mobile/src/components/AppDrawer.tsx) | 🟡 | `src/react/sidebar/Sidebar.tsx` (desktop) · `src/ui/sidebar.js` (mobile drawer) | Nav order now mirrors `#sidebarNav` (Home/Projects/Library/Scheduled/Plugins/More) + `activeRoute` highlight + session time-group headers + translateX slide-in. Remaining: permanent `<aside>` variant and resize handle. |
-| [`AppHeader.tsx`](../../mobile/src/components/AppHeader.tsx) | 🟡 | `index.html` topbar · `src/ui/effortPicker.js` | Add model picker chip + profile button. |
-| [`AnimatedPressable.tsx`](../../mobile/src/components/AnimatedPressable.tsx) | ✅ | — | Keep — velocity easing matches `easing.out`. |
-| [`BrandMark.tsx`](../../mobile/src/components/BrandMark.tsx) | ✅ | — | Keep — already references the right asset. |
-| [`MessageBubble.tsx`](../../mobile/src/components/MessageBubble.tsx) | 🟡 | `src/react/message-list/MessageItem.tsx` · `src/ui/toolCards.js` | Bubble metrics aligned to `chat-surface.css` (15px radius, 11×16, `userBubble` fill, `min(86%,620px)`); toolbar action set now matches `MessageToolbar`. Remaining: `{cite}` superscript, hover-reveal semantics, `.shimmer-text`. |
-| [`Screen.tsx`](../../mobile/src/components/Screen.tsx) | 🟡 | `src/styles/layout/app-shell.css` | Convert to flex `app-shell` (sidebar slot + main slot + composer slot). |
-| [`ToolCard.tsx`](../../mobile/src/components/ToolCard.tsx) | 🟡 | `src/ui/toolCards.js` | Match frontend's expanded/collapsed visuals + source/reload/expand/fullscreen row. |
-| [`ArtifactWebView.tsx`](../../mobile/src/components/ArtifactWebView.tsx) | ✅ | `src/render/viz.js` iframe sandbox | Keep — already used for `viz` fences. |
-| (new) `Sidebar.tsx` | 🔴 | `src/react/sidebar/Sidebar.tsx` | Phase 2.3 deliverable. |
-| (new) `ModelPicker.tsx` | 🔴 | `src/ui/effortPicker.js` · `src/modelPicker.js` | Phase 2.2 deliverable. |
-| (new) `DisplayPrefsPopover.tsx` | 🔴 | `src/ui/displayPrefs.js` | Phase 3.7 deliverable. |
-| (new) `ToolRunPanel.tsx` | 🔴 | `src/react/thinking-panel/` | Phase 3.5 deliverable. |
-| (new) `PromptTemplatePicker.tsx` | 🔴 | `src/react/promptTemplatesModal/` | Phase 3.6 deliverable. |
+## Release gate
 
-## Modal parity (Phase 3)
-
-| Modal | Status | Frontend reference | mobile landing |
-|---|---|---|---|
-| CmdK | 🔴 | `src/react/cmdk/` · `src/ui/cmdK.js` | `mobile/src/modals/CmdKModal.tsx` (modal, not route) |
-| SettingsOverlay | 🔴 | `src/react/settings/` | `mobile/src/modals/SettingsOverlay.tsx` |
-| ConfirmDialog | 🔴 | `src/react/confirm/` | `mobile/src/modals/ConfirmDialog.tsx` |
-| ShareModal | 🟡 | `src/react/shareModal/` | `mobile/src/components/ShareModal.tsx` exists (copy + native share); visibility radios + revoke deferred (backend `sharesApi` lacks them) |
-| ProfileModal | 🔴 | `src/react/profileModal/` | `mobile/src/modals/ProfileModal.tsx` |
-| UsageModal | 🔴 | `src/react/usageModal/` | `mobile/src/modals/UsageModal.tsx` |
-| PromptTemplatesModal | 🔴 | `src/react/promptTemplatesModal/` | `mobile/src/modals/PromptTemplatesModal.tsx` |
-| StorageModal | 🔴 | `src/react/storageModal/` | `mobile/src/modals/StorageModal.tsx` |
-
-Mount spec — every modal registers through `mobile/src/modals/index.tsx` so the gateway logic doesn't fork per surface. Same pattern as `frontend/src/react/lib/boot/specs.tsx`.
-
-## Render parity (Phase 3)
-
-| Render surface | Status | Reference | mobile landing |
-|---|---|---|---|
-| Markdown prose / lists / tables / quote / hr / code | ✅ | `frontend/src/render/markdown.ts` | `mobile/src/render/MarkdownView.tsx`; code blocks now render the web card (28px header + lang + Copy), `preprocessLite`/`stripChatArtifacts` ported |
-| Code syntax highlight | 🟡 | `highlight.js` (frontend) | keep `react-native-syntax-highlighter` adoption deferred — see Risk 5 in `reversal-risks.md` |
-| Math (KaTeX) | ✅ | katex | already via `RichBlock` |
-| Mermaid | ✅ | mermaid | already via `RichBlock` |
-| Plot / echarts | ✅ | echarts | already via `RichBlock` |
-| tldraw | 🔴 | frontend uses `tldraw` directly | add second WebView integration in `RichBlock` |
-| three.js | 🔴 | frontend uses `three` | add WebView in `RichBlock` |
-| Citation `{cite index="..."}` | 🔴 | `frontend/src/render/markdown.ts` `formatMsg()` | add to `mobile/src/render/markdown.ts` |
-
-## Boot parity
-
-| Step | Status | Reference | mobile landing |
-|---|---|---|---|
-| Auth bootstrap (cached user + `authApi.me()`) | ✅ | `main.js` | `mobile/src/stores/appStore.ts` already matches |
-| Network status + AppState resume | ✅ | `main.js` | matches via `subscribeToNetworkStatus` |
-| Theme resolution (mode/preference) | 🟡 | `displayPrefs.js` | `ThemeProvider` hydrates `displayPrefsStore` (fontScale/contentWidth/bg overrides); mode toggle lives in `AppDrawer` footer. Remaining: accent hue presets (mobile still `null`) |
-| Sidebar / composer / modal mount | 🟡 | `bootstrap.tsx` (`frontend/src/react/bootstrap.tsx`) | mobile uses RN Navigation; convert to side-by-side persistent sidebar at width ≥ 1080 |
-| Pre-paint background | n/a | `index.html` Capacitor hook | n/a on RN; `mobile/app.json` controls splash instead |
-
-## Per-Phase exit criteria (acceptance gates)
-
-- **Phase 1 exit**: `mobile && @socrates/theme && frontend` all pass `npm run typecheck`. Detox e2e produces a screenshot per Screen that visually matches `frontend/.snapshot` at the same viewport.
-- **Phase 2 exit**: every row above flipped to ✅ or 🟡 → 🟡 with a documented gap.
-- **Phase 3 exit**: every row flipped to ✅. WorkspaceScreen round-trip in Detox e2e.
-- **Phase 4 exit**: only one WebView point remains (`ArtifactWebView`); `embeddedBridge.test.ts` covers it.
-- **Phase 5 exit**: `mobile npm run export:web` produces < 4 MB, Playwright desktop-pass is green.
-- **Phase 6 exit**: PR removing `frontend/` is approved; CI mobile-only is the new merge gate.
-
-## Open questions to resolve before Phase 1
-
-1. Do we keep mobile's Inter / Newsreader / Noto Sans SC triple-font setup, or fold into `frontend`'s font fingerprint? (mobile today uses all three; matches except for the dropped Plus Jakarta Sans.)
-2. Does the new theme keep an `action` blue chip for primary buttons? frontend doesn't have one — the gold accent plays that role. If we drop it, every `<AnimatedPressable action={...} />` needs a follow-up migration.
-3. Does mobile keep the legacy `codexAgent` agent-side operations, or fold them into the larger unified chat flow that frontend is now heading toward?
-
-## 2026-09-18 status sync (Batch F — see `ui-gap-audit.md` for the per-item detail)
-
-Fixed in the working tree by this batch: scroll dead-zones inside `RichBlock`/`CanvasBlock`, `useAppStore` selector subscriptions + streaming/draft batching in `appStore`, hardcoded colors → palette tokens (`Mistakes`, `Composer` chips, `AppDrawer` backdrop, `Knowledge` scrim, `Projects`, `WebApp`, `ErrorBoundary`), three-tier scrim (`scrimModal/scrimConfirm/scrimDrawer`), `motionEasing` tokens wired into presses/slides/panels, new `AttachmentChip` + composer `attachments` strip, message toolbar/bubble metrics per `chat-surface.css`, fenced-code header card (lang + Copy), `RecentsScreen` session meta/mode dot/filter chips/time-group headers, `ExamScreen` review-option visuals, `markdown.ts` `preprocessLite`/`stripChatArtifacts` port, `RichBlock showActions` (source/reload/expand), `Screen scroll` prop pass-through, `Overlay` height cap + scrollable `ProfileOverlay`, `ToolCard` running-open/terminal-collapsed state machine, `CmdK` panel sizing, `AppDrawer` nav order corrected to `#sidebarNav`, `Toast` queue.
-
-Stale claims corrected by that audit: nav order "matches web" (it didn't — now fixed), scrim tier system "done" (now real), `contentWidth` 928 "unified" (now 768 per `--conversation-content-width`).
-
-Still open (recorded so the next batch picks them up): ShareModal visibility radios + revoke (needs `sharesApi` extensions), `StorageOverlay` archived-sessions domain, `UsageOverlay` 53×7 heatmap, `WorkspaceScreen` Tiptap canvas, tldraw/three.js in `RichBlock`, syntax highlighting, Android WebView pinch-zoom, plugin marketplace bridge, `ChatScreen` still renders its own inline pending-attachment chips instead of the new `Composer.attachments` prop, and several `viz.*`/`tool.*`/`common.copied` i18n keys still fall back to English.
-
-## Deferred features assessment (2026-09-18, read-only)
-
-Feasibility pass over the four remaining parity gaps. Verdicts first; evidence cites web and mobile files so the estimates are auditable.
-
-### (a) Workspace Tiptap canvas — ~2–3 days, WebView island recommended
-
-What the web actually ships is **not** a Tiptap workspace editor. The canvas is `frontend/src/react/canvas/CanvasBlock.tsx` — a sanitized-HTML `contentEditable` div with toolbar (orig/edit/copy/iterate/fullscreen), plus Tiptap only in the chat composer (`frontend/src/react/composer-input/RichComposer.tsx`). Mobile already has `mobile/src/components/CanvasBlock.tsx` with the full toolbar; the gap is that its edit mode is a plain `TextInput` storing markdown, while web edits **rendered HTML** (`innerHTML` in/out, persisted as `editedText`).
-
-Options:
-
-- **Recommended — RichBlock-style WebView island.** Extend `RichBlock`'s page template with a contentEditable body + sanitize-on-commit + `postMessage` bridge (`edited` html → native persists via existing `readCanvasEdit`/`saveCanvasEdit` in `data/offline/sqlite`). Reuses the proven auto-height/ready/fallback machinery; keeps RN gestures intact because edit mode can be confined to the Expand overlay (`interactive` prop already exists). Est. **2–3 days** including DOMPurify-equivalent sanitization parity (`frontend/src/react/canvas/sanitize.ts`) and tests.
-- Full `EmbeddedWebScreen` SPA route: **not recommended.** The canvas is a per-message inline block, not a standalone route — there is no SPA URL for it, so `mobile_target` cannot deep-link into it. Would require inventing a web route anyway.
-- Native Tiptap/ProseMirror port: **rejected** — DOM-bound (see `reversal-risks.md` R5); `@tiptap/react` cannot run outside a DOM.
-
-### (b) tldraw + three.js viz — ~1 day (three.js) / ~3–4 days (tldraw), WebView
-
-The gap is real but narrower than the doc claims: mobile `vizKindFor` (`mobile/src/render/markdown.ts:386`) only maps `mermaid`/`plot`/`html` fences, and `ToolCard`'s `VisualizationCard` (`mobile/src/components/ToolCard.tsx:235`) falls back to a bullet list for any template outside `line…histogram`/`flowchart…concept_map`. Web adapters live in `frontend/src/render/visualizationAdapters.js`: `mountThree` (~50 lines, `geometry_3d`), `mountWhiteboard` (tldraw, `whiteboard`), `mountGeoGebra` (`math_construction`), `mountPlotly` (`function`/`paper_chart`).
-
-- **`geometry_3d` → recommended, ~1 day.** Add a `'three'` entry to `RichBlock`'s `CDN` map (three UMD from jsdelivr), port `mountThree`'s ~50 lines into the bridge script, parse the spec JSON, and hook it in `vizKindFor`/`VisualizationCard`. WebGL works in `react-native-webview`; orbit interaction is confined to the Expand overlay, same trade-off as echarts tooltips.
-- **`whiteboard` (tldraw) → defer or scope to read-only, ~3–4 days if done.** tldraw v5 has no UMD bundle — it is ESM-only and needs bundling (`esbuild` a self-contained asset into `mobile/assets/` or a build step). Interactive editing also fights the FlatList touch model; a pragmatic ship is seeds-rendered, interactive only inside the Expand overlay, `domStorageEnabled` on for `persistenceKey`. A native port is off the table (no RN tldraw).
-- **`math_construction` (GeoGebra) → ~0.5 day** once a script-tag loader exists — web already loads it from the GeoGebra CDN at runtime, which a WebView can do identically.
-- **`function`/`paper_chart` → ~0.5–1 day** — either extend `chartOption` to emit echarts for these payloads or load plotly UMD (self-hosted copy exists at `frontend/src/vendor-files/plotly.min.js`).
-- Native port via `expo-gl`/`react-native-three`: **rejected** — days of new infra for a spec surface that already renders perfectly in a WebView.
-
-### (c) Plugin marketplace bridge — ~1–1.5 days, native REST (no WebView needed)
-
-`window.openPluginMarketplace` is a stub: `frontend/src/sidebar/nav.js:1102` — it just calls `renderPlugins()`, i.e. the directory itself *is* the marketplace. Mobile `PluginsScreen` already lists/connects/refreshes via `projectConnectorsApi` (`mobile/src/data/api/client.ts:277`). The real residual gaps, all already-exposed server routes:
-
-- `GET/PUT /api/project-connectors/:id/oauth-config` — web's `prepareOpenConnectorOAuth`/`openOAuthAppDialog` flow (`nav.js:622-679`) for user-supplied `oc_` OAuth apps; mobile skips it entirely. Add `oauthConfig` methods to `projectConnectorsApi` + a credentials overlay. (~0.5–1 day)
-- `DELETE /api/project-connectors/:id` — `disconnectConnector` (`nav.js:1097`); mobile has no disconnect. (~0.25 day)
-- `GET /api/connectors/arxiv/papers`, `POST /api/connectors/zotero`, `GET /api/connectors/zotero/items` — arXiv/Zotero dialogs (`nav.js:1050-1095`). Nice-to-have, ~0.5 day each.
-
-So: do **not** embed the SPA via `EmbeddedWebScreen` (the `plugins` target deliberately routes to the native screen — `embeddedBridge.ts:15`). Port the three endpoint groups natively instead.
-
-### (d) Syntax highlight — ~0.5–1 day, client-side only
-
-No server-rendered HTML path exists. `publicShares.ts` returns raw `content`/`rawText` and lets the client re-render; hljs runs exclusively in the browser (`frontend/src/vendor-files/highlight.min.js`). So a server-side HTML endpoint would be *new* infrastructure — rejected.
-
-- **Recommended:** `highlight.js@^11.9.0` is already in `mobile/package.json` (declared, unused). Run `hljs.highlight(code, {language})` in `CodeBlock` (`MarkdownView.tsx:543`) and map `hljs-*` token classes to palette colors via nested `<Text>` spans. Pure RN, offline, no WebView. Est. ~0.5–1 day including a token-color map matching the web theme.
-- Alternative for pixel-exact output: load the vendored `highlight.min.js` inside `RichBlock` — works but costs a WebView per code block; only worth it if token colors must be identical.
+- Viewports: 390×844, 412×915, 768×1024, 1440×900.
+- Locales: English and Chinese. Themes: dark and light.
+- States: loading, empty, data, error, offline, streaming, complete.
+- Android emulator or device screenshots are authoritative; Expo Web is only
+  a fast rendering proxy.
+- Main geometry tolerance is 4dp and type tolerance is 1dp.
+- Raw translation keys, unreachable overlays, misleading enabled controls,
+  unregistered routes/WebViews, stale Web baselines, and open Jest handles are
+  release-blocking failures.

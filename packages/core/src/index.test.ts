@@ -44,6 +44,7 @@ describe('@socrates/core', () => {
       toolProgress: [] as unknown[],
       toolCallDelta: [] as unknown[],
       executionStart: [] as unknown[],
+      toolApproval: [] as unknown[],
     };
     const handlers = {
       onToolUse: (v: unknown) => captured.toolUse.push(v),
@@ -51,6 +52,7 @@ describe('@socrates/core', () => {
       onToolProgress: (v: unknown) => captured.toolProgress.push(v),
       onToolCallDelta: (v: unknown) => captured.toolCallDelta.push(v),
       onExecutionStart: (v: unknown) => captured.executionStart.push(v),
+      onToolApproval: (v: unknown) => captured.toolApproval.push(v),
     };
 
     dispatchChatSseFrame('event: tool_use\ndata: {"id":"a"}\n\n', handlers);
@@ -58,12 +60,14 @@ describe('@socrates/core', () => {
     dispatchChatSseFrame('event: tool_progress\ndata: {"step":2}\n\n', handlers);
     dispatchChatSseFrame('event: tool_call_delta\ndata: {"args":"x"}\n\n', handlers);
     dispatchChatSseFrame('event: execution_start\ndata: {"execId":"e1"}\n\n', handlers);
+    dispatchChatSseFrame('event: tool_approval\ndata: {"runId":"r1","approvalId":"a1"}\n\n', handlers);
 
     expect(captured.toolUse).toEqual([{ id: 'a' }]);
     expect(captured.toolResult).toEqual([{ id: 'a', output: 'done' }]);
     expect(captured.toolProgress).toEqual([{ step: 2 }]);
     expect(captured.toolCallDelta).toEqual([{ args: 'x' }]);
     expect(captured.executionStart).toEqual([{ execId: 'e1' }]);
+    expect(captured.toolApproval).toEqual([{ runId: 'r1', approvalId: 'a1' }]);
   });
 
   it('falls back to "Stream failed" when the error payload has no message', () => {

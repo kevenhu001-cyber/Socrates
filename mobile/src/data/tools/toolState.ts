@@ -1,4 +1,4 @@
-import type { JsonValue, ToolCall } from '@socrates/contracts';
+import type { JsonValue, ToolApproval, ToolCall } from '@socrates/contracts';
 
 /* The server keys every tool frame by the tool-call id and emits `tool_use` as
  * an ARRAY of calls (see server/src/routes/chat/stream.ts). The mobile store
@@ -12,9 +12,10 @@ export type ToolEventKind =
   | 'tool_result'
   | 'tool_progress'
   | 'tool_call_delta'
-  | 'execution_start';
+  | 'execution_start'
+  | 'tool_approval';
 
-export type ToolStatus = 'running' | 'done' | 'failed';
+export type ToolStatus = 'running' | 'awaiting' | 'done' | 'failed';
 
 export interface MobileToolCall extends ToolCall {
   status?: ToolStatus;
@@ -129,6 +130,25 @@ export function reduceToolEvent(
   const record = asRecord(payload);
   if (!record) return calls;
   const id = str(record.id);
+
+  if (kind === 'tool_approval') {
+    const runId = str(record.runId);
+    const approvalId = str(record.approvalId);
+    if (!runId || !approvalId) return calls;
+    const targetId = id || calls.find((call) => call.executionId === runId)?.id || `approval:${approvalId}`;
+    const approval = {
+      ...record,
+      id: targetId,
+      runId,
+      approvalId,
+      status: str(record.status) || 'pending',
+    } as unknown as ToolApproval;
+    return upsert(calls, targetId, {
+      name: str(record.name) || str(record.kind) || 'workspace_agent',
+      approval,
+      status: 'awaiting',
+    });
+  }
 
   if (kind === 'tool_call_delta') {
     // Deltas may precede the tool_use frame; buffer argument text by id.

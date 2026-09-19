@@ -13,6 +13,7 @@ import type {
   ScheduledTask,
   Session,
   User,
+  ToolApprovalDecision,
 } from '@socrates/contracts';
 import { clearTokens, readTokens, writeCachedUser, writeTokens } from './tokenStore';
 import { API_BASE_URL, AUTH_BASE_URL, WEB_BASE_URL } from './config';
@@ -424,6 +425,16 @@ export const notificationsApi = {
     method: 'POST', body: JSON.stringify({ token, platform: 'android', deviceId, channels: ['long_tasks', 'replies', 'mentions'] }),
   }),
   unregister: () => apiRequest('/notifications/unregister', { method: 'DELETE' }),
+};
+
+export const agentRunsApi = {
+  decideApproval: (runId: string, approvalId: string, decision: Exclude<ToolApprovalDecision, 'interrupt'>) =>
+    apiRequest(`/agent-runs/${encodeURIComponent(runId)}/approvals/${encodeURIComponent(approvalId)}`, {
+      method: 'POST', body: JSON.stringify({ decision }),
+    }),
+  interrupt: (runId: string) => apiRequest(`/agent-runs/${encodeURIComponent(runId)}/interrupt`, {
+    method: 'POST', body: '{}',
+  }),
 };
 
 export function chatStreamUrl(sessionId: string) {

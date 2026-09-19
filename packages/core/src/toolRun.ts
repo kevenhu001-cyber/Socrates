@@ -17,15 +17,8 @@
  * make live SSE delivery deterministic while a response is in progress.
  */
 
-export interface ToolRun {
-  id: string;
-  tool: string;
-  phase: string;
-  startedAt: number;
-  endedAt?: number;
-  durationMs?: number;
-  elapsedMs?: number;
-}
+import type { ToolRun } from '@socrates/contracts';
+export type { ToolRun } from '@socrates/contracts';
 
 export interface ToolRunSummary {
   total: number;
