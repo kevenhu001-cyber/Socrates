@@ -662,6 +662,14 @@ if [[ -n "${APP_FILE:-}" && -f "$APP_DEPLOYED_PATH" ]]; then
   PUBLIC_APP_MATCH=0
   for attempt in 1 2 3; do
     if curl -sfL --max-time 8 "$APP_FRONTEND_GATE_URL" -o "$PUBLIC_APP_TMP"; then
+      # CDN "JS detection" injections (e.g. Cloudflare's challenge-platform,
+      # added when the domain moved behind Cloudflare) append a <script>
+      # carrying a per-request nonce before </body>. A raw md5 of the public
+      # body can therefore never equal the deployed file. Strip only script
+      # blocks that reference the CDN's /cdn-cgi/ namespace — the nonce lives
+      # inside that block — so every other byte must still match or the gate
+      # fails. Tempered `.(?!</script>)` keeps the match inside one tag.
+      perl -0777 -pi -e 's|<script\b[^>]*>(?:(?!</script>).)*cdn-cgi(?:(?!</script>).)*</script>||gs' "$PUBLIC_APP_TMP"
       PUBLIC_APP_MD5=$(md5sum "$PUBLIC_APP_TMP" | cut -d' ' -f1)
       if [[ "$PUBLIC_APP_MD5" == "${DEPLOYED_MD5:-}" ]]; then
         PUBLIC_APP_MATCH=1
