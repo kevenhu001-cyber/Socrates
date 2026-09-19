@@ -110,15 +110,14 @@ const DRAWER_LABELS = {
   settings: 'more.settings',
 } as const;
 
-/* Mirrors the final web sidebar's visible order (frontend/index.html
- * `#sidebarNav`): New chat / Projects / Library / Scheduled / Plugins / More.
- * Exam and Skills are hidden behind Customize on the web, so they remain
- * available from More instead of being promoted to extra primary rows in the
- * native drawer. */
+/* Mirrors the web sidebar's visible order at phone width
+ * (`frontend/src/react/sidebar/SidebarNav.tsx`): New chat / Library / Projects
+ * / Scheduled / Plugins / More. Exam, Skills and keyboard shortcuts live in
+ * the web's More popover, which is the native More screen here. */
 const PRIMARY_ITEMS: DrawerItem[] = [
   { route: 'Home', label: DRAWER_LABELS.newChat, icon: 'create-outline' },
-  { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
   { route: 'Library', label: DRAWER_LABELS.library, icon: 'library-outline' },
+  { route: 'Projects', label: DRAWER_LABELS.projects, icon: 'folder-open-outline' },
   { route: 'Scheduled', label: DRAWER_LABELS.scheduled, icon: 'calendar-outline' },
   { route: 'Plugins', label: DRAWER_LABELS.plugins, icon: 'extension-puzzle-outline' },
   { route: 'More', label: DRAWER_LABELS.more, icon: 'ellipsis-horizontal' },
@@ -472,7 +471,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
             autoCorrect={false}
           />
           {searchQuery ? (
-            <Pressable onPress={() => setSearchQuery('')}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('common.clear')} onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={16} color={colors.textSubtle} />
             </Pressable>
           ) : null}

@@ -46,6 +46,10 @@ export async function generateExam(options: {
   types: ExamQuestion['type'][];
   instructions?: string;
   language?: string;
+  /* Called at the START of each iteration (`frontend/src/exam.js:524-526`
+   * `updateProgress(i, …)` runs before the request): `completed` is the number
+   * of questions finished so far, so the UI can show "Generating question
+   * completed + 1 of total" while that question is in flight. */
   onProgress?: (completed: number, total: number) => void;
   signal?: AbortSignal;
 }) {
@@ -57,6 +61,7 @@ export async function generateExam(options: {
 
   for (let index = 0; index < options.count; index += 1) {
     if (options.signal?.aborted) throw new Error('Exam generation cancelled');
+    options.onProgress?.(index, options.count);
     const type = options.types[index % options.types.length] || 'multiple-choice';
     const textParts: string[] = [];
     await new Promise<void>((resolve, reject) => {
@@ -78,7 +83,6 @@ export async function generateExam(options: {
     const question = parseExamQuestion(textParts.join(''));
     if (!question) throw new Error(`Question ${index + 1} returned an invalid format`);
     questions.push(question);
-    options.onProgress?.(questions.length, options.count);
   }
 
   const userMessage: Message = { clientId: `exam-${Date.now()}`, role: 'user', rawText: `Generate an exam about ${options.topic}`, content: `Generate an exam about ${options.topic}`, type: 'user' };

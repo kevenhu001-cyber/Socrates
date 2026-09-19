@@ -8,6 +8,8 @@ import { motionEasing, withAlpha } from '../theme/theme';
 import { useT } from '../i18n';
 import { Markdown, type TutorPracticeAnswer, type TutorQuizAnswer } from '../render/MarkdownView';
 import { ToolCard } from './ToolCard';
+import { ToolRunGroup } from './ToolRunGroup';
+import { buildTurnLayout, sortableToolCalls } from '../data/tools/turnLayout';
 import { AnimatedPressable } from './AnimatedPressable';
 import { AttachmentChip } from './AttachmentChip';
 import { CanvasBlock } from './CanvasBlock';
@@ -344,12 +346,12 @@ function ThinkingPanel({
     >
       {mobile ? (
         <Animated.View style={[styles.thinkingBackdrop, { backgroundColor: withAlpha(colors.black, 0.55), opacity: backdrop }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close thinking panel" />
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('chat.closeThinking')} />
         </Animated.View>
       ) : (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: backdrop }]}>
           <BlurView tint="dark" intensity={18} style={StyleSheet.absoluteFill}>
-            <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.black, 0.55) }]} onPress={onClose} accessibilityLabel="Close thinking panel" />
+            <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(colors.black, 0.55) }]} onPress={onClose} accessibilityLabel={t('chat.closeThinking')} />
           </BlurView>
         </Animated.View>
       )}
@@ -419,9 +421,6 @@ export const MessageBubble = React.memo(function MessageBubble({
     animation.start();
     return () => animation.stop();
   }, [speakPulse, speaking]);
-  useEffect(() => {
-    if (!editing) setEditValue(text);
-  }, [editing, text]);
 
   const rate = async (next: 'up' | 'down') => {
     const value = rating === next ? 'none' : next;
@@ -475,6 +474,21 @@ export const MessageBubble = React.memo(function MessageBubble({
   /* Toolbar visibility mirrors the SPA: non-last assistant rows keep their
    * actions but at 0.7 opacity; last-assistant and user rows show full. */
   const toolbarOpacity = !isUser && !isLastAssistant ? 0.7 : 1;
+
+  /* P_declarative-tool-run — same interleaving model as the web turn
+   * renderer (toolRunModel.buildTurnLayout): tool calls carrying a
+   * `textOffset` seat inline between the prose segments they split, and
+   * consecutive calls fold into one collapsible ToolRunGroup. Calls without
+   * an offset (sessions persisted before textOffset existed, or offsets
+   * outside the text) keep the legacy above-the-prose placement rather than
+   * disappearing entirely. */
+  const turnSegments = !isUser && !isCanvas
+    ? buildTurnLayout(text, message.toolCalls, { deferOpenParagraph: streaming })
+    : [];
+  const seatedIds = new Set(
+    sortableToolCalls(text, message.toolCalls).map((call) => call.id),
+  );
+  const unseatedCalls = (message.toolCalls || []).filter((call) => !seatedIds.has(call.id));
 
   return (
     <View style={[styles.row, { alignItems: isUser ? 'flex-end' : 'flex-start' }]}>
@@ -544,8 +558,9 @@ export const MessageBubble = React.memo(function MessageBubble({
           />
         ) : null}
 
-        {/* Tool Call Cards */}
-        {message.toolCalls?.map((tool) => <ToolCard key={tool.id} call={tool} />)}
+        {/* Tool calls that never got a seat in the text (no valid
+         * textOffset) keep the pre-grouping placement above the prose. */}
+        {unseatedCalls.map((tool) => <ToolCard key={tool.id} call={tool} />)}
 
         {/* Message Content: Plain selectable text for user, Markdown for assistant */}
         {isUser ? (
@@ -581,6 +596,30 @@ export const MessageBubble = React.memo(function MessageBubble({
             label={canvasMessage._extensionLabel || undefined}
             onIterate={onIterate}
           />
+        ) : turnSegments.length ? (
+          /* Interleaved turn: prose segments and tool runs in fire order.
+           * Each prose piece is its own Markdown block so a tool row can
+           * sit between the paragraphs it occurred between (web parity). */
+          <View>
+            {turnSegments.map((segment, index) => {
+              if (segment.kind === 'text') {
+                return (
+                  <Markdown
+                    key={`seg-${segment.start}`}
+                    text={segment.text}
+                    streaming={streaming}
+                    highlight={highlight}
+                    onQuizAnswer={onTutorQuizAnswer}
+                    onPracticeSubmit={onTutorPracticeSubmit}
+                  />
+                );
+              }
+              if (segment.kind === 'tool') {
+                return <ToolCard key={segment.call.id} call={segment.call} />;
+              }
+              return <ToolRunGroup key={`group-${index}`} segment={segment} />;
+            })}
+          </View>
         ) : (
           <Markdown
             text={text}
@@ -597,7 +636,7 @@ export const MessageBubble = React.memo(function MessageBubble({
          * Attachment-only user messages still get the toolbar. */}
         {!streaming && (text || hasAttachments) && !isCanvas ? (
           <View style={[styles.toolbar, isUser && styles.toolbarUser, { opacity: toolbarOpacity }]}>
-            <AnimatedPressable accessibilityLabel="Copy" onPress={copyText} style={styles.toolbarButton}>
+            <AnimatedPressable accessibilityLabel={t('common.copy')} onPress={copyText} style={styles.toolbarButton}>
               <Ionicons
                 name={copied ? 'checkmark-circle-outline' : 'copy-outline'}
                 size={16}
@@ -609,7 +648,7 @@ export const MessageBubble = React.memo(function MessageBubble({
               <>
                 {messageId && onEdit ? (
                   <AnimatedPressable
-                    accessibilityLabel="Edit message"
+                    accessibilityLabel={t('chat.editMessage')}
                     onPress={() => { setEditValue(text); setEditing(true); }}
                     style={styles.toolbarButton}
                   >
@@ -618,7 +657,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                 ) : null}
                 {messageId && onDelete ? (
                   <AnimatedPressable
-                    accessibilityLabel="Delete message"
+                    accessibilityLabel={t('chat.deleteMessage')}
                     onPress={() => { void Promise.resolve(onDelete(messageId)); }}
                     style={styles.toolbarButton}
                   >
@@ -629,12 +668,12 @@ export const MessageBubble = React.memo(function MessageBubble({
             ) : (
               <>
                 {onShare ? (
-                  <AnimatedPressable accessibilityLabel="Share conversation" onPress={() => { void Promise.resolve(onShare()); }} style={styles.toolbarButton}>
+                  <AnimatedPressable accessibilityLabel={t('chat.shareConversation')} onPress={() => { void Promise.resolve(onShare()); }} style={styles.toolbarButton}>
                     <Ionicons name="share-outline" size={16} color={colors.textSubtle} />
                   </AnimatedPressable>
                 ) : null}
                 {messageId && onRegenerate ? (
-                  <AnimatedPressable accessibilityLabel="Regenerate response" onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
+                  <AnimatedPressable accessibilityLabel={t('chat.regenerateResponse')} onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
                     <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
                   </AnimatedPressable>
                 ) : isLastAssistant && onRetry ? (
@@ -642,18 +681,18 @@ export const MessageBubble = React.memo(function MessageBubble({
                     <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
                   </AnimatedPressable>
                 ) : null}
-                <AnimatedPressable accessibilityLabel="Helpful" onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
+                <AnimatedPressable accessibilityLabel={t('chat.helpful')} onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
                   <Ionicons name={rating === 'up' ? 'thumbs-up' : 'thumbs-up-outline'} size={16} color={rating === 'up' ? colors.accent : colors.textSubtle} />
                 </AnimatedPressable>
-                <AnimatedPressable accessibilityLabel="Not helpful" onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
+                <AnimatedPressable accessibilityLabel={t('chat.notHelpful')} onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
                   <Ionicons name={rating === 'down' ? 'thumbs-down' : 'thumbs-down-outline'} size={16} color={rating === 'down' ? colors.accent : colors.textSubtle} />
                 </AnimatedPressable>
                 {messageId && onBranch ? (
                   <>
-                    <AnimatedPressable accessibilityLabel="Branch from here" onPress={() => { void Promise.resolve(onBranch(messageId)); }} style={styles.toolbarButton}>
+                    <AnimatedPressable accessibilityLabel={t('chat.branchFromHere')} onPress={() => { void Promise.resolve(onBranch(messageId)); }} style={styles.toolbarButton}>
                       <Ionicons name="git-branch-outline" size={16} color={colors.textSubtle} />
                     </AnimatedPressable>
-                    <AnimatedPressable accessibilityLabel="Re-explain from a different angle" onPress={() => { void Promise.resolve(onBranch(messageId, { reExplain: true })); }} style={styles.toolbarButton}>
+                    <AnimatedPressable accessibilityLabel={t('chat.reExplain')} onPress={() => { void Promise.resolve(onBranch(messageId, { reExplain: true })); }} style={styles.toolbarButton}>
                       <Ionicons name="bulb-outline" size={16} color={colors.textSubtle} />
                     </AnimatedPressable>
                   </>

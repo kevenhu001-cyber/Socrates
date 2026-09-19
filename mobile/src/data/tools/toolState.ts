@@ -102,13 +102,21 @@ function upsert(calls: MobileToolCall[], id: string, patch: Partial<MobileToolCa
 /**
  * Fold one SSE tool frame into the current list of tool cards.
  * Returns a new array; never mutates the input.
+ *
+ * `textOffset` mirrors the web client's `onInlineTool` split point: the
+ * character offset into the assistant's rawText where this tool call fired.
+ * It is stamped only when the frame CREATES a card — later frames for the
+ * same id must not move a row that already found its seat.
  */
 export function reduceToolEvent(
   current: MobileToolCall[] | undefined,
   kind: ToolEventKind,
   payload: unknown,
+  textOffset?: number,
 ): MobileToolCall[] {
   let calls = current ? current.slice() : [];
+  const seat = (id: string): Partial<MobileToolCall> =>
+    indexOfCall(calls, id) < 0 && typeof textOffset === 'number' ? { textOffset } : {};
 
   if (kind === 'tool_use') {
     // Arrives as an array of {id, name, input}.
@@ -122,6 +130,7 @@ export function reduceToolEvent(
         name: str(record.name) || 'tool',
         input: (record.input ?? {}) as JsonValue,
         status: 'running',
+        ...seat(id),
       });
     }
     return calls;
@@ -147,6 +156,7 @@ export function reduceToolEvent(
       name: str(record.name) || str(record.kind) || 'workspace_agent',
       approval,
       status: 'awaiting',
+      ...seat(targetId),
     });
   }
 
@@ -162,6 +172,7 @@ export function reduceToolEvent(
       name: str(record.name) || (at >= 0 ? calls[at].name : 'tool'),
       ...(argumentsText != null ? { argumentsText } : {}),
       status: 'running',
+      ...seat(id),
     });
   }
 

@@ -23,13 +23,11 @@ export interface ComposerProps {
   attachments?: Attachment[];
   onRemoveAttachment?: (attachmentId: string) => void;
   reasoningEffort?: ReasoningEffort;
-  webSearchEnabled?: boolean;
   onChangeText: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
   onAttach: (anchor?: { x: number; y: number; width: number; height: number }) => void;
   onChangeReasoningEffort?: (effort: ReasoningEffort) => void;
-  onToggleWebSearch?: () => void;
   activeExtensionLabel?: string | null;
   selectedPlugins?: Array<{ id: string; name: string }>;
   onRemoveActiveExtension?: () => void;
@@ -159,7 +157,13 @@ function VoiceRecordingBar({
   );
 }
 
-export function Composer({
+/* P0 perf — Composer is wrapped in React.memo so a parent re-render that
+ * only changes unrelated state (e.g. streaming tokens pushing a new
+ * activeSession reference into ChatScreen) does not re-render the composer
+ * tree, which owns a heavy TextInput, attachment chips, and several
+ * AnimatedPressable rows. Without this the typing/editing experience lags
+ * because every store commit re-mounts the input keyboard state. */
+export const Composer = React.memo(function Composer({
   value,
   disabled = false,
   hasAttachments = false,
@@ -558,7 +562,7 @@ export function Composer({
     />
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   /* frontend `.attachment-chips`: grid-row:1 inside the input wrap, flex

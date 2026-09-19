@@ -437,8 +437,12 @@ export const agentRunsApi = {
   }),
 };
 
-export function chatStreamUrl(sessionId: string) {
-  return `${API_BASE_URL}/chat/stream?sessionId=${encodeURIComponent(sessionId)}`;
+/* `sessionId` is optional on the server (`stream.ts`: unbound turns take the
+ * legacy path). Incognito sessions are never persisted server-side, so
+ * sending their id would hit `requireOwnedSessionAfterSave` → 404. */
+export function chatStreamUrl(sessionId: string | null) {
+  const suffix = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
+  return `${API_BASE_URL}/chat/stream${suffix}`;
 }
 
 export function serializeChatRequest(request: ChatRequest) {

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { memo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +54,12 @@ const headerStyles = StyleSheet.create({
   },
 });
 
-export function AppHeader({
+/* P0 perf — AppHeader is memoised so the parent screen re-rendering on
+ * unrelated store commits (e.g. ChatScreen on every streamed token) does
+ * not re-render the entire top bar with its segmented control and chip
+ * buttons. The header has no internal mutable state of its own — every
+ * value comes from props — so React.memo's shallow compare is enough. */
+function AppHeaderImpl({
   title,
   leadingTitle,
   headerAction,
@@ -113,7 +118,14 @@ export function AppHeader({
         styles.header,
         isCompact ? styles.headerCompact : null,
         {
-          paddingTop: isCompact ? Math.max(insets.top, 10) : Math.max(insets.top, 10) + 4,
+          /* P0 android-edge-to-edge: Screen no longer pads the top edge
+           * (the window draws under the status bar). This header is now the
+           * sole owner of the top safe-area inset, so we add `insets.top`
+           * here and a small visual gap underneath. The compact branch sits
+           * flush against the top of the device so the hamburger / chip
+           * never strays into the status bar; the wider branch keeps a
+           * 4px visual cushion matching the desktop top bar. */
+          paddingTop: isCompact ? insets.top + 8 : insets.top + 10,
           backgroundColor: colors.background,
         },
       ]}
@@ -307,6 +319,8 @@ export function AppHeader({
     </View>
   );
 }
+
+export const AppHeader = memo(AppHeaderImpl);
 
 const styles = StyleSheet.create({
   /* frontend `.top-bar { padding: 8px 14px; min-height: 44px; gap: 12px }` */

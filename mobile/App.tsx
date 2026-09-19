@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, AppState, BackHandler, Keyboard, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Keyboard, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import {
@@ -163,7 +163,10 @@ function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof Root
       onReady={() => onRouteChange?.(navigationRef.getCurrentRoute()?.name ?? null)}
       onStateChange={() => onRouteChange?.(navigationRef.getCurrentRoute()?.name ?? null)}
     >
-      <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false, animation: 'fade' }}>
+      {/* freezeOnBlur suspends React work for screens hidden behind the top
+       * one — a directory page left in the stack (Recents/Projects/…) stops
+       * re-rendering on every store update while Chat streams on top of it. */}
+      <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false, animation: 'fade', freezeOnBlur: true }}>
         <Stack.Screen name="Home" component={NewChatScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="Tutor" component={TutorScreen} />
@@ -204,6 +207,12 @@ function NativeApp() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [storageOpen, setStorageOpen] = useState(false);
+
+  /* Android draws edge-to-edge here (see plugins/withEdgeToEdge.js), so the
+   * status bar has no colour of its own — only the icon brightness follows the
+   * theme. RN ignores backgroundColor/translucent while edge-to-edge is on and
+   * logs a warning per call, so they stay unset. */
+  const statusBarStyle = colors.statusBarStyle === 'light' ? 'light-content' : 'dark-content';
 
   useEffect(() => {
     const unsubscribeProfile = profileOverlay.subscribe(setProfileOpen);
@@ -320,6 +329,7 @@ function NativeApp() {
 
   return (
     <View style={[styles.root, styles.appFrame, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={statusBarStyle} />
       {authStatus === 'signedIn' && !embeddedActive ? <AppDrawer onNavigate={navigate} onOpenEmbedded={openEmbedded} activeRoute={currentRoute} /> : null}
       <View
         style={[

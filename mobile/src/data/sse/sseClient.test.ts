@@ -1,186 +1,195 @@
+jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
+
 jest.mock('../api/client', () => ({
   chatStreamUrl: jest.fn(() => 'https://example.test/chat/stream'),
-  refreshAccessToken: jest.fn(),
+  refreshAccessToken: jest.fn(async () => true),
   serializeChatRequest: jest.fn(() => '{}'),
 }));
+
 jest.mock('../api/tokenStore', () => ({
-  readTokens: jest.fn(),
+  readTokens: jest.fn(async () => ({ accessToken: 'token', refreshToken: 'refresh' })),
 }));
 
+import { fetch as expoFetch } from 'expo/fetch';
 import { refreshAccessToken } from '../api/client';
-import { readTokens } from '../api/tokenStore';
-import { dispatchSseFrame, startChatStream } from './sseClient';
+import { startChatStream } from './sseClient';
 
-class FakeXhr {
-  static instances: FakeXhr[] = [];
-  readyState = 1;
-  status = 0;
-  responseText = '';
-  onprogress: (() => void) | null = null;
-  onreadystatechange: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  onabort: (() => void) | null = null;
-  open = jest.fn();
-  setRequestHeader = jest.fn();
-  send = jest.fn();
-  abort = jest.fn(() => this.onabort?.());
+const mockedFetch = expoFetch as unknown as jest.Mock;
+const mockedRefresh = refreshAccessToken as unknown as jest.Mock;
 
-  constructor() { FakeXhr.instances.push(this); }
+const encoder = new TextEncoder();
 
-  complete(status: number) {
-    this.status = status;
-    this.readyState = 4;
-    this.onreadystatechange?.();
-  }
+/* `startChatStream` resolves as soon as the request is issued (mirroring the
+ * old `xhr.send()`); response headers, the reader loop, retries, and error
+ * callbacks all continue on the microtask queue afterwards. Tests must drain
+ * that queue before asserting on post-response behaviour. Works under fake
+ * timers too, unlike a setTimeout-based flush. */
+async function flush(rounds = 30) {
+  for (let i = 0; i < rounds; i++) await Promise.resolve();
 }
 
-async function flushPromises() {
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+/** Minimal ReadableStream stand-in; the client only needs body.getReader(). */
+function streamBody(chunks: string[]) {
+  const queue = chunks.map((chunk) => encoder.encode(chunk));
+  return {
+    getReader: () => ({
+      read: jest.fn(async () =>
+        queue.length ? { done: false, value: queue.shift() } : { done: true, value: undefined },
+      ),
+      cancel: jest.fn(async () => undefined),
+    }),
+    cancel: jest.fn(async () => undefined),
+  };
 }
 
-describe('SSE adapter', () => {
-  const originalXhr = globalThis.XMLHttpRequest;
+function okResponse(chunks: string[], status = 200) {
+  return { status, body: streamBody(chunks) };
+}
 
+const request = {
+  messages: [{ role: 'user', content: 'hi' }],
+} as never;
+
+describe('sseClient (expo/fetch transport)', () => {
   beforeEach(() => {
-    FakeXhr.instances = [];
-    Object.defineProperty(globalThis, 'XMLHttpRequest', { configurable: true, writable: true, value: FakeXhr });
-    (readTokens as jest.Mock).mockResolvedValue({ accessToken: 'ma.test' });
-  });
-
-  afterEach(() => {
-    Object.defineProperty(globalThis, 'XMLHttpRequest', { configurable: true, writable: true, value: originalXhr });
     jest.clearAllMocks();
   });
 
-  it('parses CRLF content and reasoning frames', () => {
-    const content: string[] = [];
-    const reasoning: string[] = [];
-    dispatchSseFrame('data: {"choices":[{"delta":{"content":"Hello"}}]}\r\n\r\n', {
-      onDelta: (value) => content.push(value),
-    });
-    dispatchSseFrame('data: {"choices":[{"delta":{"reasoning_content":"Think"}}]}\n\n', {
-      onReasoning: (value) => reasoning.push(value),
-    });
-    expect(content).toEqual(['Hello']);
-    expect(reasoning).toEqual(['Think']);
-  });
-
-  it('routes tool events and completes on DONE', () => {
-    const tools: unknown[] = [];
+  test('emits deltas and stops reading after [DONE]', async () => {
+    mockedFetch.mockResolvedValue(
+      okResponse([
+        'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
+        'data: [DONE]\n\n',
+        'data: {"choices":[{"delta":{"content":"late"}}]}\n\n',
+      ]),
+    );
+    const deltas: string[] = [];
     let done = 0;
-    dispatchSseFrame('event: tool_progress\ndata: {"step":1}\n\n', {
-      onToolProgress: (payload) => tools.push(payload),
+    await startChatStream('session', request, {
+      onDelta: (text) => deltas.push(text),
+      onDone: () => {
+        done += 1;
+      },
     });
-    dispatchSseFrame('data: [DONE]\n\n', { onDone: () => { done += 1; } });
-    expect(tools).toEqual([{ step: 1 }]);
+    await flush();
+    expect(deltas).toEqual(['Hello']);
     expect(done).toBe(1);
   });
 
-  it('routes approval requests without reducing them to generic tool progress', () => {
-    const approvals: unknown[] = [];
-    dispatchSseFrame('event: tool_approval\ndata: {"runId":"r","approvalId":"a"}\n\n', {
-      onToolApproval: (payload) => approvals.push(payload),
-    });
-    expect(approvals).toEqual([{ runId: 'r', approvalId: 'a' }]);
+  test('refreshes the token and retries once on a pre-stream 401', async () => {
+    mockedFetch
+      .mockResolvedValueOnce(okResponse([], 401))
+      .mockResolvedValueOnce(okResponse(['data: [DONE]\n\n']));
+    const done = jest.fn();
+    await startChatStream('session', request, { onDone: done });
+    await flush();
+    expect(mockedRefresh).toHaveBeenCalledTimes(1);
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+    expect(done).toHaveBeenCalledTimes(1);
   });
 
-  it('surfaces structured errors', () => {
-    let message = '';
-    dispatchSseFrame('event: error\ndata: {"message":"No connection"}\n\n', {
-      onError: (value) => { message = value; },
-    });
-    expect(message).toBe('No connection');
+  test('surfaces "Session expired" when the refresh fails', async () => {
+    mockedFetch.mockResolvedValue(okResponse([], 401));
+    mockedRefresh.mockResolvedValueOnce(false);
+    const onError = jest.fn();
+    await startChatStream('session', request, { onError });
+    await flush();
+    expect(onError).toHaveBeenCalledWith('Session expired');
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 
-  it('does not reopen a stream after Stop wins a pending 401 refresh', async () => {
-    let resolveRefresh: ((value: boolean) => void) | undefined;
-    (refreshAccessToken as jest.Mock).mockReturnValue(new Promise<boolean>((resolve) => { resolveRefresh = resolve; }));
+  test('surfaces non-OK responses as stream failures', async () => {
+    mockedFetch.mockResolvedValue(okResponse([], 500));
+    const onError = jest.fn();
+    await startChatStream('session', request, { onError });
+    await flush();
+    expect(onError).toHaveBeenCalledWith('Stream failed (500)');
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
+  });
 
-    const stop = await startChatStream('session-1', { messages: [] }, {});
-    FakeXhr.instances[0].complete(401);
+  test('retries a rejected fetch once, then reports the network error', async () => {
+    mockedFetch.mockRejectedValue(new Error('socket closed'));
+    const onError = jest.fn();
+    await startChatStream('session', request, { onError });
+    await flush();
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+    expect(onError).toHaveBeenCalledWith('Network unavailable');
+  });
+
+  test('does not retry or call handlers after the caller cancels', async () => {
+    let rejectFetch: (error: Error) => void = () => undefined;
+    mockedFetch.mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          rejectFetch = reject;
+        }),
+    );
+    const onError = jest.fn();
+    const onDone = jest.fn();
+    const stop = await startChatStream('session', request, { onError, onDone });
     stop();
-    resolveRefresh?.(true);
-    await flushPromises();
-
-    expect(FakeXhr.instances).toHaveLength(1);
+    rejectFetch(new DOMException('Aborted', 'AbortError'));
+    await flush();
+    expect(onError).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+    expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 
-  it('reopens an untouched stream once its access credential rotates', async () => {
-    (refreshAccessToken as jest.Mock).mockResolvedValue(true);
-
-    const stop = await startChatStream('session-1', { messages: [] }, {});
-    FakeXhr.instances[0].complete(401);
-    await flushPromises();
-
-    expect(FakeXhr.instances).toHaveLength(2);
+  test('ignores a response that lands after the caller cancels', async () => {
+    let resolveFetch: (response: unknown) => void = () => undefined;
+    mockedFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+    const onDelta = jest.fn();
+    const onDone = jest.fn();
+    const stop = await startChatStream('session', request, { onDelta, onDone });
     stop();
+    resolveFetch(okResponse(['data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n']));
+    await flush();
+    expect(onDelta).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
   });
 
-  it('surfaces "Session expired" when a 401 cannot refresh the access token', async () => {
-    (refreshAccessToken as jest.Mock).mockResolvedValue(false);
-    const errors: string[] = [];
-    const stop = await startChatStream('session-1', { messages: [] }, {
-      onError: (value) => errors.push(value),
-    });
-    FakeXhr.instances[0].complete(401);
-    await flushPromises();
-    expect(errors).toEqual(['Session expired']);
-    stop();
+  test('settles via onDone when the stream ends without [DONE]', async () => {
+    mockedFetch.mockResolvedValue(
+      okResponse(['data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n']),
+    );
+    const onDone = jest.fn();
+    await startChatStream('session', request, { onDone });
+    await flush();
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 
-  it('surfaces "Session expired" when the refresh promise rejects', async () => {
-    (refreshAccessToken as jest.Mock).mockRejectedValue(new Error('refresh failed'));
-    const errors: string[] = [];
-    const stop = await startChatStream('session-1', { messages: [] }, {
-      onError: (value) => errors.push(value),
-    });
-    FakeXhr.instances[0].complete(401);
-    await flushPromises();
-    expect(errors).toEqual(['Session expired']);
-    stop();
+  test('times out a request that never responds', async () => {
+    jest.useFakeTimers();
+    try {
+      mockedFetch.mockImplementation(() => new Promise(() => undefined));
+      const onError = jest.fn();
+      await startChatStream('session', request, { onError });
+      expect(onError).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(30000);
+      expect(onError).toHaveBeenCalledWith('Network unavailable');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
-  it('surfaces generic 4xx/5xx as "Stream failed (<status>)" without attempting refresh', async () => {
-    (refreshAccessToken as jest.Mock).mockClear();
-    const errors: string[] = [];
-    const stop = await startChatStream('session-1', { messages: [] }, {
-      onError: (value) => errors.push(value),
-    });
-    FakeXhr.instances[0].complete(500);
-    expect(errors).toEqual(['Stream failed (500)']);
-    expect(refreshAccessToken).not.toHaveBeenCalled();
-    stop();
-  });
-
-  it('surfaces "Stream failed (401)" when 401 arrives after partial stream', async () => {
-    (refreshAccessToken as jest.Mock).mockClear();
-    const errors: string[] = [];
-    const stop = await startChatStream('session-1', { messages: [] }, {
-      onError: (value) => errors.push(value),
-    });
-    const xhr = FakeXhr.instances[0];
-    xhr.responseText = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\n';
-    xhr.onprogress?.();
-    xhr.complete(401);
-    await flushPromises();
-    expect(errors).toEqual(['Stream failed (401)']);
-    expect(refreshAccessToken).not.toHaveBeenCalled();
-    stop();
-  });
-
-  it('abort() stops the active stream and prevents further handler calls', async () => {
-    const errors: string[] = [];
-    let deltaCount = 0;
-    const stop = await startChatStream('session-1', { messages: [] }, {
-      onDelta: () => { deltaCount += 1; },
-      onError: (value) => errors.push(value),
-    });
-    stop();
-    const xhr = FakeXhr.instances[0];
-    xhr.complete(500);
-    expect(errors).toEqual([]);
-    expect(deltaCount).toBe(0);
+  test('clears the connect timeout once response headers arrive', async () => {
+    jest.useFakeTimers();
+    try {
+      mockedFetch.mockResolvedValue(okResponse(['data: [DONE]\n\n']));
+      const onError = jest.fn();
+      const onDone = jest.fn();
+      await startChatStream('session', request, { onError, onDone });
+      await flush();
+      jest.advanceTimersByTime(60000);
+      expect(onError).not.toHaveBeenCalled();
+      expect(onDone).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

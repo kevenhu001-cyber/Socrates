@@ -1,12 +1,13 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
-import { useT } from '../i18n';
+import { useI18n, useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 import { Overlay } from './Overlay';
 import { toast } from './Toast';
-import { appStore } from '../stores/appStore';
+import { appStore, useAppStore } from '../stores/appStore';
+import { usersApi } from '../data/api/client';
 import { native } from '../native/native';
 import { storageOverlay, usageOverlay } from '../cmdK/overlayStores';
 import type { User } from '@socrates/contracts';
@@ -63,6 +64,136 @@ function buildRows(user: User | null, t: (key: string) => string): Row[] {
 function SectionTitle({ title }: { title: string }) {
   const { colors, typography } = useTheme();
   return <Text style={[styles.sectionTitle, { color: colors.textMuted, fontFamily: typography.semibold }]}>{title}</Text>;
+}
+
+/* `customInstructions` is one string with two labelled sections, exactly as
+ * `buildCustomInstructionsString` writes it on the web. */
+const RESPONSE_MARKER = '[How to respond]';
+const ABOUT_MARKER = '[About the user]';
+
+function parseCustomInstructions(raw: string | null | undefined): { response: string; about: string } {
+  const out = { response: '', about: '' };
+  for (const chunk of String(raw || '').split('\n\n')) {
+    if (chunk.startsWith(RESPONSE_MARKER)) out.response = chunk.slice(RESPONSE_MARKER.length).trim();
+    else if (chunk.startsWith(ABOUT_MARKER)) out.about = chunk.slice(ABOUT_MARKER.length).trim();
+  }
+  return out;
+}
+
+function buildCustomInstructions(response: string, about: string): string {
+  const parts: string[] = [];
+  if (response) parts.push(`${RESPONSE_MARKER}\n${response}`);
+  if (about) parts.push(`${ABOUT_MARKER}\n${about}`);
+  return parts.join('\n\n');
+}
+
+/**
+ * Web `.profile-modal` Preferences: language segment, web-search switch and
+ * the two custom-instruction textareas with a debounced PATCH on `/users/me`.
+ */
+function PreferencesSection({ user }: { user: User | null }) {
+  const { colors, radius, typography } = useTheme();
+  const t = useT();
+  const { language, setLanguage } = useI18n();
+  const webSearchEnabled = useAppStore((s) => s.webSearchEnabled);
+  const initial = parseCustomInstructions(user?.customInstructions);
+  const [response, setResponse] = useState(initial.response);
+  const [about, setAbout] = useState(initial.about);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const savedAt = useRef<string>('');
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  const queueSave = (nextResponse: string, nextAbout: string) => {
+    if (timer.current) clearTimeout(timer.current);
+    setSaveState('idle');
+    timer.current = setTimeout(() => {
+      setSaveState('saving');
+      void usersApi
+        .updateMe({ customInstructions: buildCustomInstructions(nextResponse, nextAbout) })
+        .then((updated) => {
+          appStore.setUser(updated);
+          savedAt.current = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          setSaveState('saved');
+        })
+        .catch((error) => {
+          setSaveState('idle');
+          toast.show(error instanceof Error ? error.message : t('profile.saveFailed'), 'error');
+        });
+    }, 600);
+  };
+
+  const label = (text: string) => (
+    <Text style={[styles.instLabel, { color: colors.text, fontFamily: typography.medium }]}>{text}</Text>
+  );
+  const area = (value: string, placeholder: string, key: 'response' | 'about') => (
+    <TextInput
+      value={value}
+      onChangeText={(next) => {
+        if (key === 'response') { setResponse(next); queueSave(next, about); }
+        else { setAbout(next); queueSave(response, next); }
+      }}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textMuted}
+      multiline
+      maxLength={4000}
+      style={[
+        styles.instArea,
+        { color: colors.text, fontFamily: typography.body, backgroundColor: colors.surfaceRaised, borderColor: colors.border, borderRadius: radius.sm },
+      ]}
+    />
+  );
+
+  return (
+    <>
+      <View style={[styles.row, { borderBottomColor: colors.borderSubtle }]}>
+        <Text style={[styles.rowLabel, { color: colors.textMuted }]}>{t('profile.language')}</Text>
+        <View style={[styles.langToggle, { backgroundColor: colors.surfaceRaised, borderRadius: radius.sm }]}>
+          {([['en', 'English'], ['zh', '中文']] as const).map(([value, text]) => (
+            <AnimatedPressable
+              key={value}
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === value }}
+              accessibilityLabel={t('profile.language')}
+              onPress={() => { void setLanguage(value); }}
+              style={[styles.langOption, language === value && { backgroundColor: colors.accent, borderRadius: radius.xs }]}
+            >
+              <Text style={[styles.langText, { color: language === value ? colors.textInverse : colors.textMuted, fontFamily: typography.medium }]}>{text}</Text>
+            </AnimatedPressable>
+          ))}
+        </View>
+      </View>
+
+      <Text style={[styles.actionDesc, { color: colors.textMuted, fontFamily: typography.body }]}>{t('profile.webSearchDesc')}</Text>
+      <AnimatedPressable
+        accessibilityRole="switch"
+        accessibilityState={{ checked: webSearchEnabled }}
+        accessibilityLabel={t('profile.webSearch')}
+        onPress={() => { void appStore.setWebSearchEnabled(!webSearchEnabled); }}
+        style={styles.toggleRow}
+      >
+        <Text style={[styles.actionLabel, { color: colors.text, fontFamily: typography.medium }]}>{t('profile.webSearch')}</Text>
+        <View style={[styles.toggleTrack, { backgroundColor: webSearchEnabled ? colors.accent : colors.surfaceHover }]}>
+          <View style={[styles.toggleKnob, { backgroundColor: colors.textInverse, transform: [{ translateX: webSearchEnabled ? 18 : 0 }] }]} />
+        </View>
+      </AnimatedPressable>
+
+      <View style={styles.instBlock}>
+        {label(t('profile.howShouldIRespond'))}
+        {area(response, t('profile.instructionsSavedPlaceholder'), 'response')}
+        {label(t('profile.whatDoYouKnow'))}
+        {area(about, t('profile.instructionsAboutPlaceholder'), 'about')}
+        <Text style={[styles.instState, { color: colors.textMuted, fontFamily: typography.body }]}>
+          {saveState === 'saving'
+            ? t('common.saving')
+            : saveState === 'saved'
+              ? t('profile.savedAt', { hh: savedAt.current.split(':')[0] || '', mm: savedAt.current.split(':')[1] || '' })
+              : t('profile.notYetSaved')}
+        </Text>
+      </View>
+    </>
+  );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -160,11 +291,8 @@ export function ProfileOverlay({ visible, onClose, user }: ProfileOverlayProps) 
         />
 
         <SectionTitle title={text('profile.preferences', 'Preferences')} />
-        {user?.defaultModel ? <InfoRow label={t('profile.defaultModel') || 'Default model'} value={user.defaultModel} /> : (
-          <Text style={[styles.actionDesc, { color: colors.textMuted, fontFamily: typography.body, marginBottom: 4 }]}>
-            {text('profile.preferencesEmpty', 'Theme, text size and grid live under Display & theme.')}
-          </Text>
-        )}
+        <PreferencesSection user={user} />
+        {user?.defaultModel ? <InfoRow label={t('profile.defaultModel')} value={user.defaultModel} /> : null}
 
         <SectionTitle title={text('profile.data', 'Data')} />
         <ActionRow
@@ -303,6 +431,58 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 12,
+  },
+  /* frontend `.profile-lang-toggle` / `.stg-toggle-track` / `.profile-instructions-*`. */
+  langToggle: {
+    flexDirection: 'row',
+    padding: 2,
+    gap: 2,
+  },
+  langOption: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  langText: {
+    fontSize: 12,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
+  },
+  toggleTrack: {
+    width: 38,
+    height: 22,
+    borderRadius: 11,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleKnob: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  instBlock: {
+    marginTop: 10,
+    gap: 6,
+  },
+  instLabel: {
+    fontSize: 12.5,
+    marginTop: 4,
+  },
+  instArea: {
+    minHeight: 76,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlignVertical: 'top',
+  },
+  instState: {
+    fontSize: 11,
+    marginTop: 2,
   },
   empty: {
     fontSize: 13,

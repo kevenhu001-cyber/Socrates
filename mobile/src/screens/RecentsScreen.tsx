@@ -48,7 +48,11 @@ type RecentsListItem =
 export function RecentsScreen({ navigation }: Props) {
   const { colors, radius, typography } = useTheme();
   const t = useT();
-  const state = useAppStore();
+  /* P0 perf — only subscribe to the sessions slice, since that is the
+   * only piece of store state this screen renders. Whole-state
+   * subscription would also re-render here on every streaming token
+   * pushed by ChatScreen in the background. */
+  const sessions = useAppStore((s) => s.sessions);
   const [tab, setTab] = useState<Tab>('chats');
   const [filterChip, setFilterChip] = useState<FilterChipType>('all');
   const [files, setFiles] = useState<Array<Record<string, unknown>>>([]);
@@ -99,13 +103,13 @@ export function RecentsScreen({ navigation }: Props) {
     }
 
     // Tab === 'chats': filter by chip first
-    let sessions = state.sessions;
+    let filtered = sessions;
     if (filterChip === 'chat') {
-      sessions = sessions.filter((s) => s.mode === 'chat' && s.kind !== 'exam');
+      filtered = filtered.filter((s) => s.mode === 'chat' && s.kind !== 'exam');
     } else if (filterChip === 'tutor') {
-      sessions = sessions.filter((s) => s.mode === 'tutor');
+      filtered = filtered.filter((s) => s.mode === 'tutor');
     } else if (filterChip === 'exam') {
-      sessions = sessions.filter((s) => s.kind === 'exam');
+      filtered = filtered.filter((s) => s.kind === 'exam');
     }
 
     const now = new Date();
@@ -113,7 +117,7 @@ export function RecentsScreen({ navigation }: Props) {
     const bucketMap = new Map<string, Session[]>();
     const bucketOrder: string[] = [];
 
-    sessions.forEach((s) => {
+    filtered.forEach((s) => {
       const bucket = getTimeBucket(s.updatedAt, Boolean(s.pinned), now);
       if (!bucketMap.has(bucket)) {
         bucketMap.set(bucket, []);
@@ -136,7 +140,7 @@ export function RecentsScreen({ navigation }: Props) {
     });
 
     return result;
-  }, [artifacts, files, filterChip, state.sessions, tab]);
+  }, [artifacts, files, filterChip, sessions, tab]);
 
   const openItem = async (item: Record<string, unknown>) => {
     if (item._kind === 'session') {
@@ -290,6 +294,13 @@ export function RecentsScreen({ navigation }: Props) {
           data={listItems}
           keyExtractor={(item) => item.key}
           contentContainerStyle={styles.list}
+          /* Plain text rows only (no WebView islands), so clipped-subview
+           * removal is safe here and trims memory/offscreen work on long
+           * session histories. */
+          removeClippedSubviews
+          initialNumToRender={14}
+          windowSize={7}
+          maxToRenderPerBatch={10}
           renderItem={({ item }) => {
             if (item.kind === 'header') {
               // Time-grouping label: Today / Yesterday / Previous 7 days / etc. (.recents-time-label)
@@ -330,7 +341,7 @@ export function RecentsScreen({ navigation }: Props) {
                   <View style={styles.titleRow}>
                     {modeBadgeColor ? (
                       <View
-                        accessibilityLabel={modeDotLabel(rowData)}
+                        accessibilityLabel={modeDotLabel(rowData, t)}
                         style={[styles.modeDot, { backgroundColor: modeBadgeColor }]}
                       />
                     ) : null}
@@ -358,7 +369,7 @@ export function RecentsScreen({ navigation }: Props) {
             );
           }}
           ListEmptyComponent={(() => {
-            const filteredEmpty = tab === 'chats' && filterChip !== 'all' && state.sessions.length > 0;
+            const filteredEmpty = tab === 'chats' && filterChip !== 'all' && sessions.length > 0;
             return (
               <View style={styles.empty}>
                 <Ionicons name="library-outline" size={34} color={colors.textSubtle} />
@@ -454,7 +465,7 @@ export function RecentsScreen({ navigation }: Props) {
               <Text numberOfLines={1} style={[styles.actionMenuTitle, { color: colors.text, fontFamily: typography.semibold }]}>
                 {String(actionSession?.title || actionSession?.topic || t('library.untitled'))}
               </Text>
-              <AnimatedPressable onPress={() => setActionSession(null)} style={styles.actionMenuCloseBtn}>
+              <AnimatedPressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setActionSession(null)} style={styles.actionMenuCloseBtn}>
                 <Ionicons name="close" size={18} color={colors.textMuted} />
               </AnimatedPressable>
             </View>
@@ -570,23 +581,32 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/* Local fallback — no shared formatRelativeTime util exists in src/utils yet.
- * Mirrors the web recents list: relative time for recent items, short date
- * beyond a week. Replace with a shared util if one lands. */
+/* Port of `formatRelativeTime` in `frontend/src/react/session-list/
+ * sessionList.bridge.ts` — same buckets and same ( untranslated ) wording, so
+ * a row reads identically on both clients. Built lazily: Hermes costs ~0.1ms
+ * per DateTimeFormat, and this runs for every visible row. */
+let shortDateFormatter: Intl.DateTimeFormat | null = null;
+function shortDate(ts: number): string {
+  if (!shortDateFormatter) shortDateFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+  return shortDateFormatter.format(ts);
+}
+
 function formatRelativeTime(rawDate: unknown): string {
   if (!rawDate) return '';
   const ts = new Date(String(rawDate)).getTime();
   if (Number.isNaN(ts)) return '';
   const diff = Date.now() - ts;
-  if (diff < 0) return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(ts);
+  if (diff < 0) return shortDate(ts);
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'now';
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(ts);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
 }
 
 /* Session mode for the tinted 6px badge — exam kind wins, then mode.
@@ -604,9 +624,9 @@ function modeDotColor(item: Record<string, unknown>, isDark: boolean): string {
   return mode === 'chat' ? 'hsl(0, 0%, 20%)' : mode === 'tutor' ? 'hsl(0, 0%, 40%)' : 'hsl(0, 0%, 55%)';
 }
 
-function modeDotLabel(item: Record<string, unknown>): string {
+function modeDotLabel(item: Record<string, unknown>, t: (key: string) => string): string {
   const mode = sessionMode(item);
-  return mode === 'exam' ? 'Exam' : mode === 'tutor' ? 'Tutor' : 'Chat';
+  return mode === 'exam' ? t('session.badgeExam') : mode === 'tutor' ? t('tutor.modeTutor') : t('tutor.modeChat');
 }
 
 const styles = StyleSheet.create({

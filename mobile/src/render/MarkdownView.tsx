@@ -528,11 +528,13 @@ function WidgetView({
 function MathParagraph({ nodes, fontSize }: { nodes: InlineNode[]; fontSize: number }) {
   /* Key the memo on node content, not identity: a re-parse (streaming delta,
    * highlight toggle) yields an equal-but-new array, and rebuilding the HTML
-   * would remount the WebView and flash the spinner. */
+   * would remount the WebView and flash the spinner. `nodesKey` is only the
+   * change detector — the HTML is built from `nodes` itself, so no
+   * stringify→parse round trip. */
   const nodesKey = useMemo(() => JSON.stringify(nodes), [nodes]);
   const html = useMemo(
-    // nodesKey serialises nodes, so this only recomputes on real content change.
-    () => `<div style="text-align:left;font-size:${fontSize}px">${inlineToHtml(JSON.parse(nodesKey) as InlineNode[])}</div>`,
+    () => `<div style="text-align:left;font-size:${fontSize}px">${inlineToHtml(nodes)}</div>`,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [nodesKey, fontSize],
   );
   return <RichBlock body={html} libs={KATEX_ONLY} fallbackText={inlineToText(nodes)} center={false} initialHeight={fontSize * 1.6} />;
@@ -591,7 +593,7 @@ function CodeBlock({
   );
 }
 
-function BlockView({
+function BlockViewImpl({
   block,
   index,
   highlight,
@@ -768,6 +770,27 @@ function BlockView({
   }
 }
 
+/* A streamed message re-parses the whole source on every flush, so each Block
+ * object is new even when all but the tail are unchanged. Comparing the
+ * content signature lets finished blocks keep their rendered Text tree instead
+ * of rebuilding the entire reply 15×/second. */
+type SignedBlock = Block & { sig?: string };
+
+export const BlockView = React.memo(
+  BlockViewImpl,
+  (a, b) =>
+    a.block === b.block
+    || (
+      (a.block as SignedBlock).sig !== undefined
+      && (a.block as SignedBlock).sig === (b.block as SignedBlock).sig
+      && a.index === b.index
+      && a.highlight === b.highlight
+      && a.muted === b.muted
+      && a.onQuizAnswer === b.onQuizAnswer
+      && a.onPracticeSubmit === b.onPracticeSubmit
+    ),
+);
+
 export interface MarkdownProps {
   text: string;
   onQuizAnswer?: (answer: TutorQuizAnswer) => void | Promise<void>;
@@ -807,6 +830,9 @@ export const Markdown = React.memo(function Markdown({
       block.interactive = !quizSeen;
       quizSeen = true;
     }
+    /* Signed last so `interactive` counts and the field never feeds back into
+     * its own hash. */
+    for (const block of parsed) (block as SignedBlock).sig = JSON.stringify(block);
     return parsed;
   }, [text]);
   if (!blocks.length) {
