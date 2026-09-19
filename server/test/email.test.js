@@ -28,6 +28,8 @@ import {
   sendPasswordResetEmail,
   sendLoginCode,
   sendDuplicateRegistrationEmail,
+  sendStatusSubscriptionEmail,
+  sendStatusIncidentEmail,
 } from '../src/services/email.js';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -272,6 +274,72 @@ describe('sendLoginCode', () => {
       assert.ok(previewLine);
       assert.match(previewLine, /to: u@e\.co/);
       assert.match(previewLine, /subj: Your Socrates login code/);
+    });
+  });
+});
+
+describe('sendStatusSubscriptionEmail', () => {
+  test('delivers the confirmation email to the subscriber', async () => {
+    await withEnv({
+      NODE_ENV: 'development',
+      SMTP_HOST: undefined,
+      SMTP_USER: undefined,
+      SMTP_PASS: undefined,
+    }, async () => {
+      const captured = await captureConsole(() =>
+        sendStatusSubscriptionEmail('u@e.co', 'https://status.topodrive.top/api/status/confirm?token=TOK'),
+      );
+      const previewLine = captured.log.find((l) => l.includes('[email:dev]'));
+      assert.ok(previewLine);
+      assert.match(previewLine, /to: u@e\.co/);
+      /* Subject is truncated at 40 chars in the dev preview. */
+      assert.match(previewLine, /subj: Confirm your Topodrive Status subscrip/);
+    });
+  });
+});
+
+describe('sendStatusIncidentEmail', () => {
+  test('delivers a down notification with the component in the subject', async () => {
+    await withEnv({
+      NODE_ENV: 'development',
+      SMTP_HOST: undefined,
+      SMTP_USER: undefined,
+      SMTP_PASS: undefined,
+    }, async () => {
+      const captured = await captureConsole(() =>
+        sendStatusIncidentEmail('u@e.co', {
+          component: 'API Gateway',
+          from: 'ok',
+          to: 'down',
+          statusUrl: 'https://status.topodrive.top/',
+        }),
+      );
+      const previewLine = captured.log.find((l) => l.includes('[email:dev]'));
+      assert.ok(previewLine);
+      assert.match(previewLine, /to: u@e\.co/);
+      assert.match(previewLine, /subj: \[Topodrive Status\] API Gateway is down/);
+    });
+  });
+
+  test('delivers a recovery notification with "has recovered" in the subject', async () => {
+    await withEnv({
+      NODE_ENV: 'development',
+      SMTP_HOST: undefined,
+      SMTP_USER: undefined,
+      SMTP_PASS: undefined,
+    }, async () => {
+      const captured = await captureConsole(() =>
+        sendStatusIncidentEmail('u@e.co', {
+          component: 'Database',
+          from: 'down',
+          to: 'ok',
+          statusUrl: 'https://status.topodrive.top/',
+        }),
+      );
+      const previewLine = captured.log.find((l) => l.includes('[email:dev]'));
+      assert.ok(previewLine);
+      /* Subject is truncated at 40 chars in the dev preview. */
+      assert.match(previewLine, /subj: \[Topodrive Status\] Database has recov/);
     });
   });
 });

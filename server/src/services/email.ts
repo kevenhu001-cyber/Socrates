@@ -200,6 +200,26 @@ function textWrap(parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join('\n\n');
 }
 
+/* Minimal HTML escaper for values interpolated into email bodies.
+ * The subscribe endpoint's regex (`[^\s@]+@[^\s@]+\.[^\s@]+`) still
+ * admits `<`, `>` and `&`, so an unescaped address or component name
+ * (e.g. "Billing & Payments") could break the layout or inject markup. */
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* Status brand: a single ● in the status page's --ok green ahead of
+ * the wordmark — the one permitted splash of color, echoing the
+ * status-dot language the page itself is built on. &#9679; renders
+ * in every client including Outlook (no border-radius needed). */
+const STATUS_WORDMARK =
+  '<span style="color:#22c55e">&#9679;</span>&nbsp; Topodrive ' +
+  '<span style="font-weight:400;color:#999999">Status</span>';
+
 /**
  * Send a verification email.
  */
@@ -377,19 +397,24 @@ export async function sendDuplicateRegistrationEmail(email: string) {
  * `confirmUrl` is the public status host link the subscriber clicks.
  */
 export async function sendStatusSubscriptionEmail(email: string, confirmUrl: string) {
-  const wordmark = 'Topodrive <span style="font-weight:400;color:#999999">Status</span>';
+  const to = escapeHtml(email);
 
   const body = `
-    <h1 style="margin:0 0 14px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
-      Almost there — confirm your subscription
+    <h1 style="margin:0 0 16px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
+      Confirm your subscription
     </h1>
     <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.65;color:#666666">
-      Thanks for subscribing to <strong style="color:#080808;font-weight:500">Topodrive Status</strong> updates. We'll email you the moment a service goes down or recovers — no noise, only when it matters.
+      Someone — hopefully you — asked to send <strong style="color:#080808;font-weight:500">Topodrive Status</strong> alerts to <strong style="color:#080808;font-weight:500">${to}</strong>. We only write when something changes:
     </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0 0">
+      <tr><td style="padding:3px 0;font-size:13px;line-height:1.5;color:#666666"><span style="color:#ef4444">&#9679;</span>&nbsp;&nbsp;A service goes down</td></tr>
+      <tr><td style="padding:3px 0;font-size:13px;line-height:1.5;color:#666666"><span style="color:#f59e0b">&#9679;</span>&nbsp;&nbsp;A service is degraded</td></tr>
+      <tr><td style="padding:3px 0;font-size:13px;line-height:1.5;color:#666666"><span style="color:#22c55e">&#9679;</span>&nbsp;&nbsp;A service recovers</td></tr>
+    </table>
     ${ctaButton('Confirm subscription', confirmUrl)}
     ${fallbackLink(confirmUrl)}
     <p style="margin:36px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
-      This confirmation link expires in 7 days. If you didn't request this subscription, you can safely ignore this email — nothing has been set up yet.
+      This link expires in 7 days. Didn't subscribe? Ignore this email — no alerts are active yet.
     </p>
   `;
 
@@ -397,16 +422,86 @@ export async function sendStatusSubscriptionEmail(email: string, confirmUrl: str
     to: email,
     subject: 'Confirm your Topodrive Status subscription',
     text: textWrap([
-      'Thanks for subscribing to Topodrive Status updates.',
-      'Please confirm your email by opening this link:',
+      `Confirm Topodrive Status alerts for ${email}.`,
+      'We only email when a service goes down, is degraded, or recovers.',
+      'Open this link to confirm:',
       confirmUrl,
-      'We will only email you when a service goes down or recovers.',
-      'This link expires in 7 days. If you did not request this, you can ignore this email.',
+      'This link expires in 7 days. If you did not subscribe, ignore this email.',
     ]),
     html: statusShell({
-      preheader: 'One tap to confirm your Topodrive Status alerts.',
+      preheader: 'One click to get outage and recovery alerts for Topodrive services.',
       title: 'Confirm your Topodrive Status subscription',
-      wordmark,
+      wordmark: STATUS_WORDMARK,
+      body,
+    }),
+  });
+}
+
+/* Per-state presentation for incident notifications. `headline`
+ * completes "<Component> …" for both the subject and the H1; `badge`
+ * is the short label beside the state dot. Colors mirror the status
+ * page dots (--down / --warn / --ok). */
+const INCIDENT_STATES: Record<string, { headline: string; badge: string; color: string }> = {
+  down: { headline: 'is down',       badge: 'Service disruption',   color: '#ef4444' },
+  warn: { headline: 'is degraded',   badge: 'Degraded performance', color: '#f59e0b' },
+  ok:   { headline: 'has recovered', badge: 'Back to operational',  color: '#22c55e' },
+};
+const STATE_NOUNS: Record<string, string> = { ok: 'operational', warn: 'degraded', down: 'down' };
+
+/**
+ * Send a status-change notification to a confirmed subscriber.
+ *
+ * Fired by the status monitor on every component transition —
+ * disruptions, degradations, and recoveries — matching what the
+ * subscription confirmation email promises.
+ */
+export async function sendStatusIncidentEmail(email: string, opts: {
+  component: string;
+  from: string | null;
+  to: string;
+  statusUrl: string;
+}) {
+  const meta = INCIDENT_STATES[opts.to]
+    || { headline: `changed to ${opts.to}`, badge: 'Status update', color: '#999999' };
+  const component = escapeHtml(opts.component);
+  const fromNoun = (opts.from && STATE_NOUNS[opts.from]) || opts.from || 'unknown';
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+  const host = opts.statusUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+
+  const lead = opts.to === 'ok'
+    ? `${component} is operational again as of ${stamp} (previously ${escapeHtml(fromNoun)}). The full incident timeline is on the status page.`
+    : `${component} was flagged ${escapeHtml(STATE_NOUNS[opts.to] || opts.to)} at ${stamp} (previously ${escapeHtml(fromNoun)}). We're tracking it — live updates are on the status page.`;
+
+  const body = `
+    <h1 style="margin:0 0 12px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
+      ${component} ${meta.headline}
+    </h1>
+    <p style="margin:0 0 18px;font-family:'Inter',-apple-system,sans-serif;font-size:13px;line-height:1.5;color:#666666">
+      <span style="color:${meta.color}">&#9679;</span>&nbsp; ${meta.badge} · ${stamp}
+    </p>
+    <p style="margin:0;font-family:'Inter',-apple-system,sans-serif;font-size:15px;line-height:1.65;color:#666666">
+      ${lead}
+    </p>
+    ${ctaButton('View live status', opts.statusUrl)}
+    <p style="margin:36px 0 0;font-family:'Inter',-apple-system,sans-serif;font-size:12px;line-height:1.6;color:#999999">
+      You're receiving this because ${escapeHtml(email)} subscribed to alerts at ${escapeHtml(host)}.
+    </p>
+  `;
+
+  const subject = `[Topodrive Status] ${opts.component} ${meta.headline}`;
+  await sendEmail({
+    to: email,
+    subject,
+    text: textWrap([
+      `${opts.component} ${meta.headline}.`,
+      `Previous state: ${fromNoun}. Detected: ${stamp}.`,
+      `Live status: ${opts.statusUrl}`,
+      `You are receiving this because ${email} subscribed to Topodrive Status alerts.`,
+    ]),
+    html: statusShell({
+      preheader: `${opts.component} ${meta.headline} — ${stamp}`,
+      title: subject,
+      wordmark: STATUS_WORDMARK,
       body,
     }),
   });
