@@ -199,9 +199,7 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
     };
   });
   await editor.focus();
-  /* The collapsed-row probe measures at the pill-inclusive editor width
-     (~100px), so the single-line probe string must be short. */
-  await editor.fill('Mobile');
+  await editor.fill('Mobile line one');
   await expect(wrap).toHaveClass(/composer-focused/);
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.waitForTimeout(80);
@@ -269,9 +267,8 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
      controller deliberately does, to avoid an expand/collapse loop near
      the wrap boundary), so the probe string must fit one collapsed line:
      at the 390px reference width a ~21-char draft still wraps and the
-     shell correctly stays expanded. With the effort pill inline the
-     collapsed editor column is ~100px, so keep the probe short. */
-  await editor.fill('One line');
+     shell correctly stays expanded. */
+  await editor.fill('Send one line');
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.waitForTimeout(360);
   await editor.press('Enter');

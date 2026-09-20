@@ -68,11 +68,8 @@ test('topic composer changes geometry only after a second rendered line', async 
       .toBeLessThan(2);
   }
 
-  /* The collapse probe measures at the *collapsed* row width — with the
-     effort pill inline that editor column is ~100px, so the probe string
-     must be short enough to fit one collapsed line. */
   const shrink = await sampleDuring(page, '#topicInputWrap', async () => {
-    await editor.fill('Back');
+    await editor.fill('Back to one line');
   });
   expect(await heightOf(wrap)).toBe(baseline);
   /* Shrinking glides from the tall two-tier height down to the one-row

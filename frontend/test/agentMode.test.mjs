@@ -21,11 +21,3 @@ test('chat requests never carry a manual agent-mode flag', async () => {
   assert.equal(body.agentMode, undefined);
   assert.equal(body.mode, 'chat');
 });
-
-test('chat requests carry the validated response speed preference', async () => {
-  const { buildChatRequestBody } = await import('../src/chat/api.js');
-  localStorage.setItem('socrates-response-speed', 'fast');
-  assert.equal(buildChatRequestBody([{ role: 'user', content: 'hi' }], 100, 0.7).response_speed, 'fast');
-  localStorage.setItem('socrates-response-speed', 'unexpected');
-  assert.equal(buildChatRequestBody([{ role: 'user', content: 'hi' }], 100, 0.7).response_speed, 'standard');
-});
