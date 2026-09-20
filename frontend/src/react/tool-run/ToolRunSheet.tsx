@@ -169,6 +169,17 @@ function ToolRunSheetContent({
                     sheetMode
                   />
                 ))}
+                {request.segment.running.map((call, index) => (
+                  <ToolRunRow
+                    key={call.id}
+                    view={groupView!.running[index]}
+                    startedAt={runStartedAt(call)}
+                    messageId={request.messageId}
+                    readOnly={request.readOnly}
+                    nested
+                    sheetMode
+                  />
+                ))}
               </div>
             </>
           ) : (

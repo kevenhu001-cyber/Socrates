@@ -102,7 +102,7 @@ export function ChatConfiguration() {
       document.removeEventListener('pointerdown', onPointerDown, true);
       document.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [snapshot.open]);
+  }, [snapshot.open, view]);
 
   if (!snapshot.open) return null;
 

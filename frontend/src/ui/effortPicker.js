@@ -1,5 +1,5 @@
 import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
-import { openChatConfiguration } from '../react/chat-configuration/chatConfiguration.bridge.ts';
+import { installChatConfigurationBridge, openChatConfiguration } from '../react/chat-configuration/chatConfiguration.bridge.ts';
 /* ui/effortPicker.js — the composer "思考强度" pill.
  *
  * P_chatgpt-landing (v3). The pill is a fixed-label trigger (思考强度 ⌄)
@@ -69,9 +69,15 @@ export function toggleEffortPicker(el) {
 
 /* Refresh every trigger: the visible pill text stays the fixed i18n label
    (思考强度); the live "model · level" value rides on the tooltip and
-   aria-label so it stays one hover away and announced to screen readers. */
+   aria-label so it stays one hover away and announced to screen readers.
+   The bridge snapshot keeps aria-expanded / data-open in sync with the
+   anchored popover. */
 export function syncEffortUI() {
   var v = _load();
+  var open = false;
+  try {
+    open = installChatConfigurationBridge().getSnapshot().open;
+  } catch (_) { /* bridge may not be installed in test harnesses */ }
   document.querySelectorAll(".effort-picker").forEach(function (picker) {
     /* P_effort-glyph — kept for any residual markup/CSS that still keys off
        the level attribute. */
@@ -84,6 +90,8 @@ export function syncEffortUI() {
       trigger.setAttribute("aria-label", fullLabel);
       trigger.setAttribute("title", fullLabel);
       trigger.setAttribute("data-model-label", modelLabel);
+      trigger.setAttribute("aria-expanded", String(open));
+      trigger.setAttribute("data-open", open ? "true" : "false");
     }
   });
 }
@@ -99,4 +107,5 @@ if (typeof document !== "undefined") {
   });
   window.addEventListener("DOMContentLoaded", function () { try { syncEffortUI(); } catch (_) {} });
   if (document.readyState !== "loading") { try { syncEffortUI(); } catch (_) {} }
+  try { installChatConfigurationBridge().subscribe(syncEffortUI); } catch (_) {}
 }
