@@ -92,14 +92,26 @@ feel real:
 
 The marketing site ([`site/`](site/)) is what the public sees; the
 SPA (`frontend/`) is what learners use. Both are shipped from the
-same repo.
+same repo. The four panels below are the live captures that
+ship with the repo; any image not in `screenshot_*.png` at the
+repo root is **not** referenced from `README.md` (audit 2026-09-20,
+F-006).
+
+> Capture convention: append-only `screenshot_<n>_<view>[_zh].png` at the
+> repo root; PRs that update a screenshot should re-use the same filename
+> when the meaning hasn't changed, and bump the index when it has.
 
 <div align="center">
 
-| Marketing landing | Pricing | About |
-| --- | --- | --- |
-| ![Landing](index-v2.png) | ![Pricing](pricing-v2.png) | ![About](about-v2.png) |
-| `index-v2.png` | `pricing-v2.png` | `about-v2.png` |
+| App home (EN) | App product view |
+| --- | --- |
+| ![Home (EN)](screenshot_1_home.png) | ![Product (EN)](screenshot_2_product.png) |
+| `screenshot_1_home.png` | `screenshot_2_product.png` |
+
+| App home (中文) | App product view (中文) |
+| --- | --- |
+| ![首页 (中文)](screenshot_3_zh_home.png) | ![产品视图 (中文)](screenshot_4_zh_product.png) |
+| `screenshot_3_zh_home.png` | `screenshot_4_zh_product.png` |
 
 </div>
 
@@ -312,8 +324,8 @@ Socrates/
 ├── frontend/               # Vite SPA (React/TS + legacy JS)
 │   ├── index.html
 │   ├── src/
-│   │   ├── main.js         # State/event backbone (~8k lines)
-│   │   ├── styles.css      # All CSS (~3800 lines)
+│   │   ├── main.js         # State/event backbone (~930 lines)
+│   │   ├── styles.css      # All CSS (~12k lines)
 │   │   ├── state.js        # Reactive state object
 │   │   ├── i18n.js         # I18N dictionary
 │   │   ├── windowExports.js# Legacy window.* compat shim
@@ -435,7 +447,7 @@ Actions rather than on a developer workstation. Trigger a debug build with
 `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`; use
 [`release-clients.yml`](.github/workflows/release-clients.yml) for a signed APK/AAB
 and versioned Windows release.
-See [`docs/rn-migration.md`](docs/rn-migration.md) for the phase plan and
+See [`docs/plans/rn-migration.md`](docs/plans/rn-migration.md) for the phase plan and
 acceptance checklist.
 
 ## Configuration
@@ -587,7 +599,7 @@ The Android client is built by
 [`.github/workflows/release-clients.yml`](.github/workflows/release-clients.yml) for
 versioned releases: it verifies, signs, checksums, and attaches Android/Windows
 artifacts to a GitHub Release. Google Play publishing is opt-in and requires a service
-account secret. See [`docs/client-release.md`](docs/client-release.md) for the complete
+account secret. See [`docs/audits/client-release.md`](docs/audits/client-release.md) for the complete
 workflow and secret contract.
 
 ## Security model

@@ -8,11 +8,11 @@
 
 项目存在两条相互冲突的前端路线：
 
-1. `docs/unification-plan.md`（2025）：将 `frontend/`（Vite SPA）整体迁入
+1. `docs/plans/unification-plan.md`（2025）：将 `frontend/`（Vite SPA）整体迁入
    `mobile/`（Expo React Native），以 Expo Web 取代 Web 端，最终删除
    `frontend/`。
-2. `docs/react-typescript-migration.md`（进行中）：保留 Vite SPA，把
-   `main.js`（~9,900 行 vanilla JS）逐岛迁移为 React 19 + TypeScript，
+2. `docs/plans/react-typescript-migration.md`（进行中）：保留 Vite SPA，把
+   `main.js`（迁移前 ~9,900 行 vanilla JS；2026-09 已拆至 ~930 行）逐岛迁移为 React 19 + TypeScript，
    已完成大部分用户可见面（消息列表、composer、cmd-k、sidebar 等）。
 
 同时，对照 LobeHub（LobeChat）的系统性架构，Socrates 需要在
@@ -24,7 +24,7 @@
 
 1. **保留 Vite SPA 作为 Web 客户端**，继续并完成 React/TS 迁移路线。
    `frontend/` 不会被删除。
-2. **搁置** `docs/unification-plan.md` 的 Expo Web 替换方案（不删除该
+2. **搁置** `docs/plans/unification-plan.md` 的 Expo Web 替换方案（不删除该
    文档）。`mobile/` 继续作为原生 Android/iOS 客户端，通过
    `packages/`（`@socrates/core`、`@socrates/contracts`、theme tokens）
    与 Web 共享逻辑。
@@ -49,4 +49,4 @@
 ## 关联
 
 - 执行计划：LobeHub 对齐 + 技术债清理（M1–M4，见会话记录）。
-- Superseded：`docs/unification-plan.md`（头部已标注）。
+- Superseded：`docs/plans/unification-plan.md`（头部已标注）。

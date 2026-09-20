@@ -13,7 +13,7 @@ on:
       - 'packages/core/**'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/build-windows.yml'
-      - 'docs/client-release.md'
+      - 'docs/audits/client-release.md'
   pull_request:
     branches: [main]
     paths:
@@ -22,7 +22,7 @@ on:
       - 'packages/core/**'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/build-windows.yml'
-      - 'docs/client-release.md'
+      - 'docs/audits/client-release.md'
   workflow_dispatch:
     inputs:
       build_profile:

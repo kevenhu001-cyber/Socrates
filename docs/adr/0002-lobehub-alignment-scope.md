@@ -24,7 +24,7 @@ pipeline 化、协议与共享层、体验能力（云 TTS/模型选择/性能�
 3. **构建分包**：`vite.config.js` 将第三方库拆为 `vendor` /
    `vendor-react` chunk，app 代码更新不再击穿 vendor 缓存；新增
    `store` chunk。
-4. **基线**：`docs/react-typescript-migration.md` 追加 M1 基线指标
+4. **基线**：`docs/plans/react-typescript-migration.md` 追加 M1 基线指标
    （main.js 9,902 行 / window 绑定 200+138 / `__socrates*` 桥 98 个），
    M1 完成定义 = 指标清零。
 

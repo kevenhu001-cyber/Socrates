@@ -13,11 +13,11 @@ on:
       - 'assets/buildResources/**'
       - 'deploy.sh'
       - 'docs/api/openapi.yaml'
-      - 'docs/rn-migration.md'
+      - 'docs/plans/rn-migration.md'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/build-windows.yml'
       - '.github/workflows/release-clients.yml'
-      - 'docs/client-release.md'
+      - 'docs/audits/client-release.md'
       - 'desktop/windows/**'
   pull_request:
     branches: [main]
@@ -31,11 +31,11 @@ on:
       - 'assets/buildResources/**'
       - 'deploy.sh'
       - 'docs/api/openapi.yaml'
-      - 'docs/rn-migration.md'
+      - 'docs/plans/rn-migration.md'
       - '.github/workflows/build-apk.yml'
       - '.github/workflows/build-windows.yml'
       - '.github/workflows/release-clients.yml'
-      - 'docs/client-release.md'
+      - 'docs/audits/client-release.md'
       - 'desktop/windows/**'
   workflow_dispatch:
     inputs:

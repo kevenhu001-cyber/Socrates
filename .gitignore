@@ -51,12 +51,20 @@ apply_patch_example.txt
 *.tmp.cjs
 
 # ── Screenshot / audit scratch dirs (playwright QA runs) ──
+.shots/
+.shots-*/
+shots-tmp/
 audit-shots/
+audit_shots/
 tmp-shots/
 frontend/tmp-shots/
+*.shots/
 shots*.cjs
 audit_shots.cjs
 query_args.json
+%TEMP%/
+socr-shots/
+socr-shots-*/
 
 # ── Firecrawl CLI cache ──
 .firecrawl/
@@ -88,7 +96,22 @@ server/_repro_*.mjs
 server/test_browser.mjs
 server/_test_date.mjs
 graphify-out/
+graphify-out-*/
 mobile/e2e-artifacts/
+mobile/docs/qa-*.xml
+debug.log
+# ── Root-level probe files named "-", "%TEMP%", "*.tgz" etc. left by tooling ──
+# ("nul" is a Windows device name; tools that redirect to it under git-bash
+# create a real file that git cannot index.)
+/-
+/-*/
+nul
+# ── Stale desktop/ release output (no first-party source dir under desktop/) ──
+desktop/dist/
+desktop/dist-*/
+desktop/build/
+desktop/.cache/
+desktop/socrates-desktop-web-*.tar.gz
 
 # ── E2E diagnostic / scratch artifacts ──
 # One-off probes that surface during playwright debugging. Note that the
@@ -105,6 +128,7 @@ frontend/index.html.bak
 
 # ── UI mockup screenshots (not needed in version control) ──
 *.png
+!/screenshot_*.png
 !site/media/*.png
 !assets/buildResources/icon_android_1024.png
 !assets/buildResources/icon_android_foreground_1024.png

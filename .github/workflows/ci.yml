@@ -6,8 +6,35 @@ on:
   workflow_dispatch:
   push:
     branches: [main, feat/*]
+    # paths-ignore is cumulative: jobs that do not depend on the changed
+    # paths run trivially and waste CI budget. Doc-only and config-only
+    # changes fall under this opt-out (docs/adr, docs/audits, docs/plans,
+    # docs/STRUCTURE.md, README, AGENTS.md, .gitignore). The 3 jobs in this
+    # workflow (frontend / server / shared) re-trigger on the next PR that
+    # touches code, so docs-only PRs still get reviewed.
+    #
+    # WARNING: when a workflow is skipped by path filtering, GitHub keeps
+    # its checks "Pending" forever — a docs-only PR becomes unmergeable if
+    # branch protection marks Frontend/Server/Shared as required. Either do
+    # not mark them required, or add a no-op mirror workflow (ADR 0009).
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'README.zh.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.gitignore'
+      - '.hintrc'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - 'README.zh.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - '.gitignore'
+      - '.hintrc'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
