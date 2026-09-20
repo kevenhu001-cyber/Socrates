@@ -1,0 +1,116 @@
+{
+  "sessions": [
+    {
+      "id": "s-demo-chat",
+      "title": "Pricing page rewrite",
+      "topic": "Pricing page rewrite",
+      "mode": "chat",
+      "pinned": true,
+      "preview": "Here's a tighter structure for the pricing page…",
+      "totalQ": 3,
+      "_ageMinutes": 12,
+      "createdAt": "2026-05-01T08:02:00.000Z",
+      "updatedAt": "2026-05-04T09:12:00.000Z"
+    },
+    {
+      "id": "s-demo-stream",
+      "title": "Weekly metrics digest",
+      "topic": "Weekly metrics digest",
+      "mode": "chat",
+      "preview": "Pulling together the activation numbers…",
+      "totalQ": 1,
+      "_ageMinutes": 38,
+      "createdAt": "2026-05-04T08:40:00.000Z",
+      "updatedAt": "2026-05-04T09:00:00.000Z"
+    },
+    {
+      "id": "s-rec-1",
+      "title": "Onboarding email sequence",
+      "topic": "Onboarding email sequence",
+      "mode": "chat",
+      "preview": "Draft a 4-email onboarding sequence for trial users…",
+      "totalQ": 5,
+      "_ageMinutes": 160,
+      "createdAt": "2026-05-03T14:10:00.000Z",
+      "updatedAt": "2026-05-03T16:22:00.000Z"
+    },
+    {
+      "id": "s-rec-2",
+      "title": "SQL query for churn cohorts",
+      "topic": "SQL query for churn cohorts",
+      "mode": "chat",
+      "preview": "Write a query that buckets churned accounts by signup month…",
+      "totalQ": 2,
+      "_ageMinutes": 1500,
+      "createdAt": "2026-05-02T10:00:00.000Z",
+      "updatedAt": "2026-05-02T10:18:00.000Z"
+    },
+    {
+      "id": "s-rec-3",
+      "title": "Photosynthesis — tutoring",
+      "topic": "Photosynthesis",
+      "mode": "tutor",
+      "preview": "Let's check what you remember about the Calvin cycle…",
+      "totalQ": 8,
+      "_ageMinutes": 2900,
+      "createdAt": "2026-05-01T19:00:00.000Z",
+      "updatedAt": "2026-05-01T19:45:00.000Z"
+    },
+    {
+      "id": "s-rec-4",
+      "title": "Conference talk outline",
+      "topic": "Conference talk outline",
+      "mode": "chat",
+      "preview": "Outline a 20-minute talk on designing eval harnesses…",
+      "totalQ": 4,
+      "_ageMinutes": 4400,
+      "createdAt": "2026-04-30T11:00:00.000Z",
+      "updatedAt": "2026-04-30T11:52:00.000Z"
+    },
+    {
+      "id": "s-rec-5",
+      "title": "Japanese verb review",
+      "topic": "Japanese verb review",
+      "mode": "chat",
+      "preview": "Quiz me on te-form conjugations, mixed difficulty…",
+      "totalQ": 12,
+      "_ageMinutes": 7000,
+      "createdAt": "2026-04-28T07:30:00.000Z",
+      "updatedAt": "2026-04-28T08:05:00.000Z"
+    },
+    {
+      "id": "s-rec-6",
+      "title": "Vendor comparison: vector DBs",
+      "topic": "Vendor comparison: vector DBs",
+      "mode": "chat",
+      "preview": "Compare pgvector, Qdrant, and Weaviate for our workload…",
+      "totalQ": 6,
+      "_ageMinutes": 13000,
+      "createdAt": "2026-04-25T15:00:00.000Z",
+      "updatedAt": "2026-04-25T16:10:00.000Z"
+    },
+    {
+      "id": "s-rec-7",
+      "title": "Apartment hunt criteria",
+      "topic": "Apartment hunt criteria",
+      "mode": "chat",
+      "preview": "Turn my scattered notes into a weighted decision matrix…",
+      "totalQ": 3,
+      "_ageMinutes": 20000,
+      "createdAt": "2026-04-19T18:20:00.000Z",
+      "updatedAt": "2026-04-19T18:44:00.000Z"
+    },
+    {
+      "id": "s-rec-8",
+      "title": "Renewal forecast model",
+      "topic": "Renewal forecast model",
+      "mode": "chat",
+      "preview": "Sanity-check the assumptions in this renewal forecast…",
+      "totalQ": 7,
+      "_ageMinutes": 43000,
+      "createdAt": "2026-04-02T13:00:00.000Z",
+      "updatedAt": "2026-04-02T14:30:00.000Z"
+    }
+  ],
+  "nextCursor": null
+}

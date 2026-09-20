@@ -28,6 +28,10 @@ export interface ComposerProps {
   onStop: () => void;
   onAttach: (anchor?: { x: number; y: number; width: number; height: number }) => void;
   onChangeReasoningEffort?: (effort: ReasoningEffort) => void;
+  /** Compact-only plain-text model name shown next to the effort label;
+   *  tapping opens the unified ModelConfigSheet via `onOpenConfig`. */
+  modelLabel?: string;
+  onOpenConfig?: () => void;
   activeExtensionLabel?: string | null;
   selectedPlugins?: Array<{ id: string; name: string }>;
   onRemoveActiveExtension?: () => void;
@@ -175,6 +179,8 @@ export const Composer = React.memo(function Composer({
   onStop,
   onAttach,
   onChangeReasoningEffort,
+  modelLabel,
+  onOpenConfig,
   activeExtensionLabel = null,
   selectedPlugins = [],
   onRemoveActiveExtension,
@@ -213,11 +219,12 @@ export const Composer = React.memo(function Composer({
     onError: handleVoiceError,
   });
 
-  // The current SPA phone composer is always a two-row 104px card:
-  // editor on top, controls on the bottom. Desktop keeps the compact resting
-  // pill and expands only when the draft/focus requires it.
+  /* Single-row resting capsule on every viewport, expanding to two rows on
+   * focus or content. This deliberately diverges from the SPA phone
+   * composer (always two rows) and docs/frontend-parity.md: the product
+   * reference is ChatGPT mobile, whose composer rests as a one-row pill. */
   const hasContextChips = Boolean(activeExtensionLabel) || selectedPlugins.length > 0;
-  const isExpanded = isCompact || focused || value.includes('\n') || value.length > 30 || hasContextChips;
+  const isExpanded = focused || value.includes('\n') || value.length > 30 || hasContextChips || attachments.length > 0;
 
   const openAttachMenu = () => {
     const node = attachAnchorRef.current;
@@ -496,23 +503,51 @@ export const Composer = React.memo(function Composer({
             </ScrollView>
 
             <View style={styles.expandedRightRow}>
-              <View ref={effortAnchorRef} collapsable={false}>
+              {isCompact ? (
+                /* ChatGPT phone parity: plain "model · effort" text trigger
+                 * (no pill, no chevron) opening the unified ModelConfigSheet
+                 * bottom sheet. The anchored pill stays desktop-only. */
                 <AnimatedPressable
                   accessibilityRole="button"
-                  accessibilityLabel={t('effort.label') || 'Reasoning effort'}
-                  onPress={openEffortPicker}
-                  style={[styles.effortPill, { backgroundColor: colors.controlFill }]}
+                  accessibilityLabel={`${modelLabel || 'Model'} ${reasoningEffort === 'high'
+                    ? (t('effort.high') || 'High')
+                    : reasoningEffort === 'low'
+                      ? (t('effort.low') || 'Low')
+                      : (t('effort.medium') || 'Medium')}`}
+                  onPress={onOpenConfig}
+                  disabled={!onOpenConfig}
+                  style={styles.modelTrigger}
                 >
-                  <Text style={[styles.effortLabel, { color: colors.text, fontFamily: typography.medium }]}>
+                  <Text numberOfLines={1} style={[styles.modelTriggerName, { color: colors.text, fontFamily: typography.medium }]}>
+                    {modelLabel || 'Model'}
+                  </Text>
+                  <Text numberOfLines={1} style={[styles.modelTriggerEffort, { color: colors.textMuted, fontFamily: typography.body }]}>
                     {reasoningEffort === 'high'
                       ? (t('effort.high') || 'High')
                       : reasoningEffort === 'low'
                         ? (t('effort.low') || 'Low')
                         : (t('effort.medium') || 'Medium')}
                   </Text>
-                  <Ionicons name="chevron-down" size={16} color={colors.text} />
                 </AnimatedPressable>
-              </View>
+              ) : (
+                <View ref={effortAnchorRef} collapsable={false}>
+                  <AnimatedPressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('effort.label') || 'Reasoning effort'}
+                    onPress={openEffortPicker}
+                    style={[styles.effortPill, { backgroundColor: colors.controlFill }]}
+                  >
+                    <Text style={[styles.effortLabel, { color: colors.text, fontFamily: typography.medium }]}>
+                      {reasoningEffort === 'high'
+                        ? (t('effort.high') || 'High')
+                        : reasoningEffort === 'low'
+                          ? (t('effort.low') || 'Low')
+                          : (t('effort.medium') || 'Medium')}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={colors.text} />
+                  </AnimatedPressable>
+                </View>
+              )}
 
               <AnimatedPressable
                 accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
@@ -724,6 +759,21 @@ const styles = StyleSheet.create({
     maxWidth: 125,
     fontSize: 12,
     lineHeight: 16,
+  },
+  modelTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+    minHeight: 40,
+  },
+  modelTriggerName: {
+    fontSize: 15,
+    flexShrink: 1,
+  },
+  modelTriggerEffort: {
+    fontSize: 15,
+    flexShrink: 0,
   },
   effortPill: {
     height: 40,

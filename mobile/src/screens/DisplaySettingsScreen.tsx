@@ -128,7 +128,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
 
           <View style={styles.row}>
             <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>Text size</Text>
+              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('display.textSize')}</Text>
               <Text style={[styles.value, { color: colors.textSubtle, fontFamily: typography.mono }]}>
                 {FONT_LABELS[Math.max(0, DISPLAY_FONT_STEPS.indexOf(prefs.fontScale as never))] || 'M'}
               </Text>
@@ -143,7 +143,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
 
           <View style={styles.row}>
             <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>Content width</Text>
+              <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('display.contentWidth')}</Text>
               <Text style={[styles.value, { color: colors.textSubtle, fontFamily: typography.mono }]}>
                 {WIDTH_LABELS[
                   Math.max(
@@ -165,7 +165,7 @@ export function DisplaySettingsScreen({ navigation }: Props) {
             onPress={() => displayPrefsStore.set({ gridEnabled: !prefs.gridEnabled })}
             style={styles.toggleRow}
           >
-            <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>Background grid</Text>
+            <Text style={[styles.label, { color: colors.textMuted, fontFamily: typography.medium }]}>{t('display.backgroundGrid')}</Text>
             <View
               style={[
                 styles.toggle,

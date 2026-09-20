@@ -264,7 +264,7 @@ export function TutorScreen({ navigation, route }: Props) {
             </View>
             <View style={styles.stepper}>
               <AnimatedPressable
-                accessibilityLabel="Decrease question count"
+                accessibilityLabel={t('exam.decreaseCount')}
                 onPress={() => setQuestionCount((value) => Math.max(1, value - 1))}
                 style={[styles.stepperButton, { backgroundColor: colors.surfaceRaised }]}
               >
@@ -274,7 +274,7 @@ export function TutorScreen({ navigation, route }: Props) {
                 {questionCount}
               </Text>
               <AnimatedPressable
-                accessibilityLabel="Increase question count"
+                accessibilityLabel={t('exam.increaseCount')}
                 onPress={() => setQuestionCount((value) => Math.min(10, value + 1))}
                 style={[styles.stepperButton, { backgroundColor: colors.surfaceRaised }]}
               >

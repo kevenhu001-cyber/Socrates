@@ -1,0 +1,44 @@
+{
+  "providers": [
+    {
+      "id": "beagle-built-in",
+      "label": "Beagle",
+      "url": "/api/minimax/v1",
+      "model": "",
+      "isActive": true,
+      "isBuiltIn": true,
+      "isMultimodal": true,
+      "hasKey": true
+    },
+    {
+      "id": "prov-openai",
+      "label": "GPT-5.2",
+      "url": "https://api.openai.com/v1",
+      "model": "gpt-5.2",
+      "keyHint": "sk-…4f2a",
+      "isActive": false,
+      "isMultimodal": true,
+      "hasKey": true
+    },
+    {
+      "id": "prov-claude",
+      "label": "Claude Sonnet 4.6",
+      "url": "https://api.anthropic.com/v1",
+      "model": "claude-sonnet-4-6",
+      "keyHint": "sk-ant-…9d1c",
+      "isActive": false,
+      "isMultimodal": true,
+      "hasKey": true
+    },
+    {
+      "id": "prov-gemini",
+      "label": "Gemini 3 Pro",
+      "url": "https://generativelanguage.googleapis.com/v1beta",
+      "model": "gemini-3-pro",
+      "keyHint": "AIza…71be",
+      "isActive": false,
+      "isMultimodal": true,
+      "hasKey": true
+    }
+  ]
+}

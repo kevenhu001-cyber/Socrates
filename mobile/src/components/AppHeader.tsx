@@ -139,7 +139,7 @@ function AppHeaderImpl({
               onPress={openDrawer}
               hitSlop={8}
               scale={0.94}
-              style={[styles.circleBtn, styles.circleBtnCompact, { borderColor: 'transparent', backgroundColor: 'transparent' }]}
+              style={[styles.circleBtn, styles.circleBtnCompact, { borderColor: 'transparent', backgroundColor: colors.controlFill }]}
             >
               <HamburgerLines color={colors.text} />
             </AnimatedPressable>
@@ -156,7 +156,7 @@ function AppHeaderImpl({
               isCompact ? styles.circleBtnCompact : null,
               {
                 borderColor: isCompact ? 'transparent' : colors.border,
-                backgroundColor: isCompact ? 'transparent' : circleBg,
+                backgroundColor: isCompact ? colors.controlFill : circleBg,
               },
             ]}
           >
@@ -249,8 +249,9 @@ function AppHeaderImpl({
           <View style={styles.actionGroup}>
             {onSearchInSession ? (
               <AnimatedPressable
-                accessibilityLabel="Find in conversation"
+                accessibilityLabel={t('chat.findInConversation')}
                 onPress={onSearchInSession}
+                hitSlop={10}
                 style={[styles.actionBtn, { borderColor: colors.border }]}
               >
                 <Ionicons name="search-outline" size={15} color={colors.textMuted} />
@@ -260,6 +261,7 @@ function AppHeaderImpl({
               <AnimatedPressable
                 accessibilityLabel={t('common.share') || 'Share'}
                 onPress={onShare}
+                hitSlop={10}
                 style={[styles.actionBtn, { borderColor: colors.border }]}
               >
                 <Ionicons name="share-outline" size={15} color={colors.textMuted} />
@@ -268,6 +270,7 @@ function AppHeaderImpl({
             <AnimatedPressable
               accessibilityLabel={t('common.more') || 'More'}
               onPress={onMore || openDrawer}
+              hitSlop={10}
               style={[styles.actionBtn, { borderColor: colors.border }]}
             >
               <Ionicons name="ellipsis-horizontal" size={15} color={colors.textMuted} />
@@ -306,7 +309,7 @@ function AppHeaderImpl({
                   backgroundColor: isIncognito
                     ? colors.accentSoft
                     : isCompact
-                      ? 'transparent'
+                      ? colors.controlFill
                       : circleBg,
                 },
               ]}
@@ -354,12 +357,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* Web mobile forces the top-bar affordances to 40px transparent rounded
-   * squares (mobile-parity.css:557-587). */
+  /* ChatGPT phone parity: filled 44dp circles (reference home/composer
+   * shots) — deliberately not the web's 40px transparent rounded squares
+   * (mobile-parity.css:557-587). */
   circleBtnCompact: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 0,
     backgroundColor: 'transparent',
   },

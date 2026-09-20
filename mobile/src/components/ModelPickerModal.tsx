@@ -33,12 +33,12 @@ interface Props {
   onManageSettings?: () => void;
 }
 
-function providerName(provider: ApiProvider): string {
+export function providerName(provider: ApiProvider): string {
   if (provider.label && provider.label !== 'Default') return provider.label;
   return provider.model || provider.label || 'Model';
 }
 
-function providerSubline(provider: ApiProvider): string {
+export function providerSubline(provider: ApiProvider): string {
   if (provider.isBuiltIn) return '';
   if (provider.model && provider.model !== providerName(provider)) return provider.model;
   return provider.url || '';

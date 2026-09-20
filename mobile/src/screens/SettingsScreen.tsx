@@ -285,9 +285,9 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
 
           <View style={[styles.section, isDark && { borderTopColor: withAlpha(colors.border, 0.5), borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14 }]}>
             <View style={styles.sectionHead}>
-              <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>Model providers</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('settings.providers')}</Text>
               <Text style={[styles.sectionDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
-                Add a provider or choose the active model.
+                {t('settings.providersHint')}
               </Text>
             </View>
 
@@ -309,7 +309,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
                   },
                 ]}
               >
-                <AnimatedPressable onPress={() => setExternalApi(false)} style={styles.radioButton}>
+                <AnimatedPressable onPress={() => setExternalApi(false)} hitSlop={10} style={styles.radioButton}>
                   <Text style={[styles.radio, { color: !settings.externalApiOn ? colors.accent : colors.textSubtle }]}>
                     {!settings.externalApiOn ? '●' : '○'}
                   </Text>
@@ -345,6 +345,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
               >
                 <AnimatedPressable
                   onPress={() => setSettings((current) => ({ ...current, externalApiOn: true, activeId: provider.id }))}
+                  hitSlop={10}
                   style={styles.radioButton}
                 >
                   <Text style={[styles.radio, { color: settings.externalApiOn && settings.activeId === provider.id ? colors.accent : colors.textSubtle }]}>
@@ -380,9 +381,9 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
 
           <View style={[styles.section, isDark && { borderTopColor: withAlpha(colors.border, 0.5), borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 14 }]}>
             <View style={styles.sectionHead}>
-              <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>Assistant tone</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text, fontFamily: typography.semibold }]}>{t('settings.assistantTone')}</Text>
               <Text style={[styles.sectionDesc, { color: colors.textMuted, fontFamily: typography.body }]}>
-                Choose how Socrates speaks during a session.
+                {t('settings.toneHint')}
               </Text>
             </View>
             <View style={styles.toneGrid}>

@@ -15,7 +15,10 @@
     "test:e2e": "detox test -c android.debug",
     "check:parity": "node scripts/check-parity-manifest.mjs",
     "check:theme": "node scripts/check-theme-drift.mjs",
-    "verify:apk": "node scripts/verify-apk.mjs"
+    "verify:apk": "node scripts/verify-apk.mjs",
+    "visual:build": "EXPO_PUBLIC_API_BASE_URL=http://127.0.0.1:8787/api/v2 expo export --platform web --output-dir dist-visual",
+    "visual:capture": "node scripts/visual/capture.mjs",
+    "visual:all": "npm run visual:build && npm run visual:capture"
   },
   "expo": {
     "install": {

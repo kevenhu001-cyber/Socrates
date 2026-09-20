@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { motionEasing, withAlpha } from '../theme/theme';
+import { useT } from '../i18n';
 
 export type OverlayPresentation = 'center' | 'bottom';
 
@@ -47,6 +48,7 @@ export function Overlay({
   style,
 }: OverlayProps) {
   const { colors, radius, shadows } = useTheme();
+  const t = useT();
   const opacity = useRef(new Animated.Value(0)).current;
   const translate = useRef(new Animated.Value(presentation === 'bottom' ? 28 : 12)).current;
 
@@ -95,7 +97,7 @@ export function Overlay({
       <View style={[styles.root, presentation === 'bottom' && styles.bottomRoot]}>
         <Animated.View pointerEvents="box-none" style={[styles.backdrop, { opacity }]}>
           <Pressable
-            accessibilityLabel="Close"
+            accessibilityLabel={t('common.close')}
             disabled={!dismissOnBackdrop}
             onPress={dismissOnBackdrop ? onClose : undefined}
             style={[StyleSheet.absoluteFill, { backgroundColor: scrimColor ?? colors.scrimModal }]}

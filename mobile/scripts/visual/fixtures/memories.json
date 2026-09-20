@@ -1,0 +1,8 @@
+{
+  "memories": [
+    { "id": "mem-1", "text": "Maya prefers bullet-point summaries over long paragraphs.", "source": "user", "enabled": true, "createdAt": "2026-01-04T10:00:00.000Z" },
+    { "id": "mem-2", "text": "Working on the Northwind Q3 launch; weekly review on Thursdays.", "source": "chat", "enabled": true, "createdAt": "2026-01-11T15:22:00.000Z" },
+    { "id": "mem-3", "text": "Use metric units and ISO dates in all written deliverables.", "source": "user", "enabled": true, "createdAt": "2026-02-02T08:41:00.000Z" }
+  ],
+  "nextCursor": null
+}

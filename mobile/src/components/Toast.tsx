@@ -3,6 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
+import { useT } from '../i18n';
 import { motionEasing, withAlpha, type Palette } from '../theme/theme';
 import { AnimatedPressable } from './AnimatedPressable';
 
@@ -152,6 +153,7 @@ function toneFor(type: ToastType, colors: Palette): string {
  * skipped because the queue already keeps at most 3 items on screen. */
 function ToastCard({ item, colors }: { item: ToastItem; colors: Palette }) {
   const { typography } = useTheme();
+  const t = useT();
   const opacity = useRef(new Animated.Value(0)).current;
   const translate = useRef(new Animated.Value(8)).current;
   const tone = toneFor(item.type, colors);
@@ -185,7 +187,7 @@ function ToastCard({ item, colors }: { item: ToastItem; colors: Palette }) {
       <AnimatedPressable
         testID="toast-close"
         accessibilityRole="button"
-        accessibilityLabel="Dismiss"
+        accessibilityLabel={t('common.dismiss')}
         onPress={() => dismissToast(item.id)}
         style={styles.close}
       >

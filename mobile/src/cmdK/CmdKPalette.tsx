@@ -366,7 +366,7 @@ export function CmdKPalette({
       statusBarTranslucent
     >
       <Pressable
-        accessibilityLabel="Close command palette"
+        accessibilityLabel={t('cmdK.close')}
         onPress={() => cmdKStore.close()}
         style={[styles.backdrop, { backgroundColor: colors.scrimModal }]}
       >
@@ -408,7 +408,7 @@ export function CmdKPalette({
                 }}
               />
               {query ? (
-                <Pressable onPress={() => setQuery('')} accessibilityLabel="Clear">
+                <Pressable onPress={() => setQuery('')} accessibilityLabel={t('common.clear')}>
                   <Ionicons name="close-circle" size={18} color={colors.textSubtle} />
                 </Pressable>
               ) : null}
