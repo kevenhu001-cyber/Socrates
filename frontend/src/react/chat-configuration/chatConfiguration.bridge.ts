@@ -1,5 +1,5 @@
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
-import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences';
+import { createImmutableBridge, useBridge } from '../../lib/bridge/index.ts';
+import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
 
 declare global {
