@@ -480,8 +480,12 @@ installDiagnosticFlowListeners();
 /* B5: extracted to chat/turnUi.js */
 /* B5: retry-viewport singleton centralized in chat/turnState.js (imported). */
 
-/* looksLikeMetaInstruction + appendThinking extracted to
-   src/ui/thinkingPill.js (Phase 1B split). Imported at the top. */
+/* thinkingPill.js 已删除（迭代 1 · B2）：其 DOM 药丸挂载器在
+   P_declarative-tool-run 声明式改造后无任何引用方 —— 状态行是
+   数据（message._liveStatus），唯一绘制者是 react/tool-run/TurnStatus；
+   开面板走 ui/messageSnapshot.publishThinkingPanelEvent（app/legacyBridge.js
+   的 gateway.thinking.openPanel 也路由到它）；工具标签映射的单一来源
+   是 react/tool-run/labels.ts。 */
 
 
 

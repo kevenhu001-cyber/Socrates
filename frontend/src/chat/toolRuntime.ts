@@ -22,7 +22,7 @@
 /* Type-only: the event shape is owned by the React store, but this module is
    loaded straight from Node by test/toolRuntime.test.mjs, so the runtime
    linkage stays the `window.__socratesReactChatBridge` global (same hand-off
-   `publishReactChatRuntime` in main.js and ui/thinkingPill.js use). */
+   `publishReactChatRuntime` in ui/reactBridge.js uses). */
 import type { ChatRuntimeEvent } from '../react/types/domain';
 
 import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.js';

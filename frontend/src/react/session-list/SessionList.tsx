@@ -25,23 +25,35 @@ function safeId(sessionId: string): string {
   return 'r-' + Math.abs(hash);
 }
 
-const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+const MONTH_KEYS = ['recents.month.1', 'recents.month.2', 'recents.month.3', 'recents.month.4',
+  'recents.month.5', 'recents.month.6', 'recents.month.7', 'recents.month.8',
+  'recents.month.9', 'recents.month.10', 'recents.month.11', 'recents.month.12'];
+const MONTH_FALLBACKS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
+
+/* t() with an English fallback when the key is missing from the bundle —
+   same guard shape SidebarNav uses. */
+function ti18n(key: string, fallback: string): string {
+  const v = t(key);
+  return v && v !== key ? v : fallback;
+}
 
 /* UI-align: open-webui-style time buckets for the session list.
    Pinned rows get their own group at the top; the rest fall into
-   Today / Yesterday / Previous 7 days / Previous 30 days / month / year. */
+   Today / Yesterday / Previous 7 days / Previous 30 days / month / year.
+   All labels are i18n keys — the buckets used to be hardcoded English,
+   which showed through in the zh locale. */
 function timeGroupLabel(session: SessionItem, now: Date): string {
-  if (session.pinned) return 'Pinned';
+  if (session.pinned) return ti18n('recents.groupPinned', 'Pinned');
   const raw = session.updatedAt || session.createdAt || Date.now();
   const d = new Date(raw);
   const ts = d.getTime();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  if (ts >= startOfDay) return 'Today';
-  if (ts >= startOfDay - 86400000) return 'Yesterday';
-  if (ts >= startOfDay - 7 * 86400000) return 'Previous 7 days';
-  if (ts >= startOfDay - 30 * 86400000) return 'Previous 30 days';
-  if (d.getFullYear() === now.getFullYear()) return MONTH_NAMES[d.getMonth()];
+  if (ts >= startOfDay) return ti18n('recents.groupToday', 'Today');
+  if (ts >= startOfDay - 86400000) return ti18n('recents.groupYesterday', 'Yesterday');
+  if (ts >= startOfDay - 7 * 86400000) return ti18n('recents.groupPrev7', 'Previous 7 days');
+  if (ts >= startOfDay - 30 * 86400000) return ti18n('recents.groupPrev30', 'Previous 30 days');
+  if (d.getFullYear() === now.getFullYear()) return ti18n(MONTH_KEYS[d.getMonth()], MONTH_FALLBACKS[d.getMonth()]);
   return String(d.getFullYear());
 }
 
@@ -58,9 +70,11 @@ function buildMeta(session: SessionItem): string[] {
   const meta: string[] = [];
   meta.push(formatRelativeTime(session.updatedAt || session.createdAt || Date.now()));
   const qCount = session.totalQ;
-  if (qCount) meta.push(String(qCount) + ' Qs');
+  if (qCount) meta.push(ti18n('session.metaQuestions', '{n} Qs').replace('{n}', String(qCount)));
   if (session.branchedFrom) {
-    meta.push(session.branchedFrom.reExplain ? 'Re-explained' : 'Branched');
+    meta.push(session.branchedFrom.reExplain
+      ? ti18n('session.metaReExplained', 'Re-explained')
+      : ti18n('session.metaBranched', 'Branched'));
   }
   return meta;
 }
@@ -111,7 +125,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStar
               dangerouslySetInnerHTML={{ __html: PIN_ICON }}
             />
           )}
-          <div className="recent-item-text">{session.title || session.topic || '(untitled)'}</div>
+          <div className="recent-item-text">{session.title || session.topic || ti18n('session.untitled', '(untitled)')}</div>
           {label && <span className="recent-item-label">{label}</span>}
         </div>
         <div className="recent-item-meta">

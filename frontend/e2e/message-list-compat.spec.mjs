@@ -81,7 +81,10 @@ test('message list renders assistant messages with toolbar and model label', asy
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Helpful"]')).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Not helpful"]')).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]')).toHaveCount(1);
-  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Branch from here"]')).toHaveCount(1);
+  /* E1: branch moved behind the "…" overflow. The item stays mounted with
+     [hidden], so count still asserts presence; select by data-msg-action
+     so the assertion survives label translation. */
+  await expect(toolbar.locator('button[data-msg-action="branch"]')).toHaveCount(1);
 });
 
 test('message list snapshots react to message-added events', async ({ page }) => {
@@ -205,7 +208,9 @@ test('message list toolbar action buttons dispatch to legacy window globals', as
   await assistantBubble.hover();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]').click();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Helpful"]').click();
-  await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Branch from here"]').click();
+  /* E1: branch lives in the overflow menu now — open "…" before clicking. */
+  await assistantBubble.locator('.msg-toolbar-more-btn').click();
+  await assistantBubble.locator('button[data-msg-action="branch"]').click();
 
   const assistantResult = await page.evaluate(() => ({
     edits: window.__msgSpecEditCalls,
