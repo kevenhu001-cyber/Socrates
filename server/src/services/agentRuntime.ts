@@ -28,7 +28,7 @@ import {
   ensureWorkspaceInstructions,
   removeSessionWorkspace,
   sessionWorkspaceKey,
-} from './workspacePaths.js';
+} from './util/workspacePaths.js';
 import {
   PI_AGENT_ENABLED,
   runPiAgentTask,
@@ -42,7 +42,7 @@ import {
   limitsFromPolicy,
   normalizeWorkspaceLimits,
   workspaceResourceSnapshot,
-} from './workspaceResources.js';
+} from './util/workspaceResources.js';
 
 export const WORKSPACE_AGENT_ENABLED = PI_AGENT_ENABLED;
 export const WORKSPACE_AGENT_BACKGROUND_ENABLED = PI_AGENT_ENABLED;

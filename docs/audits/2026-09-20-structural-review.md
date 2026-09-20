@@ -139,6 +139,17 @@
 - 没有独立 CI gate
 - 用途：mobile 用 rn.ts；是否必需 vs mobile 自身的 theme/i18n 体系待评估
 
+### F-016 · 后端测试源码 `.js` / `.ts` 扩展名不一致（**预先存在**，与本次审查改动无关）
+- **描述**：`server/test/crypto.test.js` 等测试 `import 'src/lib/crypto.js'`，但实际源是 `server/src/lib/crypto.ts`（**整个目录所有文件都是 `.ts`，不存在 `.js` 副本**）。Node 24 ESM resolver 默认不允许扩展名 mismatch，导致 `node --test` 直接抛 `ERR_MODULE_NOT_FOUND`。
+- **触发验证**：本次审查做最终验证时跑 `node --test` 一组 server test，5/5 全部 fail；追踪到不是 P0 改动回归，是同一 ESM 解析问题。
+- **路径范围**：`server/test/*.test.js` 的 import 段（不仅 crypto，其它可能也踩同一坑；本次抽测 5 个全部 fail）。
+- **修复方向（不在本次 PR 范围内）**：
+  - 选项 A：用 `tsx --test` 跑测试（`tsx` 已安装在 server node_modules）。
+  - 选项 B：把测试 import 的 `.js` 后缀去掉（`import '../src/lib/crypto'`）——仅 tsx/loader 下可解析，纯 Node ESM 要求显式扩展名，单独 `node --test` 仍会失败；选此项等于锁定"必须经 tsx 运行"。
+  - 选项 C：迁测试到 `.test.ts` + 项目级 ts-node/tsx runner。
+- **实际不影响 CI**：CI 用 `node scripts/run-tests.mjs` 等命令，可能已在内部跑 `tsx`/`ts-node`，所以 git history 里 CI 一直"绿"；本地 `node --test` 才暴露 mismatch。
+- **下一步**：建议单独开 ADR（不在本次 P0/P1 范围）。F-016 不阻塞 P0/P1 PR 落地。
+
 ---
 
 ## 2. 治理原则（来源：`docs/adr/0003-structural-debt-categories.md`）
@@ -196,12 +207,12 @@ PR-P2.1 · services/ 子分组（重命名）
 - 文件：`server/src/services/{llm,tools,auth,integrations,infra}/`
 - 涉及 import 路径批量修改
 - 验收：`server/` 内 `grep "from.*services/"` 全部指向新路径，typecheck 全绿
+- **PR-0010.1 已落地 2026-09-20**：5 文件（artifactOwnership / workspacePaths / workspaceResources / cleanupDb / fileArtifacts）迁入 `services/util/`；6 caller + 3 test import path 全部更新；`server tsc --noEmit` exit=0；`server/scripts/run-tests.mjs` 57 suites 全 pass / 0 fail。
 
-PR-P2.2 · vendor-files 精减
-- ADR 0011：vendor 三选一精减
-- 决策点：plotly / mermaid / echarts 三选二
-- 文件：删除 `frontend/src/vendor-files/{echarts,mermaid,plotly}.min.js` 不需要的
-- 验收：构建产物大小记录于 ADR；E2E 验证 viz 卡片正常
+PR-P2.2 · vendor-files 文档对齐（非"三选一精减"）
+- ADR 0011：vendor 来源策略决策（**校正 ADR-0010 草案中原"三选一"假设，详见 ADR 0011**：实测 5 个 vendor bundle 全部被实际加载使用，删除会破坏 viz 卡片）
+- 真实动作：修 README + 新建 `frontend/src/vendor-files/README.md`（已落地 2026-09-20，PR-0011.1）+ 后续 PR-0011.2 引入 `scripts/verify-vendor-sri.mjs` 验证脚本
+- 验收：`git grep vendored` 在 README 与 codebase 一致；`verify-vendor-sri.mjs` 失败阻断 CI
 
 PR-P2.3 · styles.css 拆分
 - ADR 0012：styles.css 拆分路线

@@ -9,14 +9,14 @@
  */
 import { lt, sql, and } from 'drizzle-orm';
 import fs from 'node:fs/promises';
-import { getDb } from '../db/index.js';
+import { getDb } from '../../db/index.js';
 import {
   authSessions, pendingRegistrations, verificationTokens,
   usageEvents, auditEvents, executions, files,
   statusMonitorEvents, statusSubscribers,
   ttsResults,
-} from '../db/schema.js';
-import { codeInterpreter } from './codeInterpreter.js';
+} from '../../db/schema.js';
+import { codeInterpreter } from '../codeInterpreter.js';
 
 let _timer: ReturnType<typeof setInterval> | null = null;
 

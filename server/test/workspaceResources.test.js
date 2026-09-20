@@ -11,7 +11,7 @@ import {
   normalizeWorkspaceLimits,
   workspaceDiskUsageBytes,
   workspaceResourceSnapshot,
-} from '../src/services/workspaceResources.js';
+} from '../src/services/util/workspaceResources.js';
 
 test('workspace limits clamp to the supported range and fall back to defaults', () => {
   assert.deepEqual(normalizeWorkspaceLimits({ maxMemoryMb: 1, maxDiskMb: 1 }), {

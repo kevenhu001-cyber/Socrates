@@ -6,7 +6,7 @@
  */
 
 import { closeDb } from '../db/index.js';
-import { stopExpiredCleanup } from '../services/cleanupDb.js';
+import { stopExpiredCleanup } from '../services/util/cleanupDb.js';
 import { stopRustFetchWorker } from '../services/rustFetchWorker.js';
 import type { Server } from 'node:http';
 

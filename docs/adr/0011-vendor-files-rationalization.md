@@ -29,7 +29,7 @@
 
 ### A. 把 vendor-files 全部保留 + 文档对齐（采用本 ADR）
 - 行动：
-  1. 修 README "Tech stack / CDN deps"段，明确说 KaTeX/marked/Plotly/Mermaid/ECharts/highlight.js 都是 vendor-files 自带，**无 CDN 兜底**。
+  1. 修 README "Tech stack / CDN deps"段，明确说 KaTeX/highlight.js/Plotly/Mermaid/ECharts 是 `vendor-files/` 自带 UMD，marked/DOMPurify/fuse.js 走 npm bundle —— **均无 CDN 兜底**。
   2. 写一份 `frontend/src/vendor-files/README.md`，说明每个文件的来源（upstream URL + commit）、SRI hash（首版生成、锁进 vendor-files/）、以及"何时更新"的策略。
   3. 加 `docs/adr/0011-vendor-files-rationalization.md`（本 ADR）为"新增 heavy 库"的归口。
 - 优：与实测选择一致；最小工程；不破坏 viz 卡片。

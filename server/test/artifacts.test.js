@@ -2,7 +2,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { requireOwnedArtifact } from '../src/services/artifactOwnership.js';
+import { requireOwnedArtifact } from '../src/services/util/artifactOwnership.js';
 import { NotFound } from '../src/lib/errors.js';
 
 function fakeDbReturning(rows) {
