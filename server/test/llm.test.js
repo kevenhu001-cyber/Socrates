@@ -154,6 +154,45 @@ describe('streamChatCompletion: happy path', () => {
     assert.deepEqual(sentBody.thinking, { type: 'enabled' });
   });
 
+  test('fast response speed requests priority service tier', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([{ choices: [{ delta: { content: 'fast' }, finish_reason: 'stop' }] }, sseDone()]),
+    );
+    await streamChatCompletion(
+      { ...BASE_OPTS, response_speed: 'fast' },
+      () => {}, () => {}, () => {},
+    );
+    const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
+    assert.equal(sentBody.service_tier, 'priority');
+  });
+
+  test('priority rejection falls back without dropping tools or reasoning fields', async () => {
+    globalThis.fetch = mock.fn(async (_url, init) => {
+      const body = JSON.parse(init.body);
+      if (body.service_tier) return makeJsonResponse({ error: 'service_tier unsupported' }, 400);
+      return makeSseResponse([{ choices: [{ delta: { content: 'standard' }, finish_reason: 'stop' }] }, sseDone()]);
+    });
+    const fallbacks = [];
+    await streamChatCompletion(
+      {
+        ...BASE_OPTS,
+        response_speed: 'fast',
+        reasoning_effort: 'high',
+        extra_body: { reasoning_split: true },
+        tools: [{ type: 'function', function: { name: 'web_search' } }],
+        onPreferenceFallback: (detail) => fallbacks.push(detail),
+      },
+      () => {}, () => {}, () => {},
+    );
+    assert.equal(globalThis.fetch.mock.calls.length, 2);
+    const fallbackBody = JSON.parse(globalThis.fetch.mock.calls[1].arguments[1].body);
+    assert.equal(fallbackBody.service_tier, undefined);
+    assert.equal(fallbackBody.reasoning_effort, 'high');
+    assert.equal(fallbackBody.reasoning_split, true);
+    assert.equal(fallbackBody.tools[0].function.name, 'web_search');
+    assert.deepEqual(fallbacks, [{ preference: 'response_speed', requested: 'fast', applied: 'standard' }]);
+  });
+
   test('falls back once without tools when a provider rejects native tools with 400', async () => {
     globalThis.fetch = mock.fn(async (_url, init) => {
       const body = JSON.parse(init.body);

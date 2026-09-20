@@ -11,13 +11,14 @@
  * The elapsed timer is driven by one shared 250ms tick per running row rather
  * than the old global RUNNING_INLINE_ROWS table.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { STROKE_ICONS, toolIcon } from '../../ui/icons/toolIcons.js';
 import { formatSeconds } from './labels.js';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps.js';
 import { ToolRunApproval } from './ToolRunApproval.js';
 import { ToolRunDetail } from './ToolRunDetail.js';
+import { useToolRunSheet } from './ToolRunSheetContext.js';
 import type { ToolRunState, ToolRunView } from './toolRunModel';
 import { useElapsed } from './useElapsed.js';
 
@@ -31,6 +32,8 @@ export interface ToolRunRowProps {
   readOnly?: boolean;
   /** True when this row sits inside a collapsed group (tighter rhythm). */
   nested?: boolean;
+  /** Group rows rendered inside the mobile sheet expand in place, not a new sheet. */
+  sheetMode?: boolean;
 }
 
 function metaParts(view: ToolRunView, elapsedMs: number): string {
@@ -82,8 +85,15 @@ function runSectionState(state: ToolRunState): 'done' | 'failed' | 'cancelled' {
   return 'done';
 }
 
-export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: ToolRunRowProps) {
+export function ToolRunRow({ view, startedAt, messageId, readOnly, nested, sheetMode }: ToolRunRowProps) {
   const [open, setOpen] = useState(false);
+  const toolSheet = useToolRunSheet();
+  useEffect(() => {
+    const activeSheet = toolSheet.sheet;
+    if (activeSheet?.kind === 'tool' && activeSheet.id === view.id && activeSheet.view !== view) {
+      toolSheet.refreshTool(view);
+    }
+  }, [toolSheet.sheet, toolSheet.refreshTool, view]);
   /* A call blocked on approval is still in flight — it keeps the live shape and
      the spinner, because the run has not ended, it is waiting for the reader. */
   const inFlight = view.state === 'running' || view.state === 'awaiting';
@@ -143,7 +153,15 @@ export function ToolRunRow({ view, startedAt, messageId, readOnly, nested }: Too
         open={expanded}
         onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}
       >
-        <summary className="tool-inline-head">
+        <summary
+          className="tool-inline-head"
+          aria-haspopup={toolSheet.isNarrowViewport && !sheetMode ? 'dialog' : undefined}
+          onClick={(event) => {
+            if (sheetMode || !toolSheet.isNarrowViewport) return;
+            event.preventDefault();
+            toolSheet.openTool(view, messageId, readOnly, event.currentTarget);
+          }}
+        >
           <RowHead view={view} elapsedMs={elapsedMs} />
         </summary>
         {approval}

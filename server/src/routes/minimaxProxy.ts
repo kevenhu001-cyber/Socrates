@@ -38,7 +38,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       });
     }
 
-    const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, extra_body } = req.body;
+    const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body } = req.body;
+    const responseSpeed = response_speed === 'fast' ? 'fast' : 'standard';
 
     /* P_beagle-system-prompt — inject the full behavior spec from
        prompts/beagle.md as the first system message. This is the
@@ -166,7 +167,13 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           /* P_deepseek-mode — forward reasoning flags so the upstream
              emits reasoning_content chunks. */
           reasoning_effort,
+          response_speed: responseSpeed,
           extra_body: safeExtraBody,
+          onPreferenceFallback: (detail) => {
+            try {
+              res.write(`event: preference_fallback\ndata: ${JSON.stringify(detail)}\n\n`);
+            } catch { /* client disconnected */ }
+          },
         },
         // onChunk
         (chunk) => {
@@ -239,6 +246,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         temperature: temperature ?? 0.3,
         /* P_deepseek-mode — forward reasoning flags. */
         reasoning_effort,
+        response_speed: responseSpeed,
         extra_body: safeExtraBody,
       });
 
@@ -246,6 +254,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         /* P_deepseek-mode — preserve reasoning_content on the
            response so the client can persist it for the next turn. */
         choices: [{ message: { role: 'assistant', content: result.content, ...(result.reasoning_content ? { reasoning_content: result.reasoning_content } : {}) } }],
+        meta: result.meta,
       });
     }
   } catch (err) {

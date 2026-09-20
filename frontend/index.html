@@ -84,10 +84,13 @@
 <link rel="stylesheet" href="/src/styles/chatgpt-v2.css">
 <link rel="stylesheet" href="/src/styles/ref-baseline.css">
 <link rel="stylesheet" href="/src/styles/mobile-parity.css">
-<!-- The conversation surface is intentionally last: it owns the shared
+<!-- The conversation surface stays late in the cascade: it owns the shared
      landing + in-session composition language without another cascade of
      per-screen exceptions. -->
 <link rel="stylesheet" href="/src/styles/chat-surface.css">
+<!-- Tool-run rows and the narrow-screen details sheet have their own
+     final-layer module so the main stylesheet stays untouched. -->
+<link rel="stylesheet" href="/src/styles/components/tool-card.css">
 </head>
 <body>
 
@@ -586,25 +589,10 @@
                  The label is filled by syncEffortUI() (ui/effortPicker.js) and
                  the chosen value feeds chat/stream.js's reasoning_effort. -->
             <div class="effort-picker" data-open="false">
-              <button type="button" class="effort-trigger" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
-                <svg class="effort-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <!-- P_effort-glyph — three ascending bars signal "reasoning
-                       effort" without competing with the i18n label. CSS
-                       fills the right number of bars from the
-                       `.effort-picker[data-effort]` attribute that
-                       syncEffortUI() maintains. -->
-                  <rect class="effort-bar" data-bar="1" x="4"  y="14" width="4" height="6"  rx="1"/>
-                  <rect class="effort-bar" data-bar="2" x="10" y="10" width="4" height="10" rx="1"/>
-                  <rect class="effort-bar" data-bar="3" x="16" y="6"  width="4" height="14" rx="1"/>
-                </svg>
-                <span class="effort-label">Medium</span>
+              <button type="button" class="effort-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                <span class="effort-label" data-i18n-key="effort.label">Effort</span>
                 <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </button>
-              <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                <button type="button" class="effort-item" data-effort="high" role="option"><span data-i18n-key="effort.high">High</span></button>
-                <button type="button" class="effort-item" data-effort="medium" role="option"><span data-i18n-key="effort.medium">Medium</span></button>
-                <button type="button" class="effort-item" data-effort="low" role="option"><span data-i18n-key="effort.low">Low</span></button>
-              </div>
             </div>
             <!-- Keep the topic controls structurally identical to the
                  in-session composer. The microphone is the explicit
@@ -869,20 +857,10 @@
                        for the in-session composer; shares the persisted value
                        with the landing one. -->
                   <div class="effort-picker" data-open="false">
-                  <button type="button" class="effort-trigger" aria-haspopup="listbox" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
-                      <svg class="effort-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <rect class="effort-bar" data-bar="1" x="4"  y="14" width="4" height="6"  rx="1"/>
-                        <rect class="effort-bar" data-bar="2" x="10" y="10" width="4" height="10" rx="1"/>
-                        <rect class="effort-bar" data-bar="3" x="16" y="6"  width="4" height="14" rx="1"/>
-                      </svg>
-                      <span class="effort-label">Medium</span>
+                  <button type="button" class="effort-trigger" aria-haspopup="dialog" aria-expanded="false" data-i18n-title="effort.label" title="Reasoning effort">
+                      <span class="effort-label" data-i18n-key="effort.label">Effort</span>
                       <svg class="effort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
-                    <div class="effort-menu" role="listbox" aria-label="Reasoning effort">
-                      <button type="button" class="effort-item" data-effort="high" role="option"><span data-i18n-key="effort.high">High</span></button>
-                      <button type="button" class="effort-item" data-effort="medium" role="option"><span data-i18n-key="effort.medium">Medium</span></button>
-                      <button type="button" class="effort-item" data-effort="low" role="option"><span data-i18n-key="effort.low">Low</span></button>
-                    </div>
                   </div>
                 </div>
                 <button class="mobile-mic-btn" id="chatMobileMicBtn" type="button" aria-label="Voice input" title="Voice input">

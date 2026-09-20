@@ -35,8 +35,9 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#topicInputWrap', [
     '#topicComposerToolsBtn', '#topicMobileMicBtn', '#startBtn',
   ]);
-  expect(landing.wrap?.height).toBeGreaterThanOrEqual(100);
-  expect(landing.radius).toBe('28px');
+  expect(landing.wrap?.height).toBeGreaterThanOrEqual(64);
+  expect(landing.wrap?.height).toBeLessThanOrEqual(76);
+  expect(landing.radius).toBe('34px');
   expect(landing.controls.every((control) => control?.width === 40 && control?.height === 40 && control.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
   expect((landing.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
   await page.screenshot({ path: '/tmp/socrates-mobile-unified-landing.png', fullPage: true });
@@ -99,17 +100,18 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
   await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'false');
   await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(1);
-  /* Mobile parity shows the reasoning-level pill at rest. */
+  /* The reference capsule always shows the fixed-label 思考强度 pill. */
   await expect(effort).toBeVisible();
+  await expect(effort.locator('.effort-label')).toHaveText('思考强度');
 
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   await expect(effort).toBeVisible();
-  /* The mobile pill shows only the reasoning level, not the model name. */
-  await expect(effort.locator('.effort-label')).toHaveText('中');
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(96);
+  /* Keyboard open keeps the single-row capsule — focus alone never expands
+     the composer; the greeting is the element that yields. */
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(76);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
@@ -125,14 +127,59 @@ test('mobile composer keeps model selector and reference controls discoverable',
       send: rect('#sendBtn'),
     };
   });
-  expect(rows.editor?.bottom ?? 0).toBeLessThanOrEqual(rows.attach?.top ?? Number.POSITIVE_INFINITY);
-  expect(rows.model?.top ?? 0).toBeGreaterThanOrEqual(rows.attach?.top ?? 0);
-  expect(rows.mic?.top ?? 0).toBeGreaterThanOrEqual(rows.attach?.top ?? 0);
-  expect(rows.send?.top ?? 0).toBeGreaterThanOrEqual(rows.attach?.top ?? 0);
+  /* Idle capsule is one row: every control shares the editor's row band. */
+  for (const key of ['attach', 'model', 'mic', 'send']) {
+    expect(Math.abs((rows[key]?.top ?? 0) - (rows.editor?.top ?? 0)), key).toBeLessThanOrEqual(12);
+  }
 
   await effort.locator('.effort-trigger').click();
-  const menu = page.locator('.effort-menu.portal-open');
-  await expect(menu).toBeVisible();
-  await expect(menu).toContainText('5.6 Luna');
+  const pop = page.locator('.chat-config-pop');
+  await expect(pop).toBeVisible();
+  await expect(pop).toContainText('5.6 Luna');
+  await expect(pop).toContainText('思考强度');
+  await expect(pop).toContainText('速度');
+  /* The popover is anchored above the pill, not a sheet/dialog. */
+  const popBox = await pop.boundingBox();
+  const triggerBox = await effort.locator('.effort-trigger').boundingBox();
+  expect(popBox?.y ?? 0).toBeLessThan(triggerBox?.y ?? 0);
   await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png', fullPage: true });
+});
+
+test('desktop configuration reuses the same content in an anchored popover', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await mockAuthedApp(page, { lang: 'zh' });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const trigger = page.locator('#topicInputWrap .effort-trigger');
+  await trigger.click();
+  const pop = page.locator('.chat-config-pop');
+  await expect(pop).toBeVisible();
+  const geometry = await pop.boundingBox();
+  expect(geometry?.width).toBeLessThanOrEqual(300);
+  /* Anchored above (or beside) the pill, never a centred dialog. */
+  const triggerBox = await trigger.boundingBox();
+  expect(geometry?.y ?? 0).toBeLessThan((triggerBox?.y ?? 0) + (triggerBox?.height ?? 0));
+
+  await pop.getByRole('button', { name: /速度/ }).click();
+  await expect(pop.getByRole('option', { name: /快速/ })).toBeVisible();
+  await pop.getByRole('option', { name: /快速/ }).click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-response-speed'))).toBe('fast');
+
+  await pop.getByRole('button', { name: /思考强度/ }).click();
+  const slider = pop.locator('input[type="range"]');
+  await expect(slider).toBeVisible();
+  /* React-controlled input: set through the native setter so the synthetic
+     onChange sees a real value transition. */
+  await slider.evaluate((node) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(node, '2');
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');
+
+  /* Escape backs out of the slider sub-view first, then dismisses. */
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(pop).toBeHidden();
 });
