@@ -28,6 +28,7 @@ import { mountCheatsheet } from '../../cheatsheet';
 import { mountPromptTemplatesModal } from '../../promptTemplatesModal';
 import { mountSettingsModal } from '../../settings';
 import { mountConfirmDialog } from '../../confirm';
+import { mountChatConfiguration } from '../../chat-configuration';
 import { installSidebarChromeBridge } from '../../sidebar-chrome/sidebarChrome.bridge';
 import { SidebarHeader } from '../../sidebar-chrome/SidebarHeader';
 import { SidebarFooter } from '../../sidebar-chrome/SidebarFooter';
@@ -152,6 +153,9 @@ export function mountRegistryList(): MountSpec[] {
     { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
       ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
       mount: () => mountConfirmDialog() },
+    { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
+      ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
+      mount: () => mountChatConfiguration() },
     /* Admin modal — system model + embedding provider config. Lazy
        body-level root like the other modals; main.js calls
        openAdminModal() to publish the open state. */
