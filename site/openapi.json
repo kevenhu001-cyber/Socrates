@@ -1330,7 +1330,8 @@
         "properties": {
           "sessionId": { "type": "string", "format": "uuid" },
           "content": { "type": "string", "minLength": 1, "maxLength": 32000 },
-          "mode": { "type": "string", "enum": ["socratic", "tutor"], "default": "socratic" }
+          "mode": { "type": "string", "enum": ["socratic", "tutor"], "default": "socratic" },
+          "response_speed": { "type": "string", "enum": ["standard", "fast"], "default": "standard", "description": "Requests priority service when fast; unsupported providers automatically fall back to standard." }
         }
       },
       "ChatStreamEvent": {
@@ -1340,7 +1341,7 @@
         "properties": {
           "event": {
             "type": "string",
-            "enum": ["start", "token", "tool", "complete", "error"]
+            "enum": ["start", "token", "tool", "preference_fallback", "complete", "error"]
           },
           "data": { "type": "object", "additionalProperties": true }
         }

@@ -49,15 +49,15 @@ test('mobile conversation home matches the compact dark reference layout', async
     };
   });
 
-  expect(geometry.left?.width).toBe(40);
-  expect(geometry.left?.height).toBe(40);
-  expect(geometry.right?.width).toBe(40);
+  expect(geometry.left?.width).toBe(44);
+  expect(geometry.left?.height).toBe(44);
+  expect(geometry.right?.width).toBe(44);
   expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(168);
   expect(geometry.modeTabs?.height).toBeGreaterThanOrEqual(40);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Mobile parity: two-row card — editor on top, controls below. */
-  expect(geometry.composer?.height).toBeGreaterThanOrEqual(100);
-  expect(geometry.composer?.height).toBeLessThanOrEqual(140);
+  /* Idle mobile composer is a single compact capsule. */
+  expect(geometry.composer?.height).toBeGreaterThanOrEqual(64);
+  expect(geometry.composer?.height).toBeLessThanOrEqual(76);
   expect(geometry.topicFontSize).toBe(17);
   expect(geometry.composer?.y).toBeGreaterThan(600);
   expect(geometry.composer?.y).toBeLessThan(820);
@@ -95,7 +95,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      greeting's parent flex column. */
   expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
     .toBeLessThanOrEqual(1);
-  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.42;
+  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.44;
   expect(Math.abs(centering.centerY - expectedCenterY))
     .toBeLessThanOrEqual(1);
 
@@ -158,12 +158,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(composer).toHaveClass(/composer-focused/);
   const afterFocus = (await composer.boundingBox())?.height ?? 0;
   expect(Math.abs(afterFocus - beforeFocus)).toBeLessThanOrEqual(2);
-  /* Mobile parity shows the effort pill at rest, like the reference. */
+  /* The pill stays visible inside the idle capsule, like the reference. */
   await expect(composer.locator('.effort-picker')).toBeVisible();
 
   await editor.fill('This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.');
   await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
-    .toBeGreaterThan(beforeFocus + 24);
+    .toBeGreaterThan(beforeFocus + 36);
   await expect(composer.locator('.effort-picker')).toBeVisible();
   /* The landing composer mirrors the reference controls row: a dedicated
      dictation mic sits beside the voice/send primary. */

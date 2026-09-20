@@ -63,9 +63,15 @@ interface ChatCompletionRequestOptions {
   temperature?: number;
   signal?: AbortSignal;
   reasoning_effort?: string;
+  response_speed?: 'standard' | 'fast';
   extra_body?: Record<string, unknown>;
   tools?: Array<{ type: 'function'; function: { name: string; [key: string]: unknown } }>;
   tool_choice?: unknown;
+  onPreferenceFallback?: (detail: {
+    preference: 'response_speed';
+    requested: 'fast';
+    applied: 'standard';
+  }) => void;
 }
 
 /** Preserve useful upstream context without exposing credentials. */
@@ -96,7 +102,7 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
 }
 
 function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean) {
-  const { model, messages, maxTokens, temperature = stream ? 0.7 : 0.3, reasoning_effort, extra_body, tools, tool_choice } = opts;
+  const { model, messages, maxTokens, temperature = stream ? 0.7 : 0.3, reasoning_effort, response_speed, extra_body, tools, tool_choice } = opts;
   const base = {
     model,
     messages: normalizeProviderMessages(messages),
@@ -104,6 +110,7 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     temperature,
     stream,
     ...(reasoning_effort ? { reasoning_effort } : {}),
+    ...(response_speed === 'fast' ? { service_tier: 'priority' } : {}),
     ...(extra_body ? { ...extra_body } : {}),
   } as Record<string, unknown>;
   const hasTools = Array.isArray(tools) && tools.length > 0;
@@ -117,23 +124,31 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
    * presenting a raw provider 400 to the user. This is deliberately a
    * request-local fallback, so a temporary incompatibility cannot disable
    * tools for every later conversation. */
-  const variants: Array<{ body: Record<string, unknown>; reason: string }> = [
-    { body: withTools, reason: 'initial' },
+  const variants: Array<{ body: Record<string, unknown>; reason: string; speedApplied: 'standard' | 'fast' }> = [
+    { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' ? 'fast' : 'standard' },
   ];
+  let compatibilityBase = withTools;
+  /* Priority service is provider-specific. Its fallback is deliberately the
+     first compatibility variant so tools, reasoning_effort and extra_body
+     survive when a generic OpenAI-compatible gateway rejects service_tier. */
+  if (response_speed === 'fast') {
+    const { service_tier: _serviceTier, ...withoutPriority } = withTools;
+    compatibilityBase = withoutPriority;
+    variants.push({ body: withoutPriority, reason: 'provider-400-without-priority', speedApplied: 'standard' });
+  }
   if (hasTools) {
-    const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = withTools;
-    variants.push({ body: withoutTools, reason: 'provider-400-with-tools' });
+    const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;
+    compatibilityBase = withoutTools;
+    variants.push({ body: withoutTools, reason: 'provider-400-with-tools', speedApplied: 'standard' });
   }
   /* Optional reasoning fields are another common source of 400s on generic
    * gateways. Only try this stricter form after the previous compatibility
    * variant, never on a successful request. */
   if (reasoning_effort || extra_body) {
-    const { reasoning_effort: _effort, ...withoutReasoning } = hasTools
-      ? (variants[variants.length - 1].body)
-      : withTools;
+    const { reasoning_effort: _effort, ...withoutReasoning } = compatibilityBase;
     const withoutOptional = { ...withoutReasoning };
     for (const key of Object.keys(extra_body || {})) delete withoutOptional[key];
-    variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields' });
+    variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
   }
   return variants;
 }
@@ -276,6 +291,7 @@ export async function streamChatCompletion(
     const MAX_LLM_ATTEMPTS = 3; // initial + 2 retries
     let lastError: Error | null = null;
     const variants = requestBodyVariants(opts, true);
+    let successfulVariant: (typeof variants)[number] | null = null;
     for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
       const variant = variants[variantIndex];
       let tryNextVariant = false;
@@ -294,16 +310,19 @@ export async function streamChatCompletion(
             body: JSON.stringify(variant.body),
             signal: mergedSignal,
           });
-          if (response.ok) break;
+          if (response.ok) {
+            successfulVariant = variant;
+            break;
+          }
 
           const errBody = await response.text().catch(() => '');
           lastError = new LlmProviderError(response.status, errBody);
           if (response.status === 400 && variantIndex < variants.length - 1) {
             tryNextVariant = true;
-            if (variantIndex === 0 && Array.isArray(tools) && tools.length > 0) {
+            if (variants[variantIndex + 1]?.reason === 'provider-400-with-tools') {
               console.warn('[LLM] provider rejected native tool request; retrying with compatibility payload', JSON.stringify({
                 status: response.status,
-                toolCount: tools.length,
+                toolCount: Array.isArray(tools) ? tools.length : 0,
                 maxTokens: variant.body.max_tokens,
               }));
             } else {
@@ -339,6 +358,14 @@ export async function streamChatCompletion(
     if (!response?.ok) {
       onError(lastError || new Error('LLM API request failed'));
       return;
+    }
+
+    if (opts.response_speed === 'fast' && successfulVariant?.speedApplied === 'standard') {
+      opts.onPreferenceFallback?.({
+        preference: 'response_speed',
+        requested: 'fast',
+        applied: 'standard',
+      });
     }
 
     if (!response!.body) {
@@ -600,6 +627,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
 
   let response: Response | undefined;
   const variants = requestBodyVariants(opts, false);
+  let successfulVariant: (typeof variants)[number] | null = null;
   for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
     const variant = variants[variantIndex];
     response = await fetch(`${apiBase}/chat/completions`, {
@@ -611,7 +639,10 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
       body: JSON.stringify(variant.body),
       signal: mergedSignal,
     });
-    if (response.ok) break;
+    if (response.ok) {
+      successfulVariant = variant;
+      break;
+    }
     const errBody = await response.text().catch(() => '');
     if (response.status === 400 && variantIndex < variants.length - 1) {
       console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
@@ -641,5 +672,8 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
     reasoning_content: typeof message.reasoning_content === 'string' ? message.reasoning_content : undefined,
     tool_calls: Array.isArray(message.tool_calls) ? message.tool_calls : undefined,
     finish_reason: finishReason,
+    meta: {
+      response_speed_applied: successfulVariant?.speedApplied || 'standard',
+    },
   };
 }

@@ -52,7 +52,7 @@ import type {
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
-  const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort } = prep.payload;
+  const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
 
   // Set SSE headers
   res.writeHead(200, {
@@ -288,6 +288,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * dropped without executing — surfaced in the contract so the model
    * knows they never ran (they are not echoed upstream either). */
   let lastDroppedCalls = 0;
+  let speedFallbackEmitted = false;
 
   for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
     const toolsAllowed = toolPolicy.toolsAllowed(iter);
@@ -339,7 +340,13 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         temperature,
         signal: abortController.signal,
         reasoning_effort,
+        response_speed: responseSpeed,
         extra_body: safeExtraBody,
+        onPreferenceFallback: (detail) => {
+          if (speedFallbackEmitted) return;
+          speedFallbackEmitted = true;
+          emitter.event('preference_fallback', detail);
+        },
         ...(toolsAllowed && activeToolDefs.length > 0
           ? {
             tools: activeToolDefs,

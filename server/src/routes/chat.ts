@@ -45,7 +45,7 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
     res.locals.timeoutMs = 0;
     const prep = await prepareChatRequest(req, res);
     if (!prep.ok) return;
-    const { messages: finalMessages, provider, safeExtraBody, temperature, maxTokens, reasoning_effort } = prep.payload;
+    const { messages: finalMessages, provider, safeExtraBody, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
 
     const promptTokens = estimateMessageTokens(finalMessages);
     const completion = await callChatCompletion({
@@ -56,6 +56,7 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
       maxTokens,
       temperature,
       reasoning_effort,
+      response_speed: responseSpeed,
       extra_body: safeExtraBody,
     });
 
@@ -82,6 +83,7 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
       choices: [{ message: { role: 'assistant', content } }],
       reasoning_content: completion.reasoning_content || null,
       usage: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens },
+      meta: completion.meta,
     });
   } catch (err) { next(err); }
 });
