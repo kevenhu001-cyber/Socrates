@@ -115,10 +115,10 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
-  /* Single-row capsule: the editor and the control rail share one row band —
-     every control's top edge stays within the editor's row. */
+  /* Two-row mobile card: the editor owns the first row and the attach rail
+     sits under it, left of the primary action. */
   expect(['grid', 'contents']).toContain(collapsedGeometry.bodyDisplay);
-  expect(Math.abs((collapsedGeometry.send?.top ?? 0) - (collapsedGeometry.editor?.top ?? 0))).toBeLessThanOrEqual(12);
+  expect(collapsedGeometry.editor?.bottom ?? 0).toBeLessThanOrEqual((collapsedGeometry.send?.top ?? 0) + 1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
 
   await mobileEditor.click();
@@ -133,9 +133,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
      editor column while every control stays on the same row. */
   // The mobile rail keeps the reasoning control exposed, leaving a
   // compact but readable editor column at the 390px reference width.
-  expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(96);
+  expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(120);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
-  /* Focus must not push the card out of its capsule height. */
+  /* Focus must not push the card out of its two-row height. */
   expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(112);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 

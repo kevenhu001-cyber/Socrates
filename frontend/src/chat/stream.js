@@ -16,7 +16,6 @@ import {
   waitForAIRetry,
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
-import { notifySpeedFallbackOnce } from './speedFallback.js';
 
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
@@ -234,29 +233,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        the bubble replays the whole turn and duplicates both prose and tools. */
     var semanticActivity=false;
     var streamError=null;
-    /* Flush visible tail text at semantic boundaries, while retaining a
-       trailing prefix that may still become an opening think tag. If the
-       stream ends first, that unresolved prefix is dropped instead of being
-       exposed as literal parser markup. */
-    var flushVisibleThinkTail=function(){
-      if(thinkOpen||!thinkTail.length)return;
-      var thinkTag="<think>";
-      var keepPrefix=0;
-      for(var prefixLength=Math.min(thinkTail.length,thinkTag.length-1);prefixLength>0;prefixLength--){
-        if(thinkTail.slice(-prefixLength)===thinkTag.slice(0,prefixLength)){
-          keepPrefix=prefixLength;
-          break;
-        }
-      }
-      var visibleLength=thinkTail.length-keepPrefix;
-      if(visibleLength<=0)return;
-      var visibleTail=thinkTail.slice(0,visibleLength);
-      thinkTail=thinkTail.slice(visibleLength);
-      full+=visibleTail;
-      try{if(onDelta){onDelta(visibleTail,full)}}catch(deltaErr){
-        console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
-      }
-    };
     /* Parse ONE SSE frame (the text between two "\n\n" delimiters, or the
        leftover buffer flushed at stream end). Extracted so the same logic
        runs for both the delimited frames in the read loop AND the final
@@ -284,13 +260,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           if(evName==="tool_use"){
             semanticActivity=true;
             if(opts&&typeof opts.onToolUse==="function"&&dataParts.length){
-              /* The inline-think scanner keeps up to seven visible chars in
-                 thinkTail so an opening `<think>` tag can span deltas. A
-                 tool_use is a hard split-point boundary: commit ordinary
-                 text before asking the turn controller to record textOffset,
-                 but keep a trailing prefix of `<think>` intact so a tag may
-                 still continue after this event frame. */
-              flushVisibleThinkTail();
               try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_use",e)}
             }
             return;
@@ -331,15 +300,6 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             semanticActivity=true;
             if(opts&&typeof opts.onAgentPlan==="function"&&dataParts.length){
               try{opts.onAgentPlan(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_plan",e)}
-            }
-            return;
-          }
-          if(evName==="preference_fallback"){
-            if(dataParts.length){
-              try{
-                var fallback=JSON.parse(dataParts.join("\n"));
-                if(fallback&&fallback.preference==="response_speed")notifySpeedFallbackOnce();
-              }catch(e){warnBadFrame("preference_fallback",e)}
             }
             return;
           }
@@ -649,10 +609,17 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         thinkTail="";
         thinkOpen=false;
       }else if(!thinkOpen&&thinkTail.length>0){
-        /* P_truncation_fix — the same scanner tail is flushed at tool_use.
-           Real answer text is committed, but a still-incomplete opening-tag
-           prefix is intentionally not rendered as prose. */
-        flushVisibleThinkTail();
+        /* P_truncation_fix — when the stream ends and we're NOT inside
+           a think block, thinkTail holds up to 7 unflushed chars
+           (held back so a split <think> across chunks would still be
+           reassembled). With no think block to flush into, those chars
+           are real response content that would otherwise be silently
+           dropped — and they compound across every chunk, so a long
+           non-thinking response can lose its last 7 chars. Forward
+           them to full + onDelta so the saved message + UI bubble
+           both contain the complete answer. */
+        full+=thinkTail;
+        try{if(onDelta){onDelta(thinkTail,full)}}catch(_){}
         thinkTail="";
       }
     }catch(e){
