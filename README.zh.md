@@ -72,14 +72,21 @@
 
 ## 截图
 
-市场站点（[`site/`](site/)）面向公众；SPA（`frontend/`）面向学习者。两者出自同一仓库。
+市场站点（[`site/`](site/)）面向公众；SPA（`frontend/`）面向学习者。两者出自同一仓库。下面四个面板是随仓库发布的实时截图；仓库根目录中不在 `screenshot_*.png` 之内的图片均未被 `README` 引用（2026-09-20 审计，F-006）。
+
+> 截图约定：仓库根目录下 append-only 的 `screenshot_<n>_<view>[_zh].png`；更新截图的 PR 在含义不变时复用同名文件，含义变化时递增序号。
 
 <div align="center">
 
-| 营销首页 | 定价 | 关于 |
-| --- | --- | --- |
-| ![Landing](index-v2.png) | ![Pricing](pricing-v2.png) | ![About](about-v2.png) |
-| `index-v2.png` | `pricing-v2.png` | `about-v2.png` |
+| 应用首页（英文） | 应用产品视图（英文） |
+| --- | --- |
+| ![Home (EN)](screenshot_1_home.png) | ![Product (EN)](screenshot_2_product.png) |
+| `screenshot_1_home.png` | `screenshot_2_product.png` |
+
+| 应用首页（中文） | 应用产品视图（中文） |
+| --- | --- |
+| ![首页 (中文)](screenshot_3_zh_home.png) | ![产品视图 (中文)](screenshot_4_zh_product.png) |
+| `screenshot_3_zh_home.png` | `screenshot_4_zh_product.png` |
 
 </div>
 
@@ -361,7 +368,7 @@ debug APK。原生 Android 构建统一在 GitHub Actions 执行，
 `gh workflow run build-apk.yml --ref <branch> -f build_profile=debug`；正式签名
 APK/AAB 使用
 [`release-clients.yml`](.github/workflows/release-clients.yml)。
-完整迁移阶段和验收项见 [`docs/rn-migration.md`](docs/rn-migration.md)。
+完整迁移阶段和验收项见 [`docs/plans/rn-migration.md`](docs/plans/rn-migration.md)。
 
 ## 配置
 
@@ -449,7 +456,7 @@ Android 客户端由 GitHub Actions 自动构建，产物可在 Actions 页下�
 正式版本统一使用
 [`release-clients.yml`](.github/workflows/release-clients.yml)：它会先完成验证和签名，
 再创建 GitHub Release；Google Play 上传需要显式开启并配置服务账号。完整的 Secrets、tag
-和回滚说明见 [`docs/client-release.md`](docs/client-release.md)。
+和回滚说明见 [`docs/audits/client-release.md`](docs/audits/client-release.md)。
 
 ## 安全模型
 

@@ -19,8 +19,8 @@ For the reverse-align plan (see [inherited-munching-book.md](../../../../../../U
 - **severity**: 🔴
 - **owner**: team lead
 - **summary**: This plan reverses the direction documented in
-  [`docs/rn-migration.md`](../../docs/rn-migration.md),
-  [`docs/unification-plan.md`](../../docs/unification-plan.md), and
+  [`docs/plans/rn-migration.md`](../../docs/plans/rn-migration.md),
+  [`docs/plans/unification-plan.md`](../../docs/plans/unification-plan.md), and
   [`AGENTS.md`](../../AGENTS.md). All three documents describe a
   forward path that replaces `frontend/` with `mobile/`. The reverse
   plan contradicts all three and re-opens decisions that landed in
@@ -63,7 +63,7 @@ For the reverse-align plan (see [inherited-munching-book.md](../../../../../../U
 - **owner**: release manager
 - **summary**: Mobile's `2.1.x` visual pass (ChatGPT-style fidelity,
   separate mic) is in production per
-  [`docs/client-release.md`](../../docs/client-release.md). The visual
+  [`docs/audits/client-release.md`](../../docs/audits/client-release.md). The visual
   revert in Phase 1 must be paired with a `2.2.0` re-release that ships
   the new visual identity, otherwise users see two different designs
   on the same Play Store listing across installs.

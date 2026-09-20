@@ -45,5 +45,5 @@ npx expo export --platform android --output-dir /tmp/socrates-rn-export
 Generated `mobile/android/`, `mobile/ios/`, and `.expo/` state is intentionally
 ignored. Change native generation inputs in `app.json` or Expo config plugins,
 then regenerate rather than editing generated files. See
-[`docs/rn-migration.md`](../docs/rn-migration.md) for the phase plan and
+[`docs/plans/rn-migration.md`](../docs/plans/rn-migration.md) for the phase plan and
 acceptance checklist.
