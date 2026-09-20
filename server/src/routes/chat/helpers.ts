@@ -635,6 +635,7 @@ export const ChatPayloadSchema = z.object({
      them to llm.js as-is; non-DeepSeek upstreams silently ignore
      the unknown fields. */
   reasoning_effort: z.enum(['low', 'medium', 'high']).optional(),
+  response_speed: z.enum(['standard', 'fast']).optional().default('standard'),
   /* Backward-compatible input for older clients. Agent routing is now always
      decided from the user's intent by the model; this field is accepted but
      ignored so stale clients cannot force a worker run. */
@@ -823,6 +824,7 @@ export async function prepareChatRequest(
         temperature: number;
         maxTokens: number | undefined;
         reasoning_effort?: 'low' | 'medium' | 'high';
+        responseSpeed: 'standard' | 'fast';
       };
     }
 > {
@@ -833,7 +835,7 @@ export async function prepareChatRequest(
     res.status(400).json({ code: 'INVALID_REQUEST', message: (err as Error).message });
     return { ok: false };
   }
-  const { messages, temperature = 0.3, max_tokens, mode = 'chat', reasoning_effort, extra_body } = parsed;
+  const { messages, temperature = 0.3, max_tokens, mode = 'chat', reasoning_effort, response_speed, extra_body } = parsed;
 
   /* System-prompt assembly order. Every step below folds into the single
      canonical first system message; the final prompt reads top-to-bottom as:
@@ -921,6 +923,7 @@ export async function prepareChatRequest(
       temperature,
       maxTokens: max_tokens,
       reasoning_effort,
+      responseSpeed: response_speed,
     },
   };
 }

@@ -270,6 +270,7 @@ export interface ChatRequest {
   max_tokens?: number;
   mode?: 'chat' | 'tutor';
   reasoning_effort?: 'low' | 'medium' | 'high';
+  response_speed?: 'standard' | 'fast';
   extra_body?: JsonObject;
 }
 

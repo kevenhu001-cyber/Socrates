@@ -326,6 +326,64 @@ test('answer prose keeps its recorded order around the rows, with no baked-in du
   await expect(body).not.toContainText('baked row');
 });
 
+test('a narrow viewport browses a tool group in one sheet and restores focus on close', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const body = await loadFixtureSession(page);
+  const group = body.locator('.tool-run-group').first();
+  const trigger = group.locator('.tool-run-summary');
+  const sheet = page.locator('[data-tool-run-sheet="1"]');
+
+  await trigger.click();
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toHaveAttribute('data-kind', 'group');
+  await expect(sheet.locator('.tool-run-sheet-close')).toBeFocused();
+  await expect(sheet.locator('.tool-run-sheet-meta')).not.toContainText(/\d{3,}m/);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  /* Mobile does not open the old inline list under the chat bubble. */
+  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
+  await expect(sheet.locator('.tool-inline[data-tcid="s1"]')).toHaveCount(1);
+  await expect(body.locator('.tool-inline[data-tcid="s3"]')).toBeVisible();
+  await expect(sheet.locator('.tool-inline[data-tcid="s3"]')).toHaveCount(0);
+  await sheet.screenshot({ path: 'test-results/tool-run-mobile-sheet.png' });
+
+  /* Member details open inside this sheet instead of nesting another modal. */
+  const member = sheet.locator('.tool-inline[data-tcid="s1"]');
+  await member.locator('summary').click();
+  await expect(member).toHaveAttribute('open', '');
+  await expect(member.locator('.tool-inline-src-title')).toHaveCount(2);
+
+  await sheet.locator('.tool-run-sheet-close').click();
+  await expect(sheet).toHaveCount(0);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true);
+
+  /* Escape and backdrop close use the same focus-restoring path. */
+  await trigger.click();
+  await expect(sheet).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true);
+
+  await trigger.click();
+  await expect(sheet).toBeVisible();
+  await page.locator('[data-tool-run-sheet-backdrop="1"]').click({ position: { x: 8, y: 8 } });
+  await expect(sheet).toHaveCount(0);
+  expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true);
+
+  /* A lone failed call opens the detail sheet directly, without a group page. */
+  const singleTrigger = body.locator('.tool-inline[data-tcid="f1"] summary');
+  await singleTrigger.click();
+  await expect(sheet).toBeVisible();
+  await expect(sheet).toHaveAttribute('data-kind', 'tool');
+  await expect(sheet.locator('.tool-run-sheet-title')).toContainText('Search failed: delta theory');
+  await expect(sheet.locator('[data-kind="error"] .tool-inline-detail-value'))
+    .toContainText('Search upstream timed out after 30s');
+  await sheet.locator('.tool-run-sheet-close').click();
+  await expect(sheet).toHaveCount(0);
+  expect(await singleTrigger.evaluate((element) => document.activeElement === element)).toBe(true);
+});
+
 test('the turn keeps one column for its rows and prose at body width', async ({ page }) => {
   /* Collapsed is the state a reader lands in, so capture it before opening
      anything: one header for the run, the live row below it, one lone row, and

@@ -62,18 +62,31 @@ function frame(content) {
   return `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
 }
 
-async function runStream(frames) {
+function eventFrame(event, data) {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+async function runStream(options = {}) {
   const { callAPIStream } = await import('../src/chat/stream.js');
   let full = '';
   const thinking = [];
+  const events = [];
   const result = await callAPIStream(
     [{ role: 'user', content: 'hi' }],
     256,
-    (_delta, acc) => { full = acc; },
+    (delta, acc) => {
+      full = acc;
+      events.push({ type: 'text', delta, full: acc });
+    },
     (t) => { thinking.push(t); },
-    {},
+    {
+      onToolUse: (calls) => {
+        events.push({ type: 'tool_use', full });
+        if (options.onToolUse) options.onToolUse(calls, full);
+      },
+    },
   );
-  return { result, full, thinking: thinking.join('') };
+  return { result, full, thinking: thinking.join(''), events };
 }
 
 test('tiny head chunks survive the 7-char think-tag hold', async () => {
@@ -107,4 +120,57 @@ test('back-to-back think blocks in one frame keep content order, no duplication'
   assert.match(thinking, /第二段思考/);
   /* The head after the first close must appear exactly once. */
   assert.equal(result.text.indexOf('AB'), result.text.lastIndexOf('AB'));
+});
+
+test('tool_use commits chunked visible text before the call offset is observed', async () => {
+  installEnvironment([
+    frame('A short preamble split'),
+    frame(' across deltas before the tool'),
+    eventFrame('tool_use', [{ id: 'tool-1', name: 'web_search' }]),
+    frame(' and a follow-up sentence.'),
+  ]);
+
+  const offsets = [];
+  const { result, full, events } = await runStream({
+    onToolUse: (_calls, textAtCall) => offsets.push(textAtCall),
+  });
+  const toolIndex = events.findIndex((event) => event.type === 'tool_use');
+  assert.equal(offsets[0], 'A short preamble split across deltas before the tool');
+  assert.ok(toolIndex > 0, 'tool_use should follow the committed visible-text callbacks');
+  assert.equal(events.slice(0, toolIndex).at(-1).full, offsets[0]);
+  assert.equal(result.text, 'A short preamble split across deltas before the tool and a follow-up sentence.');
+  assert.equal(full, result.text);
+});
+
+test('tool_use preserves a partial opening think tag for the next content delta', async () => {
+  installEnvironment([
+    frame('Visible before <thi'),
+    eventFrame('tool_use', [{ id: 'tool-2', name: 'web_search' }]),
+    frame('nk>private</think>visible after.'),
+  ]);
+
+  const offsets = [];
+  const { result, full, thinking } = await runStream({
+    onToolUse: (_calls, textAtCall) => offsets.push(textAtCall),
+  });
+  assert.deepEqual(offsets, ['Visible before ']);
+  assert.equal(result.text, 'Visible before visible after.');
+  assert.equal(full, result.text);
+  assert.equal(thinking, 'private');
+  assert.ok(!offsets[0].includes('<thi'), 'an incomplete think marker is not visible text');
+});
+
+test('an incomplete think marker at EOF after tool_use never leaks into answer text', async () => {
+  installEnvironment([
+    frame('Visible before <thi'),
+    eventFrame('tool_use', [{ id: 'tool-3', name: 'web_search' }]),
+  ]);
+
+  const offsets = [];
+  const { result, full } = await runStream({
+    onToolUse: (_calls, textAtCall) => offsets.push(textAtCall),
+  });
+  assert.deepEqual(offsets, ['Visible before ']);
+  assert.equal(result.text, 'Visible before ');
+  assert.equal(full, result.text);
 });

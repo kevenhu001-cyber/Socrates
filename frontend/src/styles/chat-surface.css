@@ -877,3 +877,387 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
     background-image: none !important;
   }
 }
+
+/* ========================================================================
+ * Refined conversational shell — approved September 2026 concept
+ * This final block is the single owner of the chat landing, composer and
+ * generation configuration overlay. Earlier compatibility layers may keep
+ * non-chat routes working, but cannot re-shape these surfaces.
+ * ===================================================================== */
+:root {
+  --chat-page: #000;
+  --chat-surface: #212121;
+  --chat-control: #2d2d2d;
+  --chat-control-hover: #383838;
+  --chat-line: rgb(255 255 255 / 12%);
+  --chat-text: #f5f5f5;
+  --chat-muted: #a7a7a7;
+  --chat-overlay: rgb(0 0 0 / 58%);
+  --chat-accent: #3b82f6;
+}
+
+[data-mode="light"] {
+  --chat-page: #fff;
+  --chat-surface: #f3f3f3;
+  --chat-control: #e7e7e7;
+  --chat-control-hover: #dcdcdc;
+  --chat-line: rgb(0 0 0 / 11%);
+  --chat-text: #171717;
+  --chat-muted: #747474;
+  --chat-overlay: rgb(0 0 0 / 28%);
+  --chat-accent: #3b82f6;
+}
+
+#appShell#appShell .top-mode-tabs {
+  width: 176px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 3px !important;
+  border-color: var(--chat-line) !important;
+  background: var(--chat-surface) !important;
+}
+
+#appShell#appShell .top-mode-tabs .app-mode-toggle {
+  min-width: 0 !important;
+  height: 36px !important;
+  padding: 0 18px !important;
+  font-size: 16px !important;
+  letter-spacing: 0 !important;
+}
+
+#appShell#appShell .top-mode-tabs .app-mode-toggle.active {
+  background: var(--chat-control) !important;
+}
+
+#appShell#appShell #topicSetup .topic-title.greeting {
+  color: var(--chat-text) !important;
+  font-weight: 400 !important;
+}
+
+#appShell#appShell .effort-trigger .effort-label {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The legacy effort dropdown markup was removed; the trigger now opens the
+   anchored React generation-config popover (react/chat-configuration). */
+
+/* ── Generation-config popover — ChatGPT-style floating card anchored above
+   the composer pill. It behaves like a menu (no scrim, outside-click/Escape
+   to dismiss), not a dialog. ── */
+.chat-config-pop {
+  position: fixed;
+  z-index: 160;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, calc(100vw - 32px));
+  max-height: min(60dvh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px;
+  border: 1px solid var(--chat-line);
+  border-radius: 22px;
+  background: var(--chat-control);
+  color: var(--chat-text);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 40%);
+  animation: chat-config-pop-in 160ms ease both;
+}
+
+.chat-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: var(--chat-text);
+  font-size: 15px;
+  text-align: left;
+  transition: background-color 140ms ease;
+}
+
+.chat-config-row:hover,
+.chat-config-row:focus-visible { background: color-mix(in srgb, var(--chat-text) 8%, transparent); }
+
+.chat-config-row > span:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-config-row strong {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-config-row small {
+  color: var(--chat-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.chat-config-row > svg { width: 20px; height: 20px; flex: 0 0 auto; }
+
+.chat-config-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--chat-muted);
+}
+
+.chat-config-value svg { width: 18px; height: 18px; }
+
+.chat-config-divider { height: 1px; margin: 4px 10px; background: var(--chat-line); }
+.chat-config-empty { padding: 20px 14px; color: var(--chat-muted); font-size: 14px; text-align: center; }
+
+/* Effort sub-view — 3-stop slider mirroring the reference (blue track,
+   stop dots, white thumb). */
+.chat-config-slider { position: relative; padding: 6px 8px 12px; }
+
+.chat-config-slider input[type="range"] {
+  width: 100%;
+  height: 36px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.chat-config-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 36px;
+  border-radius: 999px;
+  background: var(--chat-accent);
+}
+
+.chat-config-slider input[type="range"]::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+}
+
+.chat-config-slider input[type="range"]::-moz-range-track {
+  height: 36px;
+  border-radius: 999px;
+  background: var(--chat-accent);
+}
+
+.chat-config-slider input[type="range"]::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+}
+
+.chat-config-slider-dots {
+  position: absolute;
+  inset: 6px 8px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.chat-config-slider-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 45%);
+}
+
+@keyframes chat-config-pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 768px) {
+  #appShell#appShell .top-bar {
+    min-height: 72px !important;
+    padding: max(10px, env(safe-area-inset-top, 0px)) 16px 8px !important;
+  }
+
+  /* Landing top-bar buttons are 44px tactile chips; the in-conversation
+     header keeps its existing 40px unframed utilities. */
+  body:not([data-conversation-active="true"]) #appShell#appShell #sidebarOpenBtn,
+  body:not([data-conversation-active="true"]) #appShell#appShell #mobileIncognitoBtn {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    border: 1px solid var(--chat-line) !important;
+    background: var(--chat-surface) !important;
+    color: var(--chat-text) !important;
+    box-shadow: inset 0 1px rgb(255 255 255 / 5%) !important;
+  }
+
+  #appShell#appShell .mobile-sidebar-status { display: none !important; }
+
+  #appShell#appShell #topicSetup {
+    min-height: calc(100dvh - 72px) !important;
+    padding-inline: 16px !important;
+  }
+
+  #appShell#appShell #topicSetup .topic-title.greeting {
+    top: 44% !important;
+    font-size: clamp(20px, 5.5vw, 22px) !important;
+    letter-spacing: -.015em !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active),
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) {
+    grid-template-columns: 44px minmax(0, 1fr) auto 40px 40px !important;
+    grid-template-rows: 56px !important;
+    column-gap: 4px !important;
+    width: 100% !important;
+    min-height: 68px !important;
+    height: 68px !important;
+    padding: 6px !important;
+    border-radius: 34px !important;
+    background: var(--chat-surface) !important;
+  }
+
+  /* Flatten the legacy wrapper elements so the final chat surface owns one
+     grid. Without this, their older three-row layout places the controls in
+     an implicit row below the 68px pill and clips them against the viewport. */
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer,
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .footer-left-group,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .footer-left-group {
+    display: contents !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .composer-editor-root,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-height: 56px !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+    padding: 15px 4px !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer #topicComposerToolsBtn,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer #chatComposerToolsBtn {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  /* The effort pill stays visible inside the idle capsule, like the
+     reference composer — kept compact so the editor column stays usable. */
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .footer-left-group .effort-picker {
+    display: inline-flex !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    justify-self: end !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .effort-trigger,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger {
+    height: 36px !important;
+    padding: 0 10px !important;
+    gap: 4px !important;
+    font-size: 14px !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .effort-trigger .effort-caret,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .effort-trigger .effort-caret {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer #topicMobileMicBtn,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer #chatMobileMicBtn {
+    display: inline-flex !important;
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+  }
+
+  #appShell#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer #startBtn,
+  #appShell#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer #sendBtn {
+    grid-column: 5 !important;
+    grid-row: 1 !important;
+  }
+
+  /* Expansion is content-driven only: `composer-multiline` opens the
+     two-row shape; focus alone keeps the single-row capsule. */
+  #appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(96px, auto) 40px 40px !important;
+    grid-template-rows: minmax(60px, auto) 44px !important;
+    min-height: 120px !important;
+    height: auto !important;
+    padding: 8px !important;
+    border-radius: 28px !important;
+  }
+
+  #appShell#appShell #topicInputWrap.composer-multiline .composer-editor-root,
+  #appShell#appShell #chatInputWrap.composer-multiline .composer-editor-root {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    min-height: 60px !important;
+  }
+
+  #appShell#appShell #topicInputWrap.composer-multiline .rich-composer-editor,
+  #appShell#appShell #chatInputWrap.composer-multiline .rich-composer[data-surface="chat"] .tiptap {
+    height: auto !important;
+    min-height: 60px !important;
+    max-height: min(220px, 32dvh) !important;
+    padding: 10px 8px 8px !important;
+  }
+
+  #appShell#appShell #topicInputWrap.composer-multiline .topic-footer #topicComposerToolsBtn,
+  #appShell#appShell #chatInputWrap.composer-multiline .chat-input-footer #chatComposerToolsBtn {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  #appShell#appShell #topicInputWrap.composer-multiline .topic-footer .effort-picker,
+  #appShell#appShell #chatInputWrap.composer-multiline .chat-input-footer .footer-left-group .effort-picker {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+    justify-self: end !important;
+  }
+
+  #appShell#appShell #topicInputWrap.composer-multiline .topic-footer #topicMobileMicBtn,
+  #appShell#appShell #chatInputWrap.composer-multiline .chat-input-footer #chatMobileMicBtn {
+    grid-column: 4 !important;
+    grid-row: 2 !important;
+  }
+
+  #appShell#appShell #topicInputWrap.composer-multiline .topic-footer #startBtn,
+  #appShell#appShell #chatInputWrap.composer-multiline .chat-input-footer #sendBtn {
+    grid-column: 5 !important;
+    grid-row: 2 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-config-pop { animation: none !important; }
+}
