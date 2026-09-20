@@ -28,6 +28,7 @@ import {
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
 import { ToolRunRow } from './ToolRunRow.js';
+import { ToolRunSheetProvider } from './ToolRunSheet.js';
 import { TurnStatus } from './TurnStatus.js';
 import type { LegacyChatMessage } from '../types/domain';
 
@@ -135,7 +136,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
   const messageId = String(message.clientId || message.id || '');
 
   return (
-    <>
+    <ToolRunSheetProvider>
       {segments.map((segment, index) => {
         if (segment.kind === 'text') {
           if (index !== growingIndex) {
@@ -215,7 +216,7 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
           dropped from the rendered tree — its only role was the typing
           cue, and the parent CSS animates the toolbar in alongside. */}
       {isLive && !showStatus ? <StreamCursor /> : null}
-    </>
+    </ToolRunSheetProvider>
   );
 }
 

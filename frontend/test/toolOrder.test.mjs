@@ -153,3 +153,20 @@ test('finalized layout mounts every row (nothing starves)', () => {
   assert.equal(layout[0].text, '原因有三：还没写完');
   assert.equal(layout[1].members.map((m) => m.id).join(','), 's,f');
 });
+
+test('equal-offset calls keep event order before rows in later paragraphs', () => {
+  const raw = 'Paragraph one.\n\nParagraph two.\n\nTail.';
+  const nextParagraph = 'Paragraph one.\n\n'.length;
+  const calls = [
+    call({ id: 'event-b', textOffset: 0, status: 'completed', output: 'ok' }),
+    call({ id: 'event-a', textOffset: 0, status: 'completed', output: 'ok' }),
+    call({ id: 'later', textOffset: nextParagraph, status: 'completed', output: 'ok' }),
+  ];
+
+  const layout = buildTurnLayout(raw, calls);
+  assert.deepEqual(layout.map((segment) => segment.kind), ['group', 'text', 'group', 'text']);
+  assert.deepEqual(layout[0].members.map((member) => member.id), ['event-b', 'event-a']);
+  assert.equal(layout[1].text, 'Paragraph one.\n\n');
+  assert.deepEqual(layout[2].members.map((member) => member.id), ['later']);
+  assert.equal(layout[3].text, 'Paragraph two.\n\nTail.');
+});
