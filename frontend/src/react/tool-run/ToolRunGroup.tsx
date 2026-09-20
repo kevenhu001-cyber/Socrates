@@ -19,7 +19,7 @@
  * controls `.tool-run-list` — collapsing a run may hide its arguments and
  * stdout, never its result.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
 import { formatSeconds } from './labels.js';
@@ -34,6 +34,7 @@ import {
 } from './toolRunModel.js';
 import { ToolRunDetail } from './ToolRunDetail.js';
 import { ToolRunRow } from './ToolRunRow.js';
+import { toolRunGroupId, useToolRunSheet } from './ToolRunSheetContext.js';
 import { useElapsed } from './useElapsed.js';
 
 type GroupSegment = Extract<TurnSegment, { kind: 'group' }>;
@@ -57,8 +58,17 @@ export interface ToolRunGroupProps {
 
 export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps) {
   const [open, setOpen] = useState(false);
+  const toolSheet = useToolRunSheet();
   const view = useMemo(() => groupViewOf(segment), [segment]);
   const showsHeader = view.showsHeader;
+  const groupId = toolRunGroupId(segment);
+  const sheetOpen = toolSheet.sheet?.kind === 'group' && toolSheet.sheet.id === groupId;
+  useEffect(() => {
+    const activeSheet = toolSheet.sheet;
+    if (activeSheet?.kind === 'group' && activeSheet.id === groupId && activeSheet.segment !== segment) {
+      toolSheet.refreshGroup(segment);
+    }
+  }, [groupId, segment, toolSheet.sheet, toolSheet.refreshGroup]);
   const inFlight = showsHeader && (view.state === 'running' || view.state === 'awaiting');
   const startedAt = showsHeader && segment.running.length ? runStartedAt(segment.running[0]) : 0;
   // Hooks first: the single-member shortcut below must not make one conditional.
@@ -109,8 +119,15 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
         <button
           type="button"
           className="tool-run-summary"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
+          aria-haspopup={toolSheet.isNarrowViewport ? 'dialog' : undefined}
+          aria-expanded={toolSheet.isNarrowViewport ? sheetOpen : open}
+          onClick={(event) => {
+            if (toolSheet.isNarrowViewport) {
+              toolSheet.openGroup(segment, messageId, readOnly, event.currentTarget);
+              return;
+            }
+            setOpen((value) => !value);
+          }}
         >
           <span className="tool-run-summary-dot" aria-hidden="true" />
           <span className={`tool-run-summary-label${inFlight ? ' shimmer-text' : ''}`}>
@@ -124,7 +141,7 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
           />
         </button>
 
-        <div className="tool-run-list" hidden={!open}>
+        <div className="tool-run-list" hidden={toolSheet.isNarrowViewport || !open}>
           {open ? <ToolRunDetail view={view} readOnly={readOnly} /> : null}
           {segment.members.map((call, index) => (
             <ToolRunRow

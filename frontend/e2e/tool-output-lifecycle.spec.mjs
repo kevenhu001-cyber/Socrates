@@ -171,6 +171,49 @@ test('a settled visualization under a collapsed tool run stays on screen', async
   await body.screenshot({ path: 'test-results/tool-output-collapsed.png' });
 });
 
+test('opening the mobile tool sheet does not move or duplicate call outputs', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const code = {
+    id: 'code-1',
+    name: 'code_interpreter',
+    input: { code: 'plot(x, y)' },
+    output: 'saved plot.png',
+    artifacts: [{ id: 'file-1', mimeType: 'image/png', name: 'plot.png' }],
+    durationMs: 500,
+    status: 'completed',
+    textOffset: 0,
+  };
+  const body = await openAssistantFixture(page, [
+    userMessage(),
+    assistantMessage([
+      searchCall('search-1', 'curve'),
+      vizCall('viz-a', 'Probe A'),
+      code,
+      vizCall('viz-b', 'Probe B'),
+    ]),
+  ]);
+
+  const group = body.locator('.tool-run-group');
+  const sheet = page.locator('[data-tool-run-sheet="1"]');
+  const charts = body.locator('.visualization-card');
+  await expect(charts).toHaveCount(2);
+  await expect(charts.nth(0)).toContainText('Probe A');
+  await expect(charts.nth(1)).toContainText('Probe B');
+  await expect(body.locator('.exec-artifact')).toHaveCount(1);
+  await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
+
+  await group.locator('.tool-run-summary').click();
+  await expect(sheet).toBeVisible();
+  await expect(charts).toHaveCount(2);
+  await expect(body.locator('.exec-artifact')).toHaveCount(1);
+  await expect(sheet.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
+  await expect(group.locator('.tool-run-list .visualization-card, .tool-run-list .exec-artifact')).toHaveCount(0);
+
+  const probe = await readVizProbe(page);
+  expect(probe.created.map((mount) => mount.cardId)).toEqual(['viz-a', 'viz-b']);
+  expect(probe.removed).toEqual([]);
+});
+
 test('a code artifact and a visualization from one run both render outside the collapsed details', async ({ page }) => {
   const code = {
     id: 'code-1',

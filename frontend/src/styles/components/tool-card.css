@@ -1,10 +1,283 @@
-/*
- * styles/components/tool-card.css
- *
- * M1 placeholder. Will own the tool-card design tokens + every
- * tool-card surface (composer tools menu, inline tool rows, agent
- * tool card, sources card, skill row, storage row). For now the
- * token definitions stay in `src/styles.css`; M2 extracts the
- * `[data-theme=socrates][data-mode]` token blocks alongside the
- * surface rules.
- */
+/* Tool-call presentation. Shared Socrates palette + density for the inline
+   run rows and the narrow-screen details sheet. */
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-summary {
+  min-height: 38px;
+  padding: 5px 0 5px 10px;
+  border-radius: 10px;
+  gap: 9px;
+  color: var(--tool-card-text-muted);
+  transition: background-color .16s ease, color .16s ease;
+}
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-summary:hover,
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-summary[aria-expanded="true"] {
+  background: var(--tool-card-bg-hover);
+  color: var(--tool-card-text);
+}
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-summary-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-summary-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tool-card-text-subtle);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-run-group[data-state="error"] .tool-run-summary-label {
+  color: var(--tool-card-danger);
+}
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-head {
+  min-height: 34px;
+  gap: 8px;
+  border-radius: 8px;
+  transition: background-color .16s ease, color .16s ease;
+}
+
+.msg.assistant .msg-body.is-declarative:has(.tool-inline) .tool-inline-meta {
+  color: var(--tool-card-text-subtle);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tool-run-sheet-backdrop {
+  position: fixed;
+  z-index: 1600;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: hsl(var(--always-black) / .42);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: tool-run-sheet-backdrop-in .16s ease-out both;
+}
+
+.tool-run-sheet {
+  display: flex;
+  width: min(100%, 760px);
+  max-height: min(84vh, 780px);
+  max-height: min(84dvh, 780px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border-300) / .48);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  background: hsl(var(--bg-000));
+  color: hsl(var(--text-100));
+  box-shadow: 0 -18px 58px hsl(var(--always-black) / .3);
+  animation: tool-run-sheet-rise .22s var(--ease-out, ease-out) both;
+}
+
+.tool-run-sheet-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 70px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid hsl(var(--border-300) / .32);
+  background: hsl(var(--bg-000));
+}
+
+.tool-run-sheet-heading {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.tool-run-sheet-title {
+  overflow: hidden;
+  margin: 0;
+  color: hsl(var(--text-100));
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-run-sheet-meta {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: hsl(var(--text-500));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-run-sheet-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  max-width: 40%;
+  padding: 4px 8px;
+  border: 1px solid hsl(var(--border-300) / .4);
+  border-radius: 999px;
+  color: hsl(var(--text-400));
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.tool-run-sheet-status-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: hsl(var(--text-400));
+}
+
+.tool-run-sheet-status[data-state="running"] .tool-run-sheet-status-dot {
+  background: hsl(var(--accent-000));
+  animation: search-progress-dot 1.1s ease-in-out infinite;
+}
+
+.tool-run-sheet-status[data-state="error"] {
+  border-color: var(--tool-card-danger-soft-strong);
+  color: var(--tool-card-danger);
+}
+
+.tool-run-sheet-status[data-state="error"] .tool-run-sheet-status-dot {
+  background: var(--tool-card-danger);
+}
+
+.tool-run-sheet-close {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--border-300) / .4);
+  border-radius: 10px;
+  background: hsl(var(--bg-100) / .72);
+  color: hsl(var(--text-400));
+  transition: color .14s ease, background-color .14s ease, border-color .14s ease;
+}
+
+.tool-run-sheet-close svg {
+  width: 17px;
+  height: 17px;
+}
+
+.tool-run-sheet-close:hover,
+.tool-run-sheet-close:focus-visible {
+  border-color: hsl(var(--border-300) / .7);
+  background: hsl(var(--bg-200));
+  color: hsl(var(--text-100));
+}
+
+.tool-run-sheet-close:focus-visible {
+  outline: 2px solid hsl(var(--accent-000) / .65);
+  outline-offset: 2px;
+}
+
+.tool-run-sheet-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  scrollbar-color: hsl(var(--text-500) / .34) transparent;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+}
+
+.tool-run-sheet-overview {
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid hsl(var(--border-300) / .24);
+}
+
+.tool-run-sheet-call-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-left: 2px;
+  padding-left: 12px;
+  border-left: 1px solid hsl(var(--border-300) / .42);
+}
+
+.tool-run-sheet .tool-inline {
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.tool-run-sheet .tool-inline-head {
+  min-height: 38px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.tool-run-sheet .tool-inline-head:hover,
+.tool-run-sheet .tool-inline[open] > .tool-inline-head {
+  background: var(--tool-card-bg-hover);
+}
+
+.tool-run-sheet .tool-inline-detail {
+  margin: 0 0 8px 8px;
+  padding: 10px 10px 8px 14px;
+  border-left: 1px solid hsl(var(--border-300) / .38);
+  background: transparent;
+}
+
+.tool-run-sheet .tool-inline-detail-section + .tool-inline-detail-section {
+  margin-top: 12px;
+}
+
+.tool-run-sheet .tool-inline-detail-value {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.tool-run-sheet .tool-inline-error-actions {
+  margin-top: 10px;
+}
+
+@keyframes tool-run-sheet-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tool-run-sheet-rise {
+  from { opacity: .7; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 761px) {
+  .tool-run-sheet-backdrop {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .tool-run-sheet {
+    max-height: min(82vh, 780px);
+    border-bottom: 1px solid hsl(var(--border-300) / .48);
+    border-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-run-sheet-backdrop,
+  .tool-run-sheet {
+    animation-duration: .01ms;
+  }
+}

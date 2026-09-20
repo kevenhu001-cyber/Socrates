@@ -84,10 +84,13 @@
 <link rel="stylesheet" href="/src/styles/chatgpt-v2.css">
 <link rel="stylesheet" href="/src/styles/ref-baseline.css">
 <link rel="stylesheet" href="/src/styles/mobile-parity.css">
-<!-- The conversation surface is intentionally last: it owns the shared
+<!-- The conversation surface stays late in the cascade: it owns the shared
      landing + in-session composition language without another cascade of
      per-screen exceptions. -->
 <link rel="stylesheet" href="/src/styles/chat-surface.css">
+<!-- Tool-run rows and the narrow-screen details sheet have their own
+     final-layer module so the main stylesheet stays untouched. -->
+<link rel="stylesheet" href="/src/styles/components/tool-card.css">
 </head>
 <body>
 
