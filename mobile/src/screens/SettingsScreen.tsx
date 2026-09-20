@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AnimatedPressable } from '../components/AnimatedPressable';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { toast } from '../components/Toast';
 import { apiKeysApi, type ApiProvider } from '../data/api/client';
 import { TONE_PRESETS, type TonePreset } from '../data/chat/tonePresets';
@@ -225,7 +226,10 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
     }
   };
 
+  const [clearArmed, setClearArmed] = useState(false);
+
   const clear = async () => {
+    setClearArmed(false);
     setSaving(true);
     try {
       await Promise.all(initialIds.current.map((id) => apiKeysApi.remove(id).catch(() => undefined)));
@@ -415,7 +419,7 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
           </View>
 
           <View style={styles.actions}>
-            <AnimatedPressable disabled={saving} onPress={() => { void clear(); }} style={styles.actionButton}>
+            <AnimatedPressable disabled={saving} onPress={() => setClearArmed(true)} style={styles.actionButton}>
               <Text style={[styles.actionText, { color: colors.danger }]}>{t('settings.clearAll')}</Text>
             </AnimatedPressable>
             <View style={styles.actionSpacer} />
@@ -430,6 +434,19 @@ export function SettingsScreen({ navigation }: { navigation: { goBack: () => voi
           </View>
         </ScrollView>
       </View>
+      {/* Web `confirmClearSettings` — destructive wipe needs an explicit
+       * confirm, same copy as the SPA dialog. */}
+      <ConfirmDialog
+        visible={clearArmed}
+        title={t('settings.clearAllConfirmTitle') || 'Clear API settings?'}
+        message={t('settings.clearAllConfirmBody') || 'This removes all configured API providers and keys. You will need to reconfigure them.'}
+        confirmLabel={t('common.delete') || 'Delete'}
+        cancelLabel={t('common.cancel') || 'Cancel'}
+        danger
+        busy={saving}
+        onCancel={() => setClearArmed(false)}
+        onConfirm={() => { void clear(); }}
+      />
     </View>
   );
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "webBaseline": "81efb29a3a846a049030c4b0edc8df3d5f9fb902",
+  "webBaseline": "3839e85ecbf1df838d95c51c2600f2fab1bab0a0",
   "baselineNote": "Generated from the latest commit touching frontend/. Any later Web UI change must update this manifest and the visual baselines.",
   "viewports": [
     { "name": "phone-compact", "width": 390, "height": 844, "densityIndependent": true },
@@ -22,6 +22,7 @@
     { "id": "plugins", "route": "Plugins", "coverage": ["loading", "empty", "data", "error"], "webReference": "workspace/plugins" },
     { "id": "knowledge", "route": "Knowledge", "coverage": ["loading", "empty", "data", "error"], "webReference": "knowledge" },
     { "id": "mistakes", "route": "Mistakes", "coverage": ["loading", "empty", "data", "error"], "webReference": "mistakes" },
+    { "id": "skills", "route": "Skills", "coverage": ["empty", "data", "complete"], "webReference": "prompt-templates-modal" },
     { "id": "exam", "route": "ExamSession", "coverage": ["loading", "empty", "data", "error", "complete"], "webReference": "exam" },
     { "id": "search", "route": "Search", "coverage": ["loading", "empty", "data", "error"], "webReference": "search" },
     { "id": "settings", "route": "Settings", "coverage": ["loading", "data", "error", "complete"], "webReference": "settings" },
@@ -41,7 +42,7 @@
   ],
   "controlledWebViews": [
     { "id": "html-artifact", "component": "ArtifactWebView", "routes": ["ArtifactPreview"], "reason": "HTML, chart, 3D and rich visualization rendering", "bridge": "artifact-v1", "csp": "sandboxed", "fallback": "source-and-reload" },
-    { "id": "embedded-external", "component": "EmbeddedWebScreen", "routes": ["Embedded"], "reason": "skills, provider authorization and approved external flows", "bridge": "embedded-v1", "csp": "allowlisted-origins", "fallback": "native-error-and-retry" }
+    { "id": "embedded-external", "component": "EmbeddedWebScreen", "routes": ["Embedded"], "reason": "provider authorization and approved external flows", "bridge": "embedded-v1", "csp": "allowlisted-origins", "fallback": "native-error-and-retry" }
   ],
   "androidDifferences": ["system-back", "keyboard", "status-bar", "navigation-bar", "permissions", "haptics", "system-share"]
 }

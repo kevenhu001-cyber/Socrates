@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Attachment } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
 import { withAlpha } from '../theme/theme';
@@ -10,6 +11,7 @@ import { AnimatedPressable } from './AnimatedPressable';
 import { AttachmentChip } from './AttachmentChip';
 import { ReasoningEffortPicker, type EffortPickerAnchor } from './ReasoningEffortPicker';
 import { useResponsive } from '../theme/responsive';
+import { native } from '../native/native';
 import { useVoiceInput, type VoiceInputErrorCode, type VoiceInputStatus } from '../native/voiceInput';
 
 export type ReasoningEffort = 'low' | 'medium' | 'high';
@@ -72,6 +74,21 @@ const waveStyles = StyleSheet.create({
   },
 });
 
+/* ChatGPT capsule parity: the resting composer ends in a filled voice orb
+ * (white in dark mode, black in light) carrying a static waveform glyph.
+ * A full-duplex voice surface does not exist yet, so the orb enters the
+ * same dictation session as the mic button. */
+export function VoiceModeGlyph({ color, size = 20 }: { color: string; size?: number }) {
+  const bars = [0.5, 0.82, 1, 0.62, 0.85];
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2.6, height: size }} pointerEvents="none">
+      {bars.map((scale, i) => (
+        <View key={i} style={{ width: 2.6, borderRadius: 1.3, height: Math.round(size * scale), backgroundColor: color }} />
+      ))}
+    </View>
+  );
+}
+
 export function ThinkDeeperGlyph({ size = 19, color }: { size?: number; color: string }) {
   return (
     <View
@@ -108,6 +125,111 @@ export function ThinkDeeperGlyph({ size = 19, color }: { size?: number; color: s
 function formatVoiceDuration(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+export interface VoiceModeOverlayProps {
+  visible: boolean;
+  status: VoiceInputStatus;
+  transcript: string;
+  elapsedSeconds: number;
+  volume: number;
+  /** X / Android back — discards the session. */
+  onCancel: () => void;
+  /** Check — stops recognition and commits the transcript to the draft. */
+  onDone: () => void;
+}
+
+/* ChatGPT voice-mode surface: a full-screen dark layer with a volume-
+ * reactive orb, live status/timer/transcript, and cancel/done actions.
+ * Rendered by the Composer so landing and chat share the same session. */
+export function VoiceModeOverlay({
+  visible,
+  status,
+  transcript,
+  elapsedSeconds,
+  volume,
+  onCancel,
+  onDone,
+}: VoiceModeOverlayProps) {
+  const { colors, typography } = useTheme();
+  const insets = useSafeAreaInsets();
+  const t = useT();
+  const label = status === 'stopping'
+    ? t('chat.voiceProcessing')
+    : status === 'starting'
+      ? t('chat.voiceStarting')
+      : t('chat.voiceListening');
+  const level = Math.min(1, Math.max(0, volume));
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onCancel}
+    >
+      <View style={[styles.voiceOverlay, { backgroundColor: withAlpha(colors.background, 0.94) }]} testID="voice-mode-overlay">
+        <AnimatedPressable
+          accessibilityLabel={t('common.close') || 'Close'}
+          onPress={onCancel}
+          hitSlop={10}
+          style={[styles.voiceClose, { top: insets.top + 14 }]}
+        >
+          <Ionicons name="close" size={26} color={colors.text} />
+        </AnimatedPressable>
+
+        <View style={styles.voiceCenter}>
+          <View style={styles.voiceOrbWrap}>
+            <View
+              style={[
+                styles.voiceHalo,
+                { backgroundColor: withAlpha(colors.text, 0.07), transform: [{ scale: 1 + level * 0.55 }] },
+              ]}
+            />
+            <View
+              style={[
+                styles.voiceOrb,
+                { backgroundColor: colors.text, transform: [{ scale: 1 + level * 0.22 }] },
+              ]}
+            >
+              <VoiceModeGlyph color={colors.background} size={40} />
+            </View>
+          </View>
+          <Text style={[styles.voiceModeLabel, { color: colors.text, fontFamily: typography.medium }]}>{label}</Text>
+          <Text style={[styles.voiceModeTimer, { color: colors.textMuted, fontFamily: typography.mono }]}>
+            {formatVoiceDuration(elapsedSeconds)}
+          </Text>
+          <Text
+            numberOfLines={2}
+            style={[styles.voiceModeTranscript, { color: transcript ? colors.textSecondary : colors.textSubtle, fontFamily: typography.body }]}
+          >
+            {transcript || t('chat.voiceSpeak')}
+          </Text>
+        </View>
+
+        <View style={[styles.voiceModeActions, { paddingBottom: Math.max(insets.bottom, 16) + 28 }]}>
+          <AnimatedPressable
+            accessibilityLabel={t('common.cancel') || 'Cancel'}
+            onPress={onCancel}
+            scale={0.94}
+            style={[styles.voiceActionBtn, { backgroundColor: colors.controlFill }]}
+          >
+            <Ionicons name="close" size={24} color={colors.text} />
+          </AnimatedPressable>
+          <AnimatedPressable
+            accessibilityLabel={t('common.done') || 'Done'}
+            onPress={status === 'stopping' ? undefined : onDone}
+            scale={0.94}
+            style={[styles.voiceActionBtn, { backgroundColor: colors.text }]}
+          >
+            <Ionicons name="checkmark" size={24} color={colors.background} />
+          </AnimatedPressable>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 function VoiceRecordingBar({
@@ -199,6 +321,11 @@ export const Composer = React.memo(function Composer({
   const [editorHeight, setEditorHeight] = useState(50);
   const [effortPickerOpen, setEffortPickerOpen] = useState(false);
   const [effortAnchor, setEffortAnchor] = useState<EffortPickerAnchor | null>(null);
+  const [voiceMode, setVoiceMode] = useState(false);
+  /* Only auto-close the voice overlay after a session has actually run —
+   * `start` resolves 'starting' asynchronously, so a bare `idle → close`
+   * would dismiss the sheet the same frame it opens. */
+  const voiceSessionRef = useRef(false);
   const canSend = (value.trim().length > 0 || hasAttachments) && !disabled;
 
   const handleVoiceError = (code: VoiceInputErrorCode) => {
@@ -218,6 +345,24 @@ export const Composer = React.memo(function Composer({
     onChangeText,
     onError: handleVoiceError,
   });
+
+  /* Voice-mode lifecycle: the overlay closes itself when the recognizer
+   * settles back to idle — commit (Done → stop → finalize), cancel (X →
+   * abort), and error paths all funnel through the same transition. */
+  useEffect(() => {
+    if (voice.status !== 'idle') voiceSessionRef.current = true;
+    if (voiceMode && voiceSessionRef.current && voice.status === 'idle') {
+      voiceSessionRef.current = false;
+      setVoiceMode(false);
+    }
+  }, [voiceMode, voice.status]);
+
+  const openVoiceMode = () => {
+    Keyboard.dismiss();
+    void native.vibrate('light');
+    setVoiceMode(true);
+    void voice.start();
+  };
 
   /* Single-row resting capsule on every viewport, expanding to two rows on
    * focus or content. This deliberately diverges from the SPA phone
@@ -344,19 +489,20 @@ export const Composer = React.memo(function Composer({
           onStop={voice.stop}
         />
       ) : !isExpanded ? (
-        /* Single-row resting capsule — frontend layout is
-         * attach + text + send. Voice input is implemented by the native
+        /* Single-row resting capsule — ChatGPT layout is attach + text +
+         * mic + voice orb, with the orb swapping to a send arrow once the
+         * draft can send. Voice input is implemented by the native
          * SpeechRecognizer and swaps this row for the live recording bar. */
         <View style={styles.singleRow}>
-          {/* Plus button */}
+          {/* Plus button — ChatGPT capsule parity: plain glyph, no disc. */}
           <View ref={attachAnchorRef} collapsable={false}>
             <AnimatedPressable
               onPress={openAttachMenu}
               accessibilityRole="button"
               accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-              style={[styles.circleBtn, { backgroundColor: colors.controlFill }]}
+              style={styles.circleBtn}
             >
-              <Ionicons name="add" size={20} color={iconColor} />
+              <Ionicons name="add" size={24} color={iconColor} />
             </AnimatedPressable>
           </View>
 
@@ -380,16 +526,17 @@ export const Composer = React.memo(function Composer({
             returnKeyType="default"
           />
 
-          {/* Send / Stop — idle mirrors `.send-btn` neutral
-           * (`bg-300` fill, `text-400` glyph), active flips to accent. */}
+          {/* Right cluster — ChatGPT capsule parity: plain mic glyph, then
+           * the trailing slot is a voice orb at rest and only becomes the
+           * send arrow once the draft can actually send. */}
           <View style={styles.singleRightActions}>
             <AnimatedPressable
               accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
               accessibilityState={{ selected: voiceRecording }}
               onPress={voice.start}
-              style={[styles.micBtn, { backgroundColor: voiceRecording ? colors.accentSoft : colors.controlFill }]}
+              style={styles.micBtn}
             >
-              <Ionicons name="mic-outline" size={20} color={iconColor} />
+              <Ionicons name="mic-outline" size={22} color={iconColor} />
             </AnimatedPressable>
             {/* frontend `.send-btn.chat-stop`: neutral fill + dark glyph. */}
             {disabled ? (
@@ -401,21 +548,29 @@ export const Composer = React.memo(function Composer({
               >
                 <Ionicons name="stop" size={14} color={sendIdleFg} />
               </AnimatedPressable>
-            ) : (
+            ) : canSend ? (
               <AnimatedPressable
                 accessibilityLabel={t('chat.send') || 'Send message'}
-                accessibilityState={{ disabled: !canSend }}
-                disabled={!canSend}
-                onPress={canSend ? onSend : undefined}
+                onPress={onSend}
                 scale={0.92}
-                restingScale={canSend ? 1.05 : 1}
+                restingScale={1.05}
                 style={[
                   styles.actionBtn,
-                  { backgroundColor: canSend ? colors.accent : sendIdleBg },
-                  canSend ? [styles.sendGlow, { shadowColor: colors.accent }] : null,
+                  { backgroundColor: colors.accent },
+                  styles.sendGlow,
+                  { shadowColor: colors.accent },
                 ]}
               >
-                <Ionicons name="arrow-up" size={16} color={canSend ? colors.textInverse : sendIdleFg} />
+                <Ionicons name="arrow-up" size={16} color={colors.textInverse} />
+              </AnimatedPressable>
+            ) : (
+              <AnimatedPressable
+                accessibilityLabel={t('chat.voiceMode') || 'Voice mode'}
+                onPress={openVoiceMode}
+                scale={0.92}
+                style={[styles.actionBtn, { backgroundColor: colors.text }]}
+              >
+                <VoiceModeGlyph color={colors.background} />
               </AnimatedPressable>
             )}
           </View>
@@ -460,9 +615,9 @@ export const Composer = React.memo(function Composer({
                 onPress={openAttachMenu}
                 accessibilityRole="button"
                 accessibilityLabel={t('chat.attach') || 'Add tools and files'}
-                style={[styles.circleBtn, { backgroundColor: colors.controlFill }]}
+                style={styles.circleBtn}
               >
-                <Ionicons name="add" size={21} color={iconColor} />
+                <Ionicons name="add" size={24} color={iconColor} />
               </AnimatedPressable>
             </View>
 
@@ -553,9 +708,9 @@ export const Composer = React.memo(function Composer({
                 accessibilityLabel={t('chat.voiceInput') || 'Voice input'}
                 accessibilityState={{ selected: voiceRecording }}
                 onPress={voice.start}
-                style={[styles.circleBtn, { backgroundColor: colors.controlFill }]}
+                style={styles.circleBtn}
               >
-                <Ionicons name="mic-outline" size={21} color={iconColor} />
+                <Ionicons name="mic-outline" size={22} color={iconColor} />
               </AnimatedPressable>
 
               {disabled ? (
@@ -594,6 +749,15 @@ export const Composer = React.memo(function Composer({
       anchor={effortAnchor}
       onChange={(effort) => onChangeReasoningEffort?.(effort)}
       onClose={() => setEffortPickerOpen(false)}
+    />
+    <VoiceModeOverlay
+      visible={voiceMode}
+      status={voice.status === 'idle' ? 'starting' : voice.status}
+      transcript={voice.liveTranscript}
+      elapsedSeconds={voice.elapsedSeconds}
+      volume={voice.volume}
+      onCancel={voice.cancel}
+      onDone={voice.stop}
     />
     </>
   );
@@ -826,5 +990,71 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 4,
+  },
+  /* Voice mode overlay — ChatGPT's immersive voice surface. */
+  voiceOverlay: {
+    flex: 1,
+  },
+  voiceClose: {
+    position: 'absolute',
+    left: 20,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  voiceCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 10,
+  },
+  voiceOrbWrap: {
+    width: 112,
+    height: 112,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  voiceHalo: {
+    position: 'absolute',
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+  },
+  voiceOrb: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceModeLabel: {
+    fontSize: 17,
+  },
+  voiceModeTimer: {
+    fontSize: 13,
+  },
+  voiceModeTranscript: {
+    marginTop: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    minHeight: 22,
+  },
+  voiceModeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 40,
+  },
+  voiceActionBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

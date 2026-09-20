@@ -8,13 +8,14 @@ export const EMBEDDED_TARGETS: readonly EmbeddedTarget[] = [
 /** Product surfaces remain in the shared contract for older clients, but the
  * native client must route them into RN screens instead of opening a full SPA
  * WebView. `undefined` means the target is an intentionally controlled web
- * surface (currently Skills, OAuth, or an external flow). */
+ * surface (currently OAuth or an external flow). */
 export const NATIVE_EMBEDDED_ROUTES = {
   projects: 'Projects',
   scheduled: 'Scheduled',
   plugins: 'Plugins',
   knowledge: 'Knowledge',
   mistakes: 'Mistakes',
+  skills: 'Skills',
   'api-settings': 'Settings',
   display: 'Display',
   library: 'Library',

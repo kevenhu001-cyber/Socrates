@@ -24,11 +24,18 @@ jest.mock('../components/Composer', () => ({ Composer: () => null }));
 jest.mock('../components/ComposerToolsMenu', () => ({ ComposerToolsMenu: () => null }));
 jest.mock('../components/ModelPickerModal', () => ({ ModelPickerModal: () => null }));
 jest.mock('../data/chat/attachments', () => ({ pickChatAttachment: jest.fn() }));
-jest.mock('../data/chat/prompts', () => ({
-  MOBILE_EXTENSIONS: {},
-  filterPromptTemplates: () => [],
-  parseSlashQuery: () => null,
-}));
+jest.mock('../data/chat/prompts', () => {
+  /* useSyncExternalStore needs a stable snapshot identity — a fresh array
+   * per getSnapshot call would loop re-renders forever. */
+  const templates: never[] = [];
+  return {
+    MOBILE_EXTENSIONS: {},
+    filterPromptTemplates: () => [],
+    getPromptTemplates: () => templates,
+    parseSlashQuery: () => null,
+    subscribePromptTemplates: () => () => undefined,
+  };
+});
 
 const navigation = {
   navigate: jest.fn(),

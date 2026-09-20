@@ -531,7 +531,7 @@ export function ChatScreen({ navigation }: Props) {
         onPickExplore={() => appStore.setActiveExtension('explore')}
         onPickAnalyze={() => appStore.setActiveExtension('analyze')}
         onPickExam={() => navigation.navigate('ExamSession')}
-        onPickSkills={() => navigation.navigate('Embedded', { target: 'skills', title: t('sidebar.more.skills') || 'Skills & shortcuts' })}
+        onPickSkills={() => navigation.navigate('Skills')}
         activeExtension={activeExtension}
         onToggleThinkDeeper={() => appStore.setReasoningEffort(reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={reasoningEffort === 'high'}

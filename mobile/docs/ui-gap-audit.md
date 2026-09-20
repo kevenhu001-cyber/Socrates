@@ -41,21 +41,48 @@ Do not use historical prose as an acceptance baseline.
 - Icon-only controls that TalkBack announced as "button" now carry labels, and
   the message toolbar's labels are translated instead of hardcoded English.
 
+### Follow-up pass (interaction depth)
+
+- The composer voice orb now opens an immersive voice-mode surface
+  (`VoiceModeOverlay` in `Composer.tsx`): full-screen dark layer, volume-reactive
+  orb, status/timer/live transcript, cancel/done actions, Android back support.
+  It shares the `useVoiceInput` session with the mic button — it is still
+  dictation, not full-duplex conversation.
+- Long-pressing a message bubble opens the full ChatGPT-style action sheet
+  (copy, read aloud, edit, regenerate/retry, helpful/not helpful, share,
+  branch, re-explain, delete) instead of only the share/branch overflow. The
+  toolbar's "more" button opens the same sheet, and toolbar buttons now carry
+  `accessibilityRole="button"`.
+
+### Follow-up pass (feature gaps)
+
+- Prompt Templates now has a native manager: `SkillsScreen` ports the web
+  "Skills & shortcuts" modal (built-in list, custom list with edit/delete,
+  create/edit editor with the web's title/shortcut/uniqueness validation).
+  Custom templates persist under the same `socrates-prompt-templates` key via
+  `secureStorage`, merge into the slash palette live, and the `skills`
+  embedded target now routes to the native screen from every entry point
+  (More, composer menu, Cmd+K, bridge deep-links).
+- `loadPreferences()` is finally called at startup — the flag store was
+  written but never hydrated, so haptics prefs silently ignored storage.
+- Knowledge graph controls carry `accessibilityLabel`s (snapshot button, node
+  circles, section rows, confidence dots, note input/save, "Open in Tutor").
+
 ## Remaining gaps
 
 | Priority | Gap | Exit condition |
 |---|---|---|
-| P0 | Native Prompt Templates manager/repository is not implemented (`docs/frontend-parity.md`) | CRUD, persistence and Composer selection use the shared `PromptTemplate` contract |
-| P0 | Tool approval server continuation is not verified end-to-end on a device | Decision endpoint, resumed run stream, rejection and interruption pass on Android |
-| P0 | `teachingPlan` is stored but never rendered; the web shows title, done/total progress, per-subtopic status, current stage, depth counter and the practice-attempt chip (`frontend/src/tutorSocratic.js:519-600`) | Tutor screen renders the plan card and both chips |
-| P1 | Consecutive tool calls are appended above the prose instead of folding into a group header and seating inline between text segments (`frontend/src/toolRunModel.ts:430-645`); no "Technical details" disclosure | Tool runs group and interleave like the web |
-| P1 | Cmd+K searches local commands and recent sessions only; the web also queries `/api/search` for session and message hits with snippets (`frontend/src/ui/cmdK.js:134-232`) | Remote hits render with snippets and open at the match |
-| P1 | Explore/agent workflow stepper (Plan/Search/Read/Report) is a chip label only; the streaming web search-progress log has no counterpart | Stepper and progress log render from tool events |
-| P1 | Shortcuts sheet lists five hardcoded rows; the web cheatsheet has four sections and thirteen translated rows (`frontend/src/react/cheatsheet/Cheatsheet.tsx:21-43`) | Same sections, rows and copy |
-| P1 | Exam generation is not gated on a usable provider and the generating card shows a fake `(i+1)/n` tick instead of real progress | Gate and progress match the web; no fabricated percentage |
-| P1 | Home is missing the prompt-library row and the `/`-command overlay, and keeps the keyboard open on scroll (`frontend/src/main.js:7774-7802`, `Composer.tsx:75`) | Slash overlay and prompt row exist; scroll dismisses the keyboard |
-| P1 | Knowledge graph renders an empty card with no message; its 14 controls need labels | Empty state and labels match the web |
-| P1 | Profile sheet has no "Clear API settings" row; providers come from server config on mobile, so the web's local-key wipe has no target | Decide the mobile contract, then either implement or document the platform exception |
+| ~~P0~~ | ~~Native Prompt Templates manager/repository~~ — done: `SkillsScreen` + `prompts.ts` custom-template store (CRUD, `socrates-prompt-templates` persistence, live slash-palette merge) | — |
+| P0 | Tool approval — `ApprovalPanel` + `agentRunsApi.decideApproval`/`interrupt` exist, but the resumed-run stream has not been verified end-to-end on a device | Decision endpoint, resumed run stream, rejection and interruption pass on Android |
+| ~~P0~~ | ~~`teachingPlan` is stored but never rendered~~ — done: `TutorScreen` renders the plan card (title, done/total + %, per-subtopic status, live stage, 3-answer depth counter, practice-phase chip) | — |
+| ~~P1~~ | ~~Consecutive tool calls are appended above the prose instead of folding into a group header~~ — done: `src/data/tools/turnLayout.ts` ports `toolRunModel.buildTurnLayout` (consecutive calls fold into a collapsible `ToolRunGroup` seated between prose segments) | — |
+| ~~P1~~ | ~~Cmd+K searches local commands only~~ — done: `CmdKPalette` issues the same debounced `POST /api/search`, dedupes against local hits, renders snippet hints, and opens the session at the match | — |
+| P1 | Explore/agent workflow stepper (Plan/Search/Read/Report) is a chip label only; the streaming web search-progress log has no counterpart. Note: the web stepper consumes a **client-side** `agentRunStore` fed by `researchAgent.js`; mobile's explore is prompt-driven, so a faithful port needs stage events derived from the tool stream or a server-side workflow signal | Stepper and progress log render from tool events |
+| ~~P1~~ | ~~Shortcuts sheet lists five hardcoded rows~~ — done: `MoreScreen.tsx` ports the web cheatsheet 1:1 (four sections, thirteen translated rows, kbd badges) | — |
+| ~~P1~~ | ~~Exam generation is not gated / fake `(i+1)/n` progress~~ — done: `ExamScreen` gates on a usable provider (`ProviderSetupGate`, web `exam.js:405-414`) and the bar tracks real `genDone/count` | — |
+| ~~P1~~ | ~~Home missing `/`-command overlay and keyboard-dismiss-on-scroll~~ — done: slash palette exists on `NewChatScreen` and `keyboardDismissMode="on-drag"` is set on Home and Chat. The prompt-library row is intentionally absent — the SPA hides it under the final `chat-surface.css` layer | — |
+| ~~P1~~ | ~~Knowledge graph controls lack labels~~ — done: empty state plus `accessibilityLabel`/`accessibilityState` on snapshot, node circles, section rows, confidence dots, note input/save and "Open in Tutor" | — |
+| ~~P1~~ | ~~Profile sheet has no "Clear API settings" row~~ — the audit misread the web feature: it `DELETE`s each custom `/api-key` server-side, and `SettingsScreen.clear` already did the same. Added the missing piece — the web's `confirmClearSettings` confirm dialog before the wipe | — |
 | P1 | Detox coverage is still shallow | Authentication through artifact flows run in CI without manual setup |
 
 ## Evidence
