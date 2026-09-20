@@ -276,6 +276,7 @@ export async function callAPI(messages,maxTokens,options){
     deal with the direct MiniMax API hop (the proxy can't route to it). */
   if(provider.isBuiltIn){
     var beagleBody=buildChatRequestBody(messages,maxTokens,0.7);
+    var beagleRequestedSpeed=beagleBody.response_speed;
     /* Reasoning models (MiniMax-M2.7, DeepSeek R1, QwQ) regularly
        take 2-4 minutes to think before producing the answer. The
        previous 90s hard timeout cut off the call mid-think and the
@@ -325,7 +326,7 @@ export async function callAPI(messages,maxTokens,options){
           setLastCallError(errorMessage(lastBeagleErr,'malformed response'));
           return null;
         }
-        if(json.meta&&json.meta.response_speed_applied==="standard"&&getStoredResponseSpeed()==="fast")notifySpeedFallbackOnce();
+        if(json.meta&&json.meta.response_speed_applied==="standard"&&beagleRequestedSpeed==="fast")notifySpeedFallbackOnce();
         return json.choices[0].message.content;
       }catch(e){
         var acReason=String(beagleAc.signal.reason||"");
@@ -359,14 +360,16 @@ export async function callAPI(messages,maxTokens,options){
     var nsAc=new AbortController();
     var unbindNonBuiltin=bindAbortSignal(retryOptions.signal,nsAc);
     try{
-      var resp=await apiFetch("/api/chat",{method:"POST",body:buildChatRequestBody(messages,maxTokens,0.7),signal:nsAc.signal});
+      var nsBody=buildChatRequestBody(messages,maxTokens,0.7);
+      var nsRequestedSpeed=nsBody.response_speed;
+      var resp=await apiFetch("/api/chat",{method:"POST",body:nsBody,signal:nsAc.signal});
       if(!resp||typeof resp.content!=="string"){
         lastNsErr=makeAIError("malformed response");
         if(await waitForRetry(nsAttempt,lastNsErr,retryOptions))continue;
         setLastCallError(errorMessage(lastNsErr,'malformed response'));
         return null;
       }
-      if(resp.meta&&resp.meta.response_speed_applied==="standard"&&getStoredResponseSpeed()==="fast")notifySpeedFallbackOnce();
+      if(resp.meta&&resp.meta.response_speed_applied==="standard"&&nsRequestedSpeed==="fast")notifySpeedFallbackOnce();
       return resp.content;
     }catch(e){
       var nsReason=String(nsAc.signal.reason||"");

@@ -903,7 +903,7 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
   --chat-control-hover: #dcdcdc;
   --chat-line: rgb(0 0 0 / 11%);
   --chat-text: #171717;
-  --chat-muted: #747474;
+  --chat-muted: #595959;
   --chat-overlay: rgb(0 0 0 / 28%);
   --chat-accent: #3b82f6;
 }

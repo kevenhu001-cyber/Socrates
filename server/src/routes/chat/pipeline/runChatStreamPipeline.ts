@@ -53,6 +53,7 @@ import type {
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
+  let effectiveResponseSpeed = responseSpeed;
 
   // Set SSE headers
   res.writeHead(200, {
@@ -219,6 +220,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         name === 'agent_step' ||
         name === 'agent_plan' ||
         name === 'execution_start' ||
+        name === 'preference_fallback' ||
         name === 'error'
       ) {
         tap(name, (data ?? {}) as Record<string, unknown>);
@@ -340,11 +342,12 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         temperature,
         signal: abortController.signal,
         reasoning_effort,
-        response_speed: responseSpeed,
+        response_speed: effectiveResponseSpeed,
         extra_body: safeExtraBody,
         onPreferenceFallback: (detail) => {
           if (speedFallbackEmitted) return;
           speedFallbackEmitted = true;
+          if (effectiveResponseSpeed === 'fast') effectiveResponseSpeed = 'standard';
           emitter.event('preference_fallback', detail);
         },
         ...(toolsAllowed && activeToolDefs.length > 0
