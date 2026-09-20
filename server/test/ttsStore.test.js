@@ -26,7 +26,7 @@ import {
   saveTtsResult,
   invalidateForMessage,
 } from '../src/services/ttsStore.js';
-import { runExpiredCleanup } from '../src/services/cleanupDb.js';
+import { runExpiredCleanup } from '../src/services/util/cleanupDb.js';
 
 /* ── Pure part: ttsTextHash ────────────────────────────────────── */
 

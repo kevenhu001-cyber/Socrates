@@ -296,8 +296,8 @@ sequenceDiagram
 | --- | --- | --- |
 | Web SPA | React/TypeScript + legacy JS compatibility layer, Vite build | [`frontend/`](frontend/) — ~99% migrated, all surfaces React-driven |
 | Markdown | `marked` 4.3 + custom progressive renderer | see [Custom rendering pipeline](#-custom-rendering-pipeline) |
-| Math | `katex` 0.16.9 (CDN, SRI-pinned) | display + inline modes |
-| Code highlight | `highlight.js` (loaded lazily at finish time) | |
+| Math | `katex` 0.16.9 (vendored, see [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)) | display + inline modes |
+| Code highlight | `highlight.js` (vendored + loaded lazily at finish time) | see [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
 | Search | `fuse.js` for the Cmd-K palette | |
 | Auth | Cookie (`sid`) + CSRF double-submit | see [`server/src/middleware/auth.ts`](server/src/middleware/auth.ts) and [`server/src/middleware/csrf.ts`](server/src/middleware/csrf.ts) |
 | Backend | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
@@ -315,7 +315,7 @@ sequenceDiagram
 | Shared core | SSE framing, chat event routing, session pure functions | [`packages/core/`](packages/core/) |
 | CI | GitHub Actions: RN checks, Web baseline, server checks, and APK | [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) |
 | Edge | nginx reverse proxy + static file server | [deploy.sh](deploy.sh) |
-| CDN deps | `cdn.jsdelivr.net` (KaTeX, marked) — all SRI-pinned | |
+| Vendored scripts | KaTeX + highlight.js + Plotly + Mermaid + ECharts (UMD under [`frontend/src/vendor-files/`](frontend/src/vendor-files/)); marked + DOMPurify + fuse.js come from npm — no CDN fallback | see [vendored-scripts-README](frontend/src/vendor-files/README.md) |
 
 ## Repository layout
 

@@ -10,7 +10,7 @@ import {
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
-import { removeProjectWorkspace } from '../services/workspacePaths.js';
+import { removeProjectWorkspace } from '../services/util/workspacePaths.js';
 
 const router = Router();
 router.use(requireAuth, resourceScope('projects'));

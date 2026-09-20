@@ -1,6 +1,6 @@
 # ADR 0010 — `server/src/services/` 子分组治理（设计上，实施延后）
 
-- 状态：Accepted (ADR 层面；实施进入多 PR 路线图)
+- 状态：Accepted (ADR 层面；PR-0010.1 已落地 2026-09-20)
 - 日期：2026-09-20
 - 决策者：项目所有者 + AI 协作会话
 - 关联：`docs/adr/0003-structural-debt-categories.md` (P2.1)、`docs/audits/2026-09-20-structural-review.md` F-014
@@ -52,7 +52,7 @@
 ## 影响
 
 - **PR 切分**（每 PR ≤ 1 个子目录 + 自带测试迁移）：
-  1. PR-0010.1：迁 `services/util/`（最小，10 文件左右）。
+  1. PR-0010.1：迁 `services/util/`（最小，10 文件左右）。**已部分落地 2026-09-20**：5/10 文件已迁（artifactOwnership / workspacePaths / workspaceResources / cleanupDb / fileArtifacts），余 fetchBatch / statusMonitor / connectorTools / projectConnectorTools 待后续 PR 补齐。
   2. PR-0010.2：迁 `services/core/`（影响 20+ 文件 + 多数 test 文件 + `routes/` import）。
   3. PR-0010.3：迁 `services/embeddings/`（含现有 `fileParsers/` 与 `searchEngines/`）。
   4. PR-0010.4：迁 `services/tools/`（agent / tool-call 周边）。

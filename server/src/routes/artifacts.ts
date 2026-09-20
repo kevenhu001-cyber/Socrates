@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { generateShareToken } from '../lib/crypto.js';
 import { normalizeVisibility } from '../lib/sanitize.js';
-import { requireOwnedArtifact } from '../services/artifactOwnership.js';
+import { requireOwnedArtifact } from '../services/util/artifactOwnership.js';
 
 const router = Router();
 router.use(requireAuth);
