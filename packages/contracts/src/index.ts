@@ -114,6 +114,8 @@ export interface Message {
   attachments?: Attachment[];
   toolCalls?: ToolCall[];
   citations?: Citation[];
+  /** Persisted thumbs rating; survives session reloads. */
+  feedback?: 'up' | 'down' | null;
   createdAt?: string | null;
 }
 

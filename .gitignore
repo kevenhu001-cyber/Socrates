@@ -29,6 +29,8 @@ mobile/android/
 mobile/ios/
 mobile/.eas/
 mobile/dist/
+mobile/dist-visual/
+mobile/scripts/visual/out/
 
 # ── OS files ──
 .DS_Store

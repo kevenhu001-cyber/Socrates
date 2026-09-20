@@ -1,0 +1,6 @@
+{
+  "projects": [
+    { "id": "proj-launch", "name": "Q3 Launch", "description": "Northwind Q3 product launch workstream", "color": "#4f7cff", "icon": "rocket", "createdAt": "2026-01-20T09:00:00.000Z", "updatedAt": "2026-04-28T18:12:00.000Z" },
+    { "id": "proj-thesis", "name": "Thesis research", "description": "Literature review and experiment notes", "color": "#22a06b", "icon": "school", "createdAt": "2025-12-05T11:30:00.000Z", "updatedAt": "2026-04-25T09:45:00.000Z" }
+  ]
+}

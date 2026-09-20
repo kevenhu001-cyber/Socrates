@@ -1,0 +1,37 @@
+{
+  "id": "s-demo-chat",
+  "title": "Pricing page rewrite",
+  "topic": "Pricing page rewrite",
+  "mode": "chat",
+  "pinned": true,
+  "preview": "Here's a tighter structure for the pricing page…",
+  "totalQ": 3,
+  "createdAt": "2026-05-01T08:02:00.000Z",
+  "updatedAt": "2026-05-04T09:12:00.000Z",
+  "messages": [
+    {
+      "id": "m-1",
+      "role": "user",
+      "content": "Can you tighten up our pricing page copy?",
+      "createdAt": "2026-05-04T09:02:00.000Z"
+    },
+    {
+      "id": "m-2",
+      "role": "assistant",
+      "content": "Happy to. Before I rewrite anything, two quick questions: who is the primary buyer reading this page, and which plan do you most want to push them toward?",
+      "createdAt": "2026-05-04T09:02:30.000Z"
+    },
+    {
+      "id": "m-3",
+      "role": "user",
+      "content": "Primary buyer is an ops lead at a 50–200 person company, and we want to push the Team plan. Right now the page buries it under three paragraphs of feature marketing, the per-seat math is confusing because we list monthly and annual prices side by side, and nobody can tell that the 14-day trial doesn't need a credit card — support gets that question every week.",
+      "createdAt": "2026-05-04T09:05:10.000Z"
+    },
+    {
+      "id": "m-4",
+      "role": "assistant",
+      "content": "## Recommended structure\n\nLead with the outcome, not the feature list. An ops lead scanning this page should understand the offer in under ten seconds: what it costs, who it's for, and that the trial is risk-free.\n\n- **Headline** — \"One workspace for every team\" beats three paragraphs of positioning.\n- **Plan cards** — default the toggle to annual and show per-seat math once.\n- **Trial line** — put \"No credit card required\" directly under the CTA, not in the FAQ.\n\nHere's the toggle logic if you want to keep both prices on the card:\n\n```tsx\nconst price = annual\n  ? `$${plan.annualMonthly}/seat/mo`\n  : `$${plan.monthly}/seat/mo`;\n```\n\nAnd the before/after for the hero section:\n\n| Element | Today | Proposed |\n| --- | --- | --- |\n| Headline | \"Powerful features for modern teams\" | \"One workspace for every team\" |\n| CTA | \"Get started\" | \"Start free trial\" |\n| Trial note | Buried in FAQ | Under CTA, 14px |\n\nWant me to draft the full page copy in this structure?",
+      "createdAt": "2026-05-04T09:06:40.000Z"
+    }
+  ]
+}

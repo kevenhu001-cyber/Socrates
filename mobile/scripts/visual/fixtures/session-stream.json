@@ -1,0 +1,26 @@
+{
+  "id": "s-demo-stream",
+  "title": "Weekly metrics digest",
+  "topic": "Weekly metrics digest",
+  "mode": "chat",
+  "preview": "Pulling together the activation numbers…",
+  "totalQ": 1,
+  "createdAt": "2026-05-04T08:40:00.000Z",
+  "updatedAt": "2026-05-04T09:00:00.000Z",
+  "messages": [
+    {
+      "id": "m-s1",
+      "role": "user",
+      "content": "Summarize this week's activation metrics and flag anything that looks off.",
+      "createdAt": "2026-05-04T09:00:00.000Z"
+    },
+    {
+      "id": "m-s2",
+      "role": "assistant",
+      "type": "streaming",
+      "content": "Looking at the funnel from signup to first project created",
+      "reasoningContent": "Comparing week-over-week activation rate; checking whether the dip on Thursday correlates with the deploy.",
+      "createdAt": "2026-05-04T09:00:05.000Z"
+    }
+  ]
+}

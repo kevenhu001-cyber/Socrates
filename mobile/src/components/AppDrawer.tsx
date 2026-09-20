@@ -164,12 +164,14 @@ function formatRelativeTime(rawDate: unknown): string {
 
 /* Mirrors `SessionList.tsx:buildMeta`: relative time + "N Qs" + a
  * Branched / Re-explained marker when the session forks another. */
-function sessionMeta(session: Session): string {
+function sessionMeta(session: Session, t: (key: string, params?: Record<string, string | number>) => string): string {
   const parts: string[] = [];
   const rel = formatRelativeTime(session.updatedAt || session.createdAt);
   if (rel) parts.push(rel);
   const qCount = session.totalQ;
-  if (typeof qCount === 'number' && qCount > 0) parts.push(`${qCount} Qs`);
+  if (typeof qCount === 'number' && qCount > 0) {
+    parts.push(qCount === 1 ? t('session.questionCountOne') : t('session.questionCount', { n: qCount }));
+  }
   const branched = session.branchedFrom;
   if (branched && typeof branched === 'object' && !Array.isArray(branched)) {
     parts.push((branched as { reExplain?: boolean }).reExplain ? 'Re-explained' : 'Branched');
@@ -216,16 +218,32 @@ export function AppDrawer({ onNavigate, onOpenEmbedded, activeRoute }: Props) {
     closeDrawer();
   }), [closeDrawer]);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  /* Keep the Modal mounted through the exit animation. `prevOpen` edge-
+   * triggers each open/close so exactly one timing runs per transition —
+   * `setMounted(true)` must not restart the entrance — and the `finished`
+   * guard keeps a cancelled exit from unmounting a reopened drawer. */
+  const [mounted, setMounted] = useState(open);
+  const prevOpenRef = useRef(open);
   useEffect(() => {
+    if (open === prevOpenRef.current) return;
+    prevOpenRef.current = open;
     if (open) {
+      setMounted(true);
       Animated.timing(slideAnim, {
         toValue: 1,
-        duration: 300,
+        duration: 280,
         easing: motionEasing.out,
         useNativeDriver: true,
       }).start();
     } else {
-      slideAnim.setValue(0);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 220,
+        easing: motionEasing.out,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setMounted(false);
+      });
     }
   }, [open, slideAnim]);
 
@@ -240,10 +258,10 @@ export function AppDrawer({ onNavigate, onOpenEmbedded, activeRoute }: Props) {
   const backdropOpacity = slideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
 
   return (
-    <Modal visible={open} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
+    <Modal visible={mounted} transparent animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={closeDrawer}>
       <View style={styles.overlay}>
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity, backgroundColor: colors.scrimDrawer }]}>
-          <Pressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={StyleSheet.absoluteFill} />
+          <Pressable accessibilityLabel={t('common.closeNavigation')} onPress={closeDrawer} style={StyleSheet.absoluteFill} />
         </Animated.View>
         <Animated.View style={{ transform: [{ translateX: slideX }], height: '100%' }}>
           <DrawerSurface onNavigate={onNavigate} onOpenEmbedded={onOpenEmbedded} activeRoute={activeRoute} />
@@ -437,7 +455,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
             >
               <Ionicons name="create-outline" size={20} color={colors.textMuted} />
             </AnimatedPressable>
-            <AnimatedPressable accessibilityLabel="Close navigation" onPress={closeDrawer} style={styles.headerAction}>
+            <AnimatedPressable accessibilityLabel={t('common.closeNavigation')} onPress={closeDrawer} style={styles.headerAction}>
               <Ionicons name="close-outline" size={20} color={colors.textMuted} />
             </AnimatedPressable>
           </View>
@@ -507,7 +525,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
               }
               const session = item.session;
               const isCurrent = activeSessionId === session.id;
-              const meta = sessionMeta(session);
+              const meta = sessionMeta(session, t);
               return (
                 <AnimatedPressable
                   key={item.key}
@@ -598,7 +616,7 @@ function DrawerSurface({ onNavigate, onOpenEmbedded, activeRoute, permanent = fa
 
         {/* Theme switcher toggle */}
         <AnimatedPressable
-          accessibilityLabel="Toggle Theme"
+          accessibilityLabel={t('common.toggleTheme')}
           onPress={() => void toggleTheme()}
           style={[styles.footerIconBtn, { borderRadius: radius.md }]}
         >

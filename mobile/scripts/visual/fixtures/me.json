@@ -1,0 +1,13 @@
+{
+  "user": {
+    "id": "u-1001",
+    "email": "maya.chen@northwind.io",
+    "displayName": "Maya Chen",
+    "tier": "pro",
+    "plan": "Pro",
+    "verifiedAt": "2025-11-02T09:14:00.000Z",
+    "createdAt": "2025-08-19T16:40:00.000Z",
+    "customInstructions": "Prefer concise answers with concrete examples.",
+    "defaultModel": "beagle-built-in"
+  }
+}

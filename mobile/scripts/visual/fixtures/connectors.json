@@ -1,0 +1,33 @@
+{
+  "mode": "managed",
+  "configured": true,
+  "connectors": [
+    {
+      "id": "conn-notion",
+      "service": "notion",
+      "name": "Notion",
+      "description": "Search pages and databases in your Notion workspace.",
+      "capabilities": ["search", "read"],
+      "authType": "oauth",
+      "connection": { "status": "connected", "displayName": "maya@northwind.io" }
+    },
+    {
+      "id": "conn-gdrive",
+      "service": "google-drive",
+      "name": "Google Drive",
+      "description": "Attach and search files from Google Drive.",
+      "capabilities": ["search", "read"],
+      "authType": "oauth",
+      "connection": { "status": "connected", "displayName": "maya@northwind.io" }
+    },
+    {
+      "id": "conn-github",
+      "service": "github",
+      "name": "GitHub",
+      "description": "Reference issues, PRs, and repositories.",
+      "capabilities": ["search", "read"],
+      "authType": "oauth",
+      "connection": { "status": "disconnected" }
+    }
+  ]
+}

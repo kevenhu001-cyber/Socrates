@@ -487,9 +487,9 @@ export function ExamScreen({ navigation }: { navigation: any }) {
         {/* frontend `.exam-stepper` (styles.css:2508-2512): bordered pill
          * container, ghost +/- buttons, tabular-nums value. */}
         <View style={[styles.stepper, { borderColor: withAlpha(colors.border, 0.4), borderRadius: 9, backgroundColor: colors.surfaceRaised }]}>
-          <AnimatedPressable accessibilityLabel="Decrease question count" onPress={() => setCount(Math.max(1, count - 1))} style={styles.stepperButton}><Ionicons name="remove" size={18} color={colors.textMuted} /></AnimatedPressable>
+          <AnimatedPressable accessibilityLabel={t('exam.decreaseCount')} onPress={() => setCount(Math.max(1, count - 1))} style={styles.stepperButton}><Ionicons name="remove" size={18} color={colors.textMuted} /></AnimatedPressable>
           <Text style={[styles.count, { color: colors.text, fontVariant: ['tabular-nums'] }]}>{count}</Text>
-          <AnimatedPressable accessibilityLabel="Increase question count" onPress={() => setCount(Math.min(50, count + 1))} style={styles.stepperButton}><Ionicons name="add" size={18} color={colors.textMuted} /></AnimatedPressable>
+          <AnimatedPressable accessibilityLabel={t('exam.increaseCount')} onPress={() => setCount(Math.min(50, count + 1))} style={styles.stepperButton}><Ionicons name="add" size={18} color={colors.textMuted} /></AnimatedPressable>
         </View>
       </View>
 

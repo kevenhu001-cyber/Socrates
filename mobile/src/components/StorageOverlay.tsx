@@ -156,7 +156,7 @@ export function StorageOverlay({ visible, onClose }: StorageOverlayProps) {
               <Text style={[styles.title, { color: colors.text, fontFamily: typography.display }]}>
                 {t('profile.archivedSessions') === 'profile.archivedSessions' ? 'Archived sessions' : t('profile.archivedSessions')} ({archived.length})
               </Text>
-              <AnimatedPressable onPress={onClose} accessibilityLabel="Close storage" style={styles.closeBtn}>
+              <AnimatedPressable onPress={onClose} accessibilityLabel={t('storage.close')} style={styles.closeBtn}>
                 <Ionicons name="close" size={20} color={colors.textMuted} />
               </AnimatedPressable>
             </View>
@@ -208,7 +208,9 @@ export function StorageOverlay({ visible, onClose }: StorageOverlayProps) {
                           </Text>
                           <Text style={[styles.rowDetail, { color: colors.textMuted }]} numberOfLines={1}>
                             {meta}
-                            {typeof session.totalQ === 'number' && session.totalQ > 0 ? ` · ${session.totalQ} Qs` : ''}
+                            {typeof session.totalQ === 'number' && session.totalQ > 0
+                              ? ` · ${session.totalQ === 1 ? t('session.questionCountOne') : t('session.questionCount', { n: session.totalQ })}`
+                              : ''}
                           </Text>
                         </View>
                         <AnimatedPressable

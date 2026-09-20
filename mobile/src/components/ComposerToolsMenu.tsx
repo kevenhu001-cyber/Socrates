@@ -253,7 +253,10 @@ export function ComposerToolsMenu({
     <Popover
       visible={visible}
       onClose={onClose}
-      scrimColor="transparent"
+      /* Deliberately darker than the web popover: on a phone-width viewport
+       * the menu has no breathing room, so the full-brightness transcript
+       * read straight through it. The scrim still dismisses on outside tap. */
+      scrimColor={withAlpha(colors.black, 0.4)}
       maxWidth={menuWidth}
       testID="composer-tools-menu"
       style={[

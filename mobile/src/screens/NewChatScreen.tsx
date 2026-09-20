@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useIsFocused } from '@react-navigation/native';
 import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { Composer } from '../components/Composer';
 import { ComposerToolsMenu, type ComposerToolsAnchor } from '../components/ComposerToolsMenu';
 import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
+import { ModelConfigSheet } from '../components/ModelConfigSheet';
 import { useTheme } from '../theme/ThemeProvider';
 import { useT } from '../i18n';
 import { appStore, useAppStore } from '../stores/appStore';
@@ -58,7 +60,6 @@ export function NewChatScreen({ navigation, route }: Props) {
   const isIncognito = useAppStore((s) => s.isIncognito);
   const activeExtension = useAppStore((s) => s.activeExtension);
   const activeTemplate = useAppStore((s) => s.activeTemplate);
-  const webSearchEnabled = useAppStore((s) => s.webSearchEnabled);
   const reasoningEffort = useAppStore((s) => s.reasoningEffort);
   const composerPlugins = useAppStore((s) => s.composerPlugins);
   const selectedComposerPlugins = useAppStore((s) => s.selectedComposerPlugins);
@@ -69,17 +70,32 @@ export function NewChatScreen({ navigation, route }: Props) {
   const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
   const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [toolsMenuAnchor, setToolsMenuAnchor] = useState<ComposerToolsAnchor | null>(null);
-  /* `.home-quick-action[hidden]` — dismiss is per-session on the web
-   * (`row.hidden = true`), so a plain in-memory Set matches. */
-  const [dismissedQuickActions, setDismissedQuickActions] = useState<ReadonlySet<string>>(new Set());
+  const [configSheetOpen, setConfigSheetOpen] = useState(false);
 
+  /* The reset contract is "the user landed on Home", not "the screen is
+   * mounted" — freezeOnBlur only suspends React work and is ignored by
+   * react-native-screens' web Screen, and the drawer awaits openSession()
+   * before navigating, so session data can change while Home is either
+   * blurred OR still focused. Edge-trigger on focus (and on a fresh
+   * projectId) so opening a session never wipes it on web. */
+  const isFocused = useIsFocused();
+  const wasFocusedRef = useRef(false);
   useEffect(() => {
     const projectId = route.params?.projectId || null;
-    if (!activeSessionId || activeSessionHasMessages || (projectId && activeSessionProjectId !== projectId)) {
-      appStore.startNewSession('chat', true, projectId);
+    const gainedFocus = isFocused && !wasFocusedRef.current;
+    wasFocusedRef.current = isFocused;
+    if (!isFocused) return;
+    const projectChanged = Boolean(projectId && activeSessionProjectId !== projectId);
+    if (gainedFocus || projectChanged) {
+      if (!activeSessionId || activeSessionHasMessages || projectChanged) {
+        appStore.startNewSession('chat', true, projectId);
+      }
     }
+    /* Consume the param whenever present while focused — even when it
+     * already matches the active session's project — so it can't leak into
+     * a later focus gain and trigger a stale reset. */
     if (projectId) navigation.setParams({ projectId: undefined });
-  }, [navigation, route.params?.projectId, activeSessionId, activeSessionHasMessages, activeSessionProjectId]);
+  }, [isFocused, navigation, route.params?.projectId, activeSessionId, activeSessionHasMessages, activeSessionProjectId]);
 
   const changeMode = useCallback((next: 'chat' | 'tutor') => {
     if (next === mode) return;
@@ -148,6 +164,7 @@ export function NewChatScreen({ navigation, route }: Props) {
     appStore.setActiveTemplate(null);
   }, []);
   const onComposerRemovePlugin = useCallback((pluginId: string) => appStore.clearComposerPlugin(pluginId), []);
+  const onComposerOpenConfig = useCallback(() => setConfigSheetOpen(true), []);
 
   const currentProvider = providers.find((provider) => provider.id === selectedModel);
   const currentModelName = currentProvider ? ((currentProvider.label && currentProvider.label !== 'Default') ? currentProvider.label : (currentProvider.model || currentProvider.label || 'Model')) : 'Model';
@@ -155,22 +172,6 @@ export function NewChatScreen({ navigation, route }: Props) {
   /* The current SPA landing is a static mode greeting. Older native code
    * personalized it by time and account name, which diverged from the web
    * renderer and changed the landing geometry from one session to another. */
-  /* `.home-quick-actions` — the landing shortcut rows above the composer.
-   * Same delegates as ui/homeSurface.js: upload → composer tools menu,
-   * write → composeAction (the write extension), research → web search. */
-  const dismissQuickAction = useCallback((id: string) => {
-    setDismissedQuickActions((current) => {
-      const next = new Set(current);
-      next.add(id);
-      return next;
-    });
-  }, []);
-  const quickActions = [
-    { id: 'upload', icon: 'image-outline' as const, label: t('home.quick.upload'), onPress: () => onAttach() },
-    { id: 'write', icon: 'create-outline' as const, label: t('home.quick.write'), onPress: () => appStore.setActiveExtension('write') },
-    { id: 'research', icon: 'search-outline' as const, label: t('home.quick.research'), onPress: () => { void appStore.setWebSearchEnabled(!webSearchEnabled); } },
-  ].filter((action) => !dismissedQuickActions.has(action.id));
-
   /* `.slash-command-palette` — owned by LandingComposerCard, which holds the
    * `draft` subscription; it opens whenever the draft starts with `/`,
    * re-filters live, and closes when the leading `/` is removed. */
@@ -243,41 +244,9 @@ export function NewChatScreen({ navigation, route }: Props) {
           </Enter>
         </View>
 
-        {/* Landing quick actions — `.home-quick-actions` sit directly above
-         * the composer (mobile-parity.css pulls them to order:0). */}
-        {quickActions.length ? (
-          <View style={styles.quickActions} accessibilityLabel={t('home.quick.label')}>
-            {quickActions.map((action) => (
-              <View key={action.id} style={styles.quickActionRow}>
-                <AnimatedPressable
-                  accessibilityRole="button"
-                  accessibilityLabel={action.label}
-                  onPress={action.onPress}
-                  style={styles.quickActionMain}
-                >
-                  <View style={styles.quickActionIcon}>
-                    <Ionicons name={action.icon} size={22} color={colors.textMuted} />
-                  </View>
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.quickActionText, { color: colors.text, fontFamily: typography.body }]}
-                  >
-                    {action.label}
-                  </Text>
-                </AnimatedPressable>
-                <AnimatedPressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('home.quick.dismiss')}
-                  onPress={() => dismissQuickAction(action.id)}
-                  style={styles.quickActionDismiss}
-                  hitSlop={8}
-                >
-                  <Ionicons name="close" size={18} color={colors.textMuted} />
-                </AnimatedPressable>
-              </View>
-            ))}
-          </View>
-        ) : null}
+        {/* Landing quick actions removed: the final chat-surface.css hides
+         * `.home-quick-actions` ("native must not resurrect them"), and the
+         * ChatGPT reference home is empty above the composer. */}
 
         {/* Central Composer Capsule */}
         <Enter delay={140}>
@@ -295,6 +264,8 @@ export function NewChatScreen({ navigation, route }: Props) {
             onStop={onComposerStop}
             onAttach={onAttach}
             onChangeReasoningEffort={onComposerReasoningEffort}
+            modelLabel={currentModelName}
+            onOpenConfig={onComposerOpenConfig}
             onRemoveActiveExtension={onComposerRemoveExtension}
             onRemovePlugin={onComposerRemovePlugin}
             onPickSlashTemplate={pickSlashTemplate}
@@ -335,6 +306,19 @@ export function NewChatScreen({ navigation, route }: Props) {
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
         onManageSettings={() => navigation.navigate('Settings')}
+      />
+
+      {/* Phone-form model + thinking sheet (ChatGPT "配置" parity); the
+       * anchored ModelPickerModal above remains the wide-viewport path. */}
+      <ModelConfigSheet
+        visible={configSheetOpen}
+        providers={providers}
+        selectedId={selectedModel}
+        effort={reasoningEffort}
+        onSelectModel={(modelId) => { void appStore.setSelectedModel(modelId); }}
+        onChangeEffort={onComposerReasoningEffort}
+        onManageSettings={() => navigation.navigate('Settings')}
+        onClose={() => setConfigSheetOpen(false)}
       />
     </Screen>
   );
@@ -513,48 +497,6 @@ const styles = StyleSheet.create({
   },
   composerCardWrapCompact: {
     width: '100%',
-  },
-  /* `.home-quick-actions` — stacked shortcut rows directly above the
-   * composer; 52px min rows, 28px icon tile, trailing dismiss. */
-  quickActions: {
-    width: '100%',
-    maxWidth: 620,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  quickActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quickActionMain: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    minHeight: 52,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  quickActionIcon: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickActionText: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  quickActionDismiss: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
   },
   /* `.slash-command-palette` — bottom-anchored card listing `/` commands. */
   slashPalette: {

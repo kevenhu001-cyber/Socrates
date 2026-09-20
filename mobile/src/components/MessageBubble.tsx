@@ -12,6 +12,7 @@ import { ToolRunGroup } from './ToolRunGroup';
 import { buildTurnLayout, sortableToolCalls } from '../data/tools/turnLayout';
 import { AnimatedPressable } from './AnimatedPressable';
 import { AttachmentChip } from './AttachmentChip';
+import { Sheet } from './Sheet';
 import { CanvasBlock } from './CanvasBlock';
 import { setClipboardText } from '../native/clipboard';
 import * as Speech from '../native/speech';
@@ -45,6 +46,7 @@ type CanvasMessage = Message & {
 
 function LinkPreviewCards({ preview }: { preview: LinkPreviewState }) {
   const { colors, typography, fontScale } = useTheme();
+  const t = useT();
   if (preview.noUrlHint) {
     return (
       <View style={styles.linkPreviews}>
@@ -59,15 +61,15 @@ function LinkPreviewCards({ preview }: { preview: LinkPreviewState }) {
             <View style={styles.linkHostWrap}>
               <Ionicons name="link-outline" size={14} color={colors.textMuted} />
               <Text numberOfLines={1} style={[styles.linkHost, { color: colors.textMuted, fontFamily: typography.semibold, fontSize: 11 * fontScale }]}>
-                No URL detected
+                {t('chat.linkNoUrl')}
               </Text>
             </View>
             <Text style={[styles.linkStatus, { color: colors.danger, fontSize: 10.5 * fontScale }]}>
-              awaiting full link
+              {t('chat.linkAwaitingFull')}
             </Text>
           </View>
           <Text style={[styles.linkExcerpt, { color: colors.textSecondary, fontFamily: typography.body, fontSize: 11.5 * fontScale }]}>
-            You mentioned a site but the URL is missing or not in a form I can fetch. On your next turn, paste the full address including the https:// prefix.
+            {t('chat.linkNoUrlBody')}
           </Text>
         </View>
       </View>
@@ -309,6 +311,7 @@ function ThinkingPanel({
         <AnimatedPressable
           accessibilityLabel={t('think.closePanel') === 'think.closePanel' ? 'Close thinking panel' : t('think.closePanel')}
           onPress={onClose}
+          hitSlop={8}
           style={styles.thinkingPanelClose}
         >
           <Ionicons name="close" size={15} color={colors.textMuted} />
@@ -385,9 +388,15 @@ export const MessageBubble = React.memo(function MessageBubble({
   const canvasMessage = message as CanvasMessage;
   const isCanvas = !isUser && canvasMessage.outputMode === 'canvas' && Boolean(canvasMessage.canvasId);
   const streaming = message.type === 'streaming';
-  const [rating, setRating] = useState<'up' | 'down' | 'none'>('none');
+  /* Rating is persisted on the message (onFeedback → appStore) so it
+   * survives virtualization recycling and reloads; local useState would be
+   * wiped whenever the row unmounts. */
+  const rating = message.feedback ?? 'none';
   const [speaking, setSpeaking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const speakingRef = useRef(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [thinkingPanelOpen, setThinkingPanelOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
@@ -396,7 +405,16 @@ export const MessageBubble = React.memo(function MessageBubble({
    * assistant rows only. */
   const enterOpacity = useRef(new Animated.Value(isUser ? 1 : 0.45)).current;
 
-  useEffect(() => () => { void Speech.stop(); }, []);
+  /* Only stop playback on unmount if THIS row owns it — virtualization
+   * recycles sibling rows and a bare Speech.stop() would kill another
+   * message's read-aloud. */
+  useEffect(() => () => {
+    if (speakingRef.current) {
+      speakingRef.current = false;
+      void Speech.stop();
+    }
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+  }, []);
   useEffect(() => {
     if (isUser) return;
     Animated.timing(enterOpacity, {
@@ -424,7 +442,6 @@ export const MessageBubble = React.memo(function MessageBubble({
 
   const rate = async (next: 'up' | 'down') => {
     const value = rating === next ? 'none' : next;
-    setRating(value);
     if (messageId && onFeedback) {
       await Promise.resolve(onFeedback(messageId, value)).catch((err) => {
         console.warn('[MessageBubble] Failed to submit feedback:', err);
@@ -448,21 +465,29 @@ export const MessageBubble = React.memo(function MessageBubble({
 
   const copyText = async () => {
     await setClipboardText(text);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyTimerRef.current = setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopied(false);
+    }, 2000);
   };
 
   const toggleSpeech = async () => {
     if (speaking) {
+      speakingRef.current = false;
       await Speech.stop();
       setSpeaking(false);
       return;
     }
+    speakingRef.current = true;
     setSpeaking(true);
     Speech.speak(text, {
-      onDone: () => setSpeaking(false),
-      onStopped: () => setSpeaking(false),
-      onError: () => setSpeaking(false),
+      /* Guard every callback: an unmounted/recycled row must not set state,
+       * and a stale callback must not clear a newer playback's flag. */
+      onDone: () => { if (speakingRef.current) { speakingRef.current = false; setSpeaking(false); } },
+      onStopped: () => { if (speakingRef.current) { speakingRef.current = false; setSpeaking(false); } },
+      onError: () => { if (speakingRef.current) { speakingRef.current = false; setSpeaking(false); } },
     });
   };
 
@@ -632,86 +657,122 @@ export const MessageBubble = React.memo(function MessageBubble({
         {isUser && linkPreview ? <LinkPreviewCards preview={linkPreview} /> : null}
 
 
-        {/* Action Toolbar — same action set/order as SPA MessageToolbar.
-         * Attachment-only user messages still get the toolbar. */}
-        {!streaming && (text || hasAttachments) && !isCanvas ? (
-          <View style={[styles.toolbar, isUser && styles.toolbarUser, { opacity: toolbarOpacity }]}>
-            <AnimatedPressable accessibilityLabel={t('common.copy')} onPress={copyText} style={styles.toolbarButton}>
-              <Ionicons
-                name={copied ? 'checkmark-circle-outline' : 'copy-outline'}
-                size={16}
-                color={copied ? colors.success : colors.textSubtle}
-              />
-            </AnimatedPressable>
-
-            {isUser ? (
-              <>
-                {messageId && onEdit ? (
-                  <AnimatedPressable
-                    accessibilityLabel={t('chat.editMessage')}
-                    onPress={() => { setEditValue(text); setEditing(true); }}
-                    style={styles.toolbarButton}
-                  >
-                    <Ionicons name="pencil-outline" size={16} color={colors.textSubtle} />
-                  </AnimatedPressable>
-                ) : null}
-                {messageId && onDelete ? (
-                  <AnimatedPressable
-                    accessibilityLabel={t('chat.deleteMessage')}
-                    onPress={() => { void Promise.resolve(onDelete(messageId)); }}
-                    style={styles.toolbarButton}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={colors.textSubtle} />
-                  </AnimatedPressable>
-                ) : null}
-              </>
-            ) : (
-              <>
-                {onShare ? (
-                  <AnimatedPressable accessibilityLabel={t('chat.shareConversation')} onPress={() => { void Promise.resolve(onShare()); }} style={styles.toolbarButton}>
-                    <Ionicons name="share-outline" size={16} color={colors.textSubtle} />
-                  </AnimatedPressable>
-                ) : null}
-                {messageId && onRegenerate ? (
-                  <AnimatedPressable accessibilityLabel={t('chat.regenerateResponse')} onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
-                    <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
-                  </AnimatedPressable>
-                ) : isLastAssistant && onRetry ? (
-                  <AnimatedPressable accessibilityLabel={t('chat.retry') || 'Retry'} onPress={onRetry} style={styles.toolbarButton}>
-                    <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
-                  </AnimatedPressable>
-                ) : null}
-                <AnimatedPressable accessibilityLabel={t('chat.helpful')} onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
-                  <Ionicons name={rating === 'up' ? 'thumbs-up' : 'thumbs-up-outline'} size={16} color={rating === 'up' ? colors.accent : colors.textSubtle} />
-                </AnimatedPressable>
-                <AnimatedPressable accessibilityLabel={t('chat.notHelpful')} onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
-                  <Ionicons name={rating === 'down' ? 'thumbs-down' : 'thumbs-down-outline'} size={16} color={rating === 'down' ? colors.accent : colors.textSubtle} />
-                </AnimatedPressable>
-                {messageId && onBranch ? (
-                  <>
-                    <AnimatedPressable accessibilityLabel={t('chat.branchFromHere')} onPress={() => { void Promise.resolve(onBranch(messageId)); }} style={styles.toolbarButton}>
-                      <Ionicons name="git-branch-outline" size={16} color={colors.textSubtle} />
-                    </AnimatedPressable>
-                    <AnimatedPressable accessibilityLabel={t('chat.reExplain')} onPress={() => { void Promise.resolve(onBranch(messageId, { reExplain: true })); }} style={styles.toolbarButton}>
-                      <Ionicons name="bulb-outline" size={16} color={colors.textSubtle} />
-                    </AnimatedPressable>
-                  </>
-                ) : null}
-                <AnimatedPressable
-                  accessibilityLabel={speaking ? 'Stop reading' : 'Read aloud'}
-                  onPress={toggleSpeech}
-                  style={[
-                    styles.toolbarButton,
-                    speaking ? { backgroundColor: colors.accent, opacity: speakPulse } : null,
-                  ]}
-                >
-                  <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'} size={16} color={speaking ? colors.textInverse : colors.textSubtle} />
-                </AnimatedPressable>
-              </>
-            )}
-          </View>
-        ) : null}
+        {/* Action Toolbar — rendered as a sibling of the bubble below (see
+         * `styles.row`), so the user row no longer inflates the grey
+         * bubble. Attachment-only user messages still get the toolbar. */}
       </Animated.View>
+      {!streaming && (text || hasAttachments) && !isCanvas ? (
+        <View style={[styles.toolbar, isUser && styles.toolbarUser, { opacity: toolbarOpacity }]}>
+          <AnimatedPressable hitSlop={6} accessibilityLabel={t('common.copy')} onPress={copyText} style={styles.toolbarButton}>
+            <Ionicons
+              name={copied ? 'checkmark-circle-outline' : 'copy-outline'}
+              size={16}
+              color={copied ? colors.success : colors.textSubtle}
+            />
+          </AnimatedPressable>
+
+          {isUser ? (
+            <>
+              {messageId && onEdit ? (
+                <AnimatedPressable
+                  hitSlop={6}
+                  accessibilityLabel={t('chat.editMessage')}
+                  onPress={() => { setEditValue(text); setEditing(true); }}
+                  style={styles.toolbarButton}
+                >
+                  <Ionicons name="pencil-outline" size={16} color={colors.textSubtle} />
+                </AnimatedPressable>
+              ) : null}
+              {messageId && onDelete ? (
+                <AnimatedPressable
+                  hitSlop={6}
+                  accessibilityLabel={t('chat.deleteMessage')}
+                  onPress={() => { void Promise.resolve(onDelete(messageId)); }}
+                  style={styles.toolbarButton}
+                >
+                  <Ionicons name="trash-outline" size={16} color={colors.textSubtle} />
+                </AnimatedPressable>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {/* Five primaries: copy (above), thumbs, read-aloud,
+               * regenerate/retry — everything else folds into the overflow
+               * sheet (ChatGPT mobile parity; eight 28px icons at 2px gaps
+               * were untappable on a 390pt phone). */}
+              <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.helpful')} onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
+                <Ionicons name={rating === 'up' ? 'thumbs-up' : 'thumbs-up-outline'} size={16} color={rating === 'up' ? colors.accent : colors.textSubtle} />
+              </AnimatedPressable>
+              <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.notHelpful')} onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
+                <Ionicons name={rating === 'down' ? 'thumbs-down' : 'thumbs-down-outline'} size={16} color={rating === 'down' ? colors.accent : colors.textSubtle} />
+              </AnimatedPressable>
+              <AnimatedPressable
+                hitSlop={6}
+                accessibilityLabel={speaking ? t('chat.stopReading') : t('chat.readAloud')}
+                onPress={toggleSpeech}
+                style={[
+                  styles.toolbarButton,
+                  speaking ? { backgroundColor: colors.accent, opacity: speakPulse } : null,
+                ]}
+              >
+                <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'} size={16} color={speaking ? colors.textInverse : colors.textSubtle} />
+              </AnimatedPressable>
+              {messageId && onRegenerate ? (
+                <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.regenerateResponse')} onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
+                  <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
+                </AnimatedPressable>
+              ) : isLastAssistant && onRetry ? (
+                <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.retry') || 'Retry'} onPress={onRetry} style={styles.toolbarButton}>
+                  <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
+                </AnimatedPressable>
+              ) : null}
+              {onShare || (messageId && onBranch) ? (
+                <AnimatedPressable hitSlop={6} accessibilityLabel={t('common.more')} onPress={() => setActionsOpen(true)} style={styles.toolbarButton}>
+                  <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSubtle} />
+                </AnimatedPressable>
+              ) : null}
+            </>
+          )}
+        </View>
+      ) : null}
+      <Sheet visible={actionsOpen} onClose={() => setActionsOpen(false)} maxWidth={420}>
+        {onShare ? (
+          <AnimatedPressable
+            accessibilityRole="button"
+            onPress={() => { setActionsOpen(false); void Promise.resolve(onShare()); }}
+            style={styles.sheetRow}
+          >
+            <Ionicons name="share-outline" size={17} color={colors.textSecondary} />
+            <Text style={[styles.sheetRowLabel, { color: colors.text, fontFamily: typography.body }]}>
+              {t('chat.shareConversation')}
+            </Text>
+          </AnimatedPressable>
+        ) : null}
+        {messageId && onBranch ? (
+          <>
+            <AnimatedPressable
+              accessibilityRole="button"
+              onPress={() => { setActionsOpen(false); void Promise.resolve(onBranch(messageId)); }}
+              style={styles.sheetRow}
+            >
+              <Ionicons name="git-branch-outline" size={17} color={colors.textSecondary} />
+              <Text style={[styles.sheetRowLabel, { color: colors.text, fontFamily: typography.body }]}>
+                {t('chat.branchFromHere')}
+              </Text>
+            </AnimatedPressable>
+            <AnimatedPressable
+              accessibilityRole="button"
+              onPress={() => { setActionsOpen(false); void Promise.resolve(onBranch(messageId, { reExplain: true })); }}
+              style={styles.sheetRow}
+            >
+              <Ionicons name="bulb-outline" size={17} color={colors.textSecondary} />
+              <Text style={[styles.sheetRowLabel, { color: colors.text, fontFamily: typography.body }]}>
+                {t('chat.reExplain')}
+              </Text>
+            </AnimatedPressable>
+          </>
+        ) : null}
+      </Sheet>
     </View>
   );
 });
@@ -874,13 +935,14 @@ const styles = StyleSheet.create({
   linkStatus: { flexShrink: 1, textAlign: 'right' },
   linkTitle: { lineHeight: 18 },
   linkExcerpt: { lineHeight: 17, marginTop: 2 },
-  /* frontend `.msg-toolbar`: height 28px, gap 2px, margin-top 2px,
-   * margin-left 2px (assistant) / justify-content flex-end (user). */
+  /* frontend `.msg-toolbar`: margin-top 2px, margin-left 2px (assistant) /
+   * justify-content flex-end (user). Buttons grew to 34px with a 4px gap
+   * and 6px hitSlop to reach a usable touch target on phones. */
   toolbar: {
-    minHeight: 28,
+    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
     marginTop: 2,
     marginLeft: 2,
   },
@@ -890,12 +952,23 @@ const styles = StyleSheet.create({
     marginRight: 0,
     marginTop: 2,
   },
-  /* frontend `.msg-toolbar-btn`: 28x28, border-radius 8px. */
+  /* frontend `.msg-toolbar-btn` was 28x28, border-radius 8px; bumped to
+   * 34x34 plus hitSlop for the 44pt accessibility floor. */
   toolbarButton: {
-    width: 28,
-    height: 28,
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
+  },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  sheetRowLabel: {
+    fontSize: 15,
   },
 });

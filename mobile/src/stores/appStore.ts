@@ -1747,8 +1747,33 @@ class AppStore {
   }
 
   async sendMessageFeedback(messageId: string, rating: 'up' | 'down' | 'none', reason?: string) {
-    const sessionId = this.state.activeSession?.id || null;
-    if (!messageId || this.state.isIncognito) return;
+    const session = this.state.activeSession;
+    const sessionId = session?.id || null;
+    if (!messageId) return;
+    /* Persist the rating on the message itself (same path as other message
+     * mutations) so it survives list recycling and session reloads. The
+     * in-memory update always runs — even incognito — so the thumbs reflect
+     * the tap; `updatedAt` is carried through unchanged because a rating is
+     * not a conversation edit and must not re-sort the drawer recents. */
+    if (session?.messages?.length) {
+      const stored = rating === 'none' ? null : rating;
+      const messages = session.messages.map((item) =>
+        String(item.id || item.clientId || '') === messageId ? { ...item, feedback: stored } : item,
+      );
+      const nextSession: Session = { ...session, messages };
+      this.setState({
+        activeSession: nextSession,
+        sessions: this.state.sessions.map((item) => (item.id === session.id ? nextSession : item)),
+      });
+      if (!this.state.isIncognito && session.id) {
+        try {
+          await sessionRepository.save(nextSession, messages);
+        } catch {
+          this.enqueueSession(nextSession, id('feedback'));
+        }
+      }
+    }
+    if (this.state.isIncognito) return;
     await messagesApi.feedback(messageId, rating, reason, sessionId);
   }
 

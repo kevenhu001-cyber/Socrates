@@ -203,7 +203,7 @@ export function UsageOverlay({ visible, onClose }: UsageOverlayProps) {
         <Text style={[styles.title, { color: colors.text, fontFamily: typography.semibold }]}>
           {t('usage.heading') || 'Token usage'}
         </Text>
-        <AnimatedPressable onPress={onClose} accessibilityLabel="Close usage" style={styles.closeBtn}>
+        <AnimatedPressable onPress={onClose} accessibilityLabel={t('usage.close')} style={styles.closeBtn}>
           <Ionicons name="close" size={20} color={colors.textMuted} />
         </AnimatedPressable>
       </View>

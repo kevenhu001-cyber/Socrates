@@ -21,6 +21,7 @@ import { Screen } from '../components/Screen';
 import { AppHeader } from '../components/AppHeader';
 import { useAppDrawer } from '../components/AppDrawer';
 import { ModelPickerModal, type ModelPickerAnchor } from '../components/ModelPickerModal';
+import { ModelConfigSheet } from '../components/ModelConfigSheet';
 import { MessageBubble } from '../components/MessageBubble';
 import { Composer } from '../components/Composer';
 import { ComposerToolsMenu, type ComposerToolsAnchor } from '../components/ComposerToolsMenu';
@@ -90,6 +91,7 @@ export function ChatScreen({ navigation }: Props) {
   const [toolsMenuAnchor, setToolsMenuAnchor] = useState<ComposerToolsAnchor | null>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelPickerAnchor, setModelPickerAnchor] = useState<ModelPickerAnchor | null>(null);
+  const [configSheetOpen, setConfigSheetOpen] = useState(false);
   const insets = useSafeAreaInsets();
   /* frontend `.new-reply-pill`: `bottom: calc(96px + safe-area + 12px)`
    * above the composer. 96 covers the composer + wrap; add the device
@@ -281,6 +283,7 @@ export function ChatScreen({ navigation }: Props) {
   const onComposerReasoningEffort = useCallback((effort: Parameters<typeof appStore.setReasoningEffort>[0]) => appStore.setReasoningEffort(effort), []);
   const onComposerRemoveExtension = useCallback(() => appStore.setActiveExtension(null), []);
   const onComposerRemovePlugin = useCallback((pluginId: string) => appStore.clearComposerPlugin(pluginId), []);
+  const onComposerOpenConfig = useCallback(() => setConfigSheetOpen(true), []);
 
   /* AppHeader is React.memo'd too — the same inline-arrow problem made the
    * whole top bar (segmented model chip, share, search, drawer button)
@@ -386,16 +389,16 @@ export function ChatScreen({ navigation }: Props) {
 
           {matchingIndices.length > 0 ? (
             <View style={styles.searchNavBtns}>
-              <AnimatedPressable accessibilityRole="button" accessibilityLabel={t('find.previousMatch')} onPress={prevMatch} style={styles.searchNavBtn}>
+              <AnimatedPressable accessibilityRole="button" accessibilityLabel={t('find.previousMatch')} onPress={prevMatch} hitSlop={8} style={styles.searchNavBtn}>
                 <Ionicons name="chevron-up" size={18} color={colors.text} />
               </AnimatedPressable>
-              <AnimatedPressable accessibilityRole="button" accessibilityLabel={t('find.nextMatch')} onPress={nextMatch} style={styles.searchNavBtn}>
+              <AnimatedPressable accessibilityRole="button" accessibilityLabel={t('find.nextMatch')} onPress={nextMatch} hitSlop={8} style={styles.searchNavBtn}>
                 <Ionicons name="chevron-down" size={18} color={colors.text} />
               </AnimatedPressable>
             </View>
           ) : null}
 
-          <AnimatedPressable onPress={() => setSearchActive(false)} style={styles.searchCloseBtn}>
+          <AnimatedPressable onPress={() => setSearchActive(false)} hitSlop={8} style={styles.searchCloseBtn}>
             <Ionicons name="close" size={20} color={colors.textMuted} />
           </AnimatedPressable>
         </View>
@@ -504,6 +507,8 @@ export function ChatScreen({ navigation }: Props) {
             onStop={onComposerStop}
             onAttach={onAttach}
             onChangeReasoningEffort={onComposerReasoningEffort}
+            modelLabel={currentModelName}
+            onOpenConfig={onComposerOpenConfig}
             activeExtensionLabel={activeExtension ? MOBILE_EXTENSIONS[activeExtension].label : null}
             selectedPlugins={selectedPluginChips}
             onRemoveActiveExtension={onComposerRemoveExtension}
@@ -545,6 +550,19 @@ export function ChatScreen({ navigation }: Props) {
         onSelect={(modelId) => { void appStore.setSelectedModel(modelId); }}
         onClose={() => setModelPickerOpen(false)}
         onManageSettings={() => navigation.navigate('Settings')}
+      />
+
+      {/* Phone-form model + thinking sheet — the compact composer's
+       * text trigger opens this; ModelPickerModal stays for wide. */}
+      <ModelConfigSheet
+        visible={configSheetOpen}
+        providers={providers}
+        selectedId={selectedModel}
+        effort={reasoningEffort}
+        onSelectModel={(modelId) => { void appStore.setSelectedModel(modelId); }}
+        onChangeEffort={onComposerReasoningEffort}
+        onManageSettings={() => navigation.navigate('Settings')}
+        onClose={() => setConfigSheetOpen(false)}
       />
     </Screen>
   );
@@ -609,14 +627,14 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   searchNavBtn: {
-    width: 26,
-    height: 26,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   searchCloseBtn: {
-    width: 26,
-    height: 26,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Attachment } from '@socrates/contracts';
 import { useTheme } from '../theme/ThemeProvider';
+import { useT } from '../i18n';
 import { AnimatedPressable } from './AnimatedPressable';
 
 /* Mobile port of the web `.attachment-chip` family:
@@ -59,6 +60,7 @@ export interface AttachmentChipProps {
 
 export function AttachmentChip({ attachment, onRemove, progress, pending, error }: AttachmentChipProps) {
   const { colors, typography } = useTheme();
+  const t = useT();
   const isImage = attachment.kind === 'image' && Boolean(attachment.dataUrl);
   const iconColor = colors.voiceBlue; // web uses a single soft blue across kinds
   const showProgress = typeof progress === 'number' && progress >= 0;
@@ -94,7 +96,7 @@ export function AttachmentChip({ attachment, onRemove, progress, pending, error 
       {onRemove ? (
         <AnimatedPressable
           accessibilityRole="button"
-          accessibilityLabel="Remove attachment"
+          accessibilityLabel={t('chat.attach.remove.aria')}
           onPress={() => onRemove(attachment.id)}
           style={styles.remove}
           hitSlop={6}
