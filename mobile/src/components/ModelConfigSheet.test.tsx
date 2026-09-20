@@ -42,6 +42,10 @@ describe('ModelConfigSheet', () => {
     const noop = { start: jest.fn(), stop: jest.fn(), reset: jest.fn() };
     jest.spyOn(Animated, 'timing').mockReturnValue(noop as never);
     jest.spyOn(Animated, 'parallel').mockReturnValue(noop as never);
+    /* I18nProvider defaults to the device locale — pin it to English so the
+     * assertions below hold on non-English dev machines/CI images. */
+    jest.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+      .mockReturnValue({ locale: 'en-US' } as Intl.ResolvedDateTimeFormatOptions);
   });
 
   it('lists providers built-in first and marks the selected row', async () => {

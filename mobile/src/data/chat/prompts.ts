@@ -1,3 +1,4 @@
+import { getItem, setItem } from '../../platform/secureStorage';
 import { toneVoiceSuffix, type TonePreset } from './tonePresets';
 export type MobileExtensionKey = 'write' | 'explore' | 'analyze';
 export type MobileOutputMode = 'chat' | 'canvas';
@@ -56,13 +57,15 @@ export const MOBILE_EXTENSIONS: Record<MobileExtensionKey, MobileExtensionSpec> 
 };
 
 /* ── Prompt templates (slash commands) ────────────────────────────────
- * Port of frontend/src/chat/promptTemplates.js BUILTIN_TEMPLATES. The web
- * home/chat composers open a slash-command palette when the draft starts
- * with `/`; picking a row replaces the `/query` chunk with the template
- * body and activates the template's systemPrompt for the session. Custom
- * (user-defined) templates are not synced to mobile yet — only the six
- * built-ins ship here. `icon` is an Ionicons name standing in for the
- * web's inline SVG. */
+ * Port of frontend/src/chat/promptTemplates.js. The web home/chat
+ * composers open a slash-command palette when the draft starts with `/`;
+ * picking a row replaces the `/query` chunk with the template body and
+ * activates the template's systemPrompt for the session. Custom
+ * (user-defined) templates persist under the same localStorage key as the
+ * web (`socrates-prompt-templates`), so Expo Web shares the store and
+ * native keeps its own copy via SecureStore. `icon` is an Ionicons name
+ * for built-ins; custom templates may carry any short glyph the user
+ * types (emoji or 1-2 characters), rendered as text. */
 export interface MobilePromptTemplate {
   id: string;
   title: string;
@@ -71,6 +74,9 @@ export interface MobilePromptTemplate {
   shortcut: string;
   body: string;
   systemPrompt: string;
+  /** Web `category` — shown as a hint in the skills manager. */
+  category?: string;
+  isBuiltin?: boolean;
 }
 
 const TPL_PROMPT_SUMMARIZE = `You are a precise summarization specialist. Condense the user's passage into clear bullets that preserve supported facts, names, numbers, dates, and conclusions.
@@ -132,12 +138,12 @@ Rules:
 - Match the user's language and technical vocabulary. Do not bundle multiple independent exercises into one reply.`;
 
 export const MOBILE_PROMPT_TEMPLATES: MobilePromptTemplate[] = [
-  { id: 'tpl-summarize', title: 'Summarize', description: 'Condense the pasted text into bullet points.', icon: 'list', shortcut: '/summarize', body: 'Paste the text you want summarized:\n\n', systemPrompt: TPL_PROMPT_SUMMARIZE },
-  { id: 'tpl-translate', title: 'Translate to English', description: 'Translate the input into natural English.', icon: 'globe-outline', shortcut: '/translate', body: 'Paste the text to translate into English:\n\n', systemPrompt: TPL_PROMPT_TRANSLATE },
-  { id: 'tpl-explain-code', title: 'Explain this code', description: 'Walk through the snippet in execution order.', icon: 'code-slash', shortcut: '/explain', body: 'Paste the code you want explained:\n\n```\n\n```\n', systemPrompt: TPL_PROMPT_EXPLAIN_CODE },
-  { id: 'tpl-debug', title: 'Debug this', description: 'Find the bug, propose a fix, explain why it worked.', icon: 'bug-outline', shortcut: '/debug', body: 'Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n', systemPrompt: TPL_PROMPT_DEBUG },
-  { id: 'tpl-quiz', title: 'Quiz me', description: 'Generate 5 questions on a topic.', icon: 'help-circle-outline', shortcut: '/quiz', body: 'Topic to be quizzed on:\n', systemPrompt: TPL_PROMPT_QUIZ },
-  { id: 'tpl-socratic', title: 'Socratic me', description: 'Work toward the answer through focused questions.', icon: 'chatbox-ellipses-outline', shortcut: '/socratic', body: 'Problem to work through:\n', systemPrompt: TPL_PROMPT_SOCRATIC },
+  { id: 'tpl-summarize', title: 'Summarize', description: 'Condense the pasted text into bullet points.', icon: 'list', category: 'writing', shortcut: '/summarize', body: 'Paste the text you want summarized:\n\n', systemPrompt: TPL_PROMPT_SUMMARIZE, isBuiltin: true },
+  { id: 'tpl-translate', title: 'Translate to English', description: 'Translate the input into natural English.', icon: 'globe-outline', category: 'writing', shortcut: '/translate', body: 'Paste the text to translate into English:\n\n', systemPrompt: TPL_PROMPT_TRANSLATE, isBuiltin: true },
+  { id: 'tpl-explain-code', title: 'Explain this code', description: 'Walk through the snippet in execution order.', icon: 'code-slash', category: 'code', shortcut: '/explain', body: 'Paste the code you want explained:\n\n```\n\n```\n', systemPrompt: TPL_PROMPT_EXPLAIN_CODE, isBuiltin: true },
+  { id: 'tpl-debug', title: 'Debug this', description: 'Find the bug, propose a fix, explain why it worked.', icon: 'bug-outline', category: 'code', shortcut: '/debug', body: 'Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n', systemPrompt: TPL_PROMPT_DEBUG, isBuiltin: true },
+  { id: 'tpl-quiz', title: 'Quiz me', description: 'Generate 5 questions on a topic.', icon: 'help-circle-outline', category: 'learning', shortcut: '/quiz', body: 'Topic to be quizzed on:\n', systemPrompt: TPL_PROMPT_QUIZ, isBuiltin: true },
+  { id: 'tpl-socratic', title: 'Socratic me', description: 'Work toward the answer through focused questions.', icon: 'chatbox-ellipses-outline', category: 'learning', shortcut: '/socratic', body: 'Problem to work through:\n', systemPrompt: TPL_PROMPT_SOCRATIC, isBuiltin: true },
 ];
 
 /* Port of templateSlash.js `_currentSlashQuery`: null unless the draft
@@ -150,10 +156,114 @@ export function parseSlashQuery(value: string): { query: string; tail: string } 
   return { query: value.slice(1, i).toLowerCase(), tail: value.slice(i) };
 }
 
+/* ── Custom template store ─────────────────────────────────────────────
+ * Mirrors the web `loadPromptTemplates`/`savePromptTemplates`/`upsert`/
+ * `delete` helpers over the same storage key. Kept as a synchronous cache
+ * (like `data/preferences.ts`) so the slash palette and skills manager
+ * read merged templates without awaiting; `hydratePromptTemplates` runs
+ * once at app start and every mutation re-hydrates + notifies. */
+const PROMPT_TEMPLATES_KEY = 'socrates-prompt-templates';
+const templateListeners = new Set<() => void>();
+let customCache: MobilePromptTemplate[] = [];
+let mergedCache: MobilePromptTemplate[] = [...MOBILE_PROMPT_TEMPLATES];
+
+function mergeTemplates(customs: MobilePromptTemplate[]): MobilePromptTemplate[] {
+  /* Web `loadPromptTemplates`: key by shortcut — a custom row overrides a
+   * built-in on collision — then sort by title. */
+  const byShortcut = new Map<string, MobilePromptTemplate>();
+  MOBILE_PROMPT_TEMPLATES.forEach((template) => byShortcut.set(template.shortcut, template));
+  customs.forEach((template) => {
+    if (template && template.shortcut) byShortcut.set(template.shortcut, { ...template, isBuiltin: false });
+  });
+  return [...byShortcut.values()].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+}
+
+function notifyTemplates() {
+  templateListeners.forEach((listener) => listener());
+}
+
+/** All templates — built-ins merged with customs, sorted by title. */
+export function getPromptTemplates(): MobilePromptTemplate[] {
+  return mergedCache;
+}
+
+/** Only the user-created rows (for the skills manager). */
+export function getCustomTemplates(): MobilePromptTemplate[] {
+  return customCache;
+}
+
+export function subscribePromptTemplates(listener: () => void) {
+  templateListeners.add(listener);
+  return () => templateListeners.delete(listener);
+}
+
+/** Hydrate the custom-template cache from storage. Call once at startup. */
+export async function hydratePromptTemplates(): Promise<void> {
+  let customs: MobilePromptTemplate[] = [];
+  try {
+    const raw = await getItem(PROMPT_TEMPLATES_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(parsed)) {
+      customs = parsed.filter(
+        (item): item is MobilePromptTemplate =>
+          Boolean(item) && typeof item === 'object' && typeof (item as MobilePromptTemplate).shortcut === 'string',
+      );
+    }
+  } catch {
+    customs = [];
+  }
+  customCache = customs;
+  mergedCache = mergeTemplates(customCache);
+  notifyTemplates();
+}
+
+async function persistCustoms(next: MobilePromptTemplate[]): Promise<void> {
+  customCache = next.filter((template) => template && !template.isBuiltin);
+  mergedCache = mergeTemplates(customCache);
+  notifyTemplates();
+  try {
+    await setItem(PROMPT_TEMPLATES_KEY, JSON.stringify(customCache));
+  } catch {
+    /* best effort — the in-memory value still applies for this session */
+  }
+}
+
+export function findTemplateByShortcut(shortcut: string): MobilePromptTemplate | null {
+  if (!shortcut) return null;
+  return mergedCache.find((template) => template.shortcut === shortcut) ?? null;
+}
+
+export async function upsertCustomTemplate(template: MobilePromptTemplate): Promise<void> {
+  const next = { ...template, isBuiltin: false };
+  const customs = [...customCache];
+  const index = customs.findIndex((existing) => existing.id === template.id);
+  if (index >= 0) customs[index] = next;
+  else customs.push(next);
+  await persistCustoms(customs);
+}
+
+export async function deleteCustomTemplate(id: string): Promise<void> {
+  await persistCustoms(customCache.filter((template) => template.id !== id));
+}
+
+/* Web `onPromptTemplateEditorSave` validation, kept pure so the screen and
+ * tests share it: title required, shortcut `/^\/[a-z0-9-]+$/`, unique
+ * across built-ins and other customs. */
+export function validateCustomTemplate(
+  template: Pick<MobilePromptTemplate, 'title' | 'shortcut'> & { id?: string },
+): 'ok' | 'title-required' | 'shortcut-invalid' | 'shortcut-taken' {
+  if (!template.title.trim()) return 'title-required';
+  if (!/^\/[a-z0-9-]+$/.test(template.shortcut.trim())) return 'shortcut-invalid';
+  const existing = findTemplateByShortcut(template.shortcut.trim());
+  if (existing && existing.id !== template.id) return 'shortcut-taken';
+  return 'ok';
+}
+
 /* Port of `_filterSlashList`: substring match on shortcut/title/
- * description. Mobile has no connected-apps list, so templates only. */
+ * description over the merged template list. Mobile has no connected-apps
+ * list, so templates only. */
 export function filterPromptTemplates(query: string): MobilePromptTemplate[] {
-  const list = [...MOBILE_PROMPT_TEMPLATES].sort((a, b) => a.title.localeCompare(b.title));
+  const list = [...mergedCache].sort((a, b) => a.title.localeCompare(b.title));
   if (!query) return list;
   return list.filter((tpl) =>
     tpl.shortcut.toLowerCase().includes(query)

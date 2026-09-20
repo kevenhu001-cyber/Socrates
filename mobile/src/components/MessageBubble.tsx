@@ -515,6 +515,23 @@ export const MessageBubble = React.memo(function MessageBubble({
   );
   const unseatedCalls = (message.toolCalls || []).filter((call) => !seatedIds.has(call.id));
 
+  /* Shared row builder for the long-press action sheet — keeps the menu
+   * declarative; every row auto-dismisses then runs its action. */
+  const sheetRow = (icon: string, label: string, onPress: () => void, tone: 'default' | 'danger' = 'default') => (
+    <AnimatedPressable
+      key={label}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => { setActionsOpen(false); onPress(); }}
+      style={styles.sheetRow}
+    >
+      <Ionicons name={icon as never} size={17} color={tone === 'danger' ? colors.danger : colors.textSecondary} />
+      <Text style={[styles.sheetRowLabel, { color: tone === 'danger' ? colors.danger : colors.text, fontFamily: typography.body }]}>
+        {label}
+      </Text>
+    </AnimatedPressable>
+  );
+
   return (
     <View style={[styles.row, { alignItems: isUser ? 'flex-end' : 'flex-start' }]}>
       {/* `.msg-attachment-chips` sits on the page background ABOVE the
@@ -535,6 +552,21 @@ export const MessageBubble = React.memo(function MessageBubble({
           )}
         </View>
       ) : null}
+      {/* ChatGPT mobile parity: long-pressing a message opens the action
+       * sheet (copy/edit/delete/speak/rate/share/branch). The wrapper is a
+       * plain Pressable — nested interactive children (tool cards, canvas,
+       * quiz buttons) still win their own taps; the parent only sees
+       * presses nobody else claimed. Layout alignment is re-declared on the
+       * wrapper so the bubble keeps its user/assistant anchoring. */}
+      <Pressable
+        style={[styles.bubblePress, { alignItems: isUser ? 'flex-end' : 'flex-start' }]}
+        disabled={editing || streaming}
+        delayLongPress={380}
+        onLongPress={() => {
+          void native.vibrate('light');
+          setActionsOpen(true);
+        }}
+      >
       <Animated.View
         style={[
           styles.bubble,
@@ -661,9 +693,10 @@ export const MessageBubble = React.memo(function MessageBubble({
          * `styles.row`), so the user row no longer inflates the grey
          * bubble. Attachment-only user messages still get the toolbar. */}
       </Animated.View>
+      </Pressable>
       {!streaming && (text || hasAttachments) && !isCanvas ? (
         <View style={[styles.toolbar, isUser && styles.toolbarUser, { opacity: toolbarOpacity }]}>
-          <AnimatedPressable hitSlop={6} accessibilityLabel={t('common.copy')} onPress={copyText} style={styles.toolbarButton}>
+          <AnimatedPressable hitSlop={6} accessibilityRole="button" accessibilityLabel={t('common.copy')} onPress={copyText} style={styles.toolbarButton}>
             <Ionicons
               name={copied ? 'checkmark-circle-outline' : 'copy-outline'}
               size={16}
@@ -676,6 +709,7 @@ export const MessageBubble = React.memo(function MessageBubble({
               {messageId && onEdit ? (
                 <AnimatedPressable
                   hitSlop={6}
+                  accessibilityRole="button"
                   accessibilityLabel={t('chat.editMessage')}
                   onPress={() => { setEditValue(text); setEditing(true); }}
                   style={styles.toolbarButton}
@@ -686,6 +720,7 @@ export const MessageBubble = React.memo(function MessageBubble({
               {messageId && onDelete ? (
                 <AnimatedPressable
                   hitSlop={6}
+                  accessibilityRole="button"
                   accessibilityLabel={t('chat.deleteMessage')}
                   onPress={() => { void Promise.resolve(onDelete(messageId)); }}
                   style={styles.toolbarButton}
@@ -700,14 +735,15 @@ export const MessageBubble = React.memo(function MessageBubble({
                * regenerate/retry — everything else folds into the overflow
                * sheet (ChatGPT mobile parity; eight 28px icons at 2px gaps
                * were untappable on a 390pt phone). */}
-              <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.helpful')} onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
+              <AnimatedPressable hitSlop={6} accessibilityRole="button" accessibilityLabel={t('chat.helpful')} onPress={() => { void rate('up'); }} style={styles.toolbarButton}>
                 <Ionicons name={rating === 'up' ? 'thumbs-up' : 'thumbs-up-outline'} size={16} color={rating === 'up' ? colors.accent : colors.textSubtle} />
               </AnimatedPressable>
-              <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.notHelpful')} onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
+              <AnimatedPressable hitSlop={6} accessibilityRole="button" accessibilityLabel={t('chat.notHelpful')} onPress={() => { void rate('down'); }} style={styles.toolbarButton}>
                 <Ionicons name={rating === 'down' ? 'thumbs-down' : 'thumbs-down-outline'} size={16} color={rating === 'down' ? colors.accent : colors.textSubtle} />
               </AnimatedPressable>
               <AnimatedPressable
                 hitSlop={6}
+                accessibilityRole="button"
                 accessibilityLabel={speaking ? t('chat.stopReading') : t('chat.readAloud')}
                 onPress={toggleSpeech}
                 style={[
@@ -718,16 +754,16 @@ export const MessageBubble = React.memo(function MessageBubble({
                 <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-medium-outline'} size={16} color={speaking ? colors.textInverse : colors.textSubtle} />
               </AnimatedPressable>
               {messageId && onRegenerate ? (
-                <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.regenerateResponse')} onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
+                <AnimatedPressable hitSlop={6} accessibilityRole="button" accessibilityLabel={t('chat.regenerateResponse')} onPress={() => { void Promise.resolve(onRegenerate(messageId)); }} style={styles.toolbarButton}>
                   <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
                 </AnimatedPressable>
               ) : isLastAssistant && onRetry ? (
-                <AnimatedPressable hitSlop={6} accessibilityLabel={t('chat.retry') || 'Retry'} onPress={onRetry} style={styles.toolbarButton}>
+                <AnimatedPressable hitSlop={6} accessibilityRole="button" accessibilityLabel={t('chat.retry') || 'Retry'} onPress={onRetry} style={styles.toolbarButton}>
                   <Ionicons name="refresh-outline" size={16} color={colors.textSubtle} />
                 </AnimatedPressable>
               ) : null}
               {onShare || (messageId && onBranch) ? (
-                <AnimatedPressable hitSlop={6} accessibilityLabel={t('common.more')} onPress={() => setActionsOpen(true)} style={styles.toolbarButton}>
+                <AnimatedPressable hitSlop={6} accessibilityRole="button" accessibilityLabel={t('common.more')} onPress={() => setActionsOpen(true)} style={styles.toolbarButton}>
                   <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSubtle} />
                 </AnimatedPressable>
               ) : null}
@@ -735,43 +771,32 @@ export const MessageBubble = React.memo(function MessageBubble({
           )}
         </View>
       ) : null}
-      <Sheet visible={actionsOpen} onClose={() => setActionsOpen(false)} maxWidth={420}>
-        {onShare ? (
-          <AnimatedPressable
-            accessibilityRole="button"
-            onPress={() => { setActionsOpen(false); void Promise.resolve(onShare()); }}
-            style={styles.sheetRow}
-          >
-            <Ionicons name="share-outline" size={17} color={colors.textSecondary} />
-            <Text style={[styles.sheetRowLabel, { color: colors.text, fontFamily: typography.body }]}>
-              {t('chat.shareConversation')}
-            </Text>
-          </AnimatedPressable>
+      {/* Long-press action menu — the full ChatGPT-style set, not just the
+       * share/branch overflow the toolbar's "more" button used to expose. */}
+      <Sheet visible={actionsOpen} onClose={() => setActionsOpen(false)} maxWidth={420} testID="message-actions">
+        {text ? sheetRow('copy-outline', t('common.copy'), () => void copyText()) : null}
+        {!isUser && text ? sheetRow(
+          speaking ? 'stop-circle-outline' : 'volume-medium-outline',
+          speaking ? t('chat.stopReading') : t('chat.readAloud'),
+          () => void toggleSpeech(),
         ) : null}
-        {messageId && onBranch ? (
-          <>
-            <AnimatedPressable
-              accessibilityRole="button"
-              onPress={() => { setActionsOpen(false); void Promise.resolve(onBranch(messageId)); }}
-              style={styles.sheetRow}
-            >
-              <Ionicons name="git-branch-outline" size={17} color={colors.textSecondary} />
-              <Text style={[styles.sheetRowLabel, { color: colors.text, fontFamily: typography.body }]}>
-                {t('chat.branchFromHere')}
-              </Text>
-            </AnimatedPressable>
-            <AnimatedPressable
-              accessibilityRole="button"
-              onPress={() => { setActionsOpen(false); void Promise.resolve(onBranch(messageId, { reExplain: true })); }}
-              style={styles.sheetRow}
-            >
-              <Ionicons name="bulb-outline" size={17} color={colors.textSecondary} />
-              <Text style={[styles.sheetRowLabel, { color: colors.text, fontFamily: typography.body }]}>
-                {t('chat.reExplain')}
-              </Text>
-            </AnimatedPressable>
-          </>
-        ) : null}
+        {isUser && messageId && onEdit
+          ? sheetRow('pencil-outline', t('chat.editMessage'), () => { setEditValue(text); setEditing(true); })
+          : null}
+        {!isUser && messageId && onRegenerate
+          ? sheetRow('refresh-outline', t('chat.regenerateResponse'), () => void Promise.resolve(onRegenerate(messageId)))
+          : null}
+        {!isUser && !onRegenerate && isLastAssistant && onRetry
+          ? sheetRow('refresh-outline', t('chat.retry') || 'Retry', () => void Promise.resolve(onRetry()))
+          : null}
+        {!isUser && messageId && onFeedback ? sheetRow('thumbs-up-outline', t('chat.helpful'), () => void rate('up')) : null}
+        {!isUser && messageId && onFeedback ? sheetRow('thumbs-down-outline', t('chat.notHelpful'), () => void rate('down')) : null}
+        {onShare ? sheetRow('share-outline', t('chat.shareConversation'), () => void Promise.resolve(onShare())) : null}
+        {messageId && onBranch ? sheetRow('git-branch-outline', t('chat.branchFromHere'), () => void Promise.resolve(onBranch(messageId))) : null}
+        {messageId && onBranch ? sheetRow('bulb-outline', t('chat.reExplain'), () => void Promise.resolve(onBranch(messageId, { reExplain: true }))) : null}
+        {isUser && messageId && onDelete
+          ? sheetRow('trash-outline', t('chat.deleteMessage'), () => void Promise.resolve(onDelete(messageId)), 'danger')
+          : null}
       </Sheet>
     </View>
   );
@@ -782,6 +807,9 @@ const styles = StyleSheet.create({
    * ~24px between rows; column direction stacks the page-background
    * attachment chips above the bubble. */
   row: { flexDirection: 'column', marginVertical: 6, paddingVertical: 6 },
+  /* Long-press wrapper — full-width column so the bubble inside keeps the
+   * same cross-axis alignment the row used to give it directly. */
+  bubblePress: { alignSelf: 'stretch', width: '100%' },
   bubble: {},
   /* `.msg-attachment-chips`: lives on the page background above the bubble. */
   attachments: {

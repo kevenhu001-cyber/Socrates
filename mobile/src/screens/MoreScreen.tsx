@@ -104,10 +104,7 @@ export function MoreScreen({ navigation }: Props) {
         navigation.navigate('ExamSession');
         break;
       case 'skills':
-        navigation.navigate('Embedded', {
-          target: 'skills',
-          title: t('sidebar.more.skills') || 'Skills & shortcuts',
-        });
+        navigation.navigate('Skills');
         break;
       case 'shortcuts':
         setShortcutsOpen(true);

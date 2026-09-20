@@ -18,6 +18,8 @@ import { CmdKPalette } from './src/cmdK/CmdKPalette';
 import { cmdKStore } from './src/cmdK/cmdKStore';
 import { I18nProvider, useT } from './src/i18n';
 import { appStore, useAppStore } from './src/stores/appStore';
+import { hydratePromptTemplates } from './src/data/chat/prompts';
+import { loadPreferences } from './src/data/preferences';
 import { getNetworkStatus, subscribeToNetworkStatus } from './src/native/network';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import { useFonts } from 'expo-font';
@@ -53,6 +55,7 @@ import { LibraryScreen } from './src/screens/LibraryScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { ScheduledScreen } from './src/screens/ScheduledScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { SkillsScreen } from './src/screens/SkillsScreen';
 import { TutorScreen } from './src/screens/TutorScreen';
 import { WorkspaceScreen } from './src/screens/WorkspaceScreen';
 import type { RootStackParamList } from './src/navigation/types';
@@ -189,6 +192,7 @@ function NativeStack({ onRouteChange }: { onRouteChange?: (routeName: keyof Root
         <Stack.Screen name="Plugins" component={PluginsScreen} />
         <Stack.Screen name="Knowledge" component={KnowledgeScreen} />
         <Stack.Screen name="Mistakes" component={MistakesScreen} />
+        <Stack.Screen name="Skills" component={SkillsScreen} />
         <Stack.Screen name="Workspace" component={WorkspaceScreen} />
         <Stack.Screen name="Embedded" component={EmbeddedWebScreen} />
         <Stack.Screen name="ArtifactPreview" component={ArtifactPreviewScreen} />
@@ -237,6 +241,11 @@ function NativeApp() {
 
     // 1. Defensively bootstrap authentication and session state
     (async () => {
+      /* Hydrate small persisted stores alongside auth — preferences was
+       * previously written but never loaded, and prompt templates feed the
+       * slash palette's synchronous cache. */
+      void loadPreferences();
+      void hydratePromptTemplates();
       try {
         await appStore.bootstrap();
       } catch (error) {

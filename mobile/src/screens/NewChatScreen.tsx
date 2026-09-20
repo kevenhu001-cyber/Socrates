@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -16,7 +16,7 @@ import { pickChatAttachment, type ChatAttachmentSource } from '../data/chat/atta
 import { native } from '../native/native';
 import type { RootStackParamList } from '../navigation/types';
 import { useResponsive } from '../theme/responsive';
-import { filterPromptTemplates, MOBILE_EXTENSIONS, parseSlashQuery, type MobilePromptTemplate } from '../data/chat/prompts';
+import { filterPromptTemplates, getPromptTemplates, MOBILE_EXTENSIONS, parseSlashQuery, subscribePromptTemplates, type MobilePromptTemplate } from '../data/chat/prompts';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { withAlpha } from '../theme/theme';
 
@@ -287,7 +287,7 @@ export function NewChatScreen({ navigation, route }: Props) {
         onPickExplore={() => appStore.setActiveExtension('explore')}
         onPickAnalyze={() => appStore.setActiveExtension('analyze')}
         onPickExam={() => navigation.navigate('ExamSession')}
-        onPickSkills={() => navigation.navigate('Embedded', { target: 'skills', title: t('sidebar.more.skills') || 'Skills & shortcuts' })}
+        onPickSkills={() => navigation.navigate('Skills')}
         activeExtension={activeExtension}
         onToggleThinkDeeper={() => appStore.setReasoningEffort(reasoningEffort === 'high' ? 'medium' : 'high')}
         isThinkDeeperActive={reasoningEffort === 'high'}
@@ -347,6 +347,9 @@ const LandingComposerCard = React.memo(function LandingComposerCard({
   const draft = useAppStore((s) => s.draft);
   const pendingAttachments = useAppStore((s) => s.pendingAttachments);
   const isStreaming = useAppStore((s) => s.isStreaming);
+  /* Subscribe so skills created in the manager show up in the palette
+   * without a remount. */
+  useSyncExternalStore(subscribePromptTemplates, getPromptTemplates);
   const slashQuery = parseSlashQuery(draft);
   const slashList = slashQuery ? filterPromptTemplates(slashQuery.query) : [];
 

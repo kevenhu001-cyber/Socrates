@@ -265,6 +265,8 @@ export function KnowledgeScreen({ navigation }: Props) {
               </View>
               {sessionMode === 'tutor' && Array.isArray(kbNodes) && kbNodes.length ? (
                 <AnimatedPressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('tutor.kbSnapshot') === 'tutor.kbSnapshot' ? 'Save snapshot' : t('tutor.kbSnapshot')}
                   onPress={() => { void appStore.saveKnowledgeSnapshot(); }}
                   style={[styles.snapshotButton, { borderColor: colors.border, borderRadius: radius.sm }]}
                 >
@@ -333,6 +335,7 @@ export function KnowledgeScreen({ navigation }: Props) {
                   <G
                     key={`${point.item.sessionId}:${point.item.nodeIndex ?? index}`}
                     onPress={() => openDetail(point.item)}
+                    accessibilityLabel={`${label} · ${statusBucket(point.item.status)}`}
                   >
                     <Circle
                       cx={point.x}
@@ -464,6 +467,9 @@ export function KnowledgeScreen({ navigation }: Props) {
                   return (
                     <AnimatedPressable
                       key={value}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Confidence ${value} of 5`}
+                      accessibilityState={{ selected: on, disabled: saving }}
                       disabled={saving}
                       onPress={() => void updateNode({
                         confidenceScore: Number(selected.confidenceScore || 0) === value ? 0 : value,
@@ -493,6 +499,7 @@ export function KnowledgeScreen({ navigation }: Props) {
                 Your note
               </Text>
               <TextInput
+                accessibilityLabel="Your note"
                 value={noteDraft}
                 onChangeText={setNoteDraft}
                 multiline
@@ -510,6 +517,9 @@ export function KnowledgeScreen({ navigation }: Props) {
                 ]}
               />
               <AnimatedPressable
+                accessibilityRole="button"
+                accessibilityLabel="Save note"
+                accessibilityState={{ disabled: saving || noteDraft === (selected.userNote || '') }}
                 disabled={saving || noteDraft === (selected.userNote || '')}
                 onPress={() => void updateNode({ userNote: noteDraft })}
                 style={[
@@ -555,6 +565,9 @@ export function KnowledgeScreen({ navigation }: Props) {
               )}
 
               <AnimatedPressable
+                accessibilityRole="button"
+                accessibilityLabel={t('tutor.continue') === 'tutor.continue' ? 'Open in Tutor' : t('tutor.continue')}
+                accessibilityState={{ disabled: saving || selected.nodeIndex === undefined }}
                 disabled={saving || selected.nodeIndex === undefined}
                 onPress={() => { void jumpToNode(); }}
                 style={[styles.goButton, { backgroundColor: colors.accent, borderRadius: radius.md }]}
@@ -594,6 +607,8 @@ function KnowledgeSection({
       {items.map((item, index) => (
         <AnimatedPressable
           key={`${item.sessionId}:${item.nodeIndex ?? index}`}
+          accessibilityRole="button"
+          accessibilityLabel={displayName(item, index)}
           onPress={() => onPress(item)}
           style={[styles.row, { borderBottomColor: colors.border }]}
         >

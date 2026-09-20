@@ -17,7 +17,7 @@ describe('embedded WebView bridge', () => {
     expect(isEmbeddedTarget(null)).toBe(false);
     expect(nativeRouteForEmbeddedTarget('projects')).toBe('Projects');
     expect(nativeRouteForEmbeddedTarget('library')).toBe('Library');
-    expect(nativeRouteForEmbeddedTarget('skills')).toBeNull();
+    expect(nativeRouteForEmbeddedTarget('skills')).toBe('Skills');
     expect(nativeOverlayForEmbeddedTarget('profile')).toBe('profile');
     expect(nativeOverlayForEmbeddedTarget('usage')).toBe('usage');
     expect(nativeOverlayForEmbeddedTarget('skills')).toBeNull();

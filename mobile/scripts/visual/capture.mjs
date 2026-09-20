@@ -134,6 +134,10 @@ async function newPage(browser, { width, height, dsf, signedIn = true, theme = '
     viewport: { width, height },
     deviceScaleFactor: dsf,
     colorScheme: theme,
+    /* The app's i18n provider defaults to the device locale, so pin en-US —
+     * the drivers below look up English placeholders/labels and would time
+     * out on a non-English host. */
+    locale: 'en-US',
   });
   const errors = [];
   const me = signedIn ? await fixture('me.json') : null;

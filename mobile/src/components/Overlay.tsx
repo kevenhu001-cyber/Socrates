@@ -112,7 +112,9 @@ export function Overlay({
             {
               backgroundColor: colors.surfaceRaised,
               borderColor: withAlpha(colors.border, 0.35),
-              borderRadius: presentation === 'bottom' ? radius.lg : radius.xl,
+              /* ChatGPT/material bottom-sheet parity: a 28px top radius on
+               * bottom sheets; centered modals keep the web `radius.xl`. */
+              borderRadius: presentation === 'bottom' ? 28 : radius.xl,
               maxWidth,
               opacity,
               transform: [{ translateY: translate }],

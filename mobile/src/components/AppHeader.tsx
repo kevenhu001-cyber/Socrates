@@ -172,7 +172,9 @@ function AppHeaderImpl({
             styles.modeSegment,
             {
               backgroundColor: isCompact ? colors.modeTabsBg : circleBg,
-              borderColor: colors.border,
+              /* ChatGPT phone parity: the compact pill is a pure fill — no
+               * hairline ring and no ring on the active segment. */
+              borderColor: isCompact ? 'transparent' : colors.border,
             },
           ]}
         >
@@ -190,7 +192,7 @@ function AppHeaderImpl({
                     styles.modeButtonActive,
                     {
                       backgroundColor: activeTabBg,
-                      borderColor: colors.border,
+                      borderColor: isCompact ? 'transparent' : colors.border,
                     },
                   ],
                 ]}

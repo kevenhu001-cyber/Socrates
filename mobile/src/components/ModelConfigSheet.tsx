@@ -185,14 +185,15 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   modelList: {
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 14,
   },
   row: {
-    borderRadius: 12,
-    minHeight: 56,
+    /* Reference config sheet rows are tall (~64px) 16px-radius cards. */
+    borderRadius: 16,
+    minHeight: 62,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   rowName: {
-    fontSize: 15,
+    fontSize: 16,
   },
   rowSub: {
     fontSize: 13,
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   effortToggle: {
-    minHeight: 56,
+    minHeight: 62,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
