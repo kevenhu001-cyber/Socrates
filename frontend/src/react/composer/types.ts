@@ -13,6 +13,7 @@ export type ComposerToolsAction =
   | 'camera'
   | 'photos'
   | 'upload'
+  | 'webSearch'
   | 'write'
   | 'research'
   | 'explore'
@@ -38,5 +39,6 @@ export interface ComposerToolsBridge {
 declare global {
   interface Window {
     __socratesComposerToolsBridge?: ComposerToolsBridge;
+    toggleWebSearch?: () => void;
   }
 }

@@ -121,6 +121,9 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
     case 'upload':
       openMobileAttachmentPicker(mode, action);
       return;
+    case 'webSearch':
+      if (typeof window.toggleWebSearch === 'function') window.toggleWebSearch();
+      return;
     case 'write':
       composer.composeAction();
       return;
