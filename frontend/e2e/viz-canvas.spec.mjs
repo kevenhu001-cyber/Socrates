@@ -298,11 +298,16 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
     return id && !live.includes(id);
   });
   expect(released).toBe(true);
-  // Inject a viz-error postMessage from the iframe. The card should
-  // re-render the error banner even though the registry is empty.
-  await page.evaluate(() => {
-    const id = document.querySelector('.viz').id;
-    window.postMessage({ type: 'viz-error', vizId: id, message: 'late chart failure' }, '*');
+  // Inject a viz-error postMessage from inside the real iframe — the
+  // parent only accepts viz messages whose event.source is the card's
+  // iframe contentWindow, so a top-level window.postMessage would be
+  // (correctly) rejected as forged. The card should still flip to the
+  // error banner even though the registry is empty.
+  const vizIframe = await card.locator('iframe').elementHandle();
+  const vizFrame = await vizIframe.contentFrame();
+  expect(vizFrame).not.toBeNull();
+  await vizFrame.evaluate(() => {
+    parent.postMessage({ type: 'viz-error', vizId: 'forged-id-ignored', message: 'late chart failure' }, '*');
   });
   await expect(card).toHaveAttribute('data-viz-state', 'error', { timeout: 3000 });
   await expect(card.locator('.viz-error')).toContainText('late chart failure');
@@ -310,6 +315,49 @@ test('ready viz cards release the iframe registry; late viz-error still surfaces
   // global [data-action] scan.
   await card.locator('.viz-error-btn').click();
   await expect(card.locator('.viz-error-source')).toBeVisible();
+});
+
+test('viz card Preview/Code toggle switches views and hides the iframe in code view', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/api/**/chat/stream', async (route) => {
+    const htmlBody = [
+      '```html',
+      '<div id="marker">hello canvas</div>',
+      '<script>parent.postMessage({type:"viz-ready",vizId:window.__vizId,h:80},"*")</script>',
+      '```',
+    ].join('\n');
+    const stream = [
+      'data: ' + JSON.stringify({ choices: [{ delta: { content: htmlBody } }] }) + '\n\n',
+      'data: [DONE]\n\n',
+    ].join('');
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: stream });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(async () => {
+    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
+    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-6', role: 'user', rawText: 'toggle view', html: null }] });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    await window.askChatTurn('toggle view');
+  });
+  const card = page.locator('.viz').last();
+  await expect(card).toHaveAttribute('data-viz-state', 'ready', { timeout: 6000 });
+  // Default view is preview: code pane hidden, iframe shown.
+  await expect(card).toHaveAttribute('data-viz-view', 'preview');
+  await expect(card.locator('.viz-code-pane')).toBeHidden();
+  await expect(card.locator('iframe')).toBeVisible();
+  await expect(card.locator('.viz-code-pane')).toContainText('hello canvas');
+  // Flip to code view: source shows, iframe leaves the layout.
+  await card.locator('.viz-seg-btn[data-viz-view-opt="code"]').click();
+  await expect(card).toHaveAttribute('data-viz-view', 'code');
+  await expect(card.locator('.viz-code-pane')).toBeVisible();
+  await expect(card.locator('iframe')).toBeHidden();
+  // Back to preview.
+  await card.locator('.viz-seg-btn[data-viz-view-opt="preview"]').click();
+  await expect(card).toHaveAttribute('data-viz-view', 'preview');
+  await expect(card.locator('iframe')).toBeVisible();
 });
 
 test('processPendingVizActions does not trigger a document-wide [data-action] scan', async ({ page }) => {

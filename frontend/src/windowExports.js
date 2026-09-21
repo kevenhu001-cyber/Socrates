@@ -94,11 +94,13 @@ import {
   getActiveProvider,
   syncModelPills,
   syncChatModel,
+  toggleWebSearch,
   markProvidersFetched,
 } from './pickers.js';
 window.getActiveProvider = getActiveProvider;
 window.syncModelPills = syncModelPills;
 window.syncChatModel = syncChatModel;
+window.toggleWebSearch = toggleWebSearch;
 window.markProvidersFetched = markProvidersFetched;
 
 // Note: renderProviderList stays on window for config/providers.js, which

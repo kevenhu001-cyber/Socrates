@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "webBaseline": "4255f3e60db09106e0417cad30d789c1aa03afe3",
+  "webBaseline": "549984e576d586aba0ef4373781b4ef127a8b4f7",
   "baselineNote": "Generated from the latest commit touching frontend/. Any later Web UI change must update this manifest and the visual baselines.",
   "viewports": [
     { "name": "phone-compact", "width": 390, "height": 844, "densityIndependent": true },

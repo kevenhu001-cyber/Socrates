@@ -20,6 +20,7 @@ import { analyzeExtension } from './modules/analyze';
 import { examExtension } from './modules/exam';
 import { extensiveThinkingExtension } from './modules/extensiveThinking';
 import { uploadExtension } from './modules/upload';
+import { webSearchExtension } from './modules/webSearch';
 import { skillsExtension } from './modules/skills';
 
 let installed = false;
@@ -41,6 +42,7 @@ export function installExtensions(): void {
     .register(examExtension)
     .register(extensiveThinkingExtension)
     .register(uploadExtension)
+    .register(webSearchExtension)
     .register(skillsExtension);
 }
 

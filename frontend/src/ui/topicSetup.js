@@ -36,12 +36,11 @@ export function updateStartBtn(){
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var label = canSend
-    ? (typeof window.t === "function" ? window.t("chat.send") : "Send")
-    : (typeof window.t === "function" ? window.t("voice.input") : "Voice input");
+  var label = typeof window.t === "function" ? window.t("chat.send") : "Send";
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.setAttribute("aria-disabled", "false");
+  b.setAttribute("aria-disabled", canSend ? "false" : "true");
+  b.disabled = !canSend;
   var wrap = document.getElementById("topicInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }
@@ -58,12 +57,11 @@ export function updateSendBtn(){
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var label = canSend
-    ? (typeof window.t === "function" ? window.t("chat.send") : "Send")
-    : (typeof window.t === "function" ? window.t("voice.input") : "Voice input");
+  var label = typeof window.t === "function" ? window.t("chat.send") : "Send";
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.setAttribute("aria-disabled", "false");
+  b.setAttribute("aria-disabled", canSend ? "false" : "true");
+  b.disabled = !canSend;
   var wrap = document.getElementById("chatInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }

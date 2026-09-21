@@ -69,27 +69,22 @@ function position(el, trigger) {
      stays visible on every surface. */
   var menuHeightCap = Math.max(120, (viewportBottom - viewportTop) / 2);
 
-  /* Home (topic) composer on desktop: the expanded card always opens below
-     the input and stretches toward the viewport bottom with an internal
-     scrollbar, so it never covers the greeting above and never spills past
-     the page. Width tracks the input box so both edges align. */
+  /* The landing reference anchors the popover to the composer's left edge
+     and always opens downward. Connected plugin rows scroll inside the card
+     instead of making the card jump above the prompt. */
   if (mode === "topic" && viewportWidth > 768) {
     var wrap = trigger.closest ? trigger.closest("#topicInputWrap") : null;
     var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
     var menuTop = r.bottom + 8;
-    var room = viewportBottom - menuTop - 16;
-    el.style.maxHeight = Math.min(Math.max(room, 96), 560, menuHeightCap) + "px";
-    el.style.width = Math.max(280, Math.min(wrapRect.width || 620, viewportWidth - 16)) + "px";
-    el.style.left = "0px";
-    el.style.top = "0px";
-    var menuWidth = el.offsetWidth || 620;
-    var menuLeft = Math.max(8, Math.min(wrapRect.left, viewportWidth - menuWidth - 8));
-    el.style.left = menuLeft + "px";
+    var room = Math.max(120, viewportBottom - menuTop - 16);
+    el.style.width = "220px";
+    el.style.maxHeight = Math.min(room, menuHeightCap) + "px";
+    el.style.left = Math.max(8, Math.min(wrapRect.left, viewportWidth - 228)) + "px";
     el.style.top = menuTop + "px";
     return;
   }
 
-  el.style.width = "";
+  el.style.width = viewportWidth > 768 ? "220px" : "";
   el.style.maxHeight = menuHeightCap + "px";
   el.style.left = "0px";
   el.style.top = "0px";

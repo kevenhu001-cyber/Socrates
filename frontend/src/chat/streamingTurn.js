@@ -340,10 +340,15 @@ export function addStreamingMessage(opts){
      dispatch a `tool-retry` CustomEvent (toolInline.ts). The delegated
      listener below routes to this handler. Falls back to window scope
      for share/history replay. */
-  var _onSearchRetry=function(query){
+  var _onSearchRetry=function(query, detail){
+    /* P_tool_retry_prompt — `detail.prompt` carries a verbatim repair
+       request (e.g. a failed visualization feeding its client-side
+       error back to the model). It bypasses the "Please retry the
+       search:" prefix, which only makes sense for search rows. */
+    const promptText=String((detail&&detail.prompt)||'').trim();
     const text=String(query||'').trim();
-    if(!text)return;
-    const retryText='Please retry the search: '+text;
+    const retryText=promptText||(text?('Please retry the search: '+text):'');
+    if(!retryText)return;
     if(typeof window.addMessage==='function'){
       window.addMessage('user',retryText);
     }

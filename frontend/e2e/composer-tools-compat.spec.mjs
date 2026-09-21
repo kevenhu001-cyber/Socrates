@@ -34,13 +34,13 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'write', 'explore', 'analyze', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'webSearch', 'write', 'explore', 'analyze', 'exam', 'skills']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
   expect(mobileActions).toEqual([
     'camera', 'photos', 'upload', 'write',
-    'explore', 'analyze', 'exam', 'skills', 'extensiveThinking',
+    'explore', 'analyze', 'exam', 'skills', 'webSearch', 'extensiveThinking',
   ]);
 });
 
@@ -70,14 +70,14 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items > .composer-tools-item');
-  await expect(desktopItems).toHaveCount(6);
+  await expect(desktopItems).toHaveCount(7);
   await expect(desktopItems.nth(0)).toContainText('Upload files');
   /* Footer filter narrows the expanded list. */
   await menu.locator('.composer-tools-footer-search input').fill('exam');
   await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(1);
   await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item').first()).toContainText('Generate exam');
   await menu.locator('.composer-tools-footer-search input').fill('');
-  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(6);
+  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(7);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,

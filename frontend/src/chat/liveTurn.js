@@ -88,7 +88,10 @@ export function installLiveTurnRetryListener() {
       var handler = (typeof window.__socratesToolRetry === 'function')
         ? window.__socratesToolRetry : turnState.liveSearchRetry;
       if (typeof handler !== 'function') return;
-      try { handler(detail.query || ''); } catch (_) { /* a failed retry is just a missed click */ }
+      /* P_tool_retry_prompt — pass the whole detail so repair prompts
+         (viz-failure "Fix with AI") reach the handler alongside the
+         legacy `query` field. */
+      try { handler(detail.query || '', detail); } catch (_) { /* a failed retry is just a missed click */ }
     });
   }
 }

@@ -131,12 +131,12 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.activeEditor).toBe(true);
   expect(composed.editorHeight).toBeGreaterThan(initial.editorHeight);
   expect(composed.editorHeight).toBeLessThanOrEqual(280);
-  /* A grown (multiline) composer uses the 24px two-tier radius. The shared
-     landing/chat surface keeps 40px controls in every state. */
+  /* Multiline keeps the same borderless ChatGPT surface language while the
+     plus and primary actions retain their independent hit targets. */
   expect(composed.wrapRadius).toBe(24);
-  expect(composed.wrapBorder).not.toBe('0px');
-  expect(composed.sendSize).toBe(40);
-  expect(composed.attachSize).toBe(40);
+  expect(composed.wrapBorder).toBe('0px');
+  expect(composed.sendSize).toBe(36);
+  expect(composed.attachSize).toBe(44);
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
@@ -166,10 +166,10 @@ test('desktop idle composer keeps its edge controls circular and optically align
 
   expect(geometry.wrap?.height).toBe(52);
   expect(geometry.wrap?.radius).toBe('28px');
-  expect(geometry.attach?.width).toBe(36);
-  expect(geometry.attach?.height).toBe(36);
+  expect(geometry.attach?.width).toBe(44);
+  expect(geometry.attach?.height).toBe(44);
   expect(geometry.attach?.radius).toBe('50%');
-  expect(geometry.attach?.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(geometry.attach?.background).toBe('rgba(0, 0, 0, 0)');
   expect(geometry.send?.width).toBe(36);
   expect(geometry.send?.height).toBe(36);
   expect(geometry.send?.radius).toBe('50%');

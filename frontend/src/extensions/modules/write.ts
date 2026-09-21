@@ -38,7 +38,7 @@ export const writeExtension: ExtensionDefinition = {
      keeps the input bar visible between turns so the user can iterate. */
   outputMode: 'canvas',
   autoLaunch: false,
-  placement: { tools: 2 },
+  placement: { tools: 3 },
   onActivate(ctx) {
     ctx.setTemplate({
       key: 'write',

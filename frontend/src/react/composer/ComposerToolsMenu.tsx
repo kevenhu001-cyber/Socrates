@@ -1,5 +1,5 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway';
@@ -306,13 +306,15 @@ function MenuItems({
         {expandedTools.length === 0 ? (
           <div className="composer-tools-plugin-state">{i18n('composer.tools.noMatch', 'No matching tools.')}</div>
         ) : null}
-        {expandedTools.map((spec) => (
-          <MenuItem
-            key={spec.key}
-            spec={spec}
-            active={spec.key === activeKey}
-            onPick={onPick}
-          />
+        {expandedTools.map((spec, index) => (
+          <Fragment key={spec.key}>
+            <MenuItem
+              spec={spec}
+              active={spec.key === activeKey}
+              onPick={onPick}
+            />
+            {index === 1 ? <div className="composer-tools-divider" role="separator" /> : null}
+          </Fragment>
         ))}
       </div>
       <div className="composer-tools-mobile-items">
@@ -352,8 +354,10 @@ function ComposerToolsMenu() {
   const extensionState = window as unknown as {
     _activeTemplate?: { extensionKey?: string } | null;
     extensiveThinkingOn?: boolean;
+    webSearchOn?: boolean;
   };
   const activeKey = extensionState._activeTemplate?.extensionKey
+    ?? (extensionState.webSearchOn ? 'webSearch' : null)
     ?? (extensionState.extensiveThinkingOn ? 'extensiveThinking' : null);
 
   return <MenuItems activeKey={activeKey} onPick={pick} isOpen={snapshot.isOpen} mode={snapshot.mode} />;

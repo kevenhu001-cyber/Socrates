@@ -44,18 +44,109 @@ import { ensureMermaid } from '../vendor/lazy.js';
    stable id, so the same card reclaimed across stream→finish and across
    history re-renders is always the same payload. */
 var _liveVizCards = new Map();
-var LIVE_VIZ_CARDS_MAX = 80;
+/* Each live card pins a full iframe document (canvas/WebGL contexts
+   included), so the registry stays deliberately small — a long session
+   keeps the most recent cards adoptable and lets older iframes be GC'd
+   once their message HTML is actually replaced. */
+var LIVE_VIZ_CARDS_MAX = 40;
 
 function _rememberLiveVizCard(id, el) {
   if (!id || !el) return;
   if (_liveVizCards.has(id)) _liveVizCards.delete(id);
   _liveVizCards.set(id, el);
+  _observeVizPark(el);
   while (_liveVizCards.size > LIVE_VIZ_CARDS_MAX) {
     var oldest = _liveVizCards.keys().next().value;
     if (oldest === undefined) break;
+    var evicted = _liveVizCards.get(oldest);
+    if (evicted) _unobserveVizPark(evicted);
     _liveVizCards.delete(oldest);
   }
 }
+
+/* P_viz-park — long sessions accumulate rendered cards and every live
+   iframe pins a full document (canvas/WebGL contexts included). A card
+   that has been scrolled out of view for a while gets "parked": the
+   iframe's srcdoc attribute is removed, which navigates the frame to
+   about:blank and releases the document. The markup keeps
+   `data-srcdoc`, so re-entering the viewport restores it and the card
+   re-runs the normal viz-ready handshake.
+   Guards: only park fully rendered (ready) cards, never while the tab
+   is hidden (IntersectionObserver reports everything offscreen on tab
+   switch, which would stampede every card into a reload on return),
+   and never a card currently inside fullscreen. */
+var VIZ_PARK_DELAY_MS = 45000;
+var _vizParkObserver = null;
+
+function _ensureVizParkObserver() {
+  if (_vizParkObserver || typeof IntersectionObserver !== 'function') return;
+  _vizParkObserver = new IntersectionObserver(function (entries) {
+    for (var i = 0; i < entries.length; i++) {
+      var en = entries[i];
+      var card = en.target;
+      if (en.isIntersecting) {
+        if (card.__vizParkTimer) { clearTimeout(card.__vizParkTimer); card.__vizParkTimer = null; }
+        if (card.getAttribute('data-viz-parked') === '1') _unparkVizCard(card);
+      } else if (!card.__vizParkTimer && card.getAttribute('data-viz-parked') !== '1') {
+        card.__vizParkTimer = setTimeout(function () {
+          card.__vizParkTimer = null;
+          _parkVizCard(card);
+        }, VIZ_PARK_DELAY_MS);
+      }
+    }
+    /* Generous bottom margin so a parked card remounts before the
+       user scrolls it into view — the reload happens offscreen. */
+  }, { rootMargin: '0px 0px 320px 0px' });
+}
+
+function _observeVizPark(card) {
+  _ensureVizParkObserver();
+  if (_vizParkObserver && card) {
+    try { _vizParkObserver.observe(card); } catch (_) { /* ignore */ }
+  }
+}
+
+function _unobserveVizPark(card) {
+  if (_vizParkObserver && card) {
+    try { _vizParkObserver.unobserve(card); } catch (_) { /* ignore */ }
+  }
+  if (card && card.__vizParkTimer) { clearTimeout(card.__vizParkTimer); card.__vizParkTimer = null; }
+}
+
+function _parkVizCard(card) {
+  if (!card || !card.isConnected) return;
+  if (card.getAttribute('data-viz-state') !== 'ready') return;
+  if (card.getAttribute('data-viz-parked') === '1') return;
+  try { if (document.visibilityState === 'hidden') return; } catch (_) { /* ignore */ }
+  try { if (document.fullscreenElement && card.contains(document.fullscreenElement)) return; } catch (_) { /* ignore */ }
+  var iframe = card.querySelector('iframe');
+  if (!iframe || !iframe.getAttribute('data-srcdoc')) return;
+  /* Removing srcdoc navigates the frame to about:blank, tearing down
+     the user document and its canvas/WebGL contexts. The inline style
+     height stays, so the card holds its size while parked. */
+  iframe.removeAttribute('srcdoc');
+  card.setAttribute('data-viz-parked', '1');
+}
+
+function _unparkVizCard(card) {
+  if (!card) return;
+  card.removeAttribute('data-viz-parked');
+  var iframe = card.querySelector('iframe');
+  var srcdoc = iframe && iframe.getAttribute('data-srcdoc');
+  if (!iframe || !srcdoc) return;
+  card.setAttribute('data-viz-state', 'loading');
+  iframe.setAttribute('srcdoc', srcdoc);
+  if (card.id && !_pendingViz.some(function (item) { return item.id === card.id; })) {
+    _pendingViz.push({ id: card.id });
+  }
+  try { processPendingViz(); } catch (_) { /* ignore */ }
+}
+
+/* Test hooks — the IntersectionObserver path needs a real layout
+   engine, but the park/unpark mechanics are plain DOM and worth
+   unit coverage (see test/vizPark.test.mjs). */
+export function parkVizCardForTest(card) { _parkVizCard(card); }
+export function unparkVizCardForTest(card) { _unparkVizCard(card); }
 
 function _dropPendingVizId(id) {
   _pendingViz = _pendingViz.filter(function (item) { return item.id !== id; });
@@ -133,10 +224,24 @@ function vizRuntime(vizId) {
   return '<script>' +
     '(function(){' +
       'var VIZ_ID=' + idJson + ';' +
+      'function docH(){return Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)}' +
       'function postReady(){' +
-        'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)},"*")}catch(e){}' +
+        'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:docH()},"*")}catch(e){}' +
       '}' +
       'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:VIZ_ID,message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
+      /* P_viz-ping-ack — the parent pings us when its max-wait expires
+         without a viz-ready (the ready post can race the parent's
+         listener attachment). We answer with a fresh viz-ready so the
+         parent reuses one code path. vizId check keeps cards from
+         answering each other's pings. */
+      'window.addEventListener("message",function(e){var d=e&&e.data;if(d&&d.type==="viz-ping"&&d.vizId===VIZ_ID)postReady()});' +
+      /* P_viz-resize — height is only reported at ready time, but the
+         body keeps growing afterwards (late images, animations, async
+         layout) and gets clipped by the fixed height. Observe the body
+         and post throttled deltas so the parent can grow the iframe. */
+      'var _lastH=0;' +
+      'function postH(){var h=docH();if(Math.abs(h-_lastH)>=4){_lastH=h;try{window.parent.postMessage({type:"viz-resize",vizId:VIZ_ID,h:h},"*")}catch(e){}}}' +
+      'if(typeof ResizeObserver!=="undefined"){try{new ResizeObserver(function(){postH()}).observe(document.body)}catch(e){}}else{setInterval(postH,800)}' +
       'window.addEventListener("error",function(e){postError((e&&e.message)||"runtime error")});' +
       'window.addEventListener("unhandledrejection",function(e){postError((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection")});' +
       'function ready(){' +
@@ -153,8 +258,21 @@ function vizRuntime(vizId) {
   '<\/script>';
 }
 
-function vizActions(cardId, showSource) {
+/* Session-level view preference for the Preview/Code toggle. Once a
+   user flips any card to "code", subsequently rendered cards honor it
+   (streaming re-renders included, since renderViz reads it fresh each
+   call). Persisted so the choice survives reloads. */
+var _vizViewPref = null;
+try { _vizViewPref = localStorage.getItem('socrates-viz-view'); } catch (_) { /* ignore */ }
+if (_vizViewPref !== 'code') _vizViewPref = 'preview';
+
+function vizActions(cardId, showSource, viewToggle) {
   return '<div class="viz-actions">' +
+    (viewToggle ?
+      '<span class="viz-seg" role="group" aria-label="Card view">' +
+        '<button type="button" class="viz-seg-btn' + (_vizViewPref === 'code' ? '' : ' is-on') + '" data-viz-card="' + cardId + '" data-viz-view-opt="preview">Preview</button>' +
+        '<button type="button" class="viz-seg-btn' + (_vizViewPref === 'code' ? ' is-on' : '') + '" data-viz-card="' + cardId + '" data-viz-view-opt="code">Code</button>' +
+      '</span>' : '') +
     '<span class="viz-status" role="status"><span class="viz-status-dot"></span><span class="viz-status-label"></span></span>' +
     (showSource ? '<button type="button" class="viz-btn viz-btn-source" title="View source" aria-label="View source" data-viz-card="' + cardId + '">' +
       VIZ_ICON_SOURCE + '</button>' : '') +
@@ -172,8 +290,40 @@ function vizErrorHtml(message, source) {
     '<span class="viz-error-icon">!</span>' +
     '<span class="viz-error-msg">' + msg + '</span>' +
     '<button type="button" class="viz-error-btn">Show source</button>' +
+    '<button type="button" class="viz-error-fix">Fix with AI</button>' +
     '<pre class="viz-error-source" hidden>' + src + '</pre>' +
   '</div>';
+}
+
+/* P_viz-fix-loop — feed a client-side render failure back to the
+   model. The banner's own text + the card's source attribute are
+   everything the model needs; it still has the original block in
+   context. The prompt rides the existing `tool-retry` CustomEvent
+   (detail.prompt) so no new wiring is needed — the live-turn
+   listener in liveTurn.js/streamingTurn.js sends it as the next
+   user-turn message. */
+function vizRepairPrompt(card, errMsg) {
+  var iframe = card && card.querySelector('iframe');
+  var src = iframe ? (iframe.getAttribute('data-source') || '') : '';
+  if (!src) {
+    var pre = card && card.querySelector('.viz-error-source');
+    src = pre ? pre.textContent : '';
+  } else {
+    src = decodeSrcdoc(src);
+  }
+  var prompt = 'A visualization block in your previous answer failed to render in the client'
+    + (errMsg ? ': "' + String(errMsg).slice(0, 300) + '"' : '')
+    + '. Please rewrite it as a corrected self-contained fenced ```viz or ```html block — no external network resources, no <script> that depends on globals.';
+  if (src) prompt += '\nFailing source (truncated):\n' + src.slice(0, 1200);
+  return prompt;
+}
+
+function dispatchVizRepair(card, errMsg) {
+  if (!card || typeof card.dispatchEvent !== 'function') return;
+  card.dispatchEvent(new CustomEvent('tool-retry', {
+    bubbles: true,
+    detail: { tool: 'viz_block', prompt: vizRepairPrompt(card, errMsg) },
+  }));
 }
 
 function vizLoadingHtml() {
@@ -190,13 +340,25 @@ function validMermaid(code) {
    mermaid.parse. The id is derived from the content hash, so a known-good
    id never needs re-validating. */
 var _mermaidChecked = Object.create(null);
+var _mermaidCheckedCount = 0;
+/* The cache is keyed by content hash and grows with every distinct
+   diagram a session produces. It's a pure memo — past the cap, reset
+   it; the worst case is one redundant mermaid.parse per diagram. */
+var MERMAID_CHECKED_MAX = 500;
 
 export function renderMermaid(code, opts) {
   opts = opts || {};
   var stableId = opts.stableId;
   if (typeof mermaid !== "undefined" && !(stableId && _mermaidChecked[stableId] === 'ok')) {
     var ok = validMermaid(code);
-    if (stableId) _mermaidChecked[stableId] = ok ? 'ok' : 'bad';
+    if (stableId) {
+      if (_mermaidCheckedCount >= MERMAID_CHECKED_MAX) {
+        _mermaidChecked = Object.create(null);
+        _mermaidCheckedCount = 0;
+      }
+      _mermaidChecked[stableId] = ok ? 'ok' : 'bad';
+      _mermaidCheckedCount++;
+    }
     if (!ok) {
       return '<div class="viz" data-viz-state="error"><div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
     }
@@ -396,6 +558,9 @@ export function renderViz(htmlStr, opts) {
     '</head><body>' + guardUserScripts(cleaned, id) + vizRuntime(id) + '</body></html>';
   var srcdoc = encodeSrcdoc(doc);
   var bodyHtml =
+    /* Code pane — shown when the card's data-viz-view="code". Lives
+       inside .viz-body so error banners stay visible in both views. */
+    '<pre class="viz-code-pane"><code class="language-html">' + esc(cleaned) + '</code></pre>' +
     vizLoadingHtml() +
     '<iframe data-source="' + encodeSrcdoc(cleaned) + '" data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
     '" sandbox="allow-scripts" title="Canvas" ' +
@@ -405,8 +570,8 @@ export function renderViz(htmlStr, opts) {
     _pendingViz.push({ id: id });
   }
   queueVizActions(id);
-  return '<div class="viz" id="' + id + '" data-viz-state="loading" data-title="' + esc(title) + '">' +
-    vizActions(id, true) +
+  return '<div class="viz" id="' + id + '" data-viz-state="loading" data-viz-view="' + _vizViewPref + '" data-title="' + esc(title) + '">' +
+    vizActions(id, true, true) +
     '<div class="viz-body">' + bodyHtml + '</div>' +
   '</div>';
 }
@@ -578,6 +743,16 @@ export function renderPlot(spec, opts) {
 var _pendingReady = Object.create(null);
 var _vizCards = Object.create(null);
 var VIZ_MAX_WAIT_MS = 5000;
+/* Grace window after the parent pings the iframe: vizRuntime answers
+   viz-ping with a fresh viz-ready almost instantly, so a short wait
+   is enough — long enough to cover a still-parsing huge srcdoc, short
+   enough that a truly dead card doesn't linger. */
+var VIZ_PING_WAIT_MS = 800;
+/* Height bounds applied to viz-ready and viz-resize reports. The
+   iframe is width-constrained by the card; the cap keeps a runaway
+   document from producing a kilometre-tall card. */
+var VIZ_IFRAME_MIN_H = 60;
+var VIZ_IFRAME_MAX_H = 2400;
 
 export function processPendingViz(root) {
   /* A React-owned message may be recreated from already-rendered HTML.
@@ -612,6 +787,7 @@ export function processPendingViz(root) {
          iframe/card pair and leave the visible replacement loading. */
       if (existing.card === el && existing.iframe === iframe && el.isConnected) return;
       clearTimeout(existing.maxTimer);
+      if (existing.pingTimer) clearTimeout(existing.pingTimer);
       delete _pendingReady[item.id];
       delete _vizCards[item.id];
     }
@@ -622,6 +798,7 @@ export function processPendingViz(root) {
     var entry = {
       iframe: iframe,
       card: el,
+      pingTimer: 0,
       maxTimer: setTimeout(function () {
         // Max wait expired without a viz-ready message. This
         // usually means the iframe never finished loading
@@ -637,48 +814,49 @@ export function processPendingViz(root) {
         // surfaces the error to them with full intent. We never
         // re-enter `loading` state from a timeout.
         //
-        // P_viz-timeout-only-on-empty — only show the warning
-        // banner when the iframe actually appears blank. Many
-        // user canvases post viz-ready synchronously inside
-        // DOMContentLoaded, which races the parent listener and
-        // can lose the message if the parent subscribed after
-        // the post. A successful render should not be downgraded
-        // to "Needs attention" just because our handshake missed
-        // the post.
+        // P_viz-ping-ack — replaces the old iframeIsBlank DOM
+        // probe, which read iframe.contentWindow.document — an
+        // opaque-origin access that always throws under
+        // sandbox="allow-scripts", so the "already rendered"
+        // escape hatch it was meant to provide never actually
+        // worked. Instead we ASK the iframe: vizRuntime answers
+        // viz-ping with a fresh viz-ready, which lands on the
+        // normal _markReady path. Only silence after a grace
+        // window earns the warning banner.
         var card = entry.card;
         if (!card || card.getAttribute('data-viz-state') === 'ready') return;
         if (!card.isConnected) return;
-        if (!iframeIsBlank(iframe)) {
-          card.setAttribute('data-viz-state', 'ready');
+        try { iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'viz-ping', vizId: item.id }, '*'); }
+        catch (_) { /* cannot even post → the grace window lapses into the banner */ }
+        entry.pingTimer = setTimeout(function () {
+          // A ping answer arrives as an ordinary viz-ready; if the
+          // card flipped state in the meantime, stand down.
+          if (card.getAttribute('data-viz-state') === 'ready') return;
+          if (!card.isConnected) return;
+          card.setAttribute('data-viz-state', 'error');
+          var body = card.querySelector('.viz-body');
+          if (body) {
+            // Keep the iframe mounted so the user can see what
+            // was rendered (it might be partially done) but show
+            // a thin warning bar.
+            var banner = document.createElement('div');
+            banner.className = 'viz-error';
+            banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">Canvas took too long to render</span>' +
+              '<button type="button" class="viz-error-btn">Show source</button>' +
+              '<button type="button" class="viz-error-fix">Fix with AI</button>' +
+              '<pre class="viz-error-source" hidden>' + esc(iframe.getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
+            // Insert banner ABOVE the iframe
+            if (iframe.parentNode === body) body.insertBefore(banner, iframe);
+            // Bind the buttons immediately. The card self-binds;
+            // there is no global data-action scan anymore.
+            _bindAction(banner.querySelector('.viz-error-btn'));
+            _bindAction(banner.querySelector('.viz-error-fix'));
+          }
           _rememberLiveVizCard(item.id, card);
           _hideLoading(card);
-          clearTimeout(entry.maxTimer);
           delete _pendingReady[item.id];
           delete _vizCards[item.id];
-          return;
-        }
-        card.setAttribute('data-viz-state', 'error');
-        var body = card.querySelector('.viz-body');
-        if (body) {
-          // Keep the iframe mounted so the user can see what
-          // was rendered (it might be partially done) but show
-          // a thin warning bar.
-          var banner = document.createElement('div');
-          banner.className = 'viz-error';
-          banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">Canvas took too long to render</span>' +
-            '<button type="button" class="viz-error-btn">Show source</button>' +
-            '<pre class="viz-error-source" hidden>' + esc(iframe.getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
-          // Insert banner ABOVE the iframe
-          if (iframe.parentNode === body) body.insertBefore(banner, iframe);
-          // Bind the toggle-source button immediately. The card
-          // self-binds; there is no global data-action scan anymore.
-          _bindAction(banner.querySelector('.viz-error-btn'));
-        }
-        _rememberLiveVizCard(item.id, card);
-        _hideLoading(card);
-        clearTimeout(entry.maxTimer);
-        delete _pendingReady[item.id];
-        delete _vizCards[item.id];
+        }, VIZ_PING_WAIT_MS);
       }, VIZ_MAX_WAIT_MS),
       ready: false,
     };
@@ -695,27 +873,6 @@ function _hideLoading(card) {
   if (loading) loading.style.display = 'none';
 }
 
-/* P_viz-blank-probe — best-effort check that the iframe has
-   actually rendered something. Under `sandbox="allow-scripts"`
-   (no `allow-same-origin`) the parent cannot read the
-   contentDocument, so we can only inspect attributes and the
-   intrinsic sizing. If the iframe still reports its declared
-   min-height and no inner content hints, it's reasonable to
-   assume it's blank. This is heuristic, not authoritative —
-   the goal is to avoid downgrading a successful-but-uncounted
-   render to "Needs attention". */
-function iframeIsBlank(iframe) {
-  if (!iframe) return true;
-  var h = parseInt(iframe.style.height, 10);
-  if (h && h > 32) return false;
-  if (iframe.dataset && iframe.dataset.ready === 'true') return false;
-  var cs;
-  try { cs = iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.body; }
-  catch (_) { return true; }
-  if (!cs) return true;
-  return !cs || (cs.childElementCount === 0 && (!cs.textContent || !cs.textContent.trim()));
-}
-
 function _markReady(id) {
   var entry = _pendingReady[id];
   if (!entry) return;
@@ -723,6 +880,7 @@ function _markReady(id) {
   if (!card) { delete _pendingReady[id]; return; }
   if (card.getAttribute('data-viz-state') === 'ready') {
     clearTimeout(entry.maxTimer);
+    if (entry.pingTimer) clearTimeout(entry.pingTimer);
     delete _pendingReady[id];
     delete _vizCards[id];
     return;
@@ -731,11 +889,14 @@ function _markReady(id) {
   _rememberLiveVizCard(id, card);
   // If the iframe posted a height, adopt it so the card doesn't
   // show a fixed min-height when the content is shorter/longer.
+  // Clamped to the same bounds viz-resize uses so a pathological
+  // document can't grow a card without limit.
   if (entry.lastHeight && entry.lastHeight > 16) {
-    entry.iframe.style.height = entry.lastHeight + 'px';
+    entry.iframe.style.height = Math.min(Math.max(entry.lastHeight, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H) + 'px';
   }
   _hideLoading(card);
   clearTimeout(entry.maxTimer);
+  if (entry.pingTimer) clearTimeout(entry.pingTimer);
   delete _pendingReady[id];
   delete _vizCards[id];
 }
@@ -760,15 +921,45 @@ function _markError(id, message) {
     banner.className = 'viz-error';
     banner.innerHTML = '<span class="viz-error-icon">!</span><span class="viz-error-msg">' + esc(message || 'Canvas failed to render') + '</span>' +
       '<button type="button" class="viz-error-btn">Show source</button>' +
+      '<button type="button" class="viz-error-fix">Fix with AI</button>' +
       '<pre class="viz-error-source" hidden>' + esc((entry && entry.iframe && entry.iframe.getAttribute('data-srcdoc')) || card.querySelector('iframe') && card.querySelector('iframe').getAttribute('data-srcdoc') || '').slice(0, 2000) + '</pre>';
     var iframeEl = entry && entry.iframe;
     if (!iframeEl) iframeEl = card.querySelector('iframe');
     if (iframeEl && iframeEl.parentNode === body) body.insertBefore(banner, iframeEl);
     _bindAction(banner.querySelector('.viz-error-btn'));
+    _bindAction(banner.querySelector('.viz-error-fix'));
   }
   if (entry && entry.maxTimer) clearTimeout(entry.maxTimer);
+  if (entry && entry.pingTimer) clearTimeout(entry.pingTimer);
   delete _pendingReady[id];
   delete _vizCards[id];
+}
+
+/* P_viz-source-check — viz ids are predictable (`viz-card-N`), so
+   without sender validation any iframe posting {type:'viz-ready',
+   vizId:'viz-card-3'} could flip a foreign card's state. contentWindow
+   identity can't be forged, so we resolve the SENDER's iframe and use
+   its id — the claimed vizId in the payload is ignored entirely.
+   Cards that finished the handshake live in _liveVizCards; their
+   iframes still legitimately post viz-resize and late viz-error. */
+function _vizSenderFrame(source) {
+  if (!source) return null;
+  var id, entry;
+  for (id in _pendingReady) {
+    entry = _pendingReady[id];
+    if (entry && entry.iframe && entry.iframe.contentWindow === source) return { id: id, iframe: entry.iframe };
+  }
+  for (id in _vizCards) {
+    entry = _vizCards[id];
+    if (entry && entry.iframe && entry.iframe.contentWindow === source) return { id: id, iframe: entry.iframe };
+  }
+  var hit = null;
+  _liveVizCards.forEach(function (card, cardId) {
+    if (hit) return;
+    var iframe = card && card.querySelector ? card.querySelector('iframe') : null;
+    if (iframe && iframe.contentWindow === source) hit = { id: cardId, iframe: iframe };
+  });
+  return hit;
 }
 
 var _msgListenerInstalled = false;
@@ -778,19 +969,30 @@ function _ensureMessageListener() {
   window.addEventListener('message', function (ev) {
     var data = ev && ev.data;
     if (!data || typeof data !== 'object') return;
-    if (data.type === 'viz-ready') {
-      var id = data.vizId;
-      var entry = id && _pendingReady[id];
+    var type = data.type;
+    if (type !== 'viz-ready' && type !== 'viz-error' && type !== 'viz-resize') return;
+    var sender = _vizSenderFrame(ev.source);
+    if (!sender) return;
+    var id = sender.id;
+    if (type === 'viz-ready') {
+      var entry = _pendingReady[id];
       if (!entry) return;
       entry.lastHeight = data.h || 0;
       if (!entry.ready) {
         entry.ready = true;
-        clearTimeout(entry.maxTimer);
         _markReady(id);
       }
-    } else if (data.type === 'viz-error') {
-      var id2 = data.vizId;
-      _markError(id2, data.message);
+    } else if (type === 'viz-error') {
+      _markError(id, data.message);
+    } else if (type === 'viz-resize') {
+      var h = Number(data.h);
+      if (!isFinite(h)) return;
+      var clamped = Math.min(Math.max(h, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H);
+      sender.iframe.style.height = clamped + 'px';
+      /* A pending card keeps lastHeight current so a viz-ready
+         arriving later doesn't snap the iframe back to a stale size. */
+      var pending = _pendingReady[id];
+      if (pending) pending.lastHeight = clamped;
     }
   });
 }
@@ -1007,7 +1209,7 @@ export function processPendingVizActions(root) {
      so bind only actions within the supplied message body. Calls without a
      root keep the pending-queue-only behavior and never scan the document. */
   if (root && typeof root.querySelectorAll === 'function') {
-    var rootActions = root.querySelectorAll('.viz .viz-btn, .viz .viz-error-btn');
+    var rootActions = root.querySelectorAll('.viz .viz-btn, .viz .viz-error-btn, .viz .viz-seg-btn');
     for (var ri = 0; ri < rootActions.length; ri++) _bindAction(rootActions[ri]);
   }
   var pending = _pendingActions;
@@ -1018,7 +1220,7 @@ export function processPendingVizActions(root) {
 function _bindActionsInCard(item) {
   var el = document.getElementById(item && item.id);
   if (!el) return;
-  var actions = el.querySelectorAll('.viz-btn, .viz-error-btn');
+  var actions = el.querySelectorAll('.viz-btn, .viz-error-btn, .viz-error-fix, .viz-seg-btn');
   for (var i = 0; i < actions.length; i++) _bindAction(actions[i]);
 }
 
@@ -1031,6 +1233,8 @@ function _bindAction(el) {
     : el.classList.contains('viz-btn-source') ? 'viz-source'
     : el.classList.contains('viz-btn-expand') ? 'viz-expand'
     : el.classList.contains('viz-error-btn') ? 'viz-toggle-source'
+    : el.classList.contains('viz-error-fix') ? 'viz-fix'
+    : el.classList.contains('viz-seg-btn') ? 'viz-set-view'
     : el.getAttribute('data-action');
   if (act === 'viz-reload') {
     el.addEventListener('click', function (ev) {
@@ -1063,8 +1267,36 @@ function _bindAction(el) {
   } else if (act === 'viz-toggle-source') {
     el.addEventListener('click', function (ev) {
       ev.preventDefault();
-      var n = el.nextElementSibling;
+      /* The banner may carry extra buttons between the toggle and the
+         <pre> (e.g. viz-error-fix), so resolve the source block by
+         class inside the banner rather than nextElementSibling. */
+      var banner = el.closest('.viz-error');
+      var n = (banner && banner.querySelector('.viz-error-source')) || el.nextElementSibling;
       if (n) n.hidden = !n.hidden;
+    });
+  } else if (act === 'viz-fix') {
+    el.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var banner = el.closest('.viz-error');
+      var card = el.closest('.viz');
+      var msgEl = banner && banner.querySelector('.viz-error-msg');
+      dispatchVizRepair(card, msgEl ? msgEl.textContent : '');
+    });
+  } else if (act === 'viz-set-view') {
+    el.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var cardId = el.getAttribute('data-viz-card');
+      var c = cardId && document.getElementById(cardId);
+      if (!c) return;
+      var view = el.getAttribute('data-viz-view-opt') === 'code' ? 'code' : 'preview';
+      c.setAttribute('data-viz-view', view);
+      var segs = c.querySelectorAll('.viz-seg-btn');
+      for (var si = 0; si < segs.length; si++) {
+        segs[si].classList.toggle('is-on', segs[si].getAttribute('data-viz-view-opt') === view);
+      }
+      _vizViewPref = view;
+      try { localStorage.setItem('socrates-viz-view', view); } catch (_) { /* ignore */ }
     });
   } else if (act === 'viz-close-modal') {
     el.addEventListener('click', function (ev) {
@@ -1084,6 +1316,7 @@ function reloadVizCard(card) {
     delete _pendingReady[card.id];
   }
   if (card.id) delete _vizCards[card.id];
+  card.removeAttribute('data-viz-parked');
   card.setAttribute('data-viz-state', 'loading');
   var oldError = card.querySelector('.viz-error');
   if (oldError) oldError.remove();
