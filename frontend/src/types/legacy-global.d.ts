@@ -22,6 +22,7 @@ type StateStoreAction =
   | { type: 'state/patch-namespace'; namespace: string; patch?: Record<string, unknown> }
   | { type: 'state/reset' }
   | { type: 'session/append-message'; payload: unknown }
+  | { type: 'session/append-turn'; payload: [unknown, unknown] }
   | { type: 'session/replace-messages'; payload: unknown[] }
   | {
       type: 'session/update-message';

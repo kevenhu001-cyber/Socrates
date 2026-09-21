@@ -55,6 +55,7 @@ export type SessionAction =
   | { type: 'session/patch'; patch: Partial<SessionState> }
   | { type: 'session/reset' }
   | { type: 'session/append-message'; payload: ChatMessageShape }
+  | { type: 'session/append-turn'; payload: [ChatMessageShape, ChatMessageShape] }
   | { type: 'session/replace-messages'; payload: ChatMessageShape[] }
   | {
       type: 'session/update-message';
@@ -80,6 +81,11 @@ function sessionReducer(
       return { ...createInitialSessionState(), revision: state.revision };
     case 'session/append-message': {
       const messages = state.messages.concat([action.payload]);
+      return { ...state, messages };
+    }
+    case 'session/append-turn': {
+      if (!Array.isArray(action.payload) || action.payload.length !== 2) return state;
+      const messages = state.messages.concat(action.payload);
       return { ...state, messages };
     }
     case 'session/replace-messages': {

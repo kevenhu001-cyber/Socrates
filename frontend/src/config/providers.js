@@ -184,8 +184,10 @@ async function refreshApiConfig() {
     try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (_) {}
     return apiConfig;
   }
+  var ownerId = CURRENT_USER && CURRENT_USER.id;
   try {
     var r = await window.apiFetch("/api/api-key");
+    if (!window.CURRENT_USER || window.CURRENT_USER.id !== ownerId) return apiConfig;
     /* The API deliberately never returns plaintext keys.  Normalise its
        safe wire shape once at the boundary so the rest of the UI can keep
        using the established provider contract (`vision`, masked `key`).
@@ -246,6 +248,7 @@ async function refreshApiConfig() {
     try { if (typeof window.syncEffortUI === "function") window.syncEffortUI(); } catch (_) {}
     return apiConfig;
   } catch {
+    if (!window.CURRENT_USER || window.CURRENT_USER.id !== ownerId) return apiConfig;
     apiConfig.activeId = null;
     apiConfig.providers = [];
     try { if (typeof window.markProvidersFetched === "function") window.markProvidersFetched(); } catch (_) {}

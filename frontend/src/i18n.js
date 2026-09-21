@@ -2032,10 +2032,22 @@ var I18N={
   },
 };
 var _currentLang="zh";
+var _chineseFontPromise=null;
+function ensureChineseFont(){
+  if(typeof document==="undefined")return Promise.resolve();
+  if(!_chineseFontPromise){
+    _chineseFontPromise=import("./styles/noto-sc.css").catch(function(err){
+      _chineseFontPromise=null;
+      console.warn("Unable to load Chinese font bundle",err);
+    });
+  }
+  return _chineseFontPromise;
+}
 function t(key){var v=I18N[_currentLang]&&I18N[_currentLang][key];if(typeof v!=="undefined")return v;v=I18N.en[key];if(typeof v!=="undefined")return v;return key;}
 function setLang(lang){
   if(!I18N[lang])return;
   _currentLang=lang;
+  if(lang==="zh")void ensureChineseFont();
   window._currentLang=lang;
   try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(_){}
   try{localStorage.setItem("socrates-lang-app",lang)}catch(_){}
@@ -2225,6 +2237,7 @@ try{
   var lbl=document.getElementById("langToggleLabel");
   if(lbl)lbl.textContent=_currentLang==="en"?"EN":"中";
   document.documentElement.lang=_currentLang==="zh"?"zh":"en";
+  if(_currentLang==="zh")void ensureChineseFont();
   applyI18n();
 }catch(_){}
 

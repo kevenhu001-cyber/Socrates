@@ -167,6 +167,12 @@ var stateStore = (function () {
         dispatchToNamespace('session', { type: action.type, payload: action.payload });
         result = sessionBridge.getSnapshot().messages.length - 1;
         break;
+      case 'session/append-turn': {
+        var turnStart = sessionBridge.getSnapshot().messages.length;
+        dispatchToNamespace('session', { type: action.type, payload: action.payload });
+        result = [turnStart, turnStart + 1];
+        break;
+      }
       case 'session/replace-messages':
         dispatchToNamespace('session', { type: action.type, payload: action.payload });
         result = sessionBridge.getSnapshot().messages;

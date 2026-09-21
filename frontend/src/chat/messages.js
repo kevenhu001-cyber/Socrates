@@ -50,7 +50,13 @@ function _deferPostCommit(fn) {
   setTimeout(_flushPostCommit, 0);
 }
 
-export function addMessage(role, text, type, actions, attachmentsArg) {
+function _deferAfterPaint(fn) {
+  if (typeof requestAnimationFrame !== 'function') return _deferPostCommit(fn);
+  requestAnimationFrame(function () { setTimeout(fn, 0); });
+}
+
+export function addMessage(role, text, type, actions, attachmentsArg, internalOptions) {
+  internalOptions = internalOptions || {};
   /* User sending a message = explicitly wants to follow the conversation. */
   if (role === 'user') {
     streamRetryViewport.clearPendingViewport();
@@ -81,7 +87,12 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
        turns). User messages keep whatever the user typed. */
     _displaySource = stripCitationMarkers(_displaySource);
   }
-  if (role === 'assistant' && /<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(_displaySource)) {
+  if (role === 'user') {
+    /* The React row renders rawText as an escaped text node for its first
+       paint. Markdown parsing and DOMPurify are deliberately kept out of the
+       send interaction; the sanitized HTML replaces it after that paint. */
+    html = null;
+  } else if (role === 'assistant' && /<(quiz|example|practice|definition|step|flashcard|proof|theorem|key-point|derivation)\b/i.test(_displaySource)) {
     try { html = _renderAssistantHtml(_displaySource); } catch (_) { html = formatMsg(_displaySource); }
   } else {
     html = formatMsg(_displaySource);
@@ -96,8 +107,36 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
    * shape persistMessageList() expects. */
   var atts = Array.isArray(attachmentsArg) ? attachmentsArg.slice(0, 20) : [];
   var entry = { clientId: clientId, role: role, rawText: String(text || ''), html: html, type: type || null, actions: actions || null, modelInfo: modelInfo, attachments: atts };
-  stateStore.dispatch({ type: 'session/append-message', payload: entry });
-  publishReactChatRuntime({ type: 'message-added', messageId: clientId });
+  if (!internalOptions.deferAppend) {
+    stateStore.dispatch({ type: 'session/append-message', payload: entry });
+  }
+  /* First-turn persistence used to build and serialize the entire session in
+     this click task solely so the following assistant placeholder could own a
+     stable id. Allocate that id synchronously, then leave the expensive save
+     payload and network work to the post-paint queue below. */
+  if (role === 'user' && !stateStore.read('currentSessionId') &&
+      stateStore.read('topic') && typeof window !== 'undefined' && window.CURRENT_USER) {
+    stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: generateId() });
+  }
+  var postCommitStarted = false;
+  function runPostCommit(publish) {
+    if (postCommitStarted) return;
+    postCommitStarted = true;
+    if (publish) publishReactChatRuntime({ type: 'message-added', messageId: clientId });
+    if (role === 'user' && _displaySource) _deferAfterPaint(function () {
+      var messages = stateStore.read('messages');
+      var index = messages.findIndex(function (message) { return message && message.clientId === clientId; });
+      if (index < 0) return;
+      var formatted;
+      try { formatted = formatMsg(_displaySource); } catch (_) { return; }
+      stateStore.dispatch({
+        type: 'session/update-message', index: index, clientId: clientId,
+        patch: { html: formatted },
+      });
+      publishReactChatRuntime({ type: 'message-updated', messageId: clientId });
+    });
+    _deferPostCommit(bookkeeping);
+  }
 
   /* React owns the visible message list — the state push above is the
      authoritative write and React re-renders from the snapshot. The
@@ -127,8 +166,18 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
       }
     } catch (_) {}
   };
-  if (stateStore.read('currentSessionId')) _deferPostCommit(bookkeeping);
-  else bookkeeping();
+  if (internalOptions.deferAppend) {
+    return {
+      clientId: clientId,
+      entry: entry,
+      commitPaired: function () { runPostCommit(false); },
+      commitFallback: function () {
+        stateStore.dispatch({ type: 'session/append-message', payload: entry });
+        runPostCommit(true);
+      },
+    };
+  }
+  runPostCommit(true);
   /* Return the clientId so callers (e.g. startSession) can patch this
      entry in place once async work like buildMessageContent finishes —
      without re-running the side effects above. */

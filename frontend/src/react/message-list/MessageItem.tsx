@@ -199,6 +199,11 @@ function MessageItemBase({ message, textLength }: MessageItemProps) {
           canvasId={message.canvasId}
           originalText={typeof message.rawText === 'string' ? message.rawText : ''}
         />
+      ) : role === 'user' && !html ? (
+        /* Optimistic sends avoid Markdown/DOMPurify in the click task. React
+           escapes this text node; messages.js upgrades it to sanitized HTML
+           after the first paint. */
+        <div className="msg-body">{message.rawText ?? ''}</div>
       ) : declarative ? (
         /* A turn that fired tools lays out from toolCalls[], not from the
            html string that used to carry a second copy of those rows.

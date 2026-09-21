@@ -48,6 +48,10 @@ const CSRF_COOKIE_VALUE = 'smoke-csrf-token';
  * matches the LAST registered route. We register the broad fallback LAST.
  */
 export async function mockAuthedApp(page, options = {}) {
+  const hydrationDelayMs = Number(options.hydrationDelayMs) || 0;
+  const delayHydration = () => hydrationDelayMs > 0
+    ? new Promise((resolve) => setTimeout(resolve, hydrationDelayMs))
+    : Promise.resolve();
   // Existing specs assume a first-visit consent banner is not in the way.
   // Cookie-consent specs can opt out with { consent: false }.
   if (options.consent !== false) {
@@ -110,6 +114,7 @@ export async function mockAuthedApp(page, options = {}) {
     }
     if (apiUrl.includes('/api/sessions')) {
       if (req.method() === 'GET') {
+        await delayHydration();
         await route.fulfill(jsonResponse(MOCK_SESSIONS));
       } else {
         await route.fulfill(jsonResponse({ session: { id: 'smoke-saved-1' } }));
@@ -117,10 +122,16 @@ export async function mockAuthedApp(page, options = {}) {
       return;
     }
     if (apiUrl.includes('/api/api-key')) {
+      await delayHydration();
       await route.fulfill(jsonResponse(MOCK_API_KEYS));
       return;
     }
-    if (apiUrl.includes('/api/memories') || apiUrl.includes('/api/usage') ||
+    if (apiUrl.includes('/api/memory')) {
+      await delayHydration();
+      await route.fulfill(jsonResponse([]));
+      return;
+    }
+    if (apiUrl.includes('/api/usage') ||
         apiUrl.includes('/api/projects') || apiUrl.includes('/api/share') ||
         apiUrl.includes('/api/mistakes')) {
       await route.fulfill(jsonResponse({ items: [], list: [], count: 0, ok: true }));

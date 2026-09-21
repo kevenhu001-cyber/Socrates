@@ -74,6 +74,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Initial asset budgets
+        run: npm run test:perf-budget
+
       - name: Unit tests
         run: npm run test:unit
 

@@ -232,12 +232,15 @@ function syncProfileLangToggle() {
 function loadUserMemories() {
   window._userMemories = [];
   if (!window.CURRENT_USER) return Promise.resolve();
+  var ownerId = window.CURRENT_USER && window.CURRENT_USER.id;
   try {
     return window.apiFetch("/api/memory", { _authEndpoint: true }).then(function (r) {
+      if (!window.CURRENT_USER || window.CURRENT_USER.id !== ownerId) return;
       if (r && Array.isArray(r)) {
         window._userMemories = r.filter(function (m) { return m.enabled !== false; }).map(function (m) { return m.text; });
       }
     }).catch(function () {
+      if (!window.CURRENT_USER || window.CURRENT_USER.id !== ownerId) return;
       console.log("[memories] load failed");
       window._userMemories = [];
     });

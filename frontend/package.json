@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "test:perf-budget": "node scripts/check-performance-budget.mjs",
     "build:wasm": "node scripts/build-wasm.mjs",
     "lint": "tsc --noEmit",
     "lint:eslint": "eslint src",

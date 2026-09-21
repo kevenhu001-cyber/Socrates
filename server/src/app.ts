@@ -747,10 +747,19 @@ app.use(express.static(FRONTEND_DIST, {
   index: false,
   fallthrough: true,
   maxAge: '1h',
+  setHeaders(res, filePath) {
+    /* Vite content-hashes every production asset, so these files are safe to
+       cache indefinitely. HTML remains outside this handler (`index:false`)
+       and is explicitly no-cache below, allowing instant rollbacks. */
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
 }));
 // SPA fallback: any non-/api GET that didn't match a static file
 // returns index.html so client-side routing keeps working.
 app.get(/^\/(?!api\/).*/, (_req, res, next) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(FRONTEND_DIST, 'index.html'), (err) => {
     if (err) next(err);
   });
