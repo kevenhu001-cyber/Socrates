@@ -176,7 +176,7 @@ export const CODE_INTERPRETER_TOOL = {
       '- **Indentation must form valid compound statements.** Every `def`, `for`, `if`, `try`, `with`, `while`, `class` needs a properly indented body. Empty bodies need `pass` or `...`.\n' +
       `- **Never call \`input()\`.** There is no stdin — it blocks until the ${DEFAULT_TIMEOUT_MS / 1000}s timeout. Pass data as a literal, read from a file in \`/artifacts\`, or generate it inline.\n` +
       '- **Never call `plt.show()`.** matplotlib is pinned to `Agg` (no GUI). Use `plt.savefig("name.png", ...)` and the file will be returned as an artifact.\n' +
-      '- **Never use `pip install`.** This is WASM; no `subprocess`, no network. Use `import micropip; micropip.install("pkg")` at the top of the run. Pyodide ships numpy, pandas, matplotlib, seaborn pre-installed.\n' +
+      '- **Packages:** packages in the Pyodide distribution (numpy, pandas, matplotlib, scipy, sympy, scikit-learn, statsmodels, networkx, pillow, …) auto-install on `import` — just import them. For a PyPI-only pure-Python wheel use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` — micropip is async, so a bare `micropip.install(...)` call installs nothing. Never call `pip install` — there is no `subprocess`.\n' +
       '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the per-turn tool-call budget (stated in the native-tool contract) is finite.\n\n' +
       '## When to call\n' +
       '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
@@ -206,7 +206,7 @@ export const CODE_INTERPRETER_TOOL = {
       '## Common errors and how to recover\n' +
       '- `SyntaxError` (any kind) → check indentation and module-level syntax. In particular, keep `await` inside an `async def` invoked with `asyncio.run(...)`.\n' +
       '- `NameError: name X is not defined` → X was a variable from a previous run. Recompute it in THIS run, do not just re-call.\n' +
-      '- `ModuleNotFoundError` → install with `import micropip; micropip.install("pkg")` at the top of the run.\n' +
+      '- `ModuleNotFoundError` → the package is not in the Pyodide distribution. Install a pure-Python PyPI wheel with `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` at the top of the same run, then retry the import.\n' +
       '- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.\n' +
       '- `output_limit_exceeded` → stdout was too verbose. Save the data to a file, print a summary, describe the summary.\n' +
       '- `timeout` (status field) → the work exceeded the time budget. Split into smaller runs or pre-compute what you can.\n' +
@@ -986,9 +986,18 @@ async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
   const finalStatus = result.status || 'failed';
   const finalArtifactCount = artifactFileIds.length;
 
+  /* P_syntax-no-quota — a compile-time rejection (SyntaxError /
+     IndentationError / TabError) never executed user code, so the
+     row is persisted as 'rejected' instead of 'failed'. The daily
+     quota count in the chat executor excludes 'rejected' rows:
+     the model shouldn't burn the user's execution budget on a
+     parse error it can fix for free. The row is kept (not deleted)
+     so execution history and audit still show the attempt. */
+  const persistedStatus = result.errorCode === 'syntax_error' ? 'rejected' : finalStatus;
+
   // Update the execution row.
   await db.update(executions).set({
-    status: finalStatus,
+    status: persistedStatus,
     exitCode: result.exitCode ?? null,
     durationMs: result.durationMs ?? null,
     stdout: (result.stdout || '').slice(0, MAX_OUTPUT_BYTES),

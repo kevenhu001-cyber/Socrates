@@ -23,5 +23,6 @@ This appendix is active only when the server includes `code_interpreter` in the 
   ```
 
 - There is no stdin or shell. Do not use `input()`, `subprocess`, or `plt.show()`. Save figures with `plt.savefig(...)`.
+- Packages in the Pyodide distribution (numpy, pandas, matplotlib, scipy, sympy, scikit-learn, networkx, pillow, …) auto-install on `import` — just import them. For a PyPI-only pure-Python wheel, run `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` in the same call.
 - Files written in `/artifacts` persist for this conversation. Read the `[scratch]` listing emitted by the runner before guessing a path. Imports, variables, and function definitions reset between calls, so recompute them in each call.
 - If execution fails, follow the structured error and retry only with a materially corrected call when it is marked retryable. Do not repeat an identical call.

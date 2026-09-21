@@ -848,17 +848,14 @@ body,
   color: var(--cg-text);
 }
 
-#composerToolsMenu .composer-tools-item,
-#composerToolsMenu .composer-tools-more-toggle {
+#composerToolsMenu .composer-tools-item{
   min-height: 42px;
   border-radius: 10px;
   color: var(--cg-text-secondary);
 }
 
 #composerToolsMenu .composer-tools-item:hover,
-#composerToolsMenu .composer-tools-item:focus-visible,
-#composerToolsMenu .composer-tools-more-toggle:hover,
-#composerToolsMenu .composer-tools-more-toggle:focus-visible {
+#composerToolsMenu .composer-tools-item:focus-visible{
   color: var(--cg-text);
   background: var(--cg-surface-hover);
   outline: none;
@@ -870,8 +867,7 @@ body,
   border-top: 1px solid var(--cg-border);
 }
 
-.composer-tools-section-heading,
-.plugin-directory-section-heading,
+
 .scheduled-section-heading {
   display: flex;
   align-items: center;
@@ -882,8 +878,7 @@ body,
   font-weight: 600;
 }
 
-.composer-tools-section-heading > span:last-child,
-.plugin-directory-section-heading > span:last-child,
+
 .scheduled-section-heading > span:last-child {
   color: var(--cg-text-muted);
   font-size: 11px;
@@ -971,16 +966,9 @@ body,
   cursor: not-allowed;
 }
 
-.composer-tools-plugin-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 1px;
-}
 
-.composer-tools-plugin-name,
-.composer-tools-plugin-copy small {
+
+.composer-tools-plugin-name{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -992,22 +980,11 @@ body,
   font-weight: 550;
 }
 
-.composer-tools-plugin-copy small {
-  color: var(--cg-text-muted);
-  font-size: 10px;
-  line-height: 16px;
-}
 
-.composer-tools-plugin-status {
-  flex: 0 0 auto;
-  color: var(--cg-text-muted);
-  font-size: 10px;
-  white-space: nowrap;
-}
 
-.composer-tools-plugin-status.is-connected {
-  color: var(--cg-accent);
-}
+
+
+
 
 .composer-tools-plugin-state {
   padding: 18px 8px;
@@ -1144,10 +1121,8 @@ body.workspace-active #appShell .main-page {
   gap: 0;
 }
 
-body.workspace-active #appShell .main-page > .library-header,
-body.workspace-active #appShell .main-page > .spaces-header,
-body.workspace-active #appShell .main-page > .scheduled-header,
-body.workspace-active #appShell .main-page > .plugins-header {
+
+body.workspace-active #appShell .main-page > .scheduled-header{
   display: none;
 }
 
@@ -1158,8 +1133,7 @@ body.workspace-active #appShell .main-page > .workspace-intro {
 body.workspace-active #appShell .workspace-add-btn,
 body.workspace-active #appShell .workspace-primary,
 body.workspace-active #appShell .workspace-secondary,
-body.workspace-active #appShell .workspace-danger,
-body.workspace-active #appShell .plugin-directory-action {
+body.workspace-active #appShell .workspace-danger{
   border-radius: 10px;
   font-family: var(--cg-font);
 }
@@ -1173,15 +1147,13 @@ body.workspace-active #appShell .workspace-primary:hover {
   background: var(--cg-accent-strong);
 }
 
-body.workspace-active #appShell .workspace-secondary,
-body.workspace-active #appShell .plugin-directory-action {
+body.workspace-active #appShell .workspace-secondary{
   border: 1px solid var(--cg-border-strong);
   color: var(--cg-text-secondary);
   background: var(--cg-surface);
 }
 
-body.workspace-active #appShell .workspace-secondary:hover,
-body.workspace-active #appShell .plugin-directory-action:hover {
+body.workspace-active #appShell .workspace-secondary:hover{
   color: var(--cg-text);
   background: var(--cg-surface-hover);
 }
@@ -1220,38 +1192,13 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   line-height: 1.55;
 }
 
-.plugin-directory-back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--cg-border);
-  border-radius: 50%;
-  color: var(--cg-text-secondary);
-  background: transparent;
-  cursor: pointer;
-  transition: background-color .16s ease, border-color .16s ease;
-}
 
-.plugin-directory-back svg {
-  width: 18px;
-  height: 18px;
-}
 
-.plugin-directory-back:hover {
-  border-color: var(--cg-border-strong);
-  background: var(--cg-surface-hover);
-  color: var(--cg-text);
-}
 
-.plugin-directory-back:focus-visible {
-  outline: 2px solid var(--cg-accent);
-  outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
-  outline-offset: 2px;
-}
+
+
+
+
 
 .scheduled-directory-head {
   display: flex;
@@ -1435,41 +1382,17 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   margin-left: auto;
 }
 
-.plugin-directory-action {
-  min-height: 32px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 550;
-  white-space: nowrap;
-  cursor: pointer;
-}
 
-.plugin-directory-action:focus-visible {
-  outline: 2px solid var(--cg-accent);
-  outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
-  outline-offset: 2px;
-}
+
+
 
 /* Kimi-style quiet connected state: a bare accent checkmark instead of a
    text pill. The accessible label lives on the span (aria-label). */
-.plugin-directory-connected {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--cg-accent);
-  white-space: nowrap;
-}
 
-.plugin-directory-connected svg {
-  width: 19px;
-  height: 19px;
-}
 
-.plugin-directory-muted,
+
+
+
 .plugin-directory-note {
   color: var(--cg-text-muted);
   font-size: 12px;
@@ -1491,9 +1414,7 @@ body.workspace-active #appShell .plugin-directory-action:hover {
   text-align: center;
 }
 
-.plugin-directory-browse {
-  margin-top: 12px;
-}
+
 
 .plugin-directory-warning strong,
 .plugin-directory-empty strong {
@@ -1722,20 +1643,11 @@ body.workspace-active #appShell .plugin-directory-action:hover {
 
 /* Existing library/projects controls inherit the same page rhythm. */
 
-body.workspace-active #appShell .library-panel > .library-tabs,
-body.workspace-active #appShell .library-panel > .workspace-search {
-  display: none;
-}
 
-.library-tabs,
-.workspace-search {
-  margin-bottom: 12px;
-  padding-inline: 0;
-}
 
-.library-tabs {
-  border-bottom: 1px solid var(--cg-border);
-}
+
+
+
 
 .library-tab {
   min-height: 34px;
@@ -1748,14 +1660,7 @@ body.workspace-active #appShell .library-panel > .workspace-search {
   background: var(--cg-surface-hover);
 }
 
-.workspace-search input {
-  box-sizing: border-box;
-  height: 40px;
-  border: 1px solid var(--cg-border);
-  border-radius: 11px;
-  background: var(--cg-surface);
-  color: var(--cg-text);
-}
+
 
 body.workspace-active #appShell .workspace-row {
   border-bottom: 1px solid var(--cg-border);
@@ -1777,7 +1682,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
 .auth-card,
 .workspace-dialog-card,
-.confirm-card,
 .modal-card {
   border: 1px solid var(--cg-border-strong) !important;
   border-radius: 20px !important;
@@ -1962,9 +1866,7 @@ body.workspace-active #appShell .workspace-row:hover {
     overflow: visible;
   }
 
-  #appShell .home-ideas-label {
-    display: none !important;
-  }
+  
 
   #appShell #topicInputWrap:has(.composer-plugin-chips),
   #appShell #chatInputWrap:has(.composer-plugin-chips) {
@@ -2108,9 +2010,7 @@ body.workspace-active #appShell .workspace-row:hover {
     height: 22px;
   }
 
-  .plugin-directory-row-action .plugin-directory-action {
-    padding: 10px 20px;
-  }
+  
 
   .scheduled-filter-button {
     align-self: flex-start;
@@ -2364,52 +2264,17 @@ body.workspace-active #appShell .workspace-row:hover {
   letter-spacing: -.025em !important;
 }
 
-.topic-quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  width: min(100%, 768px);
-  margin: 20px auto 0;
-  padding: 0 8px;
-}
 
-.topic-quick-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 8px 16px;
-  border: 1px solid var(--cg-border);
-  border-radius: 999px;
-  color: var(--cg-text-secondary);
-  background: var(--cg-surface);
-  font: 500 13.5px/1.2 var(--cg-font);
-  cursor: pointer;
-  transition: color .16s ease, border-color .16s ease, background-color .16s ease, transform .12s ease;
-}
 
-.topic-quick-chip:hover {
-  color: var(--cg-text);
-  border-color: var(--cg-border-strong);
-  background: var(--cg-surface-hover);
-}
 
-.topic-quick-chip:active {
-  transform: scale(.97);
-}
 
-.topic-quick-chip:focus-visible {
-  outline: 2px solid var(--cg-accent);
-  outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
-  outline-offset: 2px;
-}
 
-.topic-quick-chip svg {
-  flex: 0 0 auto;
-  width: 15px;
-  height: 15px;
-}
+
+
+
+
+
+
 
 /* Two-zone idle composer (desktop). Same selector shape as the cascade
    guard so the later declaration wins without specificity games. The
@@ -2482,9 +2347,7 @@ body.workspace-active #appShell .workspace-row:hover {
 
 /* The workspace-active button theme block above forces a 10px radius on
    every action button; the directory's Connect/Refresh pills stay round. */
-body.workspace-active #appShell .plugin-directory-action {
-  border-radius: 999px;
-}
+
 
 /* ─── Reference-aligned chat and workspace surfaces ─────────────────────
    The supplied desktop references use a quiet, open canvas: one compact
@@ -2814,7 +2677,7 @@ body.workspace-active #appShell .project-row {
 .plugin-directory-row .workspace-row-copy { gap: 3px; }
 .plugin-directory-row .workspace-row-copy strong { font-size: 14px; font-weight: 560; }
 .plugin-directory-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 12px; line-height: 17px; }
-.plugin-directory-action { min-width: 34px; min-height: 34px; padding: 6px 12px; background: transparent !important; }
+
 .plugin-directory-note { margin: 18px 0 0; }
 
 @media (max-width: 900px) {

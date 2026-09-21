@@ -614,12 +614,8 @@
   font-size: 12px;
 }
 
-#appShell .main-page > .spaces-header,
-#appShell .main-page > .workspace-intro,
-#appShell .main-page > .library-tabs,
-#appShell .main-page > .workspace-search,
-#appShell .main-page > .library-header,
-#appShell .main-page > .plugins-header {
+
+#appShell .main-page > .workspace-intro{
   display: none !important;
 }
 
@@ -911,7 +907,7 @@ html[data-mode="light"] #appShell {
   transform: none !important;
 }
 
-#appShell .recents-new-btn:hover svg,
+
 #appShell .attach-btn:hover svg,
 #appShell .send-btn:hover svg {
   transform: none !important;
