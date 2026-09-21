@@ -22,7 +22,7 @@
 /* Type-only: the event shape is owned by the React store, but this module is
    loaded straight from Node by test/toolRuntime.test.mjs, so the runtime
    linkage stays the `window.__socratesReactChatBridge` global (same hand-off
-   `publishReactChatRuntime` in main.js and ui/thinkingPill.js use). */
+   `publishReactChatRuntime` in ui/reactBridge.js uses). */
 import type { ChatRuntimeEvent } from '../react/types/domain';
 
 import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.js';
@@ -61,6 +61,11 @@ interface ToolCallEntry {
       Persisted with the message so history replay can rebuild the inline
       layout. Chosen by the stream controller's onInlineTool. */
   textOffset?: number;
+  /** Persisted terminal status ('cancelled' / 'failed' / 'completed').
+      The `_run` phase is client-only and non-enumerable, so a call settled
+      at dispose/cancel needs this field for history replay to render
+      "stopped" instead of a spinner that never ends. */
+  status?: string;
   /** Cumulative streamed `arguments` JSON while the call is in flight.
       The declarative row shows this as a live code/command preview. */
   argumentsText?: string;
@@ -435,7 +440,12 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       if (decision !== 'decline') {
         const startedAt = Date.now();
         const poll = async (): Promise<void> => {
-          if (Date.now() - startedAt > 120_000) return;
+          /* A workspace run can legitimately take minutes after approval.
+             Keep the result poll alive for 10 minutes, but drop to a 3 s
+             cadence once the common sub-30 s window has passed so a long
+             run doesn't hold a 1.1 rps request loop. */
+          const elapsed = Date.now() - startedAt;
+          if (elapsed > 10 * 60_000) return;
           try {
             const response = await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId));
             const run = response && response.run;
@@ -452,7 +462,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
               return;
             }
           } catch (_) { /* a refresh/reconnect can retry on the next tick */ }
-          window.setTimeout(() => { void poll(); }, 900);
+          window.setTimeout(() => { void poll(); }, elapsed < 30_000 ? 900 : 3000);
         };
         window.setTimeout(() => { void poll(); }, 900);
       }
@@ -1003,6 +1013,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     setRun(entry, terminalPhase, { endedAt: Date.now(), durationMs: result.durationMs || 0 });
     entry.output = display;
     entry.isError = result.ok === false;
+    /* Persisted terminal state — `_run` is client-only, so history replay
+       derives the row state from this field (awaiting_approval / timeout /
+       cancelled would otherwise collapse back to 'running'). */
+    entry.status = result.status || (result.ok === false ? 'failed' : 'completed');
     entry.results = Array.isArray(result.results) ? result.results.slice(0, 20) : [];
     if (result.visualization && result.visualization.version === 1) {
       entry.input = result.visualization;
@@ -1046,6 +1060,27 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       executionConnections.clear();
       return;
     }
+    /* A call that reached stream end without a tool_result (dropped frame,
+       a provider that never committed its tool_calls, a lost execution
+       channel) has no terminal marker at all: `_run` is non-enumerable and
+       `output`/`isError` are still their initial values, so the row renders
+       "running" forever — live and again on history replay. Settle it as
+       cancelled on the persisted data before the runtime goes away. */
+    if (message && Array.isArray(message.toolCalls)) {
+      let settledAny = false;
+      for (const entry of message.toolCalls) {
+        if (!entry) continue;
+        const run = getRun(entry);
+        const terminal = run
+          ? isTerminalToolPhase(run.phase)
+          : (entry._toolResultApplied || entry.output != null || entry.isError);
+        if (terminal) continue;
+        setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
+        entry.status = 'cancelled';
+        settledAny = true;
+      }
+      if (settledAny) notifyToolRun(message);
+    }
     disposed = true;
     pendingDeltas.length = 0;
     if (deltaFrame != null) {
@@ -1068,6 +1103,9 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         const entry = message.toolCalls[i];
         if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
         setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
+        /* Persisted too — `_run` is client-only, so without `status` the
+           reloaded row would render 'running' on history replay. */
+        entry.status = 'cancelled';
       }
       /* Runs settle as stopped, not spinning: the declarative renderer reads
          run.phase off the entry, so the cancel has to publish. */

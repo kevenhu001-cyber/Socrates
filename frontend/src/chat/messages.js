@@ -23,6 +23,33 @@ function _renderAssistantHtml(text) {
   return formatMsg(text);
 }
 
+/* Post-commit bookkeeping (localStorage mirror, session save, stats, KB
+   sidebar) is heavyweight relative to an interaction frame: it parses and
+   re-serializes up to ~1 MB of localStorage JSON and builds the full
+   session-save payload. When the session id already exists none of it
+   feeds back into this task, so it runs one macrotask later — after the
+   just-committed bubble has painted — and a burst of addMessage calls
+   (history replay, rapid sends) coalesces into a single flush.
+   First-message sends keep the synchronous path: doSave() stamps
+   currentSessionId and the streaming placeholder created later in the
+   same task captures that id as its session owner. */
+var _postCommitQueue = [];
+var _postCommitScheduled = false;
+function _flushPostCommit() {
+  _postCommitScheduled = false;
+  var queue = _postCommitQueue;
+  _postCommitQueue = [];
+  for (var i = 0; i < queue.length; i++) {
+    try { queue[i](); } catch (_) {}
+  }
+}
+function _deferPostCommit(fn) {
+  _postCommitQueue.push(fn);
+  if (_postCommitScheduled) return;
+  _postCommitScheduled = true;
+  setTimeout(_flushPostCommit, 0);
+}
+
 export function addMessage(role, text, type, actions, attachmentsArg) {
   /* User sending a message = explicitly wants to follow the conversation. */
   if (role === 'user') {
@@ -79,25 +106,29 @@ export function addMessage(role, text, type, actions, attachmentsArg) {
      messages. The legacy rAF write used to run before React committed and
      then race the smooth send scroll, causing a one-frame snap during
      composer collapse. Keep no second scroll owner here. */
-  try {
-    if (role === 'user' || role === 'assistant') {
-      try { appendLocalMemory(role, text); } catch (_) {}
-    }
-    if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
-      try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
-    }
-    if (role === 'assistant') {
-      try { updateChatStats(); } catch (_) {}
-    }
-    /* Update KB: if user is answering substantive questions, mark current node progress */
-    if (role === 'user' && stateStore.read('kbNodes')[stateStore.read('currentNode')] && stateStore.read('kbNodes')[stateStore.read('currentNode')].status === 'blank') {
-      var progressedKbNodes = stateStore.read('kbNodes').map(function (node, index) {
-        return index === stateStore.read('currentNode') ? Object.assign({}, node, { status: 'fuzzy', questions: (node.questions || 0) + 1 }) : node;
-      });
-      stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: progressedKbNodes });
-      try { updateKB(); } catch (_) {}
-    }
-  } catch (_) {}
+  var bookkeeping = function () {
+    try {
+      if (role === 'user' || role === 'assistant') {
+        try { appendLocalMemory(role, text); } catch (_) {}
+      }
+      if (stateStore.read('phase') === 'chat' || (stateStore.read('topic') && stateStore.read('kbNodes').length)) {
+        try { if (typeof window.saveCurrentSession === 'function') window.saveCurrentSession(); } catch (_) {}
+      }
+      if (role === 'assistant') {
+        try { updateChatStats(); } catch (_) {}
+      }
+      /* Update KB: if user is answering substantive questions, mark current node progress */
+      if (role === 'user' && stateStore.read('kbNodes')[stateStore.read('currentNode')] && stateStore.read('kbNodes')[stateStore.read('currentNode')].status === 'blank') {
+        var progressedKbNodes = stateStore.read('kbNodes').map(function (node, index) {
+          return index === stateStore.read('currentNode') ? Object.assign({}, node, { status: 'fuzzy', questions: (node.questions || 0) + 1 }) : node;
+        });
+        stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: progressedKbNodes });
+        try { updateKB(); } catch (_) {}
+      }
+    } catch (_) {}
+  };
+  if (stateStore.read('currentSessionId')) _deferPostCommit(bookkeeping);
+  else bookkeeping();
   /* Return the clientId so callers (e.g. startSession) can patch this
      entry in place once async work like buildMessageContent finishes —
      without re-running the side effects above. */

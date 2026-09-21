@@ -42,7 +42,8 @@ export type DetailSection =
   | { kind: 'sources'; title: string; items: SourceItem[] }
   | { kind: 'output'; title: string; text: string }
   | { kind: 'error'; title: string; text: string }
-  | { kind: 'files'; title: string; paths: string[] };
+  | { kind: 'files'; title: string; paths: string[] }
+  | { kind: 'artifacts'; title: string; items: ArtifactOutput[] };
 
 /** A block behind the secondary "Technical details" toggle. */
 export type TechSection =
@@ -87,6 +88,7 @@ export interface ToolRunView {
 export type TurnSegment =
   | { kind: 'text'; start: number; end: number; text: string }
   | { kind: 'think'; start: number; end: number; text: string }
+  | { kind: 'artifact'; start: number; end: number; output: ArtifactOutput }
   | { kind: 'tool'; call: ToolCallRecord }
   | {
     kind: 'group';
@@ -332,6 +334,34 @@ export function attachmentOutputsOf(
   );
 }
 
+/**
+ * Outputs that may appear without a prose directive. Native visualizations
+ * retain their immediate rendering contract; Python-generated files do not.
+ */
+export function automaticAttachmentOutputsOf(
+  call: ToolCallRecord | null | undefined,
+): Array<VisualizationOutput | ArtifactOutput> {
+  const outputs = attachmentOutputsOf(call);
+  if (!call || (call.name !== 'code_interpreter' && call.name !== 'Code')) return outputs;
+  return outputs.filter((output): output is VisualizationOutput => output.kind === 'visualization');
+}
+
+/** Python artifacts addressable from `{{artifact:<fileId>}}` in this turn. */
+export function pythonArtifactMap(
+  toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
+): Map<string, ArtifactOutput> {
+  const map = new Map<string, ArtifactOutput>();
+  for (const call of Array.isArray(toolCalls) ? toolCalls : []) {
+    if (!call || (call.name !== 'code_interpreter' && call.name !== 'Code')) continue;
+    for (const output of toolOutputsOf(call)) {
+      if (output.kind === 'artifact' && output.fileId && !map.has(output.fileId)) {
+        map.set(output.fileId, output);
+      }
+    }
+  }
+  return map;
+}
+
 /** The approval prompt as the row needs it: copy plus the decision list. */
 export interface ApprovalView {
   approvalId: string;
@@ -500,6 +530,69 @@ export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
   return /(?:[。！？!?]|\.)(?:["'”’」』）)\]}]*)$/u.test(before);
 }
 
+const ARTIFACT_DIRECTIVE_LINE = /^[\t ]*\{\{artifact:([^}\r\n]*)\}\}[\t ]*(?:\r?\n|$)/gm;
+const RESERVED_ARTIFACT_SYNTAX = /\{\{artifact(?::[^\r\n}]*)?(?:\}\})?/g;
+const ARTIFACT_FILE_ID = /^[A-Za-z0-9_-]{1,100}$/;
+
+/** Remove incomplete or misplaced reserved syntax before markdown sees it. */
+export function stripArtifactDirectives(text: string): string {
+  const clean = String(text || '').replace(RESERVED_ARTIFACT_SYNTAX, '');
+  /* Streaming can stop between any two characters. Suppress a trailing
+     prefix such as `{{a` before it has grown far enough for the full reserved
+     syntax regexp above; ordinary completed moustache text is unaffected. */
+  const lineStart = clean.lastIndexOf('\n') + 1;
+  const tail = clean.slice(lineStart);
+  const token = tail.trimStart();
+  if (token.startsWith('{{') && '{{artifact:'.startsWith(token)) {
+    return clean.slice(0, lineStart);
+  }
+  return clean;
+}
+
+/**
+ * Split one prose span around valid, standalone Python artifact directives.
+ * Every reserved directive is consumed, but only an id owned by a Python call
+ * in this message becomes a renderable segment. The Set makes the first valid
+ * reference authoritative and silently drops duplicates.
+ */
+export function splitArtifactDirectiveSegments(
+  text: string,
+  start: number,
+  artifacts: ReadonlyMap<string, ArtifactOutput>,
+  seen: Set<string> = new Set<string>(),
+): TurnSegment[] {
+  const source = String(text || '');
+  const out: TurnSegment[] = [];
+  let cursor = 0;
+  ARTIFACT_DIRECTIVE_LINE.lastIndex = 0;
+
+  const pushText = (from: number, to: number): void => {
+    if (to <= from) return;
+    const clean = stripArtifactDirectives(source.slice(from, to));
+    if (!clean.trim()) return;
+    out.push({ kind: 'text', start: start + from, end: start + to, text: clean });
+  };
+
+  let match: RegExpExecArray | null;
+  while ((match = ARTIFACT_DIRECTIVE_LINE.exec(source)) !== null) {
+    pushText(cursor, match.index);
+    const fileId = String(match[1] || '').trim();
+    const output = ARTIFACT_FILE_ID.test(fileId) ? artifacts.get(fileId) : undefined;
+    if (output && !seen.has(fileId)) {
+      seen.add(fileId);
+      out.push({
+        kind: 'artifact',
+        start: start + match.index,
+        end: start + ARTIFACT_DIRECTIVE_LINE.lastIndex,
+        output,
+      });
+    }
+    cursor = ARTIFACT_DIRECTIVE_LINE.lastIndex;
+  }
+  pushText(cursor, source.length);
+  return out;
+}
+
 /**
  * Build the ordered segment list for one assistant turn.
  *
@@ -530,6 +623,8 @@ export function buildTurnLayout(
   const raw = String(rawText || '');
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
   const defer = opts?.deferOpenParagraph === true;
+  const artifacts = pythonArtifactMap(toolCalls);
+  const referencedArtifacts = new Set<string>();
   const calls = sortableToolCalls(raw, toolCalls).filter((call) => {
     if (!defer) return true;
     /* Approvals need a human decision: never hide them behind prose. */
@@ -549,14 +644,20 @@ export function buildTurnLayout(
     for (const range of think) {
       if (range.end <= cursor || range.start >= end) continue;
       if (range.start > cursor) {
-        appendText(segments, raw.slice(cursor, range.start), cursor, range.start);
+        segments.push(...splitArtifactDirectiveSegments(
+          raw.slice(cursor, range.start), cursor, artifacts, referencedArtifacts,
+        ));
       }
       if (range.text.trim()) {
         segments.push({ kind: 'think', start: range.start, end: range.end, text: range.text });
       }
       cursor = range.end;
     }
-    if (cursor < end) appendText(segments, raw.slice(cursor, end), cursor, end);
+    if (cursor < end) {
+      segments.push(...splitArtifactDirectiveSegments(
+        raw.slice(cursor, end), cursor, artifacts, referencedArtifacts,
+      ));
+    }
   };
 
   let prev = 0;
@@ -580,11 +681,6 @@ export function buildTurnLayout(
   pushProse(prev, raw.length);
 
   return foldConsecutiveRuns(segments);
-}
-
-function appendText(out: TurnSegment[], text: string, start: number, end: number): void {
-  if (!text.trim()) return;
-  out.push({ kind: 'text', start, end, text });
 }
 
 /** Merge adjacent `tool` segments into `group` segments. */
@@ -628,10 +724,9 @@ export function groupShowsHeader(segment: Extract<TurnSegment, { kind: 'group' }
 }
 
 /**
- * Every call in a group whose non-text outputs (charts, saved files) must stay
- * visible even when the group is collapsed. Tool STATUS may hide behind the
- * aggregate toggle; tool OUTPUT never does. Row order and output order come
- * from this one list so the two can never disagree.
+ * Every call in a group that may carry an automatic non-text output. Native
+ * charts stay visible while the status list is collapsed; the downstream
+ * selector removes Python artifacts until prose explicitly references them.
  */
 export function groupOutputCalls(
   segment: Extract<TurnSegment, { kind: 'group' }>,
@@ -818,6 +913,9 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
   };
 
   const sources = normalizeSources(call.results);
+  const artifacts = toolOutputsOf(call).filter(
+    (item): item is ArtifactOutput => item.kind === 'artifact',
+  );
   const output = detailText(call.output).trim();
   const failed = state === 'error';
 
@@ -861,6 +959,14 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
     if (call.stderr) {
       view.sections.push({ kind: 'error', title: 'stderr', text: detailText(call.stderr) });
     }
+  }
+
+  if (state !== 'running' && artifacts.length) {
+    view.sections.push({
+      kind: 'artifacts',
+      title: translate('tool.generatedFiles', 'Generated files'),
+      items: artifacts,
+    });
   }
 
   /* Arguments always live behind the toggle: for a single-file row they

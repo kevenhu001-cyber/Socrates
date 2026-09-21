@@ -1,5 +1,5 @@
 /**
- * react/tool-run/ToolRunAttachments.tsx — a call's output host.
+ * react/tool-run/ToolRunAttachments.tsx — automatic and referenced output hosts.
  *
  * The wrapper (class + `data-tool-anchor`) is the contract the rest of the
  * system hangs off: CSS styles it, the history-recovery pass reuses it by
@@ -7,22 +7,26 @@
  * react/tool-output, which dispatches on the ToolOutput protocol and owns
  * per-output lifecycle and error isolation.
  *
- * Structural note: every output mounts into THIS wrapper (the shared host),
- * not into a per-output child. `restorePersistedMessageExtras` mounts into the
- * same wrapper on history restore; keeping one host is what makes the
- * `[data-visualization-id]` dedup hold across the two paths.
+ * Native visualizations mount automatically. Python artifacts use the same
+ * renderer only after a validated prose directive selects one; unreferenced
+ * files remain metadata rows in the tool detail. Each selected output mounts
+ * into one shared wrapper so live and restored turns keep stable ownership.
  */
 import { useEffect, useRef, useState } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
-import { attachmentOutputsOf, type ToolCallRecord } from './toolRunModel';
+import {
+  automaticAttachmentOutputsOf,
+  type ArtifactOutput,
+  type ToolCallRecord,
+  type ToolOutput,
+} from './toolRunModel';
 
 export interface ToolRunAttachmentsProps {
   call: ToolCallRecord;
 }
 
-export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
-  const outputs = attachmentOutputsOf(call);
+function OutputHost({ outputs, anchor }: { outputs: ToolOutput[]; anchor: string }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   /* Children mount only once the host element exists, so each renderer's
      effect can hand the real node to the legacy mounter. */
@@ -30,14 +34,14 @@ export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
 
   useEffect(() => {
     setHost(hostRef.current);
-  }, [call.id]);
+  }, [anchor]);
 
   if (!outputs.length) return null;
 
   return (
     <div
       className="tool-inline-attachments"
-      data-tool-anchor={call.id}
+      data-tool-anchor={anchor}
       ref={hostRef}
     >
       {host
@@ -47,6 +51,15 @@ export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
         : null}
     </div>
   );
+}
+
+export function ToolRunAttachments({ call }: ToolRunAttachmentsProps) {
+  return <OutputHost outputs={automaticAttachmentOutputsOf(call)} anchor={call.id} />;
+}
+
+/** A Python artifact explicitly placed by a validated prose directive. */
+export function ReferencedArtifact({ output }: { output: ArtifactOutput }) {
+  return <OutputHost outputs={[output]} anchor={`${output.toolCallId}:ref:${output.fileId}`} />;
 }
 
 export default ToolRunAttachments;

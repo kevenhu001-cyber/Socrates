@@ -143,10 +143,27 @@ export function stopChatResponse() {
 function interruptPendingTurn() {
   var sid = null;
   try{ sid = stateStore.read('currentSessionId') || null; }catch(_){}
-  if (!sid) return;
   var pending = null;
-  try{ pending = loadPendingTurn(sid); }catch(_){}
-  if (!pending || !pending.turnId) return;
+  if (sid) { try{ pending = loadPendingTurn(sid); }catch(_){} }
+  if (!pending || !pending.turnId) {
+    /* The durable id can still be in flight — the stream request no
+       longer waits on the createChatTurn POST, so a Stop clicked inside
+       that window finds no pending pointer yet. Chain the interrupt
+       onto the in-flight create so the server row still flips to
+       interrupted instead of only detaching the socket feed. */
+    var inFlight = null;
+    try{ inFlight = turnState.activeTurnCreate || null; }catch(_){}
+    if (inFlight && typeof inFlight.then === 'function') {
+      inFlight.then(function (turn) {
+        try{
+          if (!turn || !turn.id) return;
+          var q = interruptChatTurn(turn.id);
+          if (q && typeof q.catch === 'function') q.catch(function(){});
+        }catch(_){}
+      });
+    }
+    return;
+  }
   try{ clearPendingTurn(sid); }catch(_){}
   try{
     var p = interruptChatTurn(pending.turnId);

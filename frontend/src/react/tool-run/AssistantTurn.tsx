@@ -25,7 +25,7 @@ import {
   type ToolCallRecord,
   type TurnSegment,
 } from './toolRunModel.js';
-import { ToolRunAttachments } from './ToolRunAttachments.js';
+import { ReferencedArtifact, ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
 import { ToolRunRow } from './ToolRunRow.js';
 import { ToolRunSheetProvider } from './ToolRunSheet.js';
@@ -178,6 +178,14 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
               segment={segment}
               messageId={messageId}
               readOnly={readOnly}
+            />
+          );
+        }
+        if (segment.kind === 'artifact') {
+          return (
+            <ReferencedArtifact
+              key={`artifact-${segment.output.fileId}-${segment.start}`}
+              output={segment.output}
             />
           );
         }

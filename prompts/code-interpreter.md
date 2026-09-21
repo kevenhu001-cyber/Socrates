@@ -24,4 +24,5 @@ This appendix is active only when the server includes `code_interpreter` in the 
 
 - There is no stdin or shell. Do not use `input()`, `subprocess`, or `plt.show()`. Save figures with `plt.savefig(...)`.
 - Files written in `/artifacts` persist for this conversation. Read the `[scratch]` listing emitted by the runner before guessing a path. Imports, variables, and function definitions reset between calls, so recompute them in each call.
+- A successful run may return artifact records with an exact `fileId`. To place a useful Python-generated file in the answer, write `{{artifact:<fileId>}}` on its own line at the intended position. Do this only when the artifact helps the reader; leave helper files unreferenced, and never guess or alter an ID.
 - If execution fails, follow the structured error and retry only with a materially corrected call when it is marked retryable. Do not repeat an identical call.

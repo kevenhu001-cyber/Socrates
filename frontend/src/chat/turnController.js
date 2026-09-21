@@ -83,6 +83,10 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
      consume-once window bridge. */
   var pendingContent = arguments.length>1 ? pendingOverride : turnState.pendingChatContent;
   try{turnState.pendingChatContent=null;}catch(_){}
+  /* A new turn owns the in-flight create slot: dropping the previous
+     turn's promise keeps a Stop click from interrupting a row that
+     belongs to an already-superseded stream. */
+  try{turnState.activeTurnCreate=null;}catch(_){}
   /* Re-enter THIS turn with its immutable content. The error-bubble Retry
      is wired by handleChatApiResult, so the closure has to be handed there
      explicitly; without it the retry degrades to the visible rawText and
@@ -250,25 +254,41 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       quietTurn(retryTurn());
     }});
   }
-  /* M1 async — create the detached turn before streaming so a socket
-     drop mid-turn leaves a resumable server-side run. Best-effort:
-     a failed create falls back to the legacy unbound stream. The
-     pending pointer survives reloads; it is cleared on finish/cancel
-     below and re-attached by loadSession when still open. */
+  /* M1 async — create the detached turn so a socket drop mid-turn leaves
+     a resumable server-side run. The stream request no longer waits on
+     this POST: the server resolves clientTurnId inside /api/chat/stream
+     (idempotent on userId+clientTurnId) and announces the durable id on
+     the turn_bound frame, so one full round trip drops off the
+     time-to-first-token path. This parallel POST remains as the fallback
+     for backends that predate the clientTurnId upsert — both paths
+     converge on the same row, and its in-flight promise is exposed on
+     turnState so a fast Stop can still chain an interrupt onto the row
+     before the pending pointer is written. */
   var _turnId=null;
   var _turnSessionId=stateStore.read("currentSessionId")||null;
+  var _clientTurnId=newClientTurnId();
+  var _turnCreate=null;
+  var _myTurnSeq=(turnState.turnSeq=(turnState.turnSeq||0)+1);
+  function _adoptBoundTurn(id){
+    if(!id||_turnId===id)return;
+    /* A superseded turn's late resolution must not clobber the newer
+       turn's pending pointer (both key on the same session id). */
+    if(turnState.turnSeq!==_myTurnSeq)return;
+    _turnId=id;
+    if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:_turnId,clientTurnId:_clientTurnId,lastSeq:0});
+  }
   try{
-    var _clientTurnId=newClientTurnId();
-    var _created=await createChatTurn({
+    _turnCreate=createChatTurn({
       clientTurnId:_clientTurnId,
       sessionId:_turnSessionId,
       input:{ text:String(userText||"").slice(0,20000) },
-    });
-    if(_created&&_created.turn&&_created.turn.id){
-      _turnId=_created.turn.id;
-      if(_turnSessionId)savePendingTurn(_turnSessionId,{turnId:_turnId,clientTurnId:_clientTurnId,lastSeq:0});
-    }
-  }catch(_){_turnId=null}
+    }).then(function(r){
+      var turn=r&&r.turn;
+      if(turn&&turn.id)_adoptBoundTurn(turn.id);
+      return turn||null;
+    },function(){return null});
+    turnState.activeTurnCreate=_turnCreate;
+  }catch(_){_turnCreate=null}
   /* P_inline-tools — tool status is now carried by the inline
      .tool-inline rows inside the bubble (created via the streaming
      controller's onInlineTool), so the transient thinking-pill label
@@ -315,14 +335,22 @@ export async function askChatTurn(userText,pendingOverride,precreatedController)
       if(!d)return;
       if(typeof ctl.recordToolCallDelta==="function")ctl.recordToolCallDelta(d);
     },
-    turnId:_turnId,
+    /* M1 async — the server resolves this handle to the detached turn row
+       inside the stream request itself; the announced id arrives on
+       turn_bound, usually before the parallel POST below even returns. */
+    clientTurnId:_clientTurnId,
+    onTurnBound:function(bound){_adoptBoundTurn(bound&&bound.turnId)},
   });
   handleChatApiResult(result,ctl,userText,retryTurn);
   /* M1 async — finish/cancel consume the pending pointer; a transport
      failure keeps it so reload/reconnect can re-attach to the detached
      run instead of opening a duplicate LLM call. */
   try{
-    if(_turnSessionId&&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId);
+    /* Same supersede guard as _adoptBoundTurn: a cancelled earlier turn
+       must not clear the pending pointer its successor just wrote. */
+    if(_turnSessionId&&turnState.turnSeq===_myTurnSeq
+       &&(result&&(result.text||result.cancelled)))clearPendingTurn(_turnSessionId);
+    if(_turnCreate&&turnState.activeTurnCreate===_turnCreate)turnState.activeTurnCreate=null;
   }catch(_){}
   publishActiveWorkflowFinish(!!(result&&result.text&&String(result.text).trim()));
   updateChatStats();

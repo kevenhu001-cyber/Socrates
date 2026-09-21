@@ -76,6 +76,22 @@ test('normalizeToolCalls preserves object arguments from compatible providers', 
   assert.equal(normalized.function.arguments, '{"query":"safe"}');
 });
 
+test('normalizeToolCalls flags arguments truncated at the transport cap', () => {
+  const oversized = `{"code":"${'x'.repeat(90_000)}"}`;
+  const [normalized] = normalizeToolCalls([{
+    id: 'big',
+    function: { name: 'code_interpreter', arguments: oversized },
+  }], { iteration: 0, maxCalls: 1 });
+  assert.equal(normalized.truncated, true);
+  assert.ok(normalized.function.arguments.length <= 80_000);
+
+  const [small] = normalizeToolCalls([{
+    id: 'small',
+    function: { name: 'web_search', arguments: '{"query":"safe"}' },
+  }], { iteration: 0, maxCalls: 1 });
+  assert.equal(small.truncated, undefined);
+});
+
 /* ── repairToolArguments ─────────────────────────────────────────── */
 
 test('repairToolArguments leaves already-valid arguments untouched', () => {
@@ -310,6 +326,31 @@ test('sanitizeToolCallForProtocol canonicalizes valid arguments and quarantines 
   });
   assert.equal(malformed.function.arguments, '{}');
   assert.equal(malformed.function.name, 'web_search');
+});
+
+test('sanitizeToolCallForProtocol echoes the repaired arguments when supplied', () => {
+  /* The model wrapped the real object in `input` — the echo upstream must
+     show the canonical shape that executed, not the wrapper it emitted. */
+  const repaired = sanitizeToolCallForProtocol(
+    {
+      id: 'wrapped',
+      type: 'function',
+      function: { name: 'web_search', arguments: '{"input":{"query":"safe"}}' },
+    },
+    { query: 'safe' },
+  );
+  assert.equal(repaired.function.arguments, '{"query":"safe"}');
+
+  /* A non-object repaired value falls back to the parsed/{} path. */
+  const fallback = sanitizeToolCallForProtocol(
+    {
+      id: 'unrepairable',
+      type: 'function',
+      function: { name: 'web_search', arguments: '{broken' },
+    },
+    null,
+  );
+  assert.equal(fallback.function.arguments, '{}');
 });
 
 test('normalizeToolCalls gives nameless calls a valid protocol function name', () => {

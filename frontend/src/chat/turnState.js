@@ -13,6 +13,10 @@ export var turnState = {
   pendingAttachments: null,
   pendingBranchContext: null,
   pendingChatContent: null,
+  /* In-flight createChatTurn promise for the current turn (resolves to
+     the turn row or null). The stream no longer awaits it, so a Stop
+     clicked inside that window uses this to still reach the server row. */
+  activeTurnCreate: null,
   chatStopMode: false,
   chatStreaming: false,
   turnUi: { inProgress: false, lastUserMessageId: null },
@@ -20,6 +24,10 @@ export var turnState = {
   liveTurnRuntimes: new Map(),
   liveSearchRetry: null,
   toolRetryWired: false,
+  /* Monotonic askChatTurn sequence — a superseded turn's late-resolving
+     createChatTurn / turn_bound must not overwrite the newer turn's
+     pending pointer. */
+  turnSeq: 0,
 };
 
 export function getTurnState() {
@@ -33,6 +41,7 @@ export function resetTurnState() {
   turnState.pendingChatContent = null;
   turnState.chatStopMode = false;
   turnState.chatStreaming = false;
+  turnState.activeTurnCreate = null;
   turnState.turnUi = { inProgress: false, lastUserMessageId: null };
   turnState.liveRetryOwner = null;
   if (turnState.liveTurnRuntimes && typeof turnState.liveTurnRuntimes.clear === 'function') {

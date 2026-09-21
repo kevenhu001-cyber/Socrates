@@ -14,10 +14,10 @@
  *    the live line behind a toggle is how the streaming command preview became
  *    invisible.
  *
- * The third rule this file owns: tool OUTPUT is not tool STATUS. Charts and
- * saved files render beside the rows region, while the summary toggle only
- * controls `.tool-run-list` — collapsing a run may hide its arguments and
- * stdout, never its result.
+ * The third rule this file owns: automatic tool OUTPUT is not tool STATUS.
+ * Native charts render beside the rows region, while Python files are placed
+ * by prose directives (or listed in details). The summary toggle controls
+ * `.tool-run-list`, never an automatically rendered chart.
  */
 import { useEffect, useMemo, useState } from 'react';
 
@@ -80,12 +80,12 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
     if (elapsed) meta.push(elapsed);
   }
 
-  /* Tool OUTPUTS render as a sibling of the rows region, in the group's own
+  /* Automatic tool OUTPUTS render as a sibling of the rows region, in the group's own
      fragment — never inside the subtree whose shape changes when a run crosses
      two settled members. A host inside that subtree would be remounted (and its
      renderer torn down and rebuilt) exactly when the last call settles. The
-     toggle below owns status only: a chart or a saved file stays on screen
-     while the run is collapsed. */
+     toggle below owns status only: a native chart stays on screen while the
+     run is collapsed. Python files are handled by prose references. */
   const outputs = groupOutputCalls(segment).map((call) => (
     <ToolRunAttachments key={`output-${call.id}`} call={call} />
   ));

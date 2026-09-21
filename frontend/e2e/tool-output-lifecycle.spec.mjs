@@ -88,11 +88,11 @@ function userMessage() {
   return { id: 'lifecycle-user', role: 'user', rawText: 'Draw it', html: '<p>Draw it</p>' };
 }
 
-function assistantMessage(toolCalls) {
+function assistantMessage(toolCalls, rawText = RAW) {
   return {
     id: 'lifecycle-assistant',
     role: 'assistant',
-    rawText: RAW,
+    rawText,
     // Deliberately stale: the declarative renderer must never read this.
     html: '<p>stale snapshot</p>',
     toolCalls,
@@ -199,14 +199,18 @@ test('opening the mobile tool sheet does not move or duplicate call outputs', as
   await expect(charts).toHaveCount(2);
   await expect(charts.nth(0)).toContainText('Probe A');
   await expect(charts.nth(1)).toContainText('Probe B');
-  await expect(body.locator('.exec-artifact')).toHaveCount(1);
+  await expect(body.locator('.exec-artifact')).toHaveCount(0);
   await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
 
   await group.locator('.tool-run-summary').click();
   await expect(sheet).toBeVisible();
   await expect(charts).toHaveCount(2);
-  await expect(body.locator('.exec-artifact')).toHaveCount(1);
+  await expect(body.locator('.exec-artifact')).toHaveCount(0);
   await expect(sheet.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
+  const codeRow = sheet.locator('.tool-inline[data-tool="code_interpreter"]');
+  await codeRow.locator('summary').click();
+  await expect(codeRow.locator('.tool-inline-artifact-row')).toContainText('plot.png');
+  await expect(codeRow.locator('.tool-inline-artifact-actions a')).toHaveCount(2);
   await expect(group.locator('.tool-run-list .visualization-card, .tool-run-list .exec-artifact')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
@@ -214,7 +218,7 @@ test('opening the mobile tool sheet does not move or duplicate call outputs', as
   expect(probe.removed).toEqual([]);
 });
 
-test('a code artifact and a visualization from one run both render outside the collapsed details', async ({ page }) => {
+test('a referenced code artifact renders at its prose directive while native visualization stays automatic', async ({ page }) => {
   const code = {
     id: 'code-1',
     name: 'code_interpreter',
@@ -227,13 +231,28 @@ test('a code artifact and a visualization from one run both render outside the c
   };
   const body = await openAssistantFixture(page, [
     userMessage(),
-    assistantMessage([code, vizCall('viz-1', 'Probe scatter')]),
+    assistantMessage(
+      [code, vizCall('viz-1', 'Probe scatter')],
+      'Lead paragraph.\n\n{{artifact:file-1}}\n\nTail paragraph.',
+    ),
   ]);
 
   const group = body.locator('.tool-run-group');
   await expect(group.locator('.tool-run-list')).toHaveAttribute('hidden', '');
   await expect(body.locator('.visualization-card')).toBeVisible();
   await expect(body.locator('.exec-artifact-image')).toBeVisible();
+  await expect(body).not.toContainText('{{artifact:');
+  const directiveOrder = await body.evaluate((root) => {
+    const lead = Array.from(root.querySelectorAll('.tool-run-prose')).find((node) => node.textContent.includes('Lead paragraph'));
+    const tail = Array.from(root.querySelectorAll('.tool-run-prose')).find((node) => node.textContent.includes('Tail paragraph'));
+    const artifact = root.querySelector('.tool-inline-attachments[data-tool-anchor*="ref"]');
+    if (!lead || !tail || !artifact) return false;
+    return Boolean(
+      lead.compareDocumentPosition(artifact) & Node.DOCUMENT_POSITION_FOLLOWING
+      && artifact.compareDocumentPosition(tail) & Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+  expect(directiveOrder).toBe(true);
   await expect(group.locator('.visualization-card')).toHaveCount(0);
   await expect(group.locator('.exec-artifact')).toHaveCount(0);
   await expect(group.locator('.tool-run-list .visualization-card')).toHaveCount(0);
@@ -433,7 +452,7 @@ test('a call persisted with the outputs protocol renders the same', async ({ pag
   };
   const body = await openAssistantFixture(page, [
     userMessage(),
-    assistantMessage([code, viz]),
+    assistantMessage([code, viz], 'Lead paragraph.\n\n{{artifact:file-proto}}'),
   ]);
 
   const card = body.locator('.visualization-card');

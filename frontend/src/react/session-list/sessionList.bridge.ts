@@ -15,6 +15,7 @@
  */
 
 import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
+import { t as _t } from '../legacy/gateway';
 import type { SessionItem, SessionListBridge, SessionListSnapshot } from './types';
 
 declare global {
@@ -110,6 +111,15 @@ export function useCurrentSessionId(): string | null {
   return useBridgeSelector(factoryBridge, (snapshot) => snapshot.currentSessionId);
 }
 
+/* t() with an English fallback, plus optional {n} substitution — web t()
+   returns the raw template, so the number is filled in here. Same guard
+   shape SessionList.tsx uses; keeps the row-meta strings locale-aware. */
+function ti18n(key: string, fallback: string, n?: number): string {
+  const v = _t(key);
+  const s = v && v !== key ? v : fallback;
+  return n === undefined ? s : s.replace('{n}', String(n));
+}
+
 export function formatRelativeTime(value: string | number | null | undefined): string {
   if (!value) return '';
   const date = new Date(value);
@@ -122,10 +132,10 @@ export function formatRelativeTime(value: string | number | null | undefined): s
   const weeks = Math.floor(days / 7);
   const months = Math.floor(days / 30);
 
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  if (weeks < 5) return `${weeks}w ago`;
-  return `${months}mo ago`;
+  if (mins < 1) return ti18n('session.timeJustNow', 'Just now');
+  if (mins < 60) return ti18n('session.timeMinutesAgo', '{n}m ago', mins);
+  if (hours < 24) return ti18n('session.timeHoursAgo', '{n}h ago', hours);
+  if (days < 7) return ti18n('session.timeDaysAgo', '{n}d ago', days);
+  if (weeks < 5) return ti18n('session.timeWeeksAgo', '{n}w ago', weeks);
+  return ti18n('session.timeMonthsAgo', '{n}mo ago', months);
 }

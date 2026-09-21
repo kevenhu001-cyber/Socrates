@@ -342,6 +342,23 @@ test('arguments and error codes land in tech, never in the default sections', ()
   assert.equal(failed.tech.find((t) => t.retryable)?.retryable, '1');
 });
 
+test('generated artifacts remain accessible in a settled tool detail', () => {
+  const view = toolRunView({
+    id: 'python-files',
+    name: 'code_interpreter',
+    input: { code: 'savefig("plot.png")' },
+    output: 'saved plot.png',
+    artifacts: [{ id: 'plot-file', name: 'plot.png', mimeType: 'image/png' }],
+    status: 'completed',
+  });
+  const section = view.sections.find((item) => item.kind === 'artifacts');
+  assert.ok(section);
+  assert.deepEqual(
+    section.items.map((item) => ({ fileId: item.fileId, name: item.name, mimeType: item.mimeType })),
+    [{ fileId: 'plot-file', name: 'plot.png', mimeType: 'image/png' }],
+  );
+});
+
 test('result echoes that repeat the row label are dropped', () => {
   const results = [1, 2, 3].map((i) => ({ title: 'T' + i, url: 'https://a.dev/' + i }));
   const withCount = toolRunView({ id: '1', name: 'web_search', input: { query: 'q' }, results, output: '3 results', durationMs: 5 });

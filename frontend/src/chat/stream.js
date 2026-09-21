@@ -16,6 +16,7 @@ import {
   waitForAIRetry,
 } from './retryPolicy.ts';
 import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
+import { notifySpeedFallbackOnce, notifyToolsFallbackOnce } from './speedFallback.js';
 
 function setLastCallError(value){
   stateStore.dispatch({type:'state/set',key:'lastCallError',value:value});
@@ -151,12 +152,14 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        * Reasoning knobs, built-in identity, and custom-instructions
        * prepending are owned by buildChatRequestBody — see chat/api.js. */
       var apiBody=buildChatRequestBody(messages,maxTokens,0.7);
-      /* M1 async — bind the stream to a detached turn when the caller
-         created one. The server mirrors frames into chat_turn_events
-         and keeps running detached on socket close; turnId travels in
-         the body (the route also accepts ?turnId=). */
+      /* M1 async — bind the stream to a detached turn. turnId targets a
+         row the caller already knows; clientTurnId lets the server resolve
+         or create the row itself (idempotent on userId+clientTurnId) so the
+         turn-creation POST no longer sits on the request's critical path.
+         The server announces the durable id on the turn_bound frame below. */
       try{
         if(opts&&typeof opts.turnId==="string"&&opts.turnId)apiBody.turnId=opts.turnId;
+        if(opts&&typeof opts.clientTurnId==="string"&&opts.clientTurnId)apiBody.clientTurnId=opts.clientTurnId;
       }catch(_){}
       resp=await apiFetchRaw("/api/chat/stream",{
         method:"POST",
@@ -233,6 +236,29 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
        the bubble replays the whole turn and duplicates both prose and tools. */
     var semanticActivity=false;
     var streamError=null;
+    /* Flush visible tail text at semantic boundaries, while retaining a
+       trailing prefix that may still become an opening think tag. If the
+       stream ends first, that unresolved prefix is dropped instead of being
+       exposed as literal parser markup. */
+    var flushVisibleThinkTail=function(){
+      if(thinkOpen||!thinkTail.length)return;
+      var thinkTag="<think>";
+      var keepPrefix=0;
+      for(var prefixLength=Math.min(thinkTail.length,thinkTag.length-1);prefixLength>0;prefixLength--){
+        if(thinkTail.slice(-prefixLength)===thinkTag.slice(0,prefixLength)){
+          keepPrefix=prefixLength;
+          break;
+        }
+      }
+      var visibleLength=thinkTail.length-keepPrefix;
+      if(visibleLength<=0)return;
+      var visibleTail=thinkTail.slice(0,visibleLength);
+      thinkTail=thinkTail.slice(visibleLength);
+      full+=visibleTail;
+      try{if(onDelta){onDelta(visibleTail,full)}}catch(deltaErr){
+        console.warn("[API stream] onDelta threw:",deltaErr&&deltaErr.message);
+      }
+    };
     /* Parse ONE SSE frame (the text between two "\n\n" delimiters, or the
        leftover buffer flushed at stream end). Extracted so the same logic
        runs for both the delimited frames in the read loop AND the final
@@ -260,6 +286,13 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
           if(evName==="tool_use"){
             semanticActivity=true;
             if(opts&&typeof opts.onToolUse==="function"&&dataParts.length){
+              /* The inline-think scanner keeps up to seven visible chars in
+                 thinkTail so an opening `<think>` tag can span deltas. A
+                 tool_use is a hard split-point boundary: commit ordinary
+                 text before asking the turn controller to record textOffset,
+                 but keep a trailing prefix of `<think>` intact so a tag may
+                 still continue after this event frame. */
+              flushVisibleThinkTail();
               try{opts.onToolUse(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_use",e)}
             }
             return;
@@ -300,6 +333,16 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             semanticActivity=true;
             if(opts&&typeof opts.onAgentPlan==="function"&&dataParts.length){
               try{opts.onAgentPlan(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("agent_plan",e)}
+            }
+            return;
+          }
+          if(evName==="preference_fallback"){
+            if(dataParts.length){
+              try{
+                var fallback=JSON.parse(dataParts.join("\n"));
+                if(fallback&&fallback.preference==="response_speed")notifySpeedFallbackOnce();
+                else if(fallback&&fallback.preference==="tools")notifyToolsFallbackOnce();
+              }catch(e){warnBadFrame("preference_fallback",e)}
             }
             return;
           }
@@ -348,6 +391,16 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             semanticActivity=true;
             if(opts&&typeof opts.onToolCallDelta==="function"&&dataParts.length){
               try{opts.onToolCallDelta(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("tool_call_delta",e)}
+            }
+            return;
+          }
+          /* M1 async — the route resolved (or created) the detached turn
+             for our clientTurnId and announces the durable id up front.
+             Metadata only: it must not count as semanticActivity, since a
+             retry decision is still safe before any content arrives. */
+          if(evName==="turn_bound"){
+            if(opts&&typeof opts.onTurnBound==="function"&&dataParts.length){
+              try{opts.onTurnBound(JSON.parse(dataParts.join("\n")))}catch(e){warnBadFrame("turn_bound",e)}
             }
             return;
           }
@@ -609,17 +662,10 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
         thinkTail="";
         thinkOpen=false;
       }else if(!thinkOpen&&thinkTail.length>0){
-        /* P_truncation_fix — when the stream ends and we're NOT inside
-           a think block, thinkTail holds up to 7 unflushed chars
-           (held back so a split <think> across chunks would still be
-           reassembled). With no think block to flush into, those chars
-           are real response content that would otherwise be silently
-           dropped — and they compound across every chunk, so a long
-           non-thinking response can lose its last 7 chars. Forward
-           them to full + onDelta so the saved message + UI bubble
-           both contain the complete answer. */
-        full+=thinkTail;
-        try{if(onDelta){onDelta(thinkTail,full)}}catch(_){}
+        /* P_truncation_fix — the same scanner tail is flushed at tool_use.
+           Real answer text is committed, but a still-incomplete opening-tag
+           prefix is intentionally not rendered as prose. */
+        flushVisibleThinkTail();
         thinkTail="";
       }
     }catch(e){

@@ -252,7 +252,8 @@ export function restorePersistedMessageExtras(
          react/tool-run already rendered the host for a call that has a chart
          or a file, and an empty .tool-inline-attachments div next to every
          restored row only adds a gap to the layout. */
-      const hasArtifacts = Array.isArray(tc.artifacts) && tc.artifacts.length > 0;
+      const pythonArtifacts = tc.name === 'code_interpreter' || tc.name === 'Code';
+      const hasArtifacts = !pythonArtifacts && Array.isArray(tc.artifacts) && tc.artifacts.length > 0;
       if (!vizSpec && !hasArtifacts) continue;
       /* The declarative renderer keeps outputs OUTSIDE the collapsible row
          list, so adjacency no longer finds its host; locate it by anchor
@@ -284,7 +285,7 @@ export function restorePersistedMessageExtras(
           });
         } catch {}
       }
-      if (Array.isArray(tc.artifacts)) {
+      if (!pythonArtifacts && Array.isArray(tc.artifacts)) {
         for (let aj = 0; aj < tc.artifacts.length; aj++) {
           const artJ = tc.artifacts[aj];
           if (!artJ || !artJ.id) continue;
@@ -319,7 +320,7 @@ export function restorePersistedMessageExtras(
       for (let ai = 0; ai < tc.artifacts.length; ai++) {
         const art = tc.artifacts[ai];
         if (!art || !art.id) continue;
-        const previewable =
+        const previewable = tc.name !== 'code_interpreter' && tc.name !== 'Code' &&
           art.mimeType &&
           (art.mimeType.indexOf('image/') === 0 || art.mimeType.indexOf('text/html') === 0);
         try {

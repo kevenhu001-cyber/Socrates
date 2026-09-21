@@ -25,6 +25,20 @@ function wordCountLabel(count: number): string {
   return translate('think.wordCount', '{n} words').replace('{n}', String(count));
 }
 
+/* A2: the meta used to feed snapshot.text.length straight into the
+   label, so an English trace showed "1200 words" for 1200 CHARACTERS
+   and a Chinese one showed "300 字" for 300 code units (astral chars
+   count 2). Mixed-script count: every CJK ideograph/kana/hangul
+   character is one unit, each run of latin letters/digits is one word. */
+const CJK_RE = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/g;
+function countWords(text: string): number {
+  if (!text) return 0;
+  const cjk = text.match(CJK_RE);
+  const cjkCount = cjk ? cjk.length : 0;
+  const latin = text.replace(CJK_RE, ' ').match(/[\p{L}\p{N}_]+/gu);
+  return cjkCount + (latin ? latin.length : 0);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -134,7 +148,7 @@ export function ThinkingPanel() {
             ) : null}
           </div>
           <span className="thinking-panel-meta">
-            {wordCountLabel(snapshot.text.length)}
+            {wordCountLabel(countWords(snapshot.text))}
           </span>
           <button
             ref={closeRef}

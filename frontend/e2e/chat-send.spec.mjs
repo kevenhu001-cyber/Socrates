@@ -597,3 +597,39 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
     'Partial reply, and the answer keeps growing from here.',
   );
 });
+
+test('streamed response-speed fallback shows one notice and preserves the fast request', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.addInitScript(() => localStorage.setItem('socrates-response-speed', 'fast'));
+
+  const streamRequests = [];
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
+    streamRequests.push(route.request().postDataJSON());
+    const fallback = 'event: preference_fallback\ndata: {"preference":"response_speed","requested":"fast","applied":"standard"}\n\n';
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: `${fallback}${fallback}data: [DONE]\n\n`,
+    });
+  });
+
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Speed fallback smoke' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '88888888-8888-4888-8888-888888888888' });
+    document.getElementById('topicSetup').classList.add('hidden');
+    document.getElementById('chatView').classList.remove('hidden');
+    document.body.dataset.conversationActive = 'true';
+    window.appMode = 'chat';
+  });
+
+  await page.locator('#chatComposerRoot .rich-composer-editor').first().fill('Check the requested response speed.');
+  await page.locator('#sendBtn').click();
+
+  await expect.poll(() => streamRequests[0]?.response_speed).toBe('fast');
+  await expect(page.locator('.msg-toast')).toHaveCount(1);
+  await expect(page.locator('.msg-toast')).toBeVisible();
+});
