@@ -720,7 +720,9 @@ export const executions = pgTable('executions', {
   sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
   language: text('language').notNull().default('python'),
   code: text('code').notNull(),
-  /* running | completed | failed | timeout | cancelled | skipped */
+  /* running | completed | failed | timeout | cancelled | skipped | rejected
+     ('rejected' = refused before execution, e.g. syntax error — excluded
+     from the daily execution quota) */
   status: text('status').notNull().default('running'),
   exitCode: integer('exit_code'),
   durationMs: integer('duration_ms'),

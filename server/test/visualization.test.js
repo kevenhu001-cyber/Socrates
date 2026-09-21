@@ -74,6 +74,41 @@ test('visual spec caps graph nodes and extension source', () => {
   assert.equal(validateVisualizationSpec(unsafeExtension).ok, false);
 });
 
+/* P_interactive-sim-scripts — interactive_simulation is allowed inline
+   <script> and event handlers (the sandboxed iframe runs opaque-origin
+   with connect-src 'none'); svg_illustration stays script-free.
+   Nested iframes, network APIs and dangerous URL schemes stay banned
+   for both. */
+test('interactive_simulation accepts inline scripts; svg_illustration does not', () => {
+  const sim = {
+    version: 1, template: 'interactive_simulation', title: 'Pendulum',
+    accessibilitySummary: 'A pendulum the reader can swing.',
+    payload: { source: '<div><canvas id="c"></canvas><button onclick="reset()">Reset</button><script>function reset(){document.getElementById("c").getContext("2d").clearRect(0,0,9,9)}</script></div>' },
+  };
+  assert.equal(validateVisualizationSpec(sim).ok, true);
+
+  const svgWithScript = {
+    version: 1, template: 'svg_illustration', title: 'Art',
+    accessibilitySummary: 'A static illustration.',
+    payload: { source: '<svg><script>alert(1)</script></svg>' },
+  };
+  assert.equal(validateVisualizationSpec(svgWithScript).ok, false);
+});
+
+test('interactive_simulation still rejects nested frames, network APIs and dangerous schemes', () => {
+  const base = { version: 1, template: 'interactive_simulation', title: 'Sim', accessibilitySummary: 'A sim.' };
+  const cases = [
+    '<div><iframe src="https://example.com"></iframe></div>',
+    '<script>const ws = new WebSocket("wss://x")</script>',
+    '<a href="javascript:alert(1)">go</a>',
+    '<form action="https://example.com"></form>',
+  ];
+  for (const source of cases) {
+    const result = validateVisualizationSpec({ ...base, payload: { source } });
+    assert.equal(result.ok, false, source);
+  }
+});
+
 test('tool declaration exposes the versioned visual contract', () => {
   assert.equal(VISUALIZATION_TOOL.function.name, 'render_visualization');
   assert.deepEqual(VISUALIZATION_TOOL.function.parameters.properties.version.enum, [1]);

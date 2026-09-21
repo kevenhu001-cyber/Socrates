@@ -530,7 +530,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 }
 
 #appShell#appShell .msg-toolbar,
-#appShell#appShell .message-toolbar,
 #appShell#appShell .msg-actions {
   color: var(--conversation-text-muted) !important;
 }

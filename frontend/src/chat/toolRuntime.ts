@@ -51,6 +51,15 @@ interface ToolCallEntry {
   executionId?: string;
   visualization?: unknown;
   results?: unknown[];
+  /** Structured error layers mirrored from the tool_result payload so the
+      declarative row can render userMessage / detail / stderr separately
+      instead of falling back to the flattened `output` string. */
+  userMessage?: string;
+  error?: string | null;
+  stderr?: string;
+  errorCode?: string | null;
+  detail?: unknown;
+  retryable?: boolean;
   /** Codex run id, when this call is a workspace-agent run. */
   runId?: string;
   /** Projected Codex steps, persisted so history replay can rebuild them. */
@@ -166,6 +175,7 @@ interface ToolResult {
   results?: unknown[];
   visualization?: { version: number; [key: string]: unknown } | null;
   detail?: unknown;
+  retryable?: boolean;
 }
 
 interface ToolRuntimeOptions {
@@ -604,6 +614,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
       const source = new EventSourceImpl('/api/executions/' + encodeURIComponent(executionId) + '/stream');
       const connection: ExecutionConnection = { key: connectionKey, source, timer: null as unknown as ReturnType<typeof setTimeout> };
       executionConnections.set(connectionKey, connection);
+      /* Watchdog for a dead channel only — the default execution budget
+         is 120s (EXEC_TIMEOUT_MS_DEFAULT) and a call may specify more,
+         so a shorter timer here would report a healthy long-running
+         execution as failed and the real result would be dropped by
+         _toolResultApplied. Budget + grace is the safe bound. */
       connection.timer = setTimeout(function () {
         if (!disposed) {
           recordToolResult({
@@ -612,15 +627,15 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
             status: 'failed',
             output: '',
             stderr: '',
-            error: 'execution_sse_timeout: backend did not respond within 60s',
+            error: 'execution_sse_timeout: backend did not respond within 150s',
             artifacts: [],
-            durationMs: 60000,
+            durationMs: 150000,
             executionId: executionId,
             name: 'code_interpreter',
           });
         }
         closeConnection(connection);
-      }, 60000);
+      }, 150000);
       source.addEventListener('progress', function (event: MessageEvent) {
         try {
           const data = JSON.parse(event.data) as ToolProgress;
@@ -970,7 +985,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         if (/SyntaxError|IndentationError/i.test(stderr)) {
           display += '\n\nHint: Python refused to parse the source — fix the syntax / indentation in the same run, no need to retry the whole flow.';
         } else if (/ModuleNotFoundError/i.test(stderr)) {
-          display += "\n\nHint: Pyodide ships numpy, pandas, and matplotlib pre-installed. For other packages, install them in the run with `import micropip; micropip.install('pkg')`.";
+          display += "\n\nHint: packages in the Pyodide distribution (scipy, sympy, scikit-learn, networkx, pillow…) auto-install on `import` — just import them. For a PyPI-only wheel use `import micropip, asyncio; asyncio.run(micropip.install('pkg'))` in the same run.";
         } else if (/FileNotFoundError|No such file or directory/i.test(stderr)) {
           display += '\n\nHint: the scratch dir is session-scoped and persists across every code call in this conversation. Each run prints a `[scratch]` header listing the files currently in /artifacts — read it before guessing a path.';
         } else if (/PermissionError|IsADirectoryError|NotADirectoryError/i.test(stderr)) {
@@ -1003,6 +1018,17 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     setRun(entry, terminalPhase, { endedAt: Date.now(), durationMs: result.durationMs || 0 });
     entry.output = display;
     entry.isError = result.ok === false;
+    /* P_error-layering — the declarative row renders userMessage / error /
+       stderr / errorCode as separate layers, but they were never copied
+       onto the record, so the card fell back to `output` (which carries
+       model-facing hint text). Store the structured fields so the UI
+       shows the user layer and the hint stays out of view. */
+    if (result.userMessage != null) entry.userMessage = result.userMessage;
+    if (result.error != null) entry.error = result.error;
+    if (result.stderr) entry.stderr = result.stderr;
+    if (result.errorCode !== undefined) entry.errorCode = result.errorCode ?? null;
+    if (result.detail !== undefined) entry.detail = result.detail ?? null;
+    if (typeof result.retryable === 'boolean') entry.retryable = result.retryable;
     entry.results = Array.isArray(result.results) ? result.results.slice(0, 20) : [];
     if (result.visualization && result.visualization.version === 1) {
       entry.input = result.visualization;

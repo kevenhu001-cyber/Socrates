@@ -248,14 +248,29 @@ class _CappedStream:
         self._max = 0
         self._hook = None
         self._last_flush_idx = 0
+        self._pending_bytes = 0
 
     def set_limit(self, n):
         self._buf = []
         self._n = 0
         self._max = max(0, int(n))
+        self._pending_bytes = 0
 
     def writable(self):
         return True
+
+    def _emit_delta(self):
+        """Forward the buffer delta since the last emit to the JS hook."""
+        try:
+            if self._hook is not None:
+                tail = ''.join(self._buf[self._last_flush_idx:])
+                if tail:
+                    self._hook(tail)
+            self._last_flush_idx = len(self._buf)
+        except Exception:
+            pass
+        finally:
+            self._pending_bytes = 0
 
     def write(self, s):
         if not s:
@@ -273,22 +288,23 @@ class _CappedStream:
             raise RuntimeError('output_limit_exceeded: ' + self._label + ' exceeded ' + str(self._max) + ' bytes')
         self._buf.append(s)
         self._n += bs
+        self._pending_bytes += bs
+        # P_live-stdout — print() only calls flush() when flush=True,
+        # so a flush-only hook left the "live output" stream silent
+        # for the entire run. Emit when a line completes, or when the
+        # pending delta grows past ~4 KB (covers unterminated writes
+        # and \r progress-bar spam without a per-update SSE storm).
+        if '\\n' in s or self._pending_bytes >= 4096:
+            self._emit_delta()
         return bs
 
     def flush(self):
-        try:
-            if self._hook is not None:
-                # Flush the delta since the last flush.
-                tail = ''.join(self._buf[self._last_flush_idx:])
-                if tail:
-                    self._hook(tail)
-                self._last_flush_idx = len(self._buf)
-        except Exception:
-            pass
+        self._emit_delta()
 
     def set_hook(self, hook):
         self._hook = hook
         self._last_flush_idx = 0
+        self._pending_bytes = 0
 
     def getvalue(self):
         return ''.join(self._buf)
@@ -374,10 +390,11 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
 
   pyodide.runPython(`_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`);
 
-  /* P_progress — install the flush hooks so the parent receives
-     incremental stdout/stderr. The hooks run on Python's flush(),
-     which print() calls after every newline by default. The hook
-     is best-effort: a thrown transport just no-ops, the canonical
+  /* P_progress — install the delta hooks so the parent receives
+     incremental stdout/stderr. The stream emits on line boundaries
+     from write() (see P_live-stdout) as well as on explicit flush(),
+     because print() only flushes when flush=True. The hook is
+     best-effort: a thrown transport just no-ops, the canonical
      stdout/stderr in the final `result` is the source of truth. */
   const makeHook = (stream: string) => (chunk: unknown) => {
     try {
@@ -452,6 +469,53 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     }
   } catch (_) { /* non-fatal */ }
 
+  /* P_auto-import-resolution — scan the user's imports and install
+     every matching package from the Pyodide distribution (scipy,
+     sympy, scikit-learn, statsmodels, networkx, pillow…). This is the
+     same mechanism JupyterLite and the Pyodide console use; without
+     it `import scipy` dies as ModuleNotFoundError even though a
+     prebuilt wheel ships with the runtime, and the model then burns
+     its retry budget on a failure that was never real. Runs BEFORE
+     exec so the import inside user code resolves on first use.
+     PyPI-only wheels still need micropip (async — the tool
+     description documents the asyncio.run pattern). A syntax error
+     in the source makes find_imports raise here — swallowed on
+     purpose so the exec below can report the real error through the
+     normal marker path. */
+  try {
+    const loadResult: any = await pyodide.loadPackagesFromImports(code, {
+      messageCallback: (msg: string) => {
+        try {
+          parentPort!.postMessage({
+            id, type: 'stdout', stream: 'stdout',
+            chunk: `[pyodide] ${msg}\n`,
+            executionId, elapsedMs: Date.now() - startedAt,
+          });
+        } catch (_) { /* parent closed */ }
+      },
+    });
+    const namesOf = (collection: any): string[] => {
+      try {
+        if (!collection) return [];
+        if (typeof collection.toJs === 'function') collection = collection.toJs();
+        if (collection instanceof Map) return Array.from(collection.keys()).map(String);
+        if (collection instanceof Set) return Array.from(collection).map(String);
+        if (Array.isArray(collection)) return collection.map(String);
+        if (typeof collection === 'object') return Object.keys(collection).map(String);
+      } catch (_) { /* fall through to [] */ }
+      return [];
+    };
+    const loadedNames = namesOf(loadResult && loadResult.loaded);
+    const failedNames = namesOf(loadResult && loadResult.failed);
+    if (loadedNames.length || failedNames.length) {
+      const note = (loadedNames.length ? `[pyodide] auto-installed: ${loadedNames.join(', ')}` : '')
+        + (failedNames.length
+          ? `${loadedNames.length ? '\n' : ''}[pyodide] not in the Pyodide distribution: ${failedNames.join(', ')} — pure-Python PyPI wheels install via asyncio.run(micropip.install("pkg"))`
+          : '');
+      pyodide.runPython(`print(${JSON.stringify(note)}, flush=True)`);
+    }
+  } catch (_) { /* offline fetch / unparseable source — exec reports the real error */ }
+
   let status = 'completed';
   let exitCode = 0;
   let errorMessage: string | null = null;
@@ -493,6 +557,31 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     // they see, and the JS side reads it via the deferred-error
     // path below. The `_socrates_user_failed` flag lets the JS catch
     // distinguish "user code raised" from "Pyodide itself blew up".
+    //
+    // P_compact-traceback — a bare `Type: msg` line told the model
+    // WHAT failed but not WHERE, so a fix attempt had to guess which
+    // line broke and re-emitted near-identical code. The wrapper now
+    // also prints a compact traceback (last 3 frames in the user's
+    // `<socrates>` source, each with its source line) to stderr
+    // BEFORE the markers: the marker block stays a clean
+    // `Type: msg` errorMessage while stderr reads like a real
+    // Python traceback — the channel the model already reads and the
+    // row's stderr section already renders. For SyntaxError /
+    // IndentationError there is no user frame (the failure is inside
+    // compile() itself), so `e.lineno` / `e.text` / `e.offset` carry
+    // the position. Registering `_socrates_user_code` in
+    // `linecache.cache` is the same trick IPython uses for exec'd
+    // cells — it is what lets FrameSummary.line resolve to the
+    // actual source text instead of None.
+    //
+    // `except KeyboardInterrupt: raise` must stay ahead of
+    // `BaseException`: Pyodide's interrupt buffer raises
+    // KeyboardInterrupt inside the user's exec on timeout/cancel,
+    // and swallowing it into the marker path reported the run as
+    // `failed`/`KeyboardInterrupt` instead of `timeout` — which the
+    // executor then marked retryable. Letting it escape keeps the
+    // JS-side timeout classification (and the parent's
+    // user-raised-KeyboardInterrupt guard) intact.
     const oneLine = code
       .replace(/\\/g, '\\\\')   // backslash → double-backslash
       .replace(/"/g, '\\"')     // double-quote → backslash-quote
@@ -505,8 +594,34 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       '    exec(_socrates_compiled, {"__name__": "__main__"})',
       'except SystemExit as _socrates_se:',
       '    raise',
+      'except KeyboardInterrupt:',
+      '    raise',
       'except BaseException as _socrates_e:',
-      '    import sys',
+      '    import sys, traceback, linecache',
+      '    linecache.cache["<socrates>"] = (len(_socrates_user_code), None, _socrates_user_code.splitlines(True), "<socrates>")',
+      '    _socrates_frames = [f for f in (traceback.extract_tb(_socrates_e.__traceback__) if _socrates_e.__traceback__ is not None else []) if f.filename == "<socrates>"]',
+      '    if (not _socrates_frames) and isinstance(_socrates_e, SyntaxError) and getattr(_socrates_e, "lineno", None):',
+      '        print("Traceback (most recent call last):", file=sys.stderr)',
+      '        print(\'  File "<socrates>", line \' + str(_socrates_e.lineno) + \', in <module>\', file=sys.stderr)',
+      '        _socrates_src = (_socrates_e.text or "").strip()',
+      '        if not _socrates_src:',
+      '            _socrates_lines = _socrates_user_code.splitlines()',
+      '            if _socrates_e.lineno <= len(_socrates_lines):',
+      '                _socrates_src = _socrates_lines[_socrates_e.lineno - 1].strip()',
+      '        if _socrates_src:',
+      '            print("    " + _socrates_src, file=sys.stderr)',
+      '            _socrates_off = getattr(_socrates_e, "offset", None)',
+      '            if _socrates_off:',
+      '                print("    " + " " * max(0, _socrates_off - 1) + "^", file=sys.stderr)',
+      '    elif _socrates_frames:',
+      '        print("Traceback (most recent call last):", file=sys.stderr)',
+      '        for _f in _socrates_frames[-3:]:',
+      '            _loc = \'  File "<socrates>", line \' + str(_f.lineno)',
+      '            if _f.name and _f.name != "<module>":',
+      '                _loc += ", in " + _f.name',
+      '            print(_loc, file=sys.stderr)',
+      '            if _f.line:',
+      '                print("    " + _f.line.strip(), file=sys.stderr)',
       '    print("---SOCRATES-ERROR-BEGIN---", file=sys.stderr)',
       '    print(type(_socrates_e).__name__ + ": " + str(_socrates_e), file=sys.stderr)',
       '    print("---SOCRATES-ERROR-END---", file=sys.stderr)',
@@ -515,6 +630,7 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     ].join('\n');
     let pyodideThrew = false;
     let sysExitCode: number | null = null;
+    let interrupted = false;
     try {
       await pyodide.runPythonAsync(wrapped);
     } catch (err) {
@@ -522,8 +638,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       // Python exception across the JS bridge. The user-side
       // traceback frames (file `<exec>`, etc.) leak into
       // err.message. We ignore that here and rely on the stderr
-      // marker for the friendly message. Distinguish three cases:
+      // marker for the friendly message. Distinguish four cases:
       //   - User code called sys.exit(N)            → re-raised SystemExit
+      //   - SIGINT interrupt buffer fired           → re-raised KeyboardInterrupt
       //   - User code raised any other BaseException → re-raised as a PythonError
       //   - Pyodide itself blew up                  → some other JS error
       // We use the err.type / err.name / err.code to tell them apart.
@@ -536,6 +653,13 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
         // otherwise default to 0 (Python's sys.exit() with no arg).
         const code = (err && ((err as PyRunError).code != null ? (err as PyRunError).code : (Array.isArray((err as PyRunError).args) ? (err as PyRunError).args[0] : null))) ?? 0;
         sysExitCode = typeof code === 'number' ? code : (code == null ? 0 : 1);
+      } else if (errType === 'KeyboardInterrupt' || /KeyboardInterrupt/.test(errMsg)) {
+        /* The wrapper deliberately re-raises KeyboardInterrupt so a
+           SIGINT-buffer interrupt (parent timeout or caller cancel)
+           reports as `timeout` instead of a generic user failure.
+           The parent's `!timedOut` check still maps a user-raised
+           KeyboardInterrupt to 'worker_interrupt'. */
+        interrupted = true;
       }
       void err;
     }
@@ -550,6 +674,13 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
         status = 'failed';
         exitCode = 1;
         pendingPyType = 'PythonError';
+      } else if (interrupted) {
+        /* SIGINT-buffer interrupt (parent timeout / caller abort). The
+           parent still discriminates: a user-raised KeyboardInterrupt
+           with no timedOut flag becomes 'worker_interrupt'. */
+        status = 'timeout';
+        errorMessage = 'timeout';
+        exitCode = 124;
       } else if (sysExitCode !== null) {
         // User called sys.exit(N). Treat as completed unless the
         // code is non-zero. Pyodide's `runPythonAsync` propagates
@@ -626,6 +757,16 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     stderrText = stderrText.replace(re, '').trim();
   }
 
+  /* P_syntax-no-quota — a SyntaxError-family failure means compile()
+     rejected the source before any user code ran, so the run consumed
+     ~zero interpreter time. Tag it so the parent can persist the row
+     as 'rejected' and keep it out of the daily execution quota.
+     Runtime failures (NameError, TypeError…) still count — they
+     burned real worker work. */
+  const errorCode = (status === 'failed' && errorMessage
+    && /^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage))
+    ? 'syntax_error' : undefined;
+
   // Walk the artifacts dir and report what we produced.
   let artifacts: Array<{ name: string; relPath: string; size: number; mtimeMs: number; absPath: string }> = [];
   try {
@@ -660,6 +801,7 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     stdout: String(stdoutText),
     stderr: String(stderrText),
     errorMessage,
+    errorCode,
     artifacts,
   };
 }

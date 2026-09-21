@@ -6,7 +6,7 @@
  * progress streaming (P_progress) mirror the original route behaviour.
  */
 
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, eq, gte, ne, sql } from 'drizzle-orm';
 import { getDb } from '../../../../db/index.js';
 import { executions } from '../../../../db/schema.js';
 import { getExecutionsPerDay } from '../../../../lib/tiers.js';
@@ -58,12 +58,16 @@ export const executeCodeInterpreter: ToolExecutor = async (
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const db = getDb();
+    /* P_syntax-no-quota — rows persisted as 'rejected' were rejected
+       at compile time (SyntaxError family) and never ran user code,
+       so they don't consume the daily execution budget. */
     const [countRow] = await db.select({
       count: sql<number>`COUNT(*)::int`,
     }).from(executions)
       .where(and(
         eq(executions.userId, userId),
         gte(executions.startedAt, today),
+        ne(executions.status, 'rejected'),
       ));
     const usedToday = countRow?.count || 0;
     if (usedToday >= tierLimit) {

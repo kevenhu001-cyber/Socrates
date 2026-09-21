@@ -268,21 +268,35 @@ export function validateVisualizationSpec(input: unknown) {
   if (!payload.success) return { ok: false, issues: compactIssues(payload.error) };
   if (['svg_illustration', 'interactive_simulation'].includes(parsed.data.template)) {
     const source = payload.data.source;
-    // Match the frontend's extensionIsSafe() logic exactly. We block
-    // only the actually-dangerous patterns: script/iframe/object/embed/form
-    // tags, inline event handlers, network-request APIs, and dangerous
-    // URL schemes. HTTPS URLs are allowed — the iframe's CSP
-    // (default-src 'none'; img-src data: blob:) already blocks external
-    // loads at the browser level, and legitimate CDN images / CSS imports
-    // inside svg_illustration templates need them.
-    if (/<(?:script|iframe|object|embed|form)\b/i.test(source)) {
-      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含脚本、iframe、object、embed 或 form 标签。' }] };
+    /* P_interactive-sim-scripts — match the frontend's
+       extensionIsSafe() split exactly. `interactive_simulation`
+       allows inline <script> and event handlers: the extension
+       iframe runs opaque-origin under CSP `connect-src 'none'`
+       with no popup permission, so a script cannot reach the
+       parent page, the network, or cookies — the same containment
+       a fenced ```viz block already gets. Banning scripts there
+       made the "interactive" template fail validation on every
+       genuinely interactive submission and burn the retry budget.
+       `svg_illustration` stays script-free — it is static art.
+       What remains banned for BOTH templates: nested iframe /
+       object / embed / form tags, network-request APIs (the CSP
+       would kill them anyway — the explicit check gives the model
+       a readable error instead of a silent runtime failure), and
+       dangerous URL schemes on src/href-style attributes. */
+    const isInteractive = parsed.data.template === 'interactive_simulation';
+    const tagBan = isInteractive
+      ? /<(?:iframe|object|embed|form)\b/i
+      : /<(?:script|iframe|object|embed|form)\b/i;
+    if (tagBan.test(source)) {
+      return { ok: false, issues: [{ path: 'payload.source', message: isInteractive
+        ? '扩展源不能包含 iframe、object、embed 或 form 标签。'
+        : '扩展源不能包含脚本、iframe、object、embed 或 form 标签。' }] };
     }
-    if (/\son\w+\s*=/i.test(source)) {
+    if (!isInteractive && /\son\w+\s*=/i.test(source)) {
       return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含内联事件处理函数。' }] };
     }
-    if (/\b(?:fetch|xmlhttprequest|websocket)\b/i.test(source)) {
-      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含网络请求 API。' }] };
+    if (/\b(?:fetch|xmlhttprequest|websocket|sendbeacon|eventsource)\b/i.test(source)) {
+      return { ok: false, issues: [{ path: 'payload.source', message: '扩展源不能包含网络请求 API（沙箱已关闭网络访问，请把数据内联进源码）。' }] };
     }
     // Check for dangerous URL schemes on src/href attributes
     const attrRe = /\b(?:src|href|action|formaction|xlink:href)\s*=\s*["']?\s*([^\s"'>]+)/gi;
@@ -312,7 +326,7 @@ export const VISUALIZATION_TOOL = {
   type: 'function',
   function: {
     name: 'render_visualization',
-    description: 'Create a native Socrates visual card backed by mature renderers: ECharts for ordinary statistics, Plotly for function/paper charts, Mermaid for flows, GeoGebra for math constructions, Three.js for 3D geometry, and tldraw for editable whiteboards. Submit semantic content only. Keep category, node, edge, and series labels concise (normally at most 24 characters); put explanation in caption, detail, or accessibilitySummary so labels do not overlap. Prefer fewer categories, a horizontal bar, or a table when long text would make a dense chart unreadable. Never submit CSS, fonts, colors, dimensions, raw renderer options, or Mermaid source. Use code_interpreter only when data must first be calculated, analysed from files, or exported.',
+    description: 'Create a native Socrates visual card backed by mature renderers: ECharts for ordinary statistics, Plotly for function/paper charts, Mermaid for flows, GeoGebra for math constructions, Three.js for 3D geometry, and tldraw for editable whiteboards. Submit semantic content only. Keep category, node, edge, and series labels concise (normally at most 24 characters); put explanation in caption, detail, or accessibilitySummary so labels do not overlap. Prefer fewer categories, a horizontal bar, or a table when long text would make a dense chart unreadable. Never submit CSS, fonts, colors, dimensions, raw renderer options, or Mermaid source. For svg_illustration submit static self-contained SVG/HTML — no scripts. For interactive_simulation submit a self-contained HTML document; inline <script> and event handlers ARE allowed and run in a sandbox, but network access (fetch/XHR/WebSocket) is disabled — inline all data. Use code_interpreter only when data must first be calculated, analysed from files, or exported.',
     parameters: {
       type: 'object',
       required: ['version', 'template', 'title', 'accessibilitySummary', 'payload'],
