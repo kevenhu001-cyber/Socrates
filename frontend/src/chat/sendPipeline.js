@@ -32,6 +32,32 @@ import {
 import { renderAttachmentChips } from '../attachments/render.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
+import { ensureChatReady } from '../app/bootstrapReadiness.js';
+
+function _mark(name) {
+  try { if (typeof performance !== "undefined" && performance.mark) performance.mark(name); } catch (_) {}
+}
+
+function _afterFirstPaint() {
+  if (typeof requestAnimationFrame !== "function") {
+    return new Promise(function(resolve){setTimeout(resolve,0)});
+  }
+  return new Promise(function(resolve){
+    requestAnimationFrame(function(){setTimeout(resolve,0)});
+  });
+}
+
+function _markFeedbackPainted() {
+  if (typeof requestAnimationFrame !== "function") return;
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      _mark("socrates:send-feedback-visible");
+      try{
+        performance.measure("socrates:send-feedback-latency","socrates:send-click","socrates:send-feedback-visible");
+      }catch(_){}
+    });
+  });
+}
 
 function _t(key, fallback) {
   try {
@@ -89,6 +115,7 @@ function _addAnchoredAssistant(text, type, actions) {
 
 export async function submitChatMessage(textOverride,opts){
   opts=opts||{};
+  _mark("socrates:send-click");
   var rawText=(textOverride!=null?textOverride:getComposerMarkdown("chat"));
   var text=rawText.trim();
   /* P5.8 — if a template is active, strip its body prefix
@@ -135,21 +162,27 @@ export async function submitChatMessage(textOverride,opts){
    * so two fast submits cannot overwrite a global hand-off slot. */
   var precreatedChatCtl=null;
   var precreatedRetry=null;
-  function precreateChatTurn() {
+  function precreateChatTurn(optimisticUser) {
     if (_appMode() !== "chat" || _deepResearchOn()) return;
     try {
       precreatedChatCtl=_addStreamingMessage({
+        optimisticUser:optimisticUser,
         onRetry:function(){
           if (typeof precreatedRetry === "function") return precreatedRetry();
           return _askChatTurn(text, textForModel);
         },
       });
-    } catch (_) { precreatedChatCtl=null; }
+    } catch (_) {
+      precreatedChatCtl=null;
+      if(optimisticUser&&typeof optimisticUser.commitFallback==="function")optimisticUser.commitFallback();
+    }
   }
   var userClientId=null;
+  var canCommitTurnAtomically=_appMode()==="chat"&&!_deepResearchOn();
   if(isComposerSubmit){
-    userClientId=addMessage("user",text,null,null,immediateAttList);
-    precreateChatTurn();
+    var optimisticUser=addMessage("user",text,null,null,immediateAttList,canCommitTurnAtomically?{deferAppend:true}:null);
+    userClientId=canCommitTurnAtomically?optimisticUser.clientId:optimisticUser;
+    if(canCommitTurnAtomically)precreateChatTurn(optimisticUser);
     clearComposer("chat");updateSendBtn();
     /* Click-send (opts.blurAfterSend) ends the typing session: drop the
        editor focus so the composer collapses out of its focus-within
@@ -162,9 +195,12 @@ export async function submitChatMessage(textOverride,opts){
     }
   }else{
     /* Origin: quiz — synthetic message from a quiz pick. */
-    userClientId=addMessage("user",text,null,null,immediateAttList);
-    precreateChatTurn();
+    var optimisticQuizUser=addMessage("user",text,null,null,immediateAttList,canCommitTurnAtomically?{deferAppend:true}:null);
+    userClientId=canCommitTurnAtomically?optimisticQuizUser.clientId:optimisticQuizUser;
+    if(canCommitTurnAtomically)precreateChatTurn(optimisticQuizUser);
   }
+  _mark("socrates:optimistic-turn-committed");
+  _markFeedbackPainted();
   /* P_attachments — clear the pending chips after the message is
    * committed to the DOM. Render an empty strip so the UI updates. */
   if(isComposerSubmit){
@@ -172,6 +208,11 @@ export async function submitChatMessage(textOverride,opts){
     if(typeof renderAttachmentChips==="function")renderAttachmentChips();
     if(typeof updateSendBtn==="function")updateSendBtn();
   }
+
+  /* End the input task before payload assembly. This gives React and the
+     browser a paint opportunity for the user row, waiting state and Stop
+     control even when markdown/session history or attachment work is heavy. */
+  await _afterFirstPaint();
 
   /* Assemble the model payload from the immutable snapshot after the UI has
      committed. buildMessageContent waits for in-flight uploads
@@ -225,6 +266,10 @@ export async function submitChatMessage(textOverride,opts){
     fetchWebContext(stateStore.read("topic")+" "+text,{background:true});
   }
   setTimeout(async function(){
+    /* The shell is intentionally visible while providers and memories load.
+       Keep the optimistic turn visible, but do not construct a model request
+       with an empty provider set or the wrong user's memory context. */
+    await ensureChatReady();
     /* Deep Research mode — if the extension is active, run research
        instead of a normal chat turn. Read the window-level flag set by
        pickers.js: the EXTENSIONS array is module-scoped in pickers.js

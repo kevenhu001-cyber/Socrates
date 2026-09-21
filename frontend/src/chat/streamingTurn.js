@@ -120,7 +120,7 @@ export function addStreamingMessage(opts){
     }
   } catch (_) {}
 
-  var msgIdx=stateStore.dispatch({type:"session/append-message",payload:{
+  var assistantEntry={
     clientId:clientId,
     role:"assistant",
     rawText:"",
@@ -130,7 +130,18 @@ export function addStreamingMessage(opts){
     _turnAnchorMinHeight: _initialReserve > 0 ? _initialReserve : undefined,
     _turnAnchorMode: _initialReserve > 0 ? 'turn' : undefined,
     _turnViewportTarget: _initialReserve > 0 ? _initialTargetOffset : undefined,
-  }});
+  };
+  var msgIdx;
+  if(opts.optimisticUser&&opts.optimisticUser.entry){
+    var turnIndexes=stateStore.dispatch({
+      type:"session/append-turn",
+      payload:[opts.optimisticUser.entry,assistantEntry]
+    });
+    msgIdx=turnIndexes[1];
+    if(typeof opts.optimisticUser.commitPaired==="function")opts.optimisticUser.commitPaired();
+  }else{
+    msgIdx=stateStore.dispatch({type:"session/append-message",payload:assistantEntry});
+  }
   publishReactChatRuntime({type:"stream-started",messageId:clientId});
   var full="";
   /* P_reasoning-persist — accumulate reasoning_content deltas so we

@@ -31,6 +31,13 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
   await sendBtn.click({ timeout: 2_000 }).catch((e) => consoleErrors.push('click: ' + String(e)));
   await page.waitForTimeout(1_500);
 
+  const feedbackLatency = await page.evaluate(() => {
+    const entries = performance.getEntriesByName('socrates:send-feedback-latency');
+    return entries.length ? entries[entries.length - 1].duration : null;
+  });
+  expect(feedbackLatency, 'send feedback should be painted and measured').not.toBeNull();
+  expect(feedbackLatency, 'click-to-feedback latency').toBeLessThanOrEqual(100);
+
   const realErrors = consoleErrors.filter((e) =>
     /ReferenceError|TypeError|SyntaxError/.test(e) &&
     !/fetch|network|api\/|\b401\b|csrf/i.test(e),

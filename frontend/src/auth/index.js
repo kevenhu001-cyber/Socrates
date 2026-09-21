@@ -30,6 +30,7 @@ import { toggleShareBtn } from '../ui/share.js';
 import { renderProviderList } from '../ui/settings.js';
 
 import { renderGreeting } from '../ui/greeting.js';
+import { startPostAuthHydration } from '../app/bootstrapReadiness.js';
 
 function isEmbeddedNativeWebView(){
   try{
@@ -205,7 +206,8 @@ export function mountAuthListeners(){
    Runs after a successful signin/register/verify/code-login. Loads
    the user's projects, sessions, providers, memories, etc. Reads
    main.js globals via window. */
-export async function afterAuthEnter(){
+export async function afterAuthEnter(options){
+  options=options||{};
   toggleShareBtn&&toggleShareBtn();
   /* P_bleed-v2 — wipe the previous user's module-level caches
      BEFORE we start fetching the new user's data. Without this,
@@ -218,8 +220,12 @@ export async function afterAuthEnter(){
   if(typeof window.clearPerUserClientState==="function"){
     try{window.clearPerUserClientState()}catch {/* ignore */}
   }
-  /* Run the localStorage -> server migration once if there's anything to bring. */
-  try{
+  /* Migration is useful but not a paint prerequisite.  Start it in the
+     background so a large local session archive cannot hold the shell gate. */
+  Promise.resolve().then(async function(){try{
+    /* The migration is the only boot-time mutation. Keep CSRF priming off the
+       shell critical path, but preserve the original security ordering here. */
+    if(options.csrfReady)try{await options.csrfReady}catch(_){}
     var localApi=localStorage.getItem("socrates-api");
     var localSessions=localStorage.getItem("socrates-sessions-v2");
     var payload={};
@@ -233,7 +239,7 @@ export async function afterAuthEnter(){
         try{localStorage.removeItem("socrates-api")}catch(_){}
       }catch {/* migrate failed */}
     }
-  }catch {/* migrate setup failed */}
+  }catch {/* migrate setup failed */}});
   /* Boot-time data fetch helper — calls a `fn` once; if it throws
      an ApiError(401) DURING the post-login grace window
      (isInAuthGraceWindow), the brand-new `sid` cookie may not have
@@ -266,27 +272,14 @@ export async function afterAuthEnter(){
       }
     }
   }
-  /* Pull the user's server-side chat sessions into the local cache. */
-  await bootFetch("refreshServerSessions", window.refreshServerSessions);
-  /* Load the user's saved API providers and model configs.
-     Wrap the call so the `await` waits for the returned Promise;
-     bootFetch retries 401s during the grace window so the model
-     picker isn't left empty when the sid cookie is still settling. */
-  var _r=await bootFetch("refreshApiConfig", window.refreshApiConfig);
-  /* Load the user's saved memories for long-term context. AWAIT this
-     so the first chat request the user fires after sign-in sees their
-     own memories (and not the previous user's, which would otherwise
-     be visible during the fire-and-forget window). loadUserMemories
-     also clears _userMemories before fetching, so awaiting is safe
-     even if the request fails. */
-  try{await loadUserMemories()}catch(_){/* handled inside */}
   /* Update sidebar footer with user info. */
   renderUserFooter&&renderUserFooter();
   /* Once the user object is available, paint the personalized greeting. */
   try {
     if (typeof renderGreeting === "function") renderGreeting();
   } catch (_) { /* first-paint helpers — never block sign-in */ }
-  /* Re-render sidebar lists now that the cache is fresh. */
+  /* Paint the cleared/skeleton state immediately.  Each background loader
+     re-renders only the surface it owns when its data becomes available. */
   window.renderRecents&&window.renderRecents();
   window.renderMistakes&&window.renderMistakes();
   window.updateMistakesBadge&&window.updateMistakesBadge();
@@ -295,6 +288,22 @@ export async function afterAuthEnter(){
   syncExtensionsUI&&syncExtensionsUI();
   window.syncAppModeUI&&window.syncAppModeUI();
   syncSidebarForMode&&syncSidebarForMode();
+  startPostAuthHydration({
+    sessions:async function(){
+      await bootFetch("refreshServerSessions",window.refreshServerSessions);
+      window.renderRecents&&window.renderRecents();
+      window.renderMistakes&&window.renderMistakes();
+      window.updateMistakesBadge&&window.updateMistakesBadge();
+    },
+    providers:async function(){
+      if(options.configReady)try{await options.configReady}catch(_){}
+      await bootFetch("refreshApiConfig",window.refreshApiConfig);
+      renderProviderList&&renderProviderList();
+      window.syncModelPills&&window.syncModelPills();
+      syncExtensionsUI&&syncExtensionsUI();
+    },
+    memories:function(){return loadUserMemories();}
+  });
   /* If the URL carries a chat session ID, load it. Otherwise, stay on the
      main page (topic setup) — no session exists until the user clicks Begin.
      P_exam-route — exam sessions live under a different query key
@@ -304,15 +313,15 @@ export async function afterAuthEnter(){
   var chatId=getChatIdFromURL();
   var examId=getExamIdFromURL();
   if(chatId){
-    try{await window.loadSession(chatId)}catch {/* failed to load session */
+    Promise.resolve().then(function(){return window.loadSession(chatId)}).catch(function(){
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       setChatIdInURL(null);
-    }
+    });
   }else if(examId){
-    try{await window.loadSession(examId)}catch {/* failed to load session */
+    Promise.resolve().then(function(){return window.loadSession(examId)}).catch(function(){
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       setExamIdInURL(null);
-    }
+    });
   }
   /* Trigger initial data load. */
   if(typeof window.initialLoad==="function")window.initialLoad();

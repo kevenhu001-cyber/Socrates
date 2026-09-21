@@ -21,9 +21,50 @@ import { renderUserFooter } from '../ui/profile.js';
    even if the boot IIFE completes before that function is defined. */
 export var SERVER_HAS_BEAGLE_KEY=false;
 
+async function loadPublicConfig(){
+  var cfgOk=false;
+  try{
+    var cfg=await fetch("/api/v2/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
+    if(cfg&&cfg.hasBeagleKey){
+      var builtIn=window.BEAGLE_BUILT_IN;
+      if(builtIn){
+        if(typeof cfg.beagleKey==="string")builtIn.key=cfg.beagleKey;
+        if(typeof cfg.beagleModel==="string")builtIn.model=cfg.beagleModel;
+      }
+      cfgOk=true;
+    }
+    try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (_) {}
+  }catch(_){/* config fetch failed */}
+  SERVER_HAS_BEAGLE_KEY=cfgOk;
+  try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (_) {}
+  return cfgOk;
+}
+
+async function loadCurrentUser(){
+  var me=null;
+  for(var meAttempt=1;meAttempt<=3;meAttempt++){
+    try{
+      me=await apiFetch("/api/auth/me",{_authEndpoint:true});
+      break;
+    }catch(e){
+      if(e&&e.status===401){
+        if(meAttempt<3){
+          await new Promise(function(r){setTimeout(r,500)});
+          continue;
+        }
+        return {unauthorized:true,user:null};
+      }
+      if(meAttempt<3)await new Promise(function(r){setTimeout(r,500)});
+    }
+  }
+  return {unauthorized:false,user:me&&me.user?me.user:null};
+}
+
 export async function authBoot(){
-  /* Prime the CSRF cookie before any API calls. */
-  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
+  /* CSRF priming is required before mutations, but it is independent of the
+     read-only identity/config probes.  Starting it here removes one full RTT
+     from the signed-in cold-start path. */
+  var csrfReady=fetch("/api/v2/auth/csrf-token",{credentials:"include"}).catch(function(){});
   var params=new URLSearchParams(location.search);
   /* P_local-dev-bypass — when the app is served from localhost (vite dev
    * server, `npm run dev`) append `?dev=1` to skip the sign-in flow.
@@ -40,8 +81,9 @@ export async function authBoot(){
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(devUser);
     else window.CURRENT_USER=devUser;
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
-    if(typeof afterAuthEnter==="function")try{await afterAuthEnter()}catch(_){}
+    if(typeof afterAuthEnter==="function")try{await afterAuthEnter({configReady:Promise.resolve(true),csrfReady:csrfReady})}catch(_){}
     window.hideGate&&window.hideGate();
+    try{performance.mark("socrates:shell-visible")}catch(_){}
     return;
   }
   var oauthError=params.get("oauth_error");
@@ -107,41 +149,10 @@ export async function authBoot(){
     })();
     return;
   }
-  /* Fetch the built-in Beagle API key from the server's public config
-     endpoint so the key lives in the server environment, not the source. */
-  var cfgOk=false;
-  try{
-    var cfg=await fetch("/api/v2/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
-    if(cfg&&cfg.hasBeagleKey){
-      /* The server proxies Beagle requests using its own env key.
-         The raw key is never sent to the client, so cfg.beagleKey
-         is intentionally absent. Only update model when the server
-         explicitly provides one. */
-      var BEAGLE_BUILT_IN = window.BEAGLE_BUILT_IN;
-      if(BEAGLE_BUILT_IN){
-        if(typeof cfg.beagleKey==="string")BEAGLE_BUILT_IN.key=cfg.beagleKey;
-        if(typeof cfg.beagleModel==="string")BEAGLE_BUILT_IN.model=cfg.beagleModel;
-      }
-      cfgOk=true;
-    }
-    /* P_privacy-leak — bridge the server-side capability hint to
-     * window so isReasoningProvider() can request reasoning_effort for
-     * the built-in provider without ever knowing its model name.
-     * Default false (assume non-reasoning) if the server is older and
-     * doesn't send the field. */
-    try { window.BEAGLE_IS_REASONING = cfg && cfg.isReasoning === true; } catch (_) {}
-  }catch(_){/* config fetch failed */}
-  /* Promote to the module-level flag so refreshApiConfig() — which
-     runs after we return — can decide whether to fall back to
-     BEAGLE on cold start. */
-  SERVER_HAS_BEAGLE_KEY=cfgOk;
-  /* Also sync the window bridge. windowExports.js imported the var
-     at module-load time (false), and ESM imports are live bindings
-     for re-exports BUT the plain assignment `window.X = X` in
-     windowExports.js captured the value at import time, so the
-     window copy never sees the runtime update above. Re-bridge
-     here so refreshApiConfig() sees the true value. */
-  try { window.SERVER_HAS_BEAGLE_KEY = cfgOk; } catch (_) {}
+  /* Config and identity are independent reads. The shell waits only for
+     identity; provider hydration awaits config in the background. */
+  var configReady=loadPublicConfig();
+  var identity=await loadCurrentUser();
 
   /* P0.0 — only route the user to the auth gate when the server
    * explicitly says 401. Network blips, 5xx, and a missing
@@ -150,37 +161,20 @@ export async function authBoot(){
    * the sign-in flow. We retry once after 500ms on transient
    * failures, then show a "couldn't reach the server" toast and
    * stop on the topic-setup shell so the user can try again. */
-  var me=null;
-  for(var meAttempt=1;meAttempt<=3;meAttempt++){
-    try{
-      me=await apiFetch("/api/auth/me",{_authEndpoint:true});
-      break;
-    }catch(e){
-      if(e&&e.status===401){
-        /* Genuine session expiry. Don't immediately kick to the gate on the
-         * very first 401 — a transient race or a Set-Cookie propagation
-         * delay can produce a 401 even when the session is still valid.
-         * Retry once more after a short delay before declaring the user
-         * logged out, so a single bad response doesn't force a re-login. */
-        if(meAttempt<3){
-          await new Promise(function(r){setTimeout(r,500)});
-          continue;
-        }
-        window.showGate&&window.showGate();
-        window.showAuthSignin&&window.showAuthSignin();
-        return;
-      }
-      if(meAttempt<3)await new Promise(function(r){setTimeout(r,500)});
-    }
+  if(identity.unauthorized){
+    window.showGate&&window.showGate();
+    window.showAuthSignin&&window.showAuthSignin();
+    return;
   }
-  if(me&&me.user){
-    if(typeof window.setCurrentUser==="function")window.setCurrentUser(me.user);
-    else window.CURRENT_USER=me.user;
+  if(identity.user){
+    if(typeof window.setCurrentUser==="function")window.setCurrentUser(identity.user);
+    else window.CURRENT_USER=identity.user;
     /* Grace window for the Set-Cookie to settle (see notes in
      * markAuthSuccess). */
     try{window.markAuthSuccess&&window.markAuthSuccess()}catch(_){}
-    if(typeof afterAuthEnter==="function")await afterAuthEnter();
+    if(typeof afterAuthEnter==="function")await afterAuthEnter({configReady:configReady,csrfReady:csrfReady});
     window.hideGate&&window.hideGate();
+    try{performance.mark("socrates:shell-visible")}catch(_){}
     /* The one-time mobile web-session consume route leaves an allow-listed
        target in the query. Open it only after normal authenticated hydration
        so its list data and controls match a first-party browser visit. */

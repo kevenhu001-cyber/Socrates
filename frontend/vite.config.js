@@ -64,22 +64,21 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    cssCodeSplit: false,
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
+        /* Keep only genuinely shared eager libraries in named chunks. The
+           previous catch-all `vendor` bucket merged dependencies reachable
+           solely through dynamic imports (notably tldraw and Fuse) back into
+           the startup graph, effectively disabling lazy loading. */
         manualChunks(id) {
           const f = id.split('\\').join('/');
           if (f.includes('/node_modules/')) {
             if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/')) return 'vendor-react';
-            if (f.includes('/node_modules/zustand/')) return 'vendor-react';
-            return 'vendor';
+            if (f.includes('/node_modules/@tiptap/') || f.includes('/node_modules/@prosemirror/') || f.includes('/node_modules/prosemirror-')) return 'vendor-editor';
+            if (f.includes('/node_modules/zustand/')) return 'vendor-state';
+            if (f.includes('/node_modules/marked/') || f.includes('/node_modules/dompurify/')) return 'vendor-markdown';
           }
-          if (!f.includes('/src/')) return;
-          if (f.includes('/src/i18n.js')) return 'i18n';
-          if (f.includes('/src/store/')) return 'store';
-          if (f.includes('/src/render/')) return 'render';
-          if (f.includes('/src/chat/')) return 'chat';
-          if (f.includes('/src/ui/')) return 'ui';
         },
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',

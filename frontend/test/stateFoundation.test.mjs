@@ -96,6 +96,26 @@ test('message actions replace arrays and guard indexed updates by client id', ()
   assert.deepEqual(stateStore.read('messages').map((message) => message.clientId), ['m-1']);
 });
 
+test('append-turn publishes the user row and assistant placeholder atomically', () => {
+  window.stateStore.dispatch({ type: 'session/replace-messages', payload: [] });
+  let notifications = 0;
+  const dispose = window.stateStore.subscribe(() => { notifications += 1; });
+  const indexes = window.stateStore.dispatch({
+    type: 'session/append-turn',
+    payload: [
+      { clientId: 'turn-user', role: 'user', rawText: 'hello', html: null },
+      { clientId: 'turn-assistant', role: 'assistant', rawText: '', html: null, type: 'streaming' },
+    ],
+  });
+  dispose();
+
+  assert.deepEqual(indexes, [0, 1]);
+  assert.deepEqual(stateStore.read('messages').map((message) => message.clientId), [
+    'turn-user', 'turn-assistant',
+  ]);
+  assert.equal(notifications, 1);
+});
+
 test('deferred stream updates coalesce subscriber notifications', async () => {
   window.stateStore.dispatch({
     type: 'session/replace-messages',

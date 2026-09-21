@@ -62,6 +62,7 @@ export function getKnownTags(){
 
 export async function refreshServerSessions(){
   if(!_currentUser())return[];
+  var ownerId=_currentUser()&&_currentUser().id;
   /* P_delbug-cleanup — the previous `console.warn("[DEL-BUG] ...")`
      tracing logs (incl. a `new Error().stack` capture on every call)
      were left over from a delete-flow debugging session and flooded
@@ -71,6 +72,7 @@ export async function refreshServerSessions(){
   var ok=false;
   try{
     var r=await apiFetch("/api/sessions?limit=200");
+    if(!_currentUser()||_currentUser().id!==ownerId)return[];
     serverCache.sessions=Array.isArray(r&&r.sessions)?r.sessions:[];
     ok=true;
   }catch(e){
@@ -89,6 +91,7 @@ export async function refreshServerSessions(){
       try{
         await new Promise(function(res){setTimeout(res,400)});
         var r2=await apiFetch("/api/sessions?limit=200");
+        if(!_currentUser()||_currentUser().id!==ownerId)return[];
         serverCache.sessions=Array.isArray(r2&&r2.sessions)?r2.sessions:[];
         ok=true;
       }catch {/* still failing — surface below */}
