@@ -161,19 +161,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   text-wrap: balance;
 }
 
-#appShell .lobe-home-actions {
-  width: min(100%, 720px);
-  margin: 20px auto 0;
-}
 
-#appShell .lobe-home-action {
-  width: 100%;
-  text-align: left;
-}
 
-#appShell .lobe-home-action-copy strong {
-  font-weight: 400;
-}
+
+
+
 
 /* --------------------------------------------------------------------------
    4. Light-mode paint repairs.
@@ -278,18 +270,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   box-shadow: 0 0 0 3px rgb(0 0 0 / 6%), var(--cg-composer-shadow) !important;
 }
 
-[data-mode="light"] #appShell .lobe-home-action:hover,
-[data-mode="light"] #appShell .lobe-home-action:focus-visible {
-  background: var(--cg-surface-hover) !important;
-}
 
-[data-mode="light"] #appShell .lobe-home-action-icon {
-  color: var(--cg-text-muted) !important;
-}
 
-[data-mode="light"] #appShell .lobe-home-action-copy strong {
-  color: var(--cg-text-secondary) !important;
-}
+
+
+
 
 /* Workspace pages: never force the near-black canvas in light mode. */
 [data-mode="light"] body.workspace-active #appShell .plugins-panel.main-page {
@@ -406,9 +391,7 @@ body.workspace-active #appShell .main-page {
    refactor. Styles intentionally not deleted yet — search history may
    still reference them in design docs.
    -------------------------------------------------------------------------- */
-#appShell .lobe-home-context {
-  display: none !important;
-}
+
 
 /* --------------------------------------------------------------------------
    8. Unified Composer & Top Mode Pills Refinement

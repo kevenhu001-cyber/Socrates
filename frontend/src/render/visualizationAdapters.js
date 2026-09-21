@@ -196,17 +196,25 @@ function loadGeoGebra() {
   if (window.GGBApplet) return Promise.resolve(window.GGBApplet);
   geogebraPromise ||= new Promise((resolve, reject) => {
     const script = document.createElement('script');
+    /* A stalled CDN connection never fires onerror — the card would
+       sit in "mounting" forever. Treat silence past the deadline as a
+       load failure so the fallback UI (Retry / Fix with AI) shows. */
+    const timer = setTimeout(() => {
+      script.remove();
+      reject(new Error('GeoGebra CDN unreachable (deployggb.js load timed out)'));
+    }, 15000);
+    const settle = (fn) => (value) => { clearTimeout(timer); fn(value); };
     script.src = 'https://www.geogebra.org/apps/deployggb.js';
     script.async = true;
-    script.onload = () => {
+    script.onload = settle(() => {
       if (window.GGBApplet) {
         resolve(window.GGBApplet);
       } else {
         script.remove();
         reject(new Error('GeoGebra loaded without GGBApplet'));
       }
-    };
-    script.onerror = () => { script.remove(); reject(new Error('GeoGebra failed to load')); };
+    });
+    script.onerror = settle(() => { script.remove(); reject(new Error('GeoGebra CDN unreachable (deployggb.js failed to load)')); });
     document.head.appendChild(script);
   }).catch((error) => {
     /* P_viz-geogebra-retry — a failed CDN load used to poison this cache

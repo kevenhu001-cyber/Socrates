@@ -147,6 +147,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # check:parity runs `git log -1 -- frontend`; a depth-1 clone
+          # resolves that to HEAD regardless of which commit touched
+          # frontend, so the webBaseline pin can never match.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

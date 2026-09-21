@@ -272,7 +272,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .kb-graph-node-blank circle{fill:hsl(var(--text-500))}
 .kb-graph-node-active circle{stroke:hsl(var(--accent-000));stroke-width:2.5}
 .recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
-.recents-panel.hidden{display:none}.panel-enter{animation:panelFadeIn .15s ease}
+.recents-panel.hidden{display:none}
 .recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 /* UI-align: time-bucket headers inside the session list (Today /
    Yesterday / Previous 7 days…), mirroring open-webui's grouping. */
@@ -321,40 +321,40 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .recent-item-label{font-size:calc(9px * var(--sidebar-font-scale));padding:1px 6px;border-radius:4px;background:hsl(var(--accent-900)/0.25);color:hsl(var(--accent-300));font-weight:500;flex-shrink:0;line-height:1.4;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
 
 /* Long-press context menu for recent items. */
-.session-context-menu{position:fixed;width:240px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:960;padding:6px;display:none;flex-direction:column;gap:2px;animation:contextMenuIn .15s ease}
-.session-context-menu.visible{display:flex}
+
+
 @keyframes contextMenuIn{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.session-context-head{padding:6px 8px 8px;border-bottom:0.5px solid hsl(var(--border-300)/0.15);margin-bottom:4px}
-.session-context-title{font-size:12px;font-weight:600;color:hsl(var(--text-100));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}
-.session-context-body{display:flex;flex-direction:column;gap:2px}
-.session-context-btn{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;background:transparent;border:0;color:hsl(var(--text-200));font-size:12px;font-family:inherit;cursor:pointer;transition:background .1s,color .1s;text-align:left;width:100%}
-.session-context-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.session-context-btn-danger:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
-.session-context-icon{flex-shrink:0;display:inline-flex;align-items:center;width:16px;justify-content:center}
-.session-context-icon svg{display:block}
-.session-context-label-row{display:flex;align-items:center;gap:6px;padding:3px 8px}
-.session-context-label-trigger{display:flex;align-items:center;gap:8px;width:100%;padding:7px 0;border:none;background:transparent;color:hsl(var(--text-200));font-size:12px;font-family:inherit;cursor:pointer;text-align:left;transition:color .1s}
-.session-context-label-trigger:hover{color:hsl(var(--text-100))}
-.session-context-label-trigger mark{color:hsl(var(--accent-000));background:transparent;font-style:normal}
-.session-context-label-input-wrap{flex:1;display:flex;align-items:center;gap:6px;background:hsl(var(--bg-300));border-radius:6px;padding:4px 8px;border:0.5px solid hsl(var(--border-300)/0.2)}
-.session-context-label-input{flex:1;background:transparent;border:0;color:hsl(var(--text-100));font-size:12px;font-family:inherit;outline:none;padding:0;min-width:0}
-.session-context-label-input::placeholder{color:hsl(var(--text-500))}
-.session-context-label-set{padding:4px 10px;border-radius:6px;background:hsl(var(--accent-900));color:hsl(var(--accent-100));font-size:11px;font-weight:500;border:0;cursor:pointer;font-family:inherit;transition:background .15s;flex-shrink:0}
-.session-context-label-set:hover{background:hsl(var(--accent-800))}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Block pointer events on all recent items while context menu is
    open. Prevents mobile synthetic clicks from navigating. */
 #sidebar.ctx-menu-block .recent-item{pointer-events:none}
 
 /* "Move to project" sub-section in the session context menu. */
-.session-context-move-to-project{border-top:0.5px solid hsl(var(--border-300)/0.1);margin-top:4px;padding-top:4px}
-.session-context-move-header{font-size:10px;font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;padding:2px 8px 4px}
-.session-context-project-list{display:flex;flex-direction:column;gap:1px;max-height:120px;overflow-y:auto}
-.session-context-project-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-200));font-size:12px;font-family:inherit;cursor:pointer;transition:background .1s;text-align:left;width:100%}
-.session-context-project-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.session-context-project-item.active{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.session-context-project-check{margin-left:auto;font-size:11px;color:hsl(var(--text-100))}
-.session-context-project-item .project-swatch{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+
+
+
+
+
+
+
 
 /* P2.2 — tag editor popover */
 .tag-editor-popover{position:fixed;width:320px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
@@ -389,13 +389,13 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .modal-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
 .modal-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200))}
 .modal-spacer{flex:1}
-.modal-cancel,.modal-save,.modal-delete{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
+.modal-cancel,.modal-save{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
 .modal-cancel{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
 .modal-cancel:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .modal-save{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
 .modal-save:hover{filter:brightness(1.1)}
-.modal-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.5)}
-.modal-delete:hover{background:hsl(0 60% 30%/0.4)}
+
+
 
 /* P5.6 — shortcut cheatsheet modal */
 .cheatsheet{max-height:75vh;width:min(520px,92vw);display:flex;flex-direction:column}
@@ -473,11 +473,11 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .cheatsheet-kbd{font-family:var(--font-mono);font-size:10px;padding:2px 6px;min-width:18px;text-align:center;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:4px;background:hsl(var(--bg-000));color:hsl(var(--text-200))}
 .cheatsheet-desc{margin-left:8px;font-size:13px;color:hsl(var(--text-200))}
 .recents-title{font-size:calc(10px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
-.recents-new-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:calc(10px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-300));background:transparent;border:0.5px solid hsl(var(--border-300)/0.5);transition:background-color .2s var(--ease-out),color .2s var(--ease-out),border-color .2s var(--ease-out),transform .14s var(--ease-out);cursor:pointer;line-height:1}
-.recents-new-btn:hover{color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.08)}
-.recents-new-btn:active{transform:scale(.96)}
-.recents-new-btn svg{stroke:currentColor;transition:transform .25s cubic-bezier(.4,0,.2,1)}
-.recents-new-btn:hover svg{transform:rotate(90deg)}
+
+
+
+
+
 .recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s var(--ease-out),color .18s var(--ease-out);cursor:pointer;gap:8px;position:relative;-webkit-touch-callout:none;contain:layout style}
 .recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .recent-item:active{transform:none}
@@ -563,31 +563,31 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 /* P4.1 — inline confirm bar shown when the user holds the delete
    button for 600ms. Replaces the row's normal content with a
    [Cancel][Delete] pair. */
-.recent-item-confirm{display:flex;align-items:center;gap:6px;margin-left:auto;padding:4px 8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:8px;font-size:12px;color:hsl(var(--text-200))}
-.recent-item-confirm-text{flex:1;color:hsl(var(--text-300));font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.recent-item-confirm-cancel{padding:3px 8px;border-radius:6px;background:transparent;color:hsl(var(--text-300));font-size:12px;cursor:pointer;border:0.5px solid hsl(var(--border-300)/0.4)}
-.recent-item-confirm-cancel:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
-.recent-item-confirm-delete{padding:3px 8px;border-radius:6px;background:hsl(0 60% 30%/0.6);color:hsl(0 60% 80%);font-size:12px;cursor:pointer;border:0.5px solid hsl(0 60% 50%/0.4)}
-.recent-item-confirm-delete:hover{background:hsl(0 60% 35%/0.8);color:#fff}
+
+
+
+
+
+
 .recents-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
 
 /* PR-B: Library panel — files & artifacts list */
 .library-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
 .library-panel.hidden{display:none}
-.library-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
-.library-title{font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
-.library-count{font-size:calc(11px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
-.library-tabs{display:flex;gap:2px;padding:0 12px 6px;flex-shrink:0}
+
+
+
+
 .library-tab{padding:4px 10px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));font-size:calc(12px * var(--sidebar-font-scale));cursor:pointer;transition:background .12s,color .12s;font-family:var(--font-sans)}
 .library-tab:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .library-tab.active{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
 .library-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.library-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
-.library-item:hover{background:hsl(var(--bg-300))}
-.library-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
-.library-item-info{flex:1;min-width:0}
-.library-item-name{font-size:calc(13px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.library-item-meta{font-size:calc(11px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+
+
+
+
+
+
 .library-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
 .library-selection-bar{display:none;align-items:center;justify-content:space-between;padding:4px 12px 6px;gap:8px;flex-shrink:0}
 .library-selection-bar.visible{display:flex}
@@ -605,25 +605,25 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .library-rename-input:focus{border-color:hsl(var(--accent-000)/.65);box-shadow:0 0 0 2px hsl(var(--accent-000)/.18)}
 
 /* Workspace surfaces shared by Library, Projects, Scheduled, and Apps. */
-.workspace-header-actions{display:flex;align-items:center;gap:7px}.workspace-add-btn{min-height:24px;padding:3px 8px;border-radius:6px;background:hsl(var(--accent-000)/.13);color:hsl(var(--accent-000));font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;line-height:1;transition:background .15s,color .15s}.workspace-add-btn:hover{background:hsl(var(--accent-000)/.23);color:hsl(var(--text-100))}.workspace-intro{padding:0 12px 8px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));line-height:1.45}.workspace-search{padding:0 12px 7px}.workspace-search input{width:100%;height:28px;padding:0 9px;border:0.5px solid hsl(var(--border-300)/.22);border-radius:7px;outline:none;background:hsl(var(--bg-200));color:hsl(var(--text-200));font-size:calc(12px * var(--sidebar-font-scale))}.workspace-search input:focus{border-color:hsl(var(--accent-000)/.55);background:hsl(var(--bg-000))}.workspace-loading{padding:28px 12px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale))}.workspace-empty{display:flex;flex-direction:column;align-items:center;gap:7px;padding:30px 16px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));line-height:1.5}.workspace-empty strong{color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:550}.workspace-primary,.workspace-secondary,.workspace-danger{min-height:30px;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:550;transition:background .15s,color .15s}.workspace-primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}.workspace-primary:hover{background:hsl(var(--accent-100))}.workspace-secondary{border:0.5px solid hsl(var(--border-300)/.45);background:hsl(var(--bg-200));color:hsl(var(--text-200))}.workspace-secondary:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-danger{background:transparent;color:hsl(0 65% 62%)}.workspace-danger:hover{background:hsl(0 60% 35%/.35)}.workspace-row{display:flex;align-items:center;gap:9px;min-height:48px;padding:7px 10px;border-radius:8px;transition:background .14s}.workspace-row:hover{background:hsl(var(--bg-300))}.workspace-row-icon{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:7px;background:hsl(var(--bg-200));color:hsl(var(--text-400));flex:0 0 auto}.workspace-row-icon svg{width:14px;height:14px}.workspace-row-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:1px;text-align:left}.workspace-row-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:520}.workspace-row-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale))}.workspace-row-action{padding:4px 6px;border-radius:5px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));opacity:0;transition:opacity .14s,background .14s,color .14s}.workspace-row:hover .workspace-row-action,.workspace-row-action:focus-visible{opacity:1}.workspace-row-action:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}.project-main,.task-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;text-align:left}.project-swatch{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px hsl(var(--bg-200))}.task-status{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:hsl(40 80% 52%)}.task-status.on{background:hsl(145 50% 50%)}.task-status.failed{background:hsl(0 65% 55%)}.app-state{display:flex;align-items:center;gap:4px;padding:3px 5px;border-radius:6px;color:hsl(var(--text-500));font-size:11px}.app-state i{width:7px;height:7px;border-radius:99px;background:hsl(var(--text-500))}.app-state.on{color:hsl(145 50% 58%)}.app-state.on i{background:hsl(145 50% 50%)}
+.workspace-add-btn{min-height:24px;padding:3px 8px;border-radius:6px;background:hsl(var(--accent-000)/.13);color:hsl(var(--accent-000));font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;line-height:1;transition:background .15s,color .15s}.workspace-add-btn:hover{background:hsl(var(--accent-000)/.23);color:hsl(var(--text-100))}.workspace-intro{padding:0 12px 8px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));line-height:1.45}.workspace-loading{padding:28px 12px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale))}.workspace-empty{display:flex;flex-direction:column;align-items:center;gap:7px;padding:30px 16px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));line-height:1.5}.workspace-empty strong{color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:550}.workspace-primary,.workspace-secondary,.workspace-danger{min-height:30px;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:550;transition:background .15s,color .15s}.workspace-primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}.workspace-primary:hover{background:hsl(var(--accent-100))}.workspace-secondary{border:0.5px solid hsl(var(--border-300)/.45);background:hsl(var(--bg-200));color:hsl(var(--text-200))}.workspace-secondary:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-danger{background:transparent;color:hsl(0 65% 62%)}.workspace-danger:hover{background:hsl(0 60% 35%/.35)}.workspace-row{display:flex;align-items:center;gap:9px;min-height:48px;padding:7px 10px;border-radius:8px;transition:background .14s}.workspace-row:hover{background:hsl(var(--bg-300))}.workspace-row-icon{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:7px;background:hsl(var(--bg-200));color:hsl(var(--text-400));flex:0 0 auto}.workspace-row-icon svg{width:14px;height:14px}.workspace-row-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:1px;text-align:left}.workspace-row-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:520}.workspace-row-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale))}.workspace-row-action{padding:4px 6px;border-radius:5px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));opacity:0;transition:opacity .14s,background .14s,color .14s}.workspace-row:hover .workspace-row-action,.workspace-row-action:focus-visible{opacity:1}.workspace-row-action:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}.project-main,.task-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;text-align:left}.task-status{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:hsl(40 80% 52%)}.task-status.on{background:hsl(145 50% 50%)}.task-status.failed{background:hsl(0 65% 55%)}
 
-.workspace-dialog{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;padding:18px;background:hsl(var(--always-black)/.52);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}.workspace-dialog.hidden{display:none}.workspace-dialog-card{width:min(440px,100%);max-height:min(680px,calc(100dvh - 36px));overflow:auto;padding:17px;border:0.5px solid hsl(var(--border-300)/.52);border-radius:13px;background:hsl(var(--bg-000));box-shadow:0 20px 60px hsl(var(--always-black)/.35);animation:workspaceDialogIn .18s var(--ease-out)}@keyframes workspaceDialogIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}.workspace-dialog-title{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:16px}.workspace-dialog-title h2{font-family:var(--font-display);font-size:21px;line-height:1.1;font-weight:550;color:hsl(var(--text-100))}.workspace-dialog-title p{margin-top:5px;color:hsl(var(--text-500));font-size:12px;line-height:1.45}.workspace-dialog-title>button{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:hsl(var(--text-400));font-size:21px;line-height:1}.workspace-dialog-title>button:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-form{display:flex;flex-direction:column;gap:12px}.workspace-field{display:flex;flex-direction:column;gap:5px;color:hsl(var(--text-300));font-size:11px;font-weight:550}.workspace-field em{font-style:normal;color:hsl(var(--text-500));font-weight:400}.workspace-field input,.workspace-field textarea,.workspace-field select{width:100%;padding:8px 9px;border:0.5px solid hsl(var(--border-300)/.4);border-radius:7px;outline:none;background:hsl(var(--bg-200));color:hsl(var(--text-100));font-size:12px;font-weight:400;resize:vertical}.workspace-field input:focus,.workspace-field textarea:focus,.workspace-field select:focus{border-color:hsl(var(--accent-000)/.65);background:hsl(var(--bg-000))}.workspace-form-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:10px}.workspace-dialog-actions{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:7px;margin-top:4px}.workspace-note{color:hsl(var(--text-500));font-size:11px;line-height:1.45}.project-workspace-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.marketplace-list{display:flex;flex-direction:column;gap:6px}.marketplace-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}.marketplace-row:last-child{border-bottom:0}
-.connector-row{align-items:center;gap:13px;min-height:66px;padding:10px 12px}.plugins-list .connector-row{margin-bottom:6px}.connector-row:hover{background:hsl(var(--bg-200)/.72)}.connector-icon{overflow:hidden;font-size:11px;font-weight:700;background:hsl(var(--bg-100));color:hsl(var(--text-100));border:1px solid hsl(var(--border-300)/.38);box-shadow:0 1px 2px hsl(var(--always-black)/.12)}.connector-icon svg{width:18px;height:18px}.connector-github{background:#24292f;color:#fff;border-color:#24292f}.connector-notion{background:#fff;color:#111;border:1px solid hsl(var(--border-300)/.6)}.connector-zotero{background:#cc2936;color:#fff;border-color:#cc2936}.connector-baidu-netdisk,.connector-gitee,.connector-feishu,.connector-gmail,.connector-googledrive,.connector-googlecalendar,.connector-todoist,.connector-ticktick,.connector-discord,.connector-tencent_docs,.connector-one_drive,.connector-onedrive,.connector-outlook,.connector-gitlab,.connector-qq_mail,.connector-qq-mail,.connector-arxiv{background:#fff;color:#111;border-color:hsl(var(--border-300)/.42)}.connector-baidu-netdisk svg,.connector-gitee svg,.connector-feishu svg,.connector-gmail svg,.connector-googledrive svg,.connector-googlecalendar svg,.connector-todoist svg,.connector-ticktick svg,.connector-discord svg,.connector-tencent_docs svg,.connector-one_drive svg,.connector-onedrive svg,.connector-outlook svg,.connector-gitlab svg,.connector-qq_mail svg,.connector-qq-mail svg,.connector-arxiv svg{width:19px;height:19px}.connector-connect{flex:0 0 auto;min-height:29px;padding:5px 10px;font-size:10.5px}.connector-disconnect{flex:0 0 auto}.connector-actions{display:flex;align-items:center;gap:5px}.connector-row.is-connected .workspace-row-copy strong::after{content:' ';display:inline-block;width:5px;height:5px;margin:0 0 1px 5px;border-radius:50%;background:hsl(145 50% 50%)}.connector-coming-soon{flex:0 0 auto;padding:4px 7px;border-radius:6px;background:hsl(var(--bg-200));color:hsl(var(--text-500));font-size:9.5px}.zotero-item,.arxiv-paper{padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}.zotero-item:last-child,.arxiv-paper:last-child{border-bottom:0}.arxiv-paper{align-items:flex-start}.arxiv-paper .connector-actions{margin-left:auto;padding-top:2px}.arxiv-summary{display:-webkit-box;overflow:hidden;margin-top:4px;color:hsl(var(--text-500));font-size:11px;line-height:1.42;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
+.workspace-dialog{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;padding:18px;background:hsl(var(--always-black)/.52);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}.workspace-dialog.hidden{display:none}.workspace-dialog-card{width:min(440px,100%);max-height:min(680px,calc(100dvh - 36px));overflow:auto;padding:17px;border:0.5px solid hsl(var(--border-300)/.52);border-radius:13px;background:hsl(var(--bg-000));box-shadow:0 20px 60px hsl(var(--always-black)/.35);animation:workspaceDialogIn .18s var(--ease-out)}@keyframes workspaceDialogIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}.workspace-dialog-title{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:16px}.workspace-dialog-title h2{font-family:var(--font-display);font-size:21px;line-height:1.1;font-weight:550;color:hsl(var(--text-100))}.workspace-dialog-title p{margin-top:5px;color:hsl(var(--text-500));font-size:12px;line-height:1.45}.workspace-dialog-title>button{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:hsl(var(--text-400));font-size:21px;line-height:1}.workspace-dialog-title>button:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-form{display:flex;flex-direction:column;gap:12px}.workspace-field{display:flex;flex-direction:column;gap:5px;color:hsl(var(--text-300));font-size:11px;font-weight:550}.workspace-field em{font-style:normal;color:hsl(var(--text-500));font-weight:400}.workspace-field input,.workspace-field textarea,.workspace-field select{width:100%;padding:8px 9px;border:0.5px solid hsl(var(--border-300)/.4);border-radius:7px;outline:none;background:hsl(var(--bg-200));color:hsl(var(--text-100));font-size:12px;font-weight:400;resize:vertical}.workspace-field input:focus,.workspace-field textarea:focus,.workspace-field select:focus{border-color:hsl(var(--accent-000)/.65);background:hsl(var(--bg-000))}.workspace-form-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:10px}.workspace-dialog-actions{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:7px;margin-top:4px}.workspace-note{color:hsl(var(--text-500));font-size:11px;line-height:1.45}.project-workspace-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.marketplace-list{display:flex;flex-direction:column;gap:6px}
+.connector-row{align-items:center;gap:13px;min-height:66px;padding:10px 12px}.plugins-list .connector-row{margin-bottom:6px}.connector-row:hover{background:hsl(var(--bg-200)/.72)}.connector-icon{overflow:hidden;font-size:11px;font-weight:700;background:hsl(var(--bg-100));color:hsl(var(--text-100));border:1px solid hsl(var(--border-300)/.38);box-shadow:0 1px 2px hsl(var(--always-black)/.12)}.connector-icon svg{width:18px;height:18px}.connector-github{background:#24292f;color:#fff;border-color:#24292f}.connector-notion{background:#fff;color:#111;border:1px solid hsl(var(--border-300)/.6)}.connector-zotero{background:#cc2936;color:#fff;border-color:#cc2936}.connector-baidu-netdisk,.connector-gitee,.connector-feishu,.connector-gmail,.connector-googledrive,.connector-googlecalendar,.connector-todoist,.connector-ticktick,.connector-discord,.connector-tencent_docs,.connector-one_drive,.connector-onedrive,.connector-outlook,.connector-gitlab,.connector-qq_mail,.connector-qq-mail,.connector-arxiv{background:#fff;color:#111;border-color:hsl(var(--border-300)/.42)}.connector-baidu-netdisk svg,.connector-gitee svg,.connector-feishu svg,.connector-gmail svg,.connector-googledrive svg,.connector-googlecalendar svg,.connector-todoist svg,.connector-ticktick svg,.connector-discord svg,.connector-tencent_docs svg,.connector-one_drive svg,.connector-onedrive svg,.connector-outlook svg,.connector-gitlab svg,.connector-qq_mail svg,.connector-qq-mail svg,.connector-arxiv svg{width:19px;height:19px}.connector-connect{flex:0 0 auto;min-height:29px;padding:5px 10px;font-size:10.5px}.connector-disconnect{flex:0 0 auto}.connector-actions{display:flex;align-items:center;gap:5px}.connector-coming-soon{flex:0 0 auto;padding:4px 7px;border-radius:6px;background:hsl(var(--bg-200));color:hsl(var(--text-500));font-size:9.5px}.zotero-item,.arxiv-paper{padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}.zotero-item:last-child,.arxiv-paper:last-child{border-bottom:0}.arxiv-paper{align-items:flex-start}.arxiv-paper .connector-actions{margin-left:auto;padding-top:2px}.arxiv-summary{display:-webkit-box;overflow:hidden;margin-top:4px;color:hsl(var(--text-500));font-size:11px;line-height:1.42;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
 
 /* PR-C: Spaces panel — projects list */
 .spaces-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
 .spaces-panel.hidden{display:none}
-.spaces-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
-.spaces-title{font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
-.spaces-add-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
-.spaces-add-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+
+
+
+
 .spaces-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.spaces-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
-.spaces-item:hover{background:hsl(var(--bg-300))}
-.spaces-item-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.spaces-item-info{flex:1;min-width:0}
-.spaces-item-name{font-size:calc(13px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.spaces-item-count{font-size:calc(11px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+
+
+
+
+
+
 .spaces-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
 
 /* PR-D: Scheduled panel — scheduled tasks */
@@ -631,40 +631,40 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .scheduled-panel.hidden{display:none}
 .scheduled-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
 .scheduled-title{font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
-.scheduled-add-btn{width:24px;height:24px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
-.scheduled-add-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+
+
 .scheduled-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.scheduled-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
-.scheduled-item:hover{background:hsl(var(--bg-300))}
-.scheduled-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
-.scheduled-item-info{flex:1;min-width:0}
-.scheduled-item-title{font-size:calc(13px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.scheduled-item-meta{font-size:calc(11px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;gap:6px;align-items:center}
-.scheduled-item-status{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.scheduled-item-status.active{background:hsl(145 50% 50%)}
-.scheduled-item-status.paused{background:hsl(40 80% 50%)}
-.scheduled-item-status.completed{background:hsl(var(--text-500))}
+
+
+
+
+
+
+
+
+
+
 .scheduled-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
 
 /* PR-E: Plugins panel — installed extensions */
 .plugins-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
 .plugins-panel.hidden{display:none}
-.plugins-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
-.plugins-title{font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
-.plugins-browse-btn{padding:4px 10px;border-radius:6px;border:none;background:hsl(var(--accent-000)/.12);color:hsl(var(--accent-000));font-size:calc(11px * var(--sidebar-font-scale));font-weight:500;cursor:pointer;transition:background .12s;font-family:var(--font-sans)}
-.plugins-browse-btn:hover{background:hsl(var(--accent-000)/.2)}
+
+
+
+
 .plugins-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
-.plugins-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;contain:layout style}
-.plugins-item:hover{background:hsl(var(--bg-300))}
-.plugins-item-icon{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
-.plugins-item-info{flex:1;min-width:0}
-.plugins-item-name{font-size:calc(13px * var(--sidebar-font-scale));color:hsl(var(--text-200));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.plugins-item-desc{font-size:calc(11px * var(--sidebar-font-scale));color:hsl(var(--text-500));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.plugins-item-toggle{width:28px;height:16px;border-radius:8px;border:none;background:hsl(var(--bg-300));cursor:pointer;position:relative;transition:background .15s;flex-shrink:0}
-.plugins-item-toggle.on{background:hsl(var(--accent-000)/.5)}
-.plugins-item-toggle::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:hsl(var(--text-400));transition:transform .15s,background .15s}
-.plugins-item-toggle.on::after{transform:translateX(12px);background:hsl(var(--accent-000))}
-.plugins-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+
+
+
+
+
+
+
+
+
+
 
 /* Main-content pages (Library, Projects, Scheduled, Plugins shown in
    main area instead of sidebar). Overrides sidebar-panel sizing. */
@@ -680,32 +680,32 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .theme-toggle .theme-sun,.theme-toggle .theme-moon{width:16px;height:16px}
 [data-mode=dark] .theme-toggle .theme-sun{display:none}
 [data-mode=light] .theme-toggle .theme-moon{display:none}
-.lang-toggle .lang-toggle-label{font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;letter-spacing:.03em;color:hsl(var(--text-300))}
+
 .user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer;position:relative}
 .user-row:hover{background:hsl(var(--bg-300))}
 .user-row:active{transform:scale(.99)}
 
 /* ─── Clerk User Button (Motion style) ─── */
-.user-btn__root{position:relative;display:flex;align-items:center;width:100%;min-width:0}
-.user-btn__trigger{width:100%}
-.user-btn__avatar{background:linear-gradient(135deg, hsl(var(--accent-000)), hsl(var(--accent-100)));color:#fff;font-weight:600}
-.user-btn__avatar--large{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.18);margin:0 auto}
-.user-btn__open{position:absolute;bottom:calc(100% + 8px);left:0;z-index:100;width:240px;padding:6px;border-radius:16px;background:hsl(var(--bg-100)/0.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid hsl(var(--border-300)/0.28);box-shadow:0 16px 36px -6px rgba(0,0,0,0.45),0 6px 14px -2px rgba(0,0,0,0.25),inset 0 0 0 1px hsl(var(--border-300)/0.1);color:hsl(var(--text-100));transform-origin:bottom left;animation:clerkMenuEnter .22s cubic-bezier(0.16,1,0.3,1) forwards}
-[data-mode="light"] .user-btn__open{background:rgba(255,255,255,0.96);border:1px solid rgba(0,0,0,0.08);box-shadow:0 16px 36px -6px rgba(0,0,0,0.12),0 6px 14px -2px rgba(0,0,0,0.06),inset 0 0 0 1px rgba(255,255,255,0.8);color:#111827}
+
+
+
+
+
+
 @keyframes clerkMenuEnter{0%{opacity:0;transform:scale(0.92) translateY(8px);filter:blur(8px)}100%{opacity:1;transform:scale(1) translateY(0);filter:blur(0px)}}
-.user-btn__menu-header{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:12px 10px 10px;border-bottom:1px solid hsl(var(--border-300)/0.12)}
-.user-btn__menu-header-content{display:flex;flex-direction:column;align-items:center;width:100%;overflow:hidden}
-.user-btn__name{font-size:calc(13.5px * var(--app-font-scale, 1));font-weight:600;margin:0;line-height:1.25;color:hsl(var(--text-100));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
-.user-btn__email{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin:2px 0 0;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:210px}
-.user-btn__menu-content{display:flex;flex-direction:column;gap:2px;padding:6px 2px}
-.user-btn__menu-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border:none;border-radius:8px;background:transparent;font-size:calc(12.5px * var(--app-font-scale, 1));font-family:var(--font-sans);color:hsl(var(--text-200));cursor:pointer;text-align:left;transition:background .15s ease,color .15s ease}
-.user-btn__menu-item:hover{background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-100))}
-.user-btn__menu-item--danger{color:hsl(var(--text-300))}
-.user-btn__menu-item--danger:hover{background:hsl(0 60% 50%/0.15);color:hsl(0 75% 70%)}
-.user-btn__icon{width:14px;height:14px;flex-shrink:0;opacity:0.75}
-.user-btn__footer{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 4px;border-top:1px solid hsl(var(--border-300)/0.12);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
-.user-btn__secured{display:flex;align-items:center;gap:4px;opacity:0.85}
-.user-btn__brand-tag{font-weight:600;color:hsl(var(--text-300))}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Display / reading preferences (font size + content width) */
 .display-prefs-popover{position:fixed;min-width:240px;max-width:280px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.2);z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
@@ -796,7 +796,7 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
   font-weight:var(--tool-card-meta-weight);
   line-height:1.3
 }
-.composer-tools-divider{display:none}
+
 .composer-tools-trigger{border-radius:12px!important}
 @keyframes composer-tools-enter{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:768px){
@@ -917,9 +917,9 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .grid-toggle.on{background:hsl(var(--accent-000)/0.35);border-color:hsl(var(--accent-000)/0.4)}
 .grid-toggle .toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:hsl(var(--text-400));transition:transform .15s,background .15s;box-shadow:0 1px 2px hsl(0 0% 0%/0.15)}
 .grid-toggle.on .toggle-knob{transform:translateX(16px);background:hsl(var(--accent-000));box-shadow:0 1px 3px hsl(var(--always-black)/0.25)}
-.display-prefs-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:background-color .1s,color .1s;flex-shrink:0}
-.display-prefs-btn:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300))}
-.display-prefs-btn svg{width:14px;height:14px}
+
+
+
 .user-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100))}
 .user-name{font-size:calc(12px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-100))}.user-plan{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:4px}
 .tier-badge{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:3px}
@@ -1088,22 +1088,21 @@ html[data-show-grid="false"] .main-bg{background-image:none}
    Matches the .extensions-trigger style so the two sit on the same row
    without one looking heavier than the other. */
 .model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
-.model-picker-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;max-width:100%;transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
-.model-picker-trigger:focus-visible{outline:1px solid hsl(var(--accent-000)/0.5);outline-offset:1px}
+
+
 /* Unselected hover: subtle background tint only, no border-color jump —
    matches the user's request that "未选中时不要有光影变化". */
-.model-picker-trigger:hover{background:hsl(var(--bg-300)/0.5)}
-.model-picker-trigger.has-model{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000))}
-.model-picker-trigger.has-model:hover{background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.5)}
-.model-picker-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
-.model-picker-trigger svg.model-picker-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .22s cubic-bezier(.4,0,.2,1)}
+
+
+
+
+
 /* Only highlight on open when something is already picked. Otherwise the
    border would suddenly change just because the menu opened, which the
    user finds distracting. */
-.model-picker.has-model[data-open="true"] .model-picker-trigger,
-.model-picker-trigger.has-model[data-open-true]{border-color:hsl(var(--accent-000)/0.5)}
-.model-picker[data-open="true"] .model-picker-caret{transform:rotate(180deg)}
-.model-picker-label{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+
+
 .model-picker-menu{position:absolute;top:calc(100% + 4px);left:50%;min-width:220px;max-width:340px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-6px) scale(.96);transform-origin:top center;transition:opacity .14s ease,transform .22s cubic-bezier(.16,1,.3,1);will-change:transform,opacity}
 .model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
 .model-picker-menu .model-picker-item,
@@ -1236,29 +1235,29 @@ true) but the dropdown never shows — see commit history. */
   padding-top:6px;
 }
 
-.topic-setup-row{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:720px;width:100%;padding:0 6px;position:relative}
+
 /* P_chatgpt-landing — composer quick-action chips row (撰写或编辑 /
    查找资料), shown under the landing composer like ChatGPT. Pill
    buttons with an icon + label; hover raises the surface subtly. */
-.composer-quick-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:720px;width:100%;margin:14px 0 4px;padding:0 6px}
-.composer-quick-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:1px solid hsl(var(--border-300)/0.35);background:transparent;color:hsl(var(--text-300));font-size:calc(14px * var(--app-font-scale, 1));font-family:var(--font-sans);cursor:pointer;line-height:1.2;transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .12s ease;animation:chipWaterfall .2s var(--ease-out) both}
+
+
 /* UI-align: staggered waterfall entrance for suggestion chips
    (open-webui Suggestions.svelte — fadeInUp 200ms, 45ms/item). */
 @keyframes chipWaterfall{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.composer-quick-chip:nth-child(1){animation-delay:45ms}
-.composer-quick-chip:nth-child(2){animation-delay:90ms}
-.composer-quick-chip:nth-child(3){animation-delay:135ms}
-.composer-quick-chip:nth-child(4){animation-delay:180ms}
-.composer-quick-chip:nth-child(5){animation-delay:225ms}
-.composer-quick-chip:nth-child(6){animation-delay:270ms}
-.composer-quick-chip:nth-child(7){animation-delay:315ms}
-.composer-quick-chip:nth-child(n+8){animation-delay:360ms}
-.composer-quick-chip svg{width:18px;height:18px;flex-shrink:0;color:hsl(var(--text-400))}
-.composer-quick-chip:hover{background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.5)}
-.composer-quick-chip:hover svg{color:hsl(var(--accent-000))}
-.composer-quick-chip:active{transform:scale(.97)}
-.composer-quick-chip.active{background:hsl(var(--accent-000)/0.1);color:hsl(var(--accent-000));border-color:hsl(var(--accent-000)/0.4)}
-.composer-quick-chip.active svg{color:hsl(var(--accent-000))}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* P_chatgpt-landing — reasoning-effort selector (高/中/低) inside the
    composer footer. Compact pill trigger + a small pop-up menu that
    opens upward (the picker sits at the bottom of the composer). */
@@ -1298,21 +1297,20 @@ true) but the dropdown never shows — see commit history. */
 .effort-item.active::after{content:"";width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
 .effort-item-note{margin-left:auto;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:right;line-height:1.25;max-width:150px}
 .effort-item.active .effort-item-note{color:hsl(var(--accent-000)/0.7)}
-.topic-setup-row .model-picker,.topic-setup-row .extensions-picker{position:relative;max-width:none;width:auto}
+
 .extensions-picker{position:relative}
-.extensions-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:6px;border:1px solid hsl(var(--border-300)/0.4);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));background:transparent;cursor:pointer;font-family:var(--font-sans);line-height:1.2;transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),border-color .2s cubic-bezier(.4,0,.2,1),box-shadow .2s cubic-bezier(.4,0,.2,1)}
-.extensions-trigger:hover{background:hsl(var(--bg-300)/0.5)}
-.extensions-trigger.has-active{background:hsl(var(--accent-000)/0.06);border-color:hsl(var(--accent-000)/0.35);color:hsl(var(--accent-000))}
-.extensions-trigger.has-active:hover{background:hsl(var(--accent-000)/0.12);border-color:hsl(var(--accent-000)/0.5)}
-.extensions-trigger>svg:first-child{width:13px;height:13px;flex-shrink:0}
-.extensions-caret{width:10px;height:10px;flex-shrink:0;margin-left:2px;transition:transform .22s cubic-bezier(.4,0,.2,1)}
-.extensions-picker.has-active[data-open="true"] .extensions-trigger{border-color:hsl(var(--accent-000)/0.5)}
-.extensions-picker[data-open="true"] .extensions-caret{transform:rotate(180deg)}
-.extensions-label{white-space:nowrap}
+
+
+
+
+
+
+
+
+
 .extensions-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;max-width:300px;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateY(-6px) scale(.96);transform-origin:top right;transition:opacity .14s ease,transform .22s cubic-bezier(.16,1,.3,1);will-change:transform,opacity}
 .extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0) scale(1)}
-.extensions-menu .extensions-item,
-.extensions-menu .extensions-divider{
+.extensions-menu .extensions-item{
   animation:menuItemIn .26s cubic-bezier(.16,1,.3,1) both;
 }
 .extensions-menu .extensions-item:nth-child(1){animation-delay:0ms}
@@ -1324,7 +1322,7 @@ true) but the dropdown never shows — see commit history. */
 .extensions-item.on{color:hsl(var(--text-100))}
 .extensions-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .extensions-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.extensions-item-desc{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.35}
+
 .extensions-item-icon{flex-shrink:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .1s}
 .extensions-item.on .extensions-item-icon{color:hsl(var(--accent-000))}
 .extensions-item-icon svg{width:16px;height:16px}
@@ -1332,8 +1330,8 @@ true) but the dropdown never shows — see commit history. */
 .extensions-item.on .extensions-item-check{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
 .extensions-item-check svg{width:10px;height:10px;stroke:hsl(var(--oncolor-100));opacity:0}
 .extensions-item.on .extensions-item-check svg{opacity:1}
-.extensions-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:3px 0}
-@media (max-width:600px){.model-picker-trigger,.extensions-trigger{font-size:calc(12px * var(--app-font-scale, 1));padding:5px 9px}}
+
+@media (max-width:600px){}
 @media (max-width:768px){.model-picker-menu{left:0;right:auto;transform-origin:top left;transform:translateY(-6px) scale(.96);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0) scale(1)}}
 
 .settings-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -1484,12 +1482,12 @@ true) but the dropdown never shows — see commit history. */
 .teaching-plan-depth{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-400));background:hsl(var(--bg-300)/0.8);padding:2px 6px;border-radius:6px;letter-spacing:.03em;flex-shrink:0;font-variant-numeric:tabular-nums;cursor:default}
 .teaching-plan-status{font-size:calc(9px * var(--sidebar-font-scale));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
 /* Task 6.4 — cross-session knowledge-boundary section. */
-.kb-cross-session{display:flex;flex-direction:column;gap:6px;padding:8px 8px 10px;margin-top:2px}
-.kb-cross-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px}
-.kb-cross-title{font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
-.kb-cross-refresh{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--accent-000));background:transparent;border:0;padding:2px 6px;border-radius:6px;cursor:pointer;transition:background .1s}
-.kb-cross-refresh:hover{background:hsl(var(--accent-000)/0.1)}
-.kb-cross-body{display:flex;flex-direction:column;gap:6px}
+
+
+
+
+
+
 .kb-cross-summary{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 4px}
 .kb-cross-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-400));padding:2px 8px;border-radius:6px;background:hsl(var(--bg-300))}
 .kb-cross-count.kb-cross-internalized{color:hsl(145 50% 65%);background:hsl(145 50% 50%/0.14)}
@@ -1645,27 +1643,26 @@ true) but the dropdown never shows — see commit history. */
 .msg-list::-webkit-scrollbar-track{background:transparent}
 .msg-list::-webkit-scrollbar-thumb{border-radius:3px;background:transparent;transition:background .25s}
 .msg-list.scrollbar-visible::-webkit-scrollbar-thumb{background:hsl(var(--text-500)/0.25)}
-.demo-banner{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;background:hsl(var(--accent-000)/0.08);border:0.5px solid hsl(var(--accent-000)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));line-height:1.4}
-.demo-banner[hidden]{display:none}
-.demo-banner-text{flex:1}
-.demo-banner-cta{padding:6px 12px;border-radius:8px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:none;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;white-space:nowrap;transition:background .1s}
-.demo-banner-cta:hover{background:hsl(var(--accent-100))}
-.demo-banner-close{background:transparent;border:none;cursor:pointer;color:hsl(var(--text-300));font-size:calc(18px * var(--app-font-scale, 1));line-height:1;padding:0 4px;flex-shrink:0}
-.demo-banner-close:hover{color:hsl(var(--text-100))}
+
+
+
+
+
+
+
 /* chat-header is now legacy — content lives in .top-bar. The rule
    below is kept so old selectors don't break, but it's hidden. */
 .chat-header{display:none}
 /* chatDomain element was removed from index.html — topicBadge is the
    sole session indicator now. Hide any stale nodes defensively. */
-.chat-domain{display:none !important}
+
 .chat-stats{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
 /* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
    Animated so the text/background/color crossfade between Tutor and Chat
    instead of snapping instantly. The `badgeSwap` keyframe runs once per
    class change (driven by JS clearing & re-adding the class). */
-.chat-mode-badge{display:inline-flex;align-items:center;gap:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.03em;vertical-align:middle;border:0.5px solid hsl(var(--border-300)/0.35);color:hsl(var(--text-400));background:hsl(var(--bg-300));transition:background-color .3s ease,color .3s ease,border-color .3s ease;animation:badgeSwap .35s cubic-bezier(.16,1,.3,1) both}
-.chat-mode-badge.mode-tutor,
-.chat-mode-badge.mode-chat{color:hsl(var(--text-300));background:hsl(var(--bg-300))}
+
+
 @keyframes badgeSwap{
   0%{transform:scale(.92);opacity:.5;filter:blur(1px)}
   60%{transform:scale(1.04);opacity:1;filter:blur(0)}
@@ -1963,35 +1960,35 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
    Types: success / info / warning / error. Each uses the app's
    design tokens for colors so dark/light mode is automatic.
    Alerts stack upward from the bottom-right. */
-.alert-container{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;max-width:400px}
-.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;border:1px solid;box-shadow:0 6px 20px hsl(var(--always-black)/0.25);pointer-events:auto;animation:alertSlideIn .3s var(--ease-out);transition:opacity .2s,transform .2s;max-width:100%;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.5;word-break:break-word}
-.alert-item.alert-exit{opacity:0;transform:translateX(40px)}
-.alert-icon{flex-shrink:0;width:18px;height:18px;margin-top:1px}
-.alert-msg{flex:1;min-width:0}
-.alert-close{flex-shrink:0;width:18px;height:18px;border:none;background:none;cursor:pointer;opacity:.5;padding:0;border-radius:4px;color:inherit;display:flex;align-items:center;justify-content:center;transition:opacity .12s;margin:-2px -2px 0 0}
-.alert-close:hover{opacity:1}
-.alert-close svg{width:14px;height:14px;display:block}
+
+
+
+
+
+
+
+
 
 /* Type-specific colors (automatic dark mode via design tokens) */
-.alert-success{background:hsl(152 55% 42%/0.12);border-color:hsl(152 55% 42%/0.3);color:hsl(152 50% 35%)}
-.alert-success .alert-icon{color:hsl(152 55% 42%)}
-[data-mode=dark] .alert-success{background:hsl(152 50% 40%/0.12);border-color:hsl(152 50% 40%/0.25);color:hsl(152 60% 65%)}
-[data-mode=dark] .alert-success .alert-icon{color:hsl(152 60% 60%)}
 
-.alert-info{background:hsl(210 90% 50%/0.10);border-color:hsl(210 90% 50%/0.25);color:hsl(210 80% 38%)}
-.alert-info .alert-icon{color:hsl(210 90% 50%)}
-[data-mode=dark] .alert-info{background:hsl(210 70% 55%/0.10);border-color:hsl(210 70% 55%/0.2);color:hsl(210 70% 65%)}
-[data-mode=dark] .alert-info .alert-icon{color:hsl(210 70% 60%)}
 
-.alert-warning{background:hsl(38 92% 50%/0.12);border-color:hsl(38 92% 50%/0.3);color:hsl(38 80% 38%)}
-.alert-warning .alert-icon{color:hsl(38 92% 50%)}
-[data-mode=dark] .alert-warning{background:hsl(38 90% 55%/0.12);border-color:hsl(38 90% 55%/0.25);color:hsl(38 80% 65%)}
-[data-mode=dark] .alert-warning .alert-icon{color:hsl(38 90% 60%)}
 
-.alert-error{background:hsl(0 75% 50%/0.10);border-color:hsl(0 75% 50%/0.25);color:hsl(0 70% 40%)}
-.alert-error .alert-icon{color:hsl(0 75% 50%)}
-[data-mode=dark] .alert-error{background:hsl(0 70% 55%/0.10);border-color:hsl(0 70% 55%/0.2);color:hsl(0 70% 65%)}
-[data-mode=dark] .alert-error .alert-icon{color:hsl(0 70% 60%)}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @keyframes alertSlideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
 
@@ -2076,9 +2073,9 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
    reads as "the page reloaded". The fade masks the swap with a short
    ~80ms opacity dip so it feels like a single pulse, not a refresh. */
 .quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.quick-opt{padding:6px 14px;border-radius:16px;border:0.5px solid hsl(var(--border-300)/0.2);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));transition:background-color .1s,color .1s,border-color .1s;cursor:pointer}
-.quick-opt:hover{border-color:hsl(var(--border-200)/0.4);background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.quick-opt.primary{background:hsl(var(--accent-000)/0.1);border-color:hsl(var(--accent-000)/0.25);color:hsl(var(--accent-000))}
+
+
+
 .chat-input-bar{
   width:100%;
   flex-shrink:0;
@@ -2138,11 +2135,11 @@ mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--a
      so the composer skin does not change between landing and in-chat. */
   transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease)}
 .chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
-#chatInputArea{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));min-height:24px;max-height:120px;overflow-y:auto;font-family:var(--font-sans);padding:5px 14px 7px}@supports (scrollbar-width:none){#chatInputArea{scrollbar-width:none}}
-#chatInputArea::-webkit-scrollbar{display:none}
-#chatInputArea::placeholder{color:hsl(var(--text-500));font-size:calc(14px * var(--app-font-scale, 1))}
+@supports (scrollbar-width:none){}
+
+
 .chat-input-footer{display:flex;align-items:center;padding:0 12px 8px}
-.chat-input-hint{flex:1;text-align:left;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+
 /* P_attachments — paperclip button to the left of the hint. Same
    circle footprint as the send button so the footer stays balanced
    regardless of attach state. */
@@ -2210,10 +2207,10 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 
 /* Pulse-ring variant — concentric expanding rings, good for larger
    loading blocks that need a bolder visual. */
-.loading-pulse{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;position:relative}
-.loading-pulse::before,.loading-pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid hsl(var(--accent-000)/0.4)}
-.loading-pulse::before{animation:pulseRing 1.6s cubic-bezier(.4,0,.2,1) infinite}
-.loading-pulse::after{animation:pulseRing 1.6s cubic-bezier(.4,0,.2,1) infinite .8s}
+
+
+
+
 @keyframes pulseRing{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.4);opacity:0}}
 
 /* Concentric ring rotation — new "thinking" animation system.
@@ -2231,15 +2228,15 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .thinking-ring-sm::after{inset:2px;border-width:1.5px}
 
 /* Tiny variant for very compact spaces */
-.thinking-ring-xs{width:10px;height:10px}
-.thinking-ring-xs::before{border-width:1px}
-.thinking-ring-xs::after{inset:1.5px;border-width:1px}
+
+
+
 
 /* Skeleton shimmer — a moving highlight bar for content placeholders. */
 .shimmer{position:relative;overflow:hidden;background:hsl(var(--bg-200));border-radius:6px}
 .shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,hsla(var(--accent-000)/0.08) 50%,transparent 100%);animation:shimmerSweep 2s ease-in-out infinite;transform:translateX(-100%)}
-.shimmer-line{height:12px;margin-bottom:8px;width:100%}
-.shimmer-line:last-child{width:65%}
+
+
 @keyframes shimmerSweep{100%{transform:translateX(100%)}}
 
 @keyframes loadingSpin{to{transform:rotate(360deg)}}
@@ -2311,11 +2308,11 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .settings-input:focus{border-color:hsl(var(--accent-000)/0.4)}
 .settings-input::placeholder{color:hsl(var(--text-500));font-family:var(--font-sans)}
 .settings-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.4}
-.settings-status{font-size:calc(12px * var(--app-font-scale, 1));padding:8px 12px;border-radius:8px;text-align:center;line-height:1.4;display:flex;align-items:center;gap:6px;justify-content:center}
-.settings-status.ok{color:hsl(145 50% 55%);background:hsl(145 30% 10%/0.6);border:0.5px solid hsl(145 40% 30%/0.4)}
-.settings-status.ok::before{content:'';display:inline-block;width:calc(13px * var(--app-font-scale, 1));height:calc(13px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z' fill='%2322c55e'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
-.settings-status.warn{color:hsl(39 70% 50%);background:hsl(39 30% 10%/0.6);border:0.5px solid hsl(39 40% 30%/0.4)}
-.settings-status.warn::before{content:'';display:inline-block;width:calc(13px * var(--app-font-scale, 1));height:calc(13px * var(--app-font-scale, 1));background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.5a.75.75 0 0 1 .65.375l6.25 11.25a.75.75 0 0 1-.65 1.125H1.75a.75.75 0 0 1-.65-1.125L7.35 1.875A.75.75 0 0 1 8 1.5zM8 5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 1 0v-3A.5.5 0 0 0 8 5zm0 5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z' fill='%23d97706'/%3E%3C/svg%3E") center/contain no-repeat;flex-shrink:0}
+
+
+
+
+
 .settings-actions{display:flex;gap:8px;justify-content:flex-end}
 .settings-btn{padding:8px 18px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;transition:background-color .1s;cursor:pointer}
 .settings-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
@@ -2337,7 +2334,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
 .profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
 .profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(24px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100));flex-shrink:0}
-.profile-name{font-size:calc(17px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center}
+
 /* Editable name input in the profile header. */
 .profile-name-input{font-size:calc(17px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:inherit;padding:2px 4px;width:90%;max-width:280px;transition:border-color .15s}
 .profile-name-input:focus{border-bottom-color:hsl(var(--accent-000)/0.4)}
@@ -2415,8 +2412,8 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .usage-period-tab.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .usage-calendar-wrap{overflow-x:auto;padding:4px 0 8px}
 .usage-calendar{display:grid;grid-template-columns:auto repeat(53,1fr);gap:2px;font-size:calc(10px * var(--app-font-scale, 1));min-width:560px}
-.usage-cal-mth{grid-column:2/-1;display:grid;grid-template-columns:repeat(53,1fr);margin-bottom:2px}
-.usage-cal-mth span{text-align:left;font-size:calc(9px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:1px 0}
+
+
 .usage-cal-day{width:100%;aspect-ratio:1;border-radius:2px;min-width:10px;min-height:10px;position:relative}
 .usage-cal-day:hover{outline:2px solid hsl(var(--accent-000));outline-offset:-1px;z-index:1}
 .usage-cal-day-lbl{display:flex;align-items:center;justify-content:flex-end;font-size:calc(9px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding-right:4px}
@@ -2445,9 +2442,9 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 /* Exam view (standalone page within the SPA) */
 .exam-view{width:100%;display:flex;flex-direction:column;flex:1;min-height:0;position:relative;background:radial-gradient(circle at 50% -10%,hsl(var(--accent-000)/.08),transparent 38%),hsl(var(--bg-100))}
 .exam-view.hidden{display:none}
-.exam-view-header{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-shrink:0;background:hsl(var(--bg-000));border-bottom:0.5px solid hsl(var(--border-300)/0.10)}
-.exam-view-title{font-size:calc(15px * var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100));margin:0;letter-spacing:-.01em;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
-.exam-view-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500));flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+
+
 .exam-title-bar{font-size:calc(13px * var(--app-font-scale,1));color:hsl(var(--text-100));font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .exam-view-body{flex:1;overflow-y:auto;padding:32px 24px 24px;width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center}
 /* Full-width scroll container (scrollbar hugs the window edge); content
@@ -2476,10 +2473,10 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .exam-form-textarea{resize:vertical;min-height:72px}
 .exam-form-input:focus,.exam-form-textarea:focus{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 3px hsl(var(--accent-000)/0.06)}
 .exam-form-input::placeholder,.exam-form-textarea::placeholder{color:hsl(var(--text-500))}
-.exam-form-grid3{display:grid;grid-template-columns:1.4fr 1.4fr 0.8fr;gap:12px;align-items:end}
-.exam-form-cell{display:flex;flex-direction:column;min-width:0}
-.exam-form-cell-narrow .exam-form-input{text-align:center;font-variant-numeric:tabular-nums;padding-left:8px;padding-right:8px}
-@media(max-width:560px){.exam-form-grid3{grid-template-columns:1fr;gap:10px}}
+
+
+
+@media(max-width:560px){}
 
 /* ── ChatGPT-style exam setup extras (P_exam-ui) ── */
 .exam-form-hero{margin:0 0 24px;padding:10px 4px 4px;text-align:left}
@@ -2659,8 +2656,8 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .exam-score-val{font-size:calc(22px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100));letter-spacing:-.01em;display:inline-flex;align-items:baseline;gap:3px}
 .exam-score-val .score-total{font-size:calc(15px*var(--app-font-scale,1));color:hsl(var(--text-400));font-weight:400}
 .exam-score-lbl{font-size:calc(12px*var(--app-font-scale,1));color:hsl(var(--text-500));margin-top:1px}
-.exam-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
-.exam-actions{display:flex;justify-content:center;gap:10px;margin-top:10px}
+
+
 .exam-result-correct{color:hsl(145 50% 45%);font-weight:500}
 .exam-result-wrong{color:hsl(0 60% 55%);font-weight:500}
 
@@ -2681,15 +2678,15 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .exam-nav-total{color:hsl(var(--text-500))}
 
 /* exam-readonly and modal minimal */
-.exam-readonly-pill{display:inline-flex;align-items:center;padding:6px 14px;font-size:calc(12px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:6px}
-.exam-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
-.exam-overlay.hidden{display:none}
-.exam-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:14px;width:min(640px,94vw);max-height:90vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
-.exam-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
-.exam-title{font-size:calc(14px*var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-100))}
-.exam-close{cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
-.exam-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
-.exam-body{padding:14px 18px 18px;overflow-y:auto;flex:1}
+
+
+
+
+
+
+
+
+
 /* Share modal */
 .share-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
 .share-overlay.hidden{display:none}
@@ -2790,6 +2787,47 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
 .viz-btn:active{transform:scale(.92)}
 .viz-btn:focus-visible{opacity:1;outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
 .viz-btn svg{width:13px;height:13px;display:block}
+/* Preview / Code segmented toggle. Unlike the icon buttons it stays
+   visible without hover — discoverability is the point: teaching code
+   inside a canvas card must be one click away. */
+.viz-seg{
+  display:inline-flex;align-items:center;
+  border-radius:6px;overflow:hidden;
+  background:hsl(var(--bg-200)/0.9);
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+}
+.viz-seg-btn{
+  border:0;background:transparent;
+  color:hsl(var(--text-400));
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  line-height:1;height:26px;padding:0 9px;
+  cursor:pointer;white-space:nowrap;
+  transition:color .15s ease,background .15s ease;
+}
+.viz-seg-btn:hover{color:hsl(var(--text-200))}
+.viz-seg-btn.is-on{background:hsl(var(--bg-300)/0.95);color:hsl(var(--text-100))}
+.viz-seg-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.45);outline-offset:-1px}
+/* Code view: hide the live iframe + loading skeleton, show the source
+   pane. Error banners are siblings of the iframe inside .viz-body, so
+   they remain visible in both views. */
+.viz-code-pane{
+  display:none;
+  margin:0;max-height:360px;overflow:auto;
+  padding:12px 14px;
+  background:hsl(var(--bg-200)/0.5);
+  border-radius:8px;
+  font-family:var(--font-mono);
+  font-size:calc(11.5px * var(--app-font-scale, 1));
+  line-height:1.5;
+  color:hsl(var(--text-200));
+}
+.viz-code-pane code{font:inherit;color:inherit;background:transparent;padding:0}
+.viz[data-viz-view="code"] .viz-code-pane{display:block}
+/* !important: the iframe carries an inline display:block baked into its
+   markup, which would otherwise beat this view-state rule. */
+.viz[data-viz-view="code"] .viz-body>iframe,
+.viz[data-viz-view="code"] .viz-body>.viz-loading{display:none !important}
 .viz-body{position:relative}
 .viz-body iframe{
   display:block;width:100%;border:0;background:transparent
@@ -3077,7 +3115,7 @@ a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
    mixed-language chat. Use !important to override KaTeX's inline
    style="font-style:italic" on mathnormal spans. */
 .katex .mathnormal{font-style:normal !important}
-.katex .mathvariant-italic{font-style:normal !important}
+
 @media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4dvh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:6px}}
 .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
 .sidebar-backdrop.show{display:block}
@@ -3200,7 +3238,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    the only "buttony" thing in the card — give them real button
    borders so selected / correct / wrong states are unmistakable. */
 .inline-quiz-q{font-weight:600;margin-bottom:8px;color:hsl(var(--text-100))}
-.inline-quiz-q .q-tag{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-right:4px;font-weight:400}
+
 .inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
 .inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
 .inline-quiz-opt:hover:not(:disabled){background:hsl(var(--bg-300));border-color:hsl(var(--border-300)/0.5);color:hsl(var(--text-100))}
@@ -3241,7 +3279,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    (optional) + Submit button row. Hint and answer text get the
    same left-rule treatment as example-solution. The Reveal and
    Submit buttons are real buttons, not links. */
-.inline-practice-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+
 .inline-practice-problem{margin-bottom:8px}
 .inline-practice-hint{margin-top:6px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(12.5px * var(--app-font-scale, 1))}
 .inline-practice-hint .label{color:hsl(var(--text-500));margin-right:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500}
@@ -3271,7 +3309,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 
 /* Step list: just a numbered ordered list. No title, no card
    chrome — the steps are inherently structured already. */
-.inline-step-list-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+
 .inline-step{display:flex;gap:10px;margin:6px 0;line-height:1.55;align-items:flex-start}
 .inline-step-n{flex-shrink:0;color:hsl(var(--text-500));min-width:20px;font-variant-numeric:tabular-nums;font-weight:600;margin-top:1px}
 .inline-step-body{flex:1}
@@ -3284,7 +3322,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .inline-flashcard-front,
 .inline-flashcard-back{padding:2px 0}
 .inline-flashcard-back{margin-top:8px;padding-top:8px;border-top:0.5px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-200))}
-.inline-flashcard-tag{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:500}
+
 
 /* Fallback for malformed XML — show the raw content as muted
    preformatted text. No warning banner. */
@@ -3343,7 +3381,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .scaffold-stream-live{border-style:solid;color:hsl(var(--text-200))}
 .scaffold-stream-live>.scaffold-stream-label{margin-bottom:6px}
 .inline-key-point.scaffold-stream-live>.scaffold-stream-label{background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000))}
-.scaffold-stream-live-status{min-height:1.1em}
+
 .scaffold-stream-live button,.scaffold-stream-live textarea{pointer-events:none}
 .scaffold-stream-step-number{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-right:6px;border-radius:50%;background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-400));font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;vertical-align:middle}
 .scaffold-stream-placeholder{color:hsl(var(--text-400))}
@@ -3384,7 +3422,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 /* Tab badge for mistakes */
 .tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;text-align:center;vertical-align:middle;transition:background .15s,color .15s}
 .tab-badge:empty{display:none}
-.tab-badge.badge-flash{background:hsl(0 60% 50%/0.35);color:hsl(0 60% 85%)}
+
 
 /* Panel enter animation */
 @keyframes panelFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
@@ -3515,16 +3553,16 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    16px block spinner meant for full-card states (diag-loading /
    usage-loading / exam-loading), so forcing it inline broke the
    stream cursor and thinking pill layout. */
-.thinking-pulse{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;position:relative;vertical-align:middle;flex-shrink:0}
-.thinking-pulse::before,.thinking-pulse::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;box-sizing:border-box}
-.thinking-pulse::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
-.thinking-pulse::after{inset:2.5px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
+
+
+
+
 
 /* Streaming Markdown is split into a settled prefix and a live tail.
    Only the tail is replaced at token cadence, keeping completed blocks,
    selection, and expensive code/math DOM stable. */
 .stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
-.stream-content.stream-typing{white-space:pre-wrap;word-wrap:break-word}
+
 .stream-settled-content,.stream-live-content{min-width:0}
 .stream-settled-content:not(:empty)>p:last-child{margin-bottom:8px}
 .stream-live-content:empty{display:none}
@@ -3542,31 +3580,31 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .msg-stopped-marker{font-style:italic;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));margin-top:8px;opacity:.8}
 
 /* ── Agent (mode banner + tool module cards + stop button) ── */
-.agent-intro{padding:12px;display:flex;flex-direction:column;gap:10px}
-.agent-intro-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
-.agent-intro-desc{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5}
-.agent-intro-desc code{font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));background:hsl(var(--bg-200));padding:1px 4px;border-radius:3px}
-.agent-launch-btn{padding:8px 12px;border-radius:8px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:none;font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background .12s}
-.agent-launch-btn:hover{background:hsl(var(--accent-100))}
-.agent-history{margin-top:16px;padding:0 12px 12px}
-.agent-history-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
-.agent-history-row{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-200));cursor:pointer;transition:background .1s}
-.agent-history-row:hover{background:hsl(var(--bg-200))}
-.agent-history-row .dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
-.agent-history-row .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.agent-history-row .ts{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* Mode banner — slim strip between chat-header and msgList. */
-.agent-mode-banner{display:flex;align-items:center;gap:10px;padding:8px 14px;background:hsl(var(--bg-200));border-bottom:0.5px solid hsl(var(--border-300)/0.6);font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-300));flex-shrink:0}
-.agent-mode-banner.hidden{display:none}
-.agent-mode-dot{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;position:relative;vertical-align:middle;flex-shrink:0}
-.agent-mode-dot::before,.agent-mode-dot::after{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;box-sizing:border-box}
-.agent-mode-dot::before{border-top-color:hsl(var(--text-400));border-right-color:hsl(var(--text-400)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
-.agent-mode-dot::after{inset:2.5px;border-top-color:hsl(var(--text-400)/0.7);border-left-color:hsl(var(--text-400)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
-.agent-mode-label{font-weight:600;letter-spacing:.02em}
-.agent-mode-hint{flex:1;color:inherit;opacity:0.75;font-size:calc(11.5px * var(--app-font-scale, 1))}
-.agent-mode-exit{padding:3px 10px;border-radius:6px;background:transparent;border:0.5px solid currentColor;color:inherit;font-size:calc(11px * var(--app-font-scale, 1));cursor:pointer;font-weight:500;transition:background .1s,color .1s;opacity:0.85}
-.agent-mode-exit:hover{background:currentColor;color:hsl(var(--bg-000))}
+
+
+
+
+
+
+
+
+
+
 
 /* Tool module cards — appended to assistant bubbles. Looks like
    a compact, collapsible summary line. */
@@ -3682,8 +3720,8 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-code-truncated::before{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:hsl(0 65% 50%);box-shadow:0 0 0 2px hsl(0 65% 50%/0.18);animation:truncation-pulse 1.4s ease-in-out infinite}
 @keyframes truncation-pulse{50%{opacity:.4}}
 /* Legacy alias used by older tool card builds (.agent-tool-code-wrap). */
-.agent-tool-code-wrap{display:block;border-top:0;background:hsl(var(--bg-200)/.5)}
-[data-theme=socrates][data-mode=dark] .agent-tool-code-wrap{background:hsl(220 25% 14%/0.5)}
+
+
 /* Broken-artifact placeholder shown when an inline image (matplotlib
    PNG, etc.) fails to load. Replaces the <img> on error so the
    user sees a useful diagnostic instead of a browser broken-icon. */
@@ -3698,14 +3736,14 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
    <pre> underneath streams stdout/stderr as it arrives. We cap
    height at 200px so a runaway print loop scrolls instead of
    pushing the page. */
-.agent-tool-progress{margin:0;padding:6px 12px;background:hsl(var(--bg-000)/.4);border-top:0;display:flex;align-items:center;gap:8px}
-.agent-tool-progress-badge{display:inline-flex;align-items:center;font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.4px;color:hsl(220 60% 60%);padding:2px 8px;border-radius:999px;background:hsl(220 60% 95%);font-variant-numeric:tabular-nums;flex-shrink:0}
-.agent-tool-progress .agent-tool-progress-spinner{display:inline-block;width:10px;height:10px;margin-right:5px;border-radius:50%;border:1.5px solid hsl(220 60% 60%/0.25);border-top-color:hsl(220 60% 60%);vertical-align:-1px;animation:agent-tool-spin 0.7s linear infinite}
+
+
+
 @keyframes agent-tool-spin{to{transform:rotate(360deg)}}
-[data-theme=socrates][data-mode=dark] .agent-tool-progress-badge{background:hsl(220 30% 22%);color:hsl(220 60% 78%)}
-[data-theme=socrates][data-mode=dark] .agent-tool-progress{background:hsl(220 25% 14%/0.55)}
+
+
 .agent-tool-stream{margin:0;padding:6px 12px 8px;background:transparent;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));line-height:1.4;color:hsl(var(--text-300));white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;flex:1;min-width:0}
-.agent-tool-out-sep{height:1px;background:transparent;margin:2px 0 4px}
+
 [data-theme=socrates][data-mode=dark] .agent-tool-out.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
 
 /* Status badge: small monospaced glyph in the card header next to the
@@ -3717,11 +3755,11 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .agent-tool-status.ok   {background:hsl(var(--bg-300));color:hsl(var(--text-400))}
 .agent-tool-status.err  {background:hsl(0 60% 92%);color:hsl(0 60% 42%)}
 .agent-tool-status.warn {background:hsl(var(--bg-300));color:hsl(var(--text-400))}
-.agent-tool-status.mute {background:hsl(var(--bg-300));color:hsl(var(--text-500))}
+
 [data-theme=socrates][data-mode=dark] .agent-tool-status.ok   {background:hsl(var(--bg-200));color:hsl(var(--text-400))}
 [data-theme=socrates][data-mode=dark] .agent-tool-status.err  {background:hsl(0 40% 22%);color:hsl(0 60% 78%)}
 [data-theme=socrates][data-mode=dark] .agent-tool-status.warn {background:hsl(var(--bg-200));color:hsl(var(--text-400))}
-[data-theme=socrates][data-mode=dark] .agent-tool-status.mute {background:hsl(var(--bg-200));color:hsl(var(--text-500))}
+
 
 /* Inline artifacts produced by the code interpreter (matplotlib PNGs,
    CSV exports, etc.). The figure wrapper (.exec-artifact) holds the
@@ -3862,14 +3900,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   color:var(--tool-card-text-subtle);
 }
 .agent-tool-toolbar[hidden]{display:none}
-.agent-tool-toolbar-label{
-  flex:1;
-  min-width:0;
-  font-size:calc(10px * var(--app-font-scale, 1));
-  font-family:var(--font-sans);
-  text-transform:uppercase;
-  letter-spacing:.06em;
-}
+
 .agent-tool-action{
   border:0;
   padding:2px 0;
@@ -3882,7 +3913,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 }
 .agent-tool-action:hover,.agent-tool-action:focus-visible{color:hsl(var(--text-200));text-decoration:underline;text-underline-offset:2px}
 .agent-tool-action:focus-visible{outline:2px solid hsl(var(--text-400)/.4);outline-offset:2px;border-radius:2px}
-.agent-tool-code,.agent-tool-out,.agent-tool-progress{
+.agent-tool-code,.agent-tool-out{
   background:hsl(var(--bg-000)/.32);
   border-top:0;
 }
@@ -3926,9 +3957,9 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   cursor:pointer;
 }
 .agent-tool-output-toggle:hover{text-decoration:underline;text-underline-offset:2px}
-.agent-tool-progress{align-items:flex-start;padding:7px 10px}
-.agent-tool-progress-badge{padding:0;background:transparent;color:hsl(var(--text-400));font-weight:500}
-.agent-tool-progress .agent-tool-progress-spinner{width:8px;height:8px}
+
+
+
 .agent-tool-stream{padding:0;max-height:180px}
 .exec-artifact{border:0;border-radius:var(--tool-card-radius-sm);background:transparent}
 .exec-artifact::before{display:none}
@@ -3936,9 +3967,9 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 .exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
 .artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:var(--tool-card-radius-sm);background:transparent}
 .artifact-error-open,.artifact-error-retry{margin-left:0;border:0;background:transparent;color:hsl(var(--accent-000));padding:0;font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
-.artifact-error-detail,.agent-tool-error-detail{width:100%;color:hsl(var(--text-400));font-size:inherit}
-.artifact-error-detail code,.agent-tool-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
-.agent-tool-retry{display:block;margin-top:8px;padding:0;border:0;background:transparent;color:hsl(var(--accent-000));font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
+.artifact-error-detail{width:100%;color:hsl(var(--text-400));font-size:inherit}
+.artifact-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
+
 .agent-tool-card.websearch .agent-tool-out{padding:0;max-height:520px}
 
 /* Open WebUI-style tool disclosure: a quiet status row until the reader
@@ -3988,7 +4019,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   letter-spacing:.06em;text-transform:uppercase;
 }
 .agent-tool-section-head .agent-tool-action{margin-left:auto;text-transform:none;letter-spacing:0}
-.agent-tool-code,.agent-tool-out,.agent-tool-progress{
+.agent-tool-code,.agent-tool-out{
   border:0;border-radius:var(--tool-card-radius-sm);background:hsl(var(--bg-200)/.5);
 }
 .agent-tool-code{margin:0;padding:9px 11px;max-height:300px}
@@ -4054,7 +4085,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
   .wsr-index{width:18px;height:18px;line-height:16px}
   .wsr-snippet{-webkit-line-clamp:2;line-clamp:2}
   .agent-tool-toolbar{gap:8px}
-  .agent-tool-toolbar-label{display:none}
+  
   .wsr-header{align-items:flex-start}
   .wsr-summary{white-space:normal}
 }
@@ -4319,7 +4350,7 @@ html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
 /* Mode chip — disabled. The Chat / Tutor switcher was removed from
  * the UI (renderModeBanner in tutorSocratic.js is now a no-op).
  * If any stale element still lives in the DOM we hide it. */
-.mode-chip,.mode-chip-sep,.mode-chip-dot,.mode-chip-label,.mode-chip-switch{display:none !important}
+
 
 /* Mistake book filter bar. */
 .mistake-filter-bar{
@@ -4789,7 +4820,7 @@ a.tool-inline-src:hover{background:var(--tool-card-bg-hover);color:hsl(var(--tex
    count; the row becomes visible again when it settles and replaces the
    head. The selector is scoped to the slot so serialized rows in history
    are never affected. */
-.tool-inline-live-slot .tool-inline[data-merged="1"]{display:none}
+
 
 /* P_tool_live_card — fade-out applied to a tool row that is being
    replaced in the live slot. Only opacity/transform animate so the
@@ -4888,10 +4919,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .chat-composer-body{display:contents}
 .chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.45)}
  .chat-input-wrap .attachment-chips{order:0;flex-basis:100%}
-#chatInputArea{order:2;flex:1;min-width:120px;min-height:28px;padding:4px 4px 6px;line-height:1.45}
+
 .chat-input-footer{display:contents}
 .chat-input-footer .footer-left-group{order:1;display:flex;align-items:center;gap:2px;flex-shrink:0}
-.chat-input-footer .chat-input-hint{order:3;display:none}
+
 /* UI-align: send-btn mirrors start-btn. Same 30px circle footprint and
    15px SVG so the run control does not change size between landing and
    in-chat. */
@@ -4900,7 +4931,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .chat-input-footer .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
 .chat-input-footer .attach-btn{width:38px;height:38px;color:hsl(var(--text-300))}
 .chat-input-footer .attach-btn svg{width:20px;height:20px}
-.chat-input-footer .mic-btn{width:34px;height:34px}
+
 .chat-input-footer .effort-trigger{padding:6px 8px;border-radius:12px;color:hsl(var(--text-300))}
 
 /* Mic button (data-action="toggleSpeechInput") — sit inside the composer
@@ -5006,7 +5037,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .chat-input-wrap .footer-left-group{display:contents}
   .chat-input-wrap .footer-left-group .attach-btn{order:1}
   .chat-input-wrap .footer-left-group .effort-picker{order:3;flex:0 0 auto}
-  .chat-input-wrap .chat-input-hint{order:3}
+  
   /* Voice input: place between the hint and the send button so the row
      stays `[attach][editor][mic][send]` without disturbing the existing
      order values used by the tool controls. The hint is display:none so
@@ -5109,7 +5140,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .chat-input-footer .send-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
   .chat-input-footer .send-btn svg{width:15px;height:15px}
   .chat-input-footer .attach-btn{width:38px;height:38px}
-  .chat-input-footer .mic-btn{display:none}
+  
   /* Voice input: the collapsed mobile row is already three columns
      ([left][editor][send]) with no slack for a fourth control, and the
      collapsed composer body reserves only 44px of height. Hide the
@@ -5184,7 +5215,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .send-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
   .send-btn svg{width:15px;height:15px}
   .chat-input-footer{min-height:44px;padding:0 8px 6px}
-  .chat-input-hint{display:none}
+  
   .tool-run-summary{min-height:44px}
 }
 
@@ -5215,16 +5246,13 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .model-picker-menu .model-picker-filter,
   .model-picker-menu .model-picker-add,
   .model-picker-menu .model-picker-empty,
-  .extensions-menu .extensions-item,
-  .extensions-menu .extensions-divider{animation:none}
-  .model-picker-trigger.has-model,
-  .extensions-trigger.has-active{animation:none}
-  .chat-mode-badge{animation:none}
+  .extensions-menu .extensions-item{animation:none}
+  
+  
   .composer-extension-inline{animation:none}
   .display-prefs-segs::before{transition:none}
   .display-prefs-seg:active{transform:none}
-  .model-picker-trigger svg.model-picker-caret,
-  .extensions-caret,
+  
   .chat-model-caret,
   .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
   /* Disable transform-on-press/hover for all interactive controls. */
@@ -5238,7 +5266,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .recent-item:active,
   .recent-item-del:active,
   .recent-item-del:hover,
-  .recents-new-btn:active,
   .kb-node:active,
   .user-row:active,
   .tool-run-summary:active,
@@ -5246,7 +5273,6 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   .new-reply-pill:hover{transform:none !important}
   /* Disable icon micro-rotations. */
   .attach-btn:hover svg,
-  .recents-new-btn:hover svg,
   .recent-item-del:hover svg,
   .send-btn:hover svg{transform:none !important}
   /* Disable hover translateX shifts that move content. */
@@ -5289,9 +5315,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 /* PR-A — "is-soon" used by the Scheduled button in PR-A. Faded but
    still clickable (so the click handler can fire a toast). Lighter
    than the [disabled] treatment (which is reserved for true disables). */
-.sidebar-nav-btn.is-soon{opacity:.55}
-.sidebar-nav-btn.is-soon:hover{opacity:.8}
-.sidebar-nav-soon{margin-left:auto;font-size:10px;padding:2px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em;font-weight:500}
+
+
+
 
 /* Top bar — center segmented control */
 .top-bar{justify-content:space-between}
@@ -5302,11 +5328,11 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 /* Suggestion chips under the input (removed 2026-07-20 per user request) */
 
 /* Mic button (next to attach) */
-.mic-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;transition:background .15s var(--ease-out),color .15s var(--ease-out),transform .12s ease;flex-shrink:0}
-.mic-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
-.mic-btn:active{transform:scale(.92)}
-.mic-btn svg{width:16px;height:16px}
-.mic-btn.is-listening{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/.16);box-shadow:0 0 0 3px hsl(var(--accent-000)/.07);animation:voicePulse 1.15s ease-in-out infinite}.mic-btn.is-listening svg{animation:voiceGlyph .75s ease-in-out infinite alternate}@keyframes voicePulse{50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0)}}@keyframes voiceGlyph{to{transform:translateY(-1px)}}
+
+
+
+
+@keyframes voicePulse{50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0)}}@keyframes voiceGlyph{to{transform:translateY(-1px)}}
 
 /* Send / start stays an arrow while idle and while text is present. Voice
    capture uses the separate full-width recording surface below. */
@@ -5344,14 +5370,14 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .share-create-area{text-align:center;margin-top:4px}
 .share-create-btn{margin-top:8px}
 .stg-toggle-label{margin-bottom:0}
-.profile-tier{font-size:calc(13px * var(--app-font-scale,1))}
-.profile-compare-wrap{margin-top:10px}
-.profile-compare-link{text-align:center;display:block;font-size:calc(12px * var(--app-font-scale,1));padding:8px 0}
-.profile-instructions-label-spaced{margin-top:10px}
-.profile-action-btn{width:auto;padding:6px 14px;flex-shrink:0}
-.profile-section-hidden{display:none}
-.profile-danger-color{color:hsl(0 60% 55%)}
-.profile-actions-sep{border-top:0.5px solid hsl(var(--border-300)/0.08);padding-top:12px}
+
+
+
+
+
+
+
+
 
 /* =====================================================================
  * Extension workflow layer — compact, in-flow Agent progress.
@@ -5530,7 +5556,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .connector-row .workspace-row-copy strong{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
 .connector-row .workspace-row-copy > span{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
 .connector-row .workspace-note{display:none}
-.connector-row.is-connected .workspace-row-copy strong::after{content:none}
+
 .connector-coming-soon{padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight)}
 .connector-connect.workspace-secondary{
   min-height:32px;
@@ -5596,15 +5622,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .agent-tool-card.open .agent-tool-chev{opacity:.7}
 .agent-tool-card .agent-tool-body::before{display:none}
 .agent-tool-body{margin:2px 4px 6px var(--inline-detail-indent);border-radius:var(--inline-radius);background:var(--inline-sunken-bg)}
-.agent-tool-out,.agent-tool-code,.agent-tool-progress,.agent-tool-code-wrap{border-top:0;background:transparent}
+.agent-tool-out,.agent-tool-code{border-top:0;background:transparent}
 .agent-tool-out{padding:8px 10px;color:hsl(var(--text-400))}
 .agent-tool-code{padding:8px 10px;color:var(--tool-card-text)}
 .agent-tool-code-streaming::after{color:var(--tool-card-icon)}
 .agent-tool-out.error{color:var(--tool-card-danger);background:var(--tool-card-danger-soft)}
-.agent-tool-progress{padding:8px 10px;color:hsl(var(--text-400))}
-.agent-tool-progress-badge{color:hsl(var(--text-400));background:transparent}
-.agent-tool-progress .agent-tool-progress-spinner{border-color:hsl(var(--border-300)/.4);border-top-color:hsl(var(--text-400))}
-.agent-tool-status.ok,.agent-tool-status.warn,.agent-tool-status.mute{background:transparent;color:hsl(var(--text-500))}
+
+
+
+.agent-tool-status.ok,.agent-tool-status.warn{background:transparent;color:hsl(var(--text-500))}
 .agent-tool-status.err{background:transparent;color:var(--tool-card-danger)}
 .agent-tool-card[data-tool-state="cancelled"]{border-color:transparent}
 /* State presentation mirrors the inline rows: while running only the
@@ -5647,8 +5673,8 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 .storage-row{padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
 .storage-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
 .storage-row-meta{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
-.quick-opt{padding:8px 12px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius-sm);color:var(--tool-card-text-muted);background:var(--tool-card-bg)}
-.quick-opt:hover,.quick-opt.primary{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong);color:var(--tool-card-text)}
+
+
 /* Extension/model menus: keep active state neutral and remove scale-heavy
    entrance motion while preserving keyboard focus and selection semantics. */
 .extensions-menu,.model-picker-menu{padding:8px;transition:opacity .14s ease,transform .14s ease;will-change:auto}
@@ -5658,8 +5684,8 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 .extensions-item.on .extensions-item-icon,.model-picker-item-check{color:var(--tool-card-icon)}
 .extensions-item.on .extensions-item-check{background:var(--tool-card-text);border-color:var(--tool-card-text)}
 .extensions-item-check svg{stroke:var(--tool-card-surface)}
-.extensions-item-desc,.model-picker-item-sub{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
-.extensions-menu .extensions-item,.extensions-menu .extensions-divider,.model-picker-menu .model-picker-item,.model-picker-menu .model-picker-divider,.model-picker-menu .model-picker-filter,.model-picker-menu .model-picker-add,.model-picker-menu .model-picker-empty{animation:none}
+.model-picker-item-sub{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
+.extensions-menu .extensions-item,.model-picker-menu .model-picker-item,.model-picker-menu .model-picker-divider,.model-picker-menu .model-picker-filter,.model-picker-menu .model-picker-add,.model-picker-menu .model-picker-empty{animation:none}
 .extensions-picker[data-open="true"] .extensions-menu{transform:translateY(0)}
 .model-picker[data-open="true"] .model-picker-menu{transform:translateX(-50%) translateY(0)}
 .model-picker-item:focus-visible,.extensions-item:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px}
@@ -5673,20 +5699,8 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 /* Composer tools refresh: a calmer ChatGPT-style capability switcher.
    The registry owns the content; this layer only gives the menu a compact
    heading, clearer descriptions, shortcut hints, and a quiet active state. */
-.composer-tools-heading{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:5px 10px 8px;
-  color:var(--tool-card-text);
-  font-size:calc(12px * var(--app-font-scale,1));
-  font-weight:600;
-  letter-spacing:-.01em;
-}
-.composer-tools-heading-hint{
-  color:var(--tool-card-text-subtle);
-  font-size:calc(10px * var(--app-font-scale,1));
-  font-weight:400;
-  white-space:nowrap;
-}
+
+
 .composer-tools-item{
   position:relative;
   min-height:48px;
@@ -5714,8 +5728,8 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   .composer-tools-menu{width:min(340px,calc(100vw - 24px));max-height:min(50vh,520px);overflow-y:auto}
 }
 @media(max-width:768px){
-  .composer-tools-heading{padding:3px 4px 8px;font-size:calc(14px * var(--app-font-scale,1))}
-  .composer-tools-heading-hint{font-size:calc(11px * var(--app-font-scale,1))}
+  
+  
   .composer-tools-item kbd{display:none}
 }
 
@@ -6479,7 +6493,6 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   .settings-overlay,
   .profile-overlay,
   .usage-overlay,
-  .exam-overlay,
   .share-overlay,
   .thinking-panel-backdrop,
   .workspace-dialog,
@@ -6680,7 +6693,7 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline:first-child{margin-top:3px}
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline:last-child{margin-bottom:3px}
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-merged="1"]{display:none}
+
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
   display:flex;
   align-items:center;
@@ -7378,7 +7391,7 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
     order:0;
   }
   .chat-input-wrap .chat-input-footer .send-btn{grid-column:3;grid-row:1;margin-left:0}
-  .chat-input-wrap .chat-input-footer .chat-input-hint{display:none}
+  
   .chat-input-wrap .footer-left-group .effort-picker{
     position:absolute;
     right:48px;
@@ -7956,15 +7969,12 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav{
   padding-inline:8px;
 }
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn,
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-session-item{
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn{
   border-radius:var(--workbench-radius-sm);
   color:hsl(var(--workbench-text-muted));
 }
 body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn:hover,
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn.active,
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-session-item:hover,
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-session-item.active{
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .sidebar-nav-btn.active{
   color:hsl(var(--workbench-text));
   background:hsl(var(--workbench-hover));
 }
@@ -8647,46 +8657,22 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    the engine swaps prompts (e.g. after a lang flip or after the user
    sends a new turn). The transition is short enough to feel responsive
    and long enough to mask React commits and i18n re-renders behind it. */
-.home-idea,.suggestion-chip{
-  display:flex;align-items:center;gap:12px;min-height:32px;padding:5px 10px;
-  border:0;border-radius:8px;color:hsl(var(--cowork-text));background:transparent;
-  font:400 13px var(--font-sans);text-align:left;cursor:pointer;
-  opacity:1;
-  /* P_idea-overflow — flex children default to min-width:auto, so a long
-     Chinese/English prompt can stretch the chip past its parent. Pair
-     min-width:0 on the chip with overflow:hidden + text-overflow:ellipsis
-     so the row clips inside its grid instead of overflowing the page. */
-  min-width:0;max-width:100%;overflow:hidden;
-  transition:background-color .18s var(--ease-out),color .18s var(--ease-out),opacity .18s var(--ease-out),transform .18s var(--ease-out);
-}
-.home-idea:hover,.suggestion-chip:hover{background:hsl(var(--cowork-surface))}
-.home-idea:focus-visible,.suggestion-chip:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:1px}
-.home-idea>.home-idea-text,.suggestion-chip>.home-idea-text{
-  min-width:0;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap;
-}
+
+
+
+
 /* Enter: the chip starts hidden + slightly nudged down and animates
    to its resting state over ~180ms. The JS toggles the .suggestion-enter
    class on a rAF after appending, so the browser commits the start
    frame first, then transitions the change — no flash. */
-.suggestion-chip.suggestion-enter{opacity:0;transform:translateY(4px)}
-.suggestion-chip:not(.suggestion-enter){opacity:1;transform:translateY(0)}
-.suggestion-chip.suggestion-leave{opacity:0;transform:translateY(-2px);pointer-events:none}
+
+
+
 /* A hairline tile per idea: it separates the glyph from the label without
    adding a filled chip, which is what the reference row does. */
-.home-idea-icon{
-  display:grid;
-  place-items:center;
-  flex:0 0 auto;
-  width:22px;
-  height:22px;
-  border:1px solid hsl(var(--cowork-line)/.75);
-  border-radius:6px;
-  color:hsl(var(--cowork-muted));
-  transition:border-color .18s var(--ease-out),color .18s var(--ease-out);
-}
-.home-idea-icon svg{width:13px;height:13px}
-.home-idea:hover .home-idea-icon,.suggestion-chip:hover .home-idea-icon{border-color:hsl(var(--cowork-line));color:hsl(var(--cowork-text))}
+
+
+
 #topicDisclaimer{display:none}
 
 body[data-conversation-active="true"] .home-ideas{display:none}
@@ -8716,14 +8702,14 @@ body[data-conversation-active="true"] .chat-suggestions{display:none}
   gap:0;
 }
 .chat-suggestions:empty{margin:0;padding:0}
-.chat-suggestions-label{padding:0 6px 4px;color:hsl(var(--cowork-muted));font-size:11px}
-.chat-suggestions .suggestion-chip{min-height:32px}
+
+
 /* On mobile the chat composer fills the safe-area bottom; align the
    suggestions just above it without padding-top (the row scrolls with
    the chat input). */
 @media(max-width:768px){
   .chat-suggestions{width:100%;padding-inline:12px}
-  .chat-suggestions .suggestion-chip{font-size:12.5px}
+  
 }
 
 /* Short windows: the serif hero is the one band with slack in it. */
@@ -8775,24 +8761,11 @@ body[data-conversation-active="true"] .chat-suggestions{display:none}
     margin:0 0 16px;
     gap:4px;
   }
-  .home-ideas-label{display:none}
-  .home-idea{
-    min-height:44px;
-    gap:14px;
-    padding:7px 10px;
-    border-radius:10px;
-    font-size:16px;
-    color:hsl(var(--cowork-muted));
-    /* P_idea-mobile-overflow — on phones the chip must stay inside the
-       safe area. min-width:0 lets the flex child shrink below its
-       intrinsic width; the .home-idea-text inside carries the ellipsis
-       clip so the icon and label keep their 24px / wrap as needed. */
-    min-width:0;max-width:100%;
-    overflow:hidden;
-  }
-  .home-idea>span:last-child,.home-idea>.home-idea-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .home-idea-icon{width:24px;height:24px;flex:0 0 auto;border:0;border-radius:0;color:hsl(var(--cowork-text))}
-  .home-idea-icon svg{width:20px;height:20px}
+  
+  
+  
+  
+  
 }
 
 /* ═══ Stable live-turn + composer state contract ═══════════════════════
@@ -9338,15 +9311,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
 }
-.composer-tools-heading{
-  padding:4px 10px 6px;
-  color:var(--cg-text-secondary);
-  font-size:12px;
-  font-weight:600;
-}
-.composer-tools-heading-hint{color:var(--cg-text-muted);font-size:11px}
-.composer-tools-item,
-.composer-tools-more-toggle{
+
+
+.composer-tools-item{
   display:flex;
   align-items:center;
   gap:12px;
@@ -9363,41 +9330,29 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   cursor:pointer;
   transition:background-color .15s ease,color .15s ease;
 }
-.composer-tools-item + .composer-tools-item,
-.composer-tools-more-toggle + .composer-tools-item,
-.composer-tools-item + .composer-tools-more-toggle{margin-top:1px}
+.composer-tools-item + .composer-tools-item{margin-top:1px}
 .composer-tools-item:hover,
-.composer-tools-item:focus-visible,
-.composer-tools-more-toggle:hover,
-.composer-tools-more-toggle:focus-visible{
+.composer-tools-item:focus-visible{
   color:var(--cg-text);
   background:var(--cg-surface-hover);
   outline:0;
 }
-.composer-tools-item:focus-visible,
-.composer-tools-more-toggle:focus-visible{box-shadow:inset 0 0 0 2px var(--cg-border-strong)}
+.composer-tools-item:focus-visible{box-shadow:inset 0 0 0 2px var(--cg-border-strong)}
 .composer-tools-item.is-active{color:var(--cg-text);background:var(--cg-surface-hover)}
 .composer-tools-icon{width:22px;height:22px;color:var(--cg-text-secondary)}
 .composer-tools-item:hover .composer-tools-icon,
-.composer-tools-item:focus-visible .composer-tools-icon,
-.composer-tools-more-toggle:hover .composer-tools-icon,
-.composer-tools-more-toggle:focus-visible .composer-tools-icon{color:var(--cg-text)}
+.composer-tools-item:focus-visible .composer-tools-icon{color:var(--cg-text)}
 .composer-tools-icon svg{width:18px;height:18px}
 .composer-tools-copy{gap:0;line-height:20px}
 .composer-tools-copy > span{font-size:14px;font-weight:500;color:inherit}
 .composer-tools-copy small,
 .composer-tools-item kbd{display:none}
-.composer-tools-more-toggle .composer-tools-copy{flex:1;min-width:0}
+
 .composer-tools-disclosure{width:16px;height:16px;flex:0 0 16px;margin-left:auto;color:var(--cg-text-muted);transition:transform .15s ease,color .15s ease}
-.composer-tools-disclosure.is-expanded{transform:none}
-.composer-tools-more-toggle:hover .composer-tools-disclosure,
-.composer-tools-more-toggle:focus-visible .composer-tools-disclosure{color:var(--cg-text)}
-.composer-tools-more-items{
-  margin-top:4px;
-  padding-top:4px;
-  border-top:1px solid var(--cg-border);
-}
-.composer-tools-more-items .composer-tools-item{font-size:13.5px}
+
+
+
+
 
 /* ChatGPT keeps the plus glyph small but gives its button a full 44px hit
    target. This also prevents the local control from becoming a visually
@@ -9426,9 +9381,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     padding:8px;
     border-radius:18px;
   }
-  .composer-tools-heading{display:none}
-  .composer-tools-item,
-  .composer-tools-more-toggle{
+  
+  .composer-tools-item{
     min-height:56px;
     height:56px;
     padding:6px 8px;
@@ -9436,8 +9390,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     border-radius:12px;
     font-size:16px;
   }
-  .composer-tools-item + .composer-tools-item,
-  .composer-tools-more-toggle + .composer-tools-item{margin-top:2px}
+  .composer-tools-item + .composer-tools-item{margin-top:2px}
   .composer-tools-copy > span{font-size:16px}
   #topicComposerToolsBtn,
   #chatComposerToolsBtn{width:44px;min-width:44px;height:44px;min-height:44px}
@@ -9799,8 +9752,8 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   width:min(100%,var(--conversation-composer-width));
   margin:16px 0 0;
 }
-#appShell .home-ideas-label{font-family:var(--font-sans);font-size:14px;font-weight:500;color:hsl(var(--cowork-text))}
-#appShell .home-idea{font-family:var(--font-sans);font-size:13px;color:hsl(var(--cowork-text))}
+
+
 
 /* Shared composer: the initial state is one row; only a measured multiline
    draft creates the second control row. This keeps focus from moving the
@@ -9894,17 +9847,14 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
   border-color:hsl(0 0% 0%/.12);
   box-shadow:0 16px 40px hsl(0 0% 0%/.16),0 1px 0 hsl(0 0% 100%/.8) inset;
 }
-[data-mode=light] #composerToolsMenu .composer-tools-item,
-[data-mode=light] #composerToolsMenu .composer-tools-more-toggle{color:hsl(0 0% 13%/.92)}
+[data-mode=light] #composerToolsMenu .composer-tools-item{color:hsl(0 0% 13%/.92)}
 [data-mode=light] #composerToolsMenu .composer-tools-icon{color:hsl(0 0% 13%/.58)}
 [data-mode=light] #composerToolsMenu .composer-tools-disclosure{color:hsl(0 0% 13%/.48)}
 [data-mode=light] #composerToolsMenu .composer-tools-item:hover,
-[data-mode=light] #composerToolsMenu .composer-tools-item:focus-visible,
-[data-mode=light] #composerToolsMenu .composer-tools-more-toggle:hover,
-[data-mode=light] #composerToolsMenu .composer-tools-more-toggle:focus-visible{
+[data-mode=light] #composerToolsMenu .composer-tools-item:focus-visible{
   color:hsl(0 0% 0%);background:hsl(0 0% 0%/.06);
 }
-[data-mode=light] #composerToolsMenu .composer-tools-more-items{border-top-color:hsl(0 0% 0%/.1)}
+
 
 @media(max-width:768px){
   #appShell .top-bar{min-height:56px;padding:10px 16px}
@@ -9944,10 +9894,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
     width:100%;
     margin:14px 0 0;
   }
-  #appShell .home-ideas-label{display:block;padding:0 10px 2px;font-size:13px}
-  #appShell .home-idea{min-height:34px;padding:5px 8px;border-radius:8px;gap:10px;font-size:13px}
-  #appShell .home-idea-icon{width:22px;height:22px;border:1px solid hsl(var(--cowork-line)/.72);border-radius:6px;color:hsl(var(--cowork-muted))}
-  #appShell .home-idea-icon svg{width:13px;height:13px}
+  
+  
+  
+  
 
   #appShell #chatInputWrap:not(.voice-recording-active){
     width:100%;max-width:none;padding:4px 6px;border-radius:28px;
@@ -10581,17 +10531,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     margin:0 -6px 16px;
     overflow:visible;
   }
-  #appShell .home-ideas-label{display:none}
-  #appShell .home-idea{
-    min-height:44px;
-    padding:7px 0;
-    gap:14px;
-    border-radius:10px;
-    font-size:16px;
-    color:hsl(var(--cowork-text));
-  }
-  #appShell .home-idea-icon{width:24px;height:24px;border:0;border-radius:0;color:hsl(var(--cowork-text))}
-  #appShell .home-idea-icon svg{width:20px;height:20px}
+  
+  
+  
+  
 
   /* In-session mobile card: inset from the viewport edge and one-row at
      rest; a measured multiline draft still gets its second control row. */
@@ -11311,76 +11254,20 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   padding:2px 0 0;
   margin:4px auto 0;
 }
-.home-ideas-label{
-  display:none; /* ChatGPT has no “Ideas for you” label on this screenshot */
-}
-.home-idea,
-.suggestion-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 14px;
-  border-radius:999px;
-  background:transparent;
-  border:0.5px solid hsl(0 0% 100% / 0.08);
-  color:hsl(0 0% 70%);
-  font-size:calc(13px * var(--app-font-scale, 1));
-  font-weight:400;
-  line-height:1.3;
-  cursor:pointer;
-  transition:background-color .14s ease, border-color .14s ease, color .14s ease;
-}
-[data-mode="light"] .home-idea,
-[data-mode="light"] .suggestion-chip{
-  border-color:hsl(0 0% 0% / 0.08);
-  color:hsl(0 0% 45%);
-}
-.home-idea:hover,
-.suggestion-chip:hover{
-  background:hsl(0 0% 13%);
-  border-color:hsl(0 0% 100% / 0.12);
-  color:hsl(0 0% 100%);
-}
-[data-mode="light"] .home-idea:hover{
-  background:hsl(0 0% 96%);
-  color:hsl(0 0% 10%);
-}
-.home-idea-icon{
-  width:16px;
-  height:16px;
-  flex:0 0 16px;
-  color:hsl(0 0% 60%);
-  background:transparent;
-  border:0;
-}
-.home-idea-icon svg{
-  width:16px;
-  height:16px;
-}
-.home-idea-text{
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
+
+
+
+
+
+
+
+
 /* When there is only one suggestion (e.g. the screenshot’s “Give me…” line),
    render it as a plain helper row without a pill border. The JS still emits
    the same chip element — we detect the single-child case and strip the pill. */
-.home-ideas:has(> .home-idea:only-child) .home-idea{
-  border:0;
-  background:transparent;
-  padding:4px 8px;
-  color:hsl(0 0% 65%);
-  font-size:calc(13px * var(--app-font-scale, 1));
-}
-.home-ideas:has(> .home-idea:only-child) .home-idea:hover{
-  background:transparent;
-  color:hsl(0 0% 90%);
-  text-decoration:underline;
-  text-underline-offset:3px;
-}
-[data-mode="light"] .home-ideas:has(> .home-idea:only-child) .home-idea:hover{
-  color:hsl(0 0% 20%);
-}
+
+
+
 /* ChatGPT’s composer toolbar “+ / mic / wave” row is inside the pill’s
    grid — ensure the Tiptap surface doesn’t add extra padding */
 .composer-tools-trigger{

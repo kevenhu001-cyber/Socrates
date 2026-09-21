@@ -46,7 +46,7 @@ var I18N={
     "topic.model":"Model",
     "topic.extensions":"Extensions",
     /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
-    "greeting.chat":"Ready when you are",
+    "greeting.chat":"Where should we begin?",
     "greeting.tutor":"Let's explore.",
     /* Composer "+" menu. The five mobile rows were briefly hardcoded to
        Chinese inside ComposerToolsMenu.tsx; the copy belongs here so both
@@ -974,7 +974,7 @@ var I18N={
     "share.readOnly":"Read-only",
     "topic.titleChat":"What can I help you with?",
     "topic.subChat":"",
-    "topic.disclaimerChat":"Chat mode is a plain conversation.",
+    "topic.disclaimerChat":"Socrates can make mistakes. Check important information.",
     "profile.savedAt":"Saved at {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"Reply in concise bullet points. Cite sources inline as [1], [2]. Avoid hedging language.",
     "profile.instructionsAboutPlaceholder":"e.g. I'm a backend engineer working on a payments product. I'm allergic to puns.",
@@ -1018,7 +1018,7 @@ var I18N={
     /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
        left holding the English strings when the landing was redesigned, so
        the zh locale rendered a half-English sidebar. */
-    "greeting.chat":"准备好，我们就开始。",
+    "greeting.chat":"我们先从哪里开始呢？",
     "greeting.tutor":"来一起探索吧",
     /* Composer "+" menu. */
     "composer.tools.heading":"添加到对话",
@@ -1027,7 +1027,7 @@ var I18N={
     "composer.tools.less":"收起工具",
     "composer.tools.mobile":"工具",
     "composer.tools.mobileLess":"收起工具",
-    "composer.tools.webSearch":"联网搜索",
+    "composer.tools.webSearch":"网页搜索",
     "composer.tools.camera":"相机",
     "composer.tools.photos":"照片",
     "composer.tools.files":"文件",
@@ -1925,7 +1925,7 @@ var I18N={
     "share.readOnly":"只读",
     "topic.titleChat":"我能帮你什么？",
     "topic.subChat":"",
-    "topic.disclaimerChat":"聊天模式为普通对话。",
+    "topic.disclaimerChat":"Socrates 也可能会犯错。请核查重要信息。",
     "profile.savedAt":"已保存 {hh}:{mm}",
     "profile.instructionsSavedPlaceholder":"例如：用简洁的项目符号回复。引用来源标为 [1]、[2]。避免模棱两可的措辞。",
     "profile.instructionsAboutPlaceholder":"例如：我是一名后端工程师，正在做支付产品。我讨厌双关语。",
@@ -2069,17 +2069,19 @@ function applyI18n(){
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
   if(sb){
-    var startLabel=sb.classList.contains("active")?t("chat.send"):t("voice.input");
+    var startLabel=t("chat.send");
     sb.setAttribute("aria-label",startLabel);
     sb.setAttribute("title",startLabel);
-    sb.setAttribute("aria-disabled","false");
+    sb.setAttribute("aria-disabled",sb.classList.contains("active")?"false":"true");
+    sb.disabled=!sb.classList.contains("active");
   }
   var sendBtn=document.getElementById("sendBtn");
   if(sendBtn&&!sendBtn.classList.contains("chat-stop")&&!sendBtn.classList.contains("agent-stop")){
-    var sendLabel=sendBtn.classList.contains("active")?t("chat.send"):t("voice.input");
+    var sendLabel=t("chat.send");
     sendBtn.setAttribute("aria-label",sendLabel);
     sendBtn.setAttribute("title",sendLabel);
-    sendBtn.setAttribute("aria-disabled","false");
+    sendBtn.setAttribute("aria-disabled",sendBtn.classList.contains("active")?"false":"true");
+    sendBtn.disabled=!sendBtn.classList.contains("active");
   }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");

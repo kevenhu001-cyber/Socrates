@@ -56,6 +56,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const desktopControlBoxes = await page.evaluate(() => {
     const box = (selector) => {
       const element = document.querySelector(selector);
+      if (!element || getComputedStyle(element).display === 'none') return null;
       const rect = element?.getBoundingClientRect();
       return rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null;
     };
@@ -63,18 +64,20 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       attach: box('#chatInputWrap .attach-btn'),
       editor: box('#chatComposerRoot'),
       effort: box('#chatInputWrap .effort-picker'),
+      mic: box('#chatMobileMicBtn'),
       send: box('#sendBtn'),
     };
   });
-  /* The desktop composer is a two-row grid: the editor spans the top row
-     and the compact control rail (attach → effort → send) sits beneath
-     it, in that order left-to-right. */
-  expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.effort?.left ?? 0) + 1);
-  expect(desktopControlBoxes.effort?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
+  /* Desktop matches ChatGPT's single rail: plus → editor → mic → send.
+     Reasoning remains available in the tools surface instead of consuming
+     permanent composer width. */
+  expect(desktopControlBoxes.effort).toBeNull();
+  expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.editor?.left ?? 0) + 1);
+  expect(desktopControlBoxes.editor?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.mic?.left ?? 0) + 1);
+  expect(desktopControlBoxes.mic?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
   const editorCenter = ((desktopControlBoxes.editor?.top ?? 0) + (desktopControlBoxes.editor?.bottom ?? 0)) / 2;
   const attachCenter = ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
-  // The single-line editor is intentionally taller than the compact control
-  // rail; both stay on the same vertical center line inside the pill.
+  // Every one-row control shares the same optical center inside the pill.
   expect(Math.abs(editorCenter - attachCenter)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
   await page.evaluate(() => window.toggleTheme?.());

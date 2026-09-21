@@ -479,7 +479,6 @@
      list and the footer filter stay hidden, but connected plugins now stay
      visible below the tool rows (see ComposerToolsMenu). */
   body #composerToolsMenu .composer-tools-desktop-items,
-  body #composerToolsMenu .composer-tools-section-heading,
   body #composerToolsMenu .composer-tools-footer-search {
     display: none !important;
   }
