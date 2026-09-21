@@ -759,7 +759,9 @@ app.use(express.static(FRONTEND_DIST, {
 // SPA fallback: any non-/api GET that didn't match a static file
 // returns index.html so client-side routing keeps working.
 app.get(/^\/(?!api\/).*/, (_req, res, next) => {
-  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  /* no-cache (not no-store) so HTML is always revalidated for instant
+     rollbacks while still allowing the back-forward cache. */
+  res.set('Cache-Control', 'no-cache, must-revalidate');
   res.sendFile(path.join(FRONTEND_DIST, 'index.html'), (err) => {
     if (err) next(err);
   });

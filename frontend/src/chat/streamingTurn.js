@@ -139,6 +139,13 @@ export function addStreamingMessage(opts){
     });
     msgIdx=turnIndexes[1];
     if(typeof opts.optimisticUser.commitPaired==="function")opts.optimisticUser.commitPaired();
+    /* commitPaired intentionally skips the user row's message-added publish
+       (the paired stream-started below is the single commit signal). Emit it
+       here so event-only listeners see the same contract as the
+       non-optimistic path, which publishes message-added for every row. */
+    try {
+      if (opts.optimisticUser.clientId) publishReactChatRuntime({ type: "message-added", messageId: opts.optimisticUser.clientId });
+    } catch (_) {}
   }else{
     msgIdx=stateStore.dispatch({type:"session/append-message",payload:assistantEntry});
   }

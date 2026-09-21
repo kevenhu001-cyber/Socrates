@@ -32,7 +32,8 @@ import {
 import { renderAttachmentChips } from '../attachments/render.js';
 import { updateSendBtn } from '../ui/topicSetup.js';
 import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
-import { ensureChatReady } from '../app/bootstrapReadiness.js';
+import { ensureChatReady, getHydrationSnapshot } from '../app/bootstrapReadiness.js';
+import { saveState } from '../session/saveState.js';
 
 function _mark(name) {
   try { if (typeof performance !== "undefined" && performance.mark) performance.mark(name); } catch (_) {}
@@ -56,6 +57,27 @@ function _markFeedbackPainted() {
         performance.measure("socrates:send-feedback-latency","socrates:send-click","socrates:send-feedback-visible");
       }catch(_){}
     });
+  });
+}
+
+/* P1 session-load race — a history/exam load in flight (deep link or
+   in-app navigation via sidebar/nav.js) ends with a wholesale
+   session/replace-messages. Resolve true when the wait timed out while
+   the load was still pending, so the caller can warn instead of
+   silently stacking a turn the loader is about to wipe. */
+function _waitForSessionLoadIdle(timeoutMs) {
+  try {
+    if (!saveState || !saveState.loadingSession) return Promise.resolve(false);
+  } catch (_) { return Promise.resolve(false); }
+  var budget = typeof timeoutMs === "number" ? timeoutMs : 10000;
+  var start = Date.now();
+  return new Promise(function (resolve) {
+    (function poll() {
+      var idle = true;
+      try { idle = !saveState.loadingSession; } catch (_) { idle = true; }
+      if (idle || (Date.now() - start) >= budget) resolve(!idle);
+      else setTimeout(poll, 50);
+    })();
   });
 }
 
@@ -103,6 +125,9 @@ function _deepResearchOn() {
   try { return !!window.deepResearchOn; } catch (_) { return false; }
 }
 
+/* One-shot notice for the bounded chat-readiness wait below. */
+var _chatNotReadyNotified = false;
+
 /* Direct Tutor/Chat fallbacks still need the exact same send-time viewport
    owner as streaming replies. `addMessage` publishes the entry first and
    the anchor module then waits for the React row to commit by clientId. */
@@ -139,6 +164,15 @@ export async function submitChatMessage(textOverride,opts){
    * the text is empty (e.g. just a single image with no caption). */
   var hasAtt = Array.isArray(window.attachments) && window.attachments.length>0;
   if(!text && !hasAtt)return;
+  /* P1 session-load race — do not commit the optimistic turn while a
+     history/exam load is still rebuilding the message list; the load's
+     trailing replace-messages would wipe it. The deep-link path in
+     auth/index.js already awaits its load, this covers in-app
+     navigation (sidebar/nav.js) racing a fast send. */
+  var sessionLoadTimedOut = await _waitForSessionLoadIdle(10000);
+  if (sessionLoadTimedOut) {
+    try{showToast(_t("toast.sessionLoadSlow","History is still loading — sending anyway"));}catch(_){}
+  }
   var chatPlugins=selectedComposerPlugins("chat").slice();
   var textForModel=serializeSelectedPluginContext(chatPlugins,text);
   /* Snapshot this turn before any focus or attachment state changes. The
@@ -268,8 +302,19 @@ export async function submitChatMessage(textOverride,opts){
   setTimeout(async function(){
     /* The shell is intentionally visible while providers and memories load.
        Keep the optimistic turn visible, but do not construct a model request
-       with an empty provider set or the wrong user's memory context. */
-    await ensureChatReady();
+       with an empty provider set or the wrong user's memory context. The
+       wait is bounded (8s) so a stalled fetch degrades to sending anyway
+       rather than wedging the turn behind a spinner forever. */
+    await ensureChatReady(8000);
+    try {
+      var snap = getHydrationSnapshot();
+      if (snap && (snap.providers !== "ready" || snap.memories !== "ready")
+          && !_chatNotReadyNotified) {
+        _chatNotReadyNotified = true;
+        showToast(_t("toast.chatNotReady",
+          "Providers are still loading — sending with available settings"));
+      }
+    } catch (_) {}
     /* Deep Research mode — if the extension is active, run research
        instead of a normal chat turn. Read the window-level flag set by
        pickers.js: the EXTENSIONS array is module-scoped in pickers.js

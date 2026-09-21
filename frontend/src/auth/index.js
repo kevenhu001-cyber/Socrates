@@ -312,16 +312,23 @@ export async function afterAuthEnter(options){
      loadSession() handles either via its existing kind==='exam' branch. */
   var chatId=getChatIdFromURL();
   var examId=getExamIdFromURL();
+  /* P1 deep-link race — when the URL names a session, the shell must not
+     become interactive before that session has committed. afterAuthEnter
+     used to fire-and-forget loadSession(), so a user who sent a message
+     inside the fetch window had their optimistic turn wiped by the later
+     session/replace-messages (and the in-flight stream silently discarded
+     by the streaming slot guards). The plain homepage keeps the fast
+     background path; only deep links await the target session here. */
   if(chatId){
-    Promise.resolve().then(function(){return window.loadSession(chatId)}).catch(function(){
+    try{await window.loadSession(chatId)}catch{
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       setChatIdInURL(null);
-    });
+    }
   }else if(examId){
-    Promise.resolve().then(function(){return window.loadSession(examId)}).catch(function(){
+    try{await window.loadSession(examId)}catch{
       stateStore.dispatch({type:'state/set',key:'currentSessionId',value:null});
       setExamIdInURL(null);
-    });
+    }
   }
   /* Trigger initial data load. */
   if(typeof window.initialLoad==="function")window.initialLoad();

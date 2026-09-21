@@ -74,8 +74,23 @@ export function startPostAuthHydration(loaders) {
   return { chatReady: chatReady, hydrationReady: hydrationReady, generation: ownerGeneration };
 }
 
-export function ensureChatReady() {
-  return chatReady;
+export function ensureChatReady(timeoutMs) {
+  /* Timeout-bounded: a stalled providers/memories fetch must never wedge
+     a send forever. When the budget expires the caller proceeds with
+     whatever snapshot is current (usually degraded/loading) instead of
+     hanging the optimistic turn behind a spinner. */
+  if (typeof timeoutMs !== "number" || !(timeoutMs > 0)) return chatReady;
+  var budget = timeoutMs;
+  var current = chatReady;
+  return Promise.race([
+    current,
+    new Promise(function (resolve) {
+      setTimeout(function () {
+        try { resolve(getHydrationSnapshot()); }
+        catch (_) { resolve(snapshot); }
+      }, budget);
+    }),
+  ]);
 }
 
 export function getHydrationSnapshot() {

@@ -62,7 +62,9 @@ test('a failed resource degrades locally and an old user cannot overwrite a rese
   resetPostAuthHydration();
   const resetGeneration = getHydrationSnapshot().generation;
   oldProviders.resolve();
-  await Promise.resolve();
+  // runLoader chains at least two microtasks after resolve; a single
+  // Promise.resolve() tick is not enough under load.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   assert.deepEqual(getHydrationSnapshot(), {
     generation: resetGeneration,
     providers: 'idle', memories: 'idle', sessions: 'idle',

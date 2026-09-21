@@ -55,6 +55,17 @@ function _deferAfterPaint(fn) {
   requestAnimationFrame(function () { setTimeout(fn, 0); });
 }
 
+/* Flush the coalesced post-commit queue synchronously. Best-effort hook
+   for pagehide/beforeunload so a deferred saveCurrentSession still gets
+   a chance to run when the tab closes mid-turn. */
+export function flushPostCommit() {
+  if (_postCommitScheduled) _flushPostCommit();
+}
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('pagehide', function () { try { flushPostCommit(); } catch (_) {} });
+  window.addEventListener('beforeunload', function () { try { flushPostCommit(); } catch (_) {} });
+}
+
 export function addMessage(role, text, type, actions, attachmentsArg, internalOptions) {
   internalOptions = internalOptions || {};
   /* User sending a message = explicitly wants to follow the conversation. */
@@ -113,10 +124,15 @@ export function addMessage(role, text, type, actions, attachmentsArg, internalOp
   /* First-turn persistence used to build and serialize the entire session in
      this click task solely so the following assistant placeholder could own a
      stable id. Allocate that id synchronously, then leave the expensive save
-     payload and network work to the post-paint queue below. */
+     payload and network work to the post-paint queue below — except for the
+     very first turn, which still saves synchronously: deferring it leaves a
+     window where closing the tab loses the turn entirely (the id exists but
+     no save was ever issued). */
+  var allocatedFirstTurnId = false;
   if (role === 'user' && !stateStore.read('currentSessionId') &&
       stateStore.read('topic') && typeof window !== 'undefined' && window.CURRENT_USER) {
     stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: generateId() });
+    allocatedFirstTurnId = true;
   }
   var postCommitStarted = false;
   function runPostCommit(publish) {
@@ -135,7 +151,10 @@ export function addMessage(role, text, type, actions, attachmentsArg, internalOp
       });
       publishReactChatRuntime({ type: 'message-updated', messageId: clientId });
     });
-    _deferPostCommit(bookkeeping);
+    /* First turns keep the synchronous save so the session exists
+       server-side even if the tab closes before the next macrotask. */
+    if (allocatedFirstTurnId) bookkeeping();
+    else _deferPostCommit(bookkeeping);
   }
 
   /* React owns the visible message list — the state push above is the
