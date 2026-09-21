@@ -190,8 +190,13 @@ export async function submitChatMessage(textOverride,opts){
   var attList=built.attachmentList||immediateAttList;
   /* P_file-attachments — the committed user row still holds the pending
      stubs (no fileId yet). Now that uploads resolved, patch the row in
-     place so the persisted message carries the durable file references. */
-  if(userClientId){
+     place so the persisted message carries the durable file references.
+     Skip the dispatch+publish entirely when both lists are empty — the
+     common no-attachment send would otherwise pay a whole extra React
+     commit for a no-op. Sends WITH attachments keep the original
+     unconditional patch: the normalized metadata (fileId, no inline
+     dataUrl) must replace the pending stubs on the row. */
+  if(userClientId&&(attList.length||immediateAttList.length)){
     var _msgs=stateStore.read("messages");
     for(var _mi=_msgs.length-1;_mi>=0;_mi--){
       if(_msgs[_mi]&&_msgs[_mi].clientId===userClientId){

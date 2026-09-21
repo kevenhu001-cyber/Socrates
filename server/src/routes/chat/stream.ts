@@ -23,6 +23,7 @@ import { isUuid } from '../../lib/validate.js';
 import { NotFound } from '../../lib/errors.js';
 import { getDb } from '../../db/index.js';
 import { chatTurns } from '../../db/schema.js';
+import { createChatTurn } from '../../services/chatTurns.js';
 import { and, eq } from 'drizzle-orm';
 import {
   chatRateLimitDispatch,
@@ -75,9 +76,16 @@ export function registerStreamRoute(router: Router) {
       }
       const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
-      /* M1 async — optional detached-turn binding. The turn must belong
-       * to the caller; otherwise the run proceeds unbound (legacy path)
-       * rather than leaking another user's turn stream. */
+      /* M1 async — optional detached-turn binding, two accepted shapes:
+       *   turnId       — a previously-created turn row (ownership checked)
+       *   clientTurnId — the idempotent client handle; the row is created
+       *                  here so the browser does not serialize a
+       *                  POST /api/chat-turns round trip ahead of this
+       *                  stream request (one full RTT off time-to-first-
+       *                  token). The announced id travels back on the
+       *                  turn_bound SSE frame emitted by the pipeline.
+       * The turn must belong to the caller; otherwise the run proceeds
+       * unbound (legacy path) rather than leaking another user's stream. */
       let turnId: string | null = null;
       const rawTurnId = req.query.turnId ?? req.body?.turnId;
       if (typeof rawTurnId === 'string' && rawTurnId) {
@@ -88,6 +96,30 @@ export function registerStreamRoute(router: Router) {
           .limit(1);
         if (!owned) throw new NotFound('Chat turn not found');
         turnId = owned.id;
+      }
+      if (!turnId) {
+        const rawClientTurnId = req.body?.clientTurnId;
+        if (typeof rawClientTurnId === 'string' && rawClientTurnId.trim()) {
+          try {
+            /* Parity with the client's POST /api/chat-turns snapshot:
+               derive it from the last user message so whichever request
+               wins the create race stores the same shape. */
+            const bodyMessages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+            const lastUser = [...bodyMessages].reverse().find((m: any) => m && m.role === 'user');
+            const lastUserText = typeof lastUser?.content === 'string' ? lastUser.content : null;
+            const { turn } = await createChatTurn({
+              userId: req.userId!,
+              clientTurnId: rawClientTurnId.trim(),
+              sessionId: sessionIdFromQuery,
+              model: typeof req.body?.model === 'string' ? req.body.model : null,
+              inputSnapshot: lastUserText ? { text: lastUserText.slice(0, 20000) } : (req.body?.input ?? null),
+            });
+            turnId = turn.id;
+          } catch {
+            /* invalid handle or a session row that has not committed yet —
+               the run proceeds unbound exactly like the legacy path. */
+          }
+        }
       }
 
       const prep = await prepareChatRequest(req, res);

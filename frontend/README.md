@@ -123,7 +123,7 @@ Key milestones:
 - [x] Typed `getLegacyActions()` bridge — all React components use it
 - [x] `data-action` delegation replacing inline handlers
 - [ ] Delete `windowExports.js` once no legacy reader remains (C4)
-- [ ] Port remaining UI modules (`topicSetup.js`, `thinkingPill.js`, etc.)
+- [ ] Port remaining UI modules (`topicSetup.js`, etc.) — `thinkingPill.js` was deleted 2026-09-20 (its status line is data on `message._liveStatus`, drawn solely by `react/tool-run/TurnStatus`)
 
 ## Validation
 

@@ -13,6 +13,10 @@ import test from 'node:test';
 
 import {
   attachmentOutputsOf,
+  automaticAttachmentOutputsOf,
+  pythonArtifactMap,
+  splitArtifactDirectiveSegments,
+  stripArtifactDirectives,
   toolOutputsOf,
   visualizationSpecOf,
 } from '../src/react/tool-run/toolRunModel.ts';
@@ -137,4 +141,68 @@ test('attachment outputs keep charts and files but leave text in the row', () =>
   assert.deepEqual(outputs.map((output) => output.kind), ['visualization', 'artifact']);
   assert.deepEqual(attachmentOutputsOf(null), []);
   assert.deepEqual(toolOutputsOf(undefined), []);
+});
+
+test('Python files require a prose reference while native visualizations stay automatic', () => {
+  const python = {
+    id: 'call-python',
+    name: 'code_interpreter',
+    visualization: VIZ,
+    artifacts: [{ id: 'plot-file', mimeType: 'image/png', name: 'plot.png' }],
+  };
+  assert.deepEqual(
+    automaticAttachmentOutputsOf(python).map((output) => output.kind),
+    ['visualization'],
+  );
+  assert.deepEqual(
+    automaticAttachmentOutputsOf({
+      id: 'call-native',
+      name: 'render_visualization',
+      visualization: VIZ,
+    }).map((output) => output.kind),
+    ['visualization'],
+  );
+});
+
+test('artifact directives resolve only Python-owned ids and dedupe first reference', () => {
+  const calls = [
+    {
+      id: 'python-call',
+      name: 'code_interpreter',
+      artifacts: [{ id: 'owned-file', mimeType: 'image/png', name: 'plot.png' }],
+    },
+    {
+      id: 'other-call',
+      name: 'workspace_agent',
+      artifacts: [{ id: 'foreign-file', mimeType: 'image/png', name: 'other.png' }],
+    },
+  ];
+  const map = pythonArtifactMap(calls);
+  assert.deepEqual([...map.keys()], ['owned-file']);
+
+  const raw = [
+    'Before.',
+    '{{artifact:owned-file}}',
+    'Middle.',
+    '{{artifact:foreign-file}}',
+    '{{artifact:owned-file}}',
+    'After.',
+  ].join('\n');
+  const segments = splitArtifactDirectiveSegments(raw, 0, map);
+  assert.equal(segments.filter((segment) => segment.kind === 'artifact').length, 1);
+  assert.equal(segments.find((segment) => segment.kind === 'artifact').output.fileId, 'owned-file');
+  assert.equal(segments.filter((segment) => segment.kind === 'text').map((segment) => segment.text).join(''), 'Before.\nMiddle.\nAfter.');
+});
+
+test('malformed, inline and partial reserved artifact syntax never leaks into prose', () => {
+  assert.equal(stripArtifactDirectives('A {{artifact:unknown}} B'), 'A  B');
+  assert.equal(stripArtifactDirectives('A\n{{artifact:unfinished'), 'A\n');
+  assert.equal(stripArtifactDirectives('A\n{{arti'), 'A\n');
+  const segments = splitArtifactDirectiveSegments(
+    'Lead\n{{artifact:missing}}\nTail\n{{artifact:partial',
+    10,
+    new Map(),
+  );
+  assert.equal(segments.map((segment) => segment.text || '').join(''), 'Lead\nTail\n');
+  assert.equal(segments.some((segment) => segment.kind === 'artifact'), false);
 });

@@ -31,11 +31,20 @@ async function bootChat(page, streamBodies) {
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
 }
 
+/* E1: re-explain moved behind the assistant toolbar's "…" overflow, so
+   tests must open the menu before clicking the item. data-msg-action is
+   locale-proof, unlike the old aria-label selector. */
+async function clickReExplain(page) {
+  const toolbar = page.locator('#msgList .msg.assistant .msg-toolbar').last();
+  await toolbar.locator('.msg-toolbar-more-btn').click();
+  await toolbar.locator('button[data-msg-action="re-explain"]').click();
+}
+
 test('re-explain sends a visible prompt and streams an answer', async ({ page }) => {
   const streamBodies = [];
   await bootChat(page, streamBodies);
 
-  await page.locator('#msgList .msg.assistant button.msg-toolbar-btn[aria-label="Re-explain from a different angle"]').click();
+  await clickReExplain(page);
   const confirmBtn = page.locator('#confirmOkBtn');
   if (await confirmBtn.isVisible().catch(() => false)) {
     await confirmBtn.click();
@@ -54,7 +63,7 @@ test('cancelling the re-explain confirm pushes nothing and fires no turn', async
   const streamBodies = [];
   await bootChat(page, streamBodies);
 
-  await page.locator('#msgList .msg.assistant button.msg-toolbar-btn[aria-label="Re-explain from a different angle"]').click();
+  await clickReExplain(page);
   await expect(page.locator('#confirmDialog')).not.toHaveClass(/hidden/);
   /* M4 step 4.5c — the confirm dialog is React-owned; the cancel
      button is now #confirmCancelBtn (no more data-action closeConfirm). */

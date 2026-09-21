@@ -189,6 +189,7 @@ function normalizeFieldErrors(fieldErrors?: string | string[] | null): string {
 
 const USER_MESSAGES: Record<string, string> = {
   invalid_tool_arguments: '工具参数格式无效，已把正确格式示例反馈给模型。',
+  tool_arguments_too_large: '工具参数超出长度上限，已请模型拆分为更小的调用重试。',
   duplicate_tool_call: '模型重复了同一个工具调用，本次已跳过执行。',
   tool_not_available: '该工具未启用或不可用，已告知模型可用的工具。',
   unknown_tool: '该工具不存在，已告知模型可用的工具。',

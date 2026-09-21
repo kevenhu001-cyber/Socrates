@@ -16,10 +16,15 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     lines.push(`[status: ${result.status || 'unknown'}]`);
     lines.push(`[exit_code: ${result.exitCode ?? 'n/a'}]`);
     lines.push(`[duration_ms: ${result.durationMs ?? 'n/a'}]`);
-    const artifactList = (result.artifactFileIds || [])
-      .map(a => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}`)
+    const artifacts = (result.artifactFileIds || []).filter((artifact) => artifact && artifact.id);
+    const artifactList = artifacts
+      .map((artifact) => `${artifact.name || 'artifact'} (${artifact.mimeType || 'application/octet-stream'}, id=${artifact.id})`)
       .join(', ');
     lines.push(`[artifacts: ${artifactList || 'none'}]`);
+    if (artifacts.length) {
+      lines.push('To show one of these Python artifacts in the answer, put `{{artifact:<fileId>}}` on its own line exactly where it should appear.');
+      lines.push('Only emit that directive when the artifact materially helps the answer. Do not show helper files by default, and never guess, shorten, or alter a fileId.');
+    }
     if (result.status !== 'completed') {
       lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
       lines.push(`[retryable: ${result.retryable === false ? 'no' : 'yes'}]`);

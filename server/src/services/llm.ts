@@ -68,9 +68,9 @@ interface ChatCompletionRequestOptions {
   tools?: Array<{ type: 'function'; function: { name: string; [key: string]: unknown } }>;
   tool_choice?: unknown;
   onPreferenceFallback?: (detail: {
-    preference: 'response_speed';
-    requested: 'fast';
-    applied: 'standard';
+    preference: 'response_speed' | 'tools';
+    requested: string;
+    applied: string;
   }) => void;
 }
 
@@ -216,8 +216,13 @@ export function mergeToolNameDelta(previous: unknown, incoming: unknown): string
  * @param {Array}  [opts.tools]       - OpenAI-style tool definitions
  * @param {string} [opts.tool_choice] - 'auto' | 'none' | 'required' | {type:'function', function:{name}}
  * @param {function} onChunk     - Called with each text chunk
- * @param {function} onDone      - Called when streaming completes; receives { finishReason } so the
- *                                  caller can decide whether to dispatch tool calls
+ * @param {function} onDone      - Called when streaming completes; receives
+ *                                  { finishReason, incompleteToolCalls? }. incompleteToolCalls
+ *                                  carries the accumulated tool_call entries when the stream ended
+ *                                  WITHOUT a tool finish reason (e.g. 'stop', 'length', or a dropped
+ *                                  finish_reason) — the caller decides whether to execute the
+ *                                  well-formed ones or feed the malformed ones back as corrections
+ *                                  instead of silently losing them.
  * @param {function} onError     - Called on error
  * @param {function} [onReasoning] - Called with each reasoning_content chunk (DeepSeek-style)
  * @param {function} [onToolUse]   - Called once per fully streamed tool_call when finish_reason
@@ -235,7 +240,10 @@ export function mergeToolNameDelta(previous: unknown, incoming: unknown): string
 export async function streamChatCompletion(
   opts: ChatCompletionRequestOptions,
   onChunk: (chunk: string) => void,
-  onDone: (info: { finishReason: string | null }) => void,
+  onDone: (info: {
+    finishReason: string | null;
+    incompleteToolCalls?: Array<{ id?: string; type: 'function'; function: { name: string; arguments: string } }>;
+  }) => void,
   onError: (err: Error) => void,
   onReasoning?: (reasoning: string) => void,
   onToolUse?: (tc: { id: string; type: 'function'; function: { name: string; arguments: string } }) => void,
@@ -365,6 +373,22 @@ export async function streamChatCompletion(
         preference: 'response_speed',
         requested: 'fast',
         applied: 'standard',
+      });
+    }
+
+    /* The provider accepted a request only after the tools field was
+       stripped: this hop can never produce a native tool call, so the
+       client must be told the answer is text-only instead of silently
+       looking like the model chose not to use tools. */
+    if (
+      Array.isArray(tools) && tools.length > 0
+      && successfulVariant
+      && !Array.isArray((successfulVariant.body as { tools?: unknown }).tools)
+    ) {
+      opts.onPreferenceFallback?.({
+        preference: 'tools',
+        requested: 'native',
+        applied: 'text-only',
       });
     }
 
@@ -565,13 +589,26 @@ export async function streamChatCompletion(
     /* Dispatch accumulated tool calls when the model decided to call
        a tool. The chat route listens for these in its tool-execution
        loop (Phase 3). */
-    if (isToolFinishReason(finishReason) && typeof onToolUse === 'function') {
+    const toolFinish = isToolFinishReason(finishReason);
+    if (toolFinish && typeof onToolUse === 'function') {
       for (const tc of toolCallAcc.values()) {
         try { onToolUse(tc); } catch { /* ignore listener errors */ }
       }
     }
 
-    onDone({ finishReason });
+    /* P_tool-call-recovery — a stream that ends on 'stop' / 'length' / a
+       missing finish_reason with accumulated tool_calls used to drop them
+       silently: no card, no correction, the model never learned its call
+       failed to parse upstream. Hand the leftovers to the caller so the
+       pipeline can execute the well-formed ones and feed the malformed
+       ones back as structured rejections. */
+    const incompleteToolCalls = !toolFinish && toolCallAcc.size > 0
+      ? Array.from(toolCallAcc.values())
+      : undefined;
+
+    /* The key is omitted (not undefined) when empty — strict deep-equality
+       checks on {finishReason} treat an explicit undefined as a real key. */
+    onDone(incompleteToolCalls ? { finishReason, incompleteToolCalls } : { finishReason });
   } catch (err) {
     if (silenceTimer) clearTimeout(silenceTimer);
     if (firstByteTimer) clearTimeout(firstByteTimer);

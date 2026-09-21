@@ -357,12 +357,86 @@ describe('streamChatCompletion: tool_calls', () => {
       ]),
     );
     const tools = [];
+    let donePayload = null;
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'noop' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      (d) => { donePayload = d; },
+      () => {}, () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 0, 'no onToolUse when finish_reason !== "tool_calls"');
+    /* The accumulated call must not vanish: onDone surfaces it as
+       incompleteToolCalls so the pipeline can recover or correct it. */
+    assert.equal(donePayload.finishReason, 'stop');
+    assert.equal(donePayload.incompleteToolCalls.length, 1);
+    assert.equal(donePayload.incompleteToolCalls[0].id, 'call_x');
+    assert.equal(donePayload.incompleteToolCalls[0].function.name, 'noop');
+  });
+
+  test('surfaces truncated tool calls on finish_reason "length" via incompleteToolCalls', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          index: 0, id: 'call_big',
+          function: { name: 'code_interpreter', arguments: '{"code":"print(1' },
+        }] } }] },
+        { choices: [{ delta: {}, finish_reason: 'length' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    let donePayload = null;
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'code_interpreter' } }] },
+      () => {},
+      (d) => { donePayload = d; },
+      () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 0);
+    assert.equal(donePayload.finishReason, 'length');
+    assert.equal(donePayload.incompleteToolCalls.length, 1);
+    assert.equal(donePayload.incompleteToolCalls[0].function.arguments, '{"code":"print(1');
+  });
+
+  test('omits incompleteToolCalls when no calls accumulated before a non-tool finish', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { content: 'prose' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
+    );
+    let donePayload = null;
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      (d) => { donePayload = d; },
+      () => {},
+    );
+    assert.deepEqual(donePayload, { finishReason: 'stop' });
+  });
+
+  test('emits a tools preference_fallback when the provider only accepts a tool-less request', async () => {
+    globalThis.fetch = mock.fn(async (_url, init) => {
+      const body = JSON.parse(init.body);
+      if (body.tools) return makeJsonResponse({ error: 'tools unsupported' }, 400);
+      return makeSseResponse([
+        { choices: [{ delta: { content: 'text only' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]);
+    });
+    const fallbacks = [];
+    await streamChatCompletion(
+      {
+        ...BASE_OPTS,
+        tools: [{ type: 'function', function: { name: 'web_search' } }],
+        onPreferenceFallback: (detail) => fallbacks.push(detail),
+      },
+      () => {}, () => {}, () => {},
+    );
+    assert.equal(globalThis.fetch.mock.calls.length, 2);
+    assert.deepEqual(fallbacks, [{ preference: 'tools', requested: 'native', applied: 'text-only' }]);
   });
 });
 

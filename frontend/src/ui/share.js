@@ -309,7 +309,7 @@ function _renderSharedMessageList(messages) {
           for (var ai = 0; ai < tc.artifacts.length; ai++) {
             var art = tc.artifacts[ai];
             if (art && art.id) {
-              var previewable = art.mimeType && (art.mimeType.indexOf("image/") === 0 || art.mimeType.indexOf("text/html") === 0);
+              var previewable = tc.name !== "code_interpreter" && tc.name !== "Code" && art.mimeType && (art.mimeType.indexOf("image/") === 0 || art.mimeType.indexOf("text/html") === 0);
               appendInlineArtifact(art.id, art.mimeType || "application/octet-stream", previewable ? body : cardOut, art.name);
             }
           }

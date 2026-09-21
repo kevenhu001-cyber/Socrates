@@ -11,6 +11,10 @@ export interface NormalizedToolCall {
     name: string;
     arguments: string;
   };
+  /** Set when the raw arguments exceeded MAX_TOOL_ARGUMENT_CHARS and were
+   *  truncated — the tail slice is guaranteed to be malformed JSON, so the
+   *  caller should reject with a size error instead of a parse error. */
+  truncated?: boolean;
 }
 
 /**
@@ -19,15 +23,33 @@ export interface NormalizedToolCall {
  * still need to preserve the assistant tool-call envelope so the following
  * role:'tool' message has a valid predecessor, but we must not send the
  * malformed JSON back upstream and trigger a second provider-side 400.
+ *
+ * When `repairedArguments` is supplied (the post-repair object the executor
+ * actually ran), echo THAT instead of the raw string: the model then sees
+ * the canonical shape that executed, so a repaired wrapper/coercion does not
+ * teach it that the mis-shaped form was accepted.
  */
-export function sanitizeToolCallForProtocol(call: NormalizedToolCall): NormalizedToolCall {
+export function sanitizeToolCallForProtocol(
+  call: NormalizedToolCall,
+  repairedArguments?: Record<string, unknown> | null,
+): NormalizedToolCall {
   const parsed = parseToolArguments(call.function.arguments);
+  let argumentsText: string;
+  if (repairedArguments && typeof repairedArguments === 'object') {
+    try {
+      argumentsText = JSON.stringify(repairedArguments);
+    } catch {
+      argumentsText = '{}';
+    }
+  } else {
+    argumentsText = parsed.ok ? JSON.stringify(parsed.value) : '{}';
+  }
   return {
     ...call,
     function: {
       ...call.function,
       name: call.function.name || 'unknown_tool',
-      arguments: parsed.ok ? JSON.stringify(parsed.value) : '{}',
+      arguments: argumentsText,
     },
   };
 }
@@ -445,6 +467,15 @@ export function normalizeToolCalls(
     let suffix = 1;
     while (seenIds.has(id)) id = `${baseId || 'tool-call'}-${suffix++}`;
     seenIds.add(id);
+    const rawArguments = (
+      fn.arguments && typeof fn.arguments === 'object'
+        ? (() => { try { return JSON.stringify(fn.arguments); } catch { return ''; } })()
+        : String(fn.arguments || '')
+    );
+    /* A sliced argument string is guaranteed-malformed JSON: flag it so the
+       pipeline can reject with `tool_arguments_too_large` ("split the call")
+       instead of a misleading `invalid_tool_arguments` parse error. */
+    const truncated = rawArguments.length > MAX_TOOL_ARGUMENT_CHARS;
     return {
       id,
       type: 'function',
@@ -453,12 +484,9 @@ export function normalizeToolCalls(
         // envelope. Keep the original call unavailable, but give the next
         // provider hop a syntactically valid name.
         name: String(fn.name || 'unknown_tool').slice(0, 128),
-        arguments: (
-          fn.arguments && typeof fn.arguments === 'object'
-            ? (() => { try { return JSON.stringify(fn.arguments); } catch { return ''; } })()
-            : String(fn.arguments || '')
-        ).slice(0, MAX_TOOL_ARGUMENT_CHARS),
+        arguments: rawArguments.slice(0, MAX_TOOL_ARGUMENT_CHARS),
       },
+      ...(truncated ? { truncated: true } : {}),
     };
   });
 }

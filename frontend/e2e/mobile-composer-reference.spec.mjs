@@ -131,8 +131,51 @@ test('mobile composer keeps model selector and reference controls discoverable',
   expect(rows.send?.top ?? 0).toBeGreaterThanOrEqual(rows.attach?.top ?? 0);
 
   await effort.locator('.effort-trigger').click();
-  const menu = page.locator('.effort-menu.portal-open');
-  await expect(menu).toBeVisible();
-  await expect(menu).toContainText('5.6 Luna');
-  await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png', fullPage: true });
+  const popover = page.locator('.chat-config-pop');
+  await expect(popover).toBeVisible();
+  await expect(popover).toHaveCSS('opacity', '1');
+  await expect(popover).toContainText('5.6 Luna');
+  await expect(popover).toContainText('思考强度');
+  await expect(popover).toContainText('速度');
+  const popoverBox = await popover.boundingBox();
+  const triggerBox = await effort.locator('.effort-trigger').boundingBox();
+  expect(popoverBox?.y ?? 0).toBeLessThan(triggerBox?.y ?? 0);
+  await page.screenshot({ path: '/tmp/socrates-mobile-composer-reference.png', fullPage: true });
+});
+
+test('desktop configuration popover persists speed and effort choices', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await mockAuthedApp(page, { lang: 'zh' });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const trigger = page.locator('#topicInputWrap .effort-trigger');
+  await trigger.click();
+  const popover = page.locator('.chat-config-pop');
+  await expect(popover).toBeVisible();
+  await expect(popover).toHaveCSS('opacity', '1');
+  await page.screenshot({ path: '/tmp/socrates-desktop-chat-config.png', fullPage: true });
+  const popoverBox = await popover.boundingBox();
+  const triggerBox = await trigger.boundingBox();
+  expect(popoverBox?.width ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(300);
+  expect(popoverBox?.y ?? 0).toBeLessThan((triggerBox?.y ?? 0) + (triggerBox?.height ?? 0));
+
+  await popover.getByRole('button', { name: /速度/ }).click();
+  await expect(popover.getByRole('option', { name: /快速/ })).toBeVisible();
+  await popover.getByRole('option', { name: /快速/ }).click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-response-speed'))).toBe('fast');
+
+  await popover.getByRole('button', { name: /思考强度/ }).click();
+  const slider = popover.locator('input[type="range"]');
+  await expect(slider).toBeVisible();
+  await slider.evaluate((node) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(node, '2');
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect(popover).toBeHidden();
 });

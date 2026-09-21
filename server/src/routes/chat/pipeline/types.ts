@@ -35,7 +35,7 @@ export type ToolResult = {
   stderr?: string;
   exitCode?: number | null;
   durationMs?: number;
-  artifactFileIds?: Array<{ name?: string; mimeType?: string | null }>;
+  artifactFileIds?: Array<{ id?: string; name?: string; mimeType?: string | null }>;
   executionId?: string | null;
   visualization?: { template?: string; title?: string } | null;
   plan?: { title?: string; steps?: unknown[] } | null;
@@ -74,6 +74,10 @@ export interface PreparedCall {
   toolName: string;
   registryEntry: ReturnType<ReturnType<typeof import('../../../services/toolRegistry.js').createToolRegistry>['get']> | null;
   args: Record<string, any>;
+  /** The post-repair argument object, echoed back upstream so the model's
+   *  view of its own call matches what actually executed. Null when repair
+   *  failed. */
+  repairedArgs?: Record<string, unknown> | null;
   rejection: { code: string; retryable: boolean; hint?: string; fieldErrors?: string } | null;
 }
 

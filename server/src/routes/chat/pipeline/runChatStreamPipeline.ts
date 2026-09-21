@@ -21,8 +21,9 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
 import { chatTurns, sessions } from '../../../db/schema.js';
 import { publishChatTurnEvent, setChatTurnStatus } from '../../../services/chatTurns.js';
-import { isToolFinishReason, streamChatCompletion } from '../../../services/llm.js';
+import { streamChatCompletion } from '../../../services/llm.js';
 import {
+  MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
   repairToolArguments,
   resolveToolName,
@@ -50,9 +51,23 @@ import type {
   ToolCallDelta,
 } from './types.js';
 
+/* Tool-loop hops (iter >= 1) exist to execute calls and summarize their
+ * results — argument generation is the dominant failure mode there, so a
+ * lower sampling temperature is cheap insurance. The FIRST hop keeps the
+ * caller's temperature untouched so prose quality is unaffected on turns
+ * that never reach a tool. Tunable via CHAT_TOOL_HOP_TEMPERATURE_CAP. */
+function toolHopTemperature(base: number | undefined): number | undefined {
+  if (typeof base !== 'number' || !Number.isFinite(base)) return base;
+  const raw = process.env.CHAT_TOOL_HOP_TEMPERATURE_CAP;
+  const parsed = raw ? Number.parseFloat(raw) : NaN;
+  const cap = Number.isFinite(parsed) ? Math.min(2, Math.max(0, parsed)) : 0.4;
+  return Math.min(base, cap);
+}
+
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
+  let effectiveResponseSpeed = responseSpeed;
 
   // Set SSE headers
   res.writeHead(200, {
@@ -190,6 +205,13 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
   });
 
   const emitter = new SseEmitter(res, () => abortController.signal.aborted || sseDetached);
+  /* Announce the bound turn before any content: callers that sent a
+     clientTurnId (instead of pre-resolving a row through POST
+     /api/chat-turns) learn the durable id here and can persist their
+     re-attach / interrupt pointer without a second round trip. */
+  if (turnId) {
+    emitter.event('turn_bound', { turnId });
+  }
   /* M1 async — mirror lifecycle frames into the bound turn. Content and
    * reasoning deltas are persisted per-chunk (they are the resume
    * baseline); tool_use/tool_result/agent frames mark boundaries;
@@ -219,6 +241,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         name === 'agent_step' ||
         name === 'agent_plan' ||
         name === 'execution_start' ||
+        name === 'preference_fallback' ||
         name === 'error'
       ) {
         tap(name, (data ?? {}) as Record<string, unknown>);
@@ -328,6 +351,11 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }
     let iterFinishReason: string | null = null;
     const toolCallsThisTurn: ToolCall[] = [];
+    /* Tool calls the upstream streamed but never committed to (finish_reason
+       was 'stop'/'length'/missing instead of 'tool_calls'). They are folded
+       into the normal prepare/dispatch flow below: well-formed ones execute,
+       malformed ones get the structured correction instead of vanishing. */
+    let iterIncompleteToolCalls: ToolCall[] = [];
 
     let upstreamErr: Error | null = null;
     await streamChatCompletion(
@@ -337,14 +365,17 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         model: provider.model,
         messages: requestMessages,
         maxTokens,
-        temperature,
+        temperature: iter === 0 ? temperature : toolHopTemperature(temperature),
         signal: abortController.signal,
         reasoning_effort,
-        response_speed: responseSpeed,
+        response_speed: effectiveResponseSpeed,
         extra_body: safeExtraBody,
         onPreferenceFallback: (detail) => {
-          if (speedFallbackEmitted) return;
-          speedFallbackEmitted = true;
+          if (detail.preference === 'response_speed') {
+            if (speedFallbackEmitted) return;
+            speedFallbackEmitted = true;
+            if (effectiveResponseSpeed === 'fast') effectiveResponseSpeed = 'standard';
+          }
           emitter.event('preference_fallback', detail);
         },
         ...(toolsAllowed && activeToolDefs.length > 0
@@ -365,8 +396,13 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         emitter.content(chunk);
       },
       // onDone — capture finish_reason so the loop can dispatch
-      ({ finishReason }: { finishReason: string | null }) => {
-        iterFinishReason = finishReason;
+      (info: { finishReason: string | null; incompleteToolCalls?: Array<{ id?: string }> }) => {
+        iterFinishReason = info.finishReason;
+        /* normalizeToolCalls assigns fallback ids, so the optional upstream
+           id is fine here. */
+        iterIncompleteToolCalls = Array.isArray(info.incompleteToolCalls)
+          ? (info.incompleteToolCalls as ToolCall[])
+          : [];
       },
       // onError
       (err: Error) => {
@@ -426,21 +462,35 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       return;
     }
 
-    const boundedToolCalls = normalizeToolCalls(toolCallsThisTurn, {
+    /* P_tool-call-recovery — calls the upstream streamed but ended without
+       a tool finish reason ('stop', 'length', or a gateway that drops
+       finish_reason) used to be discarded silently: no card, no tool
+       message, and the model never learned its call failed to arrive. Fold
+       them into the normal resolve → repair → validate → dispatch path:
+       well-formed recovered calls execute, malformed ones take the
+       standard correction so the next hop re-emits a clean call. */
+    const allCalls: ToolCall[] = toolCallsThisTurn.concat(iterIncompleteToolCalls);
+    if (iterIncompleteToolCalls.length > 0) {
+      console.warn('[chat/stream] recovered tool calls after non-tool finish', JSON.stringify({
+        count: iterIncompleteToolCalls.length,
+        finishReason: iterFinishReason,
+      }));
+    }
+    const boundedToolCalls = normalizeToolCalls(allCalls, {
       iteration: iter,
       maxCalls: toolPolicy.maxCallsPerIteration,
     }) as ToolCall[];
 
-    /* Keep the raw calls for execution and diagnostics, but only echo a
-     * canonical protocol-safe copy to the next provider hop. If a model
-     * emitted malformed JSON, sending that exact string back in the
-     * assistant message can make the gateway reject the entire retry
-     * before it has a chance to read the structured tool error. */
-    const protocolToolCalls = boundedToolCalls.map(sanitizeToolCallForProtocol);
-
     // No tool call → done. The extra tools-disabled iteration lets the
     // model summarize the fourth and final execution round in prose.
-    if (!isToolFinishReason(iterFinishReason) || boundedToolCalls.length === 0) break;
+    if (boundedToolCalls.length === 0) break;
+    /* bounded[i] is allCalls[i] (normalize preserves order, only the tail
+       is cut by the cap), so the recovered calls are exactly the entries
+       at index >= toolCallsThisTurn.length. */
+    const recoveredIds = new Set<string>();
+    for (let i = toolCallsThisTurn.length; i < boundedToolCalls.length; i++) {
+      recoveredIds.add(boundedToolCalls[i].id);
+    }
     if (!toolsAllowed) {
       emitter.event('error', {
         error: 'tool_iteration_limit_reached',
@@ -459,7 +509,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
      * copy-ready example. */
     /* Count the calls the per-iteration cap just dropped so the next
        * contract appendix can tell the model they never ran. */
-    const droppedCalls = Math.max(0, toolCallsThisTurn.length - boundedToolCalls.length);
+    const droppedCalls = Math.max(0, allCalls.length - boundedToolCalls.length);
     lastDroppedCalls = droppedCalls;
     if (droppedCalls > 0) {
       console.warn('[chat/stream] dropped tool calls over per-iteration cap', JSON.stringify({
@@ -497,6 +547,15 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       }
       const args = (repaired.ok ? repaired.value : {}) as Record<string, any>;
 
+      /* A recovered call (non-tool finish_reason) that fails to parse is
+         almost certainly a truncated stream, not a model mistake — say so
+         so the correction tells it to shorten rather than reformat. */
+      const recoveredHint = recoveredIds.has(call.id)
+        ? (iterFinishReason === 'length'
+          ? 'This tool call was cut off by the response token limit (finish_reason=length). Re-emit it with shorter arguments, or split the work into several smaller calls.'
+          : 'This tool call ended without a tool_calls finish reason, so it may be incomplete. Re-emit it with complete arguments.')
+        : null;
+
       let rejection: PreparedCall['rejection'] = null;
       if (!resolved.name) {
         rejection = { code: 'unknown_tool', retryable: false };
@@ -508,10 +567,19 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           retryable: false,
           hint: `\`${resolved.name}\` was withdrawn for the rest of this turn (${toolPolicy.disabledReason(resolved.name)}).`,
         };
+      } else if ((call as { truncated?: boolean }).truncated) {
+        /* normalizeToolCalls sliced the arguments at the transport cap, so
+           the JSON is guaranteed malformed — report size, not syntax. */
+        rejection = {
+          code: 'tool_arguments_too_large',
+          retryable: toolPolicy.remainingRetries(resolved.name) > 1,
+          hint: `The arguments exceeded the ${MAX_TOOL_ARGUMENT_CHARS}-character transport limit and were truncated. Split the work into several smaller calls.`,
+        };
       } else if (!repaired.ok) {
         rejection = {
           code: 'invalid_tool_arguments',
           retryable: toolPolicy.remainingRetries(resolved.name) > 1,
+          hint: recoveredHint || undefined,
         };
       } else {
         /* Repair coerced the shape; now enforce the declared contract
@@ -523,6 +591,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
             code: 'invalid_tool_arguments',
             retryable: toolPolicy.remainingRetries(resolved.name) > 1,
             fieldErrors: validation.fieldErrors.join('; '),
+            hint: recoveredHint || undefined,
           };
         } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
           rejection = {
@@ -535,8 +604,19 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       if (resolved.name && !rejection) {
         toolPolicy.registerCall(resolved.name, hashToolArguments(args));
       }
-      return { call, toolName, registryEntry, args, rejection };
+      return { call, toolName, registryEntry, args, repairedArgs: repaired.ok ? repaired.value : null, rejection };
     });
+
+    /* Keep the raw calls for execution and diagnostics, but only echo a
+     * canonical protocol-safe copy to the next provider hop. If a model
+     * emitted malformed JSON, sending that exact string back in the
+     * assistant message can make the gateway reject the entire retry
+     * before it has a chance to read the structured tool error. When the
+     * repair stage produced a canonical argument object, echo THAT so the
+     * model's self-image of the call matches what actually ran. */
+    const protocolToolCalls = boundedToolCalls.map((call, index) => (
+      sanitizeToolCallForProtocol(call, prepared[index]?.repairedArgs ?? null)
+    ));
 
     // Emit tool_use event for the client to render cards.
     emitter.event('tool_use', prepared.map((entry) => ({

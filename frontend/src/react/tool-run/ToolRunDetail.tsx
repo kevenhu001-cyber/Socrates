@@ -64,6 +64,39 @@ function ResultSection({ section }: { section: DetailSection }) {
     );
   }
 
+  if (section.kind === 'artifacts') {
+    return (
+      <section className="tool-inline-detail-section" data-kind="artifacts">
+        <div className="tool-inline-detail-title">{section.title}</div>
+        <div className="tool-inline-artifact-list">
+          {section.items.map((artifact) => {
+            const url = `/api/files/${encodeURIComponent(artifact.fileId)}/raw`;
+            return (
+              <div className="tool-inline-artifact-row" key={artifact.id}>
+                <span className="tool-inline-artifact-copy">
+                  <span className="tool-inline-artifact-name">
+                    {artifact.name || artifact.fileId}
+                  </span>
+                  <span className="tool-inline-artifact-type">
+                    {artifact.mimeType || translate('tool.file', 'File')}
+                  </span>
+                </span>
+                <span className="tool-inline-artifact-actions">
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    {translate('tool.openFile', 'Open')}
+                  </a>
+                  <a href={url} download>
+                    {translate('tool.downloadFile', 'Download')}
+                  </a>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
   /* Output gets the sanitized rich formatter (fences, JSON pretty-print,
      tracebacks); errors stay plain text so the message reads verbatim. */
   const rich = section.kind === 'output' ? formatToolOutput(section.text) : null;
