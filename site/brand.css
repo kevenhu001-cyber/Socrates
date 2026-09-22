@@ -19,6 +19,7 @@
      subtle black. Dark "footer frame" / "black band" surfaces remain
      pure black as intentional contrast bands inside the monochrome
      theme. */
+  color-scheme: light only;
   --site-paper: #ffffff;
   --site-paper-soft: #ffffff;
   --site-paper-strong: #ffffff;
