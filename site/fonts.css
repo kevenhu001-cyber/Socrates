@@ -1,12 +1,13 @@
 /* ── Canonical type system ──────────────────────────────────────────────
    One set of stacks for the whole site. Sans = Inter (UI, nav, buttons,
-   data), Serif = Newsreader (editorial headlines + long-form body — the
-   original theme serif), Mono = Geist Mono (kickers, meta, code).
-   Source Serif 4 and Geist remain loaded as fallbacks. CJK falls back to
-   Noto Sans SC / Noto Serif SC so Windows hosts never leak Microsoft
-   YaHei / SimSun. Every other stylesheet references these variables. */
+   data — the single sans-serif family across the site), Serif = Newsreader
+   (editorial headlines + long-form body — kept unchanged from the
+   original theme), Mono = Geist Mono (kickers, meta, code).
+   Source Serif 4 is kept loaded as a fallback. CJK falls back to Noto Sans
+   SC / Noto Serif SC so Windows hosts never leak Microsoft YaHei / SimSun.
+   Every other stylesheet references these variables. */
 :root {
-  --font-sans: "Inter", "Geist", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
   --font-serif: "Newsreader", "Source Serif 4", "Iowan Old Style", "Charter", "Georgia", "Noto Serif SC", "Songti SC", "SimSun", serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
 }
@@ -76,40 +77,14 @@
   src: url(/media/fonts/source-serif-4-latin-600-normal.woff2) format('woff2');
 }
 
-/* Local fallback copies of the Google Fonts set (Geist, Geist Mono,
+/* Local fallback copies of the Google Fonts set (Geist Mono,
    Newsreader, Noto Sans SC, Noto Serif SC). Pages load the live Google
    Fonts CSS after this file; if Google Fonts is unreachable, these local
    files keep the same families working. Files live in media/fonts/;
-   unicode-range subsetting matches the Google Fonts CSS. */
-/* geist-sans-latin-400-normal */
-@font-face {
-  font-family: 'Geist';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 400;
-  src: url(/media/fonts/geist-sans-latin-400-normal.woff2) format('woff2');
-}/* geist-sans-latin-500-normal */
-@font-face {
-  font-family: 'Geist';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 500;
-  src: url(/media/fonts/geist-sans-latin-500-normal.woff2) format('woff2');
-}/* geist-sans-latin-600-normal */
-@font-face {
-  font-family: 'Geist';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 600;
-  src: url(/media/fonts/geist-sans-latin-600-normal.woff2) format('woff2');
-}/* geist-sans-latin-700-normal */
-@font-face {
-  font-family: 'Geist';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 700;
-  src: url(/media/fonts/geist-sans-latin-700-normal.woff2) format('woff2');
-}/* geist-mono-cyrillic-ext-400-normal */
+   unicode-range subsetting matches the Google Fonts CSS. The single
+   sans-serif family is Inter (loaded above); Geist @font-face declarations
+   were removed when the site unified on Inter. */
+/* geist-mono-cyrillic-ext-400-normal */
 @font-face {
   font-family: 'Geist Mono';
   font-style: normal;

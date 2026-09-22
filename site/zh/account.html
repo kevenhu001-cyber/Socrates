@@ -8,14 +8,14 @@
   <link rel="icon" href="../favicon.png">
   
   
-  <link rel="stylesheet" href="../fonts.css?cb=20260825d">
+  <link rel="stylesheet" href="../fonts.css?cb=20260922">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@400;500;600;700&amp;display=swap"></noscript>
-  <link rel="stylesheet" href="../editorial.css?cb=20260825">
-  <link rel="stylesheet" href="../brand.css?cb=20260825g">
-  <link rel="stylesheet" href="../account.css?cb=20260825d">
+  <link rel="stylesheet" href="../editorial.css?cb=20260922a">
+  <link rel="stylesheet" href="../brand.css?cb=20260922b">
+  <link rel="stylesheet" href="../account.css?cb=20260922c">
   <script src="../locale.js?cb=20260910"></script>
   <link rel="canonical" href="https://topodrive.top/zh/account">
   <link rel="alternate" type="text/markdown" href="https://topodrive.top/zh/account.md" title="Markdown twin of this page">
@@ -294,13 +294,13 @@
               '<div style="padding:0 0 22px">' +
                 '<p style="margin:0 0 8px;color:var(--ed-clay);font-weight:600;font-size:13.5px">取消订阅</p>' +
                 '<p style="margin:0 0 14px;color:var(--ed-ink-soft);font-size:13.5px;line-height:1.65;max-width:540px">取消后，订阅会持续到当前计费周期结束，然后账户降回免费 Diophantus 套餐。会话历史与知识地图会保留，但仅可保存 5 条会话。</p>' +
-                '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(154,90,59,.06)" onclick="cancelSubscription()">取消订阅</button>' +
+                '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(0,0,0,.06)" onclick="cancelSubscription()">取消订阅</button>' +
               '</div>'
             ) +
             '<div style="padding:' + (isFree ? '0' : '22px 0 0;border-top:1px solid var(--ed-line)') + '">' +
               '<p style="margin:0 0 8px;color:var(--ed-clay);font-weight:600;font-size:13.5px">注销账户</p>' +
               '<p style="margin:0 0 14px;color:var(--ed-ink-soft);font-size:13.5px;line-height:1.65;max-width:540px">永久删除账户及其关联的所有数据——会话、知识地图、错题本、API 密钥。一旦执行无法恢复。</p>' +
-              '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(154,90,59,.06)" onclick="deleteAccount()">注销账户</button>' +
+              '<button class="ed-button-quiet" style="color:var(--ed-clay);border-color:var(--ed-clay);background:rgba(0,0,0,.06)" onclick="deleteAccount()">注销账户</button>' +
             '</div>' +
           '</article>';
       }
@@ -606,8 +606,8 @@
       });
       var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">' +
         '<defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0%" stop-color="#9a5a3b" stop-opacity=".22"/>' +
-          '<stop offset="100%" stop-color="#9a5a3b" stop-opacity="0"/>' +
+          '<stop offset="0%" stop-color="#000000" stop-opacity=".22"/>' +
+          '<stop offset="100%" stop-color="#000000" stop-opacity="0"/>' +
         '</linearGradient></defs>' +
         gridSvg + xLabels +
         '<path d="' + areaD + '" fill="url(#trendGrad)"/>' +
