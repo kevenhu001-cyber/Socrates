@@ -1555,7 +1555,7 @@ body.ed-site .ed-year-rule::after {
 
 /* ── C. Header: glass on scroll, animated nav underlines ──────────────── */
 body.ed-site .ed-header.is-scrolled {
-  background: rgba(244, 241, 233, .8);
+  background: #ffffff;
   -webkit-backdrop-filter: blur(14px) saturate(160%);
   backdrop-filter: blur(14px) saturate(160%);
   border-image: linear-gradient(90deg, transparent, rgba(0, 0, 0, .26) 18%, rgba(0, 0, 0, .26) 82%, transparent) 1;
