@@ -4464,8 +4464,8 @@ html:lang(zh) body.ed-site {
 body.ed-site .ed-shell { width: min(1312px, calc(100% - 64px)); }
 body.ed-site .ed-header {
   padding: 0;
-  border-bottom: 1px solid rgba(23, 22, 20, .08);
-  background: rgba(245, 242, 234, .96);
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  background: #ffffff;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -4601,7 +4601,7 @@ body.ed-site .ed-inline-feature,
 body.ed-site .ed-footer-frame { border-radius: 10px; box-shadow: none; }
 body.ed-site .ed-home-stage { margin-top: clamp(70px, 7vw, 108px); }
 body.ed-site .ed-black-band,
-body.ed-site .ed-inline-feature { border-color: rgba(245, 242, 234, .12); background: var(--site-black); }
+body.ed-site .ed-inline-feature { border-color: rgba(255, 255, 255, .12); background: var(--site-black); }
 body.ed-site .ed-black-band-media img,
 body.ed-site .ed-inline-feature > img,
 body.ed-site .ed-featured-media img,
@@ -4884,7 +4884,7 @@ body.ed-site .ed-meta { font-size: 12.5px; letter-spacing: .01em; }
 body.ed-site .ed-header {
   padding: 0;
   min-height: 0;
-  background: rgba(240, 238, 230, .92);
+  background: #ffffff;
   -webkit-backdrop-filter: blur(10px) saturate(150%);
   backdrop-filter: blur(10px) saturate(150%);
   border-bottom: 1px solid transparent;
@@ -4893,7 +4893,7 @@ body.ed-site .ed-header {
 body.ed-site .ed-header.is-scrolled {
   padding: 0;
   border-bottom-color: var(--an-line);
-  background: rgba(240, 238, 230, .94);
+  background: #ffffff;
 }
 body.ed-site .ed-header .ed-shell { width: min(1280px, calc(100% - 48px)); }
 body.ed-site .ed-header-inner {
