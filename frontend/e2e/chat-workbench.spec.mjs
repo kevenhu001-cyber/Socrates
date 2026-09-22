@@ -36,8 +36,8 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
     const topbarStyle = getComputedStyle(document.querySelector('.top-bar'));
     const mainBackgroundStyle = getComputedStyle(document.querySelector('.main-bg'));
     return {
-      page: shellStyle.getPropertyValue('--workbench-page').trim(),
-      surface: shellStyle.getPropertyValue('--workbench-surface').trim(),
+      page: shellStyle.getPropertyValue('--ui-bg-page').trim(),
+      surface: shellStyle.getPropertyValue('--ui-bg-surface').trim(),
       mainBackgroundImage: mainBackgroundStyle.backgroundImage,
       sidebarBackground: sidebarStyle.backgroundColor,
       sidebarBorder: sidebarStyle.borderRightWidth,
@@ -62,7 +62,7 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
     const assistantStyle = assistantBody ? getComputedStyle(assistantBody) : null;
     const userStyle = userBody ? getComputedStyle(userBody) : null;
     return {
-      contentMax: getComputedStyle(shell).getPropertyValue('--workbench-content-max').trim(),
+      contentMax: getComputedStyle(shell).getPropertyValue('--ui-content-chat').trim(),
       rowWidth: Math.round(rowRect?.width || 0),
       userWidth: Math.round(userRect?.width || 0),
       userRightGap: Math.round((rowRect?.right || 0) - (userRect?.right || 0)),
@@ -75,10 +75,9 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
       toolbarHeight: Math.round(toolbar?.getBoundingClientRect().height || 0),
     };
   });
-  /* The workbench shell token is 1024px (the ChatGPT-like visual layer
-     widened --workbench-content-max); the conversation transcript keeps
-     its own 768px reading column, which rowWidth pins just below. */
-  expect(messageLayout.contentMax).toContain('1024px');
+  /* The unified content token keeps transcript and composer on one 768px
+     reading column. */
+  expect(messageLayout.contentMax).toContain('768px');
   expect(messageLayout.rowWidth).toBeLessThanOrEqual(822);
   expect(messageLayout.userWidth).toBeLessThan(messageLayout.rowWidth);
   expect(Math.abs(messageLayout.userRightGap)).toBeLessThanOrEqual(1);

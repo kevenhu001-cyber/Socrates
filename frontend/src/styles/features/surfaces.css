@@ -1,0 +1,82 @@
+/* Shared visual language for non-chat feature surfaces. Layout remains owned
+   by each feature; this file only normalizes materials and typography. */
+#appShell .main-page,
+#appShell .workspace-surface,
+#appShell .exam-view,
+#appShell .admin-panel,
+#appShell .auth-card,
+#appShell .modal,
+#appShell .modal-card,
+#appShell .workspace-dialog-card,
+#appShell .visualization-card {
+  color: var(--ui-text-primary);
+}
+
+#appShell .workspace-surface,
+#appShell .exam-view,
+#appShell .admin-panel,
+#appShell .main-page { background: var(--ui-bg-page); }
+
+#appShell .workspace-page-head h1,
+#appShell .workspace-page-head h2,
+#appShell .plugin-directory-heading h2,
+#appShell .exam-view h1,
+#appShell .modal-head h2 {
+  color: var(--ui-text-primary);
+  font-family: "Inter", "Noto Sans SC", sans-serif;
+  font-weight: 500;
+  letter-spacing: -.02em;
+}
+
+#appShell .workspace-page-head p,
+#appShell .plugin-directory-desc,
+#appShell .workspace-row-copy span,
+#appShell .workspace-empty,
+#appShell .modal-sub { color: var(--ui-text-tertiary); }
+
+#appShell .workspace-row,
+#appShell .connector-row,
+#appShell .library-row,
+#appShell .project-row { border-radius: 10px; }
+#appShell .workspace-row:hover,
+#appShell .connector-row:hover,
+#appShell .library-row:hover,
+#appShell .project-row:hover { background: var(--ui-bg-hover); }
+
+#appShell .workspace-search-field,
+#appShell .plugin-directory-search,
+#appShell .exam-input,
+#appShell .workspace-field input,
+#appShell .workspace-field textarea,
+#appShell .workspace-field select {
+  border: 1px solid var(--ui-border-default);
+  border-radius: 10px;
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  box-shadow: none;
+}
+
+#appShell .workspace-dialog,
+#appShell .modal-overlay,
+#appShell .cmd-k-overlay { background: var(--ui-backdrop); }
+
+#appShell .workspace-dialog-card,
+#appShell .modal,
+#appShell .modal-card,
+#appShell .cmd-k-card {
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-2xl);
+  background: var(--ui-bg-overlay);
+  box-shadow: var(--ui-shadow-popover);
+}
+
+#appShell .visualization-card {
+  border-color: var(--ui-border-default);
+  background: var(--ui-bg-raised);
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  #appShell .workspace-surface,
+  #appShell .main-page { padding-inline: 16px; }
+}

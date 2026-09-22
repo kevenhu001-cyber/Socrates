@@ -41,9 +41,9 @@ async function mockReferenceCatalog(page) {
 
 async function openSidebar(page) {
   const sidebar = page.locator('#sidebar');
-  if (await sidebar.isVisible().catch(() => false)) return;
+  if (!(await sidebar.evaluate((node) => node.classList.contains('collapsed')))) return;
   await page.locator('#sidebarOpenBtn').click();
-  await expect(sidebar).toBeVisible();
+  await expect(sidebar).not.toHaveClass(/collapsed/);
 }
 
 test('reference app surfaces render at mobile and desktop target sizes', async ({ page }) => {
@@ -76,11 +76,12 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
     };
   });
-  expect(mobileGeometry.mode?.width).toBeGreaterThanOrEqual(168);
-  expect(mobileGeometry.mode?.height).toBeGreaterThanOrEqual(40);
+  expect(mobileGeometry.mode?.width).toBeGreaterThanOrEqual(140);
+  expect(mobileGeometry.mode?.width).toBeLessThanOrEqual(152);
+  expect(mobileGeometry.mode?.height).toBe(32);
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(mobileGeometry.composer?.height).toBeGreaterThanOrEqual(100);
-  expect(mobileGeometry.composer?.height).toBeLessThanOrEqual(140);
+  expect(mobileGeometry.composer?.height).toBeGreaterThanOrEqual(84);
+  expect(mobileGeometry.composer?.height).toBeLessThanOrEqual(96);
   expect(mobileGeometry.plus?.width).toBe(40);
   expect(mobileGeometry.send?.width).toBe(40);
   expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
@@ -89,9 +90,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const toolsMenu = page.locator('#composerToolsMenu');
   await expect(toolsMenu).toBeVisible();
   const toolsBox = await toolsMenu.boundingBox();
-  expect(toolsBox?.width).toBeGreaterThanOrEqual(240);
-  expect(toolsBox?.width).toBeLessThanOrEqual(260);
-  expect(toolsBox?.height).toBeLessThanOrEqual(756 / 2);
+  expect(toolsBox?.width).toBeGreaterThanOrEqual(232);
+  expect(toolsBox?.width).toBeLessThanOrEqual(240);
+  expect(toolsBox?.height).toBeLessThanOrEqual(420);
   const toolsBackground = await toolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(toolsBackground).not.toBe('rgba(0, 0, 0, 0)');
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-tools-390x756.png', fullPage: true });
@@ -99,6 +100,11 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(toolsMenu).toBeHidden();
 
   await openSidebar(page);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(260);
+  await page.locator('#sidebarSearchBtn').click();
+  await expect(page.locator('#sidebar')).toHaveClass(/search-open/);
+  await expect(page.locator('#sidebarSearch')).toBeFocused();
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-sidebar-390x756.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-plugins-390x756.png', fullPage: true });

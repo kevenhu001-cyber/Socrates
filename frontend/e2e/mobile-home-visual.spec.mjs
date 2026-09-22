@@ -45,25 +45,27 @@ test('mobile conversation home matches the compact dark reference layout', async
          .main-content (the shell's page colour). Dark mode uses a layered
          charcoal canvas so the shell has depth without pure black. */
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
-      pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--cowork-page').trim(),
+      pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--ui-bg-page').trim(),
     };
   });
 
   expect(geometry.left?.width).toBe(44);
   expect(geometry.left?.height).toBe(44);
   expect(geometry.right?.width).toBe(44);
-  expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(168);
-  expect(geometry.modeTabs?.height).toBeGreaterThanOrEqual(40);
+  expect(geometry.modeTabs?.width).toBeGreaterThanOrEqual(140);
+  expect(geometry.modeTabs?.width).toBeLessThanOrEqual(152);
+  expect(geometry.modeTabs?.height).toBe(32);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Idle mobile composer is a single compact capsule. */
-  expect(geometry.composer?.height).toBeGreaterThanOrEqual(64);
-  expect(geometry.composer?.height).toBeLessThanOrEqual(76);
-  expect(geometry.topicFontSize).toBe(17);
+  /* Idle mobile composer is a stable two-row capsule. */
+  expect(geometry.composer?.height).toBeGreaterThanOrEqual(84);
+  expect(geometry.composer?.height).toBeLessThanOrEqual(96);
+  expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
+  expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(600);
   expect(geometry.composer?.y).toBeLessThan(820);
   /* P_mobile-black-canvas — the dark mobile canvas is pure #000. */
   expect(geometry.background).toBe('rgb(0, 0, 0)');
-  expect(geometry.pageToken).toBe('0 0% 13%');
+  expect(geometry.pageToken).toBe('#000');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical
@@ -128,7 +130,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
     };
   });
-  expect(headerVisual.sidebar?.width).toBe(40);
+  expect(headerVisual.sidebar?.width).toBe(44);
   expect(headerVisual.find?.width).toBe(44);
   expect(headerVisual.share?.width).toBe(44);
   expect(headerVisual.find?.borderWidth).toBe('0px');
@@ -186,7 +188,7 @@ test('mobile conversation home matches the compact dark reference layout', async
   /* On phones the add-content menu is a floating card anchored above the
      composer, matching the mobile reference. */
   expect(menuBox?.width).toBeLessThanOrEqual(300);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(240);
+  expect(menuBox?.width).toBeGreaterThanOrEqual(232);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

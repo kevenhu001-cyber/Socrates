@@ -305,6 +305,44 @@ test('spaced prose and currency stay literal', () => {
   });
 });
 
+/* Comma-separated symbol lists (`$x, y$`) carry whitespace without a
+   call shape, so they needed their own rule: a separator ENDING a word.
+   They render while spaced prose and currency groupings stay literal. */
+test('comma-separated symbol lists render as inline math', () => {
+  withKatex(() => {
+    assert.match(renderProgressive('对于 $x, y$ 这种写法'), /class="katex/);
+    assert.match(renderProgressive('设 $x, y, z$ 为变量'), /class="katex/);
+    assert.match(renderProgressive('求 $f(x), g(y)$ 的交点'), /class="katex/);
+    assert.match(renderProgressive('条件 $x； y$ 成立'), /class="katex/);
+    assert.match(renderProgressive('概率 $P(A | B)$ 同理'), /class="katex/);
+
+    /* The live tail renders too — the frame must not flash raw dollars
+       while the closing `$` is still in flight. */
+    assert.match(renderProgressive('对于 $x, y'), /class="katex/);
+
+    /* No letter (grouped currency), or a connector embedded inside a
+       word, keeps the text literal. */
+    assert.doesNotMatch(renderProgressive('price $5, 000$ today'), /class="katex/);
+    assert.doesNotMatch(renderProgressive('paid in $USD (about'), /class="katex/);
+
+    const previousKatex = globalThis.katex;
+    const previousMarked = globalThis.marked;
+    globalThis.katex = loadRealKatex();
+    globalThis.marked = marked;
+    try {
+      const final = formatMsg('对于 $x, y$ 和 $z, w$ 成立');
+      assert.match(final, /class="katex/);
+      assert.doesNotMatch(final, /\$x, y\$/);
+      assert.doesNotMatch(final, /\$z, w\$/);
+    } finally {
+      if (previousKatex === undefined) delete globalThis.katex;
+      else globalThis.katex = previousKatex;
+      if (previousMarked === undefined) delete globalThis.marked;
+      else globalThis.marked = previousMarked;
+    }
+  });
+});
+
 test('stripMarkdown keeps currency but removes real formulas', () => {
   const currency = stripMarkdown('价格是 $5 到 $10');
   assert.match(currency, /\$5/);
@@ -399,6 +437,70 @@ test('heading repair never rewrites fenced or inline code', () => {
 
     const inline = formatMsg('use `#include` here');
     assert.match(inline, /#include/);
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
+});
+
+/* The marker may sit behind container prefixes or arrive as a fullwidth
+   `＃`; both used to leak literal markers. Unfenced code lines, bare `#`
+   runs, and `#` inside display math must not be rewritten. */
+test('heading markers inside quotes, lists, and fullwidth form are repaired', () => {
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    assert.match(formatMsg('> #标题'), /<blockquote>\s*<h1>标题<\/h1>/);
+    assert.match(formatMsg('- #标题'), /<li>\s*<h1>标题<\/h1>/);
+    assert.match(formatMsg('  - ##小节'), /<h2>小节<\/h2>/);
+    assert.match(formatMsg('>> ##嵌套'), /<h2>嵌套<\/h2>/);
+    assert.match(formatMsg('1. ##有序'), /<h2>有序<\/h2>/);
+    assert.match(formatMsg('＃标题'), /<h1>标题<\/h1>/);
+    assert.match(formatMsg('＃＃二级'), /<h2>二级<\/h2>/);
+    /* `＃1` follows the `#1` prose rule — stays literal. */
+    assert.doesNotMatch(formatMsg('＃1 候选'), /<h1>/);
+    /* 7+ hashes are not a valid ATX marker; cap at h6. */
+    assert.match(formatMsg('#######标题'), /<h6>标题<\/h6>/);
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
+});
+
+test('bare hash runs and unfenced code lines stay literal', () => {
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    /* A bare `#`/`##` line is an empty h1/h2 — an invisible gap. It now
+       renders as the literal characters instead. */
+    const bare = formatMsg('文本\n#\n后续');
+    assert.doesNotMatch(bare, /<h1>\s*<\/h1>/);
+    assert.match(bare, /#/);
+    assert.doesNotMatch(formatMsg('##\n正文'), /<h2>/);
+
+    /* Unfenced code tokens are not headings. */
+    assert.doesNotMatch(formatMsg('#include <stdio.h>'), /<h1>/);
+    assert.doesNotMatch(formatMsg('#!/bin/bash'), /<h1>/);
+    assert.doesNotMatch(formatMsg('#define MAX 1'), /<h1>/);
+  } finally {
+    if (previousMarked === undefined) delete globalThis.marked;
+    else globalThis.marked = previousMarked;
+  }
+});
+
+test('heading repair leaves display math untouched', () => {
+  const previousMarked = globalThis.marked;
+  globalThis.marked = marked;
+  try {
+    /* A `#` line inside `$$…$$` is TeX source, not markdown — inserting
+       the heading space would corrupt the formula. The renderer shows
+       the preserved source (KaTeX cannot parse a bare `#` either way,
+       but the span text must be the original). */
+    const math = formatMsg('$$\n#notmath\nx+y\n$$');
+    assert.match(math, /#notmath/);
+    assert.doesNotMatch(math, /# notmath/);
+    /* The opener line of a math block is still prose before `$$`. */
+    assert.match(formatMsg('#标题 $$x'), /<h1>标题/);
   } finally {
     if (previousMarked === undefined) delete globalThis.marked;
     else globalThis.marked = previousMarked;

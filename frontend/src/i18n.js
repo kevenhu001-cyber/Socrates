@@ -46,7 +46,7 @@ var I18N={
     "topic.model":"Model",
     "topic.extensions":"Extensions",
     /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
-    "greeting.chat":"Where should we begin?",
+    "greeting.chat":"Ready when you are",
     "greeting.tutor":"Let's explore.",
     /* Composer "+" menu. The five mobile rows were briefly hardcoded to
        Chinese inside ComposerToolsMenu.tsx; the copy belongs here so both
@@ -1018,7 +1018,7 @@ var I18N={
     /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
        left holding the English strings when the landing was redesigned, so
        the zh locale rendered a half-English sidebar. */
-    "greeting.chat":"我们先从哪里开始呢？",
+    "greeting.chat":"准备好了，随时开始",
     "greeting.tutor":"来一起探索吧",
     /* Composer "+" menu. */
     "composer.tools.heading":"添加到对话",

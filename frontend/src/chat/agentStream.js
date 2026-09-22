@@ -8,7 +8,7 @@
 
 import { esc } from '../render/helpers.js';
 import { formatMsg, formatMsgProgressive } from '../render/markdown.js';
-import { getStreamRenderInterval, splitStreamingMarkdown } from '../render/streaming.js';
+import { getStreamRenderInterval, createSettledSplitter } from '../render/streaming.js';
 import { scrollContainer } from '../ui/scroll.js';
 import { processPendingMermaid, processPendingViz, processPendingVizActions, reclaimVizCards } from '../render/viz.js';
 
@@ -34,11 +34,17 @@ export function beginAgentTextStream(){
   var pending=null;
   var pendingTimer=null;
   var lastRenderAt=0;
-  var settledText=null;
+  var splitter=createSettledSplitter();
   var settled=document.createElement("div");
   settled.className="stream-settled-content";
   var live=document.createElement("div");
   live.className="stream-live-content";
+  /* The tail is re-parsed per frame; when a frame only appended settled
+     blocks (or coalesced a no-op paint) the tail text is unchanged and a
+     rewrite would rebuild identical KaTeX/code/viz nodes for nothing —
+     one visible flash per repaint. Track the last painted tail and skip
+     the write entirely. */
+  var lastTail=null;
   var cursor=document.createElement("span");
   cursor.className="stream-cursor";
   cursor.textContent="▍";
@@ -61,16 +67,18 @@ export function beginAgentTextStream(){
     var wasPinned=!!sc&&(!window.stateStore.read("_userScrolledAway"))&&
       sc.scrollHeight-sc.scrollTop-sc.clientHeight<=96;
     try{
-      var parts=splitStreamingMarkdown(full);
-      if(parts.prefix){
-        if(parts.prefix!==settledText){
-          settled.innerHTML=formatMsgProgressive(parts.prefix);
-          settledText=parts.prefix;
-        }
+      /* Each completed markdown block is appended once and never rebuilt;
+         only the still-open tail is re-parsed per frame. A reset means the
+         accumulated text was replaced rather than appended — rebuild the
+         settled region from scratch. */
+      var parts=splitter.push(full);
+      if(parts.reset){settled.innerHTML="";lastTail=null}
+      for(var bi=0;bi<parts.added.length;bi+=1){
+        settled.insertAdjacentHTML("beforeend",formatMsgProgressive(parts.added[bi]));
+      }
+      if(parts.tail!==lastTail){
         live.innerHTML=parts.tail?formatMsgProgressive(parts.tail):"";
-      }else{
-        if(settledText!==null){settled.innerHTML="";settledText=null}
-        live.innerHTML=formatMsgProgressive(full);
+        lastTail=parts.tail;
       }
       /* The tail innerHTML rewrite recreates viz cards every frame;
          reclaim the already-rendered element so the iframe/diagram is not

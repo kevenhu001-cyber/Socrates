@@ -1,0 +1,75 @@
+/* Conversation reading column and message materials. The chat view remains
+   structurally unchanged; this module is its sole visual owner. */
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
+  width: 100%;
+  max-width: calc(var(--ui-content-chat) + 40px);
+  margin-inline: auto;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(var(--ui-content-chat) + 40px);
+  margin-inline: auto;
+  gap: 24px;
+  padding: 28px 20px 24px;
+  scroll-padding-block: 24px;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList > .msg {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0;
+  color: var(--ui-text-primary);
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList > .msg.user {
+  align-items: flex-end;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body {
+  color: var(--ui-text-primary);
+  font-family: "Inter", "Noto Sans SC", sans-serif;
+  font-size: calc(15px * var(--app-font-scale, 1));
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: -.006em;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
+  max-width: min(76%, 680px);
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 15px;
+  background: var(--ui-bg-bubble);
+  box-shadow: none;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-toolbar {
+  min-height: 26px;
+  height: 26px;
+  margin-top: 5px;
+}
+
+@media (max-width: 768px) {
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
+    max-width: none;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
+    max-width: none;
+    padding: 20px 16px 24px;
+  }
+  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
+    max-width: 88%;
+    border-radius: 24px;
+  }
+}

@@ -8,7 +8,7 @@ export function renderGreeting() {
   if (!el) return;
   var mode = (typeof window !== "undefined" && window.appMode) || "chat";
   var key = mode === "tutor" ? "greeting.tutor" : "greeting.chat";
-  var fallback = mode === "tutor" ? "Let's explore." : "Where should we begin?";
+  var fallback = mode === "tutor" ? "Let's explore." : "Ready when you are";
   var tmpl = typeof window.t === "function" ? window.t(key) : fallback;
   if (!tmpl || tmpl === key) tmpl = fallback;
   el.textContent = tmpl;

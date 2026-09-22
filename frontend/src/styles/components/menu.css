@@ -1,5 +1,100 @@
-/*
- * styles/components/menu.css
- *
- * M1 placeholder. Will own dropdown / segmented / listbox menus.
- */
+.composer-tools-menu,
+.chat-config-pop,
+.sidebar-more-popover,
+.display-prefs-popover,
+.model-picker-menu,
+.extensions-menu,
+.tag-editor-popover {
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-overlay);
+  color: var(--ui-text-primary);
+  box-shadow: var(--ui-shadow-popover);
+}
+
+body #composerToolsMenu.composer-tools-menu {
+  position: fixed;
+  z-index: var(--ui-z-popover);
+  width: 236px;
+  min-width: 236px;
+  max-width: calc(100vw - 24px);
+  max-height: min(44dvh, 336px);
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 20px;
+  animation: none;
+}
+body #composerToolsMenu.composer-tools-menu::before { display: none; }
+
+#composerToolsMenu .composer-tools-desktop-items,
+#composerToolsMenu .composer-tools-mobile-items { gap: 0; }
+
+#composerToolsMenu .composer-tools-item,
+#composerToolsMenu .composer-tools-mobile-item,
+#composerToolsMenu .composer-tools-plugin-item {
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 5px 8px;
+  gap: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ui-text-primary);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+#composerToolsMenu .composer-tools-item:hover,
+#composerToolsMenu .composer-tools-mobile-item:hover,
+#composerToolsMenu .composer-tools-plugin-item:hover { background: var(--ui-bg-hover); }
+
+#composerToolsMenu .composer-tools-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border-radius: var(--ui-radius-pill);
+  /* The popover surface already uses --ui-bg-overlay; stepping DOWN to
+     --ui-bg-surface keeps the circular chip legible inside the card. */
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-secondary);
+}
+#composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; stroke-width: 1.8; }
+#composerToolsMenu .composer-tools-copy > span { color: inherit; font-size: 16px; font-weight: 400; }
+#composerToolsMenu .composer-tools-copy small,
+#composerToolsMenu .composer-tools-item kbd { display: none; }
+#composerToolsMenu .composer-tools-divider { display: none; }
+#composerToolsMenu .composer-tools-footer-search { display: none; }
+
+.chat-config-pop {
+  position: fixed;
+  z-index: var(--ui-z-popover);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  width: min(254px, calc(100vw - 32px));
+  max-height: min(60dvh, 420px);
+  padding: 8px;
+  border-radius: 18px;
+}
+.chat-config-pop button { border-radius: 10px; }
+.chat-config-pop input[type="range"] { accent-color: #1687f8; }
+
+.sidebar-more-popover,
+.display-prefs-popover,
+.model-picker-menu,
+.extensions-menu { border-radius: 14px; }
+
+@media (min-width: 769px) {
+  .composer-tools-desktop-items { display: block; }
+  .composer-tools-mobile-items { display: none; }
+  body #composerToolsMenu.composer-tools-menu { width: 252px; min-width: 252px; }
+}
+
+@media (max-width: 768px) {
+  .composer-tools-desktop-items { display: none; }
+  .composer-tools-mobile-items { display: block; }
+  body.composer-tools-open::after { display: none; }
+}

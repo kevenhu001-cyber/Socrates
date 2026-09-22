@@ -96,14 +96,20 @@ function position(el, trigger) {
      trigger edge alignment. */
   var anchorLeft = viewportWidth <= 768 ? r.left - 12 : r.left;
   var left = Math.max(8, Math.min(anchorLeft, viewportWidth - width - 8));
+  /* The menu floats above the whole composer capsule, not the trigger
+     button — the plus control lives on the capsule's second row, so
+     anchoring to the trigger would overlap the editor row. */
+  var wrap = trigger.closest ? trigger.closest('#topicInputWrap, #chatInputWrap') : null;
+  var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
+  var anchorTop = wrapRect.top;
   /* ChatGPT places the add-content menu below the composer whenever the
      viewport has room. Falling back above is only necessary near the bottom
      edge (most often on a phone), which keeps the desktop landing state from
      covering the greeting. */
-  var belowTop = r.bottom + 8;
-  var aboveTop = r.top - height - 8;
+  var belowTop = wrapRect.bottom + 8;
+  var aboveTop = anchorTop - height - 8;
   var belowSpace = viewportBottom - belowTop - 8;
-  var aboveSpace = r.top - viewportTop - 8;
+  var aboveSpace = anchorTop - viewportTop - 8;
   var top;
   if (belowSpace >= height) {
     top = belowTop;
@@ -121,7 +127,7 @@ function position(el, trigger) {
     top = belowTop;
   } else if (aboveSpace >= 120) {
     el.style.maxHeight = Math.min(aboveSpace, menuHeightCap) + "px";
-    top = r.top - aboveSpace - 8;
+    top = anchorTop - aboveSpace - 8;
   } else {
     el.style.maxHeight = Math.min(Math.max(120, Math.max(belowSpace, aboveSpace)), menuHeightCap) + "px";
     top = belowSpace >= aboveSpace ? belowTop : viewportTop + 8;

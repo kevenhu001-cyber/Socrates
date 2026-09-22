@@ -1,211 +1,64 @@
-/*
- * themes.css — concrete token values for the light / dark / accent
- * modes.
- *
- * This file is the *value* side of the design-token split:
- *   tokens.css  → token *names* (`--ui-*`)
- *   themes.css  → token *values* per mode
- *
- * Values mirror the legacy HSL palette already in styles.css so the
- *   visual identity is preserved. The split lets future milestones
- *   (per-component theme overrides, accent palettes) operate on a
- *   single file without touching the rest of the cascade.
- *
- * Mode selection:
- *   The [data-mode] attribute on <html> picks the active palette.
- *   displayPrefs.js writes `data-mode=dark|light` after resolving
- *   user preference (light / dark / system).
- *
- * Compatibility:
- *   The legacy selectors in styles.css keep their existing `--bg-*`,
- *   `--text-*`, `--border-*`, `--accent-*` definitions so older
- *   component CSS still resolves the values it expects. M1 only
- *   *adds* the `--ui-*` namespace; existing rules are unchanged.
- */
-
-/* Dark mode — primary palette. */
+/* Theme values are the single source of truth for every first-party surface. */
 [data-mode="dark"] {
-  --ui-accent-strong: 0 0% 100%;
-  --ui-accent-soft: 0 0% 20%;
-  --ui-accent-surface: 0 0% 20%;
-  --ui-on-accent: 0 0% 8%;
-
-  --ui-bg-page: 0 0% 13%;
-  --ui-bg-raised: 0 0% 16%;
-  --ui-bg-overlay: 0 0% 5%;
-  --ui-bg-hover: 0 0% 21%;
-  --ui-bg-sunken: 0 0% 2%;
-
-  --ui-text-primary: 0 0% 100%;
-  --ui-text-secondary: 0 0% 80%;
-  --ui-text-tertiary: 0 0% 65%;
-  --ui-text-muted: 0 0% 55%;
-  --ui-text-disabled: 0 0% 55%;
-
-  --ui-border-subtle: 0 0% 22%;
-  --ui-border-default: 0 0% 22%;
-  --ui-border-strong: 0 0% 22%;
-
-  --ui-danger: 0 60% 55%;
-  --ui-success: 142 60% 50%;
-  --ui-muted: 0 0% 55%;
-}
-
-/* Light mode — primary palette. */
-[data-mode="light"] {
-  --ui-accent-strong: 0 0% 10%;
-  --ui-accent-soft: 0 0% 90%;
-  --ui-accent-surface: 0 0% 90%;
-  --ui-on-accent: 0 0% 100%;
-
-  --ui-bg-page: 0 0% 98%;
-  --ui-bg-raised: 0 0% 95%;
-  --ui-bg-overlay: 0 0% 100%;
-  --ui-bg-hover: 0 0% 91%;
-  --ui-bg-sunken: 0 0% 100%;
-
-  --ui-text-primary: 0 0% 13%;
-  --ui-text-secondary: 0 0% 27%;
-  --ui-text-tertiary: 0 0% 44%;
-  --ui-text-muted: 0 0% 52%;
-  --ui-text-disabled: 0 0% 52%;
-
-  --ui-border-subtle: 0 0% 90%;
-  --ui-border-default: 0 0% 76%;
-  --ui-border-strong: 0 0% 70%;
-
-  --ui-danger: 0 60% 45%;
-  --ui-success: 142 50% 35%;
-  --ui-muted: 0 0% 52%;
-}
-
-/* ============================================================
-   LOBEHUB DESIGN TOKENS
-   ------------------------------------------------------------
-   Inspired by lobehub's DESIGN.md / DESIGN.dark.md semantic
-   token model. These coexist with the legacy `--ui-*` tokens
-   above — every legacy rule still resolves; the lobehub tokens
-   are consumed only by `styles/lobe-overrides.css` and any
-   future code that opts in by referencing them.
-   No legacy rule references these; no behavior change outside
-   the override layer.
-   ============================================================ */
-
-[data-mode="dark"] {
-  /* Lobehub semantic tokens (Dark) */
-  --lobe-bg-layout: #000000;
-  --lobe-bg-container: #0d0d0d;
-  --lobe-bg-container-secondary: #070707;
-  --lobe-bg-elevated: #1a1a1a;
-  --lobe-bg-spotlight: #2d2d2d;
-
-  --lobe-text: #ffffff;
-  --lobe-text-secondary: #aaaaaa;
-  --lobe-text-tertiary: #6f6f6f;
-  --lobe-text-quaternary: #555555;
-
-  --lobe-border: #202020;
-  --lobe-border-secondary: #1a1a1a;
-
-  --lobe-fill: rgba(255, 255, 255, 0.16);
-  --lobe-fill-secondary: rgba(255, 255, 255, 0.1);
-  --lobe-fill-tertiary: rgba(255, 255, 255, 0.06);
-  --lobe-fill-quaternary: rgba(255, 255, 255, 0.02);
-
-  --lobe-primary: #eeeeee;
-  --lobe-primary-hover: #ffffff;
-  --lobe-primary-active: #dddddd;
-  --lobe-on-primary: #000000;
-
-  --lobe-success: #c4f042;
-  --lobe-warning: #ffb224;
-  --lobe-error: #f4416c;
-  --lobe-info: #60b1ff;
-
-  /* Accent — monochrome. The app no longer ships a selectable theme
-     colour: primary surfaces use white-on-black in dark mode and
-     black-on-white in light mode. Expose it as a CSS var so the
-     override layer can stay token-driven. */
-  --lobe-accent: #f5f5f5;
-  --lobe-accent-hover: #ffffff;
-  --lobe-accent-soft: rgba(255, 255, 255, 0.18);
-  --lobe-accent-border: rgba(255, 255, 255, 0.35);
-  --lobe-on-accent: #0d0d0d;
-
-  /* Shadows (shared between light and dark) */
-  --lobe-shadow-tertiary: 0 3px 1px -1px rgba(26, 26, 26, 0.06);
-  --lobe-shadow-secondary: 0 8px 16px -4px rgba(0, 0, 0, 0.4);
-  --lobe-shadow-modal: 0 20px 20px -8px rgba(0, 0, 0, 0.48);
-
-  /* Geometry */
-  --lobe-radius-xs: 4px;
-  --lobe-radius-sm: 6px;
-  --lobe-radius: 8px;
-  --lobe-radius-lg: 12px;
-  --lobe-radius-pill: 9999px;
-
-  --lobe-control-sm: 28px;
-  --lobe-control: 36px;
-  --lobe-control-lg: 40px;
-
-  /* Glass-morphism tuning */
-  --lobe-glass-bg: rgba(13, 13, 13, 0.72);
-  --lobe-glass-border: rgba(255, 255, 255, 0.06);
-  --lobe-glass-blur: 20px;
+  color-scheme: dark;
+  --ui-bg-page: #000;
+  --ui-bg-sidebar: #000;
+  --ui-bg-raised: #171717;
+  --ui-bg-surface: #212121;
+  --ui-bg-control: #303030;
+  --ui-bg-hover: #2a2a2a;
+  --ui-bg-overlay: #303030;
+  --ui-text-primary: #f5f5f5;
+  --ui-text-secondary: #d1d1d1;
+  --ui-text-tertiary: #b4b4b4;
+  --ui-text-muted: #8e8e8e;
+  --ui-text-disabled: #676767;
+  --ui-border-subtle: rgb(255 255 255 / 8%);
+  --ui-border-default: rgb(255 255 255 / 12%);
+  --ui-border-strong: rgb(255 255 255 / 18%);
+  --ui-backdrop: rgb(0 0 0 / 58%);
+  --ui-on-accent: #000;
+  --ui-accent-strong: #fff;
+  --ui-danger: #ef6666;
+  --ui-success: #55b685;
+  /* The composer capsule sits one step above the page; the small controls
+     inside it sit one step above the capsule. */
+  --ui-bg-composer: #303030;
+  --ui-bg-chip: rgb(255 255 255 / 9%);
+  --ui-bg-chip-hover: rgb(255 255 255 / 15%);
+  --ui-bg-bubble: #2f2f2f;
+  --ui-bg-segment-active: rgb(255 255 255 / 13%);
+  --ui-shadow-popover: 0 18px 48px rgb(0 0 0 / 46%), 0 1px 0 rgb(255 255 255 / 5%) inset;
 }
 
 [data-mode="light"] {
-  /* Lobehub semantic tokens (Light) */
-  --lobe-bg-layout: #f8f8f8;
-  --lobe-bg-container: #ffffff;
-  --lobe-bg-container-secondary: #fbfbfb;
-  --lobe-bg-elevated: #ffffff;
-  --lobe-bg-spotlight: #dddddd;
-
-  --lobe-text: #080808;
-  --lobe-text-secondary: #666666;
-  --lobe-text-tertiary: #999999;
-  --lobe-text-quaternary: #bbbbbb;
-
-  --lobe-border: #e3e3e3;
-  --lobe-border-secondary: #eeeeee;
-
-  --lobe-fill: rgba(0, 0, 0, 0.12);
-  --lobe-fill-secondary: rgba(0, 0, 0, 0.06);
-  --lobe-fill-tertiary: rgba(0, 0, 0, 0.03);
-  --lobe-fill-quaternary: rgba(0, 0, 0, 0.015);
-
-  --lobe-primary: #222222;
-  --lobe-primary-hover: #000000;
-  --lobe-primary-active: #404040;
-  --lobe-on-primary: #ffffff;
-
-  --lobe-success: #379d4a;
-  --lobe-warning: #ee9e0b;
-  --lobe-error: #ec5e41;
-  --lobe-info: #0072f5;
-
-  --lobe-accent: #171717;
-  --lobe-accent-hover: #000000;
-  --lobe-accent-soft: rgba(23, 23, 23, 0.14);
-  --lobe-accent-border: rgba(23, 23, 23, 0.32);
-  --lobe-on-accent: #ffffff;
-
-  --lobe-shadow-tertiary: 0 3px 1px -1px rgba(26, 26, 26, 0.06);
-  --lobe-shadow-secondary: 0 8px 16px -4px rgba(0, 0, 0, 0.12);
-  --lobe-shadow-modal: 0 20px 20px -8px rgba(0, 0, 0, 0.16);
-
-  --lobe-radius-xs: 4px;
-  --lobe-radius-sm: 6px;
-  --lobe-radius: 8px;
-  --lobe-radius-lg: 12px;
-  --lobe-radius-pill: 9999px;
-
-  --lobe-control-sm: 28px;
-  --lobe-control: 36px;
-  --lobe-control-lg: 40px;
-
-  --lobe-glass-bg: rgba(255, 255, 255, 0.78);
-  --lobe-glass-border: rgba(0, 0, 0, 0.06);
-  --lobe-glass-blur: 20px;
+  color-scheme: light;
+  --ui-bg-page: #fff;
+  --ui-bg-sidebar: #f9f9f9;
+  --ui-bg-raised: #f7f7f7;
+  --ui-bg-surface: #f2f2f2;
+  --ui-bg-control: #e7e7e7;
+  --ui-bg-hover: #e9e9e9;
+  --ui-bg-overlay: #fff;
+  --ui-text-primary: #171717;
+  --ui-text-secondary: #343434;
+  --ui-text-tertiary: #5d5d5d;
+  --ui-text-muted: #737373;
+  --ui-text-disabled: #a2a2a2;
+  --ui-border-subtle: rgb(0 0 0 / 7%);
+  --ui-border-default: rgb(0 0 0 / 10%);
+  --ui-border-strong: rgb(0 0 0 / 17%);
+  --ui-backdrop: rgb(0 0 0 / 35%);
+  --ui-on-accent: #fff;
+  --ui-accent-strong: #171717;
+  --ui-danger: #c84242;
+  --ui-success: #267a4e;
+  /* Light composer is a white capsule on the white page — the hairline
+     border (desktop) and shadow carry the separation, not a fill step. */
+  --ui-bg-composer: #fff;
+  --ui-bg-chip: rgb(0 0 0 / 5%);
+  --ui-bg-chip-hover: rgb(0 0 0 / 9%);
+  --ui-bg-bubble: #f0f0f0;
+  --ui-bg-segment-active: #fff;
+  --ui-shadow-popover: 0 18px 48px rgb(0 0 0 / 16%), 0 1px 0 rgb(255 255 255 / 85%) inset;
 }

@@ -1,32 +1,14 @@
-/*
- * styles/index.css - aggregate entry for the modular styles tree.
- *
- * M1 replaces the single-file `src/styles.css` with a directory that
- * can grow into per-component / per-layout / per-theme modules
- * without further touching the HTML link. The cascade is preserved
- * by composing in the order:
- *
- *   1. tokens.css   - `--ui-*` token *names* (no values).
- *   2. themes.css   - `--ui-*` token *values* per mode.
- *   3. ../styles.css - the existing 10K-line stylesheet (unchanged
- *      for M1; M2 will extract logical sections into
- *      `layout/`, `components/`, and `vendor/`).
- *
- * Vite inlines all `@import`s into the single bundled stylesheet,
- * so the production HTML link still produces one hashed CSS file.
- *
- * Why three subfiles when styles.css keeps the bulk?
- *  - The new `--ui-*` tokens are pure additive surface area; they
- *    do not change any existing rule's resolved color / spacing.
- *  - Future milestones can move cleanly-delineated sections out of
- *    `styles.css` into the modular subdirectories without breaking
- *    this entry, because the import order is stable.
- */
-
+/* Single stylesheet entry. Keep this order: foundations, layout, components,
+   feature surfaces, utilities. Historical reference/parity sheets are not
+   loaded; each visible component has one final owner below. */
 @import './tokens.css';
 @import './themes.css';
 @import '../styles.css';
-/* NOTE: lobe-overrides.css is loaded directly from index.html as a
-   separate <link> at the END of the stylesheet list, so it wins
-   over chatgpt-ui.css / chatgpt-v2.css. Keeping it out of this
-   @import chain avoids double-inclusion in the Vite bundle. */
+@import './foundations/base.css';
+@import './layout/app-shell.css';
+@import './components/sidebar.css';
+@import './components/composer.css';
+@import './components/chat.css';
+@import './components/menu.css';
+@import './features/surfaces.css';
+@import './components/tool-card.css';

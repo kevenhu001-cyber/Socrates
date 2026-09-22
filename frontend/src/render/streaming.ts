@@ -26,6 +26,20 @@ function countOccurrences(s: string, needle: string): number {
   return n;
 }
 
+/* Tutor scaffold bodies commonly contain blank lines. Do not promote a
+   prefix containing an open <example>/<quiz>/... tag into the settled DOM,
+   otherwise the remaining fields render outside the card and the next
+   frame appears to duplicate or relocate the scaffold. A small stack is
+   enough here because these tags are XML-like and the live renderer can
+   safely keep the whole open block in its tail. Hoisted to module scope:
+   this set was previously rebuilt on every streaming frame. */
+const SCAFFOLD_TAGS = new Set([
+  'quiz', 'example', 'practice', 'definition', 'step', 'flashcard',
+  'proof', 'theorem', 'key-point', 'derivation', 'q', 'o', 'title',
+  'problem', 'solution', 'hint', 'front', 'back', 'statement', 'body',
+  'term', 'correct',
+]);
+
 export function isStableMarkdownPrefix(text: string): boolean {
   const s = String(text || '');
   if (countOccurrences(s, '```') % 2 !== 0) return false;
@@ -36,24 +50,12 @@ export function isStableMarkdownPrefix(text: string): boolean {
      cannot fail. Skips the tag scan for ordinary prose, the common case. */
   if (s.indexOf('<') === -1) return true;
   if (countOccurrences(s, '<think>') !== countOccurrences(s, '</think>')) return false;
-  /* Tutor scaffold bodies commonly contain blank lines. Do not promote a
-     prefix containing an open <example>/<quiz>/... tag into the settled DOM,
-     otherwise the remaining fields render outside the card and the next
-     frame appears to duplicate or relocate the scaffold. A small stack is
-     enough here because these tags are XML-like and the live renderer can
-     safely keep the whole open block in its tail. */
-  const scaffoldTags = new Set([
-    'quiz', 'example', 'practice', 'definition', 'step', 'flashcard',
-    'proof', 'theorem', 'key-point', 'derivation', 'q', 'o', 'title',
-    'problem', 'solution', 'hint', 'front', 'back', 'statement', 'body',
-    'term', 'correct',
-  ]);
   const stack: string[] = [];
   const tagRe = /<\/?([a-z][\w-]*)(?:\s[^>]*)?\/?>/gi;
   let match: RegExpExecArray | null;
   while ((match = tagRe.exec(s)) !== null) {
     const tag = match[1].toLowerCase();
-    if (!scaffoldTags.has(tag)) continue;
+    if (!SCAFFOLD_TAGS.has(tag)) continue;
     const raw = match[0];
     if (raw.charAt(1) === '/') {
       if (stack.pop() !== tag) return false;
@@ -82,17 +84,31 @@ export interface StreamingSplit {
  * aware via toolRowAnchorOffset) and the read path (react/tool-run
  * buildTurnLayout) so both agree on the final position.
  */
-export function snapToolOffsetOutOfBlock(text: string, offset: number): number {
-  const full = String(text || '');
-  let off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
-  if (off >= full.length) return off;
+/* PERF — buildTurnLayout runs snapToolOffsetOutOfBlock once per tool call
+   on every committed frame, and every call used to rebuild the line table
+   for the entire accumulated text. Within one layout pass all callers read
+   the same `rawText` reference, so the last-computed table is reused; on a
+   miss the string compare short-circuits on length for append-only growth. */
+let _lineTableCache: { text: string; starts: number[]; ends: number[] } | null = null;
 
-  /* Line table for the whole response so far. */
+function _lineTableFor(full: string): { starts: number[]; ends: number[] } {
+  const c = _lineTableCache;
+  if (c && c.text === full) return { starts: c.starts, ends: c.ends };
   const starts: number[] = [0];
   for (let i = 0; i < full.length; i += 1) {
     if (full.charCodeAt(i) === 10) starts.push(i + 1);
   }
   const ends: number[] = starts.map((s, i) => (i + 1 < starts.length ? starts[i + 1] - 1 : full.length));
+  _lineTableCache = { text: full, starts, ends };
+  return { starts, ends };
+}
+
+export function snapToolOffsetOutOfBlock(text: string, offset: number): number {
+  const full = String(text || '');
+  const off = Math.max(0, Math.min(full.length, Math.floor(Number(offset) || 0)));
+  if (off >= full.length) return off;
+
+  const { starts, ends } = _lineTableFor(full);
   let li = 0;
   for (let i = 0; i < starts.length; i += 1) {
     if (starts[i] <= off) li = i;
@@ -186,4 +202,116 @@ export function splitStreamingMarkdown(text: string): StreamingSplit {
   const prefix = full.slice(0, cut);
   if (!isStableMarkdownPrefix(prefix)) return { prefix: '', tail: full };
   return { prefix, tail: full.slice(cut + 2) };
+}
+
+/* Markdown list item opener, e.g. "- item", "1. item", "+ item". */
+const LIST_ITEM_RE = /^[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+\S/;
+
+/* A blank line between two list-item lines (or between an item and its
+   indented continuation) makes a LOOSE list. Cutting there renders each
+   half as its own <ul>/<p> instead of one list — not what the one-shot
+   final render produces — so the boundary stays pending until the list
+   truly ends. */
+function _isLooseListBoundary(text: string, blockStart: number, boundary: number): boolean {
+  const before = text.slice(blockStart, boundary);
+  const lastLine = before.slice(before.lastIndexOf('\n') + 1);
+  if (!LIST_ITEM_RE.test(lastLine)) return false;
+  const after = text.slice(boundary + 2);
+  const nl = after.indexOf('\n');
+  const nextLine = nl === -1 ? after : after.slice(0, nl);
+  if (LIST_ITEM_RE.test(nextLine)) return true;
+  /* "  continued" indented under the item belongs to that list item. */
+  if (/^[ \t]{2,}\S/.test(nextLine) && !/^[ \t]*(`{3,}|~{3,})/.test(nextLine)) return true;
+  if (nl === -1) {
+    /* The next line is still being typed and could yet grow into a list
+       item ("-", "1."). Keep the boundary pending so a loose list is not
+       split before its continuation is known. */
+    return /^[ \t]*(?:[-*+]|\d{1,9}[.)]?)?[ \t]*$/.test(nextLine);
+  }
+  return false;
+}
+
+export interface SettledSplit {
+  /** Every settled block so far, in source order. */
+  blocks: string[];
+  /** Blocks settled by this push (equal to `blocks` right after a reset). */
+  added: string[];
+  /** Text after the last settled boundary — the still-open live region. */
+  tail: string;
+  /** True when `text` did not extend the previous input (rebuilt split). */
+  reset: boolean;
+}
+
+/**
+ * Incremental settled-region splitter. The previous flow re-split and
+ * re-rendered the whole stable prefix on every commit — O(answer length)
+ * per paragraph boundary plus a full DOM rebuild of the settled region.
+ * This splitter instead keeps the settled region as a list of
+ * self-contained blocks that only ever grows: each push() scans just the
+ * still-open region for new '\n\n' boundaries and validates each candidate
+ * block on its own (a block is promoted only when it is itself a stable
+ * prefix, so a cut can never land inside a fence, math block, <think>, or
+ * scaffold card). `added` reports exactly the newly settled blocks so the
+ * caller can mount them without touching the existing DOM.
+ *
+ * Inputs are expected append-only (the accumulated response); when a push
+ * does not extend the previous input — e.g. the caller rebuilt the text —
+ * the split is derived from scratch and `reset` is reported.
+ *
+ * Reconstruction: blocks.join('\n\n') + (tail ? '\n\n' + tail : '') ===
+ * text, except that runs of more than one blank line collapse to a single
+ * separator (visually identical markdown).
+ */
+export function createSettledSplitter(): { push: (text: string) => SettledSplit } {
+  let source = '';
+  let blocks: string[] = [];
+  let emitted = 0;
+  let tailStart = 0;
+  /* Search resumes here: boundaries entirely behind scanPos were already
+     judged, and a '\n\n' can only appear at or after (old length - 1). */
+  let scanPos = 0;
+
+  return {
+    push(text: string): SettledSplit {
+      text = String(text || '');
+      if (text === source) {
+        return { blocks, added: [], tail: text.slice(tailStart), reset: false };
+      }
+      let reset = false;
+      if (!text.startsWith(source)) {
+        blocks = [];
+        emitted = 0;
+        tailStart = 0;
+        scanPos = 0;
+        reset = true;
+      }
+      let search = Math.max(scanPos, tailStart);
+      for (;;) {
+        const b = text.indexOf('\n\n', search);
+        if (b === -1) {
+          scanPos = Math.max(tailStart, text.length - 1);
+          break;
+        }
+        const candidate = text.slice(tailStart, b);
+        if (candidate.length === 0) {
+          /* A bare separator run — consume it without emitting a block. */
+          tailStart = b + 2;
+          search = tailStart;
+        } else if (isStableMarkdownPrefix(candidate)
+                   && !_isLooseListBoundary(text, tailStart, b)) {
+          blocks.push(candidate);
+          tailStart = b + 2;
+          search = tailStart;
+        } else {
+          /* Inside an unclosed construct or a loose list: leave this
+             boundary inside the pending region and look further. */
+          search = b + 1;
+        }
+      }
+      source = text;
+      const added = blocks.slice(emitted);
+      emitted = blocks.length;
+      return { blocks, added, tail: text.slice(tailStart), reset };
+    },
+  };
 }
