@@ -1260,8 +1260,8 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-pill[data-cat="Knowledge mapping"]::before,
 .ed-pill[data-cat="Tutoring"]::before { background: var(--ed-clay); }
 .ed-pill[data-cat="Announcements"]::before,
-.ed-pill[data-cat="Product"]::before { background: #3f6f8f; }
-.ed-pill[data-cat="Learning"]::before { background: #8a7a3f; }
+.ed-pill[data-cat="Product"]::before { background: #000000; }
+.ed-pill[data-cat="Learning"]::before { background: #000000; }
 
 /* Year grouping label for News / index lists */
 .ed-year-rule {
