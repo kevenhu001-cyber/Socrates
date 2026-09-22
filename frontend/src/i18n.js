@@ -40,7 +40,7 @@ var I18N={
     /* P_cowork-landing — the landing composer opens the conversation, so it
        asks a question. The "/" affordance is discoverable from the slash
        menu itself and no longer has to carry the empty state. */
-    "topic.inputPlaceholder":"How can I help you today?",
+    "topic.inputPlaceholder":"Ask Socrates",
     "topic.start":"Begin",
     "topic.hint":"Be specific for better results",
     "topic.model":"Model",
@@ -74,6 +74,7 @@ var I18N={
     "sidebar.nav.scheduled":"Scheduled",
     "sidebar.nav.plugins":"Plugins",
     "sidebar.nav.exam":"Exam",
+    "sidebar.nav.incognito":"Incognito chat",
     "sidebar.nav.more":"Customize",
     "sidebar.nav.soon":"Soon",
     /* PR-A — More popover items */
@@ -234,6 +235,7 @@ var I18N={
     "session.badgeExam":"Exam",
     "session.pinned":"Pinned",
     "session.editTags":"Edit tags",
+    "session.moreActions":"Session actions",
     "session.filterByTag":"Filter by tag: {tag}",
     "session.empty":"No recent sessions yet.",
     "session.emptyHint":"Start a topic to begin.",
@@ -1009,7 +1011,7 @@ var I18N={
        above are already localized, so Tutor now mirrors that. */
     "topic.title":"今天想探索什么？",
     "topic.subtitle":"",
-    "topic.inputPlaceholder":"今天有什么可以帮你的？",
+    "topic.inputPlaceholder":"问问 Socrates",
     "topic.start":"开始",
     "topic.hint":"描述越具体效果越好",
     "topic.model":"模型",
@@ -1044,6 +1046,7 @@ var I18N={
     "sidebar.nav.scheduled":"定时任务",
     "sidebar.nav.plugins":"插件",
     "sidebar.nav.exam":"考试",
+    "sidebar.nav.incognito":"无痕对话",
     "sidebar.nav.more":"更多",
     "sidebar.nav.soon":"即将",
     /* PR-A — More popover items */
@@ -1201,6 +1204,7 @@ var I18N={
     "session.badgeExam":"考试",
     "session.pinned":"已置顶",
     "session.editTags":"编辑标签",
+    "session.moreActions":"会话操作",
     "session.filterByTag":"按标签筛选：{tag}",
     "session.empty":"暂无最近会话。",
     "session.emptyHint":"输入主题即可开始。",
@@ -2069,19 +2073,17 @@ function applyI18n(){
   if(tp)tp.setAttribute("aria-label",t("topic.inputPlaceholder"));
   var sb=document.getElementById("startBtn");
   if(sb){
-    var startLabel=t("chat.send");
+    var startLabel=t(sb.classList.contains("active")?"chat.send":"voice.input");
     sb.setAttribute("aria-label",startLabel);
     sb.setAttribute("title",startLabel);
-    sb.setAttribute("aria-disabled",sb.classList.contains("active")?"false":"true");
-    sb.disabled=!sb.classList.contains("active");
+    sb.disabled=false;
   }
   var sendBtn=document.getElementById("sendBtn");
   if(sendBtn&&!sendBtn.classList.contains("chat-stop")&&!sendBtn.classList.contains("agent-stop")){
-    var sendLabel=t("chat.send");
+    var sendLabel=t(sendBtn.classList.contains("active")?"chat.send":"voice.input");
     sendBtn.setAttribute("aria-label",sendLabel);
     sendBtn.setAttribute("title",sendLabel);
-    sendBtn.setAttribute("aria-disabled",sendBtn.classList.contains("active")?"false":"true");
-    sendBtn.disabled=!sendBtn.classList.contains("active");
+    sendBtn.disabled=false;
   }
   var el=document.getElementById("extensionsLabel");
   if(el)el.textContent=t("topic.extensions");

@@ -84,10 +84,20 @@ function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStar
   const meta = buildMeta(session);
   const sid = safeId(session.id);
   const label = session.label || '';
+  /* Phone drawers expose the row overflow as a "⋯" affordance (the desktop
+     keeps the hover icon pair). Any click — inside or outside — closes it;
+     the item buttons still receive their own click first. */
+  const [actionsOpen, setActionsOpen] = useState(false);
+  useEffect(() => {
+    if (!actionsOpen) return undefined;
+    const close = () => setActionsOpen(false);
+    document.addEventListener('click', close, true);
+    return () => document.removeEventListener('click', close, true);
+  }, [actionsOpen]);
 
   return (
     <div
-      className={`recent-item${isActive ? ' active' : ''}${session.pinned ? ' pinned' : ''}`}
+      className={`recent-item${isActive ? ' active' : ''}${session.pinned ? ' pinned' : ''}${actionsOpen ? ' actions-open' : ''}`}
       data-recent-id={sid}
       data-recent-actual={session.id}
       draggable
@@ -140,22 +150,46 @@ function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStar
       </div>
       <div className="recent-item-actions">
         <button
-          className="recent-item-tag-btn"
-          data-tag-open="1"
-          title={t('session.editTags')}
-          data-i18n-title="session.editTags"
-          onClick={(e) => onTag(session.id, e)}
-          dangerouslySetInnerHTML={{ __html: TAG_ICON }}
-        />
-        <button
-          className="recent-item-del"
-          title={t('session.ctxDelete')}
-          aria-label={t('session.ctxDelete')}
-          data-i18n-title="session.ctxDelete"
-          data-i18n-aria="session.ctxDelete"
-          onClick={(e) => onDelete(session.id, e)}
-          dangerouslySetInnerHTML={{ __html: DELETE_ICON }}
-        />
+          className="recent-item-overflow"
+          type="button"
+          title={t('session.moreActions')}
+          aria-label={t('session.moreActions')}
+          aria-haspopup="menu"
+          aria-expanded={actionsOpen}
+          data-i18n-title="session.moreActions"
+          data-i18n-aria="session.moreActions"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActionsOpen((open) => !open);
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
+        </button>
+        {/* Desktop keeps the two icons inline (display:contents); on phones
+            the wrap becomes the ⋯ dropdown listing icon + label rows. */}
+        <div className="recent-item-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="recent-item-tag-btn"
+            data-tag-open="1"
+            title={t('session.editTags')}
+            data-i18n-title="session.editTags"
+            onClick={(e) => { setActionsOpen(false); onTag(session.id, e); }}
+          >
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: TAG_ICON }} />
+            <span className="recent-item-action-text" data-i18n-key="session.editTags">{t('session.editTags')}</span>
+          </button>
+          <button
+            className="recent-item-del"
+            title={t('session.ctxDelete')}
+            aria-label={t('session.ctxDelete')}
+            data-i18n-title="session.ctxDelete"
+            data-i18n-aria="session.ctxDelete"
+            onClick={(e) => { setActionsOpen(false); onDelete(session.id, e); }}
+          >
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: DELETE_ICON }} />
+            <span className="recent-item-action-text" data-i18n-key="session.ctxDelete">{t('session.ctxDelete')}</span>
+          </button>
+        </div>
       </div>
     </div>
   );

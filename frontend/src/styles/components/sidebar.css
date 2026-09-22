@@ -54,6 +54,18 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 }
 #appShell .nav-kbd { display: none; }
 
+/* Exam and Skills live in the 更多 popover — the primary rail stays at
+   the reference's six destinations on every viewport. */
+#appShell .sidebar-nav-btn[data-nav="exam"],
+#appShell .sidebar-nav-btn[data-nav="skills"] { display: none; }
+
+/* Session-row overflow: desktop keeps the hover icon pair inline; the
+   ⋯ button and its dropdown are the phone affordance. */
+#appShell .recent-item-overflow { display: none; }
+#appShell .recent-item-menu { display: contents; }
+#appShell .recent-item-action-icon { display: inline-flex; }
+#appShell .recent-item-action-text { display: none; }
+
 #appShell .sidebar-search-row { padding: 0 8px 8px; }
 #appShell .sidebar-search {
   height: 38px;
@@ -102,9 +114,13 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     transition: transform var(--ui-duration-normal) var(--ui-ease-out);
     box-shadow: 16px 0 40px rgb(0 0 0 / 24%);
     z-index: var(--ui-z-drawer);
+    /* The reference drawer sits one step above the pure-black page. */
+    background: var(--ui-bg-raised);
+    border-right: 0;
   }
   #appShell .sidebar.collapsed { transform: translateX(-100%); box-shadow: none; }
   #appShell .sidebar-backdrop { background: var(--ui-backdrop); z-index: var(--ui-z-backdrop); }
+  #appShell .sidebar-footer { background: var(--ui-bg-raised); }
   #appShell .sidebar-header .compose-btn { display: none; }
   #appShell .sidebar-search-row {
     max-height: 0;
@@ -121,5 +137,74 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   }
   #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
   #appShell .sidebar-nav { padding-top: 8px; }
-  #appShell .sidebar-footer-actions { gap: 2px; }
+  /* The reference footer is just the user row — the icon cluster stays
+     reachable through the 更多 popover. Only the buttons hide; the nested
+     display-prefs popover must keep rendering when it opens. */
+  #appShell .sidebar-footer-actions > .icon-btn { display: none; }
+
+  /* The reference drawer keeps only the logo glyph in the header and a
+     flat recent-session list — no mode bullets, meta rows, tag pills or
+     time-group separators on phones. */
+  #appShell .sidebar-logo span,
+  #appShell .sidebar-logo .cg-sidebar-caret { display: none; }
+  #appShell .sidebar-header { padding-left: 8px; }
+  #appShell .recents-filter-chips,
+  #appShell .recents-time-label { display: none; }
+  #appShell .recent-mode-badge { display: none; }
+  #appShell .recent-item-meta,
+  #appShell .recent-item-tags { display: none; }
+  #appShell .recent-item { min-height: 40px; padding-top: 8px; padding-bottom: 8px; }
+
+  /* ⋯ overflow → small dropdown with the row's tag/delete actions. */
+  #appShell .recent-item-actions { position: relative; opacity: 1; }
+  #appShell .recent-item-overflow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: transparent;
+    color: var(--ui-text-tertiary);
+  }
+  #appShell .recent-item-overflow svg { width: 18px; height: 18px; }
+  #appShell .recent-item-overflow:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+  #appShell .recent-item-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 2px);
+    z-index: 6;
+    min-width: 148px;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px;
+    border: 1px solid var(--ui-border-default);
+    border-radius: 12px;
+    background: var(--ui-bg-overlay);
+    box-shadow: var(--ui-shadow-popover);
+  }
+  #appShell .recent-item.actions-open .recent-item-menu { display: flex; }
+  #appShell .recent-item-menu .recent-item-tag-btn,
+  #appShell .recent-item-menu .recent-item-del {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ui-text-primary);
+    font-size: 14px;
+    text-align: left;
+  }
+  #appShell .recent-item-menu .recent-item-tag-btn:hover,
+  #appShell .recent-item-menu .recent-item-del:hover { background: var(--ui-bg-hover); }
+  #appShell .recent-item-menu .recent-item-action-icon { display: inline-flex; width: 16px; height: 16px; color: var(--ui-text-secondary); }
+  #appShell .recent-item-menu .recent-item-action-icon svg { width: 16px; height: 16px; }
+  #appShell .recent-item-menu .recent-item-action-text { display: inline; }
 }

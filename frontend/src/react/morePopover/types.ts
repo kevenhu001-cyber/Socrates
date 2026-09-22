@@ -2,6 +2,7 @@ export type MorePopoverAction =
   | 'plugins'
   | 'exam'
   | 'skills'
+  | 'incognito'
   | 'settings'
   | 'display'
   | 'shortcuts'

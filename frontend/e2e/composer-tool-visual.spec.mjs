@@ -99,9 +99,10 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   /* The reference keeps the reasoning-effort pill visible at rest. */
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
   const collapsedBox = await mobileComposer.boundingBox();
-  /* The in-session mobile composer matches the landing (topic) card: a
-     two-row surface (~104px) that only grows for a wrapped draft. */
-  expect(collapsedBox?.height).toBeLessThanOrEqual(112);
+  /* The in-session mobile composer matches the landing (topic) card: the
+     reference's single-row capsule (~54px) that only grows for a wrapped
+     draft. */
+  expect(collapsedBox?.height).toBeLessThanOrEqual(70);
   const collapsedGeometry = await page.evaluate(() => {
     const rect = (selector) => {
       const el = document.querySelector(selector);
@@ -118,10 +119,10 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
-  /* Two-row capsule (mobile-composer-reference): the editor owns the first
-     row band and the control rail sits entirely on the second. */
-  expect(['grid', 'contents']).toContain(collapsedGeometry.bodyDisplay);
-  expect(collapsedGeometry.send?.top ?? 0).toBeGreaterThanOrEqual((collapsedGeometry.editor?.bottom ?? 0) - 1);
+  /* Single-row capsule: the editor and the control rail share the same
+     vertical band. */
+  expect(['contents']).toContain(collapsedGeometry.bodyDisplay);
+  expect(Math.abs((collapsedGeometry.send?.top ?? 0) - (collapsedGeometry.editor?.top ?? 0))).toBeLessThanOrEqual(4);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
 
   await mobileEditor.click();
@@ -139,7 +140,7 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(96);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
   /* Focus must not push the card out of its capsule height. */
-  expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(112);
+  expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(70);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
 
   await page.evaluate(() => {
@@ -147,5 +148,5 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   });
   /* Blur does not re-hide the pill — the reference shows it at rest. */
   await expect(mobileComposer.locator('.effort-picker')).toBeVisible();
-  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
+  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(70);
 });

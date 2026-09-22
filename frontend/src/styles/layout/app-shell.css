@@ -21,6 +21,7 @@
 
 #appShell #sidebarOpenBtn,
 #appShell #mobileIncognitoBtn,
+#appShell #mobileNewChatBtn,
 #appShell #findBtn,
 #appShell #shareBtn {
   width: var(--ui-control-touch);
@@ -36,6 +37,7 @@
 
 #appShell #sidebarOpenBtn:hover,
 #appShell #mobileIncognitoBtn:hover,
+#appShell #mobileNewChatBtn:hover,
 #appShell #findBtn:hover,
 #appShell #shareBtn:hover {
   background: var(--ui-bg-hover);
@@ -44,8 +46,12 @@
 
 #appShell #sidebarOpenBtn svg,
 #appShell #mobileIncognitoBtn svg,
+#appShell #mobileNewChatBtn svg,
 #appShell #findBtn svg,
 #appShell #shareBtn svg { width: 24px; height: 24px; }
+
+#appShell .mobile-newchat-btn { display: none; }
+#appShell .toggle-sidebar .glyph-hamburger { display: none; }
 
 #appShell #modeSegmentedTop {
   position: absolute;
@@ -131,12 +137,23 @@
 
 @media (max-width: 768px) {
   #appShell .top-bar { padding: 6px 12px; }
+  /* Reference phone header: hamburger left, centered mode pill, one
+     circular new-chat button right. The incognito toggle moved into the
+     sidebar 更多 popover; the desktop panel-collapse glyph becomes a
+     three-line hamburger. */
+  #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
+  #appShell .toggle-sidebar .glyph-panel { display: none; }
+  #appShell .toggle-sidebar .glyph-hamburger { display: block; }
+  /* The landing column owns its 12px inset itself — the legacy
+     .main-inner adds another 8px at ≤480px which would double the
+     composer's side margin versus the in-session bar. */
+  #appShell .main-inner { padding-inline: 0; }
   #appShell #topicSetup {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: stretch;
-    padding: 0 16px calc(var(--ui-safe-bottom) + var(--keyboard-inset, 0px));
+    padding: 0 12px calc(var(--ui-safe-bottom) + var(--keyboard-inset, 0px));
     overflow: hidden;
   }
   #appShell #topicSetup .topic-title.greeting {

@@ -85,6 +85,10 @@ export function syncEffortUI() {
       trigger.setAttribute("title", fullLabel);
       trigger.setAttribute("data-model-label", modelLabel);
     }
+    /* Compact label shown instead of the fixed 思考强度 label on phone
+       layouts (the reference pill reads the level: 高/中/低). */
+    var valueEl = picker.querySelector(".effort-value");
+    if (valueEl) valueEl.textContent = effortLabel;
   });
 }
 

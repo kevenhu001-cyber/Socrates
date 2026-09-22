@@ -1840,11 +1840,12 @@ body.admin-active #appShell #modeSegmentedTop{display:none!important}
   .mobile-mode-item.active{background:hsl(var(--bg-300))}
   .mobile-mode-item.active .mobile-mode-item-title{color:hsl(var(--accent-000))}
 
-  /* Right-side incognito toggle — matches the left sidebar toggle's
-     original look (not a filled circle). Active state shows when
-     incognito is on. */
+  /* Right-side incognito toggle — moved into the sidebar 更多 popover so
+     the mobile header matches the single-icon reference. The element
+     stays mounted (syncIncognitoBtn still mirrors aria state onto it)
+     but never renders in the top bar. */
   .mobile-incognito-btn{
-    display:flex;
+    display:none;
     align-items:center;
     justify-content:center;
     width:28px;height:28px;
@@ -4995,7 +4996,7 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) .
 .rich-composer .tiptap{
   width:100%;min-height:48px;max-height:180px;overflow-y:auto;outline:none;
   padding:10px 12px 11px;font:400 calc(14px * var(--app-font-scale,1))/1.5 var(--font-sans);
-  color:hsl(var(--text-100));
+  color:hsl(var(--text-100));text-align:left;
 }@supports (scrollbar-width:thin){.rich-composer .tiptap{scrollbar-width:thin}}
 .topic-input-wrap .rich-composer .tiptap{
   min-height:86px;max-height:320px;padding:14px 18px;

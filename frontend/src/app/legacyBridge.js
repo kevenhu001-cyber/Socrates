@@ -6,7 +6,7 @@
  * except the documented optional surfaces that remain window.* reads).
  */
 import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.js';
-import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, updateModeBadge, resetApp, signOut } from './lifecycle.js';
+import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, updateModeBadge, resetApp, signOut, toggleIncognito } from './lifecycle.js';
 import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';
 import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.js';
@@ -133,6 +133,7 @@ window.__socratesLegacy = {
     closeCheatsheet: closeCheatsheet,
     closeMorePopover: window.closeMorePopover,
     toggleDisplayPrefs: toggleDisplayPrefs,
+    toggleIncognito: toggleIncognito,
     signOut: signOut,
   },
   settings: {
