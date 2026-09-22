@@ -11,6 +11,7 @@
      (Inter) are unchanged. The dark "black band" sections and modal
      scrims are still pure black; they remain intentional contrast bands
      inside the monochrome theme. */
+  color-scheme: light only;
   --ed-paper: #ffffff;
   --ed-paper-strong: #ffffff;
   --ed-paper-soft: #ffffff;
