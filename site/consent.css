@@ -13,10 +13,10 @@
   gap: 7px;
   padding: 14px 16px;
   border-radius: 10px;
-  background: #f7f4ee;
-  border: 1px solid var(--ed-line, #d9d0c3);
+  background: #ffffff;
+  border: 1px solid var(--ed-line, rgba(0, 0, 0, .12));
   box-shadow: none;
-  color: var(--ed-ink, #171716);
+  color: var(--ed-ink, #000000);
   font-family: var(--ed-sans, inherit);
   font-size: 13px;
   line-height: 1.45;
@@ -28,7 +28,7 @@
   padding-right: 88px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--ed-ink, #171716);
+  color: var(--ed-ink, #000000);
   letter-spacing: -0.01em;
 }
 .socrates-cookie-consent-message {
@@ -47,9 +47,9 @@
   min-height: 34px;
   padding: 6px 12px;
   border-radius: 7px;
-  border: 1px solid var(--ed-line, #d9d0c3);
-  background: var(--ed-paper, #f4f1e9);
-  color: var(--ed-ink, #171716);
+  border: 1px solid var(--ed-line, rgba(0, 0, 0, .12));
+  background: var(--ed-paper, #ffffff);
+  color: var(--ed-ink, #000000);
   font-family: var(--ed-sans, inherit);
   font-size: 12px;
   font-weight: 500;
@@ -57,13 +57,13 @@
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .socrates-cookie-consent-btn:hover {
-  background: var(--ed-sand, #e5dbc9);
+  background: var(--ed-sand, #ffffff);
   border-color: var(--ed-ink-soft, #56534e);
 }
 .socrates-cookie-consent-btn.primary {
-  background: var(--ed-ink, #171716);
-  border-color: var(--ed-ink, #171716);
-  color: var(--ed-paper, #f4f1e9);
+  background: var(--ed-ink, #000000);
+  border-color: var(--ed-ink, #000000);
+  color: var(--ed-paper, #ffffff);
 }
 .socrates-cookie-consent-btn.primary:hover {
   background: #000;
@@ -75,12 +75,12 @@
   top: 14px;
   right: 16px;
   font-size: 11px;
-  color: var(--ed-clay, #9a5a3b);
+  color: var(--ed-clay, #000000);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .socrates-cookie-consent-link:hover {
-  color: var(--ed-clay-warm, #b86a45);
+  color: var(--ed-clay-warm, #000000);
 }
 @media (max-width: 560px) {
   #socratesCookieConsent {

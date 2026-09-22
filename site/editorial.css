@@ -5,21 +5,27 @@
    actual visible typography — display serif, CJK stack, legal layout,
    product-block scale — is owned by brand.css. */
 :root {
-  --ed-paper: #f4f1e9;
-  --ed-paper-strong: #eee8dc;
-  --ed-paper-soft: #faf9f5;
-  --ed-sand: #e5dbc9;
-  --ed-sand-deep: #d9cdb9;
-  --ed-ink: #171716;
-  --ed-ink-soft: #56534e;
-  --ed-ink-muted: #77716a;
-  --ed-line: #d9d0c3;
-  --ed-line-dark: rgba(255, 255, 255, .17);
-  --ed-black: #171716;
-  --ed-black-soft: #22201d;
-  --ed-clay: #9a5a3b;
-  --ed-clay-warm: #b86a45;
-  --ed-clay-soft: rgba(154, 90, 59, .12);
+  /* Pure black-and-white palette — paper/sand collapse to white, ink
+     becomes pure black, clay accents collapse to black, lines become
+     subtle black. The serif (Newsreader) and the sans-serif stack
+     (Inter) are unchanged. The dark "black band" sections and modal
+     scrims are still pure black; they remain intentional contrast bands
+     inside the monochrome theme. */
+  --ed-paper: #ffffff;
+  --ed-paper-strong: #ffffff;
+  --ed-paper-soft: #ffffff;
+  --ed-sand: #ffffff;
+  --ed-sand-deep: #ffffff;
+  --ed-ink: #000000;
+  --ed-ink-soft: #1a1a1a;
+  --ed-ink-muted: #666666;
+  --ed-line: rgba(0, 0, 0, .12);
+  --ed-line-dark: rgba(255, 255, 255, .22);
+  --ed-black: #000000;
+  --ed-black-soft: #000000;
+  --ed-clay: #000000;
+  --ed-clay-warm: #000000;
+  --ed-clay-soft: rgba(0, 0, 0, .08);
   /* Legacy aliases — kept so selectors that still reference --ed-serif
      and --ed-sans below don't crash, but brand.css wins on the visible
      surface. We deliberately removed "Segoe UI" and the system CJK
@@ -62,19 +68,19 @@ body.ed-site input { font: inherit; }
 body.ed-site img { display: block; max-width: 100%; height: auto; }
 body.ed-menu-open { overflow: hidden; }
 
-/* Webkit scrollbars (Safari/Chrome/Edge) — match the warm paper palette
+/* Webkit scrollbars (Safari/Chrome/Edge) — match the monochrome palette
    so the page feels like a single material rather than a window into one. */
 body.ed-site::-webkit-scrollbar { width: 12px; height: 12px; }
 body.ed-site::-webkit-scrollbar-track { background: var(--ed-paper); }
 body.ed-site::-webkit-scrollbar-thumb {
-  background: rgba(23, 23, 22, .18);
+  background: rgba(0, 0, 0, .32);
   border: 3px solid var(--ed-paper);
   border-radius: 999px;
   transition: background .2s var(--ed-ease);
 }
-body.ed-site::-webkit-scrollbar-thumb:hover { background: var(--ed-clay); }
+body.ed-site::-webkit-scrollbar-thumb:hover { background: var(--ed-ink); }
 /* Firefox thin scrollbar */
-body.ed-site { scrollbar-width: thin; scrollbar-color: rgba(23, 23, 22, .22) var(--ed-paper); }
+body.ed-site { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, .32) var(--ed-paper); }
 
 /* Smooth focus ring — anthropic-style outline-offset so it never clips
    the rounded button corners. */
@@ -423,7 +429,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
   color: inherit;
   transition: border-color .15s ease, background .15s ease;
 }
-.ed-portal:hover { background: var(--ed-paper-strong); border-color: rgba(23, 23, 22, .22); }
+.ed-portal:hover { background: var(--ed-paper-strong); border-color: rgba(0, 0, 0, .35); }
 .ed-portal h3 { margin: 14px 0 10px; font-family: var(--ed-serif); font-size: 22px; font-weight: 400; letter-spacing: -.012em; transition: color .15s ease; }
 .ed-portal:hover h3 { color: var(--ed-clay); }
 .ed-portal p { max-width: 24ch; margin: 0; color: var(--ed-ink-soft); font-family: var(--ed-serif); font-size: 17px; line-height: 1.4; }
@@ -459,7 +465,7 @@ a:focus-visible:not(.ed-button):not(.ed-button-quiet):not(.ed-link) { outline-of
 .ed-story-card p { margin: 0; color: var(--ed-ink-soft); font-size: 15px; line-height: 1.58; }
 .ed-story-card.dark p { color: rgba(244, 241, 233, .66); }
 .ed-card-meta { display: grid; gap: 10px; margin-top: auto; padding-top: 26px; }
-.ed-card-meta div { display: flex; justify-content: space-between; gap: 14px; padding-top: 10px; border-top: 1px solid rgba(23, 23, 22, .12); color: var(--ed-ink-soft); font-size: 12px; }
+.ed-card-meta div { display: flex; justify-content: space-between; gap: 14px; padding-top: 10px; border-top: 1px solid rgba(0, 0, 0, .12); color: var(--ed-ink-soft); font-size: 12px; }
 .ed-story-card.dark .ed-card-meta div { border-top-color: var(--ed-line-dark); color: rgba(244, 241, 233, .62); }
 
 /* Lists and publication routes */
