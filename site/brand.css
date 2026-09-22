@@ -1982,17 +1982,12 @@ html:lang(zh) .ed-marquee-title { font-family: var(--site-serif-cjk); letter-spa
   pointer-events: none;
 }
 
-/* ── K8. Paper grain — a faint film that makes flat color feel tactile ── */
-body.ed-site::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 95;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-  mix-blend-mode: soft-light;
-  opacity: .3;
-  pointer-events: none;
+/* ── K8. Paper grain — disabled for the pure black-and-white theme ── */
+/* The previous SVG-noise overlay used mix-blend-mode: soft-light which made
+   the pure #ffffff body look warm/cream. The monochrome palette is now flat;
+   keep the rule so any future selector that hooks it (e.g. line ~4813) does
+   not reintroduce the grain. */
+body.ed-site::after { content: none; }
 }
 
 /* =========================================================================
@@ -2012,7 +2007,7 @@ body.ed-site main select {
   font: inherit;
   font-size: 15px;
   color: var(--site-black);
-  background: #fffdf8;
+  background: #ffffff;
   border: 1px solid var(--site-line);
   border-radius: 10px;
   transition: border-color .18s ease, background-color .18s ease;
@@ -2202,11 +2197,11 @@ body.ed-site .ed-home-hero .ed-hero-actions {
   gap: 12px;
   margin-top: 26px;
 }
-/* Primary — Anthropic charcoal pill. */
+/* Primary — monochrome pill. */
 body.ed-site .ed-home-hero .ed-button {
-  background: #191919;
-  border-color: #191919;
-  color: #f5f3ee;
+  background: #000000;
+  border-color: #000000;
+  color: #ffffff;
   font-weight: 500;
   border-radius: 999px;
 }
@@ -2248,7 +2243,7 @@ body.ed-site .ed-home-hero .ed-hero-flag span {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #c15f3c;
+  background: #000000;
   animation: sv-flag-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sv-flag-pulse {
@@ -2582,7 +2577,7 @@ body.ed-site .ed-result-track i {
   height: 100%;
   width: var(--w, 50%);
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--sv-clay), #d97b56);
+  background: linear-gradient(90deg, var(--sv-clay), #000000);
   transform-origin: left;
   animation: edResultGrow 1s var(--sv-ease) .25s both;
 }
@@ -3970,10 +3965,10 @@ body.ed-site .ed-pill::before {
 
 /* Pill color tones per category — match the editorial design. */
 body.ed-site .ed-pill[data-cat="Memory"]::before { background: #000000; }
-body.ed-site .ed-pill[data-cat="Explanation"]::before { background: #5e8d6b; }
-body.ed-site .ed-pill[data-cat="Practice"]::before { background: #6b6db8; }
-body.ed-site .ed-pill[data-cat="Knowledge mapping"]::before { background: #c89442; }
-body.ed-site .ed-pill[data-cat="Tutoring"]::before { background: #b86a8a; }
+body.ed-site .ed-pill[data-cat="Explanation"]::before { background: #000000; }
+body.ed-site .ed-pill[data-cat="Practice"]::before { background: #000000; }
+body.ed-site .ed-pill[data-cat="Knowledge mapping"]::before { background: #000000; }
+body.ed-site .ed-pill[data-cat="Tutoring"]::before { background: #000000; }
 
 /* Showcase entries (research index). */
 body.ed-site .ed-showcase-rail { display: grid; gap: 6px; }
@@ -4247,21 +4242,18 @@ body.ed-site .ed-footer-column a:hover { color: #fff; text-decoration: underline
    paragraph cadence, and predictable responsive spacing.
    ========================================================================= */
 :root {
-  --sf-paper: #f7f4ee;
-  --sf-paper-deep: #efe8dd;
-  --sf-ink: #151311;
-  --sf-ink-soft: #4f4942;
-  --sf-line: rgba(21, 19, 17, .14);
-  --sf-card: rgba(255, 255, 255, .46);
-  --sf-accent: #9b5f41;
+  --sf-paper: #ffffff;
+  --sf-paper-deep: #ffffff;
+  --sf-ink: #000000;
+  --sf-ink-soft: #1a1a1a;
+  --sf-line: rgba(0, 0, 0, .12);
+  --sf-card: rgba(0, 0, 0, .04);
+  --sf-accent: #000000;
 }
 
 body.ed-site {
   color: var(--sf-ink);
-  background:
-    radial-gradient(1200px 540px at 14% -12%, rgba(168, 129, 102, .10), transparent 68%),
-    radial-gradient(1040px 500px at 86% -18%, rgba(148, 167, 190, .08), transparent 72%),
-    var(--sf-paper);
+  background: var(--sf-paper);
   line-height: 1.6;
   letter-spacing: -.009em;
 }
@@ -4436,22 +4428,22 @@ body.ed-site .ed-publication-side img {
    Final shared layer for every English and Chinese marketing surface.
    ========================================================================= */
 :root {
-  --site-paper: #f5f2ea;
-  --site-paper-soft: #faf8f3;
-  --site-paper-strong: #e9e1d4;
-  --site-ink: #171614;
-  --site-ink-soft: #504b45;
-  --site-ink-muted: #706a62;
-  --site-line: #d6cec1;
-  --site-black: #171715;
-  --site-clay: #a35f3f;
-  --site-shadow: 0 18px 46px rgba(30, 25, 20, .07);
+  --site-paper: #ffffff;
+  --site-paper-soft: #ffffff;
+  --site-paper-strong: #ffffff;
+  --site-ink: #000000;
+  --site-ink-soft: #1a1a1a;
+  --site-ink-muted: #666666;
+  --site-line: rgba(0, 0, 0, .12);
+  --site-black: #000000;
+  --site-clay: #000000;
+  --site-shadow: 0 18px 46px rgba(0, 0, 0, .07);
   --sf-paper: var(--site-paper);
   --sf-paper-deep: var(--site-paper-strong);
   --sf-ink: var(--site-ink);
   --sf-ink-soft: var(--site-ink-soft);
-  --sf-line: rgba(23, 22, 20, .14);
-  --sf-card: rgba(255, 255, 255, .30);
+  --sf-line: rgba(0, 0, 0, .12);
+  --sf-card: rgba(0, 0, 0, .04);
   --sf-accent: var(--site-clay);
 }
 
@@ -4752,18 +4744,18 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
 
 /* ── Z1. Tokens ───────────────────────────────────────────────────────── */
 :root {
-  --an-paper: #f0eee6;          /* Anthropic ivory */
+  --an-paper: #ffffff;
   --an-paper-soft: #ffffff;
-  --an-paper-deep: #e6e1d3;
-  --an-ink: #191919;            /* Anthropic slate */
-  --an-ink-soft: #40403e;
-  --an-ink-muted: #6e6b64;
-  --an-line: rgba(25, 25, 25, .14);
-  --an-line-strong: rgba(25, 25, 25, .26);
-  --an-black: #141413;
-  --an-clay: #c15f3c;           /* direction-board terracotta */
-  --an-clay-bright: #d97757;    /* Anthropic crail */
-  --an-paper-text: #f5f3ec;
+  --an-paper-deep: #ffffff;
+  --an-ink: #000000;
+  --an-ink-soft: #1a1a1a;
+  --an-ink-muted: #666666;
+  --an-line: rgba(0, 0, 0, .12);
+  --an-line-strong: rgba(0, 0, 0, .24);
+  --an-black: #000000;
+  --an-clay: #000000;
+  --an-clay-bright: #000000;
+  --an-paper-text: #ffffff;
   --an-serif: var(--font-serif);
   --an-sans: var(--font-sans);
   --an-mono: var(--font-mono);
@@ -4778,7 +4770,7 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
   --site-ink: var(--an-ink);
   --site-ink-soft: var(--an-ink-soft);
   --site-ink-muted: var(--an-ink-muted);
-  --site-line: #d8d2c4;
+  --site-line: rgba(0, 0, 0, .12);
   --site-black: var(--an-black);
   --site-clay: var(--an-clay);
   --sf-paper: var(--an-paper);
@@ -4794,7 +4786,7 @@ body.ed-site.legal-page .ed-legal-section li { max-width: 70ch; font-size: 17px;
   --ed-ink: var(--an-ink);
   --ed-ink-soft: var(--an-ink-soft);
   --ed-ink-muted: var(--an-ink-muted);
-  --ed-line: #d8d2c4;
+  --ed-line: rgba(0, 0, 0, .12);
   --ed-black: var(--an-black);
   --ed-black-soft: #1d1c1a;
   --ed-clay: var(--an-clay);
@@ -4813,7 +4805,7 @@ body.ed-site {
   letter-spacing: -.011em;
 }
 /* Calm paper: keep a whisper of grain, nothing more. */
-body.ed-site::after { opacity: .16; }
+body.ed-site::after { /* disabled — see line 1990 for the reasoning */ }
 
 /* ── Z2. Typography ───────────────────────────────────────────────────── */
 /* Every display/headline face becomes the editorial serif, exactly like the
@@ -5145,7 +5137,7 @@ body.ed-site .ed-inline-feature .ed-link {
   text-decoration-color: rgba(217, 119, 87, .4);
 }
 body.ed-site .ed-black-band-copy .ed-link:hover,
-body.ed-site .ed-inline-feature .ed-link:hover { color: #e88a63; text-decoration-color: currentColor; }
+body.ed-site .ed-inline-feature .ed-link:hover { color: #000000; text-decoration-color: currentColor; }
 body.ed-site .ed-black-band-media img { border-radius: 0; }
 body.ed-site .ed-inline-feature { padding: clamp(28px, 4vw, 56px); }
 body.ed-site .ed-inline-feature > img { border-radius: var(--an-media-radius); aspect-ratio: 4 / 4.4; max-height: 620px; }
@@ -5312,7 +5304,7 @@ body.ed-site .ed-chat-demo {
 body.ed-site .ed-chat-head { font-family: var(--an-mono); font-size: 10.5px; letter-spacing: .1em; }
 body.ed-site .ed-chat-bubble { font-size: 14.5px; line-height: 1.6; }
 body.ed-site .ed-chat-bubble.user { background: var(--an-ink); color: var(--an-paper-text); }
-body.ed-site .ed-chat-bubble.tutor { background: #fffdf8; border: 1px solid var(--an-line); }
+body.ed-site .ed-chat-bubble.tutor { background: #ffffff; border: 1px solid var(--an-line); }
 
 /* ── Z15. Marquee ─────────────────────────────────────────────────────── */
 .ed-marquee { border-top: 1px solid var(--an-line); border-bottom: 1px solid var(--an-line); }
@@ -5898,7 +5890,7 @@ body.ed-site .ed-report-hero-card {
   overflow: hidden;
   border-radius: 24px;
   border: 1px solid rgba(0, 0, 0, .12);
-  background: var(--report-tint, #7d8b6f);
+  background: var(--report-tint, #000000);
   aspect-ratio: 16 / 8;
   display: grid;
   place-items: center;
