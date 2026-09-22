@@ -102,23 +102,40 @@ async function enterChat(page) {
   await page.waitForTimeout(300);
 }
 
-test('incognito control is removed from the header once a conversation starts', async ({ page }) => {
+test('incognito lives in the 更多 popover; the header keeps one new-chat control', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
+  /* Reference top bar: hamburger · mode pill · a single circular new-chat
+     button. Incognito moved into the sidebar's 更多 menu. */
+  const newChat = page.locator('#mobileNewChatBtn');
   const incognito = page.locator('#mobileIncognitoBtn');
-  await expect(incognito).toBeVisible();
-  await expect(incognito.locator('.incognito-glyph')).toHaveCount(1);
-  await expect(incognito.locator('.incognito-glyph path')).toHaveCount(3);
-  await expect(incognito.locator('.incognito-glyph circle')).toHaveCount(2);
-  await incognito.screenshot({ path: '/tmp/socrates-incognito-redesign.png' });
+  await expect(newChat).toBeVisible();
+  await expect(incognito).toBeHidden();
 
-  await incognito.click();
+  await page.locator('#sidebarOpenBtn').click();
+  await expect(page.locator('#sidebar')).toBeVisible();
+  await page.locator('#navMore').click();
+  const popover = page.locator('#moreNavPopover');
+  await expect(popover).toBeVisible();
+  const incognitoItem = popover.getByRole('menuitem', { name: 'Incognito chat' });
+  await expect(incognitoItem).toBeVisible();
+  await incognitoItem.click();
+  await expect(page.locator('body')).toHaveAttribute('data-incognito', 'true');
   await expect(incognito).toHaveAttribute('aria-pressed', 'true');
-  await incognito.screenshot({ path: '/tmp/socrates-incognito-redesign-active.png' });
-  await incognito.click();
+
+  /* Entering incognito resets the view, which closes the drawer —
+     reopen it to toggle back off through the same menu path. */
+  await page.locator('#sidebarOpenBtn').click();
+  await expect(page.locator('#sidebar')).toBeVisible();
+  await page.locator('#navMore').click();
+  await popover.getByRole('menuitem', { name: 'Incognito chat' }).click();
+  await expect(page.locator('body')).toHaveAttribute('data-incognito', 'false');
   await expect(incognito).toHaveAttribute('aria-pressed', 'false');
 
   await enterChat(page);
 
+  /* The header contract is unchanged in-conversation: the circular
+     new-chat control stays, incognito remains out of the header. */
+  await expect(newChat).toBeVisible();
   await expect(incognito).toBeHidden();
 });
 

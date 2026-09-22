@@ -17,6 +17,17 @@ const ICON_PROPS = {
 
 function SendArrowIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2.5" className="icon-arrow"><path d="M12 19V5M5 12l7-7 7 7" /></svg>; }
 function StopSquareIcon() { return <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>; }
+/* Voice-input waveform bars — the idle state of the shared primary
+   control (the same glyph the static markup ships in #startBtnContent /
+   #sendBtnContent). Bars are <line> elements so `… .icon-arrow path`
+   style selectors keep counting a single path. */
+function VoiceIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...ICON_PROPS} strokeWidth="2" className="icon-voice">
+      <path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4" />
+    </svg>
+  );
+}
 
 /* The pill's visibility is part of the sticky-bottom contract: while an
    answer streams, a reader who scrolls away gets the "↓ New reply"
@@ -31,6 +42,26 @@ function useScrolledAway(): boolean {
     return stateStore.subscribe(sync);
   }, []);
   return away;
+}
+
+/* The legacy updateStartBtn/updateSendBtn mirror draft state onto the
+   button's `.active` class (canSend = has text or attachments). Observe
+   that class so the icon swaps voice ⇄ arrow exactly when the legacy
+   contract flips, without duplicating its canSend logic. */
+function useControlActive(id: 'startBtn' | 'sendBtn'): boolean {
+  const [active, setActive] = useState(
+    () => document.getElementById(id)?.classList.contains('active') ?? false,
+  );
+  useEffect(() => {
+    const btn = document.getElementById(id);
+    if (!btn) return undefined;
+    const sync = () => setActive(btn.classList.contains('active'));
+    const observer = new MutationObserver(sync);
+    observer.observe(btn, { attributes: true, attributeFilter: ['class'] });
+    sync();
+    return () => observer.disconnect();
+  }, [id]);
+  return active;
 }
 
 export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
@@ -52,12 +83,13 @@ export function NewReplyPill({ host }: { host?: HTMLElement | null }) {
 }
 
 export function StartButton() {
-  return <SendArrowIcon />;
+  const active = useControlActive('startBtn');
+  return active ? <SendArrowIcon /> : <VoiceIcon />;
 }
 
 export function SendButton() {
   const streamStatus = useChatStreamStatus();
-  return streamStatus === 'streaming'
-    ? <StopSquareIcon />
-    : <SendArrowIcon />;
+  const active = useControlActive('sendBtn');
+  if (streamStatus === 'streaming') return <StopSquareIcon />;
+  return active ? <SendArrowIcon /> : <VoiceIcon />;
 }

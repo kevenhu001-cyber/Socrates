@@ -37,7 +37,7 @@ test('mobile conversation home matches the compact dark reference layout', async
     };
     return {
       left: rect('#sidebarOpenBtn'),
-      right: rect('#mobileIncognitoBtn'),
+      right: rect('#mobileNewChatBtn'),
       modeTabs: rect('#modeSegmentedTop'),
       composer: rect('#topicInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
@@ -56,9 +56,9 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeTabs?.width).toBeLessThanOrEqual(152);
   expect(geometry.modeTabs?.height).toBe(32);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Idle mobile composer is a stable two-row capsule. */
-  expect(geometry.composer?.height).toBeGreaterThanOrEqual(84);
-  expect(geometry.composer?.height).toBeLessThanOrEqual(96);
+  /* Idle mobile composer is the reference's single-row capsule. */
+  expect(geometry.composer?.height).toBeGreaterThanOrEqual(50);
+  expect(geometry.composer?.height).toBeLessThanOrEqual(66);
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(600);

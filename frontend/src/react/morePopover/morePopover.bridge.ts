@@ -74,6 +74,9 @@ export function useMorePopoverDispatch(): { pick: (action: MorePopoverAction) =>
         case 'skills':
           nav.openPromptTemplatesModal();
           return;
+        case 'incognito':
+          nav.toggleIncognito();
+          return;
         case 'settings':
           nav.openSettings();
           return;

@@ -18,6 +18,7 @@ export function mountLegacyShellListeners(actions) {
 
   click('sidebarOpenBtn', actions.toggleSidebar);
   click('mobileIncognitoBtn', actions.toggleIncognito);
+  click('mobileNewChatBtn', actions.resetApp);
   click('findBtn', actions.openFind);
   click('shareBtn', actions.openShare);
   click('apiSettingsBtn', actions.openSettings);

@@ -18,6 +18,7 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
       const controlStyle = document.querySelector(target) ? getComputedStyle(document.querySelector(target)) : null;
       return box ? {
         left: Math.round(box.left),
+        top: Math.round(box.top),
         width: Math.round(box.width),
         height: Math.round(box.height),
         background: controlStyle?.backgroundColor,
@@ -35,11 +36,23 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#topicInputWrap', [
     '#topicComposerToolsBtn', '#topicMobileMicBtn', '#startBtn',
   ]);
-  expect(landing.wrap?.height).toBeGreaterThanOrEqual(84);
-  expect(landing.wrap?.height).toBeLessThanOrEqual(96);
+  /* The phone capsule is the reference's single row: + · editor · 高⌄ ·
+     mic · voice/send, ~54px tall. */
+  expect(landing.wrap?.height).toBeGreaterThanOrEqual(50);
+  expect(landing.wrap?.height).toBeLessThanOrEqual(66);
   expect(landing.radius).toBe('28px');
-  expect(landing.controls.every((control) => control?.width === 40 && control?.height === 40 && control.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
-  expect((landing.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
+  /* + and the primary control are 40px circles; the mic is a quieter
+     ghost icon. All three sit on one row, left to right. */
+  expect(landing.controls[0]?.width).toBe(40);
+  expect(landing.controls[0]?.height).toBe(40);
+  expect(landing.controls[1]?.width).toBe(34);
+  expect(landing.controls[1]?.height).toBe(36);
+  expect(landing.controls[2]?.width).toBe(40);
+  expect(landing.controls[2]?.height).toBe(40);
+  expect(landing.controls[2]?.background).not.toBe('rgba(0, 0, 0, 0)');
+  expect(Math.abs((landing.controls[0]?.top ?? 0) - (landing.controls[2]?.top ?? 0))).toBeLessThanOrEqual(4);
+  expect((landing.controls[0]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[1]?.left ?? 0);
+  expect((landing.controls[1]?.left ?? 0) + 34).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
   await page.screenshot({ path: '/tmp/socrates-mobile-unified-landing.png', fullPage: true });
 
   await page.evaluate(() => {
@@ -53,11 +66,15 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const conversation = await measure('#chatInputWrap', [
     '#chatComposerToolsBtn', '#chatMobileMicBtn', '#sendBtn',
   ]);
-  expect(conversation.wrap).toEqual(landing.wrap);
+  /* Same capsule geometry on both surfaces; the vertical offset differs
+     because the landing column and the chat bar own different chrome. */
+  expect({ ...conversation.wrap, top: undefined }).toEqual({ ...landing.wrap, top: undefined });
   expect(conversation.radius).toBe(landing.radius);
   expect(conversation.background).toBe(landing.background);
-  expect(conversation.controls.every((control) => control?.width === 40 && control?.height === 40 && control.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
-  expect((conversation.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
+  expect(conversation.controls[0]?.width).toBe(40);
+  expect(conversation.controls[1]?.width).toBe(34);
+  expect(conversation.controls[2]?.width).toBe(40);
+  expect((conversation.controls[1]?.left ?? 0) + 34).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
   await page.screenshot({ path: '/tmp/socrates-mobile-unified-composer.png', fullPage: true });
 });
 
@@ -98,20 +115,23 @@ test('mobile composer keeps model selector and reference controls discoverable',
      conversation is active, on all viewports. */
   await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
-  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'true');
-  await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(0);
-  /* The reference capsule always shows the fixed-label 思考强度 pill. */
+  /* Empty composer → the shared primary control is the voice-input
+     affordance (waveform icon + label), not a disabled arrow. */
+  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-label', '语音输入');
+  await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(1);
+  /* The reference pill reads the current level (高/中/低), not the
+     section label. */
   await expect(effort).toBeVisible();
-  await expect(effort.locator('.effort-label')).toHaveText('思考强度');
+  await expect(effort.locator('.effort-value')).toHaveText('中');
 
   await editor.click();
   await expect(composer).toHaveClass(/composer-focused/);
   await expect(effort).toBeVisible();
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
-  /* Keyboard open keeps the stable two-row capsule; only actual multiline
-     content increases its height. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(96);
+  /* Keyboard open keeps the compact single-row capsule; only actual
+     multiline content increases its height. */
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(66);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
@@ -127,9 +147,9 @@ test('mobile composer keeps model selector and reference controls discoverable',
       send: rect('#sendBtn'),
     };
   });
-  /* The editor owns the first row and the controls share the second. */
+  /* Every control shares the editor's single row. */
   for (const key of ['attach', 'model', 'mic', 'send']) {
-    expect(rows[key]?.top ?? 0, key).toBeGreaterThanOrEqual(rows.editor?.bottom ?? 0);
+    expect(Math.abs((rows[key]?.top ?? 0) - (rows.editor?.top ?? 0)), key).toBeLessThanOrEqual(4);
   }
 
   await effort.locator('.effort-trigger').click();

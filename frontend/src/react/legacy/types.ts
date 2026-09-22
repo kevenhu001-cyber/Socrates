@@ -40,6 +40,7 @@ export interface LegacyNavigation {
   closeCheatsheet(): void;
   closeMorePopover(): void;
   toggleDisplayPrefs(): void;
+  toggleIncognito(): void;
   signOut(): void;
 }
 

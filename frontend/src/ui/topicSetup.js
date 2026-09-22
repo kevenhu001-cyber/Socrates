@@ -36,11 +36,15 @@ export function updateStartBtn(){
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var label = typeof window.t === "function" ? window.t("chat.send") : "Send";
+  /* Empty state is the voice-input action (the click handler routes a
+     non-active press to toggleSpeechInput), so the control is never
+     disabled — only its label/icon swap with the draft state. */
+  var key = canSend ? "chat.send" : "voice.input";
+  var fallback = canSend ? "Send" : "Voice input";
+  var label = typeof window.t === "function" ? window.t(key) : fallback;
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.setAttribute("aria-disabled", canSend ? "false" : "true");
-  b.disabled = !canSend;
+  b.disabled = false;
   var wrap = document.getElementById("topicInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }
@@ -57,11 +61,12 @@ export function updateSendBtn(){
     && window.attachments.length > 0;
   var canSend = !!(v || hasAtt);
   if(canSend) b.classList.add("active"); else b.classList.remove("active");
-  var label = typeof window.t === "function" ? window.t("chat.send") : "Send";
+  var key = canSend ? "chat.send" : "voice.input";
+  var fallback = canSend ? "Send" : "Voice input";
+  var label = typeof window.t === "function" ? window.t(key) : fallback;
   b.setAttribute("aria-label", label);
   b.setAttribute("title", label);
-  b.setAttribute("aria-disabled", canSend ? "false" : "true");
-  b.disabled = !canSend;
+  b.disabled = false;
   var wrap = document.getElementById("chatInputWrap");
   if(wrap) wrap.classList.toggle("has-text", !!(v || hasAtt));
 }
