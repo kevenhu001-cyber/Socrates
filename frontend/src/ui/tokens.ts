@@ -176,11 +176,11 @@ export const darkPalette: ThemePalette = {
     surface: '0 0% 20%',
   },
   bg: {
-    page: '0 0% 13%',
-    raised: '0 0% 16%',
-    overlay: '0 0% 5%',
-    hover: '0 0% 21%',
-    sunken: '0 0% 2%',
+    page: '0 0% 0%',
+    raised: '0 0% 9%',
+    overlay: '0 0% 19%',
+    hover: '0 0% 16%',
+    sunken: '0 0% 0%',
   },
   text: {
     primary: '0 0% 100%',
@@ -208,8 +208,8 @@ export const lightPalette: ThemePalette = {
     surface: '0 0% 90%',
   },
   bg: {
-    page: '0 0% 98%',
-    raised: '0 0% 95%',
+    page: '0 0% 100%',
+    raised: '0 0% 97%',
     overlay: '0 0% 100%',
     hover: '0 0% 91%',
     sunken: '0 0% 100%',
@@ -252,5 +252,5 @@ export function getThemePalette(mode: ThemeMode): ThemePalette {
  * drifts.
  */
 export function resolveBackground(mode: ThemeMode): string {
-  return mode === 'light' ? '#fafafa' : '#212121';
+  return mode === 'light' ? '#ffffff' : '#000000';
 }

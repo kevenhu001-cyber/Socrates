@@ -10,7 +10,11 @@
  * mutation outside the document root.
  */
 
-const BG_VARS = ['--bg-000', '--bg-100', '--bg-200', '--bg-300'];
+const BG_VARS = [
+  '--bg-000', '--bg-100', '--bg-200', '--bg-300',
+  '--ui-bg-page', '--ui-bg-raised', '--ui-bg-surface', '--ui-bg-control', '--ui-bg-hover',
+  '--ui-bg-composer', '--ui-bg-bubble', '--ui-bg-chip', '--ui-bg-chip-hover', '--ui-bg-segment-active',
+];
 
 export function parseHexColor(hex) {
   hex = hex.replace(/^#/, '');
@@ -77,6 +81,19 @@ export function applyCustomBg(hex, mode) {
   root.style.setProperty('--bg-100', b100);
   root.style.setProperty('--bg-200', b200);
   root.style.setProperty('--bg-300', b300);
+  root.style.setProperty('--ui-bg-page', `hsl(${b100})`);
+  root.style.setProperty('--ui-bg-raised', `hsl(${b000})`);
+  root.style.setProperty('--ui-bg-surface', `hsl(${b200})`);
+  root.style.setProperty('--ui-bg-control', `hsl(${b300})`);
+  root.style.setProperty('--ui-bg-hover', `hsl(${b300})`);
+  /* The composer capsule and user bubble ride the same derived step as the
+     control surface; chips and the active segment take the lightest step so
+     they stay legible inside the capsule. */
+  root.style.setProperty('--ui-bg-composer', `hsl(${b300})`);
+  root.style.setProperty('--ui-bg-bubble', `hsl(${b300})`);
+  root.style.setProperty('--ui-bg-chip', `hsl(${b000})`);
+  root.style.setProperty('--ui-bg-chip-hover', `hsl(${b000})`);
+  root.style.setProperty('--ui-bg-segment-active', `hsl(${b300})`);
 }
 
 export function removeCustomBg() {

@@ -14,9 +14,9 @@
  * stable-prefix strategy the old imperative painter used — so a half-arrived
  * formula never leaks raw LaTeX, and completed blocks keep their DOM nodes.
  */
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useRef } from 'react';
 
-import { splitStreamingMarkdown } from '../../render/streaming.js';
+import { createSettledSplitter } from '../../render/streaming.js';
 import { getLegacyActions } from '../legacy/gateway.js';
 import {
   buildTurnLayout,
@@ -87,18 +87,84 @@ function useProseRenderer(live: boolean): {
       const hit = cache.get(key);
       if (hit !== undefined) return hit;
       const box = { __html: paint(text) };
-      if (cache.size > 200) cache.clear();
+      /* Evict the oldest half rather than clear(): a wholesale clear hands
+         every still-mounted settled div a fresh {__html} object on the next
+         render, and React rewrites all of their innerHTML in one frame —
+         a visible flicker on very long answers. Map preserves insertion
+         order, so the first keys are the coldest. */
+      if (cache.size > 200) {
+        let drop = Math.ceil(cache.size / 2);
+        for (const oldKey of cache.keys()) {
+          if (drop <= 0) break;
+          cache.delete(oldKey);
+          drop -= 1;
+        }
+      }
       cache.set(key, box);
       return box;
     };
-    /* The unfinished tail is deliberately NOT cached: it changes on every
-       frame, and caching a string that is never repeated only grows the map. */
-    return { settled, tail: (text: string) => ({ __html: paint(text) }) };
+    /* The unfinished tail is memoized on the LAST painted text rather than
+       fully cached: it changes on every delta, but commits triggered by
+       unrelated state (a tool-row update, a status stamp, another message)
+       used to hand React a fresh {__html} object for identical text. React
+       treats that as a changed prop and rewrites the live region's
+       innerHTML — re-parsing the markdown AND rebuilding every math/code
+       node in it. Returning the same box keeps the DOM untouched. */
+    let lastTailText: string | null = null;
+    let lastTailBox: { __html: string } | null = null;
+    const tail = (text: string): { __html: string } => {
+      if (lastTailBox !== null && text === lastTailText) return lastTailBox;
+      lastTailText = text;
+      lastTailBox = { __html: paint(text) };
+      return lastTailBox;
+    };
+    return { settled, tail };
     /* `mathRev` is read, not passed: it is a counter the legacy boot bumps when
        lazily-loaded KaTeX becomes available, and the only way a *settled*
        segment can still need repainting is the renderer's own capabilities
        changing under it. Keyed on it so the cache below is rebuilt fresh. */
   }, [live, typeof window === 'undefined' ? 0 : window.__socratesMathRenderRev || 0]);
+}
+
+interface LiveTextSegmentProps {
+  text: string;
+  settled: (text: string) => { __html: string };
+  tail: (text: string) => { __html: string };
+}
+
+/**
+ * The still-growing last text segment of a live turn. The splitter peels
+ * off completed markdown blocks one at a time, so each settles into its
+ * own keyed div whose cached `{__html}` object keeps the same identity —
+ * React then never rewrites that DOM. Only the open tail is re-parsed per
+ * commit. This replaced the single-div prefix swap, which re-rendered the
+ * whole settled region (and rebuilt every KaTeX/code/viz node in it) each
+ * time a paragraph boundary arrived.
+ *
+ * The splitter is held in a ref, not state: it is a pure parse-side index
+ * whose output fully determines the render. A push() during an abandoned
+ * concurrent render simply replays on the next pass (same text → same
+ * result), so no commit/effect dance is needed.
+ */
+function LiveTextSegment({ text, settled, tail }: LiveTextSegmentProps) {
+  const splitterRef = useRef<ReturnType<typeof createSettledSplitter> | null>(null);
+  if (!splitterRef.current) splitterRef.current = createSettledSplitter();
+  const split = splitterRef.current.push(text);
+  return (
+    <>
+      {split.blocks.map((block, index) => (
+        <div
+          key={index}
+          className="tool-run-prose is-settled"
+          dangerouslySetInnerHTML={settled(block)}
+        />
+      ))}
+      <div
+        className="tool-run-prose is-live"
+        dangerouslySetInnerHTML={tail(split.tail)}
+      />
+    </>
+  );
 }
 
 /** The last text segment of a live turn is the only one still growing. */
@@ -148,26 +214,18 @@ export function AssistantTurn({ message, readOnly, live }: AssistantTurnProps) {
               />
             );
           }
-          /* Still arriving: everything up to the last blank line is settled
-             markdown (parsed once, held in the cache) and only the open block
-             is re-parsed. When splitStreamingMarkdown refuses the cut — an
-             unclosed fence or formula — the whole segment is the tail. The
-             typing cursor lives below, at the end of the turn (see below),
-             never in here. */
-          const split = splitStreamingMarkdown(segment.text);
+          /* Still arriving: completed markdown blocks mount once into keyed
+             divs and only the open block is re-parsed. While a block stays
+             unterminated — an unclosed fence or formula — it remains part of
+             the tail. The typing cursor lives below, at the end of the turn
+             (see below), never in here. */
           return (
-            <Fragment key={`text-${segment.start}-${index}`}>
-              {split.prefix ? (
-                <div
-                  className="tool-run-prose is-settled"
-                  dangerouslySetInnerHTML={settled(split.prefix)}
-                />
-              ) : null}
-              <div
-                className="tool-run-prose is-live"
-                dangerouslySetInnerHTML={tail(split.tail)}
-              />
-            </Fragment>
+            <LiveTextSegment
+              key={`text-${segment.start}-${index}`}
+              text={segment.text}
+              settled={settled}
+              tail={tail}
+            />
           );
         }
         if (segment.kind === 'group') {

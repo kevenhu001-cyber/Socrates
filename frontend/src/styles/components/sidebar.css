@@ -1,0 +1,125 @@
+#appShell .sidebar {
+  width: var(--app-sidebar-width, var(--ui-sidebar-desktop));
+  min-width: var(--app-sidebar-width, var(--ui-sidebar-desktop));
+  border-right: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-sidebar);
+  color: var(--ui-text-primary);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+#appShell .sidebar-inner { background: transparent; }
+#appShell .sidebar-header { min-height: 56px; padding: 6px 8px 6px 12px; }
+#appShell .sidebar-logo {
+  gap: 9px;
+  padding: 6px 4px;
+  color: var(--ui-text-primary);
+  font-family: "Inter", "Noto Sans SC", sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+#appShell .sidebar-logo-img { width: 22px; height: 22px; border-radius: 6px; }
+#appShell .cg-sidebar-caret { display: none; }
+#appShell .sidebar-header-actions { gap: 2px; }
+#appShell .sidebar-header .icon-btn {
+  width: var(--ui-control-md);
+  height: var(--ui-control-md);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-secondary);
+}
+#appShell .sidebar-header .icon-btn:hover { background: var(--ui-bg-hover); }
+
+#appShell .sidebar-nav { gap: 2px; padding: 4px 8px 10px; }
+#appShell .sidebar-nav-btn {
+  min-height: 44px;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: var(--ui-text-secondary);
+  font-size: calc(15px * var(--app-font-scale, 1));
+  font-weight: 400;
+  line-height: 20px;
+}
+#appShell .sidebar-nav-btn svg { width: 22px; height: 22px; color: inherit; }
+#appShell .sidebar-nav-btn:hover,
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-nav-btn.active { font-weight: 400; }
+/* The landing surface IS the new-chat surface — keep its row raised like
+   the reference drawer does, until another surface takes over. */
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-active):not(.exam-active)
+  #appShell .sidebar-nav-btn[data-nav="new"] {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+#appShell .nav-kbd { display: none; }
+
+#appShell .sidebar-search-row { padding: 0 8px 8px; }
+#appShell .sidebar-search {
+  height: 38px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: 10px;
+  background: var(--ui-bg-raised);
+}
+#appShell .sidebar-search input { color: var(--ui-text-primary); font-size: 14px; }
+#appShell .sidebar-search input::placeholder { color: var(--ui-text-muted); }
+
+#appShell .recents-panel { padding: 0 8px; }
+#appShell .recents-header { padding: 12px 10px 6px; }
+#appShell .recents-title,
+#appShell .recents-time-label {
+  color: var(--ui-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+#appShell .recent-item {
+  min-height: 44px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  color: var(--ui-text-secondary);
+}
+#appShell .recent-item:hover,
+#appShell .recent-item.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-footer {
+  min-height: 68px;
+  border-top: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-sidebar);
+}
+
+@media (min-width: 769px) {
+  #appShell .sidebar-search-btn { display: none; }
+}
+
+@media (max-width: 768px) {
+  #appShell .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
+    min-width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
+    transform: translateX(0);
+    transition: transform var(--ui-duration-normal) var(--ui-ease-out);
+    box-shadow: 16px 0 40px rgb(0 0 0 / 24%);
+    z-index: var(--ui-z-drawer);
+  }
+  #appShell .sidebar.collapsed { transform: translateX(-100%); box-shadow: none; }
+  #appShell .sidebar-backdrop { background: var(--ui-backdrop); z-index: var(--ui-z-backdrop); }
+  #appShell .sidebar-header .compose-btn { display: none; }
+  #appShell .sidebar-search-row {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease;
+  }
+  #appShell .sidebar.search-open .sidebar-search-row {
+    max-height: 54px;
+    padding-bottom: 8px;
+    opacity: 1;
+  }
+  #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
+  #appShell .sidebar-nav { padding-top: 8px; }
+  #appShell .sidebar-footer-actions { gap: 2px; }
+}

@@ -314,11 +314,28 @@ export function _autoWrapBareBracketMath(s: string): string {
    followed by a digit (e.g. `###1. 方法`, `###1、特征方程法`) is almost
    always a heading with a missing space — `###1` as a reference is
    vanishingly rare — so the space is inserted there too. Idempotent,
-   so it is safe to run on every streaming frame. */
+   so it is safe to run on every streaming frame.
+
+   The marker may also sit behind container prefixes — `> #标题` inside a
+   blockquote and `- #标题` inside a list item are headings in CommonMark
+   and need the same space. `＃` (fullwidth, common in Chinese-model
+   output) normalizes to ASCII. A run of 7+ `#` is not a valid ATX marker
+   at all, so it is capped at `######` (h6) — the model plainly meant a
+   heading. A bare run on its own line (`#`, `##`) would parse as an
+   EMPTY heading — an invisible h1–h6 whose margins read as a stray gap —
+   so the hashes are escaped to literal text instead. Lines inside
+   `$$…$$` / `\[…\]` display math are left alone: `#` there is a KaTeX
+   parse error, not a heading. `#include`/`#!`-style unfenced code lines
+   bail out via a small directive guard — a real heading virtually never
+   reads `#include`. */
+const HEADING_RUN_RE = /^([ \t]{0,3}(?:(?:>[ \t]*)+|(?:[-*+]|\d{1,9}[.)])[ \t]+)*)([#＃]+)/;
+const HEADING_DIRECTIVE_RE = /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
+
 export function fixHeadingMarkers(s: string): string {
   const lines = String(s).split('\n');
   let inFence = false;
   let fenceChar = '';
+  let inMath = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const fence = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
@@ -329,12 +346,34 @@ export function fixHeadingMarkers(s: string): string {
       continue;
     }
     if (inFence) continue;
-    /* Two passes: first the 1–2 `#` case that bails on digits (preserves
-       `#1`/`#2` as prose), then the 3–6 `#` case that allows digits (fixes
-       `###1. 方法` → `### 1. 方法`). Both are idempotent. */
-    lines[i] = line
-      .replace(/^([ \t]{0,3})(#{1,2})(?=[^\s#\d])/, '$1$2 ')
-      .replace(/^([ \t]{0,3})(#{3,6})(?=[^\s#])/, '$1$2 ');
+    /* Display-math tracking: an odd `$$` count or an unbalanced `\[`
+       toggles the region. Only lines that START inside the region are
+       skipped — a `#标题 $$…` opener line is still prose up to the
+       delimiter, so it keeps its heading repair. */
+    const dollarRun = (line.match(/\$\$/g) || []).length;
+    const bracketDelta =
+      (line.match(/\\\[/g) || []).length - (line.match(/\\\]/g) || []).length;
+    const wasMath = inMath;
+    if (dollarRun % 2 === 1 || bracketDelta !== 0) inMath = !inMath;
+    if (wasMath) continue;
+
+    const m = line.match(HEADING_RUN_RE);
+    if (!m) continue;
+    const prefix = m[1];
+    const run = m[2];
+    const rest = line.slice(m[0].length);
+    if (!/\S/.test(rest)) {
+      /* Bare `#`+ line: escape the ASCII hashes so the reader sees the
+         literal characters instead of an empty heading's gap. */
+      lines[i] = prefix + run.replace(/#/g, '\\#');
+      continue;
+    }
+    if (/^[ \t]/.test(rest)) continue; /* already spaced */
+    /* `#1`-style enumerations are prose; 3+ hashes before a digit are
+       headings (`###1. 方法`). Preprocessor/shebang lines bail too. */
+    if (run.length <= 2 && /\d/.test(rest.charAt(0))) continue;
+    if (HEADING_DIRECTIVE_RE.test(rest)) continue;
+    lines[i] = prefix + '#'.repeat(Math.min(run.length, 6)) + ' ' + rest;
   }
   return lines.join('\n');
 }

@@ -56,6 +56,15 @@ export function mountLegacyShellListeners(actions) {
     if (typeof window.toggleSpeechInput === 'function') window.toggleSpeechInput('chat');
   });
   click('mobileModeTrigger', actions.toggleMobileMode);
+  click('sidebarSearchBtn', (event) => {
+    const sidebar = byId('sidebar');
+    const input = byId('sidebarSearch');
+    const button = event.currentTarget;
+    const open = !sidebar?.classList.contains('search-open');
+    sidebar?.classList.toggle('search-open', open);
+    button?.setAttribute('aria-expanded', String(open));
+    if (open) requestAnimationFrame(() => input?.focus());
+  });
 
   bind(byId('topicComposerToolsBtn'), 'click', (event) => actions.toggleComposerTools(event.currentTarget, 'topic'));
   bind(byId('chatComposerToolsBtn'), 'click', (event) => actions.toggleComposerTools(event.currentTarget, 'chat'));

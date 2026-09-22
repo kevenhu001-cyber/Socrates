@@ -1,9 +1,159 @@
-/*
- * styles/layout/app-shell.css
- *
- * M1 placeholder. Will own the `.app`, `.sidebar`, `.main`, `.top-bar`,
- * and related shell-chrome rules in M2. For now the rules stay in
- * `src/styles.css` so the cascade is byte-identical to the pre-M1
- * bundle. Adding a rule here must be coordinated with an extraction
- * from styles.css; do not duplicate selectors.
- */
+#appShell,
+#appShell .main,
+#appShell .main-bg,
+#appShell .main-content {
+  background: var(--ui-bg-page);
+  color: var(--ui-text-primary);
+}
+
+#appShell .main-bg { background-image: none; }
+
+#appShell .top-bar {
+  min-height: 56px;
+  height: 56px;
+  padding: 6px 16px;
+  border: 0;
+  background: var(--ui-bg-page);
+}
+
+#appShell .top-bar-left,
+#appShell .top-bar-right { z-index: 2; }
+
+#appShell #sidebarOpenBtn,
+#appShell #mobileIncognitoBtn,
+#appShell #findBtn,
+#appShell #shareBtn {
+  width: var(--ui-control-touch);
+  min-width: var(--ui-control-touch);
+  height: var(--ui-control-touch);
+  min-height: var(--ui-control-touch);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  box-shadow: none;
+}
+
+#appShell #sidebarOpenBtn:hover,
+#appShell #mobileIncognitoBtn:hover,
+#appShell #findBtn:hover,
+#appShell #shareBtn:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+
+#appShell #sidebarOpenBtn svg,
+#appShell #mobileIncognitoBtn svg,
+#appShell #findBtn svg,
+#appShell #shareBtn svg { width: 24px; height: 24px; }
+
+#appShell #modeSegmentedTop {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  display: flex;
+  width: 146px;
+  height: 32px;
+  padding: 2px;
+  transform: translateX(-50%);
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-raised);
+  box-shadow: none;
+}
+
+#appShell #modeSegmentedTop .app-mode-toggle {
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  font-size: calc(15px * var(--app-font-scale, 1));
+  font-weight: 400;
+  line-height: 26px;
+}
+
+#appShell #modeSegmentedTop .app-mode-toggle.active {
+  background: var(--ui-bg-segment-active);
+  color: var(--ui-text-primary);
+  font-weight: 500;
+  box-shadow: none;
+}
+
+[data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle.active {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+#appShell #topicSetup {
+  position: relative;
+  box-sizing: border-box;
+  min-height: calc(100dvh - 56px);
+  padding: 0 24px calc(72px + var(--ui-safe-bottom));
+  background: var(--ui-bg-page);
+}
+
+#appShell #topicSetup.hidden { display: none !important; }
+
+#appShell #topicSetup .topic-title.greeting {
+  display: block;
+  animation: none;
+  padding: 0;
+  color: var(--ui-text-primary);
+  font-family: "Plus Jakarta Sans", "Inter", "Noto Sans SC", sans-serif;
+  font-weight: 400;
+  letter-spacing: -.02em;
+  text-align: center;
+}
+
+#appShell #topicSetup .topic-sub,
+#appShell #topicSetup .mobile-starter-prompts,
+#appShell #topicSetup .cg-history,
+#appShell #topicSetup .home-quick-actions,
+#appShell #topicDisclaimer { display: none; }
+
+@media (min-width: 769px) {
+  #appShell #topicSetup {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  #appShell #topicSetup .topic-title.greeting {
+    position: static;
+    margin: 0 0 48px;
+    font-size: calc(28px * var(--app-font-scale, 1));
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .top-bar { padding: 6px 12px; }
+  #appShell #topicSetup {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    padding: 0 16px calc(var(--ui-safe-bottom) + var(--keyboard-inset, 0px));
+    overflow: hidden;
+  }
+  #appShell #topicSetup .topic-title.greeting {
+    position: absolute;
+    inset-inline: 0;
+    top: 44%;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    transform: translateY(-50%);
+    font-size: calc(24px * var(--app-font-scale, 1));
+    line-height: 1.25;
+    white-space: normal;
+  }
+  body[data-conversation-active="true"] #appShell #modeSegmentedTop,
+  body.workspace-active #appShell #modeSegmentedTop,
+  body.exam-active #appShell #modeSegmentedTop,
+  body.admin-active #appShell #modeSegmentedTop { display: none; }
+  #appShell #mobileMode { display: none; }
+}

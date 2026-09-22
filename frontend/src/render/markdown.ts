@@ -485,16 +485,47 @@ function neutralizeKatexErrors(html: string): string {
        (`only`, `home`) stay literal, so currency amounts (`$5`,
        `$1,000`) and prose fragments (`$5 and`) keep their text.
        Known cosmetic trade-off: uppercase acronyms (`$US$`, `$OK$`)
-       and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math. */
-const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
+       and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math.
+       The fullwidth `，；：、` sit in the class so Chinese-model output
+       like `$x，y$` parses the same way `$x,y$` does. */
+const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;，；：、]+$/;
 
 /* Function calls are the common inline formula that carries internal
    whitespace (`u(x, y)`, `f(x, y, z)`, `sin(x, y)`). The callee must
    be attached to the opening paren and at most four ASCII letters long,
    so prose inside dollars (`$5 (approx)`, `paid in $USD (about`) stays
    literal. Whitespace inside the argument list is fine. */
-const SPACED_MATH_CHARS_RE = /^[A-Za-z0-9\s\\{}^_()[\],.'"+\-*/|=<>!:;]+$/;
+const SPACED_MATH_CHARS_RE = /^[A-Za-z0-9\s\\{}^_()[\],.'"+\-*/|=<>!:;，；：、]+$/;
 const SPACED_CALL_RE = /^[A-Za-z][A-Za-z0-9]{0,3}\(/;
+
+/* Whitespace inside `$…$` also appears in symbol lists that are not
+   calls: `x, y`, `a_1, a_2, …`, `f(x), g(y)`, `x； y`. Every
+   space-separated word must itself be a compact math token AND at
+   least one non-final word must END with a comma-like separator —
+   a connector floating inside a word (`$USD (about` — the `(` of a
+   prose aside) does not make a list, so spaced prose (`$5 USD$`,
+   `$note see above$`) keeps its literal text. */
+const MATH_SEPARATOR_RE = /[,;，；：、:]$/;
+/* A standalone operator word (`x | y`, `a => b`) is list evidence too;
+   a connector embedded inside a word (`(about`) is not. */
+const MATH_OPERATOR_WORD_RE = /^[=+\-*/|<>]+$/;
+
+function _isSpacedMathList(trimmed: string): boolean {
+  /* A letter is required so a spaced currency amount (`$5, 000`) stays
+     literal on BOTH the live tail and the closed pass — a tail that
+     rendered live but reverted at the closing `$` would flash. */
+  if (!/[A-Za-z]/.test(trimmed)) return false;
+  const words = trimmed.split(/\s+/);
+  let hasSeparator = false;
+  for (let i = 0; i < words.length; i++) {
+    if (!_isCompactMathToken(words[i])) return false;
+    if ((i < words.length - 1 && MATH_SEPARATOR_RE.test(words[i]))
+        || MATH_OPERATOR_WORD_RE.test(words[i])) {
+      hasSeparator = true;
+    }
+  }
+  return hasSeparator;
+}
 
 function _isCompactMathToken(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
@@ -510,9 +541,11 @@ function _looksLikeInlineMath(s: string): boolean {
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
   if (!/[A-Za-z]/.test(trimmed)) return false;
   if (!/\s/.test(trimmed)) return _isCompactMathToken(trimmed);
-  return SPACED_CALL_RE.test(trimmed)
-    && SPACED_MATH_CHARS_RE.test(trimmed)
-    && trimmed.indexOf(')') > 0;
+  /* `x, y`-style symbol lists and spaced calls (`u(x, y)`) both count. */
+  return _isSpacedMathList(trimmed)
+    || (SPACED_CALL_RE.test(trimmed)
+      && SPACED_MATH_CHARS_RE.test(trimmed)
+      && trimmed.indexOf(')') > 0);
 }
 
 /* A formula whose closing `$` has not arrived yet. Multi-letter words
@@ -527,7 +560,10 @@ function _looksLikeInlineMathTail(s: string): boolean {
   if (!trimmed) return false;
   if (/[\\^_{}[\]]/.test(trimmed)) return true;
   if (/\s/.test(trimmed)) {
-    return SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed);
+    /* Same widening as the closed pass: `$x, y` renders live while a
+       spaced prose tail (`$5 USD`) still waits for its closing `$`. */
+    return _isSpacedMathList(trimmed)
+      || (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed));
   }
   if (!/[A-Za-z]/.test(trimmed) || !COMPACT_MATH_RE.test(trimmed)) return false;
   return /[^A-Za-z]/.test(trimmed) || trimmed.length === 1;
@@ -553,10 +589,33 @@ function _stashInlineCode(source: string): { text: string; restore: (s: string) 
   };
 }
 
+/* PERF — KaTeX memo. A formula sitting in the live tail is re-rendered on
+   every paint frame, and renderToString output is deterministic in
+   (source, displayMode, unclosed). A small insertion-ordered map turns
+   repeat frames into hits; misses are NOT cached so a formula rendered
+   before KaTeX loads still produces real math on the next frame. */
+const _mathHtmlCache = new Map<string, string>();
+const MATH_HTML_CACHE_MAX = 200;
+
 /* Render math for a possibly-unfinished stream frame. Returns the KaTeX
    HTML, or null when KaTeX is not available yet (the caller keeps the
    raw source so the one-shot re-render can fix it up later). */
 function renderStreamMath(math: string, displayMode: boolean, unclosed: boolean): string | null {
+  const cacheKey = (displayMode ? 'D' : 'i') + (unclosed ? 'U' : 'C') + '\x00' + String(math).trim();
+  const hit = _mathHtmlCache.get(cacheKey);
+  if (hit !== undefined) return hit;
+  const html = _renderStreamMath(math, displayMode, unclosed);
+  if (html !== null) {
+    if (_mathHtmlCache.size >= MATH_HTML_CACHE_MAX) {
+      const oldest = _mathHtmlCache.keys().next();
+      if (!oldest.done) _mathHtmlCache.delete(oldest.value);
+    }
+    _mathHtmlCache.set(cacheKey, html);
+  }
+  return html;
+}
+
+function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean): string | null {
   const katex = getKatex();
   if (typeof katex === 'undefined') return null;
   const opts = {

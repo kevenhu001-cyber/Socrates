@@ -35,9 +35,9 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#topicInputWrap', [
     '#topicComposerToolsBtn', '#topicMobileMicBtn', '#startBtn',
   ]);
-  expect(landing.wrap?.height).toBeGreaterThanOrEqual(64);
-  expect(landing.wrap?.height).toBeLessThanOrEqual(76);
-  expect(landing.radius).toBe('34px');
+  expect(landing.wrap?.height).toBeGreaterThanOrEqual(84);
+  expect(landing.wrap?.height).toBeLessThanOrEqual(96);
+  expect(landing.radius).toBe('28px');
   expect(landing.controls.every((control) => control?.width === 40 && control?.height === 40 && control.background !== 'rgba(0, 0, 0, 0)')).toBe(true);
   expect((landing.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
   await page.screenshot({ path: '/tmp/socrates-mobile-unified-landing.png', fullPage: true });
@@ -98,8 +98,8 @@ test('mobile composer keeps model selector and reference controls discoverable',
      conversation is active, on all viewports. */
   await expect(page.locator('#modeSegmentedTop')).toBeHidden();
   await expect(composer.locator('#chatMobileMicBtn')).toBeVisible();
-  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'false');
-  await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(1);
+  await expect(composer.locator('#sendBtn')).toHaveAttribute('aria-disabled', 'true');
+  await expect(composer.locator('#sendBtn .icon-voice')).toHaveCount(0);
   /* The reference capsule always shows the fixed-label 思考强度 pill. */
   await expect(effort).toBeVisible();
   await expect(effort.locator('.effort-label')).toHaveText('思考强度');
@@ -109,9 +109,9 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(effort).toBeVisible();
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
-  /* Keyboard open keeps the single-row capsule — focus alone never expands
-     the composer; the greeting is the element that yields. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(76);
+  /* Keyboard open keeps the stable two-row capsule; only actual multiline
+     content increases its height. */
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(96);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
@@ -127,9 +127,9 @@ test('mobile composer keeps model selector and reference controls discoverable',
       send: rect('#sendBtn'),
     };
   });
-  /* Idle capsule is one row: every control shares the editor's row band. */
+  /* The editor owns the first row and the controls share the second. */
   for (const key of ['attach', 'model', 'mic', 'send']) {
-    expect(Math.abs((rows[key]?.top ?? 0) - (rows.editor?.top ?? 0)), key).toBeLessThanOrEqual(12);
+    expect(rows[key]?.top ?? 0, key).toBeGreaterThanOrEqual(rows.editor?.bottom ?? 0);
   }
 
   await effort.locator('.effort-trigger').click();
