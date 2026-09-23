@@ -28,6 +28,33 @@
  *
  * This directory is @imported LAST from styles/index.css so its rules
  * outrank the modular styles tree wherever selectors overlap.
+ *
+ * Component ownership map (2026-09-23 audit):
+ *
+ *   Sidebar geometry & skin (desktop)   chatgpt-parity.css - width uses
+ *     var(--app-sidebar-width) so ui/sidebarResize.js still owns resizing;
+ *     mobile drawer transform/backdrop   components/sidebar.css (live).
+ *   Top-bar                             chatgpt-parity.css (desktop) /
+ *     mobile-parity.css + fixes.css (mobile centering).
+ *   Landing #topicSetup / greeting      chat-surface.css + chatgpt-parity.css
+ *     (desktop); mobile-parity.css (<=768px). .topic-sub/.cg-history/
+ *     .home-quick-actions are hidden by layout/app-shell.css.
+ *   Composer frame (#topic/#chatInputWrap)  chatgpt-parity.css (desktop
+ *     grid, 52px/28px radius) + chat-surface.css (multiline); editor
+ *     internals (.composer-editor-root/.tiptap) components/composer.css.
+ *   Composer tools menu                 chatgpt-parity.css (desktop) /
+ *     mobile-parity.css (mobile bottom-sheet).
+ *   Message list                        #msgList bg: chat-surface.css;
+ *     width/gap: components/chat.css; user bubble: chat-surface.css.
+ *   Modals                              generic chrome features/surfaces.css
+ *     + legacy; share modal legacy/08; settings--full creation-surfaces.css.
+ *   Workspace pages                     ref-baseline.css + chatgpt-v2.css
+ *     (panel chrome); plugin directory skin chatgpt-parity.css (desktop) +
+ *     features/surfaces.css (live rows); creation panels
+ *     creation-surfaces.css (sole owner).
+ *
+ * Rule: visual parity tweaks go in fixes.css; feature-page styles in
+ * creation-surfaces.css; do not edit the historical files 1-6.
  */
 
 @import './chatgpt-ui.css';

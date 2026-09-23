@@ -49,8 +49,8 @@
   }
 
   html[data-theme="socrates"][data-mode] #appShell#appShell .sidebar {
-    width: 260px !important;
-    min-width: 260px !important;
+    width: var(--app-sidebar-width, 260px) !important;
+    min-width: var(--app-sidebar-width, 260px) !important;
     background: var(--chatgpt-rail) !important;
     background-color: var(--chatgpt-rail) !important;
     background-image: none !important;
