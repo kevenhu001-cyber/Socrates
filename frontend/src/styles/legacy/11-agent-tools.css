@@ -1,0 +1,687 @@
+/* ==========================================================================
+   11-agent-tools.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: agent tool cards, live execution, artifacts, websearch results, disclosures, link previews, thinking pill, search progress log.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* ── Agent (mode banner + tool module cards + stop button) ── */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Mode banner — slim strip between chat-header and msgList. */
+
+
+
+
+
+
+
+
+
+
+
+/* Tool module cards — appended to assistant bubbles. Looks like
+   a compact, collapsible summary line. */
+.agent-tool-card{margin-top:8px;font-size:calc(12px * var(--app-font-scale, 1));border:0;border-radius:var(--tool-card-radius);background:var(--tool-card-bg);overflow:hidden;transition:background .15s ease,box-shadow .15s ease}
+.agent-tool-card:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-card.open{box-shadow:0 2px 10px hsl(220 30% 50%/0.05)}
+.agent-tool-head{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s ease}
+.agent-tool-head:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-head:focus-visible{outline:2px solid var(--tool-card-focus);outline-offset:-2px;border-radius:var(--tool-card-radius)}
+.agent-tool-icon{flex-shrink:0;width:20px;height:20px;border-radius:5px;background:hsl(var(--bg-300));color:var(--tool-card-icon);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:calc(11px * var(--app-font-scale, 1));line-height:1;letter-spacing:-0.02em}
+.agent-tool-icon svg{display:block;width:14px;height:14px}
+/* Grayscale tool icons — every tool reads as a neutral glyph; the
+   tool name carries the identity. No per-tool colour chips. */
+.agent-tool-card.read    .agent-tool-icon,
+.agent-tool-card.write   .agent-tool-icon,
+.agent-tool-card.edit    .agent-tool-icon,
+.agent-tool-card.bash    .agent-tool-icon,
+.agent-tool-card.glob    .agent-tool-icon,
+.agent-tool-card.grep    .agent-tool-icon,
+.agent-tool-card.webfetch .agent-tool-icon,
+.agent-tool-card.websearch .agent-tool-icon,
+.agent-tool-card.codeint  .agent-tool-icon,
+.agent-tool-card.code     .agent-tool-icon{
+  background:hsl(var(--bg-300));
+  color:hsl(var(--text-300));
+  box-shadow:none;
+}
+.agent-tool-card.code{
+  background:hsl(var(--bg-100)/0.7);
+}
+[data-theme=socrates][data-mode=dark] .agent-tool-card.code{
+  background:hsl(var(--bg-100)/0.7);
+}
+/* Subtle "py" tag after the Python card name — muted grey, no brand
+   colour. */
+.agent-tool-card.code .agent-tool-name::after{
+  content:" · py";
+  color:hsl(var(--text-500));
+  font-weight:500;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  letter-spacing:0.5px;
+  margin-left:2px;
+}
+[data-theme=socrates][data-mode=dark] .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
+[data-theme=socrates][data-mode=dark] .agent-tool-card.read    .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.write   .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.edit    .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.bash    .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.glob    .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.grep    .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.webfetch .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.websearch .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.codeint .agent-tool-icon,
+[data-theme=socrates][data-mode=dark] .agent-tool-card.code     .agent-tool-icon{background:hsl(var(--bg-200));color:hsl(var(--text-400))}
+.agent-tool-name{font-weight:600;color:hsl(var(--text-100));font-size:calc(12px * var(--app-font-scale, 1));flex-shrink:0;letter-spacing:-0.005em}
+.agent-tool-input{flex:1;font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:var(--tool-card-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;opacity:.8}
+.agent-tool-chev{margin-left:auto;font-size:calc(10px * var(--app-font-scale, 1));color:var(--tool-card-text-subtle);transition:transform .2s cubic-bezier(.4,0,.2,1);flex-shrink:0;opacity:.6;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px}
+.agent-tool-chev svg{display:block;width:14px;height:14px}
+.agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.95}
+
+/* Accent rail on the leading edge of the body — gives each tool
+   card a glanceable identity without painting the whole border.
+   Tone is set by `.tool-{tone}` on the card root. The .tool-{cls}
+   modifiers used by the old SVG-emoji icons (read / write / edit
+   / bash / glob / grep / webfetch / websearch / codeint) get a
+   matching rail automatically via the per-tool .agent-tool-body
+   styles below. */
+.agent-tool-body{position:relative;padding:0}
+.agent-tool-card .agent-tool-body::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:2px 0 0 0;opacity:.85;pointer-events:none}
+/* Grayscale rail — a single neutral grey accent replaces the per-tool
+   colour rails. */
+.agent-tool-card.tool-blue   .agent-tool-body::before,
+.agent-tool-card.tool-green  .agent-tool-body::before,
+.agent-tool-card.tool-amber  .agent-tool-body::before,
+.agent-tool-card.tool-teal   .agent-tool-body::before,
+.agent-tool-card.tool-purple .agent-tool-body::before,
+.agent-tool-card.tool-orange .agent-tool-body::before,
+.agent-tool-card.tool-python .agent-tool-body::before,
+.agent-tool-card.read    .agent-tool-body::before,
+.agent-tool-card.write   .agent-tool-body::before,
+.agent-tool-card.edit    .agent-tool-body::before,
+.agent-tool-card.bash    .agent-tool-body::before,
+.agent-tool-card.glob    .agent-tool-body::before,
+.agent-tool-card.grep    .agent-tool-body::before,
+.agent-tool-card.webfetch .agent-tool-body::before,
+.agent-tool-card.websearch .agent-tool-body::before,
+.agent-tool-card.code    .agent-tool-body::before,
+.agent-tool-card.codeint .agent-tool-body::before{background:hsl(var(--border-300)/.5)}
+
+.agent-tool-out{font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-300));background:hsl(var(--bg-000)/.32);padding:8px 12px;border-top:0;white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:280px;overflow-y:auto}
+.agent-tool-out[hidden]{display:none}
+.agent-tool-out.error{color:hsl(0 60% 50%);background:hsl(0 50% 95%)}
+/* Code block inside an agent-tool-card (e.g. python source from
+   code_interpreter, or a Bash command). Renders between the
+   head and the .agent-tool-out — visible by default so the user
+   immediately sees what code was generated. Only the .agent-tool-out
+   block (stdout/stderr/artifacts) still collapses with the card. */
+.agent-tool-code{margin:0;padding:10px 12px;font-family:var(--font-mono);font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.55;white-space:pre;overflow-x:auto;color:hsl(var(--text-100));max-height:280px;overflow-y:auto;tab-size:4;background:hsl(var(--bg-000)/.38);border-top:0}
+.agent-tool-code[hidden]{display:none}
+.agent-tool-code code{font-family:inherit;font-size:inherit;color:inherit;background:transparent;padding:0}
+/* Blinking caret on the last line of the code block while the LLM
+   is still streaming the JSON arguments — gives the user a clear
+   "more is coming" cue without re-running the slow typewriter
+   setTimeout loop. */
+.agent-tool-code-streaming::after{content:"▍";margin-left:1px;color:hsl(var(--accent-000));animation:code-caret-blink 0.9s steps(2) infinite}
+@keyframes code-caret-blink{50%{opacity:0}}
+[data-theme=socrates][data-mode=dark] .agent-tool-code{background:hsl(220 25% 14%/0.5)}
+/* Truncated-code marker: a small red dot at the end when the
+   upstream was cut off mid-stream (e.g. max_tokens hit). A title
+   tooltip explains the marker; the live stream also clears the
+   marker if a final frame arrives. */
+.agent-tool-code-truncated{box-shadow:inset 2px 0 0 hsl(0 65% 50%);position:relative}
+.agent-tool-code-truncated::before{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:hsl(0 65% 50%);box-shadow:0 0 0 2px hsl(0 65% 50%/0.18);animation:truncation-pulse 1.4s ease-in-out infinite}
+@keyframes truncation-pulse{50%{opacity:.4}}
+/* Legacy alias used by older tool card builds (.agent-tool-code-wrap). */
+
+
+/* Broken-artifact placeholder shown when an inline image (matplotlib
+   PNG, etc.) fails to load. Replaces the <img> on error so the
+   user sees a useful diagnostic instead of a browser broken-icon. */
+.artifact-error{display:flex;align-items:center;gap:8px;margin:6px 0;padding:8px 10px;border:0.5px dashed hsl(0 50% 60%/0.5);border-radius:5px;background:hsl(0 50% 95%/0.4);font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));color:hsl(0 50% 35%);line-height:1.45}
+.artifact-error-icon{flex-shrink:0;width:16px;height:16px;color:hsl(0 55% 50%)}
+.artifact-error-text{flex:1;word-break:break-all}
+.artifact-error-retry{margin-left:auto;border:0;background:hsl(var(--bg-200));color:hsl(var(--text-200));font:inherit;font-size:calc(10.5px * var(--app-font-scale, 1));padding:2px 8px;border-radius:4px;cursor:pointer;flex-shrink:0}
+.artifact-error-retry:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+[data-theme=socrates][data-mode=dark] .artifact-error{background:hsl(0 30% 18%/0.5);color:hsl(0 50% 75%);border-color:hsl(0 40% 40%/0.5)}
+/* P_progress — live execution block. The badge is a small pill
+   in the top-left with the current phase + elapsed seconds; the
+   <pre> underneath streams stdout/stderr as it arrives. We cap
+   height at 200px so a runaway print loop scrolls instead of
+   pushing the page. */
+
+
+
+@keyframes agent-tool-spin{to{transform:rotate(360deg)}}
+
+
+.agent-tool-stream{margin:0;padding:6px 12px 8px;background:transparent;font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));line-height:1.4;color:hsl(var(--text-300));white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;flex:1;min-width:0}
+
+[data-theme=socrates][data-mode=dark] .agent-tool-out.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
+
+/* Status badge: small monospaced glyph in the card header next to the
+   chevron. Empty by default (display:none) so other tool cards pay no
+   visual cost. The 4 runtime statuses map to ✓ / ✗ / ⏱ / – with a
+   color cue that survives on both cream and dark backgrounds. */
+.agent-tool-status{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;margin-left:6px;border-radius:3px;font-size:calc(9.5px * var(--app-font-scale, 1));font-family:var(--font-mono);font-weight:700;line-height:1}
+.agent-tool-status:empty{display:none}
+.agent-tool-status.ok   {background:hsl(var(--bg-300));color:hsl(var(--text-400))}
+.agent-tool-status.err  {background:hsl(0 60% 92%);color:hsl(0 60% 42%)}
+.agent-tool-status.warn {background:hsl(var(--bg-300));color:hsl(var(--text-400))}
+
+[data-theme=socrates][data-mode=dark] .agent-tool-status.ok   {background:hsl(var(--bg-200));color:hsl(var(--text-400))}
+[data-theme=socrates][data-mode=dark] .agent-tool-status.err  {background:hsl(0 40% 22%);color:hsl(0 60% 78%)}
+[data-theme=socrates][data-mode=dark] .agent-tool-status.warn {background:hsl(var(--bg-200));color:hsl(var(--text-400))}
+
+
+/* Inline artifacts produced by the code interpreter (matplotlib PNGs,
+   CSV exports, etc.). The figure wrapper (.exec-artifact) holds the
+   skeleton + the eventual image. A 240px max-height keeps a tall PNG
+   from pushing the page; a fade-in transition keeps the user from
+   being visually startled when the image lands. */
+.exec-artifact{display:block;margin:6px 0 2px;padding:0;border:0;border-radius:var(--tool-card-radius-sm);overflow:hidden;background:hsl(var(--bg-200)/.45);position:relative}
+.exec-artifact::before{content:"";position:absolute;top:0;left:0;right:0;height:1.5px;background:hsl(var(--accent-000)/0.45);border-radius:8px 8px 0 0;pointer-events:none;z-index:1}
+.exec-artifact-image{display:block;max-width:100%;max-height:280px;border-radius:0;background:transparent;object-fit:contain;margin:0 auto;opacity:0;transition:opacity .25s ease-out;cursor:zoom-in}
+.exec-artifact-image.loaded{opacity:1}
+.exec-artifact-image:hover{opacity:.92}
+.exec-artifact-actions{position:absolute;top:4px;right:4px;z-index:2;display:flex;align-items:center;gap:2px;opacity:.4;transition:opacity .18s cubic-bezier(.4,0,.2,1)}
+.exec-artifact:hover .exec-artifact-actions,.exec-artifact:focus-within .exec-artifact-actions{opacity:1}
+.exec-artifact-btn{width:24px;height:24px;border:0;border-radius:5px;background:hsl(var(--bg-200)/0.92);color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
+.exec-artifact-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
+.exec-artifact-btn:active{transform:scale(.9)}
+.exec-artifact-btn svg{width:12px;height:12px;display:block}
+.exec-artifact-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 10px 5px;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200)/0.4)}
+.exec-artifact-meta-name{font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.exec-artifact-meta-size{flex-shrink:0;font-variant-numeric:tabular-nums}
+.exec-artifact-skeleton{width:100%;height:160px;display:flex;align-items:center;justify-content:center;background:hsl(var(--bg-200)/0.6);position:relative;overflow:hidden}
+.exec-artifact-skeleton::after{content:"";position:absolute;left:50%;top:50%;width:24px;height:24px;margin-left:-12px;margin-top:-12px;border-radius:50%;border:2px solid hsl(var(--bg-300));border-top-color:hsl(var(--accent-000));animation:exec-artifact-spin 0.9s linear infinite}
+.exec-artifact-skeleton-pulse{display:none}
+@keyframes exec-artifact-spin{to{transform:rotate(360deg)}}
+.exec-artifact-link{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.5);background:hsl(var(--bg-200));font-family:var(--font-mono);font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-decoration:none;transition:background .12s,border-color .12s}
+.exec-artifact-link::before{content:"↓";font-size:11px;opacity:.7}
+.exec-artifact-link:hover{background:hsl(var(--bg-300));border-color:hsl(var(--border-300));color:hsl(var(--text-100))}
+
+/* Web Search results — structured list inside the websearch tool card.
+   Shows title (clickable link), URL + date, and a brief snippet per result. */
+.agent-tool-card.websearch .agent-tool-out{max-height:480px;white-space:normal;padding:6px 0 8px}
+/* Web search results — left-rail index + body. Mirrors the layout
+   modern search UIs use (Perplexity / Google SGE / ChatGPT search)
+   so the result is immediately recognisable. The header is a
+   one-liner summary; each result is its own card with a small
+   monogram, host, date, and a 3-line snippet clamp. */
+.web-search-results{display:flex;flex-direction:column;gap:0}
+.wsr-header{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 12px 6px;font-style:italic;letter-spacing:0.01em}
+.wsr-item{display:flex;gap:10px;padding:8px 12px;border-radius:0;transition:background .12s}
+.wsr-item:hover{background:hsl(var(--accent-000)/0.04)}
+.wsr-item + .wsr-item{border-top:0.5px solid hsl(var(--border-300)/0.18)}
+.wsr-index{flex-shrink:0;width:18px;height:18px;border-radius:4px;background:hsl(var(--bg-300));color:hsl(var(--text-400));display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;line-height:1;margin-top:1px}
+.wsr-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.wsr-title{display:block;font-family:var(--font-sans,system-ui);font-size:calc(12.5px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--accent-000));text-decoration:none;line-height:1.35;word-break:break-word;letter-spacing:-0.005em}
+.wsr-title:hover{text-decoration:underline;text-underline-offset:2px}
+.wsr-meta{display:flex;align-items:center;gap:6px;font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));overflow:hidden}
+.wsr-host{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%}
+.wsr-date{color:hsl(var(--text-500));font-style:italic;flex-shrink:0}
+.wsr-date::before{content:"·";margin-right:6px;color:hsl(var(--text-500)/0.6)}
+.wsr-snippet{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));margin-top:2px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+[data-theme=socrates][data-mode=dark] .wsr-title{color:hsl(var(--accent-000))}
+[data-theme=socrates][data-mode=dark] .wsr-meta,
+[data-theme=socrates][data-mode=dark] .wsr-date{color:hsl(var(--text-500))}
+[data-theme=socrates][data-mode=dark] .wsr-snippet{color:hsl(var(--text-300))}
+[data-theme=socrates][data-mode=dark] .wsr-index{background:hsl(var(--bg-200));color:hsl(var(--text-500))}
+@media(max-width:480px){
+  .agent-tool-head{align-items:flex-start;gap:6px;padding:7px 8px}
+  .agent-tool-input{white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+  .agent-tool-code,.agent-tool-out{padding:8px;max-height:220px}
+  .agent-tool-card.websearch .agent-tool-out{max-height:55vh}
+  .wsr-url{white-space:normal;overflow-wrap:anywhere}
+}
+
+/* Codex project workspace history — intentionally compact so the project
+   dialog stays useful on a phone as well as on desktop. */
+.project-run-history{margin-top:16px;padding-top:13px;border-top:0.5px solid hsl(var(--border-300)/.28)}
+.project-runtime-heading{margin-bottom:7px;color:hsl(var(--text-200));font-size:12px;font-weight:600}
+.project-run-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}
+.project-run-row:last-child{border-bottom:0}
+.project-run-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}
+.project-run-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:12px;font-weight:520}
+.project-run-copy span{color:hsl(var(--text-500));font-size:10.5px}
+.project-run-open{opacity:1;flex:0 0 auto}
+.agent-run-details{display:flex;flex-direction:column;gap:10px}
+.agent-run-details-summary{margin:0;color:hsl(var(--text-200));font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.agent-run-details-status{color:hsl(var(--text-500));font-size:11px}
+.agent-run-details-section-title{margin-top:4px;color:hsl(var(--text-300));font-size:11px}
+.agent-run-artifacts{display:flex;flex-direction:column;gap:4px;margin:0;padding-left:18px;color:hsl(var(--accent-000));font:11px var(--font-mono)}
+.agent-run-details-activity{margin-top:3px;border-top:0.5px solid hsl(var(--border-300)/.25);padding-top:8px;color:hsl(var(--text-400));font-size:11px}
+.agent-run-details-activity summary{cursor:pointer;color:hsl(var(--text-300));font-weight:550}
+.agent-run-details-activity ol{display:flex;max-height:220px;flex-direction:column;gap:5px;overflow:auto;margin:8px 0 0;padding-left:18px;font-family:var(--font-mono);font-size:10px;line-height:1.45}
+@media(max-width:480px){.project-run-row{align-items:flex-start}.project-run-open{padding-inline:4px}.agent-run-details-activity ol{max-height:180px}}
+
+/* Tool cards — clean, minimal ChatGPT-style disclosure.
+   The chat content is primary; tool details are available on demand. */
+.agent-tool-card,.agent-tool-card.code,.agent-tool-card.codeint{
+  background:var(--tool-card-bg);
+  border:0;
+  border-radius:var(--tool-card-radius-sm);
+  box-shadow:none;
+}
+.agent-tool-card:hover{background:var(--tool-card-bg-hover);box-shadow:none}
+.agent-tool-card.open{box-shadow:0 4px 14px hsl(220 30% 50%/0.05)}
+.agent-tool-head{min-height:36px;padding:9px 12px;gap:8px;background:transparent;border-radius:var(--tool-card-radius-sm) var(--tool-card-radius-sm) 0 0}
+.agent-tool-head:hover{background:var(--tool-card-bg-hover)}
+.agent-tool-card .agent-tool-body::before{display:none}
+.agent-tool-name,.agent-tool-input,.wsr-title{letter-spacing:0}
+.agent-tool-icon,.agent-tool-card.codeint .agent-tool-icon,.agent-tool-card.websearch .agent-tool-icon{
+  width:18px;height:18px;border-radius:5px;
+  background:transparent!important;
+  color:var(--tool-card-icon)!important;
+  font-size:calc(9.5px * var(--app-font-scale, 1));
+}
+.agent-tool-name{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
+.agent-tool-input{font-size:calc(10.5px * var(--app-font-scale, 1));opacity:.7;color:hsl(var(--text-400))}
+.agent-tool-status{
+  min-width:0;
+  height:auto;
+  margin-left:auto;
+  padding:0 0 0 8px;
+  background:transparent!important;
+  color:var(--tool-card-text-subtle)!important;
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  font-weight:500;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.agent-tool-status.err,.agent-tool-status.warn{color:hsl(0 55% 52%)!important}
+.agent-tool-card[data-tool-state="running"] .agent-tool-status::before{
+  content:"";
+  display:inline-block;
+  width:6px;
+  height:6px;
+  margin-right:5px;
+  border-radius:50%;
+  background:hsl(var(--text-400));
+  animation:search-progress-dot 1.1s ease-in-out infinite;
+}
+.agent-tool-chev{margin-left:2px}
+.agent-tool-toolbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:30px;
+  padding:5px 12px;
+  border-top:0;
+  background:var(--tool-card-bg-sunken);
+  color:var(--tool-card-text-subtle);
+}
+.agent-tool-toolbar[hidden]{display:none}
+
+.agent-tool-action{
+  border:0;
+  padding:2px 0;
+  background:transparent;
+  color:hsl(var(--text-400));
+  font:inherit;
+  font-family:var(--font-sans);
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  cursor:pointer;
+}
+.agent-tool-action:hover,.agent-tool-action:focus-visible{color:hsl(var(--text-200));text-decoration:underline;text-underline-offset:2px}
+.agent-tool-action:focus-visible{outline:2px solid hsl(var(--text-400)/.4);outline-offset:2px;border-radius:2px}
+.agent-tool-code,.agent-tool-out{
+  background:hsl(var(--bg-000)/.32);
+  border-top:0;
+}
+.agent-tool-code{padding:8px 11px;font-size:calc(11px * var(--app-font-scale, 1));max-height:300px;line-height:1.52}
+.agent-tool-out{padding:8px 11px;font-size:calc(10.75px * var(--app-font-scale, 1));max-height:320px;line-height:1.5}
+.agent-tool-output-text{min-width:0}
+.agent-tool-output-pre{
+  margin:0;
+  padding:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  line-height:inherit;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.agent-tool-output-text.is-collapsed .agent-tool-output-pre{
+  max-height:13.5em;
+  overflow:hidden;
+  -webkit-mask-image:linear-gradient(180deg,#000 72%,transparent);
+  mask-image:linear-gradient(180deg,#000 72%,transparent);
+}
+.agent-tool-output-controls{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:7px;
+  padding-top:7px;
+  border-top:0;
+  color:var(--tool-card-text-subtle);
+}
+.agent-tool-output-summary{font-size:calc(10px * var(--app-font-scale, 1));font-variant-numeric:tabular-nums}
+.agent-tool-output-toggle{
+  border:0;
+  background:transparent;
+  color:hsl(var(--text-300));
+  padding:0;
+  font:inherit;
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  cursor:pointer;
+}
+.agent-tool-output-toggle:hover{text-decoration:underline;text-underline-offset:2px}
+
+
+
+.agent-tool-stream{padding:0;max-height:180px}
+.exec-artifact{border:0;border-radius:var(--tool-card-radius-sm);background:transparent}
+.exec-artifact::before{display:none}
+.exec-artifact-image{border-radius:10px}
+.exec-artifact-skeleton{height:120px;background:hsl(var(--bg-200)/.35)}
+.artifact-error{align-items:flex-start;flex-wrap:wrap;margin:6px 0;padding:8px;border:1px solid hsl(0 45% 55%/.35);border-radius:var(--tool-card-radius-sm);background:transparent}
+.artifact-error-open,.artifact-error-retry{margin-left:0;border:0;background:transparent;color:hsl(var(--accent-000));padding:0;font:inherit;font-size:inherit;text-decoration:underline;cursor:pointer}
+.artifact-error-detail{width:100%;color:hsl(var(--text-400));font-size:inherit}
+.artifact-error-detail code{display:block;margin-top:5px;white-space:pre-wrap;word-break:break-word;color:hsl(var(--text-400))}
+
+.agent-tool-card.websearch .agent-tool-out{padding:0;max-height:520px}
+
+/* Open WebUI-style tool disclosure: a quiet status row until the reader
+   explicitly opens Input/Output evidence. */
+.tool-run-list{padding:2px 8px 7px}
+.tool-run-list .agent-tool-card,.agent-tool-card{
+  margin-top:1px;background:transparent;border:0;border-radius:0;overflow:visible;
+}
+.agent-tool-card:hover,.agent-tool-card.open{border:0;box-shadow:none}
+.agent-tool-head,.tool-run-list .agent-tool-head{
+  min-height:30px;padding:4px 2px;gap:7px;border-radius:7px;
+  color:hsl(var(--text-400));
+}
+.agent-tool-head:hover{background:hsl(var(--bg-200)/.42);color:hsl(var(--text-200))}
+.agent-tool-icon{display:none!important}
+.agent-tool-state-icon{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:0 0 16px;color:hsl(var(--text-500))}
+.agent-tool-card[data-tool-state="running"] .agent-tool-state-icon::before{
+  content:"";width:12px;height:12px;border:1.5px solid hsl(var(--border-300));
+  border-top-color:hsl(var(--accent-000));border-radius:50%;animation:exec-artifact-spin .85s linear infinite;
+}
+.agent-tool-card[data-tool-state="complete"] .agent-tool-state-icon::before{
+  content:"✓";display:flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border-radius:50%;background:hsl(var(--text-400));color:hsl(var(--bg-100));font-size:10px;font-weight:700;
+}
+.agent-tool-card[data-tool-state="error"] .agent-tool-state-icon::before{
+  content:"!";display:flex;align-items:center;justify-content:center;width:15px;height:15px;
+  border-radius:50%;background:hsl(0 58% 52%);color:white;font-size:10px;font-weight:700;
+}
+.agent-tool-card[data-tool-state="cancelled"] .agent-tool-state-icon::before{
+  content:"■";font-size:10px;color:hsl(var(--text-500));
+}
+.agent-tool-name,.tool-run-list .agent-tool-name{
+  flex:0 0 auto;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;color:hsl(var(--text-200));
+}
+.agent-tool-input{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:1}
+.agent-tool-status{font-size:calc(11px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-500))!important}
+.agent-tool-chev{font-size:10px;color:hsl(var(--text-500));transition:transform .2s}
+.agent-tool-body{
+  margin:0;padding:10px 12px;
+  border-top:0;
+  background:var(--tool-card-bg-sunken);
+}
+.agent-tool-section + .agent-tool-section{margin-top:10px}
+.agent-tool-section-head{
+  min-height:20px;margin-bottom:5px;padding:0 1px;display:flex;align-items:center;gap:8px;
+  color:var(--tool-card-text-subtle);font:500 calc(10px * var(--app-font-scale,1))/1 var(--font-sans);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.agent-tool-section-head .agent-tool-action{margin-left:auto;text-transform:none;letter-spacing:0}
+.agent-tool-code,.agent-tool-out{
+  border:0;border-radius:var(--tool-card-radius-sm);background:hsl(var(--bg-200)/.5);
+}
+.agent-tool-code{margin:0;padding:9px 11px;max-height:300px}
+.agent-tool-out{padding:9px 11px;max-height:320px}
+.agent-tool-output-section:has(.agent-tool-out:empty){display:none}
+.agent-tool-input-section:has(.agent-tool-code[hidden]){display:none}
+.agent-tool-card.websearch .agent-tool-out{border-radius:0 0 var(--tool-card-radius-sm) var(--tool-card-radius-sm);overflow:hidden}
+.agent-tool-card.websearch .web-search-results{border-top:0}
+.agent-tool-card.open .agent-tool-chev{transform:rotate(180deg)}
+.web-search-results{border-top:0}
+.wsr-header{
+  display:flex;
+  align-items:center;
+  min-height:28px;
+  padding:7px 12px;
+  border-bottom:0;
+  color:var(--tool-card-text-muted);
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+}
+.wsr-summary{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wsr-copy-all{
+  flex:0 0 auto;
+  margin-left:10px;
+  border:0;
+  padding:2px 0;
+  background:transparent;
+  color:hsl(var(--accent-000));
+  font:inherit;
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  cursor:pointer;
+}
+.wsr-copy-all:hover,.wsr-copy-all:focus-visible{text-decoration:underline;text-underline-offset:2px}
+.wsr-copy-all:focus-visible{outline:2px solid hsl(var(--accent-000)/.3);outline-offset:2px;border-radius:2px}
+.wsr-item{padding:9px 12px;gap:9px}
+.wsr-item:hover{background:var(--tool-card-bg-hover)}
+.wsr-index{
+  min-width:24px;
+  width:auto;
+  height:20px;
+  padding:0 4px;
+  border:1px solid hsl(var(--border-300)/.35);
+  border-radius:5px;
+  background:hsl(var(--bg-200)/.45);
+  color:hsl(var(--text-400));
+  font-size:calc(10px * var(--app-font-scale, 1));
+  line-height:18px;
+}
+.wsr-item-muted{opacity:.72}
+.wsr-title{color:hsl(var(--text-100));font-weight:600;line-height:1.36}
+.wsr-title:hover{color:hsl(var(--text-300))}
+.wsr-title.is-disabled{color:hsl(var(--text-400));pointer-events:none}
+.wsr-meta{gap:7px}
+.wsr-host{max-width:72%;font-weight:500;color:hsl(var(--text-400))}
+.wsr-source{font-family:var(--font-mono);font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:lowercase}
+.wsr-source::before{content:"·";margin-right:7px;color:hsl(var(--text-500)/.55)}
+.wsr-snippet{font-size:calc(11.5px * var(--app-font-scale, 1));line-height:1.48}
+.wsr-actions{display:flex;align-items:center;gap:8px;margin-top:4px}
+.wsr-copy{border:0;background:transparent;color:hsl(var(--text-300));padding:0;font:inherit;font-size:calc(10.5px * var(--app-font-scale, 1));cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.wsr-copy:hover{color:hsl(var(--text-100))}
+@media(max-width:480px){
+  .agent-tool-status{margin-left:0;padding-left:0}
+  .agent-tool-head{align-items:center}
+  .wsr-index{width:18px;height:18px;line-height:16px}
+  .wsr-snippet{-webkit-line-clamp:2;line-clamp:2}
+  .agent-tool-toolbar{gap:8px}
+  
+  .wsr-header{align-items:flex-start}
+  .wsr-summary{white-space:normal}
+}
+
+/* Link previews — rendered inside the user's chat bubble when their
+   message contains URLs we successfully fetched. Compact, single-line
+   meta on the head; title is the primary clickable; excerpt is a 1-2
+   line summary. Error cards flip to red and drop the excerpt. */
+.link-previews{display:flex;flex-direction:column;gap:6px;margin-top:10px;align-items:flex-end;max-width:100%}
+.msg.user .link-previews{align-items:flex-end}
+.msg.assistant .link-previews{align-items:flex-start}
+.link-card{width:100%;max-width:520px;display:flex;flex-direction:column;gap:4px;padding:8px 12px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.5);background:hsl(var(--bg-200));font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.45;color:hsl(var(--text-200));text-align:left;box-sizing:border-box}
+.link-card.err{border-color:hsl(0 60% 70%/0.4);background:hsl(0 60% 96%)}
+[data-theme=socrates][data-mode=dark] .link-card{background:hsl(var(--bg-100));border-color:hsl(var(--border-300)/0.4)}
+[data-theme=socrates][data-mode=dark] .link-card.err{background:hsl(0 30% 18%);border-color:hsl(0 40% 35%)}
+.link-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400))}
+.link-card-host{font-weight:600;letter-spacing:-.01em;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-card-status{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));font-variant-numeric:tabular-nums}
+.link-card-status.err{color:hsl(0 50% 45%);font-weight:500}
+[data-theme=socrates][data-mode=dark] .link-card-status.err{color:hsl(0 55% 70%)}
+.link-card-title{color:hsl(var(--accent-000));text-decoration:none;font-weight:500;font-size:calc(13px * var(--app-font-scale, 1));line-height:1.35;word-break:break-word}
+.link-card-title:hover{text-decoration:underline}
+.link-card-excerpt{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5;margin-top:2px;max-height:3.6em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical}
+
+/* Thinking pill — collapsed by default; expands on click.
+   The pill has no visible "expand" affordance otherwise (just a
+   pointer cursor), which made the click-to-expand behaviour easy to
+   miss. A small chevron is appended via ::after so the user always
+   knows the truncated preview is interactive. The chevron rotates
+   180° when .expanded is added. */
+/* agent-thinking was merged into .think-block — see details/summary widget below */
+
+/* Final run footer — small status chip below the last assistant
+   message. */
+.agent-run-footer{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 10px;border-radius:10px;background:hsl(var(--bg-200));color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:500;letter-spacing:.02em}
+.agent-run-footer.error{background:hsl(0 50% 95%);color:hsl(0 60% 40%)}
+.agent-run-footer.stopped{background:hsl(45 50% 92%);color:hsl(36 60% 32%)}
+[data-theme=socrates][data-mode=dark] .agent-run-footer.error{background:hsl(0 30% 18%);color:hsl(0 55% 70%)}
+[data-theme=socrates][data-mode=dark] .agent-run-footer.stopped{background:hsl(45 30% 18%);color:hsl(45 70% 70%)}
+
+/* ──────────────────────────────────────────────────────────────────────
+   Phase 3 — Search Progress Log
+   ──────────────────────────────────────────────────────────────────────
+   A collapsible activity feed that surfaces the steps of a web search
+   inside the AI bubble that will answer the user. Default state:
+   collapsed (just the header line, click to expand). When the search
+   is in flight, `.running` adds a pulsing dot. On completion the
+   header collapses to a one-line summary. */
+.search-progress{
+  font-size:calc(11.5px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  line-height:1.5;
+  margin:6px 0 10px;
+  padding:0;
+  overflow:hidden;
+  border-radius:7px;
+  background:hsl(var(--bg-100)/.82);
+  border:1px solid hsl(var(--border-300)/.34);
+  list-style:none;
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
+}
+.search-progress.running,
+.search-progress.ok,
+[data-theme=socrates][data-mode=dark] .search-progress.running,
+[data-theme=socrates][data-mode=dark] .search-progress.ok{background:hsl(var(--bg-100)/.82);border-color:hsl(var(--border-300)/.38)}
+.search-progress.warn,
+[data-theme=socrates][data-mode=dark] .search-progress.warn{background:hsl(var(--bg-100)/.82);border-color:hsl(38 70% 50%/.38)}
+.search-progress.err,
+[data-theme=socrates][data-mode=dark] .search-progress.err{background:hsl(var(--bg-100)/.82);border-color:hsl(0 58% 52%/.42)}
+
+.search-progress-head{
+  display:flex;align-items:center;gap:8px;
+  min-height:34px;
+  padding:7px 10px;
+  font-weight:500;letter-spacing:0;
+  color:hsl(var(--text-300));
+}
+.search-progress-head:focus-visible{outline:2px solid hsl(var(--accent-000)/.5);outline-offset:-2px;border-radius:7px}
+.search-progress-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:0}
+/* UI-align: open-webui shimmer sweep across the status text while a
+   search is in flight — gradient-clipped text, opacity only. */
+.search-progress.running .search-progress-title,
+.search-progress.running .search-progress-label{background:linear-gradient(90deg,hsl(var(--text-400)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-400)) 65%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:textShimmer 2.4s linear infinite}
+@keyframes textShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.search-progress-elapsed{
+  flex:0 0 auto;
+  color:hsl(var(--text-500));
+  font-family:var(--font-mono);
+  font-size:calc(10px * var(--app-font-scale, 1));
+  font-variant-numeric:tabular-nums;
+}
+.search-progress-chev{
+  margin-left:auto;
+  font-size:calc(10px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  transition:transform .15s;
+}
+.search-progress.open .search-progress-chev{transform:rotate(180deg)}
+
+.search-progress-pulse{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:9px;height:9px;border-radius:50%;position:relative;vertical-align:middle;flex-shrink:0;
+  background:hsl(var(--accent-000)/.82);
+}
+.search-progress-pulse::before,.search-progress-pulse::after{display:none}
+.search-progress.running .search-progress-pulse{animation:search-progress-dot 1.1s ease-in-out infinite}
+@keyframes search-progress-dot{50%{opacity:.35;transform:scale(.82)}}
+.search-progress.ok .search-progress-pulse,
+.search-progress.warn .search-progress-pulse,
+.search-progress.err .search-progress-pulse{display:none}
+.search-progress.ok .search-progress-head::before,
+.search-progress.warn .search-progress-head::before,
+.search-progress.err .search-progress-head::before{
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  flex:0 0 auto;
+  background:hsl(145 45% 45%);
+}
+.search-progress.warn .search-progress-head::before{background:hsl(38 70% 48%)}
+.search-progress.err .search-progress-head::before{background:hsl(0 58% 52%)}
+
+.search-progress-steps{
+  margin:0;
+  padding:7px 10px 8px;
+  list-style:none;
+  display:none;
+  border-top:1px solid hsl(var(--border-300)/.22);
+  background:hsl(var(--bg-000)/.22);
+  /* The list itself shouldn't be clickable; clicks bubble to root which
+   * toggles .open. We stop propagation on .search-progress-step to
+   * avoid that. */
+}
+.search-progress.open .search-progress-steps{display:block}
+
+.search-progress-step{
+  display:flex;align-items:baseline;gap:7px;
+  padding:2px 0;
+  font-variant-numeric:tabular-nums;
+  color:hsl(var(--text-300));
+}
+.search-progress-step .icon{
+  flex-shrink:0;
+  width:12px;
+  text-align:center;
+  color:hsl(var(--text-500));
+  font-weight:500;
+}
+.search-progress-step.running .icon,
+.search-progress-step.ok .icon,
+.search-progress-step.warn .icon,
+.search-progress-step.err .icon{color:hsl(var(--text-500))}
+.search-progress-step .text{flex:1;min-width:0;word-break:break-word;letter-spacing:0}
+
+/* Last-resort floating panel when neither bubble nor diagnostic card
+ * is available. Pinned to the bottom of the chat. */
+.search-progress-floating{
+  position:sticky;
+  bottom:8px;
+  margin:8px 12px;
+  z-index:5;
+  box-shadow:0 4px 16px hsl(var(--shadow-color, 0 0% 0%) / 0.08);
+}
+
+/* In the diagnostic loading card, disable click-to-toggle so the
+ * header is a static status line. The steps follow the normal
+ * collapsed/open state set by startSearchProgress. */
+.diag-loading .search-progress{cursor:default}
+

@@ -43,6 +43,52 @@
 #appShell .library-row:hover,
 #appShell .project-row:hover { background: var(--ui-bg-hover); }
 
+/* The live connector directory owns the plugin panel after its React mount.
+   Hide the old static sample cards so duplicate/mock rows can never leak
+   into the real account catalog. */
+#appShell #pluginsPanel[data-live-directory="true"] { gap: 0; padding: 0; overflow: hidden; }
+#appShell #pluginsPanel[data-live-directory="true"] > :not(#pluginsList) { display: none !important; }
+#appShell #pluginsPanel[data-live-directory="true"] > #pluginsList {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+#appShell .plugin-directory { box-sizing: border-box; width: 100%; max-width: 1040px; margin: 0 auto; padding: 36px 32px 56px; }
+#appShell .plugin-directory-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; margin-bottom: 28px; }
+#appShell .plugin-directory-heading { min-width: 0; }
+#appShell .plugin-directory-heading h2 { margin: 0 0 8px; font-size: 30px; line-height: 1.2; }
+#appShell .plugin-directory-desc { margin: 0; font-size: 15px; line-height: 1.5; }
+#appShell .plugin-directory-tools { display: flex; align-items: center; gap: 10px; }
+#appShell .plugin-directory-search { display: flex; align-items: center; gap: 10px; width: min(330px, 42vw); min-width: 220px; height: 44px; padding: 0 14px; }
+#appShell .plugin-directory-search svg { width: 18px; height: 18px; }
+#appShell .plugin-directory-search input { width: 100%; border: 0; outline: 0; background: transparent; }
+#appShell .plugin-directory-add-btn,
+#appShell .plugin-directory-icon-action { display: grid; place-items: center; flex: 0 0 auto; border: 0; background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .plugin-directory-add-btn { width: 44px; height: 44px; border-radius: 50%; }
+#appShell .plugin-directory-add-btn svg,
+#appShell .plugin-directory-icon-action svg { width: 22px; height: 22px; }
+#appShell .plugin-installed-strip { display: flex; align-items: center; gap: 18px; min-height: 64px; margin: 0 0 20px; }
+#appShell .plugin-installed-label { display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: var(--ui-text-primary); font-size: 15px; white-space: nowrap; }
+#appShell .plugin-installed-icons { display: flex; align-items: center; gap: 12px; min-width: 0; }
+#appShell .plugin-installed-icons .workspace-row-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 13px; background: var(--ui-bg-raised); }
+#appShell .plugin-directory-tabs { display: flex; align-items: center; width: 192px; height: 36px; padding: 2px; margin: 0 0 28px; border-radius: 22px; background: var(--ui-bg-raised); }
+#appShell .plugin-directory-tabs button { height: 32px; padding: 0 14px; border: 0; border-radius: 18px; background: transparent; color: var(--ui-text-secondary); font-size: 14px; }
+#appShell .plugin-directory-tabs button.active { background: var(--ui-bg-segment-active); color: var(--ui-text-primary); }
+#appShell .plugin-directory-section { margin: 0 0 28px; }
+#appShell .plugin-directory-section h3 { margin: 0 0 14px; color: var(--ui-text-primary); font-size: 18px; font-weight: 500; }
+#appShell .plugin-directory-row { display: flex; align-items: center; min-width: 0; min-height: 72px; padding: 8px 4px; gap: 14px; border-bottom: 1px solid var(--ui-border-subtle); }
+#appShell .plugin-directory-row .workspace-row-icon { display: grid; place-items: center; flex: 0 0 52px; width: 52px; height: 52px; border: 0; border-radius: 15px; background: var(--ui-bg-raised); }
+#appShell .plugin-directory-row .workspace-row-copy { display: flex; flex: 1 1 auto; flex-direction: column; gap: 3px; min-width: 0; }
+#appShell .plugin-directory-row .workspace-row-copy strong { overflow: hidden; color: var(--ui-text-primary); font-size: 16px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+#appShell .plugin-directory-row .workspace-row-copy span { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-size: 14px; line-height: 1.35; }
+#appShell .plugin-directory-row-action { flex: 0 0 auto; }
+#appShell .plugin-directory-icon-action { width: 40px; height: 40px; border-radius: 50%; background: transparent; }
+#appShell .plugin-directory-icon-action:disabled { opacity: .35; }
+#appShell .plugin-directory-empty { display: flex; flex-direction: column; gap: 5px; padding: 32px 0; color: var(--ui-text-tertiary); }
+
 #appShell .workspace-search-field,
 #appShell .plugin-directory-search,
 #appShell .exam-input,
@@ -79,4 +125,72 @@
 @media (max-width: 768px) {
   #appShell .workspace-surface,
   #appShell .main-page { padding-inline: 16px; }
+
+  #appShell .plugin-directory {
+    width: 100%;
+    min-height: calc(100dvh - 56px);
+    padding: 16px 16px calc(24px + var(--ui-safe-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #appShell .plugin-directory-head { display: block; margin-bottom: 23px; }
+  #appShell .plugin-directory-heading h2 {
+    margin: 0 0 10px;
+    font-size: 26px;
+    line-height: 1.2;
+    letter-spacing: -.035em;
+  }
+  #appShell .plugin-directory-desc { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+  #appShell .plugin-directory-tools { display: flex; align-items: center; gap: 12px; }
+  #appShell .plugin-directory-search {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    padding-inline: 12px;
+    border-radius: 22px;
+  }
+  #appShell .plugin-directory-search svg { width: 18px; height: 18px; flex: 0 0 18px; }
+  #appShell .plugin-directory-search input { min-width: 0; font-size: 15px; }
+  #appShell .plugin-directory-add-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+  }
+  #appShell .plugin-installed-strip { min-height: 0; flex-direction: column; align-items: flex-start; gap: 9px; margin: 18px 0 36px; }
+  #appShell .plugin-installed-label { font-size: 15px; }
+  #appShell .plugin-installed-icons { gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  #appShell .plugin-installed-icons .workspace-row-icon { width: 40px; min-width: 40px; height: 40px; }
+  #appShell .plugin-directory-tabs { width: 122px; max-width: none; height: 40px; gap: 6px; margin: 31px 0 31px; padding: 0; border-radius: 0; background: transparent; }
+  #appShell .plugin-directory-tabs button { flex: 0 0 auto; height: 36px; padding: 0 16px; border-radius: 20px; font-size: 15px; }
+  #appShell .plugin-directory-tabs button:nth-child(2) { padding-inline: 8px; }
+  #appShell .plugin-directory-tabs button.active { background: var(--ui-bg-raised); }
+  #appShell .plugin-directory-section { margin: 0 0 26px; }
+  #appShell .plugin-directory-section h3 { margin: 0 0 3px; font-size: 16px; font-weight: 500; }
+  #appShell .plugin-directory-row {
+    align-items: flex-start;
+    min-height: 71px;
+    padding: 8px 0 0;
+    gap: 12px;
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  #appShell .plugin-directory-row .workspace-row-copy { padding-top: 4px; }
+  #appShell .plugin-directory-row .workspace-row-icon {
+    flex-basis: 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: var(--ui-bg-raised) !important;
+  }
+  #appShell .plugin-directory-row .workspace-row-copy { min-width: 0; }
+  #appShell .plugin-directory-row .workspace-row-copy strong { font-size: 16px; font-weight: 500; }
+  #appShell .plugin-directory-row .workspace-row-copy span { font-size: 13px; line-height: 1.4; }
+  #appShell .plugin-directory .connector-icon svg { width: 28px; height: 28px; }
+  #appShell .plugin-directory .connector-icon .connector-logo { width: 30px; height: 30px; }
+  #appShell .plugin-directory .connector-icon { color: var(--ui-text-primary) !important; background: var(--ui-bg-raised) !important; border: 0 !important; box-shadow: none !important; }
+  #appShell .plugin-directory-icon-action { width: 28px; min-width: 28px; height: 40px; border-radius: 50%; }
 }

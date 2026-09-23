@@ -56,9 +56,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeTabs?.width).toBeLessThanOrEqual(152);
   expect(geometry.modeTabs?.height).toBe(32);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Idle mobile composer is the reference's single-row capsule. */
-  expect(geometry.composer?.height).toBeGreaterThanOrEqual(50);
-  expect(geometry.composer?.height).toBeLessThanOrEqual(66);
+  /* Empty-home mobile composer uses the reference's two-storey capsule. */
+  expect(geometry.composer?.height).toBe(86);
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(600);
@@ -97,9 +96,11 @@ test('mobile conversation home matches the compact dark reference layout', async
      greeting's parent flex column. */
   expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
     .toBeLessThanOrEqual(1);
-  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.44;
+  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.40;
   expect(Math.abs(centering.centerY - expectedCenterY))
     .toBeLessThanOrEqual(1);
+
+  await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
 
   /* The active-chat header uses the reference's one tactile navigation
      control plus two unframed utilities. Expose the session-only controls
@@ -142,11 +143,10 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(headerVisual.shareIcon?.width).toBe(24);
   expect(headerVisual.shareLabelVisible).toBe(false);
 
-  await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
-
   /* The supplied visual's app-owned region normalizes to roughly 390×756
      after removing browser chrome. Capture that exact comparison viewport
      outside the repo for the design-QA pass. */
+  await page.evaluate(() => { document.body.dataset.conversationActive = 'false'; });
   await page.setViewportSize({ width: 390, height: 756 });
   await page.waitForTimeout(180);
   await page.screenshot({ path: 'test-results/socrates-mobile-reference-implementation.png', fullPage: true });
@@ -177,12 +177,14 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  /* Flat scrollable list: the three media shortcuts plus every workflow,
-     with no "Tools" disclosure row. */
-  await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(3);
+  /* The first screen keeps the capture, attachment, image creation, and
+     web search actions together before the remaining scrollable tools. */
+  await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(5);
   await expect(menu).toContainText('Camera');
   await expect(menu).toContainText('Photos');
   await expect(menu).toContainText('Files');
+  await expect(menu).toContainText('Create image');
+  await expect(menu).toContainText('Web search');
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
   /* On phones the add-content menu is a floating card anchored above the

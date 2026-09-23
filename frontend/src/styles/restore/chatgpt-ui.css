@@ -1,0 +1,2714 @@
+
+/*
+ * Socrates visual layer
+ *
+ * This file is intentionally the last stylesheet import. The legacy shell
+ * still owns the DOM and interaction wiring; this layer gives every surface
+ * one quiet, ChatGPT-like visual language without changing those contracts.
+ */
+
+:root {
+  /* Latin sans order follows the design system (src/styles.css):
+     Plus Jakarta Sans is the primary western face, Inter the fallback.
+     An Inter-first stack here silently demoted the bundled brand face
+     across every surface this layer owns (caught by
+     placeholder-localization.spec). */
+  --cg-font: "Plus Jakarta Sans", Inter, "Noto Sans SC", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+  --cg-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --cg-radius-sm: 8px;
+  --cg-radius-md: 14px;
+  --cg-radius-lg: 22px;
+  --cg-radius-pill: 999px;
+  --cg-sidebar-width: 240px;
+  /* The user-facing display-width preference (--app-width-scale, set by
+     src/displayPrefs.js) must flow into every content token. The legacy
+     layer scaled these widths; dropping the factor here silently froze
+     the "content width" setting (caught by home-customization.spec). */
+  --cg-content-width: calc(1024px * var(--app-width-scale, 1));
+}
+
+[data-mode="dark"] {
+  --cg-page: #212121;
+  --cg-rail: #171717;
+  --cg-surface: #2f2f2f;
+  --cg-surface-raised: #383838;
+  --cg-surface-hover: #343434;
+  --cg-border: rgb(255 255 255 / 10%);
+  --cg-border-strong: rgb(255 255 255 / 18%);
+  --cg-text: #f5f5f5;
+  --cg-text-secondary: #c5c5c5;
+  --cg-text-muted: #9b9b9b;
+  --cg-text-faint: #717171;
+  --cg-accent: #f5f5f5;
+  --cg-accent-strong: #ffffff;
+  --cg-accent-ink: #0a0a0a;
+  --cg-danger: #ef8f8f;
+}
+
+[data-mode="light"] {
+  --cg-page: #fbfbfa;
+  --cg-rail: #f3f3f1;
+  --cg-surface: #fff;
+  --cg-surface-raised: #f4f4f2;
+  --cg-surface-hover: #e9e9e7;
+  --cg-border: rgb(0 0 0 / 10%);
+  --cg-border-strong: rgb(0 0 0 / 16%);
+  --cg-text: #171717;
+  --cg-text-secondary: #595959;
+  --cg-text-muted: #858585;
+  --cg-text-faint: #a4a4a4;
+  --cg-accent: #171717;
+  --cg-accent-strong: #000000;
+  --cg-accent-ink: #fff;
+  --cg-danger: #b65050;
+}
+
+html,
+body,
+#appShell {
+  font-family: var(--cg-font);
+}
+
+body,
+#appShell,
+#appShell .main,
+#appShell .main-content,
+#appShell .main-bg {
+  background: var(--cg-page) !important;
+  color: var(--cg-text);
+}
+
+#appShell {
+  /* --app-sidebar-width is intentionally NOT declared here: sidebarResize.js
+     sets it on <html>, and a local declaration would shadow that value and
+     freeze the sidebar drag. Falls back to --cg-sidebar-width (240/260px). */
+  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
+  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
+  --workbench-content-max: var(--cg-content-width);
+}
+
+/* Shell / rail */
+
+#appShell .sidebar {
+  width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
+  min-width: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
+  background: var(--cg-rail) !important;
+  background-image: none !important;
+  border-right: 1px solid var(--cg-border) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+#appShell .sidebar::after {
+  display: none !important;
+}
+
+#appShell .sidebar-inner {
+  padding: 12px 10px 10px;
+}
+
+#appShell .sidebar-header {
+  min-height: 44px;
+  padding: 2px 4px 10px 8px;
+}
+
+#appShell .sidebar-logo {
+  gap: 8px;
+  color: var(--cg-text);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+#appShell .sidebar-logo-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+#appShell .sidebar-header-actions {
+  gap: 2px;
+}
+
+#appShell .sidebar-header .icon-btn,
+#appShell .sidebar-header .icon-btn:hover {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--cg-text-secondary);
+  background: transparent;
+}
+
+#appShell .sidebar-header .icon-btn:hover {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+#appShell .sidebar-nav {
+  gap: 3px;
+  padding: 6px 0 12px;
+}
+
+#appShell .sidebar-nav-btn {
+  min-height: 38px;
+  padding: 8px 10px;
+  gap: 11px;
+  border-radius: 10px;
+  color: var(--cg-text-secondary);
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 20px;
+}
+
+#appShell .sidebar-nav-btn svg {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  opacity: 0.92;
+}
+
+#appShell .sidebar-nav-btn:hover,
+#appShell .sidebar-nav-btn:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+#appShell .sidebar-nav-btn.active,
+#appShell .sidebar-nav-btn[aria-current="page"],
+#appShell #navNew.sidebar-nav-btn {
+  color: var(--cg-text);
+  background: var(--cg-surface);
+}
+
+#appShell #navNew.sidebar-nav-btn:hover {
+  background: var(--cg-surface-hover);
+}
+
+#appShell .sidebar-search-row {
+  gap: 6px;
+  padding: 0 0 12px;
+}
+
+#appShell .sidebar-search {
+  height: 36px;
+  border: 1px solid var(--cg-border);
+  border-radius: 10px;
+  background: var(--cg-surface);
+  background: color-mix(in srgb, var(--cg-surface) 72%, transparent);
+}
+
+#appShell .sidebar-search:focus-within {
+  border-color: var(--cg-border-strong);
+  background: var(--cg-surface);
+  box-shadow: 0 0 0 3px var(--cg-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 14%, transparent);
+}
+
+#appShell .sidebar-search input {
+  color: var(--cg-text);
+  font-size: 13px;
+}
+
+#appShell .recents-panel {
+  padding: 0;
+}
+
+#appShell .recents-header {
+  padding: 8px 10px 6px;
+}
+
+#appShell .recents-title {
+  color: var(--cg-text-muted);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+#appShell .recents-filter-chips {
+  padding: 0 6px 6px;
+}
+
+#appShell .recent-item {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 9px;
+}
+
+#appShell .recent-item-text {
+  color: var(--cg-text-secondary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+#appShell .recent-item.active,
+#appShell .recent-item:hover {
+  background: var(--cg-surface);
+}
+
+#appShell .recent-item.active .recent-item-text,
+#appShell .recent-item:hover .recent-item-text {
+  color: var(--cg-text);
+}
+
+#appShell .sidebar-footer {
+  min-height: 58px;
+  padding: 10px 6px 4px;
+  border-top: 1px solid var(--cg-border);
+}
+
+#appShell .user-row {
+  gap: 9px;
+  min-width: 0;
+  padding: 4px;
+  border-radius: 9px;
+}
+
+#appShell .user-row:hover {
+  background: var(--cg-surface-hover);
+}
+
+#appShell .user-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  /* Default identity mark is neutral gray; the gold accent stays reserved
+     for interactive/active surfaces instead of every avatar. */
+  background: var(--cg-surface-hover);
+  color: var(--cg-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#appShell .user-name {
+  color: var(--cg-text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+#appShell .user-plan {
+  color: var(--cg-text-muted);
+  font-size: 11px;
+}
+
+#appShell .sidebar-footer-actions {
+  gap: 2px;
+}
+
+#appShell .sidebar-footer-actions > .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--cg-text-muted);
+}
+
+#appShell .sidebar-footer-actions > .icon-btn:hover {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+/* Top bar and landing */
+
+#appShell .main {
+  padding-left: var(--app-sidebar-width, var(--cg-sidebar-width)) !important;
+}
+
+#appShell .sidebar.collapsed ~ .main {
+  padding-left: 0 !important;
+}
+
+#appShell .top-bar {
+  min-height: 58px;
+  padding: 8px 18px;
+  border-bottom: 0;
+  background: var(--cg-page) !important;
+}
+
+#appShell .top-mode-tabs {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-pill);
+  background: var(--cg-surface) !important;
+  box-shadow: none !important;
+}
+
+#appShell .top-mode-tabs .app-mode-toggle {
+  min-width: 94px;
+  padding: 7px 20px;
+  border-radius: var(--cg-radius-pill);
+  color: var(--cg-text-muted);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+#appShell .top-mode-tabs .app-mode-toggle:hover {
+  color: var(--cg-text);
+}
+
+#appShell .top-mode-tabs .app-mode-toggle.active {
+  color: var(--cg-text);
+  background: var(--cg-surface-raised) !important;
+  box-shadow: none !important;
+}
+
+#appShell .top-bar .toggle-sidebar,
+#appShell .top-bar .icon-btn,
+#appShell .top-bar .cg-circle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--cg-text-secondary);
+}
+
+#appShell .top-bar .toggle-sidebar:hover,
+#appShell .top-bar .icon-btn:hover,
+#appShell .top-bar .cg-circle-btn:hover {
+  color: var(--cg-text);
+  background: var(--cg-surface);
+}
+
+#appShell #mainInner {
+  width: min(100%, var(--cg-content-width));
+  max-width: var(--cg-content-width);
+}
+
+#appShell #topicSetup {
+  min-height: calc(100dvh - 58px);
+  padding: 0 24px 84px;
+  gap: 0;
+}
+
+#appShell #topicSetup::before,
+#appShell #topicSetup::after {
+  display: block;
+  flex: 1 1 0;
+}
+
+#appShell .topic-title.greeting {
+  max-width: 680px;
+  color: var(--cg-text) !important;
+  font-size: clamp(28px, 3vw, 38px) !important;
+  font-weight: 520 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.2 !important;
+}
+
+#appShell .topic-sub {
+  margin-top: 10px;
+  color: var(--cg-text-muted);
+  font-size: 14px;
+}
+
+/* One-row idle composer. The existing editor still expands to the legacy
+   multiline grid when its controller adds .composer-multiline. */
+
+#appShell #topicInputWrap:not(.voice-recording-active),
+#appShell #chatInputWrap:not(.voice-recording-active) {
+  box-sizing: border-box;
+  /* Width follows the scale-aware reading-column token (fixed 768px here
+     froze the display-width preference; see --conversation-composer-width
+     and home-customization.spec). */
+  width: min(100%, var(--conversation-composer-width)) !important;
+  max-width: var(--conversation-composer-width) !important;
+  min-height: 68px;
+  border: 1px solid var(--cg-border-strong) !important;
+  border-radius: 34px !important;
+  background: var(--cg-surface) !important;
+  box-shadow: 0 14px 38px rgb(0 0 0 / 18%) !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+#appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: var(--cg-border-strong) !important;
+  border-color: color-mix(in srgb, var(--cg-accent) 48%, var(--cg-border-strong)) !important;
+  box-shadow: 0 0 0 3px var(--cg-accent), 0 16px 42px rgb(0 0 0 / 22%) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 12%, transparent), 0 16px 42px rgb(0 0 0 / 22%) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) {
+  /* P_mic-dedup — the dedicated mic button was removed as a duplicate of
+     the idle startBtn voice affordance, so the topic grid drops from five
+     tracks to four: attach, editor, effort, send. */
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto 38px;
+  grid-template-rows: 66px;
+  align-items: center;
+  height: 68px !important;
+  margin-top: 24px;
+  padding: 0 10px 0 4px;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) > .attachment-chips {
+  grid-column: 1 / -1;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) .composer-editor-root,
+#appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root {
+  width: 100%;
+  min-width: 0;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) .composer-editor-root {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer,
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .footer-left-group,
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer,
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .footer-left-group {
+  display: contents !important;
+}
+
+#appShell #topicComposerToolsBtn,
+#appShell #chatComposerToolsBtn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  margin: 0;
+  border: 0;
+  border-radius: 50% !important;
+  color: var(--cg-text-secondary);
+  background: transparent;
+}
+
+#appShell #topicComposerToolsBtn:hover,
+#appShell #chatComposerToolsBtn:hover,
+#appShell #topicComposerToolsBtn:focus-visible,
+#appShell #chatComposerToolsBtn:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+#appShell #topicComposerToolsBtn svg,
+#appShell #chatComposerToolsBtn svg {
+  width: 21px;
+  height: 21px;
+  stroke-width: 1.7;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn,
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .attach-btn {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker,
+#appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker {
+  display: inline-flex !important;
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+#appShell .effort-trigger {
+  min-height: 34px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 17px;
+  color: var(--cg-text-muted);
+  background: transparent;
+  font-size: 12px;
+}
+
+#appShell .effort-trigger:hover,
+#appShell .effort-trigger:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+#appShell .effort-trigger .effort-glyph {
+  width: 14px;
+  height: 14px;
+}
+
+#appShell .effort-trigger .effort-caret {
+  width: 12px;
+  height: 12px;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+#appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  grid-column: 4;
+  grid-row: 1;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--cg-text-secondary);
+  background: transparent;
+}
+
+#appShell .mobile-mic-btn:hover,
+#appShell .mobile-mic-btn:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+#appShell .mobile-mic-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn {
+  grid-column: 5;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--cg-accent-ink);
+  background: var(--cg-accent) !important;
+  box-shadow: none !important;
+}
+
+/* P_mic-dedup — with the mic track gone the topic send button shifts one
+   column left; the in-chat composer keeps its own mic and stays on 5. */
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
+  grid-column: 4;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn:hover,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn:hover,
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn.active,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn.active {
+  color: var(--cg-accent-ink);
+  background: var(--cg-accent-strong) !important;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) #startBtn svg,
+#appShell #chatInputWrap:not(.voice-recording-active) .send-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+#appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+#appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+  box-sizing: border-box;
+  width: 100%;
+  height: 66px !important;
+  min-height: 66px !important;
+  max-height: 66px !important;
+  padding: 20px 2px !important;
+  overflow: hidden;
+  color: var(--cg-text);
+  font: 400 15px/26px var(--cg-font);
+}
+
+#appShell .rich-composer .tiptap p.is-editor-empty:first-child::before {
+  color: var(--cg-text-muted);
+}
+
+/* In-session composer is structurally nested one level deeper. */
+
+#appShell #chatInputWrap:not(.voice-recording-active) {
+  display: block;
+  height: 68px !important;
+  padding: 0 10px 0 4px;
+}
+
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body {
+  display: grid !important;
+  grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px;
+  grid-template-rows: 66px;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+}
+
+#appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#appShell #chatInputWrap:not(.voice-recording-active) .chat-input-footer .attach-btn {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+}
+
+/* Selection chips are state-only UI; the prompt editor remains untouched. */
+
+.composer-plugin-chips {
+  position: relative;
+  z-index: 1301;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.composer-plugin-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.composer-plugin-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  max-width: 170px;
+  min-height: 28px;
+  gap: 6px;
+  padding: 4px 8px 4px 6px;
+  border: 1px solid var(--cg-border);
+  border-radius: 9px;
+  color: var(--cg-text-secondary);
+  background: var(--cg-surface-raised);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.composer-plugin-chip-icon,
+.composer-plugin-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+  border-radius: 6px;
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.composer-plugin-chip-icon svg,
+.composer-plugin-mark svg {
+  width: 16px;
+  height: 16px;
+}
+
+.composer-plugin-chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-plugin-chip-remove {
+  position: relative;
+  z-index: 1302;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--cg-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.composer-plugin-chip-remove:hover,
+.composer-plugin-chip-remove:focus-visible {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+.composer-plugin-chip-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.composer-plugin-chip-more {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.rich-composer:has(.composer-plugin-chips) {
+  gap: 4px;
+}
+
+#appShell #topicInputWrap:has(.composer-plugin-chips),
+#appShell #chatInputWrap:has(.composer-plugin-chips) {
+  min-height: 92px;
+  height: auto !important;
+  border-radius: 24px !important;
+}
+
+#appShell #topicInputWrap:has(.composer-plugin-chips) {
+  grid-template-rows: 30px 66px;
+}
+
+#appShell #chatInputWrap:has(.composer-plugin-chips) .chat-composer-body {
+  grid-template-rows: 30px 66px;
+}
+
+#appShell #topicInputWrap:has(.composer-plugin-chips) .composer-editor-root,
+#appShell #chatInputWrap:has(.composer-plugin-chips) .composer-editor-root {
+  padding-top: 6px;
+}
+
+/* Long content deliberately gets a second row instead of shrinking the
+   editor into unreadable space. */
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+  height: auto !important;
+  min-height: 112px;
+  border-radius: 24px !important;
+}
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
+  grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px;
+  grid-template-rows: minmax(68px, auto) 42px;
+}
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root,
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .composer-editor-root {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body {
+  grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px;
+  grid-template-rows: minmax(68px, auto) 42px;
+}
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker,
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn {
+  grid-column: 4;
+  grid-row: 2;
+}
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .send-btn {
+  grid-column: 5;
+  grid-row: 2;
+}
+
+#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer-editor,
+#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+  height: auto !important;
+  min-height: 68px !important;
+  max-height: 280px !important;
+  padding: 14px 8px 8px !important;
+  overflow-y: auto;
+}
+
+/* Plus menu: built-in actions remain intact, real connectors occupy a calm
+   directory section underneath them. */
+
+#composerToolsMenu {
+  /* Width and max-height stay non-important on purpose: the positioning
+     script sizes the card per trigger (composer-aligned width, room-to-
+     viewport-bottom height) via inline styles, which must win. The #id
+     selector still beats the base class rules in styles.css. The 50vh cap
+     keeps the expanded card inside the viewport's lower half. */
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(50vh, 620px);
+  padding: 8px !important;
+  overflow-y: auto;
+  border: 1px solid var(--cg-border-strong) !important;
+  border-radius: 18px !important;
+  background: var(--cg-surface) !important;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 38%), 0 1px 0 rgb(255 255 255 / 4%) inset !important;
+  color: var(--cg-text);
+}
+
+#composerToolsMenu .composer-tools-item{
+  min-height: 42px;
+  border-radius: 10px;
+  color: var(--cg-text-secondary);
+}
+
+#composerToolsMenu .composer-tools-item:hover,
+#composerToolsMenu .composer-tools-item:focus-visible{
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+.composer-tools-plugins {
+  margin-top: 8px;
+  padding: 12px 4px 4px;
+  border-top: 1px solid var(--cg-border);
+}
+
+
+.scheduled-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--cg-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+.scheduled-section-heading > span:last-child {
+  color: var(--cg-text-muted);
+  font-size: 11px;
+  font-weight: 450;
+}
+
+.composer-tools-search,
+.plugin-directory-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin: 10px 0 8px;
+  padding: 0 10px;
+  border: 1px solid var(--cg-border);
+  border-radius: 10px;
+  color: var(--cg-text-muted);
+  background: var(--cg-rail);
+}
+
+.composer-tools-search:focus-within,
+.plugin-directory-search:focus-within {
+  border-color: var(--cg-border-strong);
+  border-color: color-mix(in srgb, var(--cg-accent) 48%, var(--cg-border-strong));
+  box-shadow: 0 0 0 3px var(--cg-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 12%, transparent);
+}
+
+.composer-tools-search svg,
+.plugin-directory-search svg {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.composer-tools-search input,
+.plugin-directory-search input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: var(--cg-text);
+  background: transparent;
+  font: 400 13px/20px var(--cg-font);
+}
+
+.composer-tools-search input::placeholder,
+.plugin-directory-search input::placeholder {
+  color: var(--cg-text-muted);
+}
+
+.composer-tools-plugin-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+
+.composer-tools-plugin-item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 9px;
+  min-height: 56px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--cg-text-secondary);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.composer-tools-plugin-item:hover,
+.composer-tools-plugin-item:focus-visible,
+.composer-tools-plugin-item.is-selected {
+  border-color: var(--cg-border);
+  background: var(--cg-surface-hover);
+  outline: none;
+}
+
+.composer-tools-plugin-item.is-unavailable {
+  opacity: .48;
+  cursor: not-allowed;
+}
+
+
+
+.composer-tools-plugin-name{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composer-tools-plugin-name {
+  color: var(--cg-text);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+
+
+
+
+
+
+.composer-tools-plugin-state {
+  padding: 18px 8px;
+  color: var(--cg-text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Expanded plus-menu card: single continuous list with a footer filter,
+   mirroring the reference screenshot. Workflows and connectors share one
+   row rhythm (icon + single-line title/description); the footer input
+   filters both sections at once. UI-only: picking behavior is unchanged. */
+#composerToolsMenu .composer-tools-desktop-items.composer-tools-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-item {
+  min-height: 34px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-copy {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-copy > span {
+  flex: 0 0 auto;
+  max-width: 38%;
+}
+
+#composerToolsMenu .composer-tools-expanded .composer-tools-copy small {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+}
+
+#composerToolsMenu .composer-tools-plugins {
+  margin-top: 2px;
+  padding: 0;
+  border-top: 0;
+}
+
+#composerToolsMenu .composer-tools-plugin-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  max-height: none;
+  overflow: visible;
+}
+
+#composerToolsMenu .composer-tools-plugin-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+}
+
+#composerToolsMenu .composer-plugin-mark {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cg-surface-raised);
+  color: var(--cg-text);
+}
+
+#composerToolsMenu .composer-plugin-mark svg {
+  width: 18px;
+  height: 18px;
+}
+
+#composerToolsMenu .composer-tools-plugin-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cg-text);
+}
+
+#composerToolsMenu .composer-tools-check {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--cg-accent);
+}
+
+#composerToolsMenu .composer-tools-footer-search.composer-tools-search {
+  height: 32px;
+  margin: 4px 0 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#composerToolsMenu .composer-tools-footer-search.composer-tools-search:focus-within {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+#composerToolsMenu .composer-tools-footer-search input::placeholder {
+  color: var(--cg-text-muted);
+}
+
+#composerToolsMenu {
+  overscroll-behavior: contain;
+}
+
+/* Workspace pages */
+
+body.workspace-active #appShell #mainInner {
+  width: min(100%, var(--cg-content-width));
+  max-width: var(--cg-content-width);
+}
+
+body.workspace-active #appShell .main-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--cg-content-width);
+  margin: 0 auto;
+  padding: 56px 28px 72px;
+  overflow-y: auto;
+  gap: 0;
+}
+
+
+body.workspace-active #appShell .main-page > .scheduled-header{
+  display: none;
+}
+
+body.workspace-active #appShell .main-page > .workspace-intro {
+  display: none;
+}
+
+body.workspace-active #appShell .workspace-add-btn,
+body.workspace-active #appShell .workspace-primary,
+body.workspace-active #appShell .workspace-secondary,
+body.workspace-active #appShell .workspace-danger{
+  border-radius: 10px;
+  font-family: var(--cg-font);
+}
+
+body.workspace-active #appShell .workspace-primary {
+  color: var(--cg-accent-ink);
+  background: var(--cg-accent);
+}
+
+body.workspace-active #appShell .workspace-primary:hover {
+  background: var(--cg-accent-strong);
+}
+
+body.workspace-active #appShell .workspace-secondary{
+  border: 1px solid var(--cg-border-strong);
+  color: var(--cg-text-secondary);
+  background: var(--cg-surface);
+}
+
+body.workspace-active #appShell .workspace-secondary:hover{
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+.plugin-directory {
+  width: 100%;
+}
+
+/* Kimi-style head: left-aligned title + one-line description, with the
+   circular back button quieted to a top-right corner affordance. */
+.plugin-directory-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.plugin-directory-heading {
+  min-width: 0;
+}
+
+.plugin-directory-head h2 {
+  margin: 0;
+  color: var(--cg-text);
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  line-height: 1.25;
+}
+
+.plugin-directory-desc {
+  margin: 8px 0 0;
+  color: var(--cg-text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+
+
+
+
+
+
+
+
+.scheduled-directory-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 34px;
+}
+
+.scheduled-directory-head h1 {
+  margin-top: 6px;
+  color: var(--cg-text);
+  font-size: 32px;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.scheduled-directory-head p {
+  max-width: 560px;
+  margin-top: 10px;
+  color: var(--cg-text-secondary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.workspace-eyebrow {
+  color: var(--cg-accent);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.plugin-directory-search {
+  width: 100%;
+  height: 56px;
+  margin: 0;
+  padding: 0 22px;
+  gap: 12px;
+  border-radius: 28px;
+}
+
+.plugin-directory-search svg {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.plugin-directory-search input {
+  font-size: 15px;
+  line-height: 24px;
+}
+
+/* Reference-style category chips: plain text that scrolls horizontally,
+   the active scope becomes a filled pill. */
+.plugin-directory-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.plugin-directory-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.plugin-directory-tabs button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--cg-text-muted);
+  background: transparent;
+  font: 500 15px/24px var(--cg-font);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
+}
+
+.plugin-directory-tabs button:hover {
+  color: var(--cg-text);
+}
+
+.plugin-directory-tabs button.active {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  font-weight: 600;
+}
+
+.plugin-directory-tabs button:focus-visible {
+  outline: 2px solid var(--cg-accent);
+  outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent);
+  outline-offset: 2px;
+}
+
+/* Kimi-style two-column card grid. Cards keep the legacy connector-row
+   hooks (`.connector-row.plugin-directory-row`) so the plugin form and
+   bridge logic stay untouched — only the box model changes here. */
+.plugin-directory-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* The empty state must span the full grid width. */
+.plugin-directory-empty {
+  grid-column: 1 / -1;
+}
+
+/* Beat the legacy `.plugins-list .connector-row` card rules (0,2,0):
+   directory rows own their box, radius, and background here so the two
+   layers can never blend into an accidental hybrid again. */
+.plugins-list .connector-row.plugin-directory-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--cg-border);
+  border-radius: 16px;
+  background: var(--cg-surface);
+  transition: background-color .16s ease, border-color .16s ease;
+}
+
+.plugins-list .connector-row.plugin-directory-row:hover {
+  border-color: var(--cg-border-strong);
+  background: var(--cg-surface-hover);
+}
+
+.plugin-directory-row .workspace-row-icon {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: var(--cg-surface-raised);
+}
+
+.plugin-directory-row .workspace-row-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.plugin-directory-row .workspace-row-copy {
+  /* Inherit flex:1 (1 1 0%) from .workspace-row-copy: a zero basis keeps
+     the copy on the icon's line. An auto basis sizes from max-content and
+     pushes the copy below the icon on narrow cards. */
+  min-width: 0;
+  gap: 5px;
+}
+
+.plugin-directory-row .workspace-row-copy strong {
+  display: block;
+  overflow: hidden;
+  color: var(--cg-text);
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-directory-row .workspace-row-copy span {
+  display: block;
+  overflow: hidden;
+  color: var(--cg-text-muted);
+  font-size: 12.5px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-directory-row-action {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+
+
+
+
+/* Kimi-style quiet connected state: a bare accent checkmark instead of a
+   text pill. The accessible label lives on the span (aria-label). */
+
+
+
+
+
+.plugin-directory-note {
+  color: var(--cg-text-muted);
+  font-size: 12px;
+}
+
+.plugin-directory-note {
+  margin-top: 18px;
+}
+
+.plugin-directory-warning,
+.plugin-directory-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  color: var(--cg-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+
+
+.plugin-directory-warning strong,
+.plugin-directory-empty strong {
+  color: var(--cg-text-secondary);
+  font-weight: 550;
+}
+
+/* Scheduled */
+
+.scheduled-directory {
+  width: 100%;
+}
+
+.scheduled-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 13px;
+  border: 1px solid var(--cg-border-strong);
+  border-radius: 18px;
+  color: var(--cg-text-secondary);
+  background: var(--cg-surface);
+  font: 500 13px/20px var(--cg-font);
+  cursor: pointer;
+}
+
+.scheduled-filter-button:hover,
+.scheduled-filter-button.active {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+.scheduled-filter-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.scheduled-task-composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 68px;
+  padding: 7px 9px 7px 5px;
+  border: 1px solid var(--cg-border-strong);
+  border-radius: 34px;
+  background: var(--cg-surface);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 18%);
+}
+
+.scheduled-task-composer input {
+  min-width: 0;
+  flex: 1;
+  height: 52px;
+  padding: 0 6px;
+  border: 0;
+  outline: 0;
+  color: var(--cg-text);
+  background: transparent;
+  font: 400 15px/24px var(--cg-font);
+}
+
+.scheduled-task-composer input::placeholder {
+  color: var(--cg-text-muted);
+}
+
+.scheduled-composer-plus,
+.scheduled-composer-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--cg-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.scheduled-composer-plus:hover {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+.scheduled-composer-submit {
+  flex-basis: 36px;
+  width: 36px;
+  height: 36px;
+  color: var(--cg-accent-ink);
+  background: var(--cg-accent);
+}
+
+.scheduled-composer-submit:hover {
+  background: var(--cg-accent-strong);
+}
+
+.scheduled-composer-plus svg,
+.scheduled-composer-submit svg {
+  width: 20px;
+  height: 20px;
+}
+
+.scheduled-section-heading {
+  margin-top: 30px;
+  padding-bottom: 10px;
+}
+
+.scheduled-recommendations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+}
+
+.scheduled-recommendation {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+  min-height: 76px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--cg-border);
+  color: var(--cg-text);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scheduled-recommendation:hover .scheduled-recommendation-add {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+.scheduled-recommendation-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  color: var(--cg-text-secondary);
+  background: var(--cg-surface);
+}
+
+.scheduled-recommendation-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.scheduled-recommendation-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scheduled-recommendation-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.scheduled-recommendation-copy small {
+  overflow: hidden;
+  color: var(--cg-text-muted);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scheduled-recommendation-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--cg-text-muted);
+  font-size: 22px;
+  font-weight: 300;
+}
+
+.scheduled-empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 34px 0 0;
+  color: var(--cg-text-muted);
+  font-size: 13px;
+}
+
+.scheduled-empty-state strong {
+  color: var(--cg-text-secondary);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.scheduled-task-list {
+  margin-top: 38px;
+}
+
+.scheduled-task-heading {
+  border-bottom: 1px solid var(--cg-border);
+}
+
+.scheduled-task-list .task-row {
+  min-height: 72px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cg-border);
+  border-radius: 0;
+}
+
+.scheduled-task-list .task-row:hover {
+  background: transparent;
+}
+
+/* Existing library/projects controls inherit the same page rhythm. */
+
+
+
+
+
+
+
+.library-tab {
+  min-height: 34px;
+  border-radius: 17px;
+  color: var(--cg-text-muted);
+}
+
+.library-tab.active {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+}
+
+
+
+body.workspace-active #appShell .workspace-row {
+  border-bottom: 1px solid var(--cg-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+body.workspace-active #appShell .workspace-row:hover {
+  background: var(--cg-surface);
+  background: color-mix(in srgb, var(--cg-surface) 60%, transparent);
+}
+
+/* Dialogs, auth and form surfaces */
+
+.auth-gate {
+  background: var(--cg-page) !important;
+  color: var(--cg-text);
+}
+
+.auth-card,
+.workspace-dialog-card,
+.modal-card {
+  border: 1px solid var(--cg-border-strong) !important;
+  border-radius: 20px !important;
+  background: var(--cg-surface) !important;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 32%) !important;
+}
+
+.auth-brand,
+.auth-title,
+.workspace-dialog-title h2 {
+  color: var(--cg-text) !important;
+  font-family: var(--cg-font) !important;
+}
+
+.auth-input,
+.workspace-field input,
+.workspace-field textarea,
+.workspace-field select {
+  border: 1px solid var(--cg-border-strong) !important;
+  border-radius: 10px !important;
+  background: var(--cg-rail) !important;
+  color: var(--cg-text) !important;
+}
+
+.auth-input:focus,
+.workspace-field input:focus,
+.workspace-field textarea:focus,
+.workspace-field select:focus {
+  border-color: var(--cg-border-strong) !important;
+  border-color: color-mix(in srgb, var(--cg-accent) 62%, var(--cg-border-strong)) !important;
+  box-shadow: 0 0 0 3px var(--cg-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 13%, transparent) !important;
+}
+
+.auth-btn.primary,
+.auth-btn.primary:hover {
+  color: var(--cg-accent-ink) !important;
+  background: var(--cg-accent) !important;
+}
+
+/* Small screens: keep the rail as a drawer, pages as one column, and every
+   primary control reachable without horizontal scrolling. */
+
+@media (max-width: 768px) {
+  #appShell {
+    --cg-sidebar-width: min(300px, 84vw);
+    --conversation-content-width: calc(100vw - 28px);
+    --conversation-composer-width: calc(100vw - 28px);
+  }
+
+  #appShell .sidebar {
+    width: var(--cg-sidebar-width) !important;
+    min-width: var(--cg-sidebar-width) !important;
+  }
+
+  #appShell .main,
+  #appShell .sidebar.collapsed ~ .main {
+    padding-left: 0 !important;
+  }
+
+  #appShell .top-bar {
+    min-height: 58px;
+    padding: 8px 12px;
+  }
+
+  #appShell .top-mode-tabs {
+    min-width: 166px;
+  }
+
+  #appShell .top-mode-tabs .app-mode-toggle {
+    min-width: 78px;
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+
+  #appShell #mainInner,
+  body.workspace-active #appShell #mainInner {
+    width: 100%;
+    max-width: none;
+  }
+
+  #appShell #topicSetup {
+    min-height: calc(100dvh - 58px);
+    padding: 0 14px max(24px, env(safe-area-inset-bottom));
+    justify-content: flex-end;
+  }
+
+  #appShell #topicSetup::before,
+  #appShell #topicSetup::after,
+  #appShell #topicSetup .topic-title.greeting,
+  #appShell #topicSetup .topic-sub {
+    display: none !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active),
+  #appShell #chatInputWrap:not(.voice-recording-active) {
+    /* P_mobile-composer-shell — the mobile composer is a true black pill
+       that sits flush against the #000 canvas. The 1px stroke uses the
+       shared border token so it reads as the same divider color as
+       everything else in dark mode; the 56px height matches the
+       reference's phone composer geometry (44px button column + 12px
+       optical padding), and the 28px border-radius keeps the half-pill
+       silhouette at this height. */
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 56px;
+    height: 56px !important;
+    border: 1px solid var(--cg-border) !important;
+    border-radius: 28px !important;
+    background: var(--cgv-composer-surface, #1a1a1a) !important;
+    box-shadow: none !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) {
+    /* P_mic-dedup — three tracks on mobile: attach, editor, send. */
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
+    grid-template-rows: 54px;
+    margin-top: 0;
+    padding-right: 7px;
+    align-items: center;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell #chatInputWrap:not(.voice-recording-active) .footer-left-group .effort-picker {
+    display: none !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap:not(.voice-recording-active) .mobile-mic-btn {
+    grid-column: 3;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn,
+  #appShell #chatInputWrap:not(.voice-recording-active) .send-btn {
+    grid-column: 4;
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  /* P_mic-dedup — topic send fills the old mic track's neighbour slot. */
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
+    grid-column: 3;
+  }
+
+  #appShell #chatInputWrap:not(.voice-recording-active) {
+    padding-right: 7px;
+  }
+
+  #appShell #chatInputWrap:not(.voice-recording-active) .chat-composer-body {
+    grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
+    grid-template-rows: 54px;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer[data-surface="chat"] .tiptap {
+    /* 54px cell minus the 1px border leaves a 52px visual column. The
+       14px side padding centers the 26px line-height copy on the pill's
+       midline while leaving room for the caret. */
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    padding: 13px 0 !important;
+    font-size: 15px;
+    line-height: 26px;
+  }
+
+  #appShell .home-ideas {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100%;
+    margin: 0 0 14px;
+    overflow: visible;
+  }
+
+  
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips),
+  #appShell #chatInputWrap:has(.composer-plugin-chips) {
+    min-height: 94px;
+    height: auto !important;
+    border-radius: 24px !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) {
+    /* P_mic-dedup — chips strip above, controls row below, no mic track. */
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
+    grid-template-rows: 32px 60px;
+  }
+
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .chat-composer-body {
+    grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
+    grid-template-rows: 32px 60px;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+    min-height: 112px;
+    height: auto !important;
+    border-radius: 24px !important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
+    grid-template-columns: 44px minmax(0, 1fr) 36px;
+    grid-template-rows: minmax(68px, auto) 42px;
+  }
+
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body {
+    grid-template-columns: 44px minmax(0, 1fr) 32px 36px;
+    grid-template-rows: minmax(68px, auto) 42px;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker {
+    display: none !important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .send-btn {
+    grid-column: 4;
+    grid-row: 2;
+  }
+
+  #composerToolsMenu {
+    width: calc(100vw - 20px) !important;
+    max-height: min(72vh, 580px) !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+
+  .composer-tools-plugin-list,
+  .scheduled-recommendations {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-tools-plugin-list {
+    max-height: 270px;
+  }
+
+  body.workspace-active #appShell .main-page {
+    width: 100%;
+    max-width: none;
+    padding: 28px 16px max(44px, env(safe-area-inset-bottom));
+  }
+
+  .scheduled-directory-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .scheduled-directory-head {
+    margin-bottom: 20px;
+  }
+
+  .scheduled-directory-head h1 {
+    font-size: 26px;
+  }
+
+  .scheduled-directory-head p {
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .plugin-directory-head {
+    margin-bottom: 14px;
+  }
+
+  .plugin-directory-head h2 {
+    font-size: 22px;
+  }
+
+  .plugin-directory-desc {
+    margin-top: 6px;
+    font-size: 13.5px;
+  }
+
+  .plugin-directory-search {
+    height: 52px;
+    padding: 0 18px;
+    border-radius: 26px;
+  }
+
+  .plugin-directory-tabs {
+    margin-top: 14px;
+    margin-right: -16px;
+    margin-left: -16px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .plugin-directory-list {
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  /* Reference cards keep the action on the same line even on phones:
+     single-line ellipsis on the copy absorbs the narrow width. */
+  .plugins-list .connector-row.plugin-directory-row {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .plugin-directory-row .workspace-row-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+  }
+
+  .plugin-directory-row .workspace-row-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  
+
+  .scheduled-filter-button {
+    align-self: flex-start;
+  }
+
+  .scheduled-task-composer {
+    min-height: 62px;
+    border-radius: 31px;
+  }
+
+  .scheduled-task-composer input {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .scheduled-recommendation-copy small {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell *,
+  #composerToolsMenu * {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Final cascade guard. The legacy stylesheet contains a few later, highly
+   specific composer rules. Keep the new idle geometry authoritative while
+   leaving measured multiline and plugin-chip states free to expand. */
+@media (min-width: 769px) {
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)),
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: 68px !important;
+    min-height: 68px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    display: grid !important;
+    grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px !important;
+    grid-template-rows: 66px !important;
+  }
+
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    display: block !important;
+  }
+
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
+    display: grid !important;
+    /* Reference pill keeps plus / editor / effort / mic / send; the final
+       ref-baseline override pins the authoritative compact geometry. */
+    grid-template-columns: 40px minmax(0, 1fr) auto 32px 34px !important;
+    grid-template-rows: 52px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
+    height: 66px !important;
+    min-height: 66px !important;
+    max-height: 66px !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips),
+  #appShell #chatInputWrap:has(.composer-plugin-chips) {
+    height: auto !important;
+    min-height: 92px !important;
+    border-radius: 24px !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) {
+    grid-template-rows: 30px 66px !important;
+  }
+
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .chat-composer-body {
+    grid-template-rows: 30px 66px !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) .composer-editor-root,
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .composer-editor-root {
+    grid-row: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)),
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: 56px !important;
+    min-height: 56px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    grid-template-rows: 54px !important;
+  }
+
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .chat-composer-body {
+    grid-template-rows: 54px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips),
+  #appShell #chatInputWrap:has(.composer-plugin-chips) {
+    min-height: 94px !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) {
+    grid-template-rows: 32px 60px !important;
+  }
+
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .chat-composer-body {
+    grid-template-rows: 32px 60px !important;
+  }
+
+  /* A measured multiline draft and a selected plugin stack share the same
+     two-tier rhythm: content above, controls below. */
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active),
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+    height: auto !important;
+    min-height: 112px !important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
+    grid-template-columns: 44px minmax(0, 1fr) auto 36px !important;
+    grid-template-rows: minmax(68px, auto) 42px !important;
+  }
+
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .chat-composer-body {
+    grid-template-columns: 44px minmax(0, 1fr) auto 32px 36px !important;
+    grid-template-rows: minmax(68px, auto) 42px !important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .effort-picker,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .footer-left-group .effort-picker {
+    display: inline-flex !important;
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .mobile-mic-btn {
+    grid-column: 4 !important;
+    grid-row: 2 !important;
+  }
+
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .send-btn {
+    grid-column: 5 !important;
+    grid-row: 2 !important;
+  }
+
+  /* P_mic-dedup — topic multiline send shifts into the vacated mic track. */
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn {
+    grid-column: 4 !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) .composer-editor-root,
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 / -1 !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) #topicComposerToolsBtn,
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .chat-input-footer .attach-btn {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) .topic-footer .mobile-mic-btn,
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .mobile-mic-btn {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+  }
+
+  #appShell #topicInputWrap:has(.composer-plugin-chips) #startBtn,
+  #appShell #chatInputWrap:has(.composer-plugin-chips) .send-btn {
+    grid-column: 4 !important;
+    grid-row: 2 !important;
+  }
+
+  /* P_mic-dedup — topic chips send shifts into the vacated mic track. */
+  #appShell #topicInputWrap:has(.composer-plugin-chips) #startBtn {
+    grid-column: 3 !important;
+  }
+}
+
+/* Keep the mobile add menu as a true bottom sheet. The legacy stylesheet has
+   an older anchored-card rule later in the migration history; this final
+   declaration makes the responsive behavior match the current composer
+   bridge and gives the sheet a predictable touch target. */
+@media (max-width: 768px) {
+  #composerToolsMenu {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    max-height: min(72vh, 580px) !important;
+    padding: 8px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+    border: 0 !important;
+    border-top: 1px solid var(--cg-border-strong) !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -18px 52px rgb(0 0 0 / 42%) !important;
+  }
+
+  #composerToolsMenu::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 2px auto 10px;
+    border-radius: 999px;
+    background: var(--cg-border-strong);
+  }
+
+  body.composer-tools-open::after {
+    content: "";
+    position: fixed;
+    z-index: 1299;
+    inset: 0;
+    background: rgb(0 0 0 / 38%);
+    pointer-events: auto;
+  }
+}
+
+/* ─── Kimi-style landing polish ──────────────────────────────────────────
+   Appended last so it beats the one-row idle-composer cascade guard above.
+   Three changes vs. the ChatGPT-style landing:
+   1. A bigger greeting with more visual weight (mirrors the reference
+      wordmark's presence without replacing the personalized greeting).
+   2. A two-zone idle composer — text area above, controls row below —
+      mirroring the multiline/plugin-chips rhythm already used in-session.
+   3. A centered row of quick capability chips under the composer
+      (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
+
+#appShell .topic-title.greeting {
+  /* The display-width/type scale still applies: the clamp sets the
+     reference size, --app-font-scale carries the user's text-size
+     preference (dropping it froze the greeting under display settings,
+     caught by home-customization.spec). */
+  font-size: calc(clamp(34px, 3vw, 44px) * var(--app-font-scale, 1)) !important;
+  font-weight: 600 !important;
+  letter-spacing: -.025em !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Two-zone idle composer (desktop). Same selector shape as the cascade
+   guard so the later declaration wins without specificity games. The
+   footer stays display:contents — each control is placed onto row 2. */
+@media (min-width: 769px) {
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: auto !important;
+    min-height: 128px !important;
+    padding: 4px 12px 6px 4px;
+    border-radius: 24px !important;
+    grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px !important;
+    grid-template-rows: minmax(72px, auto) 46px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: start;
+    padding-top: 14px;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
+    height: auto !important;
+    min-height: 56px !important;
+    max-height: 280px !important;
+    padding: 0 10px 6px !important;
+    overflow-y: auto;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .effort-picker {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .mobile-mic-btn {
+    grid-column: 4;
+    grid-row: 2;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn {
+    grid-column: 5;
+    grid-row: 2;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile pins the composer to the bottom and hides the greeting —
+     the chip row would float in dead space, so it follows them out. */
+  #appShell #topicQuickActions {
+    display: none !important;
+  }
+}
+
+/* Plugin directory: the card grid falls back to a single column once two
+   cards would each get less than ~300px. */
+@media (max-width: 640px) {
+  .plugin-directory-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The workspace-active button theme block above forces a 10px radius on
+   every action button; the directory's Connect/Refresh pills stay round. */
+
+
+/* ─── Reference-aligned chat and workspace surfaces ─────────────────────
+   The supplied desktop references use a quiet, open canvas: one compact
+   composer row, broad page gutters, and list rows separated by hairlines.
+   These final rules intentionally own those surfaces as one design system. */
+
+[data-mode="light"] {
+  --cg-page: #fff;
+  --cg-rail: #f7f7f7;
+  --cg-surface: #fff;
+  --cg-surface-raised: #f3f3f3;
+  --cg-surface-hover: #ececec;
+  --cg-border: rgb(0 0 0 / 9%);
+  --cg-border-strong: rgb(0 0 0 / 15%);
+  --cg-text: #171717;
+  --cg-text-secondary: #4d4d4d;
+  --cg-text-muted: #737373;
+  --cg-text-faint: #999;
+}
+
+[data-mode="light"] #appShell .sidebar {
+  background: var(--cg-rail) !important;
+  background-image: none !important;
+  border-right-color: var(--cg-border) !important;
+  box-shadow: none !important;
+}
+
+#appShell .topic-title.greeting {
+  font-size: calc(clamp(28px, 2.35vw, 34px) * var(--app-font-scale, 1)) !important;
+  font-weight: 550 !important;
+  letter-spacing: -.035em !important;
+}
+
+@media (min-width: 769px) {
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    height: 70px !important;
+    min-height: 70px !important;
+    padding: 0 10px 0 4px !important;
+    border-radius: 35px !important;
+    grid-template-columns: 46px minmax(0, 1fr) auto 34px 38px !important;
+    grid-template-rows: 68px !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    padding-top: 0 !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
+    height: 68px !important;
+    min-height: 68px !important;
+    max-height: 68px !important;
+    padding: 21px 4px !important;
+    overflow: hidden !important;
+  }
+
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .effort-picker,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .topic-footer .mobile-mic-btn,
+  #appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn {
+    grid-row: 1 !important;
+  }
+}
+
+[data-mode="dark"] #appShell #topicInputWrap:not(.voice-recording-active),
+[data-mode="dark"] #appShell #chatInputWrap:not(.voice-recording-active) {
+  box-shadow: none !important;
+}
+
+[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active),
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active) {
+  border-color: var(--cg-border-strong) !important;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 7%) !important;
+}
+
+[data-mode="light"] #appShell #topicInputWrap:not(.voice-recording-active):focus-within,
+[data-mode="light"] #appShell #chatInputWrap:not(.voice-recording-active):focus-within {
+  border-color: rgb(0 0 0 / 24%) !important;
+  box-shadow: 0 0 0 3px rgb(0 0 0 / 5%), 0 12px 34px rgb(0 0 0 / 8%) !important;
+}
+
+body.workspace-active #appShell #mainInner {
+  width: min(100%, 1120px);
+  max-width: 1120px;
+}
+
+body.workspace-active #appShell .main-page {
+  max-width: 1120px;
+  padding: clamp(68px, 10vh, 104px) 48px 80px;
+}
+
+body.workspace-active #appShell #libraryList,
+body.workspace-active #appShell #spacesList,
+body.workspace-active #appShell #pluginsList {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.workspace-surface {
+  width: 100%;
+  color: var(--cg-text);
+}
+
+.workspace-page-head,
+.plugin-directory-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+  margin: 0 0 46px;
+}
+
+.workspace-page-head h1,
+.plugin-directory-head h2 {
+  margin: 0;
+  color: var(--cg-text);
+  font-size: 32px;
+  font-weight: 560;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+}
+
+.workspace-page-head p,
+.plugin-directory-desc {
+  margin: 10px 0 0;
+  color: var(--cg-text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.workspace-head-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 520px;
+  gap: 12px;
+}
+
+.workspace-search-field,
+.plugin-directory-search {
+  display: flex;
+  align-items: center;
+  width: min(100%, 420px);
+  height: 48px;
+  margin: 0;
+  padding: 0 16px;
+  gap: 10px;
+  border: 1px solid var(--cg-border-strong);
+  border-radius: 24px;
+  color: var(--cg-text-muted);
+  background: var(--cg-surface);
+  transition: border-color .16s ease, background-color .16s ease;
+}
+
+.workspace-search-field:focus-within,
+.plugin-directory-search:focus-within {
+  border-color: var(--cg-text);
+  border-color: color-mix(in srgb, var(--cg-text) 36%, transparent);
+  box-shadow: none;
+}
+
+.workspace-search-field svg,
+.plugin-directory-search svg {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.workspace-search-field input,
+.plugin-directory-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--cg-text);
+  background: transparent;
+  font: 400 14px/22px var(--cg-font);
+}
+
+.workspace-search-field input::placeholder,
+.plugin-directory-search input::placeholder {
+  color: var(--cg-text-muted);
+}
+
+.workspace-create-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 48px;
+  padding: 0 18px;
+  gap: 8px;
+  border: 1px solid var(--cg-border-strong);
+  border-radius: 24px;
+  color: var(--cg-page);
+  background: var(--cg-text);
+  font: 550 14px/1 var(--cg-font);
+  cursor: pointer;
+}
+
+.workspace-create-button:hover { opacity: .88; }
+.workspace-create-button:focus-visible { outline: 2px solid var(--cg-accent); outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent); outline-offset: 2px; }
+.workspace-create-button svg { width: 18px; height: 18px; }
+
+.workspace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  margin-bottom: 24px;
+}
+
+.workspace-tabs,
+.plugin-directory-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.workspace-tabs button,
+.plugin-directory-tabs button {
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 20px;
+  color: var(--cg-text-muted);
+  background: transparent;
+  font: 500 14px/22px var(--cg-font);
+  cursor: pointer;
+}
+
+.workspace-tabs button:hover,
+.plugin-directory-tabs button:hover { color: var(--cg-text); }
+
+.workspace-tabs button.active,
+.plugin-directory-tabs button.active {
+  color: var(--cg-text);
+  background: var(--cg-surface-hover);
+  font-weight: 600;
+}
+
+.workspace-table { width: 100%; }
+.workspace-table-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px 110px 60px;
+  gap: 24px;
+  padding: 0 12px 12px 64px;
+  color: var(--cg-text-muted);
+  font-size: 13px;
+}
+
+body.workspace-active #appShell .library-row {
+  display: grid;
+  grid-template-columns: 24px 42px minmax(0, 1fr) 180px 110px 60px;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--cg-border);
+}
+
+.library-checkbox-label { padding-left: 4px; opacity: 0; transition: opacity .16s ease; }
+.library-row:hover .library-checkbox-label,
+.library-row-selected .library-checkbox-label,
+.library-checkbox-label:focus-within { opacity: 1; }
+.library-file-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 10px; background: var(--cg-surface-raised); cursor: pointer; }
+.library-file-icon svg { width: 19px; height: 19px; }
+.library-row .workspace-row-copy { align-self: center; gap: 3px; cursor: pointer; }
+.library-row .workspace-row-copy strong { color: var(--cg-text); font-size: 14px; font-weight: 520; }
+.library-mobile-meta { display: none; }
+.library-updated,
+.library-size { align-self: center; color: var(--cg-text-secondary); font-size: 13px; }
+.library-row-actions { align-self: center; justify-self: end; }
+.library-row-actions .workspace-row-action { opacity: 0; }
+.library-row:hover .library-row-actions .workspace-row-action,
+.library-row-actions .workspace-row-action:focus-visible { opacity: 1; }
+
+.projects-list { border-top: 1px solid var(--cg-border); }
+body.workspace-active #appShell .project-row {
+  min-height: 82px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--cg-border);
+}
+.project-main { gap: 16px; }
+.project-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--cg-surface-hover); background: color-mix(in srgb, currentColor 13%, transparent); }
+.project-icon svg { width: 24px; height: 24px; }
+.project-row .workspace-row-copy { gap: 5px; }
+.project-row .workspace-row-copy strong { color: var(--cg-text); font-size: 15px; font-weight: 560; }
+.project-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 13px; }
+.workspace-icon-action { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
+.workspace-icon-action svg { width: 18px; height: 18px; }
+
+.plugin-directory-head { align-items: flex-end; }
+.plugin-directory-heading { flex: 1 1 auto; }
+.plugin-directory-head .plugin-directory-search { flex: 0 1 360px; }
+.plugin-installed-strip { margin: -6px 0 28px; }
+.plugin-installed-label { display: block; margin-bottom: 12px; color: var(--cg-text-secondary); font-size: 13px; font-weight: 520; }
+.plugin-installed-icons { display: flex; flex-wrap: wrap; gap: 10px; }
+.plugin-installed-icons .workspace-row-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 12px; background: var(--cg-surface-raised); }
+.plugin-installed-icons .workspace-row-icon svg { width: 24px; height: 24px; }
+
+.plugin-directory-tabs { margin-bottom: 18px; }
+.plugin-directory-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 56px;
+  row-gap: 0;
+  margin: 0;
+}
+
+.plugins-list .connector-row.plugin-directory-row {
+  min-height: 76px;
+  padding: 12px 0;
+  gap: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--cg-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.plugins-list .connector-row.plugin-directory-row:hover { border-color: var(--cg-border); background: transparent; }
+.plugin-directory-row .workspace-row-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 11px; background: var(--cg-surface-raised); }
+.plugin-directory-row .workspace-row-icon svg { width: 24px; height: 24px; }
+.plugin-directory-row .workspace-row-copy { gap: 3px; }
+.plugin-directory-row .workspace-row-copy strong { font-size: 14px; font-weight: 560; }
+.plugin-directory-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 12px; line-height: 17px; }
+
+.plugin-directory-note { margin: 18px 0 0; }
+
+@media (max-width: 900px) {
+  body.workspace-active #appShell .main-page { padding: 48px 28px 64px; }
+  .workspace-page-head,
+  .plugin-directory-head { align-items: stretch; flex-direction: column; gap: 20px; margin-bottom: 32px; }
+  .workspace-head-actions { flex: 0 0 auto; justify-content: flex-start; }
+  .plugin-directory-head .plugin-directory-search { flex: 0 0 48px; width: 100%; }
+  .workspace-table-head { grid-template-columns: minmax(0, 1fr) 120px 80px 48px; }
+  body.workspace-active #appShell .library-row { grid-template-columns: 24px 42px minmax(0, 1fr) 120px 80px 48px; }
+  .plugin-directory-list { column-gap: 28px; }
+}
+
+@media (max-width: 640px) {
+  body.workspace-active #appShell .main-page { padding: 28px 16px max(44px, env(safe-area-inset-bottom)); }
+  .workspace-page-head h1,
+  .plugin-directory-head h2 { font-size: 26px; }
+  .workspace-head-actions { align-items: stretch; flex-direction: column; }
+  .workspace-search-field { width: 100%; }
+  .workspace-create-button { align-self: flex-start; }
+  .workspace-table-head { display: none; }
+  body.workspace-active #appShell .library-row { grid-template-columns: 20px 40px minmax(0, 1fr) 36px; min-height: 68px; gap: 10px; }
+  .library-file-icon { width: 40px; height: 40px; }
+  .library-updated,
+  .library-size { display: none; }
+  .library-mobile-meta { display: block; }
+  .library-row-actions { grid-column: 4; }
+  .library-row-actions .workspace-row-action { width: 36px; overflow: hidden; padding: 0; font-size: 0; }
+  .library-row-actions .workspace-row-action::before { content: "•••"; font-size: 12px; }
+  .plugin-directory-list { grid-template-columns: 1fr; }
+  .plugin-installed-strip { margin-top: 0; }
+}
+

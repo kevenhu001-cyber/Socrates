@@ -1,0 +1,491 @@
+/* ==========================================================================
+   09-viz-markdown.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: canvas scaffold, viz renderer + fullscreen, markdown/code/think/katex, auth gate, pre-boot shell, jump-to-bottom.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* ============================================================
+   CANVAS SCAFFOLD — "scaffold" not "feature".
+
+   A self-contained unit for rendering AI-generated HTML/CSS/JS
+   visualizations inside a sandboxed iframe. The user UI never shows
+   the source — only the rendered output (or a calm "loading"
+   skeleton while the sandbox boots).
+
+   Layers (top → bottom):
+     .viz-card         — outer surface, design-token aware
+       .viz-card-head  — toolbar (icon, title, status, actions)
+       .viz-card-body  — content slot; data-viz-state drives UI:
+         loading  → skeleton + shimmer + spinner label
+         ready    → iframe (fades in on srcdoc load)
+         error    → error card with copy button
+         collapsed→ iframe hidden, only header visible
+
+   The component is pure: no global state, no shared IDs, no DOM
+   lookups outside itself. The host page just inserts the markup
+   string we return from renderCanvas().
+   ============================================================ */
+
+/* Viz — minimal diagram/canvas renderer.
+   No card wrapper, no header toolbar, no elaborate loading effects.
+   Just the content with subtle hover actions. */
+.viz{position:relative;margin:8px 0}
+.viz-actions{
+  position:absolute;top:4px;right:4px;z-index:2;
+  display:flex;align-items:center;gap:2px;
+}
+.viz-status{
+  display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 7px;
+  border-radius:6px;
+  background:hsl(var(--bg-200)/.9);
+  color:hsl(var(--text-400));
+  font-size:calc(10px * var(--app-font-scale, 1));
+  line-height:1;
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+}
+.viz-status-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex:0 0 auto}
+.viz[data-viz-state="loading"] .viz-status-dot{animation:search-progress-dot 1.1s ease-in-out infinite}
+.viz[data-viz-state="loading"] .viz-status-label::before{content:"Rendering"}
+.viz[data-viz-state="ready"] .viz-status-label::before{content:"Interactive"}
+.viz[data-viz-state="ready"] .viz-status-dot{background:hsl(145 45% 45%)}
+.viz[data-viz-state="error"] .viz-status-label::before{content:"Needs attention"}
+.viz[data-viz-state="error"] .viz-status-dot{background:hsl(30 70% 48%)}
+.viz-btn{
+  width:26px;height:26px;border:0;
+  border-radius:6px;
+  background:hsl(var(--bg-200)/0.9);
+  color:hsl(var(--text-400));
+  cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+  opacity:.35;
+  transform:translateY(0);
+  transition:color .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),opacity .18s cubic-bezier(.4,0,.2,1),transform .12s ease;
+}
+.viz:hover .viz-btn,.viz:focus-within .viz-btn{opacity:1}
+.viz-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.95);transform:translateY(-1px)}
+.viz-btn:active{transform:scale(.92)}
+.viz-btn:focus-visible{opacity:1;outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
+.viz-btn svg{width:13px;height:13px;display:block}
+/* Preview / Code segmented toggle. Unlike the icon buttons it stays
+   visible without hover — discoverability is the point: teaching code
+   inside a canvas card must be one click away. */
+.viz-seg{
+  display:inline-flex;align-items:center;
+  border-radius:6px;overflow:hidden;
+  background:hsl(var(--bg-200)/0.9);
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+}
+.viz-seg-btn{
+  border:0;background:transparent;
+  color:hsl(var(--text-400));
+  font-size:calc(10.5px * var(--app-font-scale, 1));
+  line-height:1;height:26px;padding:0 9px;
+  cursor:pointer;white-space:nowrap;
+  transition:color .15s ease,background .15s ease;
+}
+.viz-seg-btn:hover{color:hsl(var(--text-200))}
+.viz-seg-btn.is-on{background:hsl(var(--bg-300)/0.95);color:hsl(var(--text-100))}
+.viz-seg-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.45);outline-offset:-1px}
+/* Code view: hide the live iframe + loading skeleton, show the source
+   pane. Error banners are siblings of the iframe inside .viz-body, so
+   they remain visible in both views. */
+.viz-code-pane{
+  display:none;
+  margin:0;max-height:360px;overflow:auto;
+  padding:12px 14px;
+  background:hsl(var(--bg-200)/0.5);
+  border-radius:8px;
+  font-family:var(--font-mono);
+  font-size:calc(11.5px * var(--app-font-scale, 1));
+  line-height:1.5;
+  color:hsl(var(--text-200));
+}
+.viz-code-pane code{font:inherit;color:inherit;background:transparent;padding:0}
+.viz[data-viz-view="code"] .viz-code-pane{display:block}
+/* !important: the iframe carries an inline display:block baked into its
+   markup, which would otherwise beat this view-state rule. */
+.viz[data-viz-view="code"] .viz-body>iframe,
+.viz[data-viz-view="code"] .viz-body>.viz-loading{display:none !important}
+.viz-body{position:relative}
+.viz-body iframe{
+  display:block;width:100%;border:0;background:transparent
+}
+/* Loading-skeleton lifecycle:
+   - Card mounts → JS sets data-viz-state="loading"; .viz-loading
+     shows the "Rendering…" placeholder; iframe stays visible
+     (visibility:visible) so any content the browser parses from
+     srcdoc shows up immediately.
+   - Normal path: processPendingViz() runs after the iframe is in
+     the DOM. The iframe's runtime posts {type:'viz-ready'} via
+     parent.postMessage; the parent flips data-viz-state to
+     "ready" and adopts the reported height. At that point:
+       .viz-loading hides, the card adopts the real height.
+   - Safety net (this CSS): the skeleton auto-hides via a CSS
+     animation ~800ms after mount, so even if processPendingViz()
+     never runs (e.g. legacy session-reload path, or postMessage
+     handshake missed) the user sees at most ~800ms of "Rendering…"
+     and then the iframe content. The JS-side max-wait timer is a
+     separate fallback (VIZ_MAX_WAIT_MS = 5000) that surfaces a
+     "Canvas took too long" banner. */
+.viz[data-viz-state="ready"] .viz-loading,
+.viz[data-viz-state="error"] .viz-loading{display:none}
+/* P_viz-no-blank — the iframe is left visible while in the
+   "loading" state. The skeleton-fadeout animation above takes
+   the .viz-loading overlay out of view after ~800ms; once it
+   is gone, the iframe content is already on screen. Previously
+   the iframe was `visibility:hidden` while loading, so any path
+   where the JS handshake (postMessage viz-ready) failed left the
+   card blank after the skeleton faded. */
+.viz[data-viz-state="loading"] iframe{visibility:visible}
+@keyframes viz-skeleton-fadeout{
+  0%{opacity:1;max-height:80px}
+  80%{opacity:1;max-height:80px}
+  100%{opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin:0}
+}
+.viz[data-viz-state="loading"] .viz-loading{
+  animation: viz-skeleton-fadeout 800ms ease-out 0s 1 forwards;
+  overflow:hidden;
+}
+/* When JS flips state to ready, cancel the animation so the
+   skeleton disappears immediately rather than waiting for the
+   animation to finish. */
+.viz[data-viz-state="ready"] .viz-loading,
+.viz[data-viz-state="error"] .viz-loading{
+  animation:none;
+  display:none;
+}
+.viz-loading{
+  display:flex;align-items:center;gap:6px;
+  padding:24px 16px;
+  font-size:calc(12.5px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  background:hsl(var(--bg-200)/0.4);
+  border-radius:8px;
+}
+.viz-spinner{
+  width:10px;height:10px;border-radius:50%;
+  border:1.5px solid hsl(var(--text-400)/0.4);
+  border-top-color:hsl(var(--text-400));
+  animation:vizSpin .9s linear infinite;
+  flex-shrink:0;
+}
+@keyframes vizSpin{to{transform:rotate(360deg)}}
+.viz-error{
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-400));
+  padding:10px 12px;
+  background:hsl(var(--bg-200)/0.5);
+  border-radius:8px;
+  line-height:1.5;
+}
+.viz-error-icon{
+  flex-shrink:0;width:16px;height:16px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:50%;background:hsl(30 70% 50%/0.2);color:hsl(30 70% 45%);
+  font-size:calc(10px * var(--app-font-scale, 1));font-weight:700;margin-top:2px;
+}
+.viz-error-btn{
+  font:inherit;font-size:calc(11px * var(--app-font-scale, 1));
+  padding:2px 8px;border:0;border-radius:5px;
+  background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));
+  cursor:pointer;white-space:nowrap;
+}
+.viz-error-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.viz-error-source{
+  width:100%;overflow-x:auto;
+  font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));
+  background:hsl(var(--bg-300)/0.4);padding:8px 10px;border-radius:6px;
+  line-height:1.4;margin:0;
+}
+/* Fullscreen modal */
+.viz-modal-backdrop{
+  position:fixed;inset:0;z-index:200;
+  background:hsl(var(--always-black)/0.6);
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+  animation:vizModalIn .1s ease-out;
+}
+@keyframes vizModalIn{from{opacity:0}to{opacity:1}}
+.viz-modal{
+  width:min(96vw,1200px);height:min(92vh,860px);
+  background:hsl(var(--bg-000));
+  border:0.5px solid hsl(var(--border-300)/0.2);
+  border-radius:10px;
+  box-shadow:0 20px 60px hsl(var(--always-black)/0.4);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.viz-modal-head{
+  display:flex;align-items:center;gap:8px;
+  height:40px;padding:0 8px 0 14px;
+  border-bottom:0.5px solid hsl(var(--border-300)/0.1);
+  flex-shrink:0;
+}
+.viz-modal-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;flex:1}
+.viz-modal-close{
+  width:26px;height:26px;border:0;border-radius:6px;
+  background:transparent;color:hsl(var(--text-400));
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+}
+.viz-modal-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.viz-modal-close svg{width:14px;height:14px;display:block}
+.viz-modal-body{flex:1;min-height:0;background:transparent}
+.viz-modal-body-raw{display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:hsl(var(--bg-200)/0.6)}
+.img-lightbox{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:100%}
+.img-lightbox img{max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.3)}
+.viz-modal-body iframe{width:100%;height:100%;border:0;background:transparent;display:block}
+.viz-source-modal{width:min(92vw,920px);height:min(82vh,720px)}
+.viz-source-copy{
+  border:0;
+  padding:4px 7px;
+  border-radius:5px;
+  background:transparent;
+  color:hsl(var(--accent-000));
+  font:inherit;
+  font-size:calc(11px * var(--app-font-scale, 1));
+  cursor:pointer;
+}
+.viz-source-copy:hover{background:hsl(var(--bg-300)/.65)}
+.viz-source-copy:focus-visible{outline:2px solid hsl(var(--accent-000)/.45);outline-offset:1px}
+.viz-source-body{overflow:auto;background:hsl(var(--bg-100)/.72)}
+.viz-source-code{
+  min-height:100%;
+  margin:0;
+  padding:18px 20px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:hsl(var(--text-200));
+  font-family:var(--font-mono);
+  font-size:calc(11.5px * var(--app-font-scale, 1));
+  line-height:1.55;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+@media (hover:none){.viz-btn{opacity:1;transform:none}.viz-status-label{display:none}}
+/* P_viz-btn-reduced-motion — when the user opts out of motion,
+   the `.viz:hover` reveal never fires (no hover intent) and the
+   0.35 opacity leaves ghost buttons. Force the buttons to full
+   opacity so they're discoverable via keyboard or screen reader
+   even when animations/hover are off. */
+@media (prefers-reduced-motion: reduce){.viz-btn{opacity:1;transform:none}}
+
+
+.hidden{display:none !important}
+
+
+/* Markdown rendered content */
+.msg-body h1{font-size:1.4em;font-weight:500;color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
+.msg-body h2{font-size:1.2em;font-weight:500;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+/* P_h3-cjk-contrast — the previous 1.05em + weight 500 + --text-100 was
+   visually indistinguishable from body text in CJK runs (Chinese chars
+   look almost identical at 1.05em vs 1em, and `--text-100` matches body
+   colour on the dark canvas). Bumping to 1.18em + weight 600 +
+   `--text-000` makes `### 标题` read as a heading without changing the
+   h1/h2/h4–h6 hierarchy. */
+.msg-body h3{font-size:1.18em;font-weight:600;color:hsl(var(--text-000));letter-spacing:-0.005em;margin:14px 0 6px;line-height:1.3}
+.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:500;color:hsl(var(--text-100));margin:10px 0 4px}
+.msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0 10px}
+.msg-body li{margin-bottom:3px}
+.msg-body li::marker{color:hsl(var(--text-500))}
+.msg-body blockquote{border-left:2px solid hsl(var(--accent-000)/0.4);padding:4px 0 4px 14px;margin:8px 0;color:hsl(var(--text-300));font-style:italic}
+.msg-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:calc(13px * var(--app-font-scale, 1))}
+.msg-body th,.msg-body td{border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));padding:8px 12px;text-align:left}
+.msg-body th{background:hsl(var(--bg-200));font-weight:600;color:hsl(var(--text-100))}
+.msg-body td{color:hsl(var(--text-200))}
+.msg-body hr{border:none;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));margin:14px 0}
+.msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.msg-body a:hover{color:hsl(var(--accent-100))}
+.msg-body img:not(.site-link-favicon){max-width:100%;max-height:280px;border-radius:10px;margin:8px 0;cursor:zoom-in;transition:opacity .18s ease,transform .18s ease}
+.msg-body img:not(.site-link-favicon):hover{opacity:.92;transform:scale(1.005)}
+/* P_code-block-header — a minimal header bar atop <pre> blocks with
+   the language label + an expand button. Always visible at low opacity,
+   brightens on hover. Reuses the viz-btn visual language. */
+.msg-body .code-block-header{display:flex;align-items:center;gap:6px;height:28px;padding:0 6px 0 12px;margin-bottom:-2px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-bottom:none;border-radius:16px 16px 0 0;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:.85;transition:opacity .18s ease}
+.msg-body .code-block-header:hover{opacity:1}
+.msg-body .code-block-header + pre{border-radius:0 0 16px 16px;margin-top:0;border-top:none}
+.code-block-header-lang{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);text-transform:lowercase}
+.code-block-expand{width:22px;height:22px;border:0;border-radius:5px;background:transparent;color:hsl(var(--text-400));cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .12s,background .12s}
+.code-block-expand:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.code-block-expand svg{width:12px;height:12px;display:block}
+/* UI-align: streaming caret rendered as a soft breathing dot
+   (open-webui skeleton language) instead of a hard blinking ▍.
+   The glyph itself is hidden; the dot is drawn as a pseudo-element
+   so no JS change is needed. Pure opacity/scale — never touches
+   text layout, so KaTeX renders stay crisp. */
+.stream-cursor{display:inline-block;position:relative;width:12px;height:12px;margin-left:3px;vertical-align:-1px;color:transparent;font-size:0;line-height:0}
+.stream-cursor::before{content:"";position:absolute;inset:0;border-radius:50%;background:hsl(var(--text-200));animation:streamDotBreathe 1.5s ease-in-out infinite}
+@keyframes streamDotBreathe{0%,100%{transform:scale(.8);opacity:.45}50%{transform:scale(1.15);opacity:1}}
+
+/* Think block — cream/gold redesign.
+   - Collapsed by default (the markup no longer carries `open` once
+     streaming completes) so chain-of-thought doesn't push the real
+     answer down the page.
+   - A 3px gold left stripe gives the block its own visual identity
+      Minimal think-block: thin border, neutral colours, no accent stripe,
+      no gradient, no animations, no decorative icons. */
+.think-block{margin:4px 0;border-radius:7px;border:none;background:transparent}
+/* PERF: was `will-change:contents` — a no-op hint no browser promotes.
+   `contain:layout style` is the real win: it stops the think text
+   growing every stream frame from re-laying-out the whole message. */
+.think-block-streaming{contain:layout style}
+
+.think-summary{display:inline-flex;align-items:center;gap:8px;min-height:26px;padding:4px 6px;font-size:calc(13px * var(--app-font-scale,1));font-weight:400;color:hsl(var(--text-300));cursor:pointer;-webkit-user-select:none;user-select:none;list-style:none;border-radius:7px;transition:color .15s ease,background-color .15s ease}
+.think-summary::-webkit-details-marker{display:none}
+.think-summary::marker{display:none;content:""}
+.think-summary:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300)/0.55)}
+.think-summary:focus-visible{outline:1.5px solid hsl(var(--text-500)/0.3);outline-offset:-1px;border-radius:7px}
+
+.think-summary-label{font-family:var(--font-sans);font-style:normal;font-weight:400;color:inherit}
+
+.think-summary-meta{font-size:calc(11px * var(--app-font-scale,1));color:hsl(var(--text-500))}
+.think-summary-meta::before{content:"·";margin:0 4px}
+
+.think-summary-chevron{margin-left:auto;width:6px;height:6px;flex-shrink:0;border-right:1.2px solid currentColor;border-bottom:1.2px solid currentColor;transform:rotate(45deg);opacity:.6;color:hsl(var(--text-400));transition:transform .18s var(--ease-out)}
+.think-block[open]>.think-summary .think-summary-chevron{transform:rotate(-135deg)}
+
+/* think-content: tight spacing for chain-of-thought prose.
+   white-space:pre-line collapses runs of whitespace but keeps
+   single \n as a soft break, so the model’s intermittent blank
+   lines don’t inflate into huge gaps. Per-element margins below
+   override the prose defaults so p/ul/ol/pre sit close together
+   while still respecting list/heading rhythm. */
+.think-content{padding:2px 10px 10px;font-size:calc(12.5px * var(--app-font-scale,1));line-height:1.55;color:hsl(var(--text-400));white-space:pre-line;word-wrap:break-word;overflow-wrap:anywhere}
+.think-content>p{margin:0 0 0.4em}
+.think-content>p:last-child{margin-bottom:0}
+.think-content>ul,.think-content>ol{margin:0 0 0.4em;padding-left:1.4em}
+.think-content>ul li,.think-content>ol li{margin:0 0 0.15em}
+.think-content>pre{margin:0 0 0.5em;padding:6px 8px;border-radius:4px;background:hsl(var(--bg-300)/0.4);overflow-x:auto}
+.think-content>pre:last-child{margin-bottom:0}
+.think-content>h1,.think-content>h2,.think-content>h3,.think-content>h4{margin:0.6em 0 0.25em;font-size:calc(13px * var(--app-font-scale,1));font-weight:600;color:hsl(var(--text-300))}
+.think-content code{font-family:var(--font-mono);font-size:0.92em;background:hsl(var(--bg-300)/0.35);padding:0 3px;border-radius:3px}
+.think-content a{color:hsl(var(--accent-000))}
+
+/* Tool cards area inside think-block — collapses/expands with the
+   thinking block and appears after the reasoning text. */
+.think-tools{padding:2px 10px 10px}
+.think-tools .agent-tool-card{margin-top:4px}
+
+/* KaTeX dark theme overrides */
+.katex{font-size:1.05em}
+/* UI-align: KaTeX display scroll — the horizontal scrollbar stays
+   invisible until the formula is hovered (open-webui pattern), so
+   wide equations don't carry a permanent gray bar underneath. */
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:8px 0}@supports (scrollbar-width:thin){.katex-display{scrollbar-width:thin}}@supports (scrollbar-color:transparent transparent){.katex-display{scrollbar-color:transparent transparent}}
+@supports (scrollbar-color:hsl(var(--text-000)/0.25) transparent){.katex-display:hover{scrollbar-color:hsl(var(--text-000)/0.25) transparent}}
+.katex-display::-webkit-scrollbar{height:5px}
+.katex-display::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
+.katex-display:hover::-webkit-scrollbar-thumb{background:hsl(var(--text-000)/0.25)}
+.katex-display>.katex{font-size:1.1em}
+/* Streaming math that is still arriving: render/markdown.ts neutralizes
+   KaTeX's own .katex-error spans (red, inline color:#cc0000) into this
+   class, so a half-typed formula reads as calm, dimmed live text instead
+   of an error message. The span keeps the partial source KaTeX preserved,
+   so the completed render is a seamless continuation of the last frame. */
+.math-stream-pending{color:hsl(var(--text-400));font-style:italic}
+.katex .mord{color:hsl(var(--text-100))}
+.katex .mbin{color:hsl(var(--accent-000))}
+.katex .mrel{color:hsl(var(--accent-000))}
+/* Force all KaTeX output to use normal (non-italic) style. KaTeX
+   applies italic to variables by default, which can look odd in
+   mixed-language chat. Use !important to override KaTeX's inline
+   style="font-style:italic" on mathnormal spans. */
+.katex .mathnormal{font-style:normal !important}
+
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);width:18rem;min-width:18rem;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),box-shadow .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.main-inner{padding:4dvh 12px 24px}.topic-title{font-size:calc(1.5rem * var(--app-font-scale, 1))}.chat-input-bar{padding-top:6px}}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:25;animation:fadeIn .15s}
+.sidebar-backdrop.show{display:block}
+
+/* Auth gate */
+.auth-gate{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;overflow-y:auto}
+.auth-gate.hidden{display:none}
+/* P0.6 — pre-boot hidden state. When <html data-boot-state="checking">
+   neither the auth gate nor the app shell is shown, so the user never
+   sees a flash of the wrong view during the async /api/auth/me call.
+   The boot IIFE flips data-boot-state to "auth" or "app" once /me
+   resolves, which then reveals the correct view via these rules. */
+html[data-boot-state="checking"] #authGate,
+html[data-boot-state="checking"] #appShell{display:none !important}
+html[data-boot-state="app"] #authGate{display:none !important}
+html[data-boot-state="auth"] #appShell{display:none !important}
+/* Pre-boot loading shell — covers the viewport while the auth check
+   is in flight. Uses the same dotted background as the auth gate so
+   the transition is invisible when /me resolves to "auth". */
+.boot-loading{position:fixed;inset:0;z-index:190;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;opacity:1;transition:opacity .25s var(--ease-out)}
+html[data-show-grid="false"] .boot-loading{background-image:none}
+html[data-boot-state="app"] .boot-loading,
+html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none}
+.boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:600;font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
+.boot-loading-logo svg,.boot-loading-logo img{flex-shrink:0;color:hsl(var(--brand-000))}
+.boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}
+.boot-loading-dots span{display:none}
+.boot-loading-dots::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.3);border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--brand-000));animation:bootSpin 1s cubic-bezier(.4,0,.2,1) infinite;box-sizing:border-box}
+.boot-loading-dots::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid hsl(var(--accent-000)/0.2);animation:bootSpin 2s linear infinite reverse;opacity:.5}
+@keyframes bootSpin{to{transform:rotate(360deg)}}
+.auth-card{width:100%;max-width:420px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:18px;padding:32px 28px;box-shadow:0 12px 48px hsl(var(--always-black)/0.5)}
+/* P4.5 — transient banner shown at the top of the auth gate when a
+   401 from any background apiFetch triggers handleAuthExpired(). */
+.auth-expired-banner{
+  background:hsl(var(--accent-900));
+  color:hsl(var(--accent-100));
+  padding:10px 18px;
+  border-radius:10px;
+  font-size:13px;
+  text-align:center;
+  margin:0 auto 12px;
+  max-width:420px;
+  border:0.5px solid hsl(var(--accent-000)/0.4);
+}
+.auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;color:hsl(var(--text-100));font-weight:600;font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px;letter-spacing:-.01em}
+.auth-brand svg{color:hsl(var(--accent-000))}
+.auth-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:22px}
+.auth-tab{appearance:none;flex:1;text-align:center;padding:10px 0;font:500 calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);color:hsl(var(--text-400));border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer;font-weight:500;transition:color .1s,border-color .1s}
+.auth-tab:hover{color:hsl(var(--text-200))}
+.auth-tab.active{color:hsl(var(--text-100));border-bottom-color:hsl(var(--accent-000))}
+.auth-view{display:flex;flex-direction:column;gap:6px}
+.auth-lede{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.55;margin:0 0 12px;text-align:center}
+.auth-title{font-family:var(--font-display);font-size:calc(20px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-100));text-align:center;margin:4px 0 8px;line-height:1.3}
+.auth-icon{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:hsl(var(--accent-000)/0.1);color:hsl(var(--accent-000));margin:0 auto 12px}
+.auth-icon-warn{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 65%)}
+.auth-icon-ok{background:hsl(145 50% 50%/0.15);color:hsl(145 50% 65%)}
+.auth-label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
+.auth-input{width:100%;padding:10px 12px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.18);border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-family:var(--font-sans);outline:none;transition:border-color .12s;margin-bottom:4px}
+.auth-input:focus{border-color:hsl(var(--accent-000)/0.5)}
+.auth-input::placeholder{color:hsl(var(--text-500))}
+.auth-error{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 70%);min-height:14px;line-height:1.4;padding:2px 0}
+.auth-btn{padding:10px 18px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background .1s,color .1s;border:0;margin-top:10px}
+.auth-guest-label{display:flex;align-items:center;gap:8px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-top:12px;cursor:pointer;-webkit-user-select:none;user-select:none}
+.auth-guest-label input[type=checkbox]{width:15px;height:15px;accent-color:hsl(var(--accent-000));cursor:pointer;flex-shrink:0}
+.auth-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.auth-btn.primary:hover{background:hsl(var(--accent-100))}
+.auth-btn.primary:disabled{background:hsl(var(--bg-300));color:hsl(var(--text-500));cursor:not-allowed}
+.auth-btn.secondary{background:transparent;color:hsl(var(--text-200));border:0.5px solid hsl(var(--border-300)/0.3)}
+.auth-btn.secondary:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.auth-foot{text-align:center;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:14px}
+.auth-foot a{color:hsl(var(--accent-000));text-decoration:none}
+.auth-foot a:hover{text-decoration:underline}
+.auth-footnote{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:18px;letter-spacing:-.005em}
+.auth-inline-link{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--accent-000));text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.auth-inline-link:hover{text-decoration:underline}
+.auth-back-link{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-decoration:none;cursor:pointer;display:flex;align-items:center;gap:3px;margin-bottom:6px}
+.auth-back-link:hover{color:hsl(var(--text-200))}
+.auth-code-input{font-family:var(--font-mono,monospace);font-size:calc(22px * var(--app-font-scale, 1));letter-spacing:8px;text-align:center;padding:10px 12px;font-weight:600}
+.auth-view-separator{text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin:10px 0 6px;position:relative}
+.auth-view-separator::before,.auth-view-separator::after{content:"";position:absolute;top:50%;width:calc(50% - 24px);height:0.5px;background:hsl(var(--border-300)/0.18)}
+.auth-view-separator::before{left:0}
+.auth-view-separator::after{right:0}
+.auth-msg{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5;margin:4px 0 10px;text-align:center}
+
+/* "Jump to bottom" floating button. Shown whenever the user has
+   scrolled away from the bottom of the chat — even mid-reveal. */
+
+

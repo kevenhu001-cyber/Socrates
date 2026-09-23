@@ -9,7 +9,8 @@
  */
 
 import { createImmutableBridge, useBridge, useBridgeSelector } from '../../lib/bridge';
-import { getLegacyActions } from '../legacy/gateway';
+import { getLegacyActions, t as legacyT } from '../legacy/gateway';
+import { loadPluginCatalog, normalisePluginId } from './pluginCatalog';
 import type {
   ComposerMode,
   ComposerToolsAction,
@@ -124,6 +125,20 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
     case 'webSearch':
       if (typeof window.toggleWebSearch === 'function') window.toggleWebSearch();
       return;
+    case 'createImage':
+      void loadPluginCatalog(true).then((plugins) => {
+        const jimeng = plugins.find((plugin) => normalisePluginId(plugin.id).includes('jimengai'));
+        if (jimeng?.connectionStatus === 'connected') {
+          composer.toggleExtensionByKey('createImage');
+          return;
+        }
+        nav.openNav('plugins');
+        showImageConnectionRequired();
+      }).catch(() => {
+        nav.openNav('plugins');
+        showImageConnectionRequired();
+      });
+      return;
     case 'write':
       composer.composeAction();
       return;
@@ -151,6 +166,14 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       nav.openPromptTemplatesModal();
       return;
   }
+}
+
+function showImageConnectionRequired(): void {
+  const key = 'composer.createImage.connectRequired';
+  const value = legacyT(key);
+  getLegacyActions().messages.showToast?.(
+    value !== key ? value : 'Connect Jimeng AI in Plugins to create an image.',
+  );
 }
 
 export function useComposerToolsDispatch(): {

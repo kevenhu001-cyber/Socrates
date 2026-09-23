@@ -1,0 +1,30 @@
+/*
+ * styles/legacy/index.css — aggregate entry for the pre-modular base
+ * stylesheet (the old src/styles.css monolith).
+ *
+ * These slices were split by contiguous ranges, so their concat in this
+ * order is byte-identical to the original file. Keep the list ordered —
+ * rules across slices intentionally override each other by source order.
+ *
+ * Anything not yet migrated into foundations/ layout/ components/
+ * features/ lives here. New rules should go to the right modular file
+ * instead of growing these slices.
+ */
+
+@import './00-foundations.css';
+@import './01-sidebar.css';
+@import './02-modals-library.css';
+@import './03-workspace-panels.css';
+@import './04-topbar-menus.css';
+@import './05-chat-landing.css';
+@import './06-chat-transcript.css';
+@import './07-composer-settings.css';
+@import './08-exam.css';
+@import './09-viz-markdown.css';
+@import './10-tutor-scaffolds.css';
+@import './11-agent-tools.css';
+@import './12-tutor-inline-tools.css';
+@import './13-composer-rich.css';
+@import './14-tool-surfaces.css';
+@import './15-thinking-activity.css';
+@import './16-final-contract.css';

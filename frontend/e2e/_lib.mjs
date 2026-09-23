@@ -43,14 +43,17 @@ export async function gotoAndSettle(page, url = '/', opts = {}) {
   } catch (_) {
     await page.goto(url, { waitUntil: 'commit', timeout: 60000 });
   }
-  // Wait for at least 25% of the required bindings to be functions.
+  // Wait for at least 25% of the probe bindings to be functions. Full boot
+  // readiness is asserted separately by waitForAppShell or by each spec's
+  // first visible interaction; waiting for every optional global here used
+  // to burn the full 48-second budget if one migration shim was omitted.
   // The bindings list comes from this module — same import in the page
   // might not be reachable, so we hard-code a short suffix here.
   const probe = ['setLang', 't', 'openSettings', 'showConfirm', 'openCmdK', 'openProfile', 'resetApp', 'toggleAppMode', 'signOut'];
   for (let i = 0; i < 60; i++) {
     await page.waitForTimeout(800);
     const ok = await page.evaluate((req) => {
-      return req.filter(k => typeof window[k] === 'function').length >= req.length;
+      return req.filter(k => typeof window[k] === 'function').length >= Math.ceil(req.length * 0.25);
     }, probe);
     if (ok) return;
   }

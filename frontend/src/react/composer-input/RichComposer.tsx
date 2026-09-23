@@ -166,8 +166,15 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
 }
 
 export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToolbar = false }: RichComposerProps) {
-  const onRemoveExtension = useCallback((_key: string) => {
-    const legacyWindow = window as Window & { clearActiveTemplate?: () => void };
+  const onRemoveExtension = useCallback((key: string) => {
+    const legacyWindow = window as Window & {
+      _activeTemplate?: { extensionKey?: string } | null;
+      clearActiveTemplate?: () => void;
+    };
+    /* Image creation is a composer mode. Replacing the inline token with the
+       user's prompt (paste/select-all included) must not cancel that mode;
+       an explicit remove button still exits it through its non-empty key. */
+    if (!key && legacyWindow._activeTemplate?.extensionKey === 'createImage') return;
     legacyWindow.clearActiveTemplate?.();
   }, []);
 

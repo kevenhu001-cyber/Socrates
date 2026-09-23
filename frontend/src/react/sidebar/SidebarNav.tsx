@@ -47,10 +47,10 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v3"/><path d="M15 3v3"/><path d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>',
   },
   {
-    key: 'more',
-    label: 'More',
-    i18nKey: 'sidebar.nav.more',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>',
+    key: 'skills',
+    label: 'Skills',
+    i18nKey: 'sidebar.nav.skills',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5 8.6 8.1 5 9.5l3.6 1.4L10 14.5l1.4-3.6L15 9.5l-3.6-1.4z"/><path d="M17.5 13.5l-.9 2.1-2.1.9 2.1.9.9 2.1.9-2.1 2.1-.9-2.1-.9z"/></svg>',
   },
   {
     key: 'exam',
@@ -59,10 +59,10 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
   },
   {
-    key: 'skills',
-    label: 'Skills & shortcuts',
-    i18nKey: 'sidebar.more.skills',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5 8.6 8.1 5 9.5l3.6 1.4L10 14.5l1.4-3.6L15 9.5l-3.6-1.4z"/><path d="M17.5 13.5l-.9 2.1-2.1.9 2.1.9.9 2.1.9-2.1 2.1-.9-2.1-.9z"/></svg>',
+    key: 'more',
+    label: 'More',
+    i18nKey: 'sidebar.nav.more',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>',
   },
 ];
 
@@ -111,6 +111,9 @@ function SidebarNav() {
           >
             <span dangerouslySetInnerHTML={{ __html: button.icon }} />
             <span data-i18n-key={button.i18nKey}>{label}</span>
+            {button.key === 'skills' ? (
+              <span className="nav-new-badge">{i18n('sidebar.nav.newBadge', 'New')}</span>
+            ) : null}
             {button.key === 'new' ? (
               <span className="nav-kbd">{i18n('sidebar.nav.kbd', '⌘K')}</span>
             ) : null}

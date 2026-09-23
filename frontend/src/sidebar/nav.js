@@ -1,6 +1,7 @@
 import { toggleMorePopover } from "./morePopover.js";
 import { stateStore } from "../state/store.js";
 import { showToast } from "../ui/toast.js";
+import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { getConnectorIconMarkup as connectorIcon } from "../connector-icons.ts";
 
 /* React migration bridge — publishes scheduled task state so the React
@@ -164,6 +165,8 @@ export function closeAllPanels() {
 function hideMainPages() {
   ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "adminPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
   document.body.classList.remove("workspace-active");
+  document.body.classList.remove("plugins-active");
+  var pluginTabs = byId("pluginWorkspaceTabs"); if (pluginTabs) pluginTabs.hidden = true;
   document.body.classList.remove("admin-active");
   /* Leaving exam via sidebar nav must also drop the exam-active body
      class, otherwise CSS keeps hiding the mode switcher and other
@@ -178,6 +181,8 @@ function showMainPage(pageId) {
   var page = byId(pageId);
   if (page) page.classList.remove("hidden");
   if (pageId !== "examView") document.body.classList.add("workspace-active");
+  document.body.classList.toggle("plugins-active", pageId === "pluginsPanel");
+  var pluginTabs = byId("pluginWorkspaceTabs"); if (pluginTabs) pluginTabs.hidden = pageId !== "pluginsPanel";
   /* Restore .main-inner visibility — exam-view (a sibling of
      .main-inner inside .main-content) may have hidden it. */
   var mi = byId("mainInner");
@@ -186,6 +191,31 @@ function showMainPage(pageId) {
   var examEls = document.querySelectorAll("[data-exam-only='true']");
   examEls.forEach(function (el) { el.classList.add("hidden"); });
 }
+
+function bindPluginWorkspaceTabs() {
+  var pluginsTab = byId("pluginWorkspacePluginsTab");
+  var skillsTab = byId("pluginWorkspaceSkillsTab");
+  var tabs = byId("pluginWorkspaceTabs");
+  if (!pluginsTab || !skillsTab || !tabs || tabs.dataset.bound === "true") return;
+  tabs.dataset.bound = "true";
+
+  function syncSelection() {
+    var skillsOpen = !!document.getElementById("promptTemplatesOverlay");
+    pluginsTab.classList.toggle("active", !skillsOpen);
+    skillsTab.classList.toggle("active", skillsOpen);
+    pluginsTab.setAttribute("aria-selected", String(!skillsOpen));
+    skillsTab.setAttribute("aria-selected", String(skillsOpen));
+  }
+
+  pluginsTab.addEventListener("click", function () { openNav("plugins"); syncSelection(); });
+  skillsTab.addEventListener("click", function () {
+    openPromptTemplatesModal();
+    window.requestAnimationFrame(syncSelection);
+  });
+  new MutationObserver(syncSelection).observe(document.body, { childList: true, subtree: true });
+  syncSelection();
+}
+bindPluginWorkspaceTabs();
 
 function workspaceForPath(pathname) {
   var clean = String(pathname || "/").replace(/\/+$/, "") || "/";
@@ -336,6 +366,20 @@ export function openNav(name, options) {
   setActiveNav(name);
   if (name !== "more") closeAllPanels();
   openers[name]();
+  /* Workspace destinations take over the main pane on phones, so dismiss
+     the drawer after navigation. Keep it open for the More popover, which
+     is an in-drawer interaction rather than a page change. */
+  if (name !== "more" && window.innerWidth < 768) {
+    var sidebar = byId("sidebar");
+    var backdrop = byId("sidebarBackdrop");
+    if (sidebar && !sidebar.classList.contains("collapsed")) {
+      sidebar.classList.add("collapsed");
+      if (backdrop) backdrop.classList.remove("show");
+      window.sidebarOpen = false;
+      try { localStorage.setItem("socrates-sb", "0"); } catch (_) { /* storage is optional */ }
+      if (typeof window.syncSidebarBtns === "function") window.syncSidebarBtns();
+    }
+  }
 }
 export function syncWorkspaceRoute() {
   var page = workspaceForPath(location.pathname);

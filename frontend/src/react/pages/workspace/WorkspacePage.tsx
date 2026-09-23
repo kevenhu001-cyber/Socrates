@@ -31,6 +31,14 @@ function PlusIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>;
 }
 
+const PLUGIN_DIRECTORY_PRIORITY = ['gmail', 'github', 'googledrive', 'googlecalendar', 'notion'];
+
+function pluginDirectoryRank(id: string): number {
+  const normalized = id.toLowerCase().replace(/^oc/, '').replace(/[^a-z0-9]/g, '');
+  const rank = PLUGIN_DIRECTORY_PRIORITY.indexOf(normalized);
+  return rank < 0 ? PLUGIN_DIRECTORY_PRIORITY.length : rank;
+}
+
 function MoreIcon() {
   return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>;
 }
@@ -378,7 +386,10 @@ function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch
 }) {
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'public' | 'personal'>('public');
-  const catalog = plugins;
+  const catalog = useMemo(
+    () => [...plugins].sort((a, b) => pluginDirectoryRank(a.id) - pluginDirectoryRank(b.id)),
+    [plugins],
+  );
   const visiblePlugins = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return catalog.filter((plugin) => {

@@ -1,0 +1,616 @@
+/* ==========================================================================
+   06-chat-transcript.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: chat composer in-flow, transcript, legacy chat header, mode tabs + exam/admin gates, mobile topbar, bubbles, action toolbar, toasts, find bar.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* P_chat-reserve — the chat composer was previously `position:absolute`
+   docked to the bottom of `.chat-view`. That overlap pattern forced the
+   transcript (.msg-list) to reserve space at the bottom with a JS-measured
+   `padding-bottom` to keep the last message from sliding under the composer.
+   Measurement of an always-positioned bar is racy on focus / keyboard /
+   attachment changes; the bar can lag the actual rendered height by a frame
+   and the last few message rows end up covered.
+
+   The fix here is to put `.chat-input-bar` back into the flex column flow
+   so flex-shrink on the list makes room for whatever height the composer
+   naturally takes. Keyboard avoidance is now handled by `padding-bottom`
+   on `.chat-view` itself — the entire chat (list + bar) is pushed up by the
+   keyboard's inset, rather than having the bar float above a manually-sized
+   reserve. No measurement, no race, no overlap. */
+/* chat-view is a direct child of .main-content (lifted out of
+   .main-inner so the transcript scrollbar can pin to the right edge
+   of the main pane). It hosts only the floating find bar + the
+   chat-input-bar — the chat transcript (#msgList) is its sibling, not
+   its child. The parent flex column gives #msgList the remaining space
+   and lets the in-flow chat-view take only its actual composer height. */
+.chat-view{
+  width:100%;
+  /* Sit centred horizontally in the main pane with the same
+     reading-column max-width as before, so the composer visually
+     lines up with the centred message text. */
+  max-width:calc(58rem * var(--app-width-scale, 1));
+  /* P_input-lift — keep a small breathing gap below the chat composer so
+     the input sits ~6px above the bottom edge on desktop and mobile.
+     The gap stays CONSTANT through the lift (the keyboard adds travel on
+     top of it via padding-bottom): collapsing it as --keyboard-inset rose
+     stole 6px of travel in the first frame and read as a snap. */
+  margin:0 auto;
+  margin-bottom:6px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  flex:0 0 auto;
+  order:2;
+  position:relative;
+  --composer-motion-duration:.34s;
+  --composer-motion-ease:cubic-bezier(.22,1,.36,1);
+  margin-top:0;
+  /* Keyboard avoidance (Open WebUI model): --keyboard-inset is mirrored
+     1:1 from the visual viewport by ui/keyboard/index.ts on every geometry
+     event — the value already moves on the keyboard's own animation curve,
+     so it must NOT be transitioned here. A CSS transition would lag each
+     per-frame write by its full duration and read as trailing/jitter.
+     External (non-controller) inset writes land instantly for the same
+     reason; scroll.js re-anchors a pinned reader in the same task. */
+  padding-bottom:var(--keyboard-inset, 0px);
+}
+
+/* P_composer-anim-no-fr — when the engine does not interpolate fr
+   grid track sizes (the focus-in animation would otherwise snap),
+   swap the chat-composer-body layout to a fixed min-height that
+   animates between two known values via the same transition curve.
+   The collapsed body holds just the editor row (42 px); the focused
+   body holds editor + footer (106 px). The footer still slides in
+   via its own transform:translateY transition, so the visible
+   motion matches what fr-interpolating engines produce — wrap
+   grows, footer slides in, no snap. */
+.composer-anim-no-fr .chat-input-wrap .chat-composer-body{
+  display:block;
+  grid-template-rows:auto;
+  min-height:42px;
+  transition:min-height var(--composer-motion-duration) var(--composer-motion-ease);
+}
+.composer-anim-no-fr .chat-input-wrap.composer-focused .chat-composer-body{
+  min-height:106px;
+}
+.composer-anim-no-fr .chat-input-wrap .chat-input-footer{
+  /* Same translate trick as the default layout, but pinned to the
+     body's bottom so the row-2 grid split is not required. The
+     collapsed footer is lifted out of flow entirely: in a display:block
+     body its in-flow 44px would inflate the collapsed composer the
+     same way the `0fr` row did on the grid path. */
+  position:absolute;left:2px;right:2px;bottom:0;
+  transform:translateY(0);
+  transition:transform var(--composer-motion-duration) var(--composer-motion-ease);
+}
+.composer-anim-no-fr .chat-input-wrap.composer-focused .chat-input-footer{
+  position:static;
+  transform:translateY(0);
+}
+
+/* Chat transcript — full-width vertical scroll container anchored to
+   the right edge of the main pane (page right minus sidebar). The
+   message column is centred with horizontal padding that mirrors
+   the original reading column width, so the scrollbar stays on the
+   page-right edge while the bubble text stays where the user
+   expects. */
+
+#msgList,.msg-list{
+  /* The transcript is a real flex child. Its bottom edge is the composer's
+     top edge, so changes to attachments, focus expansion, and keyboard
+     inset resize the viewport without a measured/fixed reserve. */
+  position:relative;
+  order:1;
+  flex:1 1 auto;
+  min-height:0;
+  padding-top:12px;
+  padding-bottom:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
+  touch-action:pan-y;
+  scroll-padding-bottom:12px;
+  /* Smooth scroll is disabled by default. JS uses the browser-native
+     Element.scrollTo({behavior:'smooth'}) pipeline (see
+     ui/scroll.js#smoothScrollToBottom) when the reader needs to be
+     re-pinned, so no class toggle is needed and the platform owns the
+     easing curve. A class-based toggle on scroll-behavior raced the
+     first paint and produced a visible snap on send / keyboard open. */
+  scroll-behavior:auto;
+  /* Centre the message column. The horizontal padding fills any
+     leftover space on either side, and the vertical scrollbar sits
+     at the right edge of the main pane because the scroll
+     container itself spans the full main pane width. */
+  padding-inline:max(16px, calc((100% - 58rem * var(--app-width-scale, 1)) / 2));
+  /* box-sizing so padding-top/bottom shrink the scroll viewport
+     instead of overflowing it. */
+  box-sizing:border-box;
+}
+/* The landing and non-chat views keep their own layout. Once chatView is
+   visible, the empty landing column must stop consuming flex height so the
+   transcript can fill the space above the composer. */
+.main-content > #msgList{display:none}
+#mainContent:has(> #chatView:not(.hidden)) > #mainInner{display:none}
+#mainContent:has(> #chatView:not(.hidden)) > #msgList{display:flex}
+/* Search progress is inserted immediately after #msgList. Keep it in the
+   same flow slot so it sits between the transcript and composer instead of
+   becoming an unrelated flex item above the transcript. */
+.main-content > .search-progress-floating{order:1;flex:0 0 auto}
+@supports (scrollbar-width:thin){.msg-list{scrollbar-width:thin}}
+@supports (scrollbar-color:transparent transparent){.msg-list{scrollbar-color:transparent transparent}}
+@supports (scrollbar-color:hsl(var(--text-500)/0.25) transparent){
+  .msg-list.scrollbar-visible{scrollbar-color:hsl(var(--text-500)/0.25) transparent}
+}
+.msg-list::-webkit-scrollbar{width:5px}
+.msg-list::-webkit-scrollbar-track{background:transparent}
+.msg-list::-webkit-scrollbar-thumb{border-radius:3px;background:transparent;transition:background .25s}
+.msg-list.scrollbar-visible::-webkit-scrollbar-thumb{background:hsl(var(--text-500)/0.25)}
+
+
+
+
+
+
+
+/* chat-header is now legacy — content lives in .top-bar. The rule
+   below is kept so old selectors don't break, but it's hidden. */
+.chat-header{display:none}
+/* chatDomain element was removed from index.html — topicBadge is the
+   sole session indicator now. Hide any stale nodes defensively. */
+
+.chat-stats{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+/* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
+   Animated so the text/background/color crossfade between Tutor and Chat
+   instead of snapping instantly. The `badgeSwap` keyframe runs once per
+   class change (driven by JS clearing & re-adding the class). */
+
+
+@keyframes badgeSwap{
+  0%{transform:scale(.92);opacity:.5;filter:blur(1px)}
+  60%{transform:scale(1.04);opacity:1;filter:blur(0)}
+  100%{transform:scale(1);opacity:1;filter:blur(0)}
+}
+/* P_chatgpt-top — centered Chat/Tutor tabs in the top bar. Absolutely
+   centered inside .top-bar (which is position:relative) so it stays
+   visually centered regardless of the width of the left/right groups,
+   mirroring ChatGPT's 聊天/工作 top control. Reuses .app-mode-toggle
+   segments; the active segment gets a subtle raised pill background. */
+.top-mode-tabs{
+  position:absolute;
+  left:50%;top:calc(50% + 14px);
+  transform:translate(-50%,-50%);
+  display:flex;
+  align-items:center;
+  gap:2px;
+  padding:3px;
+  border-radius:999px;
+  background:hsl(var(--bg-300)/0.6);
+  z-index:1;
+  pointer-events:auto;
+}
+.top-mode-tabs .app-mode-toggle{
+  -webkit-appearance:none;
+  appearance:none;
+  border:0;cursor:pointer;
+  background:transparent;
+  color:hsl(var(--text-400));
+  font-size:calc(13px * var(--app-font-scale, 1));
+  font-weight:600;
+  padding:4px 14px;
+  border-radius:999px;
+  transition:color .18s ease,background-color .18s ease,transform .12s ease;
+  -webkit-user-select:none;
+  user-select:none;
+  white-space:nowrap;
+}
+.top-mode-tabs .app-mode-toggle:hover{color:hsl(var(--text-100))}
+.top-mode-tabs .app-mode-toggle:active{transform:scale(.97)}
+.top-mode-tabs .app-mode-toggle.active{
+  color:hsl(var(--text-100));
+  background:hsl(var(--bg-100));
+  box-shadow:0 1px 2px hsl(0 0% 0%/0.18);
+}
+/* Exam is a focused workspace. The regular chat/tutor controls are hidden
+   independently of inline styles so neither desktop nor mobile can leak in. */
+body.exam-active #modeSegmentedTop,
+body.exam-active #mobileMode,
+body.exam-active #mobileIncognitoBtn{display:none!important}
+body.workspace-active #modeSegmentedTop,
+body.workspace-active #mobileMode,
+body.workspace-active #mobileIncognitoBtn,
+body.workspace-active #topicDisclaimer{display:none!important}
+/* Admin console is a standalone operator page — none of the chat
+   top-bar chrome applies (mode switch, model picker, find, share,
+   stats). !important because the chat runtime toggles .hidden off
+   these controls whenever a session is active. The sidebar toggle
+   stays visible for navigation. */
+body.admin-active #modeSegmentedTop,
+body.admin-active #mobileMode,
+body.admin-active #mobileIncognitoBtn,
+body.admin-active #chatModelWrap,
+body.admin-active #findBtn,
+body.admin-active #shareBtn,
+body.admin-active #chatStats,
+body.admin-active #topicDisclaimer{display:none!important}
+/* The <=768px mobile-reference block force-shows the pill with a
+   double-ID selector (#appShell #modeSegmentedTop{display:flex!
+   important}), which outranks the single-ID rule above. This triple
+   selector (2 IDs + 1 class) wins the !important tie-break on phones
+   so the standalone console stays chrome-free on every viewport. */
+body.admin-active #appShell #modeSegmentedTop{display:none!important}
+.main-content:has(#chatView:not(.hidden)) #topicDisclaimer{display:none}
+/* P_hide-mode-switch-in-conversation — see the canonical rule near
+   the top of this file (line ~130). The pre-existing rule was kept
+   here for historical reference but the authoritative copy lives
+   up there. The attribute reflects the live conversation state, so
+   the pill is hidden only while a conversation is active and
+   reappears when the user returns to the topic-input page. */
+[data-mode=light] .top-mode-tabs .app-mode-toggle.active{background:hsl(var(--bg-400))}
+/* Compatibility layer: the final responsive contract below keeps the shared
+   pill on the empty landing surface and only hides it for live conversations. */
+@media (max-width:640px){.top-mode-tabs{display:none}}
+
+/* P_mobile-topbar — mobile top bar. On desktop the centered mode
+   dropdown and the incognito button are hidden (the desktop segmented
+   pill covers mode switching). Under 640px we reveal the centered
+   "Chat ˅" mode dropdown and a right-side incognito toggle; the left
+   sidebar toggle keeps its original (non-circular) style. */
+.mobile-mode{display:none}
+.mobile-incognito-btn{display:none}
+@media (max-width:640px){
+  .mobile-mode{
+    display:block;
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    z-index:6;
+  }
+  .mobile-mode-trigger{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:6px 10px;
+    border:0;
+    background:transparent;
+    color:hsl(var(--text-100));
+    font-size:calc(17px * var(--app-font-scale, 1));
+    font-weight:700;
+    line-height:1;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background-color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-mode-trigger:active{background:hsl(var(--bg-300)/0.6)}
+  .mobile-mode-caret{
+    width:16px;height:16px;
+    color:hsl(var(--text-400));
+    transition:transform .2s cubic-bezier(.16,1,.3,1);
+  }
+  .mobile-mode[data-open="true"] .mobile-mode-caret{transform:rotate(180deg)}
+  .mobile-mode-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    left:50%;
+    transform:translateX(-50%) translateY(-6px) scale(.97);
+    transform-origin:top center;
+    min-width:230px;
+    max-width:calc(100vw - 32px);
+    padding:6px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background:hsl(var(--bg-200));
+    border:0.5px solid hsl(var(--border-300)/0.5);
+    border-radius:16px;
+    box-shadow:0 12px 40px -6px hsl(var(--always-black)/0.5),0 2px 8px hsl(var(--always-black)/0.3);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .16s ease,transform .2s cubic-bezier(.16,1,.3,1);
+  }
+  .mobile-mode[data-open="true"] .mobile-mode-menu{
+    opacity:1;
+    pointer-events:auto;
+    transform:translateX(-50%) translateY(0) scale(1);
+  }
+  .mobile-mode-item{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    width:100%;
+    padding:10px 12px;
+    border:0;
+    background:transparent;
+    border-radius:12px;
+    text-align:left;
+    cursor:pointer;
+    transition:background-color .12s ease;
+  }
+  .mobile-mode-item:active{background:hsl(var(--bg-300)/0.7)}
+  .mobile-mode-item-title{
+    font-size:calc(15px * var(--app-font-scale, 1));
+    font-weight:600;
+    color:hsl(var(--text-100));
+    line-height:1.2;
+  }
+  .mobile-mode-item-desc{
+    font-size:calc(12px * var(--app-font-scale, 1));
+    color:hsl(var(--text-400));
+    line-height:1.3;
+  }
+  .mobile-mode-item.active{background:hsl(var(--bg-300))}
+  .mobile-mode-item.active .mobile-mode-item-title{color:hsl(var(--accent-000))}
+
+  /* Right-side incognito toggle — moved into the sidebar 更多 popover so
+     the mobile header matches the single-icon reference. The element
+     stays mounted (syncIncognitoBtn still mirrors aria state onto it)
+     but never renders in the top bar. */
+  .mobile-incognito-btn{
+    display:none;
+    align-items:center;
+    justify-content:center;
+    width:28px;height:28px;
+    border-radius:6px;
+    border:0;
+    background:transparent;
+    color:hsl(var(--text-300));
+    cursor:pointer;
+    flex-shrink:0;
+    transition:color .06s,background .06s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mobile-incognito-btn svg{width:16px;height:16px}
+  .mobile-incognito-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+  .mobile-incognito-btn[aria-pressed="true"]{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12)}
+}
+
+.msg-list{display:flex;flex-direction:column;gap:12px;flex:1;overflow-anchor:none}
+.msg{animation:msgIn .22s var(--ease-out);padding:6px 0}
+/* The submitted prompt is already being moved by turnAnchor's single
+   transcript scroll glide. A row-level opacity/transform entrance makes it
+   briefly paint in a second visual state while that glide is starting. Keep
+   user rows fully present from their first frame; assistant status rows may
+   still use the opacity-only reveal below. */
+.msg.user{animation:none;opacity:1;transform:none}
+.msg.turn-viewport-anchor{box-sizing:border-box}
+/* Keep transcript geometry exact. Height-estimated content-visibility made
+   long/off-screen answers replace their 150px estimate only when scrolled
+   into view, which changed scrollHeight mid-gesture and could strand the
+   reader above the real final line. */
+.msg-list>.msg{content-visibility:visible}
+/* The send-time turn anchor already moves the transcript as one continuous
+   unit. A second translate animation on each newly mounted row used a
+   compositor-only coordinate system while turnAnchor measured layout
+   coordinates, exposing the prompt at one position for a frame before the
+   scroll glide took ownership. Keep the gentle reveal, but leave all spatial
+   motion to the single scroll owner so a new prompt never flashes or appears
+   to teleport. Starting partially visible also avoids a blank frame between
+   clearing the composer and painting the submitted bubble. */
+@keyframes msgIn{from{opacity:.45}to{opacity:1}}
+/* User bubbles right-align. The toolbar lives BELOW the bubble
+ * (flex-direction:column + align-items:flex-end), not next to it on
+ * the right edge. This keeps the bubble flush-right while putting
+ * the action row in a clean horizontal strip under the text. */
+.msg.user{display:flex;flex-direction:column;align-items:flex-end}
+/* P_bubble — user bubbles fill the chat column, no manual width cap.
+ * Previously capped at max-width:75%, which created visible asymmetry with
+ * assistant bubbles (max-width:100% at line 855). The column itself is
+ * bounded by .main-inner, which the user can adjust via --app-width-scale. */
+/* UI-align: open-webui-style pill bubble — full 24px radius, no
+ * border/tail, capped at 90% of the column so long prompts don't
+ * span edge-to-edge. Surface color stays on the brand token. */
+.msg.user .msg-body{background:hsl(var(--bg-000));border:none;border-radius:24px;padding:9px 18px;max-width:90%}
+/* P_attachments — attachment chip strip inside a user bubble. Sits
+   below the text body, same horizontal padding so it lines up. */
+.msg.user .msg-attachments{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.msg.user .msg-attachment{display:inline-flex;align-items:center;gap:6px;background:hsl(var(--bg-200));border:1px solid hsl(var(--border-300)/0.18);border-radius:14px;padding:3px 10px 3px 3px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-200));max-width:200px;line-height:1.3}
+.msg.user .msg-attachment img.msg-attachment-thumb{width:24px;height:24px;border-radius:12px;object-fit:cover;flex-shrink:0;background:hsl(var(--bg-300))}
+.msg.user .msg-attachment .msg-attachment-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg.user .msg-attachment .msg-attachment-error{color:hsl(0 70% 55%);font-size:calc(10px * var(--app-font-scale, 1));margin-left:2px}
+.msg.assistant .msg-body{max-width:100%}
+/* P1.1 — per-message action toolbar. Hover-revealed on desktop,
+   always visible on touch devices. Sits as its own row under the
+   bubble; for user messages we align it to the right edge of the
+   bubble (no offset needed since the parent column already
+   right-aligns). For assistant messages it sits indented under
+   the bubble. */
+.msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:2px;opacity:0;transition:opacity .15s;height:28px}
+.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:2px}
+.msg.user .msg-toolbar{justify-content:flex-end;margin-right:0}
+@media (hover:hover){.msg:hover .msg-toolbar{opacity:1}}
+@media (hover:none){.msg-toolbar{opacity:.7}}
+/* UI-align: the newest assistant reply keeps its action row visible
+   (open-webui shows the last response's toolbar by default). */
+.msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
+/* P_finish-stream-boundary — while a bubble is still streaming, hide its
+   toolbar (opacity 0 + pointer-events none) regardless of hover state.
+   `data-stream-settled="true"` is set by MessageItem once finish() has
+   produced the final html, and `withElementSwapTransition` has cross-faded
+   the bubble. From that frame on the toolbar is visible without a remount
+   and without the page-level flicker that came from unmounting the live
+   AssistantTurn and mounting MessageToolbar at the same time. The fade
+   is animated so the swap reads as a single continuous transition. */
+.msg.assistant:not([data-stream-settled]) .msg-toolbar{opacity:0!important;pointer-events:none}
+.msg.assistant[data-stream-settled] .msg-toolbar{opacity:1;transition:opacity .18s ease}
+.msg.assistant[data-stream-settled] .stream-cursor{opacity:0;transition:opacity .15s ease}
+/* The streaming status line (`TurnStatus`) is data drawn from
+   `_liveStatus`. Once `data-stream-settled` is set, the live status is
+   already cleared by finish(); the bubble never mounts a status line
+   after that. */
+.msg-toolbar-btn{position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:background .12s,color .12s;border:0;padding:0}
+.msg-toolbar-btn:hover{background:hsl(var(--text-000)/0.06);color:hsl(var(--text-100))}
+/* UI-align: dark floating tooltip (open-webui/tippy look) driven by
+   aria-label — appears after a short hover delay, no JS needed. */
+.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:hsl(0 0% 9%);color:hsl(0 0% 98%);font-size:11px;font-weight:500;line-height:1;padding:6px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .1s ease .35s;z-index:40}
+.msg-toolbar-btn:hover::after{opacity:1}
+/* UI-align: quiet gray active state (open-webui pattern) — gold stays
+   reserved for live states like read-aloud below. */
+.msg-toolbar-btn.active{color:hsl(var(--text-000));background:hsl(var(--bg-300))}
+.msg-toolbar-btn.active:hover{background:hsl(var(--bg-400))}
+/* Read-aloud active state: pulse the accent so it's clear TTS is playing. */
+.msg-toolbar-btn.is-speaking{color:hsl(var(--oncolor-100));background:hsl(var(--accent-000));animation:readAloudPulse 1.4s ease-in-out infinite}
+.msg-toolbar-btn.is-speaking:hover{background:hsl(var(--accent-100))}
+@keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.msg-toolbar-btn svg{width:16px;height:16px;stroke-width:1.7}
+/* Edit-in-place textarea — the user bubble itself is the rounded gray
+   container (open-webui edit surface), so the textarea stays chromeless
+   and the bubble stretches to full column width while editing. */
+.msg-edit-area{width:100%;min-height:60px;background:transparent;border:none;outline:none;padding:2px 0;font:inherit;color:inherit;resize:vertical}
+.msg.user .msg-body:has(.msg-edit-area){max-width:100%;width:100%;border-radius:20px}
+/* Alert notifications — Ant Design-inspired toast system.
+   Types: success / info / warning / error. Each uses the app's
+   design tokens for colors so dark/light mode is automatic.
+   Alerts stack upward from the bottom-right. */
+
+
+
+
+
+
+
+
+
+/* Type-specific colors (automatic dark mode via design tokens) */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes alertSlideIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* P_msg-toast — minimal transient toast used by showToast() and the
+   save-failed error variant in main.js. Lives in the bottom-right at
+   z-index 1500 — above all modals (max 1300) so the user always sees
+   the notification, but below the alert container (2000) so queued
+   alert() notifications can still stack on top. Without this block
+   the toasts inherit no styles and the div renders as an unstyled
+   transparent box — users get "no feedback" for action confirmations. */
+.msg-toast{position:fixed;bottom:24px;right:24px;z-index:1500;max-width:400px;padding:11px 14px;border-radius:10px;background:hsl(var(--bg-000));color:hsl(var(--text-100));border:1px solid hsl(var(--border-300)/.35);box-shadow:0 6px 22px hsl(var(--always-black)/0.25);font-size:calc(13px * var(--app-font-scale, 1));line-height:1.45;opacity:0;transform:translateY(8px);transition:opacity .18s var(--ease-out),transform .18s var(--ease-out);pointer-events:none;word-break:break-word}
+.msg-toast.visible{opacity:1;transform:translateY(0)}
+.msg-toast-error{background:hsl(0 75% 50%/.12);border-color:hsl(0 75% 50%/.45);color:hsl(0 70% 40%)}
+[data-mode=dark] .msg-toast-error{background:hsl(0 60% 28%/.55);border-color:hsl(0 60% 50%/.45);color:hsl(0 70% 75%)}
+
+/* P1.2 — global search modal. Mac-style centered overlay with
+   a single input + scrollable results column. */
+.profile-instructions-label{font-size:12px;color:hsl(var(--text-300));font-weight:500;letter-spacing:0.01em}
+.profile-instructions-area{width:100%;min-height:64px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));line-height:1.5;resize:vertical;font-family:var(--font-sans)}
+.profile-instructions-area:focus{outline:none;border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.profile-instructions-foot{margin-top:4px;display:flex;justify-content:flex-end}
+.profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
+.profile-instructions-state.saved{color:hsl(var(--accent-000))}
+.profile-instructions-state.pending{color:hsl(var(--text-500))}
+
+/* P1.3 — Custom Instructions textareas inside the profile modal */
+.profile-instructions{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.profile-instructions-label{font-size:12px;color:hsl(var(--text-300));font-weight:500;letter-spacing:0.01em}
+.profile-instructions-area{width:100%;min-height:64px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.2);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));line-height:1.5;resize:vertical;font-family:var(--font-sans)}
+.profile-instructions-area:focus{outline:none;border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.profile-instructions-foot{margin-top:4px;display:flex;justify-content:flex-end}
+.profile-instructions-state{font-size:11px;color:hsl(var(--text-500));font-style:italic}
+.profile-instructions-state.saved{color:hsl(var(--accent-000))}
+.profile-instructions-state.pending{color:hsl(var(--text-500))}
+.cmd-k-overlay{position:fixed;inset:0;background:hsl(var(--always-black)/0.55);z-index:900;display:flex;align-items:flex-start;justify-content:center;padding-top:min(18vh,140px);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.cmd-k-overlay.hidden{display:none}
+/* P0.2 — in-session find bar. Floats at the top-right of the viewport:
+   .chat-view only spans the composer's height now, so anchoring there
+   would drop the bar next to the input instead of the transcript's top
+   edge. Distinct from the full-screen Cmd-K overlay: it never dims the
+   page and leaves the conversation usable. */
+.find-bar{position:fixed;top:10px;right:14px;z-index:60;display:flex;align-items:center;gap:6px;padding:6px 8px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.35);border-radius:10px;box-shadow:0 8px 24px hsl(var(--always-black)/0.28)}
+.find-bar.hidden{display:none}
+.find-bar-icon{width:16px;height:16px;color:hsl(var(--text-400));flex-shrink:0}
+.find-bar input{width:200px;max-width:46vw;background:transparent;border:0;outline:none;font:inherit;font-size:14px;color:hsl(var(--text-100))}
+.find-bar input::placeholder{color:hsl(var(--text-500))}
+.find-count{min-width:34px;text-align:right;font-size:12px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;flex-shrink:0}
+.find-nav-btn,.find-close-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:background-color .1s,color .1s;flex-shrink:0}
+.find-nav-btn:hover,.find-close-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.find-nav-btn svg,.find-close-btn svg{width:16px;height:16px;stroke:currentColor}
+/* Match highlight marks injected into .msg-body by findInSession.js. */
+mark.find-hl{background:hsl(48 100% 62% / 0.45);color:inherit;border-radius:2px;padding:0 1px}
+mark.find-hl.find-hl-active{background:hsl(28 100% 58% / 0.85);color:hsl(var(--always-black));box-shadow:0 0 0 1px hsl(28 100% 45% / 0.6)}
+@media(max-width:768px){
+  .find-bar{top:8px;right:8px;left:8px;justify-content:flex-start}
+  .find-bar input{flex:1;width:auto;max-width:none}
+}
+.cmd-k-modal{width:min(640px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.25);border-radius:14px;box-shadow:0 24px 60px hsl(var(--always-black)/0.45);overflow:hidden;display:flex;flex-direction:column}
+.cmd-k-input-row{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:0.5px solid hsl(var(--border-300)/0.18)}
+.cmd-k-input-row .cmd-k-icon{width:18px;height:18px;color:hsl(var(--text-400));flex-shrink:0}
+.cmd-k-input-row input{flex:1;background:transparent;border:0;outline:none;font:inherit;color:hsl(var(--text-100));font-size:16px}
+.cmd-k-input-row input::placeholder{color:hsl(var(--text-500))}
+.cmd-k-kbd{font-size:11px;padding:2px 6px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:4px;color:hsl(var(--text-400));font-family:var(--font-mono);background:transparent}
+.cmd-k-results{flex:1;overflow-y:auto;padding:6px}
+.cmd-k-section-label{font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));padding:8px 12px 4px}
+.cmd-k-row{padding:8px 12px;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:background .1s}
+.cmd-k-row:hover,.cmd-k-row.selected{background:hsl(var(--bg-200))}
+.cmd-k-row-title{font-size:14px;font-weight:500;color:hsl(var(--text-100));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd-k-row-snippet{font-size:12px;color:hsl(var(--text-400));line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cmd-k-row-meta{font-size:10px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:0.05em;margin-top:2px}
+.cmd-k-empty{padding:32px 16px;text-align:center;color:hsl(var(--text-400));font-size:13px}
+.cmd-k-empty kbd{font-family:var(--font-mono);font-size:11px;padding:1px 5px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;margin:0 2px}
+.cmd-k-foot{display:flex;gap:18px;padding:8px 16px;border-top:0.5px solid hsl(var(--border-300)/0.18);font-size:11px;color:hsl(var(--text-500))}
+.cmd-k-foot kbd{font-family:var(--font-mono);font-size:10px;padding:1px 5px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;background:transparent;margin-right:4px}
+.msg-body{font-size:calc(15px * var(--app-font-scale, 1));line-height:1.625;color:hsl(var(--text-100));overflow-wrap:break-word;word-break:break-word}
+.msg-body p{margin-bottom:8px}.msg-body p:last-child{margin-bottom:0}
+.msg-body strong{font-weight:600;color:hsl(var(--text-000))}.msg-body em{font-style:italic}
+.msg-body pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:16px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5;margin:8px 0;color:hsl(var(--text-200))}
+.msg-body code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.msg-body pre code{background:none;padding:0}
+/* Streaming→final transition: finish() rewrites the body's innerHTML
+   to swap in the marked+KaTeX render. Without this fade the user sees
+   a hard flash as the browser tears down and rebuilds the DOM, which
+   reads as "the page reloaded". The fade masks the swap with a short
+   ~80ms opacity dip so it feels like a single pulse, not a refresh. */
+.quick-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+
+
+
+.chat-input-bar{
+  width:100%;
+  flex-shrink:0;
+  /* P_pill-anchor-composer — become the positioning ancestor for the
+     new-reply pill, which was moved inside this bar so it tracks the
+     composer's top edge instead of chat-view's. */
+  position:relative;
+  /* P_chat-reserve — composer is now part of the flex column flow.
+     Its height is whatever the chip strip + wrap + footer naturally
+     add up to, so flex-shrink on the sibling `.msg-list` (flex:1 1 auto)
+     leaves the right amount of room. There is no longer a floating
+     overlay to position absolutely, so message length cannot push the
+     composer off-screen and the focus-driven height growth on mobile
+     (`.chat-input-wrap.composer-focused` jumps min-height
+     54→116) cannot race ahead of the last visible message. Keyboard
+     avoidance is handled by `padding-bottom` on `.chat-view` instead. */
+  position:relative;
+  left:auto;
+  right:auto;
+  /* (see P_chat-reserve above — `bottom` removed because the bar
+     no longer floats; keyboard inset is applied to `.chat-view`'s
+     `padding-bottom` instead.) */
+  bottom:auto;
+  z-index:10;
+  background:transparent;
+  padding-top:12px;
+  /* Keep the composer comfortably above the viewport edge on desktop and
+     mobile. Safe-area devices get whichever inset is larger. */
+  padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));
+}

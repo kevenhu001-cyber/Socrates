@@ -1,0 +1,194 @@
+/* ==========================================================================
+   01-sidebar.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: sidebar surface, recents list + resize, compose button, search row, filter chips, drag/drop, pin + label badges, context menu, tag editor.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* UI-align: translucent sidebar surface (open-webui desktop look).
+   Mobile keeps a solid background — see the 768px override below. */
+.sidebar{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);display:flex;flex-direction:column;background:hsl(var(--bg-000)/0.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-right:0.5px solid hsl(var(--border-300)/0.12);overflow:hidden;z-index:30;position:absolute;left:0;top:0;bottom:0;transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1),border-color .3s cubic-bezier(0.4,0,0.2,1);will-change:transform}
+body.sidebar-resizing .sidebar{will-change:width;transition:none!important}
+.sidebar.collapsed{width:var(--app-sidebar-width,18rem);min-width:var(--app-sidebar-width,18rem);transform:translateX(-100%);border-right-color:transparent}
+.sidebar-inner{min-width:0;width:100%;opacity:1;display:flex;flex-direction:column;flex:1;min-height:0;transition:opacity .25s var(--ease-out);position:relative;z-index:1}
+/* P_recent-list-resize — drag the recent panel's right edge to
+   resize the recents list directly. The handle sits inside the
+   recents-panel (right:0, width:10px), so it only appears when
+   the Recents tab is active. col-resize cursor never bleeds into
+   the chat pane. Visible affordance is a 1px accent hairline on
+   the panel's inner right edge that lights up on hover / drag —
+   no central pill, no floating grip widget. */
+.sidebar-resize-handle{position:absolute;top:0;right:0;bottom:0;width:10px;cursor:col-resize;z-index:25;background:transparent}
+.sidebar-resize-handle::after{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:transparent;pointer-events:none}
+/* P_a11y-focus-resize — keyboard users need to see the resize handle when
+   it has focus. The default global focus ring (added for WCAG 2.4.7) is
+   too thick for a 10px-wide column-edge handle, so use a 1px inset ring
+   along the right edge where the cursor sits. */
+.sidebar-resize-handle:focus-visible{outline:1px solid hsl(var(--accent-000));outline-offset:-2px}
+body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:none}
+.sidebar.collapsed .sidebar-resize-handle{opacity:0;pointer-events:none}
+.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}
+.sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 12px;flex-shrink:0}
+.sidebar-logo{display:flex;align-items:center;gap:6px;padding:3px 8px;font-weight:500;font-size:calc(17px * var(--sidebar-font-scale));letter-spacing:-.03em;white-space:nowrap;border-radius:6px;color:hsl(var(--text-100));font-family:var(--font-display)}
+.sidebar-logo img{flex-shrink:0}
+.sidebar-logo em{font-style:italic;color:hsl(var(--accent-000))}
+.icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;color:hsl(var(--text-300));transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer;border:none;background:transparent}
+.icon-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.icon-btn:active{transform:scale(.92)}
+.icon-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+/* Compose (new chat) button — the sidebar's primary action anchor.
+   Gets a subtle amber tint on hover so it reads as the accent action,
+   echoing the brand accent used on the logo's italic "S". */
+.compose-btn:hover{color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.10)}
+/* Unified search + view-switch row. Replaces the old three text tabs.
+   The search box is the default way to filter the single session list;
+   the tutor-only icon buttons open the Knowledge / Mistakes views. */
+.sidebar-search-row{display:flex;align-items:center;gap:4px;padding:2px 8px 6px;flex-shrink:0}
+.sidebar-search{flex:1;min-width:0;display:flex;align-items:center;gap:7px;height:32px;padding:0 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.14);transition:border-color .18s var(--ease-out),background .18s var(--ease-out)}
+.sidebar-search:focus-within{background:hsl(var(--bg-000));border-color:hsl(var(--accent-000)/0.55)}
+.sidebar-search-icon{width:15px;height:15px;flex-shrink:0;color:hsl(var(--text-500));transition:color .18s cubic-bezier(.4,0,.2,1)}
+.sidebar-search:focus-within .sidebar-search-icon{color:hsl(var(--accent-000))}
+.sidebar-search input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:hsl(var(--text-100));font-size:calc(12px * var(--sidebar-font-scale));line-height:1;padding:0}
+.sidebar-search input::placeholder{color:hsl(var(--text-500))}
+.sidebar-view-btn{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:hsl(var(--text-400));cursor:pointer;transition:color .18s var(--ease-out),background .18s var(--ease-out),transform .14s var(--ease-out)}
+.sidebar-view-btn svg{width:17px;height:17px}
+.sidebar-view-btn:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.sidebar-view-btn:active{transform:scale(.92)}
+.sidebar-view-btn.active{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.sidebar-view-btn .tab-badge{position:absolute;top:-3px;right:-3px;margin:0}
+.knowledge-panel{flex:1;overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:6px;opacity:1;transition:opacity .15s ease}
+.knowledge-panel.hidden{display:none}
+.kb-section-title{font-size:calc(10px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:6px 12px 2px}
+.kb-node{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));transition:background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer}
+.kb-node:hover{background:hsl(var(--bg-300))}
+.kb-node:active{transform:scale(.99)}
+.kb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.kb-dot.internalized{background:hsl(145 50% 50%)}.kb-dot.fuzzy{background:hsl(43 77% 62%)}.kb-dot.blank{background:hsl(var(--text-500))}
+.kb-name{flex:1;color:hsl(var(--text-200))}.kb-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+.kb-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+.kb-graph-wrap{margin:0 0 12px;padding:0 12px}
+.kb-graph-caption{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));margin-bottom:6px}
+.kb-graph{width:100%;height:auto;display:block;background:hsl(var(--bg-200)/.4);border:1px solid hsl(var(--border-300)/.3);border-radius:10px}
+.kb-graph-edges line{stroke:hsl(var(--border-300));stroke-width:1.2}
+.kb-graph-node{cursor:pointer}
+.kb-graph-node circle{stroke:hsl(var(--bg-100));stroke-width:1.5;transition:stroke .15s ease}
+.kb-graph-node text{font-size:9px;fill:hsl(var(--text-400));pointer-events:none}
+.kb-graph-node:hover circle,.kb-graph-node:focus-visible circle{stroke:hsl(var(--accent-000));stroke-width:2}
+/* P_a11y-focus-graph — the default button focus ring is a 2px solid offset
+   box, which clips a 9px-radius SVG node and looks like a separate UI
+   element. The circle already gets a colored ring on :focus-visible
+   above, so only suppress the rectangular outline. */
+.kb-graph-node:focus{outline:none}
+.kb-graph-node-internalized circle{fill:hsl(145 50% 50%)}
+.kb-graph-node-fuzzy circle{fill:hsl(43 77% 62%)}
+.kb-graph-node-blank circle{fill:hsl(var(--text-500))}
+.kb-graph-node-active circle{stroke:hsl(var(--accent-000));stroke-width:2.5}
+.recents-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.recents-panel.hidden{display:none}
+.recents-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+/* UI-align: time-bucket headers inside the session list (Today /
+   Yesterday / Previous 7 days…), mirroring open-webui's grouping. */
+.recents-time-label{font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-500));padding:12px 8px 4px;letter-spacing:.03em;-webkit-user-select:none;user-select:none}
+.recents-time-label:first-child{padding-top:4px}
+
+/* P2.2 — secondary filter chip row. A horizontal scroll of
+   short tag/preset chips below the project filter. Mirrors the
+   minimal project-chip style: small radius, no border, the
+   active chip gets a subtle bg + accent underline. */
+.recents-filter-chips{display:flex;align-items:center;gap:2px;padding:2px 4px 8px;flex-shrink:0;overflow-x:auto}@supports (scrollbar-width:thin){.recents-filter-chips{scrollbar-width:thin}}
+.recents-filter-chips-sep{width:1px;height:12px;background:hsl(var(--border-300)/0.25);flex-shrink:0;margin:0 4px}
+.recents-filter-chip-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:5px;background:transparent;border:0;color:hsl(var(--text-400));font-size:calc(10px * var(--sidebar-font-scale));cursor:pointer;flex-shrink:0;line-height:1.3;transition:color .18s var(--ease-out),background .18s var(--ease-out);font-family:inherit;position:relative}
+.recents-filter-chip-btn:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.recents-filter-chip-btn.active{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.recents-filter-chip-btn.active::after{content:"";position:absolute;left:6px;right:6px;bottom:1px;height:1.5px;border-radius:1px;background:hsl(var(--text-100));opacity:.85}
+.recents-filter-chip-icon{font-size:8px;line-height:1;opacity:0.7}
+/* Drag state for recent items. */
+.recent-item.dragging{opacity:0.4}
+/* Drop target highlight for project rows. */
+.project-row[dragover="true"]{outline:2px dashed hsl(var(--accent-000)/0.4);outline-offset:-2px;background:hsl(var(--accent-000)/0.04)}
+
+/* P2.2 — recent-item layout: mode badge + title/meta/tags in the
+   middle, action buttons on the right. */
+.recent-item-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.recent-item-text{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-100));font-weight:500;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:1;line-clamp:1;-webkit-box-orient:vertical}
+.recent-item-meta{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;align-items:center;gap:6px}
+.recent-item-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.recent-tag-pill{padding:1px 6px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-300));font-size:calc(9px * var(--sidebar-font-scale));border:0;cursor:pointer;font-family:inherit;line-height:1.5}
+.recent-tag-pill:hover{background:hsl(var(--accent-900));color:hsl(var(--accent-100))}
+.recent-item-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .18s var(--ease-out);flex-shrink:0;margin-top:1px}
+.recent-item:hover .recent-item-actions{opacity:1}
+.recent-item-tag-btn{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background-color .18s var(--ease-out),color .18s var(--ease-out)}
+.recent-item-tag-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.recent-item-tag-btn svg{width:12px;height:12px}
+.recent-item-del{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:1;transition:opacity .18s var(--ease-out),background .18s var(--ease-out),color .18s var(--ease-out);flex-shrink:0;background:transparent;border:0;cursor:pointer;padding:0}
+.recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.recent-item-del svg{width:12px;height:12px}
+/* Pin indicator in the recent item title row. */
+.recent-item-title-row{display:flex;align-items:center;gap:4px;min-width:0}
+.recent-item-pin-icon{flex-shrink:0;display:inline-flex;align-items:center;color:hsl(var(--accent-500))}
+.recent-item-pin-icon svg{display:block}
+.recent-item.pinned .recent-item-text,
+.recent-item.pinned:hover .recent-item-text{color:hsl(var(--accent-300))}
+/* Custom label badge in recent item. */
+.recent-item-label{font-size:calc(9px * var(--sidebar-font-scale));padding:1px 6px;border-radius:4px;background:hsl(var(--accent-900)/0.25);color:hsl(var(--accent-300));font-weight:500;flex-shrink:0;line-height:1.4;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis}
+
+/* Long-press context menu for recent items. */
+
+
+@keyframes contextMenuIn{from{opacity:0;transform:translateY(-4px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Block pointer events on all recent items while context menu is
+   open. Prevents mobile synthetic clicks from navigating. */
+#sidebar.ctx-menu-block .recent-item{pointer-events:none}
+
+/* "Move to project" sub-section in the session context menu. */
+
+
+
+
+
+
+
+
+
+/* P2.2 — tag editor popover */
+.tag-editor-popover{position:fixed;width:320px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:10px;box-shadow:0 12px 36px hsl(var(--always-black)/0.35);z-index:950;padding:14px;display:none;flex-direction:column;gap:10px}
+.tag-editor-popover.visible{display:flex}
+.tag-editor-head{font-size:13px;font-weight:600;color:hsl(var(--text-200))}
+.tag-editor-current{display:flex;flex-wrap:wrap;gap:4px;min-height:24px}
+.tag-editor-empty{font-size:11px;color:hsl(var(--text-500));font-style:italic;align-self:center}
+.tag-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border-radius:999px;background:hsl(var(--bg-300));color:hsl(var(--text-200));font-size:11px}
+.tag-pill.removable{padding-right:2px}
+.tag-pill-x{width:14px;height:14px;border-radius:50%;background:transparent;border:0;color:hsl(var(--text-400));font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.tag-pill-x:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.tag-editor-input-row{display:flex;gap:4px}
+.tag-editor-input{flex:1;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:6px 8px;font:inherit;font-size:12px;color:hsl(var(--text-100));outline:none}
+.tag-editor-input:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.tag-editor-add{padding:4px 10px;background:hsl(var(--accent-000));color:hsl(var(--always-white));border:0;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500}
+.tag-editor-add:hover{filter:brightness(1.1)}
+.tag-editor-suggest{display:flex;flex-wrap:wrap;gap:4px}
+.tag-editor-suggest-label{font-size:10px;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:0.05em;width:100%;margin-bottom:2px}
+.tag-editor-suggest-btn{padding:2px 8px;border-radius:999px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);color:hsl(var(--text-300));font-size:11px;cursor:pointer;font-family:inherit}
+.tag-editor-suggest-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.tag-editor-foot{display:flex;justify-content:flex-end;padding-top:6px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
+.tag-editor-done{padding:4px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:12px;cursor:pointer;font-family:inherit}
+.tag-editor-done:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+

@@ -54,6 +54,18 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
     label: 'Files',
     icon: MOBILE_MENU_ICON_OPEN + '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
   },
+  {
+    action: 'createImage',
+    labelKey: 'composer.tools.createImage',
+    label: 'Create image',
+    icon: MOBILE_MENU_ICON_OPEN + '<path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.64 5.64l2.12 2.12m8.48 8.48 2.12 2.12m0-12.72-2.12 2.12m-8.48 8.48-2.12 2.12"/><circle cx="12" cy="12" r="4.5"/><path d="m19 3 .6 1.4L21 5l-1.4.6L19 7l-.6-1.4L17 5l1.4-.6L19 3Z"/></svg>',
+  },
+  {
+    action: 'webSearch',
+    labelKey: 'composer.tools.webSearch',
+    label: 'Web search',
+    icon: MOBILE_MENU_ICON_OPEN + '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
+  },
 ];
 
 /* Expanded desktop list shows every workflow at once; mobile keeps its own
@@ -290,13 +302,13 @@ function MenuItems({
   };
   const expandedTools = definitions.filter(matchesQuery);
   const footerPlaceholder = i18n('composer.tools.searchFooter', '输入以搜索插件、文件、文件夹和技能');
-  /* Mobile keeps the media shortcuts plus every workflow in one flat list;
-     the menu scrolls instead of hiding rows behind a disclosure. */
+  /* Keep the five everyday actions in the first viewport; workflows and
+     connected app shortcuts remain reachable in the same scroll card. */
   const mobileSecondary = [
     ...WORKFLOW_ORDER
       .map((key) => definitions.find((spec) => spec.key === key))
       .filter((spec): spec is MenuItemSpec => Boolean(spec)),
-    ...definitions.filter((spec) => spec.key !== 'upload' && !WORKFLOW_ORDER.includes(spec.key as typeof WORKFLOW_ORDER[number])),
+    ...definitions.filter((spec) => !['upload', 'webSearch', 'createImage'].includes(spec.key) && !WORKFLOW_ORDER.includes(spec.key as typeof WORKFLOW_ORDER[number])),
     MOBILE_THINKING_SPEC,
   ];
 

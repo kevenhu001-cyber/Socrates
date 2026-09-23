@@ -47,20 +47,28 @@ async function openSidebar(page) {
 }
 
 test('reference app surfaces render at mobile and desktop target sizes', async ({ page }) => {
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
   await mockAuthedApp(page, { lang: 'zh' });
   await mockReferenceCatalog(page);
 
-  await page.setViewportSize({ width: 390, height: 756 });
+  await page.setViewportSize({ width: 390, height: 769 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
     if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
   });
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#modeSegmentedTop')).toBeVisible();
   await expect(page.locator('#topicInputWrap')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-home-390x756.png', fullPage: true });
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-home-390x769.png', fullPage: true });
 
   const mobileGeometry = await page.evaluate(() => {
     const read = (selector) => {
@@ -80,8 +88,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(mobileGeometry.mode?.width).toBeLessThanOrEqual(152);
   expect(mobileGeometry.mode?.height).toBe(32);
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(mobileGeometry.composer?.height).toBeGreaterThanOrEqual(84);
-  expect(mobileGeometry.composer?.height).toBeLessThanOrEqual(96);
+  expect(mobileGeometry.composer?.height).toBe(86);
+  expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(755);
   expect(mobileGeometry.plus?.width).toBe(40);
   expect(mobileGeometry.send?.width).toBe(40);
   expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
@@ -92,22 +100,64 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const toolsBox = await toolsMenu.boundingBox();
   expect(toolsBox?.width).toBeGreaterThanOrEqual(232);
   expect(toolsBox?.width).toBeLessThanOrEqual(240);
-  expect(toolsBox?.height).toBeLessThanOrEqual(420);
+  expect(toolsBox?.height).toBeGreaterThanOrEqual(230);
+  expect(toolsBox?.height).toBeLessThanOrEqual(238);
+  expect(toolsBox?.x).toBeGreaterThanOrEqual(15);
+  expect(toolsBox?.x).toBeLessThanOrEqual(17);
+  expect(Math.abs(
+    ((toolsBox?.y ?? 0) + (toolsBox?.height ?? 0))
+      - ((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)),
+  )).toBeLessThanOrEqual(2);
   const toolsBackground = await toolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(toolsBackground).not.toBe('rgba(0, 0, 0, 0)');
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-tools-390x756.png', fullPage: true });
+  await page.mouse.move(380, 4);
+  const firstViewportActions = toolsMenu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item');
+  await expect(firstViewportActions).toHaveCount(5);
+  await expect(firstViewportActions.nth(3)).toHaveAttribute('data-composer-action', 'createImage');
+  await expect(firstViewportActions.nth(4)).toHaveAttribute('data-composer-action', 'webSearch');
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-tools-390x769.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(toolsMenu).toBeHidden();
 
   await openSidebar(page);
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(260);
-  await page.locator('#sidebarSearchBtn').click();
-  await expect(page.locator('#sidebar')).toHaveClass(/search-open/);
-  await expect(page.locator('#sidebarSearch')).toBeFocused();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-sidebar-390x756.png', fullPage: true });
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.width ?? 0)).toBe(254);
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? -254)).toBe(0);
+  await expect(page.locator('#sidebarSearchBtn')).toBeVisible();
+  await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-sidebar-390x769.png', fullPage: true });
   await page.evaluate(() => document.getElementById('navPlugins')?.click());
   await expect(page.locator('.plugin-directory')).toBeVisible();
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-plugins-390x756.png', fullPage: true });
+  await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
+  await expect(page.locator('#pluginWorkspaceTabs')).toBeVisible();
+  await expect(page.locator('#modeSegmentedTop')).toBeHidden();
+  await expect(page.locator('#pluginWorkspacePluginsTab')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#pluginsPanel .plugins-panel-head')).toBeHidden();
+  const pluginGeometry = await page.evaluate(() => {
+    const box = (selector) => {
+      const rect = document.querySelector(selector)?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    };
+    return {
+      search: box('.plugin-directory-search'),
+      installedLabel: box('.plugin-installed-label'),
+      installedIcon: box('.plugin-installed-icons .workspace-row-icon'),
+      tabs: box('.plugin-directory-tabs'),
+      rowIcon: box('.plugin-directory-row .workspace-row-icon'),
+    };
+  });
+  expect(pluginGeometry.search?.height).toBe(36);
+  expect((pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0)).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
+  expect(pluginGeometry.installedIcon?.width).toBe(40);
+  expect(pluginGeometry.tabs?.y).toBeGreaterThan(315);
+  expect(pluginGeometry.tabs?.y).toBeLessThan(340);
+  expect(pluginGeometry.rowIcon?.width).toBe(40);
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-plugins-390x769.png', fullPage: true });
+  await page.locator('#pluginWorkspaceSkillsTab').click();
+  await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
+  await expect(page.locator('#pluginWorkspaceSkillsTab')).toHaveAttribute('aria-selected', 'true');
+  await page.locator('#promptTemplatesOverlay [data-prompt-command="close"]').click();
+  await expect(page.locator('#promptTemplatesOverlay')).toHaveCount(0);
+  await expect(page.locator('#pluginWorkspacePluginsTab')).toHaveAttribute('aria-selected', 'true');
   await page.evaluate(() => document.getElementById('navProjects')?.click());
   await expect(page.locator('.projects-directory')).toBeVisible();
   await expect(page.locator('.project-row').filter({ hasText: 'Socrates' })).toBeVisible();
@@ -116,6 +166,20 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await expect(page.locator('.scheduled-directory')).toBeVisible();
   await expect(page.locator('.scheduled-recommendation')).toHaveCount(5);
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-scheduled-390x756.png', fullPage: true });
+
+  await page.evaluate(() => {
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    document.getElementById('topicSetup')?.classList.add('hidden');
+    document.getElementById('chatView')?.classList.remove('hidden');
+    document.body.dataset.conversationActive = 'true';
+  });
+  await expect(page.locator('#chatInputWrap')).toBeVisible();
+  const chatComposerBox = await page.locator('#chatInputWrap').boundingBox();
+  const chatEditorBox = await page.locator('#chatComposerRoot').boundingBox();
+  const chatToolsBox = await page.locator('#chatComposerToolsBtn').boundingBox();
+  expect(chatComposerBox?.height).toBe(86);
+  expect(chatToolsBox?.y ?? 0).toBeGreaterThan((chatEditorBox?.y ?? 0) + (chatEditorBox?.height ?? 0) - 4);
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.evaluate(() => {
@@ -148,4 +212,61 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.evaluate(() => document.getElementById('navScheduled')?.click());
   await expect(page.locator('.scheduled-directory')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-desktop-scheduled-1440x900.png', fullPage: true });
+
+  expect(consoleErrors, `console errors: ${consoleErrors.join('\n')}`).toEqual([]);
+  expect(pageErrors, `page errors: ${pageErrors.join('\n')}`).toEqual([]);
+});
+
+test('Create image requires Jimeng and activates only after the connection is available', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'zh' });
+  await page.setViewportSize({ width: 390, height: 769 });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsMenu .composer-tools-mobile-item[data-composer-action="createImage"]').click();
+  await expect(page.locator('#composerToolsMenu')).toBeHidden();
+  await expect(page.locator('.plugin-directory')).toBeVisible();
+  expect(await page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBeNull();
+  await expect(page.locator('body')).toContainText('请先在插件页连接即梦 AI');
+});
+
+test('Create image waits for a user prompt before submitting the image-generation turn', async ({ page }) => {
+  await mockAuthedApp(page, { lang: 'en' });
+  await page.route('**/project-connectors*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ configured: true, connectors: [
+        { id: 'oc_jimeng_ai', name: 'Jimeng AI', description: 'Generate images.', capabilities: ['Image generation 4.6'], authType: 'custom_credential', connection: { status: 'connected' } },
+      ] }),
+    });
+  });
+  const chatRequests = [];
+  page.on('request', (request) => {
+    if (/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/.test(request.url())) chatRequests.push(request);
+  });
+  await page.route('**/chat/stream*', async (route) => {
+    const content = '![Generated image](https://images.example.test/jimeng-46-result.png)\n\nGenerated with Jimeng AI 4.6.';
+    const sse = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
+    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: sse });
+  });
+  await page.setViewportSize({ width: 390, height: 769 });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#topicComposerToolsBtn').click();
+  await page.locator('#composerToolsMenu .composer-tools-mobile-item[data-composer-action="createImage"]').click();
+  await expect.poll(async () => page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBe('createImage');
+  expect(await page.evaluate(() => window._activeTemplate?.systemPrompt || '')).toContain('You are in image creation mode');
+  expect(chatRequests).toEqual([]);
+
+  await page.locator('#topicComposerRoot .rich-composer-editor').fill('A tiny blue fox under the northern lights.');
+  expect(await page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBe('createImage');
+  await page.locator('#startBtn').click();
+  await expect.poll(() => chatRequests.length).toBe(1);
+  const requestBody = chatRequests[0].postData() || '';
+  expect(requestBody).toContain('A tiny blue fox under the northern lights.');
+  expect(requestBody).toContain('You are in image creation mode');
+  const generatedImage = page.locator('#msgList .msg.assistant .msg-body img').last();
+  await expect(generatedImage).toHaveAttribute('src', 'https://images.example.test/jimeng-46-result.png');
+  await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText('Generated with Jimeng AI 4.6.');
 });

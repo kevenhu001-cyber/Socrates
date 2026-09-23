@@ -1,0 +1,383 @@
+/* ==========================================================================
+   10-tutor-scaffolds.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: tutor scaffold widgets, streaming previews, knowledge boundary, mistake book, thinking dot, streaming split, error/stopped markers.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* ============================================================
+   Tutor scaffold widgets — modest visual language
+   ------------------------------------------------------------
+   All six scaffolds (quiz / example / practice / definition /
+   step / flashcard) share the same look so they read as a
+   cohesive family, but each gets a subtle "boxed" treatment so
+   the chat reader can tell scaffold widgets apart from prose:
+     - 0.5px rounded border in --border-300
+     - light background tint (--bg-200 at 40% alpha)
+     - 8px corner radius
+     - small quiet labels (when used at all)
+   Per-scaffold tweaks follow for any unique bits (e.g. quiz
+   option buttons need stronger selected/correct/wrong states;
+   practice needs a real submit button; example solution gets a
+   left rule for visual punctuation).
+   ============================================================ */
+.inline-quiz,
+.inline-example,
+.inline-practice,
+.inline-definition,
+.inline-step-list,
+.inline-flashcard,
+.inline-block-fallback{margin:14px 0;padding:10px 12px 12px;border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;background:hsl(var(--bg-200)/0.4);font-size:calc(13.5px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100))}
+.inline-quiz:first-child,
+.inline-example:first-child,
+.inline-practice:first-child,
+.inline-definition:first-child,
+.inline-step-list:first-child,
+.inline-flashcard:first-child{margin-top:8px}
+
+/* Quiz: question line followed by tappable options. Options are
+   the only "buttony" thing in the card — give them real button
+   borders so selected / correct / wrong states are unmistakable. */
+.inline-quiz-q{font-weight:600;margin-bottom:8px;color:hsl(var(--text-100))}
+
+.inline-quiz-opts{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.inline-quiz-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:0.5px solid hsl(var(--border-300)/0.25);background:hsl(var(--bg-100));font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-200));text-align:left;width:100%;cursor:pointer;transition:background .12s,border-color .12s,color .12s;line-height:1.45;font-family:inherit}
+.inline-quiz-opt:hover:not(:disabled){background:hsl(var(--bg-300));border-color:hsl(var(--border-300)/0.5);color:hsl(var(--text-100))}
+.inline-quiz-opt:disabled{cursor:default}
+/* The "A." / "B." chip needs to sit on the same baseline as the option
+   text — but KaTeX renders inline math with its own vertical-align that
+   pushes the .katex span off the text baseline. Without these two
+   adjustments, an option like "A. $\sin x = 0$" shows the A. floating
+   at the top of the row while the formula sits at the middle, and the
+   two read as misaligned. `align-items:center` on the row + resetting
+   `.katex` vertical-align keeps them on a single horizontal line. */
+.inline-quiz-opt-letter{flex-shrink:0;min-width:18px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));font-weight:600;line-height:1;align-self:center;font-variant-numeric:tabular-nums}
+.inline-quiz-opt-text{display:inline-block;line-height:1.55}
+.inline-quiz-opt-text .katex{vertical-align:baseline}
+.inline-quiz-opt.selected{background:hsl(var(--accent-000)/0.10);border-color:hsl(var(--accent-000)/0.45);color:hsl(var(--text-100))}
+.inline-quiz-opt.selected .inline-quiz-opt-letter{color:hsl(var(--accent-000))}
+.inline-quiz-opt.correct{background:hsl(145 50% 50%/0.10);border-color:hsl(145 50% 55%/0.6);color:hsl(145 55% 50%)}
+.inline-quiz-opt.correct .inline-quiz-opt-letter{color:hsl(145 55% 45%)}
+.inline-quiz-opt.wrong{background:hsl(0 60% 50%/0.10);border-color:hsl(0 60% 55%/0.6);color:hsl(0 60% 55%)}
+.inline-quiz-opt.wrong .inline-quiz-opt-letter{color:hsl(0 60% 50%)}
+.inline-quiz-feedback{margin-top:8px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
+.inline-quiz-feedback.ok{color:hsl(145 55% 50%)}
+.inline-quiz-feedback.bad{color:hsl(0 60% 55%)}
+
+/* Example: problem prose, then a "Show solution" button (no
+   longer a bare text link — students need to know it's
+   tappable). The solution block gets a left rule for visual
+   punctuation inside the card. */
+.inline-example-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-example-problem{margin-bottom:8px}
+.inline-example-solution{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200))}
+.inline-example-solution .label,
+.inline-example-problem .label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-right:4px;font-weight:500}
+.inline-example-reveal{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-example-reveal:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+
+/* Practice: problem text + hint toggle + textarea + Reveal-answer
+   (optional) + Submit button row. Hint and answer text get the
+   same left-rule treatment as example-solution. The Reveal and
+   Submit buttons are real buttons, not links. */
+
+.inline-practice-problem{margin-bottom:8px}
+.inline-practice-hint{margin-top:6px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(12.5px * var(--app-font-scale, 1))}
+.inline-practice-hint .label{color:hsl(var(--text-500));margin-right:4px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:500}
+.inline-practice-hint-toggle{display:inline-block;margin-top:8px;padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-practice-hint-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-practice-form{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.inline-practice-textarea{width:100%;min-height:54px;padding:8px 10px;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(13px * var(--app-font-scale, 1));line-height:1.5;resize:vertical;outline:none;box-sizing:border-box}
+.inline-practice-textarea:focus{border-color:hsl(var(--accent-000)/0.5)}
+.inline-practice-textarea:disabled{opacity:.6;cursor:default}
+.inline-practice-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inline-practice-reveal{padding:5px 12px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-200));font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-practice-reveal:hover:not(:disabled){background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+.inline-practice-reveal:disabled{opacity:0.5;cursor:default}
+.inline-practice-submit{padding:5px 14px;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;font-family:inherit;transition:background .12s,opacity .12s}
+.inline-practice-submit:hover:not(:disabled){background:hsl(var(--accent-100))}
+.inline-practice-submit:disabled{opacity:0.5;cursor:default}
+.inline-practice-feedback{margin-top:4px;font-size:calc(12.5px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
+.inline-practice-feedback.ok{color:hsl(145 55% 50%)}
+.inline-practice-feedback.bad{color:hsl(0 60% 55%)}
+.inline-practice-feedback.recorded{color:hsl(var(--text-400))}
+
+/* Definition: a single quiet term-on-top line + body. The
+   term gets a hair more weight so you can scan a list of
+   definitions in a long answer. */
+.inline-definition-term{font-weight:600;color:hsl(var(--text-100));margin-bottom:4px;font-size:calc(14px * var(--app-font-scale, 1))}
+.inline-definition-body{color:hsl(var(--text-200))}
+
+/* Step list: just a numbered ordered list. No title, no card
+   chrome — the steps are inherently structured already. */
+
+.inline-step{display:flex;gap:10px;margin:6px 0;line-height:1.55;align-items:flex-start}
+.inline-step-n{flex-shrink:0;color:hsl(var(--text-500));min-width:20px;font-variant-numeric:tabular-nums;font-weight:600;margin-top:1px}
+.inline-step-body{flex:1}
+
+/* Flashcard: front and back are just two stacked prose blocks.
+   The whole card is clickable; we add a faint separator between
+   sides. */
+.inline-flashcard{cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s}
+.inline-flashcard:hover{background:hsl(var(--bg-200)/0.55)}
+.inline-flashcard-front,
+.inline-flashcard-back{padding:2px 0}
+.inline-flashcard-back{margin-top:8px;padding-top:8px;border-top:0.5px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-200))}
+
+
+/* Fallback for malformed XML — show the raw content as muted
+   preformatted text. No warning banner. */
+.inline-block-fallback-label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-bottom:4px}
+.inline-block-fallback-content{margin:0;padding:8px 10px;background:hsl(var(--bg-200)/0.4);border-radius:6px;color:hsl(var(--text-300));font-size:calc(12.5px * var(--app-font-scale, 1));white-space:pre-wrap;word-break:break-word}
+
+/* Math-flavored scaffold widgets (proof / theorem / key-point /
+   derivation). Same base scaffold card language, differentiated by
+   subtle accent treatments so a reader can tell at a glance which
+   is authoritative (theorem), which is the worked argument (proof),
+   which is the highlighted takeaway (key-point), and which is the
+   step-by-step algebra (derivation). */
+.inline-proof,
+.inline-theorem,
+.inline-key-point,
+.inline-derivation{margin:14px 0;padding:10px 12px 12px;border:0.5px solid hsl(var(--border-300)/0.35);border-radius:8px;background:hsl(var(--bg-200)/0.4);font-size:calc(13.5px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-100))}
+.inline-proof:first-child,
+.inline-theorem:first-child,
+.inline-key-point:first-child,
+.inline-derivation:first-child{margin-top:8px}
+
+/* Proof — italicized body, accent left border, quiet title. */
+.inline-proof{border-left:2px solid hsl(var(--accent-000)/0.5)}
+.inline-proof-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:4px;font-weight:500}
+.inline-proof-body{font-style:italic;color:hsl(var(--text-200))}
+
+/* Theorem — authoritative: 2px accent top border, statement is the
+   focal point, nested proof is slightly subdued and (for long proofs)
+   collapsible. */
+.inline-theorem{border-top:2px solid hsl(var(--accent-000)/0.55);background:linear-gradient(hsl(var(--bg-200)/0.55),hsl(var(--bg-200)/0.4))}
+.inline-theorem-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:6px;font-weight:600;letter-spacing:0.02em;text-transform:none}
+.inline-theorem-statement{margin-bottom:8px;color:hsl(var(--text-100))}
+.inline-theorem-proof{margin-top:8px;padding:8px 10px;background:hsl(var(--bg-100)/0.5);border-left:2px solid hsl(var(--border-300)/0.5);border-radius:0 6px 6px 0;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1))}
+.inline-theorem-proof.collapsed{display:none}
+.inline-theorem-proof-toggle{display:inline-block;margin-top:6px;padding:4px 10px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:6px;color:hsl(var(--text-300));font-size:calc(11.5px * var(--app-font-scale, 1));cursor:pointer;font-family:inherit;transition:background .12s,color .12s,border-color .12s}
+.inline-theorem-proof-toggle:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.6)}
+
+/* Key Point — pops out: thicker accent border, soft accent wash. */
+.inline-key-point{border:1px solid hsl(var(--accent-000)/0.5);background:hsl(var(--accent-000)/0.06)}
+.inline-key-point-label{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--accent-000));margin-bottom:4px;font-weight:600;letter-spacing:0.02em}
+.inline-key-point-body{color:hsl(var(--text-100))}
+
+/* Derivation — monospaced body for multi-line algebra; quiet title. */
+.inline-derivation-title{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));margin-bottom:6px;font-weight:500}
+.inline-derivation-body{font-family:var(--font-mono,monospace);font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word}
+.inline-derivation-body .katex{font-family:var(--font-mono,monospace)}
+
+/* Streaming scaffold previews — emitted by formatMsgProgressive.
+   These existed as DOM but had no CSS, so they rendered as default
+   block children of the prose. Give them a quiet bordered treatment
+   with a small uppercase label so the reader can tell "this is a
+   scaffold, the final widget will replace it momentarily". */
+.scaffold-stream{margin:10px 0;padding:8px 10px 9px;border:0.5px dashed hsl(var(--border-300)/0.4);border-radius:6px;background:hsl(var(--bg-200)/0.25);font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-300));line-height:1.5}
+.scaffold-stream-label{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-400));font-size:calc(10.5px * var(--app-font-scale, 1));font-weight:600;letter-spacing:0.04em;text-transform:uppercase;vertical-align:1px}
+.scaffold-stream-unclosed{font-style:italic;color:hsl(var(--text-400))}
+.scaffold-stream-live{border-style:solid;color:hsl(var(--text-200))}
+.scaffold-stream-live>.scaffold-stream-label{margin-bottom:6px}
+.inline-key-point.scaffold-stream-live>.scaffold-stream-label{background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000))}
+
+.scaffold-stream-live button,.scaffold-stream-live textarea{pointer-events:none}
+.scaffold-stream-step-number{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;margin-right:6px;border-radius:50%;background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-400));font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;vertical-align:middle}
+.scaffold-stream-placeholder{color:hsl(var(--text-400))}
+
+/* Knowledge boundary detail panel */
+.kb-node{cursor:pointer}
+.kb-section-title{display:flex;align-items:center;gap:6px}
+.kb-section-count{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));background:hsl(var(--bg-300));padding:1px 6px;border-radius:6px;font-weight:500;letter-spacing:0}
+.kb-node-detail{margin:4px 0 10px;padding:10px 12px 12px;background:hsl(var(--bg-100)/0.6);border:0.5px solid hsl(var(--border-300)/0.18);border-radius:10px;display:flex;flex-direction:column;gap:10px}
+.kb-detail-head{display:flex;align-items:center;justify-content:space-between}
+.kb-detail-status{font-size:calc(10px * var(--app-font-scale, 1));text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:6px;font-weight:600}
+.kb-detail-status-internalized{background:hsl(145 50% 50%/0.18);color:hsl(145 50% 65%)}
+.kb-detail-status-fuzzy{background:hsl(43 77% 62%/0.18);color:hsl(43 77% 70%)}
+.kb-detail-status-blank{background:hsl(var(--bg-300));color:hsl(var(--text-400))}
+.kb-go-btn{font-size:calc(11px * var(--app-font-scale, 1));padding:3px 9px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);cursor:pointer;transition:background-color .1s,color .1s}
+.kb-go-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.kb-detail-row{display:flex;flex-direction:column;gap:4px}
+.kb-detail-label{font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
+.kb-conf-row{display:flex;gap:4px;align-items:center}
+.kb-conf-dot{width:14px;height:14px;border-radius:50%;background:transparent;border:1.5px solid hsl(var(--text-500));cursor:pointer;padding:0;transition:background-color .12s,border-color .12s}
+.kb-conf-dot:hover{border-color:hsl(var(--accent-000))}
+.kb-conf-dot.on{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
+.kb-system-note{font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-300));padding:6px 0}
+.kb-user-note{width:100%;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:8px;padding:8px 10px;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(12.5px * var(--app-font-scale, 1));line-height:1.5;resize:vertical;min-height:54px;outline:none}
+.kb-user-note:focus{border-color:hsl(var(--accent-000)/0.4)}
+.kb-history{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:3px}
+.kb-history li{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5}
+.kb-hist-date{color:hsl(var(--text-500));margin-right:6px}
+.kb-hist-from-blank{color:hsl(var(--text-500))}
+.kb-hist-from-fuzzy{color:hsl(43 77% 65%)}
+.kb-hist-from-internalized{color:hsl(145 50% 65%)}
+.kb-hist-to-blank{color:hsl(var(--text-500))}
+.kb-hist-to-fuzzy{color:hsl(43 77% 65%)}
+.kb-hist-to-internalized{color:hsl(145 50% 65%)}
+.kb-hist-reason{color:hsl(var(--text-500))}
+.kb-history-empty{font-size:calc(11.5px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+
+/* Tab badge for mistakes */
+.tab-badge{display:inline-block;min-width:16px;height:16px;line-height:14px;padding:0 4px;margin-left:4px;border-radius:8px;background:hsl(0 60% 50%/0.18);color:hsl(0 60% 70%);font-size:calc(10px * var(--app-font-scale, 1));font-weight:600;text-align:center;vertical-align:middle;transition:background .15s,color .15s}
+.tab-badge:empty{display:none}
+
+
+/* Panel enter animation */
+@keyframes panelFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Mistake book */
+.mistake-card{margin:0 4px 8px;padding:10px 12px;background:hsl(0 60% 12%/0.35);border:0.5px solid hsl(0 60% 30%/0.4);border-radius:10px;border-left:3px solid hsl(0 60% 55%)}
+.mistake-meta{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500))}
+.mistake-type{text-transform:uppercase;letter-spacing:.06em;font-weight:600;padding:1px 6px;border-radius:4px;background:hsl(0 60% 30%/0.4);color:hsl(0 60% 75%)}
+.mistake-topic{color:hsl(var(--text-400));font-weight:500}
+.mistake-time{margin-left:auto}
+.mistake-q{font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-100));line-height:1.5;margin-bottom:8px}
+.mistake-opts{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.mistake-opt{display:flex;align-items:flex-start;gap:8px;font-size:calc(11.5px * var(--sidebar-font-scale));color:hsl(var(--text-300));padding:5px 8px;border-radius:6px;line-height:1.4}
+.mistake-opt.correct-tag{background:hsl(145 50% 45%/0.12);color:hsl(145 50% 75%)}
+.mistake-opt.wrong-tag{background:hsl(0 60% 50%/0.14);color:hsl(0 60% 75%)}
+.mistake-opt-letter{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-400))}
+.mistake-opt.correct-tag .mistake-opt-letter{border-color:hsl(145 50% 55%);background:hsl(145 50% 55%);color:white}
+.mistake-opt.wrong-tag .mistake-opt-letter{border-color:hsl(0 60% 60%);background:hsl(0 60% 60%);color:white}
+.mistake-redo-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));margin-bottom:6px}
+.mistake-redo-btn{width:100%;padding:6px 10px;border-radius:6px;background:hsl(var(--accent-000)/0.12);color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.3);font-size:calc(11px * var(--sidebar-font-scale));font-weight:500;cursor:pointer;transition:background-color .1s,color .1s}
+.mistake-redo-btn:hover{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+
+/* Thinking dot — shown until the first stream delta arrives.
+   In chat mode (no KB / no diagnostic) this is the ONLY signal that
+   the model is still alive — without it the user has no way to tell
+   whether the request is in flight or the page is hung. We make it
+   slightly bolder than the default and add a subtle background so
+   it reads as a "live indicator" rather than a stray inline label. */
+.thinking-dot,
+.thinking-status{display:inline-flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-size:calc(13px * var(--app-font-scale, 1));padding:4px 6px;margin:0;line-height:1.3;border-radius:7px;transition:color .15s ease,background-color .15s ease;user-select:none}
+.thinking-dot.thinking-elapsed-shown::after{content:attr(data-elapsed);font-size:11px;color:hsl(var(--text-500));font-variant-numeric:tabular-nums;opacity:0;animation:thinking-elapsed-in .6s ease forwards}
+@keyframes thinking-elapsed-in{to{opacity:1}}
+.thinking-dot[data-mode="chat"],
+.thinking-status[data-mode="tool"]{color:hsl(var(--text-300))}
+/* P_tool-status-gap — the deferred tool-running line trails the prose it
+   belongs to (the row itself is still parked behind the unfinished
+   sentence). With margin:0 it touched the last paragraph, which on narrow
+   screens read as one cramped block. The trailer always sits after content,
+   so a small top gap is safe everywhere it renders. */
+.msg-body > .thinking-status{margin-top:6px}
+.thinking-dot .loading{width:14px;height:14px}
+/* P_thinking-clickable — the "Thinking…" pill and placeholder open the
+   right-side thinking panel. They keep the live indicator look but gain
+   an explicit affordance: pointer cursor, hover accent, focus ring. */
+.thinking-status-clickable,.thinking-dot-clickable{
+  cursor:pointer;
+}
+.thinking-status-clickable:hover,.thinking-dot-clickable:hover{
+  color:hsl(var(--text-100));
+  background:hsl(var(--bg-300)/0.55);
+}
+.thinking-status-clickable:focus-visible,.thinking-dot-clickable:focus-visible{
+  outline:1.5px solid hsl(var(--accent-000)/0.65);
+  outline-offset:1px;
+}
+.thinking-status-clickable:active,.thinking-dot-clickable:active{
+  background:hsl(var(--bg-300));
+}
+/* P_thinking-unified — ONE live-status language from the first request to
+   the settled line: minimalist ChatGPT-style 14px indicator + flat label,
+   identical in waiting placeholder, reasoning pill, and in-bubble summary. */
+.thinking-spinner{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+  border-radius:50%;
+  box-sizing:border-box;
+  border:1.5px solid hsl(var(--text-400)/0.18);
+  border-top-color:hsl(var(--text-200));
+  border-right-color:hsl(var(--text-200)/0.65);
+  animation:ringSpin .9s cubic-bezier(.4,0,.2,1) infinite;
+  vertical-align:middle;
+}
+.thinking-spinner::after{
+  content:"";
+  position:absolute;
+  inset:2.5px;
+  border-radius:50%;
+  background:hsl(var(--text-300)/0.35);
+  animation:thinkingDotPulse 1.8s ease-in-out infinite;
+}
+@keyframes thinkingDotPulse{
+  0%,100%{transform:scale(0.6);opacity:0.3}
+  50%{transform:scale(0.95);opacity:0.85}
+}
+.thinking-status[data-state="done"] .thinking-spinner,
+.thinking-status[data-state="error"] .thinking-spinner,
+.think-summary[data-state="done"] .thinking-spinner{display:none}
+.shimmer-text{
+  color:hsl(var(--text-400));
+  -webkit-text-fill-color:transparent;
+  background-image:linear-gradient(105deg,
+    hsl(var(--text-400)) 0%,
+    hsl(var(--text-400)) 38%,
+    hsl(var(--text-200)) 50%,
+    hsl(var(--text-400)) 62%,
+    hsl(var(--text-400)) 100%);
+  background-size:260% 100%;
+  background-position:150% 0;
+  -webkit-background-clip:text;
+  background-clip:text;
+  animation:neutralTextWave 3.2s linear infinite;
+  will-change:background-position;
+}
+@keyframes neutralTextWave{
+  /* The highlight enters and leaves beyond the glyphs. The background
+     position technically wraps at the loop boundary, but both sides are
+     the same quiet base color, so there is no visible jump. */
+  0%{background-position:150% 0}
+  100%{background-position:-50% 0}
+}
+/* P_search-status — settled tool states. The spinner is already gone
+   (see P_thinking-unified); "done" quiets the text, "error" flips the
+   copy to the error hue so "Web search failed" reads as a result line
+   rather than ongoing activity. */
+.thinking-status[data-state="done"]{color:hsl(var(--text-300))}
+.thinking-status[data-state="error"]{color:hsl(0 58% 52%)}
+/* Container that holds the "Thinking…" badge. */
+.thinking-placeholder{display:flex;flex-direction:column;gap:8px;padding:2px 0 4px;margin:0}
+/* Restore the small inline spinner used inside .thinking-dot,
+   .think-summary, .chat-hint, .appendThinking pill, and the
+   streaming body. Was deleted when the diff renamed every
+   "thinking-pulse" span to "loading" — but .loading is a centered
+   16px block spinner meant for full-card states (diag-loading /
+   usage-loading / exam-loading), so forcing it inline broke the
+   stream cursor and thinking pill layout. */
+
+
+
+
+
+/* Streaming Markdown is split into a settled prefix and a live tail.
+   Only the tail is replaced at token cadence, keeping completed blocks,
+   selection, and expensive code/math DOM stable. */
+.stream-content{white-space:normal;word-wrap:break-word;overflow-wrap:break-word}
+
+.stream-settled-content,.stream-live-content{min-width:0}
+.stream-settled-content:not(:empty)>p:last-child{margin-bottom:8px}
+.stream-live-content:empty{display:none}
+
+/* Inline error/retry state — replaces the streaming bubble on failure */
+.msg-error{display:flex;align-items:center;gap:8px;padding:6px 10px;border:0.5px solid hsl(0 60% 50%/0.25);border-radius:8px;background:transparent;color:hsl(0 60% 70%);font-size:calc(12px * var(--app-font-scale, 1))}
+.msg-error-text{flex:1;min-width:0;word-break:break-word}
+.msg-retry-btn{flex-shrink:0;padding:3px 10px;border-radius:6px;background:transparent;color:hsl(var(--accent-000));border:0.5px solid hsl(var(--accent-000)/0.35);font-size:calc(11.5px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .12s,color .1s,opacity .12s}
+.msg-retry-btn:hover:not(:disabled){background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.msg-retry-btn:disabled{opacity:0.5;cursor:wait}
+
+/* Inline "(stopped by user)" marker — appended at the bottom of a
+   partially streamed chat bubble when the user clicks Stop. Visually
+   muted so it doesn't compete with the actual reply content. */
+.msg-stopped-marker{font-style:italic;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));margin-top:8px;opacity:.8}
+

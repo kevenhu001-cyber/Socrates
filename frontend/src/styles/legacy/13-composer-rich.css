@@ -1,0 +1,481 @@
+/* ==========================================================================
+   13-composer-rich.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: composer control surface, rich composer/Tiptap, desktop chat composer, reduced-motion, ChatGPT main page block, inline utilities.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* Composer: a stable, tactile control surface that stays secondary to the
+   conversation while giving attachments, offline states, and Stop room.
+   UI-align: chat-input-bar mirrors the topic-setup footer surface so the
+   composer skin does not change between landing and in-chat — no fade
+   gradient, no extra padding-top. */
+.chat-input-bar{padding-top:6px;padding-inline:16px;background:transparent}
+/* UI-align: chat-input-wrap mirrors topic-input-wrap. The width, radius,
+   border, shadow, and focus feedback here intentionally duplicate
+   topic-input-wrap so the composer skin does not change between surfaces. */
+.chat-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0 auto;width:100%;max-width:720px;padding:7px 8px;border-radius:28px;border-color:hsl(var(--border-300)/0.24);background:hsl(var(--bg-000));box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease)}
+.chat-composer-body{display:contents}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/.45)}
+ .chat-input-wrap .attachment-chips{order:0;flex-basis:100%}
+
+.chat-input-footer{display:contents}
+.chat-input-footer .footer-left-group{order:1;display:flex;align-items:center;gap:2px;flex-shrink:0}
+
+/* UI-align: send-btn mirrors start-btn. Same 30px circle footprint and
+   15px SVG so the run control does not change size between landing and
+   in-chat. */
+.chat-input-footer .send-btn{order:4;width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%;margin-left:2px;background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.chat-input-footer .send-btn svg{width:15px;height:15px}
+.chat-input-footer .send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.chat-input-footer .attach-btn{width:38px;height:38px;color:hsl(var(--text-300))}
+.chat-input-footer .attach-btn svg{width:20px;height:20px}
+
+.chat-input-footer .effort-trigger{padding:6px 8px;border-radius:12px;color:hsl(var(--text-300))}
+
+/* Mic button (data-action="toggleSpeechInput") — sit inside the composer
+   footer as a 30px circular control. Two render surfaces use it:
+     `.topic-input-wrap` and `.chat-input-wrap`. The footer's parent
+   grid handles placement; this rule only owns the visual footprint. */
+.mobile-mic-btn,
+.topic-input-wrap .mobile-mic-btn,
+.chat-input-wrap .mobile-mic-btn{
+  flex:0 0 30px;
+  width:30px;height:30px;min-width:30px;min-height:30px;
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:0;border:0;border-radius:50%;
+  background:transparent;color:hsl(var(--text-400));
+  cursor:pointer;
+  transition:background-color .15s var(--ease-out),color .15s var(--ease-out),transform .12s ease;
+}
+.mobile-mic-btn:hover,
+.topic-input-wrap .mobile-mic-btn:hover,
+.chat-input-wrap .mobile-mic-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.mobile-mic-btn:active{transform:scale(.92)}
+.mobile-mic-btn svg,
+.topic-input-wrap .mobile-mic-btn svg,
+.chat-input-wrap .mobile-mic-btn svg{
+  display:block;width:16px;height:16px;
+  flex:0 0 16px;
+}
+.mobile-mic-btn.is-listening{
+  color:hsl(var(--oncolor-100));
+  background:hsl(var(--accent-000));
+  box-shadow:0 0 0 3px hsl(var(--accent-000)/.16);
+}
+.mobile-mic-btn.is-listening:hover{background:hsl(var(--accent-100))}
+.mobile-mic-btn.is-listening svg{animation:voiceGlyph .75s ease-in-out infinite alternate}
+@keyframes voiceGlyph{to{transform:translateY(-1px)}}
+
+/* Open WebUI-inspired rich composer. Tiptap is the only text state source;
+   the surrounding attachment/tool controls keep the Socrates theme. */
+.composer-editor-root{width:100%;min-width:0}
+.chat-input-wrap .composer-editor-root{order:2;flex:1 1 100%;min-width:0}
+.rich-composer{width:100%;min-width:0;display:flex;flex-direction:column;color:hsl(var(--text-100))}
+.rich-composer-toolbar{
+  display:flex;align-items:center;gap:2px;width:100%;min-height:35px;padding:4px 6px;
+  overflow-x:auto;overscroll-behavior-inline:contain;
+  border-bottom:1px solid hsl(var(--border-300)/.22);color:hsl(var(--text-400));
+}@supports (scrollbar-width:none){.rich-composer-toolbar{scrollbar-width:none}}
+.rich-composer-toolbar::-webkit-scrollbar{display:none}
+.rich-composer-tool{
+  flex:0 0 auto;min-width:27px;height:27px;padding:0 6px;border:0;border-radius:7px;
+  display:inline-flex;align-items:center;justify-content:center;background:transparent;
+  color:inherit;font:500 calc(11px * var(--app-font-scale,1)) var(--font-sans);
+  cursor:pointer;transition:background .15s,color .15s,transform .12s;
+}
+.rich-composer-tool:hover{background:hsl(var(--bg-200)/.7);color:hsl(var(--text-100))}
+.rich-composer-tool:active{transform:scale(.94)}
+.rich-composer-tool.active{background:hsl(var(--accent-000)/.11);color:hsl(var(--accent-000))}
+.rich-composer-tool:disabled{opacity:.3;cursor:default}
+.rich-composer-tool:focus-visible{outline:2px solid hsl(var(--accent-000)/.55);outline-offset:1px}
+.rich-composer-divider{flex:0 0 1px;width:1px;height:17px;margin:0 3px;background:hsl(var(--border-300)/.38)}
+.rich-composer .tiptap{
+  width:100%;min-height:48px;max-height:180px;overflow-y:auto;outline:none;
+  padding:10px 12px 11px;font:400 calc(14px * var(--app-font-scale,1))/1.5 var(--font-sans);
+  color:hsl(var(--text-100));text-align:left;
+}@supports (scrollbar-width:thin){.rich-composer .tiptap{scrollbar-width:thin}}
+.topic-input-wrap .rich-composer .tiptap{
+  min-height:86px;max-height:320px;padding:14px 18px;
+  font-size:calc(16px * var(--app-font-scale,1));line-height:1.55;
+}
+.rich-composer .tiptap p{margin:0}
+.rich-composer .tiptap p + p{margin-top:.45em}
+.rich-composer .tiptap h1,.rich-composer .tiptap h2,.rich-composer .tiptap h3{margin:.2em 0;font-weight:650;line-height:1.3}
+.rich-composer .tiptap h1{font-size:1.35em}.rich-composer .tiptap h2{font-size:1.2em}.rich-composer .tiptap h3{font-size:1.08em}
+.rich-composer .tiptap ul,.rich-composer .tiptap ol{margin:.35em 0;padding-left:1.45em}
+.rich-composer .tiptap ul[data-type="taskList"]{list-style:none;padding-left:.25em}
+.rich-composer .tiptap ul[data-type="taskList"] li{display:flex;gap:7px}
+.rich-composer .tiptap blockquote{margin:.35em 0;padding-left:10px;border-left:2px solid hsl(var(--border-300));color:hsl(var(--text-300))}
+.rich-composer .tiptap pre{margin:.4em 0;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));font:400 .86em/1.5 var(--font-mono);white-space:pre-wrap}
+.rich-composer .tiptap a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.rich-composer .tiptap p.is-editor-empty:first-child{position:relative}
+.rich-composer .tiptap p.is-editor-empty:first-child::before{
+  /* The hint copy comes from --composer-placeholder (React sets it on the
+     .rich-composer root so the text survives runtime language switches);
+     the Tiptap decoration only owns the empty-state classes. */
+  content:var(--composer-placeholder);position:absolute;inset-inline-start:0;top:0;float:none;height:0;pointer-events:none;color:hsl(var(--text-500));
+}
+.rich-composer-editor[contenteditable="false"]{opacity:.65;cursor:not-allowed}
+/* Desktop chat composer: mirror the compact, single-row conversation
+   composer in the visual reference. The topic composer and phone layout
+   retain the full formatting rail; Markdown shortcuts still work here. */
+@media(min-width:769px){
+  .chat-input-bar{padding-top:6px;padding-inline:16px}
+  .chat-input-wrap{
+    /* UI-align: width/radius mirror topic-input-wrap so the composer skin
+       does not change between landing and in-chat. */
+    width:100%;max-width:720px;padding:5px 7px;gap:4px;
+    flex-wrap:wrap;border-radius:28px;
+    transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .composer-editor-root{
+    order:2;flex:1 1 260px;width:auto;align-self:center;
+  }
+  .chat-input-wrap .chat-input-footer{display:contents}
+  .chat-input-wrap .footer-left-group{display:contents}
+  .chat-input-wrap .footer-left-group .attach-btn{order:1}
+  .chat-input-wrap .footer-left-group .effort-picker{order:3;flex:0 0 auto}
+  
+  /* Voice input: place between the hint and the send button so the row
+     stays `[attach][editor][mic][send]` without disturbing the existing
+     order values used by the tool controls. The hint is display:none so
+     it does not push the mic off-screen. */
+  .chat-input-wrap .mobile-mic-btn{order:4;margin-left:2px}
+  /* UI-align: keep send-btn at 30px to mirror start-btn on landing. */
+  .chat-input-wrap .send-btn{order:5;width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%;margin-left:2px}
+  .rich-composer[data-surface="chat"]{
+    min-height:44px;display:flex;flex-direction:row;align-items:center;
+  }
+  .rich-composer[data-surface="chat"] > div:last-child{flex:1;min-width:0}
+  .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
+  .rich-composer[data-surface="chat"] .tiptap{
+    /* min-height in em terms (line-height 1.5 × one line + vertical
+       padding 10px+10px) so the box always fits a single line of text
+       at the current --app-font-scale. A fixed 44px left 3px of
+       overflow at scale 1.125 (18px font → 27px line + 20px padding =
+       47px), which surfaced as a spurious scrollbar on single-line
+       input.
+       max-height is set generously so a typical multi-line message
+       stays fully readable inside the composer instead of being
+       scrolled off the top behind an invisible (thin + transparent)
+       scrollbar. ~280px ≈ 9 visible lines at scale 1.125; past that the
+       scrollbar kicks in. We also re-assert a visible scrollbar on this
+       element because the global `* { scrollbar-width: thin }` rule
+       makes the auto scrollbar effectively invisible on the dark
+       background, so users had no way to scroll back to earlier text. */
+    min-height:calc(1.5em + 20px);max-height:var(--composer-editor-max);padding:10px 8px;
+    font-size:calc(16px * var(--app-font-scale,1));line-height:1.5;
+    scrollbar-width:auto;
+    scrollbar-color:hsl(var(--text-500)/0.45) transparent;
+    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .rich-composer[data-surface="chat"] .tiptap::-webkit-scrollbar{width:8px;height:8px}
+  .rich-composer[data-surface="chat"] .tiptap::-webkit-scrollbar-thumb{background:hsl(var(--text-500)/0.45);border-radius:4px}
+  .rich-composer[data-surface="chat"] .tiptap::-webkit-scrollbar-track{background:transparent}
+  .chat-input-footer .attach-btn{width:40px;height:40px}
+  .chat-input-footer .attach-btn svg{width:22px;height:22px}
+  .chat-input-footer .effort-trigger{
+    min-height:38px;padding:7px 9px;border-radius:18px;
+    font-size:calc(14px * var(--app-font-scale,1));
+  }
+  .chat-input-footer .send-btn{width:44px;height:44px;margin-left:0}
+  .chat-input-footer .send-btn svg{width:18px;height:18px}
+  /* Desktop focus: quiet edge tint only — no glow cast; the accent
+     border is the sole focus affordance. Same motion curve as the wrap
+     so it glides in lockstep. The composer-focused class is toggled by
+     RichComposer.tsx handleDOMEvents focus/blur. */
+  .chat-input-wrap.composer-focused{
+    border-color:hsl(var(--accent-000)/.45);
+  }
+}
+
+@media(max-width:768px){
+  .chat-input-bar{padding-inline:8px}
+  .chat-input-wrap{
+    /* UI-align: width/radius mirror topic-input-wrap so the composer skin
+       does not change between landing and in-chat. */
+    width:100%;max-width:720px;padding:6px;gap:2px;flex-wrap:wrap;border-radius:28px;
+    position:relative;
+    /* All properties share the unified --composer-motion-duration/ease so
+       the focus-in expansion and blur-out collapse move as one motion —
+       border, shadow, size, and reordered children glide in lockstep. */
+    transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap .chat-input-footer{display:contents}
+  /* Mobile collapsed state is a real three-column row: left controls,
+     editor, send. Controls therefore own layout space instead of being
+     translated over the contenteditable. On focus the same grid becomes
+     two rows (editor above, controls below); no moving control ever crosses
+     placeholder or typed text during the shell's height transition. */
+  .chat-input-wrap .chat-composer-body{
+    order:2;flex:1 1 160px;width:auto;min-width:0;align-self:stretch;
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-rows:minmax(42px,auto);column-gap:2px;align-items:center;
+    contain:none;
+    /* Keep the focus expansion on the composer's shared motion timeline.
+       Keyboard avoidance has its own JS-owned timeline on .chat-view;
+       engines without fr interpolation use the min-height branch below. */
+    transition:
+      flex-basis var(--chat-motion-duration) var(--chat-motion-ease),
+      width var(--chat-motion-duration) var(--chat-motion-ease),
+      grid-template-rows var(--chat-motion-duration) var(--chat-motion-ease);
+  }
+  .chat-input-wrap .composer-editor-root{
+    order:initial;grid-column:2;grid-row:1;flex:none;width:100%;min-width:0;
+  }
+  .chat-input-wrap .chat-input-footer .footer-left-group{
+    grid-column:1;grid-row:1;display:flex;align-items:center;gap:2px;min-width:0;
+  }
+  .chat-input-wrap .chat-input-footer .send-btn{
+    grid-column:3;grid-row:1;margin-left:0;
+  }
+  .chat-input-wrap .footer-left-group .effort-picker{display:none}
+
+  .rich-composer[data-surface="chat"]{min-height:42px;display:flex;align-items:center}
+  .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
+  .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
+  /* UI-align: keep send-btn at 30px to mirror start-btn on landing. */
+  .chat-input-footer .send-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
+  .chat-input-footer .send-btn svg{width:15px;height:15px}
+  .chat-input-footer .attach-btn{width:38px;height:38px}
+  
+  /* Voice input: the collapsed mobile row is already three columns
+     ([left][editor][send]) with no slack for a fourth control, and the
+     collapsed composer body reserves only 44px of height. Hide the
+     button until focus expands the wrap into its two-row layout, where
+     the .composer-focused block places it next to the send button. */
+  .chat-input-wrap .mobile-mic-btn{display:none}
+  .chat-input-footer .effort-trigger{padding:5px 6px;font-size:calc(12px * var(--app-font-scale, 1));
+    /* Focus swaps this trigger's geometry (min-height/padding/radius in the
+       :has(:focus) rule below); ride the shared composer motion so it
+       resizes in lockstep with the wrap instead of snapping. */
+    transition:background-color .18s ease,color .18s ease,min-height var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),padding var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease),border-radius var(--composer-motion-duration,.34s) var(--composer-motion-ease,ease)}
+  .rich-composer[data-surface="chat"] .tiptap{
+    min-height:42px;max-height:var(--composer-editor-max-mobile);
+    padding:9px 8px;font-size:16px;
+    transition:min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease);
+  }
+  .chat-input-wrap.composer-focused{
+    min-height:var(--composer-focused-min);padding:8px;border-radius:26px;gap:4px 3px;
+    align-content:flex-start;
+  }
+  .chat-input-wrap.composer-focused .chat-composer-body{
+    order:1;flex:0 0 100%;width:100%;min-width:100%;max-width:100%;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:minmax(62px,1fr) 44px;
+    row-gap:2px;
+  }
+  .chat-input-wrap.composer-focused .composer-editor-root{
+    grid-column:1 / -1;grid-row:1;width:100%;min-width:0;max-width:none;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .footer-left-group{
+    grid-column:1;grid-row:2;display:flex;align-items:center;gap:4px;min-width:0;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .send-btn{
+    grid-column:2;grid-row:2;margin-left:0;
+  }
+  .chat-input-wrap.composer-focused .footer-left-group .effort-picker{
+    position:static;display:block;margin:0;align-self:center;transform:none;z-index:auto;
+  }
+  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
+    min-height:62px;max-height:var(--composer-editor-max-mobile);padding:12px 8px 8px;
+  }
+  /* P_kb-cap-editor — while the mobile composer is focused, the available
+     space above the virtual keyboard can shrink by --keyboard-inset. With many
+     attachment chips + a full multi-line editor + the 44px footer the
+     focused wrap can exceed that space, and main-content's overflow:hidden
+     clips the bottom (the send button + the last editor line). Cap the
+     editor to a viewport-relative size so wrap + chips + footer always fit.
+     Applying the cap from focus (instead of a 50px keyboard threshold) keeps
+     the composer geometry stable while the keyboard transition is in flight.
+     The cap stays above 132px (≈ 4 lines) so single-screen messages remain
+     fully readable. */
+  .chat-input-wrap.composer-focused .rich-composer[data-surface="chat"] .tiptap{
+    max-height:min(var(--composer-editor-max-mobile), calc(100dvh * .32));
+  }
+  .chat-input-wrap.composer-focused .attachment-chips{
+    /* Shrink the chip strip under the keyboard so the wrap doesn't
+       overflow. The chips keep their own overflow-y:auto so the user
+       can still see all attachments by scrolling the strip. */
+    max-height:64px;
+  }
+  .chat-input-wrap.composer-focused .chat-input-footer .effort-trigger{
+    min-height:38px;padding:7px 8px;border-radius:18px;
+  }
+  .topic-input-wrap .rich-composer .tiptap{font-size:16px;min-height:74px}
+  .tool-inline-detail{padding-left:10px}
+}
+.attach-btn:focus-visible,.send-btn:focus-visible{outline:2px solid hsl(var(--accent-000)/.65);outline-offset:2px}
+@media(max-width:768px){
+  /* UI-align: keep send-btn at 30px on mobile to mirror start-btn. attach-btn
+     stays at 36px since the landing attach uses 36px as well. */
+  .attach-btn{width:36px;height:36px}
+  .send-btn{width:30px;min-width:30px;height:30px;min-height:30px;border-radius:50%}
+  .send-btn svg{width:15px;height:15px}
+  .chat-input-footer{min-height:44px;padding:0 8px 6px}
+  
+  .tool-run-summary{min-height:44px}
+}
+
+/* A11Y — respect the user's OS-level "reduce motion" preference. Disable
+   the new animations introduced by the polish pass: the sliding segmented
+   indicator, the scale-up on picker menus, the menu-item stagger, the
+   chat-mode-badge swap, the trigger pulse, and the segment icon pop, plus
+   the hover-lift/active-press-down transforms on buttons. Basic color/border
+   transitions are kept because those convey state, not motion. */
+@media (prefers-reduced-motion: reduce){
+  .shimmer-text{
+    animation:none !important;
+    background-image:none;
+    -webkit-background-clip:border-box;
+    background-clip:border-box;
+    color:hsl(var(--text-400)) !important;
+    -webkit-text-fill-color:currentColor;
+  }
+  .thinking-spinner{
+    animation:none !important;
+    border-color:hsl(var(--text-400)/0.55);
+  }
+  .tool-inline-spinner{animation:none !important;opacity:.65}
+  .tool-inline-leaving{animation-duration:0.01ms !important;animation-iteration-count:1 !important}
+  .model-picker-menu,.extensions-menu{transition:opacity .12s ease;transform:none !important}
+  .model-picker-menu .model-picker-item,
+  .model-picker-menu .model-picker-divider,
+  .model-picker-menu .model-picker-filter,
+  .model-picker-menu .model-picker-add,
+  .model-picker-menu .model-picker-empty,
+  .extensions-menu .extensions-item{animation:none}
+  
+  
+  .composer-extension-inline{animation:none}
+  .display-prefs-segs::before{transition:none}
+  .display-prefs-seg:active{transform:none}
+  
+  .chat-model-caret,
+  .tool-run-summary-chev{transition:transform .12s ease,color .12s ease}
+  /* Disable transform-on-press/hover for all interactive controls. */
+  .start-btn:active,
+  .send-btn:active,
+  .send-btn.active:active,
+  .start-btn.active:active,
+  .attach-btn:active,
+  .icon-btn:active,
+  .sidebar-tab:active,
+  .recent-item:active,
+  .recent-item-del:active,
+  .recent-item-del:hover,
+  .kb-node:active,
+  .user-row:active,
+  .tool-run-summary:active,
+  .new-reply-pill:active,
+  .new-reply-pill:hover{transform:none !important}
+  /* Disable icon micro-rotations. */
+  .attach-btn:hover svg,
+  .recent-item-del:hover svg,
+  .send-btn:hover svg{transform:none !important}
+  /* Disable hover translateX shifts that move content. */
+  .recent-item:hover{transform:none !important}
+  /* Disable focus-within lift on the chat input. */
+  .chat-input-wrap:focus-within{transform:none}
+  .chat-input-wrap.composer-focused{transform:none}
+  .topic-input-wrap:focus-within{transform:none}
+  .send-btn.active{transform:none !important}
+  .send-btn.active:hover{transform:none !important}
+  /* Suppress layout animations but keep color/opacity/shadow transitions
+     for state feedback. The .12s duration is fast enough for accessibility
+     without being "motion" in the WCAG sense. */
+  .chat-input-wrap{
+    transition:border-color .12s ease,box-shadow .12s ease;
+    min-height:auto !important;
+  }
+  .chat-input-wrap .chat-composer-body{transition:none !important}
+  .chat-input-wrap .composer-editor-root{transition:none !important}
+  .rich-composer[data-surface="chat"] .tiptap{transition:none !important}
+  .chat-input-wrap .chat-input-footer{transition:none !important;transform:none !important}
+  .chat-input-wrap .send-btn{transition:background-color .12s ease,color .12s ease,box-shadow .12s ease;transform:none !important}
+}
+
+/* ─── ChatGPT-style main page (added 2026-07-20) ─── */
+
+/* Sidebar nav block — sits between header and search row */
+.sidebar-nav{display:flex;flex-direction:column;gap:1px;padding:6px 8px 4px;flex-shrink:0}
+.sidebar-nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:8px;background:transparent;border:none;color:hsl(var(--text-200));font-size:calc(13.5px * var(--sidebar-font-scale));font-weight:400;cursor:pointer;text-align:left;transition:background .15s var(--ease-out),color .15s var(--ease-out);font-family:var(--font-sans)}
+.sidebar-nav-btn:hover:not([disabled]){background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.sidebar-nav-btn:active:not([disabled]){transform:scale(.98)}
+.sidebar-nav-btn svg{width:16px;height:16px;flex-shrink:0;color:hsl(var(--text-400));transition:color .15s var(--ease-out)}
+.sidebar-nav-btn:hover:not([disabled]) svg{color:hsl(var(--text-200))}
+.sidebar-nav-btn[disabled]{opacity:.4;cursor:not-allowed}
+/* PR-A — active highlight on the currently-focused sidebar nav button.
+   Subtle accent tint, same shape as the hover, no transform (so the
+   active state doesn't compete with the :active press-down scale). */
+.sidebar-nav-btn.active{background:hsl(var(--bg-300));color:hsl(var(--text-100));font-weight:520}
+.sidebar-nav-btn.active svg{color:hsl(var(--text-100))}
+/* PR-A — "is-soon" used by the Scheduled button in PR-A. Faded but
+   still clickable (so the click handler can fire a toast). Lighter
+   than the [disabled] treatment (which is reserved for true disables). */
+
+
+
+
+/* Top bar — center segmented control */
+.top-bar{justify-content:space-between}
+
+/* Greeting — Newsreader serif, large, like ChatGPT */
+.topic-title.greeting{font-family:var(--font-display);font-weight:400;font-size:calc(clamp(2rem, 1.5rem + 2vw, 2.75rem) * var(--app-font-scale, 1));color:hsl(var(--text-100));letter-spacing:-.02em;line-height:1.15;margin:0 0 24px}
+
+/* Suggestion chips under the input (removed 2026-07-20 per user request) */
+
+/* Mic button (next to attach) */
+
+
+
+
+@keyframes voicePulse{50%{box-shadow:0 0 0 6px hsl(var(--accent-000)/0)}}@keyframes voiceGlyph{to{transform:translateY(-1px)}}
+
+/* Send / start stays an arrow while idle and while text is present. Voice
+   capture uses the separate full-width recording surface below. */
+
+/* Default state of the start/send button: keep the existing 'active'
+   style (filled pill) only when text/attachments present, otherwise
+   a subtle ring to match ChatGPT's gray waveform button. */
+.start-btn:not(.active){background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.start-btn:not(.active):hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.send-btn:not(.active){background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.send-btn:not(.active):hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+
+/* Reduce-motion respect — keep transforms on chips but drop bounces */
+@media (prefers-reduced-motion: reduce){
+  .sidebar-nav-btn:active:not([disabled]),
+  .composer-tools-item:active{transform:none}
+}
+
+/* Keep the arrow visible in the idle and text-entry states. The recording
+   surface is a separate full-width child added by ui/voiceInput.js. */
+.start-btn .icon-arrow,.send-btn .icon-arrow{display:inline-flex}
+
+/* ─── Inline-style replacement utilities ── */
+/* These classes replace `style="..."` attributes to eliminate
+   webhint no-inline-styles violations. */
+.logo-img{border-radius:4px;flex-shrink:0}
+.sidebar-logo-img{border-radius:3px;flex-shrink:0}
+.auth-inline-link-right{text-align:right;display:block}
+.auth-github-btn{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.auth-code-login-link{text-align:center;display:block;margin-top:10px;margin-bottom:4px}
+.sr-only-old{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.sr-only-opacity{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.sidebar-header-actions{display:flex;align-items:center;gap:2px}
+.share-centered{text-align:center}
+.share-create-area{text-align:center;margin-top:4px}
+.share-create-btn{margin-top:8px}
+.stg-toggle-label{margin-bottom:0}
+
+
+
+
+
+
+
+
+

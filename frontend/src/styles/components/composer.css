@@ -65,6 +65,55 @@
   opacity: 1;
 }
 
+/* Selected connector chips live above the editable prompt inside the rich
+   composer. Give them their own stable row so their remove controls stay
+   visible and tappable instead of being clipped by the empty-input height. */
+#appShell .rich-composer:has(.composer-plugin-chips) { gap: 4px; }
+#appShell .composer-plugin-chips {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px 0;
+}
+#appShell .composer-plugin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(100%, 240px);
+  min-height: 28px;
+  padding: 3px 5px 3px 8px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-chip);
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+#appShell .composer-plugin-chip-icon { display: grid; place-items: center; flex: 0 0 16px; width: 16px; height: 16px; overflow: hidden; border-radius: 4px; }
+#appShell .composer-plugin-chip-icon svg { display: block; width: 16px; height: 16px; }
+#appShell .composer-plugin-chip-fallback { background: var(--ui-bg-raised); font-size: 10px; }
+#appShell .composer-plugin-chip-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#appShell .composer-plugin-chip-remove {
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-muted);
+}
+#appShell .composer-plugin-chip-remove:hover { background: var(--ui-bg-hover); color: var(--ui-text-primary); }
+#appShell .composer-plugin-chip-remove svg { width: 13px; height: 13px; }
+#appShell .composer-plugin-chip-more { padding-inline: 9px; color: var(--ui-text-muted); }
+
 #appShell #topicComposerToolsBtn,
 #appShell #chatComposerToolsBtn {
   grid-column: 1;
@@ -397,6 +446,11 @@
     grid-template-rows: minmax(0, 1fr);
     min-height: 52px;
   }
+  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active),
+  #appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) {
+    grid-template-rows: minmax(64px, auto);
+    min-height: 72px;
+  }
 
   #appShell #topicInputWrap .rich-composer-editor,
   #appShell #topicInputWrap .rich-composer .tiptap,
@@ -560,6 +614,98 @@
   /* The topic composer shares the in-session rule: no formatting toolbar
      inside the phone capsule. */
   #appShell #topicInputWrap .rich-composer-toolbar { display: none; }
+
+  /* Both phone composers use the same two-storey capsule: the prompt owns
+     the first row and controls sit on a dedicated second row. */
+  #appShell #topicInputWrap:not(.voice-recording-active) {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(78px, 96px) 36px 40px;
+    grid-template-rows: 41px 41px;
+    align-content: center;
+    column-gap: 2px;
+    row-gap: 0;
+    min-height: 86px;
+    margin-bottom: var(--ui-safe-bottom);
+    padding: 0 6px 2px;
+  }
+  [data-mode="dark"] #appShell #topicInputWrap:not(.voice-recording-active) {
+    background: #212121;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) > .composer-editor-root {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: auto;
+    min-height: 41px;
+    align-self: stretch;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicComposerToolsBtn {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .effort-picker {
+    grid-column: 3;
+    grid-row: 2;
+    width: 100%;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #topicMobileMicBtn {
+    grid-column: 4;
+    grid-row: 2;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) #startBtn {
+    grid-column: 5;
+    grid-row: 2;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer,
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer .tiptap {
+    min-height: 41px;
+  }
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #topicInputWrap:not(.voice-recording-active) .rich-composer .tiptap {
+    padding: 10px 12px 4px;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) minmax(78px, 96px) 36px 40px;
+    grid-template-rows: 41px 41px;
+    align-content: center;
+    column-gap: 2px;
+    row-gap: 0;
+    min-height: 86px;
+    padding: 0 6px 2px;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) .composer-editor-root {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: auto;
+    min-height: 41px;
+    align-self: stretch;
+  }
+  #appShell #chatInputWrap:not(.voice-recording-active) #chatComposerToolsBtn { grid-column: 1; grid-row: 2; }
+  #appShell #chatInputWrap:not(.voice-recording-active) .effort-picker { grid-column: 3; grid-row: 2; width: 100%; }
+  #appShell #chatInputWrap:not(.voice-recording-active) #chatMobileMicBtn { grid-column: 4; grid-row: 2; }
+  #appShell #chatInputWrap:not(.voice-recording-active) #sendBtn { grid-column: 5; grid-row: 2; }
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer,
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer .tiptap { min-height: 41px; }
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer-editor,
+  #appShell #chatInputWrap:not(.voice-recording-active) .rich-composer .tiptap { padding: 10px 12px 4px; }
+  #appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) {
+    grid-template-rows: minmax(80px, auto) 44px;
+    min-height: 126px;
+    border-radius: 28px;
+  }
+  #appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) {
+    grid-template-rows: minmax(80px, auto) 44px;
+    min-height: 126px;
+    border-radius: 28px;
+  }
+  #appShell #topicInputWrap:has(.composer-plugin-chips):not(.voice-recording-active),
+  #appShell #chatInputWrap:has(.composer-plugin-chips):not(.voice-recording-active) {
+    grid-template-rows: minmax(80px, auto) 44px;
+    min-height: 126px;
+    border-radius: 28px;
+  }
 }
 
 [data-mode="light"] #appShell #startBtn,

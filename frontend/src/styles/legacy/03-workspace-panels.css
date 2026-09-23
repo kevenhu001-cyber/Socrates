@@ -1,0 +1,131 @@
+/* ==========================================================================
+   03-workspace-panels.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: workspace surfaces, spaces/scheduled/plugins panels, Clerk button, display prefs, more popover.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* Workspace surfaces shared by Library, Projects, Scheduled, and Apps. */
+.workspace-add-btn{min-height:24px;padding:3px 8px;border-radius:6px;background:hsl(var(--accent-000)/.13);color:hsl(var(--accent-000));font-size:calc(11px * var(--sidebar-font-scale));font-weight:600;line-height:1;transition:background .15s,color .15s}.workspace-add-btn:hover{background:hsl(var(--accent-000)/.23);color:hsl(var(--text-100))}.workspace-intro{padding:0 12px 8px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));line-height:1.45}.workspace-loading{padding:28px 12px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale))}.workspace-empty{display:flex;flex-direction:column;align-items:center;gap:7px;padding:30px 16px;text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));line-height:1.5}.workspace-empty strong{color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:550}.workspace-primary,.workspace-secondary,.workspace-danger{min-height:30px;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:550;transition:background .15s,color .15s}.workspace-primary{background:hsl(var(--accent-000));color:hsl(var(--bg-400))}.workspace-primary:hover{background:hsl(var(--accent-100))}.workspace-secondary{border:0.5px solid hsl(var(--border-300)/.45);background:hsl(var(--bg-200));color:hsl(var(--text-200))}.workspace-secondary:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-danger{background:transparent;color:hsl(0 65% 62%)}.workspace-danger:hover{background:hsl(0 60% 35%/.35)}.workspace-row{display:flex;align-items:center;gap:9px;min-height:48px;padding:7px 10px;border-radius:8px;transition:background .14s}.workspace-row:hover{background:hsl(var(--bg-300))}.workspace-row-icon{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:7px;background:hsl(var(--bg-200));color:hsl(var(--text-400));flex:0 0 auto}.workspace-row-icon svg{width:14px;height:14px}.workspace-row-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:1px;text-align:left}.workspace-row-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-200));font-size:calc(13px * var(--sidebar-font-scale));font-weight:520}.workspace-row-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale))}.workspace-row-action{padding:4px 6px;border-radius:5px;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));opacity:0;transition:opacity .14s,background .14s,color .14s}.workspace-row:hover .workspace-row-action,.workspace-row-action:focus-visible{opacity:1}.workspace-row-action:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}.project-main,.task-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;text-align:left}.task-status{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:hsl(40 80% 52%)}.task-status.on{background:hsl(145 50% 50%)}.task-status.failed{background:hsl(0 65% 55%)}
+
+.workspace-dialog{position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;padding:18px;background:hsl(var(--always-black)/.52);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}.workspace-dialog.hidden{display:none}.workspace-dialog-card{width:min(440px,100%);max-height:min(680px,calc(100dvh - 36px));overflow:auto;padding:17px;border:0.5px solid hsl(var(--border-300)/.52);border-radius:13px;background:hsl(var(--bg-000));box-shadow:0 20px 60px hsl(var(--always-black)/.35);animation:workspaceDialogIn .18s var(--ease-out)}@keyframes workspaceDialogIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}.workspace-dialog-title{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:16px}.workspace-dialog-title h2{font-family:var(--font-display);font-size:21px;line-height:1.1;font-weight:550;color:hsl(var(--text-100))}.workspace-dialog-title p{margin-top:5px;color:hsl(var(--text-500));font-size:12px;line-height:1.45}.workspace-dialog-title>button{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:hsl(var(--text-400));font-size:21px;line-height:1}.workspace-dialog-title>button:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}.workspace-form{display:flex;flex-direction:column;gap:12px}.workspace-field{display:flex;flex-direction:column;gap:5px;color:hsl(var(--text-300));font-size:11px;font-weight:550}.workspace-field em{font-style:normal;color:hsl(var(--text-500));font-weight:400}.workspace-field input,.workspace-field textarea,.workspace-field select{width:100%;padding:8px 9px;border:0.5px solid hsl(var(--border-300)/.4);border-radius:7px;outline:none;background:hsl(var(--bg-200));color:hsl(var(--text-100));font-size:12px;font-weight:400;resize:vertical}.workspace-field input:focus,.workspace-field textarea:focus,.workspace-field select:focus{border-color:hsl(var(--accent-000)/.65);background:hsl(var(--bg-000))}.workspace-form-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:10px}.workspace-dialog-actions{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:7px;margin-top:4px}.workspace-note{color:hsl(var(--text-500));font-size:11px;line-height:1.45}.project-workspace-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.marketplace-list{display:flex;flex-direction:column;gap:6px}
+.connector-row{align-items:center;gap:13px;min-height:66px;padding:10px 12px}.plugins-list .connector-row{margin-bottom:6px}.connector-row:hover{background:hsl(var(--bg-200)/.72)}.connector-icon{overflow:hidden;font-size:11px;font-weight:700;background:hsl(var(--bg-100));color:hsl(var(--text-100));border:1px solid hsl(var(--border-300)/.38);box-shadow:0 1px 2px hsl(var(--always-black)/.12)}.connector-icon svg{width:18px;height:18px}.connector-github{background:#24292f;color:#fff;border-color:#24292f}.connector-notion{background:#fff;color:#111;border:1px solid hsl(var(--border-300)/.6)}.connector-zotero{background:#cc2936;color:#fff;border-color:#cc2936}.connector-baidu-netdisk,.connector-gitee,.connector-feishu,.connector-gmail,.connector-googledrive,.connector-googlecalendar,.connector-todoist,.connector-ticktick,.connector-discord,.connector-tencent_docs,.connector-one_drive,.connector-onedrive,.connector-outlook,.connector-gitlab,.connector-qq_mail,.connector-qq-mail,.connector-arxiv{background:#fff;color:#111;border-color:hsl(var(--border-300)/.42)}.connector-baidu-netdisk svg,.connector-gitee svg,.connector-feishu svg,.connector-gmail svg,.connector-googledrive svg,.connector-googlecalendar svg,.connector-todoist svg,.connector-ticktick svg,.connector-discord svg,.connector-tencent_docs svg,.connector-one_drive svg,.connector-onedrive svg,.connector-outlook svg,.connector-gitlab svg,.connector-qq_mail svg,.connector-qq-mail svg,.connector-arxiv svg{width:19px;height:19px}.connector-connect{flex:0 0 auto;min-height:29px;padding:5px 10px;font-size:10.5px}.connector-disconnect{flex:0 0 auto}.connector-actions{display:flex;align-items:center;gap:5px}.connector-coming-soon{flex:0 0 auto;padding:4px 7px;border-radius:6px;background:hsl(var(--bg-200));color:hsl(var(--text-500));font-size:9.5px}.zotero-item,.arxiv-paper{padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/.2)}.zotero-item:last-child,.arxiv-paper:last-child{border-bottom:0}.arxiv-paper{align-items:flex-start}.arxiv-paper .connector-actions{margin-left:auto;padding-top:2px}.arxiv-summary{display:-webkit-box;overflow:hidden;margin-top:4px;color:hsl(var(--text-500));font-size:11px;line-height:1.42;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
+
+/* PR-C: Spaces panel — projects list */
+.spaces-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.spaces-panel.hidden{display:none}
+
+
+
+
+.spaces-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+
+
+
+
+
+
+.spaces-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-D: Scheduled panel — scheduled tasks */
+.scheduled-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.scheduled-panel.hidden{display:none}
+.scheduled-header{padding:8px 12px 6px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.scheduled-title{font-size:calc(12px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-200));text-transform:uppercase;letter-spacing:.04em}
+
+
+.scheduled-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+
+
+
+
+
+
+
+
+
+
+.scheduled-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-E: Plugins panel — installed extensions */
+.plugins-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.plugins-panel.hidden{display:none}
+
+
+
+
+.plugins-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+
+
+
+
+
+
+
+
+
+
+
+
+/* Main-content pages (Library, Projects, Scheduled, Plugins shown in
+   main area instead of sidebar). Overrides sidebar-panel sizing. */
+.main-page{width:100%;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1px;padding:0 4px;align-self:stretch}
+.main-page.hidden{display:none}
+
+.sidebar-footer{display:flex;align-items:center;gap:4px;padding:6px 8px;flex-shrink:0;border-top:0.5px solid hsl(var(--border-300)/0.10)}
+/* The clickable user block takes the main width; the utility icons
+   (theme / display / settings) collapse into a tidy right-aligned
+   cluster instead of being pushed apart with margin-left:auto. */
+.sidebar-footer .user-row{flex:1;min-width:0}
+.sidebar-footer-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;position:relative}
+.theme-toggle .theme-sun,.theme-toggle .theme-moon{width:16px;height:16px}
+[data-mode=dark] .theme-toggle .theme-sun{display:none}
+[data-mode=light] .theme-toggle .theme-moon{display:none}
+
+.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;transition:background .18s var(--ease-out),transform .14s var(--ease-out);cursor:pointer;position:relative}
+.user-row:hover{background:hsl(var(--bg-300))}
+.user-row:active{transform:scale(.99)}
+
+/* ─── Clerk User Button (Motion style) ─── */
+
+
+
+
+
+
+@keyframes clerkMenuEnter{0%{opacity:0;transform:scale(0.92) translateY(8px);filter:blur(8px)}100%{opacity:1;transform:scale(1) translateY(0);filter:blur(0px)}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Display / reading preferences (font size + content width) */
+.display-prefs-popover{position:fixed;min-width:240px;max-width:280px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px hsl(var(--always-black)/0.2);z-index:80;display:flex;flex-direction:column;gap:10px;font-size:calc(12px * var(--app-font-scale, 1))}
+.display-prefs-popover.hidden{display:none}
+
+/* PR-A — "More" popover (anchored to #navMore). Mirrors the
+   display-prefs popover chrome but is narrower and lays out as a
+   flat list of clickable rows. z-index sits above the sidebar
+   (z 50) but below the display-prefs popover (z 80) so the two
+   can co-exist if the user opens Display & theme from inside More. */
+.sidebar-more-popover{position:fixed;min-width:220px;max-width:260px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.5);border-radius:10px;padding:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.25);z-index:75;display:flex;flex-direction:column;gap:2px;font-size:calc(13px * var(--app-font-scale, 1))}
+.sidebar-more-popover.hidden{display:none}
+.sidebar-more-item{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px;border-radius:7px;background:transparent;border:none;color:hsl(var(--text-200));font-size:inherit;font-family:var(--font-sans);text-align:left;cursor:pointer;transition:background .18s var(--ease-out),color .18s var(--ease-out)}
+.sidebar-more-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.sidebar-more-item:active{transform:scale(.985)}
+.sidebar-more-item svg{width:14px;height:14px;flex-shrink:0;color:hsl(var(--text-400))}
+.sidebar-more-item:hover svg{color:hsl(var(--text-200))}
+.sidebar-more-item-danger{color:hsl(var(--text-200))}
+.sidebar-more-item-danger:hover{background:hsl(0 60% 30% / .25);color:hsl(0 70% 80%)}
+.sidebar-more-item-danger:hover svg{color:hsl(0 70% 80%)}
+

@@ -209,6 +209,110 @@ test('Chat tool allow-list stays unique and inventory-backed', () => {
   }
 });
 
+test('Jimeng image generation exposes only the bounded 4.6 submit and result actions', () => {
+  const submitName = 'oc_jimeng_ai_submit_image_generation_4_6';
+  const resultName = 'oc_jimeng_ai_get_image_generation_4_6_result';
+  const submit = getOpenConnectorChatTool(submitName);
+  const result = getOpenConnectorChatTool(resultName);
+  assert.equal(submit?.service, 'jimeng_ai');
+  assert.equal(submit?.actionId, 'jimeng_ai.submit_image_generation_4_6');
+  assert.equal(result?.actionId, 'jimeng_ai.get_image_generation_4_6_result');
+  assert.deepEqual(Object.keys(submit?.parameters.properties || {}), ['prompt']);
+  assert.deepEqual(validateOpenConnectorToolArguments(submitName, {}), {
+    ok: false,
+    error: 'missing required argument: prompt',
+  });
+  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: '   ' }).ok, false);
+  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 'a'.repeat(801) }).ok, false);
+  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 7 }).ok, false);
+  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 'a'.repeat(800) }).ok, true);
+  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 'painted sky', task_id: 'injected' }).ok, false);
+  assert.equal(validateOpenConnectorToolArguments(resultName, { task_id: 'job-1' }).ok, true);
+});
+
+test('Jimeng image submit requires a connected user account at execution time', async () => {
+  const toolName = 'oc_jimeng_ai_submit_image_generation_4_6';
+  const args = { prompt: 'A paper-cut rabbit under a moon.' };
+  for (const connection of [null, { status: 'disconnected' }, { status: 'initiated' }]) {
+    const result = await executeOpenConnectorTool(toolName, args, 'user-1', connection);
+    assert.equal(result.status, 'failed');
+    assert.equal(result.errorCode, 'app_not_connected');
+  }
+});
+
+test('Jimeng submit, completed image result, provider failure, and sidecar timeout preserve readable states', async () => {
+  const previousToken = process.env.OC_SIDECAR_RUNTIME_TOKEN;
+  const previousUrl = process.env.OC_SIDECAR_URL;
+  const previousFetch = globalThis.fetch;
+  process.env.OC_SIDECAR_RUNTIME_TOKEN = 'test-sidecar-token';
+  process.env.OC_SIDECAR_URL = 'http://sidecar.test';
+  const requests = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      requests.push({ url: String(url), init });
+      const responseBody = String(url).includes('get_image_generation_4_6_result')
+        ? { data: { task_id: 'job-46', status: 'succeeded', is_done: true, image_urls: ['https://images.example.test/generated.png'] } }
+        : { data: { task_id: 'job-46' } };
+      return new Response(JSON.stringify(responseBody), { status: 200, headers: { 'content-type': 'application/json' } });
+    };
+    const connected = { status: 'connected', connectionName: 'socrates-user-1' };
+    const submitted = await executeOpenConnectorTool(
+      'oc_jimeng_ai_submit_image_generation_4_6',
+      { prompt: 'A paper-cut rabbit under a moon.' },
+      'user-1',
+      connected,
+    );
+    assert.equal(submitted.status, 'completed');
+    assert.equal(JSON.parse(submitted.output).data.task_id, 'job-46');
+    assert.match(requests[0].url, /jimeng_ai\.submit_image_generation_4_6/);
+    assert.deepEqual(JSON.parse(requests[0].init.body), {
+      input: { prompt: 'A paper-cut rabbit under a moon.' },
+      connectionName: 'socrates-user-1',
+    });
+
+    const completed = await executeOpenConnectorTool(
+      'oc_jimeng_ai_get_image_generation_4_6_result',
+      { task_id: 'job-46' },
+      'user-1',
+      connected,
+    );
+    assert.equal(completed.status, 'completed');
+    assert.ok(JSON.parse(completed.output).data.image_urls.includes('https://images.example.test/generated.png'));
+    assert.equal(completed.output.includes('test-sidecar-token'), false);
+
+    globalThis.fetch = async () => new Response(JSON.stringify({ error: { code: 'jimeng_generation_failed', message: 'provider rejected the prompt' } }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+    const failed = await executeOpenConnectorTool(
+      'oc_jimeng_ai_submit_image_generation_4_6',
+      { prompt: 'A paper-cut rabbit under a moon.' },
+      'user-1',
+      connected,
+    );
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.errorCode, 'jimeng_generation_failed');
+    assert.equal(failed.userMessage, 'The connected app could not complete that request.');
+
+    globalThis.fetch = async () => { throw new DOMException('The operation was aborted.', 'AbortError'); };
+    const timedOut = await executeOpenConnectorTool(
+      'oc_jimeng_ai_get_image_generation_4_6_result',
+      { task_id: 'job-46' },
+      'user-1',
+      connected,
+    );
+    assert.equal(timedOut.status, 'failed');
+    assert.equal(timedOut.errorCode, 'sidecar_timeout');
+    assert.equal(timedOut.userMessage, 'The connected app could not complete that request.');
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousToken === undefined) delete process.env.OC_SIDECAR_RUNTIME_TOKEN;
+    else process.env.OC_SIDECAR_RUNTIME_TOKEN = previousToken;
+    if (previousUrl === undefined) delete process.env.OC_SIDECAR_URL;
+    else process.env.OC_SIDECAR_URL = previousUrl;
+  }
+});
+
 test('Chat tool argument validation rejects bad shapes', () => {
   const tool = 'oc_amap_search_places';
   assert.ok(getOpenConnectorChatTool(tool), 'expected fixture tool missing');

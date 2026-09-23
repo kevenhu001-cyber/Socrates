@@ -35,7 +35,7 @@
   --ui-control-sm: 32px;
   --ui-control-md: 40px;
   --ui-control-touch: 44px;
-  --ui-sidebar-mobile: 300px;
+  --ui-sidebar-mobile: 254px;
   --ui-sidebar-desktop: 260px;
   --ui-content-chat: calc(768px * var(--app-width-scale, 1));
   --ui-safe-bottom: max(16px, env(safe-area-inset-bottom, 0px));

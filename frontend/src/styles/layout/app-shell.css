@@ -68,6 +68,39 @@
   box-shadow: none;
 }
 
+#appShell #pluginWorkspaceTabs {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  width: 184px;
+  height: 36px;
+  padding: 2px;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-raised);
+}
+#appShell #pluginWorkspaceTabs[hidden] { display: none !important; }
+#appShell #pluginWorkspaceTabs .plugin-workspace-tab {
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  font-size: calc(15px * var(--app-font-scale, 1));
+  font-weight: 400;
+}
+#appShell #pluginWorkspaceTabs .plugin-workspace-tab.active {
+  background: var(--ui-bg-segment-active);
+  color: var(--ui-text-primary);
+  font-weight: 500;
+}
+
 #appShell #modeSegmentedTop .app-mode-toggle {
   flex: 1 1 50%;
   min-width: 0;
@@ -153,13 +186,13 @@
     flex-direction: column;
     justify-content: flex-end;
     align-items: stretch;
-    padding: 0 12px calc(var(--ui-safe-bottom) + var(--keyboard-inset, 0px));
+    padding: 0 16px calc(var(--ui-safe-bottom) + var(--keyboard-inset, 0px));
     overflow: hidden;
   }
   #appShell #topicSetup .topic-title.greeting {
     position: absolute;
     inset-inline: 0;
-    top: 44%;
+    top: 40%;
     width: auto;
     margin: 0;
     padding: 0;
@@ -173,4 +206,6 @@
   body.exam-active #appShell #modeSegmentedTop,
   body.admin-active #appShell #modeSegmentedTop { display: none; }
   #appShell #mobileMode { display: none; }
+body.plugins-active #appShell #pluginWorkspaceTabs { display: flex; }
+body.plugins-active #appShell #pluginWorkspaceTabs { width: 146px; }
 }
