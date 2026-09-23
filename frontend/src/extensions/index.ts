@@ -22,6 +22,7 @@ import { extensiveThinkingExtension } from './modules/extensiveThinking';
 import { uploadExtension } from './modules/upload';
 import { webSearchExtension } from './modules/webSearch';
 import { skillsExtension } from './modules/skills';
+import { createImageExtension } from './modules/createImage';
 
 let installed = false;
 
@@ -43,7 +44,8 @@ export function installExtensions(): void {
     .register(extensiveThinkingExtension)
     .register(uploadExtension)
     .register(webSearchExtension)
-    .register(skillsExtension);
+    .register(skillsExtension)
+    .register(createImageExtension);
 }
 
 /**

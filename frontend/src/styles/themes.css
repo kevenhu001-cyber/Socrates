@@ -8,9 +8,9 @@
   --ui-bg-control: #303030;
   --ui-bg-hover: #2a2a2a;
   --ui-bg-overlay: #303030;
-  --ui-text-primary: #f5f5f5;
-  --ui-text-secondary: #d1d1d1;
-  --ui-text-tertiary: #b4b4b4;
+  --ui-text-primary: #fff;
+  --ui-text-secondary: #f5f5f5;
+  --ui-text-tertiary: #d1d1d1;
   --ui-text-muted: #8e8e8e;
   --ui-text-disabled: #676767;
   --ui-border-subtle: rgb(255 255 255 / 8%);

@@ -1,0 +1,341 @@
+/* ==========================================================================
+   07-composer-settings.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: chat-input-wrap mirror, attachments, stop buttons, spinners/animations, disclaimer, settings/admin/profile modals, usage heatmap.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* UI-align: chat-input-wrap mirrors topic-input-wrap so the composer does
+   not change skin between landing and in-chat. Identical width, radius,
+   border, shadow, and focus feedback — only the inner Tiptap surface and
+   the footer controls differ between the two surfaces. */
+.chat-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:28px;overflow:hidden;width:100%;max-width:720px;margin:0 auto;
+  /* Focus-driven geometry (min-height/padding/border-radius/gap jump in the
+     desktop :has(:focus) rule below) must glide, not snap. Every animatable
+     property shares one duration/ease so the wrap, its shadow, and the inner
+     editor expand/collapse in a single synchronized motion — no property
+     finishing early and no visible "step". cubic-bezier(.22,1,.36,1) is a
+     smooth ease-out that decelerates without overshooting.
+     Focus feedback stays on the edge/shadow; the composer remains fixed in place. */
+  transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(--composer-motion-duration) var(--composer-motion-ease),min-height var(--composer-motion-duration) var(--composer-motion-ease),padding var(--composer-motion-duration) var(--composer-motion-ease),border-radius var(--composer-motion-duration) var(--composer-motion-ease),gap var(--composer-motion-duration) var(--composer-motion-ease);margin:0 12px;
+  will-change:min-height;
+  /* P_contain-scope — layout containment isolates the focus-expansion
+     relayout to this subtree, so each animation frame relayouts the wrap's
+     children only, not the document. We deliberately do NOT use
+     `contain:paint`: it would clip absolutely-positioned descendants
+     (effort-picker menu, slash command palette) to the wrap's bounds, so
+     opening the effort menu on mobile would hide the upper ~360px of the
+     dropdown. The composer shell is small enough that the missing paint
+     containment is not measurable. */
+  contain:layout;
+  box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
+  position:relative;z-index:1;
+  /* Focus feedback glides on the same duration/curve as topic-input-wrap
+     so the composer skin does not change between landing and in-chat. */
+  transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease)}
+.chat-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.6)}
+@supports (scrollbar-width:none){}
+
+
+.chat-input-footer{display:flex;align-items:center;padding:0 12px 8px}
+
+/* P_attachments — paperclip button to the left of the hint. Same
+   circle footprint as the send button so the footer stays balanced
+   regardless of attach state. */
+.attach-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:transparent;color:hsl(var(--text-400));transition:background-color .2s cubic-bezier(.4,0,.2,1),color .2s cubic-bezier(.4,0,.2,1),transform .12s ease;flex-shrink:0;cursor:pointer;border:none;padding:0}
+.attach-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.attach-btn:active{transform:scale(.88)}
+.attach-btn svg{width:16px;height:16px;transition:transform .2s cubic-bezier(.4,0,.2,1)}
+.attach-btn:hover svg{transform:rotate(-12deg)}
+.attach-btn.has-error{color:hsl(0 70% 50%)}
+/* P_attachments — chip strip rendered above the textarea. Hidden
+   when there are no pending attachments. */
+.attachment-chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 0;max-height:120px;overflow-y:auto}
+.attachment-chips.hidden{display:none}
+.attachment-chip{display:inline-flex;align-items:center;gap:6px;background:hsl(var(--bg-200));border:1px solid hsl(var(--border-300)/0.18);border-radius:18px;padding:3px 10px 3px 3px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-200));max-width:220px;line-height:1.3}
+.attachment-chip-thumb{width:28px;height:28px;border-radius:14px;object-fit:cover;flex-shrink:0;background:hsl(var(--bg-300))}
+.attachment-chip-icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:hsl(var(--bg-300));color:hsl(212 90% 62%);flex-shrink:0}
+[data-mode=light] .attachment-chip-icon{color:hsl(212 80% 48%)}
+.attachment-chip-icon svg{width:14px;height:14px}
+.attachment-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attachment-chip-meta{font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500));flex-shrink:0}
+.attachment-chip-remove{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:transparent;color:hsl(var(--text-400));border:none;cursor:pointer;padding:0;flex-shrink:0}
+.attachment-chip-remove:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.attachment-chip-remove svg{width:12px;height:12px}
+.attachment-chip.error{border-color:hsl(0 70% 50%/0.4)}
+.attachment-chip.pending{background:hsl(var(--bg-200));border-color:hsl(var(--accent-000)/0.25);padding:3px 10px 3px 3px;flex-wrap:wrap;gap:3px;max-width:200px;min-width:120px}
+.attachment-chip-spinner{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:hsl(var(--accent-000)/0.08);flex-shrink:0}
+.attachment-chip-progress-bar{width:calc(100% - 20px);height:3px;background:hsl(var(--bg-300));border-radius:2px;overflow:hidden;margin:2px 10px 0;order:99;flex-basis:calc(100% - 20px);flex-shrink:0;box-sizing:content-box}
+.attachment-chip-progress-fill{height:100%;background:hsl(var(--accent-000));border-radius:2px;transition:width .12s ease;will-change:width}
+/* P_file-attachments — chip row inside a sent user bubble. Reuses the
+   composer chip look; durable-file chips are links so the raw upload is
+   one click away (opens in a new tab, authorized by the session). */
+.msg-attachment-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.msg-attachment-chips .attachment-chip{max-width:260px}
+a.attachment-chip-link{text-decoration:none;color:inherit;cursor:pointer;transition:border-color .15s ease,background-color .15s ease}
+a.attachment-chip-link:hover{border-color:hsl(var(--accent-000)/0.45);background:hsl(var(--bg-300))}
+a.attachment-chip-link:hover .attachment-chip-name{text-decoration:underline}
+/* Drag-over visual — the wrap gets a subtle accent border when the
+   user drags files over the input. */
+.chat-input-wrap.drag-over{border-color:hsl(var(--accent-000)/0.5);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.2)}
+.chat-input-bar.drag-over-doc{position:relative}.chat-input-bar.drag-over-doc::after{content:'';position:absolute;inset:4px;border:2px dashed hsl(var(--accent-000)/0.4);border-radius:18px;pointer-events:none;z-index:20}
+.send-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .28s var(--ease-out),color .28s var(--ease-out),box-shadow .28s var(--ease-out),transform .18s var(--ease-out);flex-shrink:0;cursor:pointer;border:none;padding:0}
+#sendBtnContent{display:contents}
+.send-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.send-btn:active{transform:scale(.88)}
+.send-btn svg{width:16px;height:16px;transition:transform .28s var(--ease-out)}
+.send-btn:hover svg{transform:translateY(-1px)}
+.send-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 10px hsl(var(--accent-000)/0.22),0 4px 18px hsl(var(--accent-000)/0.12);transform:scale(1.05)}.send-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 16px hsl(var(--accent-000)/0.34);transform:translateY(-1px) scale(1.05)}
+.send-btn.active:active{transform:translateY(0) scale(.92)}
+.send-btn svg{width:16px;height:16px}
+/* Agent-run state: send button morphs into a quiet Stop. UI-align:
+   open-webui uses a neutral surface with a square glyph instead of a
+   red pulsing alarm — stopping a stream is routine, not destructive. */
+.send-btn.agent-stop{background:hsl(var(--bg-300));color:hsl(var(--text-000))}
+.send-btn.agent-stop:hover{background:hsl(var(--bg-400));color:hsl(var(--text-000))}
+/* Chat-mode Stop button — same quiet look. */
+.send-btn.chat-stop{background:hsl(var(--bg-300));color:hsl(var(--text-000))}
+.send-btn.chat-stop:hover{background:hsl(var(--bg-400));color:hsl(var(--text-000))}
+/* Loading animations — rotating ring spinner.
+   Uses a simple border-based ring (no mask) for reliable rendering
+   across all browsers. The inner spans (from the old 3-dot pattern)
+   are hidden; no markup changes needed. */
+.loading{display:block;width:16px;height:16px;position:relative;margin:0 auto}
+.loading span{display:none}
+.loading::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.20);border-top-color:hsl(var(--accent-000));animation:loadingSpin 1.2s cubic-bezier(.65,0,.35,1) infinite;will-change:transform;box-sizing:border-box}
+
+/* Pulse-ring variant — concentric expanding rings, good for larger
+   loading blocks that need a bolder visual. */
+
+
+
+
+@keyframes pulseRing{0%{transform:scale(.6);opacity:.8}100%{transform:scale(1.4);opacity:0}}
+
+/* Concentric ring rotation — new "thinking" animation system.
+   Replaces the old flashing/pulsing dot with smooth rotating rings.
+   Usage: <span class="thinking-ring"></span> or add .thinking-ring to any inline element. */
+.thinking-ring{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;position:relative;vertical-align:middle;flex-shrink:0}
+.thinking-ring::before,.thinking-ring::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid transparent;box-sizing:border-box}
+.thinking-ring::before{border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--accent-000)/0.6);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite}
+.thinking-ring::after{inset:3px;border-top-color:hsl(var(--accent-000)/0.7);border-left-color:hsl(var(--accent-000)/0.4);animation:ringSpin 1.2s cubic-bezier(.4,0,.2,1) infinite reverse}
+@keyframes ringSpin{to{transform:rotate(360deg)}}
+
+/* Smaller variant for inline thinking pills and summaries */
+.thinking-ring-sm{width:12px;height:12px}
+.thinking-ring-sm::before{border-width:1.5px}
+.thinking-ring-sm::after{inset:2px;border-width:1.5px}
+
+/* Tiny variant for very compact spaces */
+
+
+
+
+/* Skeleton shimmer — a moving highlight bar for content placeholders. */
+.shimmer{position:relative;overflow:hidden;background:hsl(var(--bg-200));border-radius:6px}
+.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,hsla(var(--accent-000)/0.08) 50%,transparent 100%);animation:shimmerSweep 2s ease-in-out infinite;transform:translateX(-100%)}
+
+
+@keyframes shimmerSweep{100%{transform:translateX(100%)}}
+
+@keyframes loadingSpin{to{transform:rotate(360deg)}}
+/* The landing disclaimer is an overlay, not a layout row: it stays pinned
+   at the bottom and does not reserve space, so the composer can grow
+   without having to "avoid" the tagline. It is non-interactive and can be
+   covered by the input when the composer becomes tall. */
+.disclaimer{position:absolute;left:50%;bottom:calc(8px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);text-align:center;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:6px 12px 4px;line-height:1.4;pointer-events:none;z-index:0}
+
+/* settings modal */
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.settings-overlay.hidden{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.settings-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
+
+/* Admin modal — system model + embedding provider config. Shares the
+   modal-overlay / modal-card / modal-head conventions above; adds the
+   two-section form layout and the admin gate error styling. */
+.admin-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.admin-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out)}
+.admin-body{padding:0 18px 18px;display:flex;flex-direction:column;gap:20px}
+.admin-section{display:flex;flex-direction:column;gap:12px;padding-top:20px;border-top:0.5px solid hsl(var(--border-300)/0.15)}
+.admin-section:first-child{border-top:0;padding-top:14px}
+.admin-section h3{font-size:15px;font-weight:650;color:hsl(var(--text-100));margin:0}
+.admin-section form{display:flex;flex-direction:column;gap:12px;margin:4px 0 0}
+.admin-hint{font-size:12.5px;color:hsl(var(--text-400));margin:0;line-height:1.6}
+.admin-empty{font-size:13px;color:hsl(var(--text-400));margin:0;line-height:1.6}
+.admin-loading{padding:20px 18px;font-size:14px;color:hsl(var(--text-400))}
+.admin-gate-error,.admin-error{margin:14px 18px;padding:12px 14px;border-radius:8px;background:hsl(0 60% 30%/0.18);border:0.5px solid hsl(0 60% 40%/0.4);color:hsl(0 70% 78%);font-size:13px;line-height:1.5}
+.admin-section label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:hsl(var(--text-300))}
+.admin-section input[type="text"],.admin-section input[type="url"],.admin-section input[type="password"],.admin-section input[type="number"]{padding:10px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:14px;font-family:inherit}
+.admin-section input:focus{outline:none;border-color:hsl(var(--accent-000))}
+.admin-checkbox{flex-direction:row!important;align-items:center;gap:8px!important}
+.admin-key-present{font-size:12px;color:hsl(var(--text-500));font-weight:400}
+.admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.admin-save{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:550;cursor:pointer;border:0;background:hsl(var(--accent-000));color:hsl(var(--always-white));transition:filter .15s}
+.admin-save:hover{filter:brightness(1.1)}
+.admin-save:disabled{opacity:0.5;cursor:not-allowed}
+.admin-remove{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:0.5px solid hsl(0 60% 30%/0.5);background:transparent;color:hsl(0 60% 70%);transition:background .15s}
+.admin-remove:hover{background:hsl(0 60% 30%/0.4)}
+.admin-remove:disabled{opacity:0.5;cursor:not-allowed}
+
+/* Admin console page (/admin) — a main-content page like the other
+   workspace panels, styled with the same form controls as the modal
+   variant so the two surfaces stay visually consistent. */
+.admin-panel{padding:32px 24px 48px;overflow-y:auto}
+.admin-panel-body{max-width:680px;margin:0 auto}
+.admin-console{display:flex;flex-direction:column;gap:24px}
+.admin-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
+.admin-console-head h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
+.admin-login{max-width:400px;margin:64px auto;padding:28px;display:flex;flex-direction:column;gap:14px;background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.admin-login h2{font-size:20px;font-weight:650;color:hsl(var(--text-100));margin:0;letter-spacing:-0.01em}
+.admin-login .admin-hint{margin-bottom:4px}
+.admin-login label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:hsl(var(--text-300))}
+.admin-login input[type="password"]{padding:10px 12px;border-radius:8px;border:0.5px solid hsl(var(--border-300)/0.4);background:hsl(var(--bg-100));color:hsl(var(--text-100));font-size:14px}
+.admin-login input:focus{outline:none;border-color:hsl(var(--accent-000))}
+.admin-login form{display:flex;flex-direction:column;gap:14px}
+.admin-login .admin-save{width:100%;padding:10px}
+@media (max-width:640px){.admin-panel{padding:20px 16px 40px}.admin-login{margin:32px auto;padding:22px}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.settings-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid hsl(var(--border-300)/0.08)}
+.settings-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
+.settings-close{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .06s,background .06s;cursor:pointer}
+.settings-close:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.settings-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.settings-field{display:flex;flex-direction:column;gap:6px}
+.settings-label{font-size:calc(12px * var(--app-font-scale, 1));font-weight:500;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.04em}
+.settings-input{width:100%;padding:10px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-200));font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-family:var(--font-mono);outline:none;transition:border-color .12s}
+.settings-input:focus{border-color:hsl(var(--accent-000)/0.4)}
+.settings-input::placeholder{color:hsl(var(--text-500));font-family:var(--font-sans)}
+.settings-hint{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));line-height:1.4}
+
+
+
+
+
+.settings-actions{display:flex;gap:8px;justify-content:flex-end}
+.settings-btn{padding:8px 18px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;transition:background-color .1s;cursor:pointer}
+.settings-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.settings-btn.primary:hover{background:hsl(var(--accent-100))}
+.settings-btn.secondary{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
+.settings-btn.secondary:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.settings-btn.danger{background:transparent;color:hsl(0 60% 55%)}
+.settings-btn.danger:hover{background:hsl(0 60% 15%)}
+/* Settings validation and state styles */
+.settings-btn.primary:disabled,.settings-btn.primary.saving{opacity:0.6;cursor:not-allowed;pointer-events:none}
+.settings-input.input-error{border-color:hsl(0 60% 50%)!important;box-shadow:0 0 0 1px hsl(0 60% 50%/0.3)!important}
+.settings-field-error{display:block;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(0 60% 55%);padding:2px 0 0 4px;line-height:1.3}
+/* Collapsed provider list — "Use External API" off state */
+.provider-list.collapsed{display:none}
+
+/* profile modal */
+.profile-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.profile-overlay.hidden{display:none}
+.profile-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:90%;max-width:360px;max-height:85vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
+.profile-header{display:flex;flex-direction:column;align-items:center;padding:28px 20px 20px;gap:12px;background:hsl(var(--bg-100))}
+.profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:calc(24px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--text-200));color:hsl(var(--bg-100));flex-shrink:0}
+
+/* Editable name input in the profile header. */
+.profile-name-input{font-size:calc(17px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:inherit;padding:2px 4px;width:90%;max-width:280px;transition:border-color .15s}
+.profile-name-input:focus{border-bottom-color:hsl(var(--accent-000)/0.4)}
+.profile-name-input:hover{border-bottom-color:hsl(var(--border-300)/0.3)}
+.profile-email{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center}
+.profile-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1}
+.profile-row{display:flex;align-items:center;justify-content:space-between;font-size:calc(13px * var(--app-font-scale, 1));padding:8px 0;border-bottom:0.5px solid hsl(var(--border-300)/0.06)}
+.profile-row:last-child{border-bottom:none}
+.profile-row-label{color:hsl(var(--text-500))}
+.profile-row-value{color:hsl(var(--text-100));font-weight:500}
+.profile-actions{display:flex;flex-direction:column;gap:6px;padding:0 20px 20px}
+.profile-btn{width:100%;padding:10px;border-radius:10px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;text-align:center;cursor:pointer;transition:background-color .1s,color .1s}
+.profile-btn.signout{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
+.profile-btn.signout:hover{background:hsl(0 60% 15%)}
+.profile-btn.close-btn{background:hsl(var(--bg-200));color:hsl(var(--text-300))}
+.profile-btn.close-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-100))}
+.profile-btn.danger{background:hsl(var(--bg-300));color:hsl(0 60% 55%)}
+.profile-btn.danger:hover{background:hsl(0 60% 15%)}
+.profile-btn.warning{background:hsl(var(--bg-200));color:hsl(39 70% 50%)}
+.profile-btn.warning:hover{background:hsl(39 30% 12%)}
+.profile-section{padding:12px 0;border-top:0.5px solid hsl(var(--border-300)/0.08)}
+.profile-section:first-child{border-top:none;padding-top:0}
+.profile-section-title{font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.05em;padding:0 0 8px}
+.profile-toggle{appearance:none;display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.profile-toggle-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
+.profile-toggle-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding:0 0 4px}
+.profile-lang-toggle{display:inline-flex;padding:2px;border-radius:8px;background:hsl(var(--bg-300));cursor:pointer;font-size:calc(12px * var(--app-font-scale, 1));transition:background-color .15s;gap:0;border:0.5px solid hsl(var(--border-300)/0.15)}
+.profile-lang-toggle:hover{background:hsl(var(--bg-200))}
+.profile-lang-option{appearance:none;padding:4px 12px;border-radius:6px;color:hsl(var(--text-400));transition:background-color .12s,color .12s,box-shadow .12s;font-weight:500;line-height:1.3;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:inherit}
+.profile-lang-option.active{color:hsl(var(--text-100));background:hsl(var(--bg-000));box-shadow:0 1px 3px hsl(var(--always-black)/0.15)}
+.profile-action-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;gap:12px}
+.profile-action-label{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-100))}
+.profile-action-desc{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));flex:1}
+.profile-status-badge{font-size:calc(10px * var(--app-font-scale, 1));padding:2px 8px;border-radius:10px;font-weight:500}
+.profile-status-badge.yes{background:hsl(145 50% 90%);color:hsl(145 60% 28%);border:0.5px solid hsl(145 50% 65%/0.6)}
+.profile-status-badge.no{background:hsl(0 50% 92%);color:hsl(0 55% 35%);border:0.5px solid hsl(0 50% 70%/0.6)}
+[data-theme=socrates][data-mode=dark] .profile-status-badge.yes{background:hsl(145 30% 16%);color:hsl(145 50% 65%);border:0.5px solid hsl(145 40% 35%/0.6)}
+[data-theme=socrates][data-mode=dark] .profile-status-badge.no{background:hsl(0 30% 18%);color:hsl(0 55% 70%);border:0.5px solid hsl(0 40% 38%/0.6)}
+.profile-id-text{font-size:calc(11px * var(--app-font-scale, 1));font-family:var(--font-mono);color:hsl(var(--text-400));word-break:break-all}  
+.confirm-dialog{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;animation:fadeIn .12s}
+.confirm-dialog.hidden{display:none}
+.confirm-box{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:14px;width:90%;max-width:320px;padding:24px 20px 16px;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .15s var(--ease-out)}
+.confirm-title{font-size:calc(15px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));margin-bottom:8px;text-align:center}
+.confirm-msg{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5;margin-bottom:16px;text-align:center}
+.confirm-actions{display:flex;gap:8px;justify-content:center}
+.confirm-btn{padding:8px 20px;border-radius:8px;font-size:calc(13px * var(--app-font-scale, 1));font-weight:500;cursor:pointer;transition:background-color .1s}
+.confirm-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.confirm-btn.primary:hover{background:hsl(var(--accent-100))}
+.confirm-btn.danger{background:hsl(0 60% 15%);color:hsl(0 60% 55%)}
+.confirm-btn.danger:hover{background:hsl(0 60% 20%)}
+.confirm-btn.cancel{background:hsl(var(--bg-300));color:hsl(var(--text-300))}
+.confirm-btn.cancel:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.stg-toggle{display:flex;align-items:center;gap:10px;cursor:pointer}
+.stg-toggle-track{width:36px;height:20px;border-radius:10px;background:hsl(var(--bg-300)/0.6);border:0.5px solid hsl(var(--border-300)/0.5);transition:background .15s,border-color .15s;position:relative}
+.stg-toggle-track.on{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
+.stg-toggle-knob{width:16px;height:16px;border-radius:50%;background:hsl(var(--text-000));position:absolute;top:2px;left:2px;transition:left .15s;box-shadow:0 1px 2px hsl(var(--always-black)/0.25)}
+.stg-toggle-track.on .stg-toggle-knob{left:18px}
+
+/* Usage modal — heatmap */
+.usage-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s}
+.usage-overlay.hidden{display:none}
+.usage-modal{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:16px;width:min(720px,94vw);max-height:88vh;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:slideUp .2s var(--ease-out);display:flex;flex-direction:column}
+.usage-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:0.5px solid hsl(var(--border-300)/0.08);flex-shrink:0}
+.usage-title{font-size:calc(16px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100))}
+.usage-close{appearance:none;display:inline-flex;align-items:center;justify-content:center;border:0;background:transparent;font:inherit;cursor:pointer;color:hsl(var(--text-500));padding:4px;border-radius:6px;transition:background-color .1s,color .1s}
+.usage-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.usage-body{padding:18px 22px 22px;overflow-y:auto;flex:1}
+.usage-summary{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.usage-stat{background:hsl(var(--bg-100));border-radius:10px;padding:12px 16px;flex:1;min-width:100px}
+.usage-stat-val{font-size:calc(20px * var(--app-font-scale, 1));font-weight:700;color:hsl(var(--text-000))}
+.usage-stat-lbl{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));margin-top:2px}
+.usage-section-title{font-size:calc(12px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.usage-period-tabs{display:flex;gap:4px;margin-bottom:14px}
+.usage-period-tab{padding:5px 12px;border-radius:6px;font-size:calc(12px * var(--app-font-scale, 1));cursor:pointer;background:hsl(var(--bg-200));color:hsl(var(--text-400));transition:background-color .1s,color .1s;border:none;font-family:inherit}
+.usage-period-tab.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.usage-calendar-wrap{overflow-x:auto;padding:4px 0 8px}
+.usage-calendar{display:grid;grid-template-columns:auto repeat(53,1fr);gap:2px;font-size:calc(10px * var(--app-font-scale, 1));min-width:560px}
+
+
+.usage-cal-day{width:100%;aspect-ratio:1;border-radius:2px;min-width:10px;min-height:10px;position:relative}
+.usage-cal-day:hover{outline:2px solid hsl(var(--accent-000));outline-offset:-1px;z-index:1}
+.usage-cal-day-lbl{display:flex;align-items:center;justify-content:flex-end;font-size:calc(9px * var(--app-font-scale, 1));color:hsl(var(--text-500));padding-right:4px}
+.usage-cal-day.lv0{background:hsl(var(--bg-200))}
+.usage-cal-day.lv1{background:hsl(145 40% 70%/0.3)}
+.usage-cal-day.lv2{background:hsl(145 45% 55%/0.45)}
+.usage-cal-day.lv3{background:hsl(145 50% 40%/0.6)}
+.usage-cal-day.lv4{background:hsl(145 55% 30%/0.75)}
+.usage-cal-day.lv5{background:hsl(145 60% 22%/0.9)}
+[data-theme=socrates][data-mode=dark] .usage-cal-day.lv1{background:hsl(145 40% 50%/0.25)}
+[data-theme=socrates][data-mode=dark] .usage-cal-day.lv2{background:hsl(145 45% 45%/0.35)}
+[data-theme=socrates][data-mode=dark] .usage-cal-day.lv3{background:hsl(145 50% 35%/0.5)}
+[data-theme=socrates][data-mode=dark] .usage-cal-day.lv4{background:hsl(145 55% 30%/0.6)}
+[data-theme=socrates][data-mode=dark] .usage-cal-day.lv5{background:hsl(145 60% 25%/0.75)}
+.usage-legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:6px;font-size:calc(10px * var(--app-font-scale, 1));color:hsl(var(--text-500))}
+.usage-legend-cell{width:12px;height:12px;border-radius:2px}
+.usage-tooltip{position:fixed;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.15);border-radius:6px;padding:5px 8px;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-100));pointer-events:none;z-index:999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);display:none}
+.usage-breakdown{margin-top:18px;border-top:0.5px solid hsl(var(--border-300)/0.08);padding-top:14px}
+.usage-breakdown table{width:100%;border-collapse:collapse;font-size:calc(12px * var(--app-font-scale, 1))}
+.usage-breakdown th{border-bottom:0.5px solid hsl(var(--border-300)/0.1);padding:5px 8px;text-align:left;font-weight:600;color:hsl(var(--text-400));font-size:calc(10px * var(--app-font-scale, 1));text-transform:uppercase;letter-spacing:.04em}
+.usage-breakdown td{padding:5px 8px;border-bottom:0.5px solid hsl(var(--border-300)/0.05);color:hsl(var(--text-200))}
+.usage-breakdown td:last-child{text-align:right;font-weight:500}
+.usage-breakdown tr:hover td{background:hsl(var(--bg-100))}
+.usage-loading{display:flex;align-items:center;justify-content:center;padding:40px 20px;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));gap:8px}
+

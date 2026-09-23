@@ -1,0 +1,469 @@
+/* ==========================================================================
+   05-chat-landing.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: msgList transcript shell, start button, model pickers, landing chips, effort selector, tone preset, diagnostic card.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* #msgList is a sibling of .chat-view and owns the transcript viewport.
+   The composer is an in-flow flex item, so no measured bottom reserve or
+   duplicate transcript padding is needed. */
+.topic-setup{width:100%;display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:clamp(56px,12dvh,136px);flex:1;min-height:0;overflow-y:auto}
+/* .hidden variants on chat-mode siblings of #msgList - kept out
+   of layout so they stop claiming flex space inside .main-content
+   when chat-view is active. */
+.topic-setup.hidden{display:none}
+.diagnostic-view.hidden{display:none}
+.shared-banner.hidden{display:none}
+.exam-view.hidden{display:none}
+
+.chat-view.hidden,.chat-view-lifted.hidden{display:none}
+.main-inner.hidden{display:none}/* P_topic-kb-local — the landing must not reflow when the virtual
+   keyboard opens or closes: the focused input keeps its exact position
+   and the disclaimer below stays put (the keyboard may cover it — that
+   is intended, it must never "avoid" the keyboard). The controller only
+   scrolls this local surface when the focused editor is actually covered. */
+.topic-title{font-family:var(--font-display);font-size:calc(clamp(1.8rem,1.32rem + 1.9vw,2.5rem) * var(--app-font-scale, 1));font-weight:560;color:hsl(var(--text-200));text-align:center;line-height:1.28;animation:emptyStateIn .4s var(--ease-out) both}
+.topic-sub{font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;line-height:1.5;max-width:640px;white-space:nowrap;animation:emptyStateIn .4s var(--ease-out) 70ms both}
+/* UI-align: staged empty-state entrance (open-webui Placeholder —
+   greeting, subtitle, then input fade in one after another). */
+@keyframes emptyStateIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.topic-input-wrap{--composer-motion-duration:.34s;--composer-motion-ease:cubic-bezier(.22,1,.36,1);width:100%;max-width:720px;margin-top:clamp(16px,3dvh,50px);background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.24);border-radius:26px;overflow:hidden;box-shadow:0 .35rem 1.8rem hsl(var(--always-black)/5%);
+  position:relative;z-index:1;
+  /* Focus feedback glides on the same duration/curve as the chat composer
+     (see .chat-input-wrap) — the old .2s default-ease border/shadow snap
+     read as an abrupt "blink" when the landing input gained focus.
+     Focus feedback only changes the edge/shadow; the input stays fixed in place. */
+  transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(--composer-motion-duration) var(--composer-motion-ease),background-color var(--composer-motion-duration) var(--composer-motion-ease);
+  animation:emptyStateIn .4s var(--ease-out) 140ms both}
+.topic-input-wrap:focus-within{border-color:hsl(var(--accent-000)/0.5)}
+#topicInput{width:100%;border:none;outline:none;background:transparent;resize:none;font-size:calc(16px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-100));min-height:76px;max-height:320px;overflow-y:auto;font-family:var(--font-sans);padding:16px 20px 12px}
+#topicInput::placeholder{color:hsl(var(--text-400))}
+.topic-footer{display:flex;align-items:center;padding:0 20px 16px}
+.footer-left-group{display:flex;align-items:center;gap:4px;margin-right:auto}
+/* .start-btn has no :hover rule — drop transition: all (was paying compositor
+   cost watching properties that never animate). Active state still flips
+   color/background instantly. */
+.start-btn{padding:10px 24px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:500;background:hsl(var(--bg-300));color:hsl(var(--text-400));transition:background-color .22s cubic-bezier(.4,0,.2,1),color .22s cubic-bezier(.4,0,.2,1),box-shadow .22s cubic-bezier(.4,0,.2,1),transform .12s ease;cursor:pointer;border:none;font-family:var(--font-sans)}
+.start-btn:hover{background:hsl(var(--bg-400));color:hsl(var(--text-200))}
+.start-btn:active{transform:scale(.96)}
+.start-btn.active{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));box-shadow:0 2px 8px hsl(var(--accent-000)/0.18)}.start-btn.active:hover{background:hsl(var(--accent-100));box-shadow:0 4px 14px hsl(var(--accent-000)/0.28);transform:translateY(-1px)}
+.start-btn.active:active{transform:translateY(0) scale(.97)}
+/* Model picker — a single trigger with a dropdown of available models.
+   Matches the .extensions-trigger style so the two sit on the same row
+   without one looking heavier than the other. */
+.model-picker{position:relative;max-width:720px;width:100%;display:flex;justify-content:center}
+
+
+/* Unselected hover: subtle background tint only, no border-color jump —
+   matches the user's request that "未选中时不要有光影变化". */
+
+
+
+
+
+/* Only highlight on open when something is already picked. Otherwise the
+   border would suddenly change just because the menu opened, which the
+   user finds distracting. */
+
+
+
+.model-picker-menu{position:absolute;top:calc(100% + 4px);left:50%;min-width:220px;max-width:340px;max-height:280px;overflow-y:auto;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateX(-50%) translateY(-6px) scale(.96);transform-origin:top center;transition:opacity .14s ease,transform .22s cubic-bezier(.16,1,.3,1);will-change:transform,opacity}
+.model-picker[data-open="true"] .model-picker-menu{display:block;opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+.model-picker-menu .model-picker-item,
+.model-picker-menu .model-picker-divider,
+.model-picker-menu .model-picker-filter,
+.model-picker-menu .model-picker-add,
+.model-picker-menu .model-picker-empty{
+  animation:menuItemIn .26s cubic-bezier(.16,1,.3,1) both;
+}
+.model-picker-menu .model-picker-item:nth-child(1){animation-delay:0ms}
+.model-picker-menu .model-picker-item:nth-child(2){animation-delay:18ms}
+.model-picker-menu .model-picker-item:nth-child(3){animation-delay:36ms}
+.model-picker-menu .model-picker-item:nth-child(4){animation-delay:54ms}
+.model-picker-menu .model-picker-item:nth-child(5){animation-delay:72ms}
+.model-picker-menu .model-picker-item:nth-child(n+6){animation-delay:90ms}
+@keyframes menuItemIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
+.model-picker-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.model-picker-item.active{background:hsl(var(--accent-000)/0.08);color:hsl(var(--accent-000))}
+/* Per-row glyph (visual fingerprint of the provider, mirrors the
+   trigger). Sized 18x18 so the dropdown reads as a list of icons
+   even when the active provider has an unfamiliar URL. */
+.model-picker-item-glyph{
+  width:18px;height:18px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  color:hsl(var(--text-300));
+}
+.model-picker-item-glyph .model-glyph{width:18px;height:18px}
+.model-picker-item.active .model-picker-item-glyph{color:hsl(var(--accent-000))}
+.model-picker-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.model-picker-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.model-picker-item-sub{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.model-picker-item-check{flex-shrink:0;width:14px;height:14px;opacity:0;color:hsl(var(--accent-000));transition:opacity .1s}
+.model-picker-item.active .model-picker-item-check{opacity:1}
+.model-picker-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:3px 0}
+.model-picker-filter{display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid hsl(var(--border-300)/0.25);margin-bottom:3px;color:hsl(var(--text-500))}
+.model-picker-filter svg{width:12px;height:12px;flex-shrink:0}
+.model-picker-filter-input{flex:1;min-width:0;padding:3px 6px;border:1px solid hsl(var(--border-300)/0.4);border-radius:4px;background:transparent;color:hsl(var(--text-100));font-family:var(--font-sans);font-size:calc(12px * var(--app-font-scale, 1));outline:none}
+.model-picker-filter-input:focus{border-color:hsl(var(--accent-000)/0.6)}
+.model-picker-item:focus-visible{outline:1px solid hsl(var(--accent-000)/0.5);outline-offset:-1px}
+.model-picker-add{display:block;width:100%;padding:6px 9px;border:none;background:transparent;border-top:1px solid hsl(var(--border-300)/0.25);border-radius:0;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));margin-top:3px;transition:background .1s,color .1s}
+.model-picker-add:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.model-picker-add svg{display:none}
+.model-picker-empty{padding:10px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:center;line-height:1.4}
+
+/* Chat-header model picker — compact version of the same component,
+ * sits at the top-right of the chat view. Reuses .model-picker-item
+ * so the dropdown rows look identical. */
+.chat-model-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  flex-shrink:0;
+}
+.chat-model-trigger{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 8px;
+  border-radius:5px;
+  border:1px solid hsl(var(--border-300)/0.4);
+  font-size:calc(12px * var(--app-font-scale, 1));
+  color:hsl(var(--text-300));
+  background:transparent;
+  cursor:pointer;
+  font-family:var(--font-sans);
+  line-height:1.2;
+  max-width:200px;
+  flex-shrink:0;
+  transition:background-color .1s,color .1s,border-color .1s;
+}
+.chat-model-trigger:hover{
+  border-color:hsl(var(--accent-000)/0.4);
+  color:hsl(var(--text-100));
+  background:hsl(var(--bg-300));
+}
+.chat-model-trigger.has-model{
+  background:hsl(var(--accent-000)/0.06);
+  border-color:hsl(var(--accent-000)/0.35);
+  color:hsl(var(--accent-000));
+}
+.chat-model-trigger>svg:first-child{width:12px;height:12px;flex-shrink:0}
+/* P_chat-model-glyph — model-glyph SVG inside the chat-header trigger.
+   The element is the only visible identifier of the active provider;
+   it inherits the trigger's text colour so hover/active states flow
+   through naturally without a per-provider inline style. */
+.chat-model-glyph{
+  width:14px;height:14px;flex-shrink:0;
+  color:inherit;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.chat-model-glyph .model-glyph{width:14px;height:14px}
+/* chat-model-label is sr-only — the .chat-model-label rules below are
+   kept as a safety net so a stray reference that drops `sr-only`
+   still renders sensibly (no overflow ellipsis on a hidden element
+   either way). */
+.chat-model-label{
+  font-weight:500;
+}
+.chat-model-caret{width:9px;height:9px;flex-shrink:0;transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.chat-model-trigger.menu-open .chat-model-caret{transform:rotate(180deg)}
+.chat-model-menu.model-picker-menu{
+  position:absolute;
+  top:calc(100% + 4px);
+  right:0;
+  min-width:220px;
+  max-width:320px;
+  max-height:320px;
+  overflow-y:auto;
+  background:hsl(var(--bg-100));
+  border:1px solid hsl(var(--border-300)/0.4);
+  border-radius:6px;
+  box-shadow:0 4px 12px hsl(var(--always-black)/0.3);
+  padding:3px;
+  z-index:50;
+  display:block;
+}
+.chat-model-menu.model-picker-menu.hidden{display:none}
+/* Support data-open mechanism on the chat-model-wrap for the unified picker module. */
+.chat-model-wrap[data-open="true"] .chat-model-trigger{border-color:hsl(var(--accent-000)/0.5)}
+.chat-model-wrap[data-open="true"] .chat-model-caret{transform:rotate(180deg)}
+/* When the unified picker sets data-open="true" on the wrap, hide the
+.hidden fallback so the menu shows. The .hidden utility class is
+defined later in the file as `display:none !important`, so this
+override must also use !important to win the cascade. Without it
+the chat-header picker appears "open" (caret rotated, aria-expanded
+true) but the dropdown never shows — see commit history. */
+.chat-model-wrap[data-open="true"] .chat-model-menu.hidden{display:block !important;opacity:1;transform:translateY(0)}
+.chat-model-menu .model-picker-add{
+  margin-top:3px;
+  border-top:1px solid hsl(var(--border-300)/0.25);
+  padding-top:6px;
+}
+
+
+/* P_chatgpt-landing — composer quick-action chips row (撰写或编辑 /
+   查找资料), shown under the landing composer like ChatGPT. Pill
+   buttons with an icon + label; hover raises the surface subtly. */
+
+
+/* UI-align: staggered waterfall entrance for suggestion chips
+   (open-webui Suggestions.svelte — fadeInUp 200ms, 45ms/item). */
+@keyframes chipWaterfall{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* P_chatgpt-landing — reasoning-effort selector (高/中/低) inside the
+   composer footer. Compact pill trigger + a small pop-up menu that
+   opens upward (the picker sits at the bottom of the composer). */
+.effort-picker{position:relative;display:inline-flex}
+.effort-trigger{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;border:1px solid transparent;background:transparent;color:hsl(var(--text-400));font-size:calc(13px * var(--app-font-scale, 1));font-family:var(--font-sans);line-height:1.2;cursor:pointer;transition:background-color .18s ease,color .18s ease}
+.effort-trigger:hover{background:hsl(var(--bg-300)/0.6);color:hsl(var(--text-100))}
+.effort-caret{width:12px;height:12px;opacity:.65;transition:transform .18s ease}
+.effort-picker[data-open="true"] .effort-caret{transform:rotate(180deg)}
+/* P_effort-glyph — three ascending bars. Default render shows all three
+   as outline ghosts; the .effort-picker[data-effort="…"] rules below
+   fill the active number of bars (1 = low, 2 = medium, 3 = high) so the
+   icon doubles as a level indicator next to the text label. */
+.effort-glyph{width:15px;height:15px;flex:0 0 15px}
+.effort-glyph .effort-bar{fill:none;stroke:currentColor;transition:fill .15s ease,opacity .15s ease;opacity:.35}
+.effort-picker[data-effort="low"] .effort-glyph [data-bar="1"],
+.effort-picker[data-effort="medium"] .effort-glyph [data-bar="1"],
+.effort-picker[data-effort="medium"] .effort-glyph [data-bar="2"],
+.effort-picker[data-effort="high"] .effort-glyph [data-bar="1"],
+.effort-picker[data-effort="high"] .effort-glyph [data-bar="2"],
+.effort-picker[data-effort="high"] .effort-glyph [data-bar="3"]{
+  fill:currentColor;opacity:1
+}
+.effort-picker[data-open="true"] .effort-glyph{color:hsl(var(--text-200))}
+.effort-menu{position:absolute;bottom:calc(100% + 6px);left:0;min-width:220px;max-width:300px;max-height:min(60vh,360px);overflow-y:auto;padding:4px;border-radius:10px;background:hsl(var(--bg-000));border:1px solid hsl(var(--border-300)/0.3);box-shadow:0 8px 28px hsl(var(--always-black)/16%);display:none;flex-direction:column;gap:1px;z-index:1200}
+.effort-picker[data-open="true"] .effort-menu{display:flex}
+.effort-menu.portal-open{display:flex}
+.picker-section-label{padding:6px 10px 3px;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;letter-spacing:.02em;color:hsl(var(--text-500));text-transform:none}
+.effort-divider{height:1px;background:hsl(var(--border-300)/0.25);margin:4px 2px}
+.effort-menu .model-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
+.effort-menu .model-picker-item:hover{background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-100))}
+.effort-menu .model-picker-item.active{background:hsl(var(--accent-000)/0.08);color:hsl(var(--accent-000))}
+.effort-menu .model-picker-add{display:block;width:100%;padding:6px 10px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale, 1));transition:background .1s,color .1s}
+.effort-menu .model-picker-add:hover{background:hsl(var(--bg-300)/0.7);color:hsl(var(--text-200))}
+.effort-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:0;border-radius:7px;background:transparent;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));font-family:var(--font-sans);cursor:pointer;text-align:left;transition:background-color .15s ease}
+.effort-item:hover{background:hsl(var(--bg-300)/0.7)}
+.effort-item.active{color:hsl(var(--accent-000))}
+.effort-item.active::after{content:"";width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex-shrink:0}
+.effort-item-note{margin-left:auto;font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-align:right;line-height:1.25;max-width:150px}
+.effort-item.active .effort-item-note{color:hsl(var(--accent-000)/0.7)}
+
+.extensions-picker{position:relative}
+
+
+
+
+
+
+
+
+
+.extensions-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;max-width:300px;background:hsl(var(--bg-100));border:1px solid hsl(var(--border-300)/0.4);border-radius:6px;box-shadow:0 4px 12px hsl(var(--always-black)/0.3);padding:3px;display:none;z-index:50;opacity:0;transform:translateY(-6px) scale(.96);transform-origin:top right;transition:opacity .14s ease,transform .22s cubic-bezier(.16,1,.3,1);will-change:transform,opacity}
+.extensions-picker[data-open="true"] .extensions-menu{display:block;opacity:1;transform:translateY(0) scale(1)}
+.extensions-menu .extensions-item{
+  animation:menuItemIn .26s cubic-bezier(.16,1,.3,1) both;
+}
+.extensions-menu .extensions-item:nth-child(1){animation-delay:0ms}
+.extensions-menu .extensions-item:nth-child(2){animation-delay:24ms}
+.extensions-menu .extensions-item:nth-child(3){animation-delay:48ms}
+.extensions-menu .extensions-item:nth-child(n+4){animation-delay:72ms}
+.extensions-item{display:flex;align-items:center;gap:8px;width:100%;padding:6px 9px;border:none;background:transparent;border-radius:4px;cursor:pointer;font-family:var(--font-sans);text-align:left;color:hsl(var(--text-200));font-size:calc(13px * var(--app-font-scale, 1));line-height:1.3;transition:background .1s,color .1s}
+.extensions-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.extensions-item.on{color:hsl(var(--text-100))}
+.extensions-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.extensions-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.extensions-item-icon{flex-shrink:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-400));transition:color .1s}
+.extensions-item.on .extensions-item-icon{color:hsl(var(--accent-000))}
+.extensions-item-icon svg{width:16px;height:16px}
+.extensions-item-check{flex-shrink:0;width:14px;height:14px;border-radius:3px;border:1px solid hsl(var(--border-500));display:flex;align-items:center;justify-content:center;transition:background-color .1s,border-color .1s;background:transparent}
+.extensions-item.on .extensions-item-check{background:hsl(var(--accent-000));border-color:hsl(var(--accent-000))}
+.extensions-item-check svg{width:10px;height:10px;stroke:hsl(var(--oncolor-100));opacity:0}
+.extensions-item.on .extensions-item-check svg{opacity:1}
+
+@media (max-width:600px){}
+@media (max-width:768px){.model-picker-menu{left:0;right:auto;transform-origin:top left;transform:translateY(-6px) scale(.96);min-width:200px;max-width:calc(100vw - 24px)}.model-picker[data-open="true"] .model-picker-menu{transform:translateY(0) scale(1)}}
+
+.settings-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.settings-btn-mini{padding:4px 10px;border-radius:8px;font-size:calc(12px * var(--app-font-scale, 1));background:transparent;border:0.5px solid hsl(var(--border-300)/0.3);color:hsl(var(--text-200));cursor:pointer;transition:background-color .1s,border-color .1s}
+.settings-btn-mini:hover{background:hsl(var(--bg-300));border-color:hsl(var(--border-200)/0.5)}
+.provider-list{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;padding:2px}
+.provider-empty{padding:12px;text-align:center;font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));border:1px dashed hsl(var(--border-300)/0.3);border-radius:10px}
+.provider-row{display:flex;gap:8px;align-items:flex-start;padding:10px;border:0.5px solid hsl(var(--border-300)/0.2);border-radius:10px;background:hsl(var(--bg-100));transition:background-color .15s,border-color .15s}
+.provider-row.active{border-color:hsl(var(--accent-000)/0.4);background:hsl(var(--accent-000)/0.05)}
+.provider-active-btn{background:transparent;border:none;cursor:pointer;font-size:calc(18px * var(--app-font-scale, 1));line-height:1;color:hsl(var(--text-300));padding:2px 4px;flex-shrink:0;transition:color .1s}
+.provider-row.active .provider-active-btn{color:hsl(var(--accent-000))}
+.provider-row.built-in-row{cursor:default}
+.provider-row.built-in-row .provider-active-btn{cursor:pointer}
+.provider-builtin-label{font-weight:600;color:hsl(var(--text-100));display:flex;align-items:center;gap:8px}
+.provider-builtin-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;background:hsl(var(--accent-000)/0.14);color:hsl(var(--accent-000))}
+.provider-builtin-model{font-size:12px;color:hsl(var(--text-400));font-family:var(--mono-font,ui-monospace,monospace)}
+.provider-builtin-hint{font-size:12px;color:hsl(var(--text-500));line-height:1.45;margin-top:2px}
+/* Tone preset selector -- radio-button-style card grid in the settings modal. */
+.tone-preset-options{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px 0}
+.tone-preset-btn{display:flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:8px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.2);color:hsl(var(--text-200));cursor:pointer;transition:background-color .12s,border-color .12s;text-align:left;font-family:inherit}
+.tone-preset-btn:hover{background:hsl(var(--bg-200));border-color:hsl(var(--border-300)/0.4)}
+.tone-preset-btn.active{background:hsl(var(--accent-000)/0.08);border-color:hsl(var(--accent-000)/0.4);color:hsl(var(--text-100))}
+.tone-preset-label{font-size:calc(13px * var(--app-font-scale, 1));font-weight:600}
+.tone-preset-desc{font-size:calc(10.5px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.3}
+.tone-preset-btn.active .tone-preset-desc{color:hsl(var(--text-300))}
+.provider-active-btn:hover{color:hsl(var(--accent-000))}
+.provider-fields{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.provider-fields .settings-input{padding:7px 10px;font-size:calc(12px * var(--app-font-scale, 1))}
+/* P_attachments-multimodal — user-controlled vision toggle rendered
+   below the model input. The label wraps the checkbox + localized
+   span so a single click toggles the flag; the change handler in
+   main.js keeps the row state in sync with the in-memory array. */
+.provider-multimodal{display:flex;align-items:center;gap:6px;font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-300));cursor:pointer;-webkit-user-select:none;user-select:none;padding:2px 2px 0}
+.provider-multimodal input[type="checkbox"]{cursor:pointer;accent-color:hsl(var(--accent-000));transform:scale(1.05)}
+.provider-multimodal:hover{color:hsl(var(--text-100))}
+.provider-del{background:transparent;border:none;cursor:pointer;color:hsl(var(--text-400));font-size:calc(18px * var(--app-font-scale, 1));line-height:1;padding:2px 6px;flex-shrink:0;border-radius:6px;transition:background-color .1s,color .1s}
+.provider-del:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.diagnostic-view{width:100%;display:flex;flex-direction:column;gap:24px;flex:1;min-height:0;overflow-y:auto;padding-right:4px;max-height:100%}
+/* When the diagnostic card is very tall (long question + long
+   options), pin the action row to the bottom of the visible area
+   so the Next / Submit button is always reachable. */
+.diag-card{display:flex;flex-direction:column}
+.diag-actions{margin-top:auto;padding-top:20px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.diag-actions-right{display:flex;gap:8px;align-items:center;margin-left:auto}
+.diag-btn{padding:9px 20px;border-radius:9px;font-size:calc(13px * var(--app-font-scale,1));font-weight:500;cursor:pointer;transition:background .12s,color .12s,border-color .12s,opacity .12s;border:none;line-height:1.4;display:inline-flex;align-items:center;gap:4px}
+.diag-btn-back{color:hsl(var(--text-400));background:transparent;border:0.5px solid hsl(var(--border-300)/0.12)}
+.diag-btn-back:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300));border-color:hsl(var(--border-200)/0.25)}
+.diag-btn-back.hidden{opacity:0;pointer-events:none}
+.diag-btn-skip{color:hsl(var(--text-400));background:transparent}
+.diag-btn-skip:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300)/0.5)}
+.diag-btn-continue{color:hsl(var(--text-400));background:hsl(var(--bg-300))}
+.diag-btn-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.diag-btn-continue.enabled:hover{background:hsl(var(--accent-100))}
+.diag-btn-continue:disabled{cursor:default;opacity:.45}
+.diag-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px}
+.diag-loading-text{color:hsl(var(--text-400));font-size:calc(14px * var(--app-font-scale, 1));text-align:center}
+
+/* Diagnostic progress bar — shows the user which stage the
+   loading is at and how far through it is. */
+.diag-progress{width:100%;max-width:300px;margin:4px auto 0}
+.diag-progress-bar{width:100%;height:3px;border-radius:2px;background:hsl(var(--border-300)/0.15);overflow:hidden;position:relative}
+.diag-progress-fill{height:100%;border-radius:2px;background:hsl(var(--accent-000));transition:width .45s cubic-bezier(.4,0,.2,1);width:0%}
+.diag-progress-step{font-size:calc(12px * var(--app-font-scale,1));color:hsl(var(--text-400));margin-top:8px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;transition:color .3s}
+.diag-progress-step .diag-progress-spin{display:inline-block;width:10px;height:10px;border:1.5px solid hsl(var(--border-300)/0.2);border-top-color:hsl(var(--accent-000));border-radius:50%;animation:loadingSpin .8s linear infinite;flex-shrink:0}
+/* U-H3 — cancel button under the diagnostic loading spinner. */
+.diag-cancel-btn{margin-top:10px;background:transparent;border:0.5px solid hsl(var(--border-300)/0.4);color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale,1));padding:6px 16px;border-radius:8px;cursor:pointer;transition:color .12s,border-color .12s,background .12s}
+.diag-cancel-btn:hover{color:hsl(var(--text-100));border-color:hsl(var(--border-300)/0.7);background:hsl(var(--bg-300))}
+/* U-H3 — explicit generation timeout / failure prompt (replaces the
+   old silent mock fallback) with Retry + Use built-in actions. */
+.diag-error{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:56px 20px;text-align:center}
+.diag-error-title{color:hsl(var(--text-100));font-size:calc(15px * var(--app-font-scale,1));font-weight:600}
+.diag-error-reason{color:hsl(var(--text-400));font-size:calc(12px * var(--app-font-scale,1));max-width:340px;word-break:break-word}
+.diag-error-actions{display:flex;gap:10px;margin-top:4px}
+.diag-error-retry,.diag-error-builtin{font-size:calc(13px * var(--app-font-scale,1));font-weight:600;padding:8px 18px;border-radius:8px;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.diag-error-retry{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0}
+.diag-error-retry:hover{background:hsl(var(--accent-100))}
+.diag-error-builtin{background:transparent;color:hsl(var(--text-300));border:0.5px solid hsl(var(--border-300)/0.5)}
+.diag-error-builtin:hover{color:hsl(var(--text-100));background:hsl(var(--bg-300))}
+.diag-card{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.12);border-radius:16px;padding:24px;transition:opacity .3s,transform .3s}
+.diag-num{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.diag-text{font-size:calc(16px * var(--app-font-scale, 1));color:hsl(var(--text-100));line-height:1.55;margin-bottom:18px}
+.diag-opts{display:flex;flex-direction:column;gap:6px}
+.diag-opt{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.1);font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-200));transition:background-color .1s,color .1s,border-color .1s;cursor:pointer;text-align:left;width:100%}
+.diag-opt:hover{border-color:hsl(var(--border-200)/0.3);background:hsl(var(--always-white)/0.03);color:hsl(var(--text-100))}
+.diag-opt.selected{border-color:hsl(var(--accent-000)/0.25);background:hsl(var(--accent-000)/0.06);color:hsl(var(--text-100))}
+.diag-opt-letter{width:22px;height:22px;border-radius:50%;border:1px solid hsl(var(--text-500));display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-400));flex-shrink:0;transition:background-color .1s,color .1s,border-color .1s}
+.diag-opt.selected .diag-opt-letter{border-color:hsl(var(--accent-000));background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.diag-opt-text{font-size:calc(14px * var(--app-font-scale, 1));line-height:1.55;color:hsl(var(--text-200))}
+.diag-opt-text p{margin-bottom:4px}.diag-opt-text p:last-child{margin-bottom:0}
+.diag-opt-text strong{font-weight:600;color:hsl(var(--text-100))}.diag-opt-text em{font-style:italic}
+.diag-opt-text code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.diag-opt-text .katex{font-size:1em}
+.diag-text h1{font-size:1.3em;font-weight:600;color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+.diag-text h2{font-size:1.15em;font-weight:600;color:hsl(var(--text-000));margin:12px 0 4px;line-height:1.3}
+.diag-text h3{font-size:1.05em;font-weight:600;color:hsl(var(--text-100));margin:10px 0 4px;line-height:1.3}
+.diag-text ul,.diag-text ol{padding-left:20px;margin:4px 0 8px}
+.diag-text li{margin-bottom:2px}
+.diag-text li::marker{color:hsl(var(--text-500))}
+.diag-text code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.diag-text pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:10px;padding:10px 12px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale, 1));line-height:1.5;margin:6px 0;color:hsl(var(--text-200))}
+.diag-text pre code{background:none;padding:0}
+.diag-text blockquote{border-left:2px solid hsl(var(--accent-000)/0.4);padding:4px 0 4px 14px;margin:6px 0;color:hsl(var(--text-300));font-style:italic}
+.diag-text table{border-collapse:collapse;width:100%;margin:6px 0;font-size:calc(13px * var(--app-font-scale, 1))}
+.diag-text th,.diag-text td{border:0.5px solid hsl(var(--border-300)/0.15);padding:6px 10px;text-align:left}
+.diag-text th{background:hsl(var(--bg-200));font-weight:600;color:hsl(var(--text-100))}
+.diag-text td{color:hsl(var(--text-200))}
+.diag-text a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
+.diag-nav{display:flex;justify-content:space-between;align-items:center}
+.diag-nav button{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));padding:8px 14px;border-radius:6px;transition:background-color .1s,color .1s}
+.diag-nav button:hover{color:hsl(var(--text-200));background:hsl(var(--bg-300))}
+.diag-nav .diag-continue{background:hsl(var(--bg-300));font-weight:500}
+.diag-nav .diag-continue.enabled{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
+.diag-nav .diag-continue.enabled:hover{background:hsl(var(--accent-100))}
+/* P_test-interpretation — diagnostic results interpretation screen. */
+.diag-results{max-width:600px;margin:0 auto;padding:8px 4px;display:flex;flex-direction:column;gap:20px}
+.diag-results-title{font-size:calc(18px * var(--app-font-scale, 1));font-weight:600;color:hsl(var(--text-100));text-align:center;margin-bottom:4px}
+.diag-results-notice{display:flex;gap:12px;padding:14px 16px;background:hsl(var(--accent-000)/0.06);border:0.5px solid hsl(var(--accent-000)/0.2);border-radius:12px}
+.diag-results-notice-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-style:italic;font-family:Georgia,serif}
+.diag-results-notice-text{font-size:calc(13px * var(--app-font-scale, 1));line-height:1.6;color:hsl(var(--text-200))}
+.diag-results-notice-text strong{color:hsl(var(--text-100));font-weight:600}
+.diag-results-grid{display:flex;flex-direction:column;gap:8px}
+.diag-result-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:0.5px solid hsl(var(--border-300)/0.15);background:hsl(var(--bg-000))}
+.diag-result-card.fuzzy{border-color:hsl(38 60% 50%/0.25);background:hsl(38 60% 50%/0.05)}
+.diag-result-card.blank{border-color:hsl(var(--border-300)/0.15)}
+.diag-result-card-num{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:hsl(var(--bg-300));color:hsl(var(--text-300));display:inline-flex;align-items:center;justify-content:center;font-size:calc(13px * var(--app-font-scale, 1));font-weight:600;font-family:var(--font-mono)}
+.diag-result-card.fuzzy .diag-result-card-num{background:hsl(38 60% 50%/0.15);color:hsl(38 60% 40%)}
+.diag-result-card-name{flex:1;font-size:calc(14px * var(--app-font-scale, 1));color:hsl(var(--text-100));font-weight:500}
+.diag-result-card-status{font-size:calc(11px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.diag-result-card.fuzzy .diag-result-card-status{color:hsl(38 60% 45%)}
+.diag-results-summary{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));text-align:center;padding:4px 0}
+.diag-results-actions{display:flex;justify-content:center;padding:8px 0 4px}
+.diag-results-continue{padding:12px 32px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:600;background:hsl(var(--accent-000));color:hsl(var(--oncolor-100));border:0;cursor:pointer;transition:background .15s;font-family:inherit}
+.diag-results-continue:hover{background:hsl(var(--accent-100))}
+/* Task 3.4 — teaching-plan view in the Knowledge sidebar. Kept
+   minimal and consistent with the .diag-* / .kb-* styles: same
+   font-scale pattern, same colour tokens, text markers (no emoji). */
+.teaching-plan{display:flex;flex-direction:column;gap:2px;padding:4px 4px 10px;margin-bottom:6px;border-bottom:0.5px solid hsl(var(--border-300)/0.12)}
+.teaching-plan-title{font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em;padding:4px 8px 6px}
+.teaching-plan-subtopic{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-300));transition:background .06s}
+.teaching-plan-subtopic.current{background:hsl(var(--accent-000)/0.08);color:hsl(var(--text-100))}
+.teaching-plan-subtopic.done{color:hsl(var(--text-500))}
+.teaching-plan-marker{flex-shrink:0;width:38px;font-size:calc(10px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-500));font-family:var(--font-mono)}
+.teaching-plan-subtopic.current .teaching-plan-marker{color:hsl(var(--accent-000))}
+.teaching-plan-subtopic.done .teaching-plan-marker{color:hsl(145 50% 50%)}
+.teaching-plan-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.teaching-plan-stage{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--accent-000));background:hsl(var(--accent-000)/0.12);padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+/* U-M1 — substantive-answer depth counter (n/3) next to the stage pill. */
+.teaching-plan-depth{font-size:calc(9px * var(--sidebar-font-scale));font-weight:600;color:hsl(var(--text-400));background:hsl(var(--bg-300)/0.8);padding:2px 6px;border-radius:6px;letter-spacing:.03em;flex-shrink:0;font-variant-numeric:tabular-nums;cursor:default}
+.teaching-plan-status{font-size:calc(9px * var(--sidebar-font-scale));color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+/* Task 6.4 — cross-session knowledge-boundary section. */
+
+
+
+
+
+
+.kb-cross-summary{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 4px}
+.kb-cross-count{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-400));padding:2px 8px;border-radius:6px;background:hsl(var(--bg-300))}
+.kb-cross-count.kb-cross-internalized{color:hsl(145 50% 65%);background:hsl(145 50% 50%/0.14)}
+.kb-cross-count.kb-cross-fuzzy{color:hsl(43 77% 70%);background:hsl(43 77% 62%/0.14)}
+.kb-cross-count.kb-cross-blank{color:hsl(var(--text-500));background:hsl(var(--bg-300))}
+.kb-cross-nodes{display:flex;flex-direction:column;gap:1px}
+.kb-cross-node{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:7px;font-size:calc(11.5px * var(--sidebar-font-scale));color:hsl(var(--text-300))}
+.kb-cross-node-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kb-cross-node-status{font-size:calc(9px * var(--sidebar-font-scale));text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.kb-cross-status-internalized .kb-cross-node-status{color:hsl(145 50% 65%)}
+.kb-cross-status-fuzzy .kb-cross-node-status{color:hsl(43 77% 70%)}
+.kb-cross-status-blank .kb-cross-node-status{color:hsl(var(--text-500))}
+.kb-cross-empty{font-size:calc(11px * var(--sidebar-font-scale));color:hsl(var(--text-500));padding:6px 2px;line-height:1.5}

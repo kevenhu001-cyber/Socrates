@@ -17,7 +17,7 @@ import {
   shouldAutoSearchTutor,
 } from '../tutor/policy.js';
 import { fetchWebContext } from './webSearch.js';
-import { isSlashCommandPaletteOpen } from './templateSlash.js';
+import { isSlashCommandPaletteOpen, setActiveTemplate } from './templateSlash.js';
 import { addMessage } from './messages.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
@@ -86,6 +86,13 @@ export async function startSession(){
   if(isSlashCommandPaletteOpen()) return;
   var topic=getComposerMarkdown("topic").trim();
   if(!topic)return;
+  /* Keep a mode the user deliberately selected on the landing composer.
+     resetSessionTransients clears stale templates from the previous session,
+     but this fresh first turn still needs its selected image/skill prompt. */
+  var startTemplate = null;
+  try {
+    if (window._activeTemplate) startTemplate = Object.assign({}, window._activeTemplate);
+  } catch (_) { /* no active prompt template */ }
   /* P_composer-plugins — selected connected apps are a presentation-layer
      context selector. Keep the persisted topic/user bubble clean, while the
      model receives the same natural-language connector hints used by the
@@ -229,6 +236,7 @@ export async function startSession(){
          composer draft, plan fields, _pendingChat*) before assembling the
          first model request. */
       resetSessionTransients();
+      if (startTemplate) setActiveTemplate(startTemplate);
       /* P_attachments-start — only block on buildMessageContent when
          the topic actually carries attachments (in-flight uploads).
          Plain-text topics skip the await entirely, so the

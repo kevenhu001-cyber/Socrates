@@ -34,13 +34,13 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'webSearch', 'write', 'explore', 'analyze', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'webSearch', 'write', 'explore', 'analyze', 'exam', 'skills', 'createImage']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'write',
-    'explore', 'analyze', 'exam', 'skills', 'webSearch', 'extensiveThinking',
+    'camera', 'photos', 'upload', 'createImage', 'webSearch', 'write',
+    'explore', 'analyze', 'exam', 'skills', 'extensiveThinking',
   ]);
 });
 
@@ -70,14 +70,14 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items > .composer-tools-item');
-  await expect(desktopItems).toHaveCount(7);
+  await expect(desktopItems).toHaveCount(8);
   await expect(desktopItems.nth(0)).toContainText('Upload files');
   /* Footer filter narrows the expanded list. */
   await menu.locator('.composer-tools-footer-search input').fill('exam');
   await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(1);
   await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item').first()).toContainText('Generate exam');
   await menu.locator('.composer-tools-footer-search input').fill('');
-  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(7);
+  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(8);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,
@@ -199,19 +199,21 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('16px');
-  expect(mobileMenuStyle.bottomRadius).toBe('16px');
+  expect(mobileMenuStyle.radius).toBe('20px');
+  expect(mobileMenuStyle.bottomRadius).toBe('20px');
   // Wait for the entrance animation to settle before measuring geometry.
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();
   expect(sheetBox).not.toBeNull();
   // Floating-card geometry at the 390px reference width: inset from the
-  // left edge and lifted above the composer instead of a bottom sheet.
+  // left edge and stacked over the composer's left side instead of becoming
+  // a full-width bottom sheet.
   expect(sheetBox.x).toBeGreaterThanOrEqual(12);
   expect(sheetBox.x).toBeLessThanOrEqual(20);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(240);
-  expect(sheetBox.width).toBeLessThanOrEqual(260);
-  expect(sheetBox.y + sheetBox.height).toBeLessThan(820);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(232);
+  expect(sheetBox.width).toBeLessThanOrEqual(240);
+  expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(830);
+  expect(Math.abs((sheetBox.y + sheetBox.height) - (before.y + before.height))).toBeLessThanOrEqual(2);
   // The expanded card never grows past the viewport's vertical midline.
   expect(sheetBox.height).toBeLessThanOrEqual(844 / 2);
   // The open-state class still owns dismissal state, but the card paints

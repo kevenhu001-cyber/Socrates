@@ -1,0 +1,203 @@
+/* ==========================================================================
+   00-foundations.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: fontsource imports, shared timing/motion tokens, view transitions, tool-card tokens, global focus ring, hide-mode gate, a11y utilities, scrollbars.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* P_perf-self-host — the original Google Fonts set is bundled from
+   @fontsource and served from this origin, so no page request touches
+   fonts.googleapis.com and CJK glyphs come from the locally hosted Noto
+   Sans SC subsets.
+
+   Latin sans face: Plus Jakarta Sans (primary) + Inter (fallback).
+   Plus Jakarta Sans is the planned western face — a humanist-geometric
+   sans with warmer, more distinctive letterforms that pairs with the
+   Newsreader serif display face. Inter remains as a local fallback so
+   mixed Chinese/Latin strings never silently fall back to a
+   platform-dependent western face. Both families are bundled from
+   @fontsource so production and local dev share the same file set. */
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/newsreader/400.css";
+@import "@fontsource/newsreader/500.css";
+@import "@fontsource/newsreader/400-italic.css";
+@import "@fontsource/noto-sans-sc/400.css";
+@import "@fontsource/noto-sans-sc/500.css";
+@import "@fontsource/noto-sans-sc/600.css";
+
+:root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
+/* Shared timing tokens for composer focus expansion. Keyboard avoidance is
+   deliberately not part of this CSS timeline: ui/keyboard/index.ts owns the
+   inset animation frame by frame so a browser resize cannot drop the input
+   straight onto its final position. --composer-motion-duration and
+   --composer-motion-ease remain aliases for the existing composer rules. */
+:root{
+  --chat-motion-duration:.34s;
+  --chat-motion-ease:cubic-bezier(.22,1,.36,1);
+  --composer-motion-duration:var(--chat-motion-duration);
+  --composer-motion-ease:var(--chat-motion-ease);
+}
+/* Keyboard inset motion is driven by ui/keyboard/index.ts; the browser only
+   consumes the interpolated value below. */
+html[data-mode=dark]{color-scheme:dark}
+html[data-mode=light]{color-scheme:light}
+[data-theme=socrates][data-mode=dark]{--bg-000:0 0% 5%;--bg-100:0 0% 13%;--bg-200:0 0% 16%;--bg-300:0 0% 21%;--bg-400:0 0% 2%;--text-000:0 0% 100%;--text-100:0 0% 100%;--text-200:0 0% 80%;--text-300:0 0% 80%;--text-400:0 0% 65%;--text-500:0 0% 55%;--border-100:0 0% 22%;--border-200:0 0% 22%;--border-300:0 0% 22%;--border-400:0 0% 22%;--accent-000:0 0% 100%;--accent-100:0 0% 88%;--accent-900:0 0% 20%;--brand-000:0 0% 88%;--brand-100:0 0% 100%;--oncolor-100:0 0% 8%;--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.25}
+[data-theme=socrates][data-mode=light]{--bg-000:0 0% 100%;--bg-100:0 0% 98%;--bg-200:0 0% 95%;--bg-300:0 0% 91%;--bg-400:0 0% 100%;--text-000:0 0% 8%;--text-100:0 0% 13%;--text-200:0 0% 27%;--text-300:0 0% 36%;--text-400:0 0% 44%;--text-500:0 0% 52%;--border-100:0 0% 90%;--border-200:0 0% 84%;--border-300:0 0% 76%;--border-400:0 0% 70%;--accent-000:0 0% 10%;--accent-100:0 0% 0%;--accent-900:0 0% 90%;--brand-000:0 0% 14%;--brand-100:0 0% 0%;--oncolor-100:0 0% 100%;--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB",sans-serif;--font-display:"Newsreader","Noto Sans SC",ui-serif,Georgia,"Times New Roman","Songti SC","SimSun",serif;--font-mono:"JetBrains Mono","Cascadia Code","Fira Code",ui-monospace,monospace;--ease-out:cubic-bezier(0.16,1,0.3,1);--ease-spring:cubic-bezier(0.34,1.3,0.64,1);--cell-border-alpha:0.6}
+/* Keep the Latin face first in Chinese UI as well. Plus Jakarta Sans and
+   Inter have no CJK glyphs, so Noto Sans SC is still selected
+   automatically for Chinese characters while Latin text keeps the intended
+   western rhythm. */
+html[data-theme=socrates][data-mode]:lang(zh){--font-sans:"Plus Jakarta Sans","Inter","Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;--font-display:"Newsreader","Noto Sans SC","PingFang SC","Hiragino Sans GB",ui-serif,Georgia,"Times New Roman",serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+/* ─── View Transition — cross-browser consistent ── */
+::view-transition-old(root){animation:.3s ease-out vt-fade-out;z-index:1}
+::view-transition-new(root){animation:.3s ease-out vt-fade-in;z-index:2}
+/* Scoped single-element swaps (withElementSwapTransition): while the html
+   element carries .vt-scoped-swap, the root snapshot must NOT cross-fade —
+   only the named element (a message row finishing its stream) morphs.
+   The group rule also shrinks the default UA morph duration so the
+   collapse of streaming-only chrome reads as a quick settle, not a wipe. */
+html.vt-scoped-swap::view-transition-old(root),
+html.vt-scoped-swap::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-timing-function:var(--ease-out,ease-out)}
+@keyframes vt-fade-out{from{opacity:1}to{opacity:0}}
+@keyframes vt-fade-in{from{opacity:0}to{opacity:1}}
+:root{--surface-page:var(--bg-100);--surface-raised:var(--bg-200);--surface-overlay:var(--bg-000);--surface-hover:var(--bg-300);--surface-input:var(--bg-000);--text-primary:var(--text-100);--text-secondary:var(--text-400);--text-tertiary:var(--text-500);--border-default:var(--border-300);--border-subtle:var(--border-300);--accent:var(--accent-000);--accent-bg:var(--accent-900);--font-scale:var(--app-font-scale,1);--app-sidebar-width:16.25rem;/* 260px — default until sidebarResize.js restores the stored width */--sidebar-width:var(--app-sidebar-width,18rem);--sidebar-font-scale:calc(var(--app-font-scale,1) * 0.92)}
+
+/* ── Tool card design tokens (P_tool-card-minimal) ─────────────────
+   A grayscale, ChatGPT-style visual language shared by every
+   tool-card surface: composer tools menu, inline tool rows, agent
+   tool card (share/history), sources card, skill row, and storage
+   row. Every card reads from these tokens so a design tweak lands
+   in one place rather than six. */
+:root{
+  --tool-card-bg:hsla(0,0%,100%,.062);
+  --tool-card-bg-hover:hsla(0,0%,100%,.1);
+  --tool-card-bg-sunken:hsla(0,0%,100%,.04);
+  --tool-card-border:hsla(0,0%,100%,.095);
+  --tool-card-border-strong:hsla(0,0%,100%,.15);
+  --tool-card-text:hsl(var(--text-200));
+  --tool-card-text-muted:hsl(var(--text-350,var(--text-400)));
+  --tool-card-text-subtle:hsl(var(--text-500));
+  --tool-card-icon:hsl(var(--text-350,var(--text-300)));
+  --tool-card-icon-hover:hsl(var(--text-100));
+  --tool-card-radius:14px;
+  --tool-card-radius-sm:11px;
+  --tool-card-pad-y:10px;
+  --tool-card-pad-x:13px;
+  --tool-card-title-size:14px;
+  --tool-card-title-weight:550;
+  --tool-card-desc-size:12.5px;
+  --tool-card-desc-weight:400;
+  --tool-card-meta-size:11px;
+  --tool-card-meta-weight:400;
+  --tool-card-danger:hsl(0,60%,62%);
+  --tool-card-danger-soft:hsla(0,60%,62%,.12);
+  --tool-card-danger-soft-strong:hsla(0,60%,62%,.22);
+  --tool-card-focus:hsla(0,0%,100%,.35)
+}
+
+[data-theme=socrates][data-mode=light]{
+  --tool-card-bg:hsla(40,10%,16%,.05);
+  --tool-card-bg-hover:hsla(40,10%,16%,.08);
+  --tool-card-bg-sunken:hsla(40,10%,16%,.032);
+  --tool-card-border:hsla(40,12%,10%,.11);
+  --tool-card-border-strong:hsla(40,12%,10%,.19);
+  --tool-card-text:hsl(var(--text-200));
+  --tool-card-text-muted:hsl(var(--text-350,var(--text-400)));
+  --tool-card-text-subtle:hsl(var(--text-500));
+  --tool-card-icon:hsl(var(--text-350,var(--text-400)));
+  --tool-card-icon-hover:hsl(var(--text-100));
+  --tool-card-focus:hsla(40,12%,10%,.35)
+}
+/* ── Inline tool row tokens (P_tool-inline-minimal) ────────────────
+   Borderless row language: a bare line icon plus one muted text line.
+   Live rows and serialized history rows read from the same tokens so
+   old message HTML re-renders in the same visual language. */
+:root{
+  --inline-row-height:24px;
+  --inline-row-gap:6px;
+  --inline-icon-size:16px;
+  --inline-icon-glyph:14px;
+  --inline-chevron-size:14px;
+  --inline-detail-indent:22px;
+  --inline-radius:6px;
+  --inline-sunken-bg:hsla(0,0%,100%,.045);
+  --inline-hover-bg:hsla(0,0%,100%,.06);
+  --shimmer-duration:2.4s;
+  --crossfade-duration:.22s
+}
+[data-theme=socrates][data-mode=light]{
+  --inline-sunken-bg:hsla(40,10%,16%,.04);
+  --inline-hover-bg:hsla(40,10%,16%,.06)
+}
+body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
+button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}
+button{border:none;background:none;cursor:pointer;outline:none;font-weight:inherit}
+/* Global keyboard focus ring. The default `button{outline:none}` removes
+   the focus indicator for mouse users but ALSO for keyboard users — a
+   WCAG 2.4.7 violation. We restore a visible ring only for keyboard
+   navigation via `:focus-visible`, so mouse clicks stay clean. This rule
+   intentionally sits below per-element `:focus-visible` overrides so
+   they win for components that already have a custom ring. */
+button:focus-visible,a:focus-visible{outline:2px solid hsl(var(--accent-000)/.85);outline-offset:2px;border-radius:4px}
+a{color:inherit;text-decoration:none}
+::selection{background:hsl(var(--accent-000)/0.3);color:hsl(var(--text-000))}
+/* ──────────────────────────────────────────────────────────────────
+   P_hide-mode-switch-in-conversation — central gate that hides the
+   top-bar Chat/Tutor switcher once a conversation has started.
+
+   The body attribute `data-conversation-active` is set by
+   `syncConversationActive()` in src/ui/mobileModeSwitch.js. The
+   attribute is derived from the current session state: it is "true"
+   only while a conversation is actually in progress, and flips back
+   to "false" whenever the user returns to the topic-input page
+   (resetApp / new chat), so the top-bar pill reappears for the
+   next conversation.
+
+   This single rule covers:
+     • #modeSegmentedTop — the centered Chat/Tutor pill (desktop)
+     • #mobileMode       — the mobile "Chat ⌄" dropdown
+   and uses !important so cowork / cowork-cascade overrides can't
+   reveal the pill mid-session. The rule lives up here (line ~130)
+   instead of next to the original `.top-mode-tabs { display: flex }`
+   block (line ~1667) so future readers see it before they decide to
+   tweak the visible-on-landing state.
+   ────────────────────────────────────────────────────────────────── */
+body[data-conversation-active="true"] #modeSegmentedTop,
+body[data-conversation-active="true"] #mobileMode{display:none!important}
+/* ─── A11y utilities ── */
+/* P_a11y-visually-hidden — screen-reader-only text. The 1px size and
+   clip-path trick keep the element in the accessibility tree without
+   taking layout space. Used for icon-only buttons that need a label. */
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* P_reduced-motion — honour the OS-level "reduce motion" preference.
+   Scope: animations, transitions, view transitions. Layout-affecting
+   transforms (sidebar drag) are kept so resize still feels responsive.
+   Unlike the blanket approach, we preserve color/opacity/box-shadow
+   transitions since those convey state without being "motion" in the
+   accessibility sense. Only animating transforms and layout properties
+   are suppressed. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:0.01ms!important}
+}
+/* ─── Scrollbar — cross-browser ── */
+/* WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:hsl(var(--always-white)/0.12);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:hsl(var(--always-white)/0.22)}
+/* Firefox — supported since FF 64. WebKit fallback above. */
+@supports (scrollbar-width:thin){*{scrollbar-width:thin;scrollbar-color:hsl(var(--always-white)/0.12) transparent}}
+.app{display:flex;height:100vh;height:100dvh;
+  /* The dynamic viewport is allowed to follow the browser's native resize.
+     ui/keyboard/index.ts adds only the measured overlay inset when a browser
+     keeps the layout viewport unchanged. */
+  overflow:hidden;overscroll-behavior:none;position:relative}

@@ -1,9 +1,11 @@
 /* Reviewed chat tool allow-list for OpenConnector apps.
  *
- * Each entry exposes ONE read-only sidecar action to the model. The list
+ * Each entry exposes one reviewed sidecar action to the model. The list
  * was generated from the live sidecar catalog (121 providers, 2026-09-09)
  * by keeping only query-style actions (search/list/get/fetch/…) and was
- * hand-reviewed to exclude every state-changing action. Bots that can only
+ * hand-reviewed to exclude state-changing actions, with the sole exception
+ * of the bounded Jimeng AI 4.6 image-generation submit action below and its
+ * matching result lookup. Bots that can only
  * send messages (dingtalk_bot, wecom_bot, feishu_custom_bot), mail-sending
  * (encharge) and model-calling actions (cohere chat/embed) are deliberately
  * absent: they are write oracles, not context tools.
@@ -1484,6 +1486,13 @@ export const OPEN_CONNECTOR_CHAT_TOOLS: OpenConnectorChatTool[] = [
     parameters: {"type":"object","properties":{"task_id":{"type":"string","minLength":1,"description":"The Jimeng async task identifier."},"logo_info":{"type":"object","properties":{"add_logo":{"type":"boolean"},"position":{"type":"integer","minimum":0,"maximum":3},"language":{"type":"integer","minimum":0,"maximum":1},"opacity":{"type":"number","minimum":0,"maximum":1},"logo_text_content":{"type":"string"}},"additionalProperties":false,"description":"Visible watermark configuration sent to Jimeng."},"aigc_meta":{"type":"object","properties":{"content_producer":{"type":"string"},"producer_id":{"type":"string","minLength":1},"content_propagator":{"type":"string"},"propagate_id":{"type":"string"}},"additionalProperties":false,"required":["producer_id"],"description":"AIGC metadata configuration embedded in generated content."}},"additionalProperties":false,"required":["task_id"],"description":"Input parameters for querying a Jimeng image task result."},
   },
   {
+    tool: 'oc_jimeng_ai_submit_image_generation_4_6',
+    service: 'jimeng_ai',
+    actionId: 'jimeng_ai.submit_image_generation_4_6',
+    description: "Submit a user-requested image-generation prompt to Jimeng AI 4.6. This action creates a new image task; use it only after the user has submitted a prompt in image-creation mode.",
+    parameters: {"type":"object","properties":{"prompt":{"type":"string","minLength":1,"maxLength":800,"description":"The user's image-generation prompt, up to 800 characters."}},"additionalProperties":false,"required":["prompt"],"description":"Submit one text prompt to Jimeng AI Image Generation 4.6."},
+  },
+  {
     tool: 'oc_jimeng_ai_get_image_generation_4_6_result',
     service: 'jimeng_ai',
     actionId: 'jimeng_ai.get_image_generation_4_6_result',
@@ -2318,6 +2327,21 @@ export function validateOpenConnectorToolArguments(toolName: unknown, args: unkn
     if (value === undefined || value === null || value === '') {
       return { ok: false, error: `missing required argument: ${key}` };
     }
+  }
+  for (const [key, value] of Object.entries(input)) {
+    const rawSchema = params.properties?.[key];
+    if (!rawSchema || typeof rawSchema !== 'object' || Array.isArray(rawSchema)) continue;
+    const schema = rawSchema as { type?: unknown; minLength?: unknown; maxLength?: unknown };
+    if (schema.type !== 'string') continue;
+    if (typeof value !== 'string') return { ok: false, error: `argument ${key} must be a string` };
+    const minLength = typeof schema.minLength === 'number' ? schema.minLength : 0;
+    const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : Number.POSITIVE_INFINITY;
+    if (value.length < minLength) return { ok: false, error: `argument ${key} is too short` };
+    if (value.length > maxLength) return { ok: false, error: `argument ${key} is too long` };
+  }
+  if (spec.actionId === 'jimeng_ai.submit_image_generation_4_6'
+    && typeof input.prompt === 'string' && input.prompt.trim().length === 0) {
+    return { ok: false, error: 'argument prompt must not be blank' };
   }
   if (!stringsWithinLimit(input)) return { ok: false, error: 'an argument value is too long' };
   if (argumentDepth(input) > MAX_ARG_DEPTH) return { ok: false, error: 'arguments are nested too deeply' };

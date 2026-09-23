@@ -1,7 +1,7 @@
 /**
  * OpenConnector chat tool executor.
  *
- * Runs the curated read-only allow-list from openConnectorChatTools.ts
+ * Runs the curated OpenConnector allow-list from openConnectorChatTools.ts
  * against the vendored sidecar, using the calling user's namespaced
  * connection. Mirrors executeProjectConnector's result envelope so the
  * pipeline treats both connector families identically.

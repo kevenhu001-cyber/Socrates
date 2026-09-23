@@ -1,9 +1,28 @@
-/* Single stylesheet entry. Keep this order: foundations, layout, components,
-   feature surfaces, utilities. Historical reference/parity sheets are not
-   loaded; each visible component has one final owner below. */
+/*
+ * styles/index.css — single stylesheet entry and cascade manifest.
+ *
+ * The bundle is produced by inlining these @imports top to bottom, so this
+ * list IS the cascade: later entries outrank earlier ones at equal
+ * specificity. Keep it in three tiers and never reorder across tiers.
+ *
+ *   Tier 1  tokens + themes      — --ui-* custom properties only.
+ *   Tier 2  legacy/              — the pre-modular base sheet (old
+ *                                  src/styles.css), sliced contiguously;
+ *                                  slices override each other by order.
+ *   Tier 3  modular              — foundations/layout/components/features:
+ *                                  the current component-owned styles.
+ *   Tier 4  restore/             — the pre-rework visual layer; must stay
+ *                                  last so it outranks everything above.
+ */
+
+/* Tier 1 — design tokens */
 @import './tokens.css';
 @import './themes.css';
-@import '../styles.css';
+
+/* Tier 2 — legacy base sheet (order-sensitive slices) */
+@import './legacy/index.css';
+
+/* Tier 3 — modular layer */
 @import './foundations/base.css';
 @import './layout/app-shell.css';
 @import './components/sidebar.css';
@@ -12,3 +31,6 @@
 @import './components/menu.css';
 @import './features/surfaces.css';
 @import './components/tool-card.css';
+
+/* Tier 4 — restored pre-rework visual layer (always last) */
+@import './restore/index.css';

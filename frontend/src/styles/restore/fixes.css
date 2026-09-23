@@ -1,0 +1,32 @@
+/* ==========================================================================
+   fixes.css — post-restore adjustments.
+
+   Corrections layered after the restored cascade. The six layer files in
+   this directory are verbatim history; anything in this file is an
+   adjustment made against the current DOM/modular base. Add future
+   restore-layer tweaks here, not into the historical files.
+   ========================================================================== */
+
+/* chatgpt-v2 hid the API-settings gear outright on every viewport; the
+   restored footer cluster keeps it reachable at the row's right edge. */
+#appShell #apiSettingsBtn {
+  display: flex !important;
+}
+
+@media (max-width: 768px) {
+  /* The restored parity layer grows the phone top bar to 72px while no
+     mobile rule re-centres the mode pill, so it inherited the modular
+     top:12px and floated ~10px above the 44px header controls. Anchor it
+     to the bar's midline instead of a fixed offset. */
+  #appShell .top-mode-tabs {
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  /* The post-rework sidebar hides the footer icon cluster on phones
+     (components/sidebar.css). The restored footer keeps theme, display
+     and API settings visible at the row's right edge again. */
+  #appShell .sidebar-footer-actions > .icon-btn {
+    display: flex !important;
+  }
+}

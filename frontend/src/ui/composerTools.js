@@ -94,13 +94,22 @@ function position(el, trigger) {
      plus control, so the card edge aligns with the composer instead of
      looking like it is attached to the icon's center. Desktop keeps the
      trigger edge alignment. */
-  var anchorLeft = viewportWidth <= 768 ? r.left - 12 : r.left;
-  var left = Math.max(8, Math.min(anchorLeft, viewportWidth - width - 8));
   /* The menu floats above the whole composer capsule, not the trigger
      button — the plus control lives on the capsule's second row, so
      anchoring to the trigger would overlap the editor row. */
   var wrap = trigger.closest ? trigger.closest('#topicInputWrap, #chatInputWrap') : null;
   var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
+  var anchorLeft = viewportWidth <= 768 ? wrapRect.left : r.left;
+  var left = Math.max(8, Math.min(anchorLeft, viewportWidth - width - 8));
+  /* On phones the reference card shares the composer's bottom edge and
+     covers its left half; the mic and primary control remain visible on the
+     right. This is a deliberate stacked state, not an above-composer gap. */
+  if (viewportWidth <= 768) {
+    var mobileTop = Math.max(viewportTop + 8, wrapRect.bottom - height);
+    el.style.left = left + "px";
+    el.style.top = mobileTop + "px";
+    return;
+  }
   var anchorTop = wrapRect.top;
   /* ChatGPT places the add-content menu below the composer whenever the
      viewport has room. Falling back above is only necessary near the bottom
@@ -115,10 +124,6 @@ function position(el, trigger) {
     top = belowTop;
   } else if (aboveSpace >= height) {
     top = aboveTop;
-  } else if (viewportWidth <= 768) {
-    /* Mobile CSS pins the menu to the bottom edge. Leave the inline
-       coordinates harmless; the fixed sheet rule owns the final geometry. */
-    top = belowTop;
   } else if (belowSpace >= 120 && belowSpace >= aboveSpace) {
     /* A short desktop viewport may not have room for the full directory.
        Prefer a scrollable menu below the composer so selected chips and the

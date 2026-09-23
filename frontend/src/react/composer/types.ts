@@ -13,6 +13,7 @@ export type ComposerToolsAction =
   | 'camera'
   | 'photos'
   | 'upload'
+  | 'createImage'
   | 'webSearch'
   | 'write'
   | 'research'

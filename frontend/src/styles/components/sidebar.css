@@ -28,20 +28,30 @@
   border-radius: var(--ui-radius-pill);
   color: var(--ui-text-secondary);
 }
+#appShell .sidebar-header .icon-btn svg { width: 22px; height: 22px; }
 #appShell .sidebar-header .icon-btn:hover { background: var(--ui-bg-hover); }
 
-#appShell .sidebar-nav { gap: 2px; padding: 4px 8px 10px; }
+#appShell .sidebar-nav { gap: 0; padding: 4px 8px; }
 #appShell .sidebar-nav-btn {
-  min-height: 44px;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  min-height: 40px;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 9px;
   color: var(--ui-text-secondary);
   font-size: calc(15px * var(--app-font-scale, 1));
   font-weight: 400;
   line-height: 20px;
 }
-#appShell .sidebar-nav-btn svg { width: 22px; height: 22px; color: inherit; }
+#appShell .sidebar-nav-btn svg { width: 22px; height: 22px; color: inherit; flex: 0 0 22px; }
+#appShell .sidebar-nav-btn .nav-new-badge {
+  margin-left: 4px;
+  padding: 1px 6px 2px;
+  border: 1px solid var(--ui-border-default);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-tertiary);
+  font-size: 10px;
+  line-height: 16px;
+}
 #appShell .sidebar-nav-btn:hover,
 #appShell .sidebar-nav-btn.active { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
 #appShell .sidebar-nav-btn.active { font-weight: 400; }
@@ -56,8 +66,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 
 /* Exam and Skills live in the 更多 popover — the primary rail stays at
    the reference's six destinations on every viewport. */
-#appShell .sidebar-nav-btn[data-nav="exam"],
-#appShell .sidebar-nav-btn[data-nav="skills"] { display: none; }
+#appShell .sidebar-nav-btn[data-nav="exam"] { display: none; }
 
 /* Session-row overflow: desktop keeps the hover icon pair inline; the
    ⋯ button and its dropdown are the phone affordance. */
@@ -112,15 +121,14 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     min-width: min(var(--ui-sidebar-mobile), calc(100vw - 54px));
     transform: translateX(0);
     transition: transform var(--ui-duration-normal) var(--ui-ease-out);
-    box-shadow: 16px 0 40px rgb(0 0 0 / 24%);
+    box-shadow: none;
     z-index: var(--ui-z-drawer);
-    /* The reference drawer sits one step above the pure-black page. */
-    background: var(--ui-bg-raised);
-    border-right: 0;
+    background: var(--ui-bg-sidebar);
+    border-right: 1px solid var(--ui-border-subtle);
   }
   #appShell .sidebar.collapsed { transform: translateX(-100%); box-shadow: none; }
   #appShell .sidebar-backdrop { background: var(--ui-backdrop); z-index: var(--ui-z-backdrop); }
-  #appShell .sidebar-footer { background: var(--ui-bg-raised); }
+  #appShell .sidebar-footer { background: var(--ui-bg-sidebar); }
   #appShell .sidebar-header .compose-btn { display: none; }
   #appShell .sidebar-search-row {
     max-height: 0;
@@ -136,7 +144,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     opacity: 1;
   }
   #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
-  #appShell .sidebar-nav { padding-top: 8px; }
+  #appShell .sidebar-nav { padding-top: 4px; }
   /* The reference footer is just the user row — the icon cluster stays
      reachable through the 更多 popover. Only the buttons hide; the nested
      display-prefs popover must keep rendering when it opens. */

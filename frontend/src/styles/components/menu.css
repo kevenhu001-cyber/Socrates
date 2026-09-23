@@ -66,7 +66,6 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 #composerToolsMenu .composer-tools-copy small,
 #composerToolsMenu .composer-tools-item kbd { display: none; }
 #composerToolsMenu .composer-tools-divider { display: none; }
-#composerToolsMenu .composer-tools-footer-search { display: none; }
 
 .chat-config-pop {
   position: fixed;
@@ -91,10 +90,54 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
   .composer-tools-desktop-items { display: block; }
   .composer-tools-mobile-items { display: none; }
   body #composerToolsMenu.composer-tools-menu { width: 252px; min-width: 252px; }
+  #composerToolsMenu .composer-tools-footer-search {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border-top: 1px solid var(--ui-border-subtle);
+  }
+  #composerToolsMenu .composer-tools-footer-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ui-text-primary);
+    font: inherit;
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 768px) {
   .composer-tools-desktop-items { display: none; }
   .composer-tools-mobile-items { display: block; }
   body.composer-tools-open::after { display: none; }
+  body #composerToolsMenu.composer-tools-menu {
+    width: 236px;
+    min-width: 236px;
+    height: min(48dvh, 234px);
+    max-height: min(48dvh, 234px);
+    padding: 6px;
+    border-radius: 20px;
+  }
+  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu { background: #1f1f1f; }
+  #composerToolsMenu .composer-tools-item,
+  #composerToolsMenu .composer-tools-mobile-item,
+  #composerToolsMenu .composer-tools-plugin-item {
+    min-height: 44px;
+    padding: 4px 8px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+  #composerToolsMenu .composer-tools-icon {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+  }
+  [data-mode="dark"] #composerToolsMenu .composer-tools-icon { background: #3a3a3a; }
+  #composerToolsMenu .composer-tools-icon svg { width: 22px; height: 22px; }
+  #composerToolsMenu .composer-tools-copy > span { font-size: 16px; }
+  #composerToolsMenu .composer-tools-footer-search { display: none; }
 }

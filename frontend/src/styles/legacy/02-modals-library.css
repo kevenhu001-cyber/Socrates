@@ -1,0 +1,233 @@
+/* ==========================================================================
+   02-modals-library.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: shared modal chrome, shortcut/storage/slash-palette/prompt-template modals, session states, viz cards, library panel.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* Shared modal chrome — head/title/close/foot/spacer/cancel/save.
+   Originally the project editor modal's CSS, now used by every
+   command-palette modal (storage / cheatsheet / prompt templates)
+   after the project feature was removed. */
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:0.5px solid hsl(var(--border-300)/0.18)}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{width:28px;height:28px;border-radius:6px;background:transparent;border:0;font-size:18px;color:hsl(var(--text-400));cursor:pointer}
+.modal-close:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
+.modal-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:0.5px solid hsl(var(--border-300)/0.18);background:hsl(var(--bg-200))}
+.modal-spacer{flex:1}
+.modal-cancel,.modal-save{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid transparent}
+.modal-cancel{background:transparent;color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
+.modal-cancel:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.modal-save{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.modal-save:hover{filter:brightness(1.1)}
+
+
+
+/* P5.6 — shortcut cheatsheet modal */
+.cheatsheet{max-height:75vh;width:min(520px,92vw);display:flex;flex-direction:column}
+
+/* P2.3 — Storage modal */
+.storage-modal{width:min(560px,92vw);max-height:75vh;display:flex;flex-direction:column}
+
+/* P5.8 — Slash-command palette (Spotlight-style). Anchored
+   above the chat input bar; the active row is highlighted
+   and the kbd hints sit at the bottom. */
+.slash-command-palette{position:fixed;left:50%;bottom:120px;transform:translateX(-50%) translateY(8px);width:min(520px,92vw);max-height:60vh;background:hsl(var(--bg-100));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:12px;box-shadow:0 16px 50px hsl(var(--always-black)/0.4);overflow:hidden;display:none;flex-direction:column;z-index:850;opacity:0;transition:opacity .16s var(--ease-out),transform .16s var(--ease-out)}
+.slash-command-palette.visible{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
+.slash-command-head{padding:10px 14px;font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));border-bottom:0.5px solid hsl(var(--border-300)/0.15)}
+.slash-command-empty{padding:20px 14px;text-align:center;color:hsl(var(--text-400));font-size:12px}
+.slash-command-row{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;transition:background .1s}
+.slash-command-row:hover,.slash-command-row.selected{background:hsl(var(--bg-200))}
+.slash-command-icon{font-size:18px;line-height:1;flex-shrink:0;width:24px;text-align:center}
+.slash-command-icon svg{width:18px;height:18px;vertical-align:middle}
+/* Section label separating connected apps from prompt templates. */
+.slash-command-group{padding:8px 14px 4px;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:hsl(var(--text-500))}
+.slash-command-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.slash-command-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));display:flex;align-items:center;gap:8px}
+.slash-command-shortcut{font-size:11px;color:hsl(var(--accent-000));font-family:var(--font-mono);background:hsl(var(--accent-900));padding:1px 6px;border-radius:3px}
+.slash-command-desc{font-size:11px;color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slash-command-foot{display:flex;gap:14px;padding:6px 14px;border-top:0.5px solid hsl(var(--border-300)/0.15);font-size:10px;color:hsl(var(--text-500))}
+.slash-command-foot kbd{font-family:var(--font-mono);font-size:10px;padding:1px 4px;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:3px;background:transparent;margin-right:3px}
+
+/* P5.8 — Active extension status. The selected extension lives in the
+   conversation body, so the composer stays focused on entering a prompt. */
+
+/* P5.8 — Prompt templates manager + editor */
+.prompt-templates-modal{width:min(620px,92vw);max-height:80vh;display:flex;flex-direction:column}
+.prompt-templates-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.prompt-templates-section-label{font-size:11px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;color:hsl(var(--text-500));padding:4px 0 2px}
+.prompt-templates-intro{margin:0 0 4px;color:hsl(var(--text-400));font-size:12px;line-height:1.45}
+.prompt-templates-empty{padding:14px;border:0.5px dashed hsl(var(--border-300)/0.3);border-radius:8px;text-align:center;color:hsl(var(--text-400));font-size:12px}
+.prompt-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15)}
+.prompt-row-icon{font-size:18px;line-height:1;width:24px;text-align:center;flex-shrink:0}
+.prompt-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.prompt-row-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));display:flex;align-items:center;gap:6px}
+.prompt-row-shortcut{font-size:10px;color:hsl(var(--accent-000));font-family:var(--font-mono);background:hsl(var(--accent-900));padding:1px 5px;border-radius:3px}
+.prompt-row-desc{font-size:11px;color:hsl(var(--text-400));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prompt-row-actions{display:flex;gap:4px;flex-shrink:0}
+.prompt-row-edit,.prompt-row-delete{padding:3px 8px;border-radius:5px;font-size:11px;cursor:pointer;border:0.5px solid transparent;background:transparent;font-family:inherit}
+.prompt-row-edit{color:hsl(var(--text-300));border-color:hsl(var(--border-300)/0.4)}
+.prompt-row-edit:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.prompt-row-delete{color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.4)}
+.prompt-row-delete:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 80%)}
+.prompt-templates-new{padding:8px 14px;border-radius:8px;background:transparent;border:0.5px dashed hsl(var(--border-300)/0.4);color:hsl(var(--text-300));font-size:13px;cursor:pointer;font-family:inherit;margin-top:6px}
+.prompt-templates-new:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100));border-color:hsl(var(--accent-000)/0.4)}
+.prompt-editor-grid{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:10px}
+.prompt-editor-label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:hsl(var(--text-400))}
+.prompt-editor-input,.prompt-editor-textarea,.prompt-editor-input select{background:hsl(var(--bg-000));border:0.5px solid hsl(var(--border-300)/0.3);border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;color:hsl(var(--text-100));outline:none;font-family:inherit}
+.prompt-editor-input:focus,.prompt-editor-textarea:focus{border-color:hsl(var(--accent-000)/0.6);box-shadow:0 0 0 2px hsl(var(--accent-000)/0.15)}
+.prompt-editor-shortcut{width:160px;font-family:var(--font-mono)}
+.prompt-editor-icon{width:60px;text-align:center}
+.prompt-editor-textarea{min-height:100px;resize:vertical;font-family:var(--font-sans);line-height:1.5}
+.storage-modal-body{padding:14px 18px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.storage-modal-desc{font-size:12px;color:hsl(var(--text-400));line-height:1.5}
+.storage-list{display:flex;flex-direction:column;gap:6px}
+.storage-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.15)}
+.storage-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.storage-row-title{font-size:13px;font-weight:500;color:hsl(var(--text-100));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.storage-row-meta{font-size:11px;color:hsl(var(--text-500))}
+.storage-row-actions{display:flex;gap:6px;flex-shrink:0}
+.storage-btn-restore,.storage-btn-delete{padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;border:0.5px solid transparent;font-weight:500;font-family:inherit}
+.storage-btn-restore{background:hsl(var(--accent-000));color:hsl(var(--always-white))}
+.storage-btn-restore:hover{filter:brightness(1.1)}
+.storage-btn-delete{background:transparent;color:hsl(0 60% 70%);border-color:hsl(0 60% 30%/0.4)}
+.storage-btn-delete:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 80%)}
+.storage-empty{text-align:center;padding:32px 12px;color:hsl(var(--text-400));font-size:13px}
+.cheatsheet-body{padding:0 6px 12px;overflow-y:auto}
+.cheatsheet-section{padding:8px 12px}
+.cheatsheet-row{display:flex;align-items:center;gap:6px;padding:4px 0}
+.cheatsheet-kbd{font-family:var(--font-mono);font-size:10px;padding:2px 6px;min-width:18px;text-align:center;border:0.5px solid hsl(var(--border-300)/0.4);border-radius:4px;background:hsl(var(--bg-000));color:hsl(var(--text-200))}
+.cheatsheet-desc{margin-left:8px;font-size:13px;color:hsl(var(--text-200))}
+.recents-title{font-size:calc(10px * var(--sidebar-font-scale));font-weight:500;color:hsl(var(--text-500));text-transform:uppercase;letter-spacing:.06em}
+
+
+
+
+
+.recent-item{display:flex;align-items:center;padding:8px 12px;border-radius:8px;font-size:calc(12px * var(--sidebar-font-scale));color:hsl(var(--text-200));transition:background .18s var(--ease-out),color .18s var(--ease-out);cursor:pointer;gap:8px;position:relative;-webkit-touch-callout:none;contain:layout style}
+.recent-item:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.recent-item:active{transform:none}
+.recent-item.active{background:hsl(var(--bg-300))}
+/* Active session — the currently-open chat keeps a persistent accent
+   tint so it stays identifiable while the user hovers other rows
+   (which use the neutral bg-300 hover). Matches ChatGPT/Claude, where
+   the selected conversation is always highlighted. Hovering the active
+   row deepens the tint slightly rather than falling back to grey. */
+.recent-item.active .recent-item-text{color:hsl(var(--text-100));font-weight:600}
+.recent-item.active:hover{background:hsl(var(--bg-300))}
+.recent-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.recent-item-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:hsl(var(--text-200))}
+.recent-item:hover .recent-item-text{color:hsl(var(--text-100))}
+.recent-item-meta{font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-500));display:flex;gap:8px;align-items:center}
+.recent-item-meta .dot{width:3px;height:3px;border-radius:50%;background:hsl(var(--text-500)/0.4);display:inline-block}
+/* Mode tag in the recent list — minimal: tiny colored dot + normal-case
+ * label. No background fill, no border, no uppercase letter-spacing.
+ * Two colors are enough to distinguish Chat (cool blue) from Tutor
+ * (warm amber) without dominating the row. */
+/* P_recent-minimal-badge — the colored dot is enough to identify
+ * the row type at a glance; the text label used to eat ~40px of
+ * horizontal space and clip the title. Now the badge is just a 6px
+ * dot. The full text label still ships in `data-mode-label` so the
+ * native title tooltip on hover still shows "Chat" / "Tutor" / "Exam"
+ * for users who want it. */
+.recent-mode-badge{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  margin-right:6px;
+  flex-shrink:0;
+  background:hsl(var(--text-400));
+  display:inline-block;
+  cursor:help;
+  transition:transform .12s ease;
+  overflow:hidden;
+  font-size:0;
+  line-height:0;
+}
+
+/* Native AI visualization cards. They reuse the chat surface and tokens so
+   generated content reads as part of Socrates, not as an embedded dashboard.
+   The card uses the same bundled Plus Jakarta Sans + Inter face as the rest
+   of the shell so labels stay consistent regardless of the user's installed
+   system fonts. */
+.visualization-card{margin:14px 0 4px;border:1px solid hsl(var(--border-200));border-radius:14px;background:hsl(var(--bg-100));overflow:hidden;color:hsl(var(--text-100));box-shadow:0 1px 2px rgba(15,23,42,.04);font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
+.visualization-header{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid hsl(var(--border-100))}
+.visualization-header h3{margin:0;font:600 14px/1.35 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;letter-spacing:-.01em}.visualization-header p,.visualization-caption{margin:4px 0 0;color:hsl(var(--text-300));font-size:12px;line-height:1.45}
+.visualization-actions{display:flex;align-items:center;gap:3px;flex:none}.visualization-actions button{-webkit-appearance:none;appearance:none;border:0;border-radius:7px;padding:5px 7px;background:transparent;color:hsl(var(--text-300));font:500 11px/1 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;cursor:pointer}.visualization-actions button:hover,.visualization-actions button:focus-visible{color:hsl(var(--text-100));background:hsl(var(--bg-200));outline:none}
+.visualization-stage{height:350px;min-width:0;padding:4px 4px 0;position:relative}
+.visualization-card[data-visualization-renderer="tldraw"] .visualization-stage{height:520px;padding:0}
+.visualization-card[data-visualization-renderer="geogebra"] .visualization-stage{height:480px;padding:0}
+.visualization-card[data-visualization-renderer="three"] .visualization-stage{height:430px}
+.visualization-card[data-visualization-renderer="mermaid"] .visualization-stage{height:auto;min-height:300px;display:grid;place-items:center;padding:22px}
+.visualization-card[data-visualization-renderer="mermaid"] .visualization-stage>svg{max-width:100%;height:auto;max-height:520px}
+/* Size the ECharts render root only. The `:first-child` scope is critical:
+   ECharts appends its tooltip as a second direct child <div> of the stage,
+   and a bare `.visualization-stage>div` rule would stretch that tooltip to
+   fill the whole stage, producing a full-card overlay on hover (the x value
+   pinned top-left, the series value flung to the right edge) that hides the
+   chart. Scoping to the first child leaves the absolutely-positioned tooltip
+   at its natural content size. */
+.visualization-stage>div:first-child{width:100%;height:100%}
+/* Force ECharts chart background transparent — the default theme sets white. */
+.visualization-stage canvas,.visualization-stage svg{background:transparent!important}.visualization-data{padding:0 16px 14px}.visualization-table-wrap{overflow:auto;border:1px solid hsl(var(--border-100));border-radius:9px;max-height:260px}.visualization-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-table th,.visualization-table td{padding:8px 10px;text-align:left;border-bottom:1px solid hsl(var(--border-100));white-space:nowrap;color:hsl(var(--text-100))}.visualization-table th{position:sticky;top:0;background:hsl(var(--bg-100));color:hsl(var(--text-300));font-weight:600}.visualization-table tr:last-child td{border-bottom:0}
+.visualization-diagram{display:block;width:100%;height:100%;color:hsl(var(--text-300));font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-edge{fill:none;stroke:currentColor;stroke-width:1.4}.visualization-edge-label{fill:currentColor;font:500 12px 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node rect{fill:hsl(var(--bg-100));stroke:hsl(var(--border-200));stroke-width:1.4}.visualization-node text{fill:hsl(var(--text-100));font:600 13px 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif;text-anchor:middle}.visualization-node .visualization-node-detail{fill:hsl(var(--text-300));font:11px 'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}
+.visualization-extension{display:block;width:100%;height:100%;border:0;background:transparent}.visualization-fallback{display:grid;place-content:center;gap:8px;height:100%;padding:20px;color:hsl(var(--text-300));text-align:center;font-family:'Plus Jakarta Sans','Inter','Noto Sans SC','Helvetica Neue',Arial,system-ui,sans-serif}.visualization-fallback strong{color:hsl(var(--text-100))}.visualization-fallback p{margin:0;font-size:13px;line-height:1.5}.visualization-fallback button{justify-self:center;border:1px solid hsl(var(--border-200));border-radius:7px;padding:6px 9px;background:hsl(var(--bg-100));color:hsl(var(--text-100));cursor:pointer;font:inherit}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (max-width:520px){.visualization-card{margin-left:-2px;margin-right:-2px;border-radius:12px}.visualization-header{padding:12px;gap:8px}.visualization-actions button{padding:5px;font-size:10px}.visualization-stage{height:292px;padding:2px}.visualization-data{padding:0 10px 10px}}
+@media (prefers-reduced-motion:reduce){.visualization-card *, .visualization-card *:before, .visualization-card *:after{transition:none!important;animation:none!important}}
+.recent-mode-badge.mode-tutor{background:hsl(0 0% 40%)}
+.recent-mode-badge.mode-chat{background:hsl(0 0% 20%)}
+.recent-mode-badge.mode-exam{background:hsl(0 0% 55%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-tutor{background:hsl(0 0% 72%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-chat{background:hsl(0 0% 88%)}
+[data-theme=socrates][data-mode=dark] .recent-mode-badge.mode-exam{background:hsl(0 0% 60%)}
+.recent-item-del{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:0;transition:opacity .18s cubic-bezier(.4,0,.2,1),background .18s cubic-bezier(.4,0,.2,1),color .18s cubic-bezier(.4,0,.2,1);flex-shrink:0;cursor:pointer}
+.recent-item:hover .recent-item-del{opacity:1}
+.recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
+.recent-item-del:active{transform:none}
+.recent-item-del.holding{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%);opacity:1}
+.recent-item-del svg{width:12px;height:12px}
+/* P4.1 — inline confirm bar shown when the user holds the delete
+   button for 600ms. Replaces the row's normal content with a
+   [Cancel][Delete] pair. */
+
+
+
+
+
+
+.recents-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(11px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+
+/* PR-B: Library panel — files & artifacts list */
+.library-panel{flex:1;overflow-y:auto;padding:0 8px;display:flex;flex-direction:column;gap:1px;position:relative}
+.library-panel.hidden{display:none}
+
+
+
+
+.library-tab{padding:4px 10px;border-radius:6px;border:none;background:transparent;color:hsl(var(--text-400));font-size:calc(12px * var(--sidebar-font-scale));cursor:pointer;transition:background .12s,color .12s;font-family:var(--font-sans)}
+.library-tab:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.library-tab.active{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.library-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+
+
+
+
+
+
+.library-empty{text-align:center;color:hsl(var(--text-500));font-size:calc(12px * var(--sidebar-font-scale));padding:32px 12px;line-height:1.6}
+.library-selection-bar{display:none;align-items:center;justify-content:space-between;padding:4px 12px 6px;gap:8px;flex-shrink:0}
+.library-selection-bar.visible{display:flex}
+.library-select-all{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:calc(10px * var(--sidebar-font-scale));color:hsl(var(--text-400));-webkit-user-select:none;user-select:none}
+.library-select-all span{color:hsl(var(--text-400))}
+.library-checkbox{width:14px;height:14px;accent-color:hsl(var(--text-100));cursor:pointer;flex-shrink:0}
+.library-checkbox-label{display:flex;align-items:center;padding:0 0 0 8px;cursor:pointer;flex-shrink:0}
+.library-bulk-delete{min-height:22px;padding:2px 7px;border-radius:5px;font-size:10px;background:hsl(0 65% 62%/.15);color:hsl(0 65% 62%)}
+.library-bulk-delete:disabled{opacity:.35;cursor:default}
+.library-bulk-delete:not(:disabled):hover{background:hsl(0 65% 62%/.25)}
+.library-row-selected{background:hsl(var(--bg-300)/.72)}
+.library-name{cursor:text;border-bottom:1px dashed transparent;transition:border-color .12s}
+.library-name:hover{border-bottom-color:hsl(var(--text-400))}
+.library-rename-input{width:100%;padding:2px 4px;border:0.5px solid hsl(var(--border-300)/.75);border-radius:4px;outline:none;background:hsl(var(--bg-000));color:hsl(var(--text-100));font-size:calc(12px * var(--sidebar-font-scale));font-family:var(--font-sans);font-weight:550}
+.library-rename-input:focus{border-color:hsl(var(--accent-000)/.65);box-shadow:0 0 0 2px hsl(var(--accent-000)/.18)}
+

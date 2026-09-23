@@ -3,7 +3,7 @@
  *
  * M1 placeholder. Will own the `.chat-view`, `.msg-list`, `.composer`,
  * `.topic-input-wrap`, and related transcript / composer rules in M2.
- * The rules currently live in `src/styles.css`; do not duplicate
+ * The rules currently live in `styles/legacy/` slices; do not duplicate
  * selectors from there until the corresponding lines have been
  * removed from the main sheet.
  */

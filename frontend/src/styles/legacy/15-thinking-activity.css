@@ -1,0 +1,842 @@
+/* ==========================================================================
+   15-thinking-activity.css — slice of the pre-modular base stylesheet (src/styles.css).
+   Covers: thinking panel, cookie consent, codex app activity stream, agent step stream, todo list.
+   Order-sensitive: rules here may be overridden by later slices and by
+   the modular layer (foundations/layout/components/features) and the
+   restore layer. Keep this file's position in legacy/index.css stable.
+   ========================================================================== */
+
+/* =====================================================================
+ * Thinking panel — right drawer on desktop, bottom sheet on mobile.
+ * Opened from the clickable "Thinking…" pill / placeholder; driven by
+ * the React bridge (src/react/thinking-panel/).
+ * ===================================================================== */
+.thinking-panel-backdrop{
+  position:fixed;
+  inset:0;
+  background:hsl(var(--always-black)/0.45);
+  -webkit-backdrop-filter:blur(3px);
+  backdrop-filter:blur(3px);
+  z-index:1200;
+  animation:fadeIn .16s ease;
+}
+.thinking-panel{
+  position:fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  width:min(420px,90vw);
+  display:flex;
+  flex-direction:column;
+  background:hsl(var(--bg-100));
+  border-left:0.5px solid hsl(var(--border-300)/0.28);
+  box-shadow:-18px 0 50px -18px hsl(var(--always-black)/0.45);
+  z-index:1201;
+  animation:thinking-panel-drawer-in .24s cubic-bezier(.22,1,.36,1);
+}
+@keyframes thinking-panel-drawer-in{
+  from{transform:translateX(30px);opacity:.55}
+  to{transform:translateX(0);opacity:1}
+}
+.thinking-panel-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:0 0 auto;
+  padding:14px 16px;
+  border-bottom:0.5px solid hsl(var(--border-300)/0.18);
+}
+.thinking-panel-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  flex:1;
+}
+.thinking-panel-title{
+  margin:0;
+  font-size:calc(14px * var(--app-font-scale,1));
+  font-weight:600;
+  color:hsl(var(--text-100));
+  white-space:nowrap;
+}
+.thinking-panel-live{
+  width:7px;
+  height:7px;
+  flex:0 0 7px;
+  border-radius:50%;
+  background:hsl(var(--accent-000)/0.85);
+  animation:thinkingLivePulse 1.8s ease-in-out infinite;
+}
+@keyframes thinkingLivePulse{0%,100%{opacity:.45}50%{opacity:1}}
+.thinking-panel-meta{
+  flex:0 0 auto;
+  font-size:calc(11px * var(--app-font-scale,1));
+  color:hsl(var(--text-500));
+  white-space:nowrap;
+}
+.thinking-panel-close{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  padding:0;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:hsl(var(--text-400));
+  cursor:pointer;
+  transition:background-color .14s ease,color .14s ease;
+}
+.thinking-panel-close:hover{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.thinking-panel-close:focus-visible{outline:1.5px solid hsl(var(--accent-000)/0.65);outline-offset:1px}
+.thinking-panel-close svg{width:15px;height:15px;display:block}
+.thinking-panel-body{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  padding:16px 18px 22px;
+  scrollbar-width:thin;
+  scrollbar-color:hsl(var(--text-500)/0.25) transparent;
+}
+.thinking-panel-text{
+  font-size:calc(13px * var(--app-font-scale,1));
+  line-height:1.7;
+  color:hsl(var(--text-200));
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+/* Rich mode — the trace is painted through the assistant markdown
+   pipeline, so block elements need bubble-like rhythm instead of the
+   plain-text pre-wrap above. Mirrors .msg-body code/pre treatment. */
+.thinking-panel-text.is-rich{white-space:normal}
+.thinking-panel-text.is-rich p{margin:0 0 .6em}
+.thinking-panel-text.is-rich p:last-child{margin-bottom:0}
+.thinking-panel-text.is-rich ul,.thinking-panel-text.is-rich ol{margin:0 0 .6em;padding-left:1.4em}
+.thinking-panel-text.is-rich li{margin:.2em 0}
+.thinking-panel-text.is-rich strong{color:hsl(var(--text-100))}
+.thinking-panel-text.is-rich code{font-family:var(--font-mono);font-size:.9em;background:hsl(var(--always-white)/0.06);padding:2px 5px;border-radius:3px}
+.thinking-panel-text.is-rich pre{background:hsl(var(--bg-200));border:0.5px solid hsl(var(--border-300)/0.08);border-radius:12px;padding:12px 14px;overflow-x:auto;font-family:var(--font-mono);font-size:calc(12px * var(--app-font-scale,1));line-height:1.5;margin:8px 0;white-space:pre}
+.thinking-panel-text.is-rich pre code{background:none;padding:0}
+.thinking-panel-text.is-rich blockquote{margin:0 0 .6em;padding:2px 0 2px 12px;border-left:2px solid hsl(var(--border-300)/0.4);color:hsl(var(--text-300))}
+.thinking-panel-empty{
+  margin:0;
+  font-size:calc(12.5px * var(--app-font-scale,1));
+  color:hsl(var(--text-500));
+  line-height:1.6;
+}
+@media (max-width:768px){
+  .thinking-panel{
+    top:auto;
+    left:0;
+    right:0;
+    bottom:0;
+    width:100%;
+    height:40vh;
+    border-left:0;
+    border-top:0.5px solid hsl(var(--border-300)/0.28);
+    border-radius:18px 18px 0 0;
+    box-shadow:0 -18px 50px -18px hsl(var(--always-black)/0.5);
+    animation:thinking-panel-sheet-in .28s cubic-bezier(.22,1,.36,1);
+  }
+  @keyframes thinking-panel-sheet-in{
+    from{transform:translateY(42px);opacity:.55}
+    to{transform:translateY(0);opacity:1}
+  }
+}
+
+/* P_perf-mobile-backdrop — backdrop-filter blur is one of the most
+   expensive effects on low-end phones and makes overlay open/close
+   visibly janky. Mobile overlays keep the dim scrim but drop the blur. */
+@media (max-width:768px){
+  .cmd-k-overlay,
+  .settings-overlay,
+  .profile-overlay,
+  .usage-overlay,
+  .share-overlay,
+  .thinking-panel-backdrop,
+  .workspace-dialog,
+  .tutor-explore-overlay,
+  .viz-modal-backdrop{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  body.composer-tools-open::after{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+}
+
+@media (max-width:640px){
+  .canvas-block-header{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .canvas-block-actions{
+    width:100%;
+    justify-content:flex-end;
+  }
+  .canvas-block-chip{
+    align-self:flex-start;
+  }
+}
+.library-file-preview-card{width:min(860px,calc(100vw - 36px));max-height:min(820px,calc(100dvh - 36px));display:flex;flex-direction:column}.library-file-preview-card .workspace-dialog-title{flex:0 0 auto}.library-file-preview-media{display:flex;align-items:center;justify-content:center;min-height:180px;max-height:calc(100dvh - 190px);overflow:auto;border-radius:9px;background:hsl(var(--bg-200))}.library-file-preview-media img{display:block;max-width:100%;max-height:calc(100dvh - 210px);object-fit:contain}.library-file-preview-media video{display:block;max-width:100%;max-height:calc(100dvh - 210px)}.library-file-preview-audio{display:flex;align-items:center;justify-content:center;min-height:110px;border-radius:9px;background:hsl(var(--bg-200))}.library-file-preview-audio audio{width:min(520px,100%)}.library-file-preview-frame{width:100%;height:min(650px,calc(100dvh - 190px));border:0;border-radius:9px;background:#fff}.library-file-preview-loading{display:flex;align-items:center;justify-content:center;min-height:180px;color:hsl(var(--text-500));font-size:12px}.library-file-preview-text{box-sizing:border-box;width:100%;max-height:min(620px,calc(100dvh - 190px));margin:0;padding:13px 14px;overflow:auto;border:0.5px solid hsl(var(--border-300)/.35);border-radius:9px;background:hsl(var(--bg-200));color:hsl(var(--text-200));font:12px/1.6 var(--font-mono,ui-monospace,SFMono-Regular,Consolas,monospace);white-space:pre-wrap;overflow-wrap:anywhere}.library-artifact-source{min-height:220px}.library-file-preview-note{margin-top:8px}.library-file-preview-error{min-height:140px;padding:24px 12px}.library-file-preview-error span{max-width:100%;overflow-wrap:anywhere}
+
+/* ─────────────────────────────────────────────────────────────────────
+   COOKIE CONSENT BANNER
+   Fixed bottom-center card shown until the visitor makes a choice.
+   Non-essential cookies are gated in src/cookieConsent.js.
+   ───────────────────────────────────────────────────────────────────── */
+.socrates-cookie-consent{
+  position:fixed;
+  left:50%;
+  bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);
+  z-index:2147483000;
+  width:min(560px,calc(100vw - 24px));
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:16px 18px;
+  border-radius:14px;
+  background:hsl(var(--bg-000));
+  border:0.5px solid hsl(var(--border-300)/0.35);
+  box-shadow:0 18px 60px hsl(var(--always-black)/0.35);
+  color:hsl(var(--text-200));
+  font-size:calc(13px * var(--app-font-scale,1));
+  line-height:1.5;
+  pointer-events:auto;
+}
+.socrates-cookie-consent-title{
+  font-size:calc(14px * var(--app-font-scale,1));
+  font-weight:600;
+  color:hsl(var(--text-100));
+}
+.socrates-cookie-consent-message{
+  margin:0;
+  color:hsl(var(--text-300));
+}
+.socrates-cookie-consent-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:2px;
+}
+.socrates-cookie-consent-btn{
+  padding:8px 14px;
+  border-radius:999px;
+  border:0.5px solid hsl(var(--border-300)/0.4);
+  background:transparent;
+  color:hsl(var(--text-100));
+  font-size:calc(12.5px * var(--app-font-scale,1));
+  font-weight:500;
+  cursor:pointer;
+  transition:background .12s ease,border-color .12s ease;
+}
+.socrates-cookie-consent-btn:hover{
+  background:hsl(var(--bg-200));
+}
+.socrates-cookie-consent-btn.primary{
+  background:hsl(var(--accent-000));
+  border-color:transparent;
+  color:hsl(var(--oncolor-100));
+}
+.socrates-cookie-consent-btn.primary:hover{
+  background:hsl(var(--accent-100));
+}
+.socrates-cookie-consent-link{
+  align-self:flex-start;
+  font-size:calc(12px * var(--app-font-scale,1));
+  color:hsl(var(--accent-000));
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+.socrates-cookie-consent-link:hover{
+  color:hsl(var(--accent-100));
+}
+@media (max-width:520px){
+  .socrates-cookie-consent{
+    bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    width:calc(100vw - 16px);
+    padding:14px 16px;
+  }
+  .socrates-cookie-consent-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .socrates-cookie-consent-btn{
+    width:100%;
+    text-align:center;
+  }
+}
+
+/* When consent is shown before authentication, it must not sit above the
+   sign-in card as a viewport-fixed layer. Keep it in the auth gate's scroll
+   flow instead; the card remains usable and the banner is still reachable
+   below the form. Once the gate closes, cookieConsent.js moves it back to
+   body and the normal fixed treatment resumes. */
+.auth-gate:has(.socrates-cookie-consent--auth){
+  justify-content:flex-start;
+  gap:16px;
+}
+.socrates-cookie-consent--auth{
+  position:static;
+  left:auto;
+  bottom:auto;
+  transform:none;
+  z-index:auto;
+  width:min(420px,calc(100vw - 24px));
+  margin:0 auto;
+  flex:0 0 auto;
+}
+@media (max-width:520px){
+  .auth-gate:has(.socrates-cookie-consent--auth){
+    padding-top:24px;
+    padding-bottom:24px;
+  }
+  .socrates-cookie-consent--auth{
+    width:calc(100vw - 24px);
+    padding:12px 14px;
+    gap:8px;
+  }
+}
+
+/* ── Codex App activity stream refinement ──────────────────────────
+   The execution UI is intentionally open rather than card-stacked. A
+   tool row should read like a quiet event in the assistant's transcript:
+   icon, state label, optional command preview, then an indented detail
+   surface when the row is expanded. */
+:root{
+  --tool-activity-bg:transparent;
+  --tool-activity-border:hsl(var(--border-300)/.26);
+  --tool-activity-text:hsl(var(--text-100));
+  --tool-activity-row:hsl(var(--text-400));
+  --tool-activity-row-hover:hsl(var(--text-200));
+  --tool-activity-focus:hsl(var(--text-300)/.58);
+  --tool-activity-code-bg:hsl(var(--bg-200)/.72);
+  --tool-activity-danger:hsl(0 58% 62%);
+  --tool-activity-danger-bg:hsl(0 58% 50%/.12);
+}
+
+.msg.assistant .msg-body:has(.tool-inline),
+.msg.assistant .msg-body:has(.tool-run-group),
+.msg.assistant .msg-body:has(.agent-run-host),
+.msg.assistant .msg-body:has(.agent-tool-card){
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:var(--tool-activity-text);
+}
+.msg.assistant .msg-body:has(.tool-inline) p,
+.msg.assistant .msg-body:has(.tool-inline) li,
+.msg.assistant .msg-body:has(.tool-run-group) p,
+.msg.assistant .msg-body:has(.tool-run-group) li,
+.msg.assistant .msg-body:has(.agent-tool-card) p,
+.msg.assistant .msg-body:has(.agent-tool-card) li{color:hsl(var(--text-100))}
+
+/* Live compact rows. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+  display:block;
+  /* A status line should read like one sentence of the answer, not a card.
+     Keep only a compact rhythm break around it; details remain available on
+     demand without surrounding the closed row in chrome. */
+  margin:9px 0;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:var(--tool-activity-row);
+  transition:color .16s ease,opacity .16s ease;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:first-child{margin-top:3px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:last-child{margin-bottom:3px}
+
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-height:24px;
+  padding:0;
+  gap:7px;
+  border-radius:6px;
+  background:transparent;
+  color:var(--tool-activity-row);
+  cursor:pointer;
+  list-style:none;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head::-webkit-details-marker{display:none}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:hover,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-head{color:var(--tool-activity-row-hover)}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:focus-visible{
+  outline:2px solid var(--tool-activity-focus);
+  outline-offset:4px;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 17px;
+  width:17px;
+  height:17px;
+  color:currentColor;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-tool-icon svg{width:15px;height:15px;stroke-width:1.5}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-label{
+  min-width:0;
+  flex:0 1 auto;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:inherit;
+  font-size:13px;
+  font-weight:430;
+  line-height:1.4;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta{
+  flex:0 0 auto;
+  margin-left:auto;
+  color:hsl(var(--text-500));
+  font:11px/1.3 var(--font-mono);
+}
+/* P_tool-chevron-single — this rule used to draw a CSS border triangle
+   (border-width:0 1.4px 1.4px 0 on a 9×9 box, rotate(45deg)) INSIDE the
+   same span that already carries the chevron SVG, and it never hid that
+   SVG. Two different glyphs were therefore stacked and clipped inside a
+   9×9 box on every tool row — the reason the expand/collapse arrow
+   looked hand-drawn. Render the SVG alone at its designed 16px size and
+   rotate the box, not the artwork, so the glyph's exact 45° arms
+   survive the open/closed transition. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev{
+  position:relative;
+  flex:0 0 14px;
+  width:14px;
+  height:14px;
+  margin:0 0 0 1px;
+  border:0;
+  opacity:.45;
+  transform:rotate(0deg);
+  transition:transform .18s cubic-bezier(.4,0,.2,1),opacity .18s ease;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev svg{width:14px;height:14px;stroke-width:1.5}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head:hover .tool-inline-chev{opacity:.85}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[open] .tool-inline-chev{transform:rotate(90deg);opacity:.85}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{animation:neutralTextWave 3.2s linear infinite}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-tool-icon,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="error"] .tool-inline-label{color:var(--tool-activity-danger)}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
+  margin:7px 0 1px 24px;
+  padding:0 0 0 12px;
+  border:0;
+  border-left:1px solid var(--tool-activity-border);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-title{
+  margin:0 0 6px;
+  color:hsl(var(--text-500));
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:.01em;
+  /* Uppercasing is a Latin-device trick; half these titles are Chinese
+     ("来源", "参数") where text-transform does nothing but the widened
+     letter-spacing breaks every glyph apart. */
+  text-transform:none;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-value,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-code-preview{
+  margin:0 0 8px;
+  padding:8px 10px;
+  border:1px solid var(--tool-activity-border);
+  border-radius:9px;
+  background:var(--tool-activity-code-bg);
+  color:hsl(var(--text-300));
+  font:12px/1.55 var(--font-mono);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+/* A running call streams its arguments — and then its stdout — into the row
+   itself, outside any collapsible. That is the point of the live row: the
+   reader sees the program being executed instead of a spinner. Cap the box so
+   a long script cannot push the answer off screen, and give the output block a
+   quieter face than the code above it so the pair reads as "ran this" /
+   "printed this" rather than two copies of the same text. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-code-preview{
+  max-height:180px;
+  overflow:auto;
+  margin:0 0 4px;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-code-preview.is-output{
+  margin:0;
+  border-color:transparent;
+  background:transparent;
+  color:hsl(var(--text-500));
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-section[data-kind="error"] .tool-inline-detail-value{
+  border-color:var(--tool-activity-danger-bg);
+  background:var(--tool-activity-danger-bg);
+  color:var(--tool-activity-danger);
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-src-host,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail-empty{color:hsl(var(--text-500))}
+.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src{color:hsl(var(--text-300));text-decoration-color:hsl(var(--text-500)/.6)}
+.msg.assistant .msg-body:has(.tool-inline) a.tool-inline-src:hover{color:hsl(var(--text-100));background:transparent}
+
+/* Detailed/history rows use the same anatomy as live rows. The body still
+   contains the existing Input/Output sections, but those sections now feel
+   like an indented execution trace instead of a nested dashboard card. */
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card,
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-list .agent-tool-card{
+  display:block;
+  margin:14px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head{
+  display:flex;
+  align-items:center;
+  min-height:26px;
+  padding:0;
+  gap:10px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:var(--tool-activity-row);
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:hover{background:transparent;color:var(--tool-activity-row-hover)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-head:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:4px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-state-icon{display:none!important}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 19px;
+  width:19px;
+  height:19px;
+  border:0;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:currentColor!important;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-icon svg{width:17px;height:17px;stroke-width:1.7}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-name{min-width:0;color:inherit;font-size:13.5px;font-weight:450}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{
+  min-width:0;
+  flex:1 1 auto;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:hsl(var(--text-500));
+  font:12px/1.4 var(--font-mono);
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-status{flex:0 0 auto;color:hsl(var(--text-500));font-size:11px}
+/* P_tool-chevron-single — same double-glyph defect as .tool-inline-chev:
+   a ::before border triangle was drawn on top of the 14px chevron SVG
+   inside a 9×9 box (font-size:0 only hides text, not the SVG child).
+   Render the SVG alone and rotate the box. */
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev{
+  flex:0 0 16px;
+  width:16px;
+  height:16px;
+  margin:0 0 0 2px;
+  color:currentColor;
+  font-size:0;
+  opacity:.5;
+  transform:rotate(0deg);
+  transition:transform .18s cubic-bezier(.4,0,.2,1),opacity .18s ease;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev svg,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev svg{width:16px;height:16px;stroke-width:1.5}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev::before,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-chev::before{content:none}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card.open .agent-tool-chev,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-card.open .agent-tool-chev{transform:rotate(180deg);opacity:.85}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{
+  margin:9px 0 2px 29px;
+  padding:0 0 0 17px;
+  border:0;
+  border-left:1px solid var(--tool-activity-border);
+  background:transparent;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-section{margin:0 0 10px;border:0;background:transparent}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-section-head,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-section-head{min-height:18px;padding:0 0 5px;color:hsl(var(--text-500));font-size:11px}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out{
+  margin:0;
+  border:1px solid var(--tool-activity-border);
+  border-radius:9px;
+  background:var(--tool-activity-code-bg);
+  color:hsl(var(--text-300));
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-code{padding:8px 10px;font:12px/1.55 var(--font-mono)}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
+.msg.assistant .msg-body:has(.tool-run-group) .agent-tool-out{padding:8px 10px}
+
+@media(max-width:768px){
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail,
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-body{margin-left:23px;padding-left:13px}
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
+  .msg.assistant .msg-body:has(.tool-run-group) .agent-tool-input{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev,
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev{transition:none}
+}
+
+/* Keep the activity row's geometry stable while its state changes. The
+   spinner and shimmer own the running animation; settled rows explicitly
+   clear both so completed/error states never keep moving. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{min-height:24px}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-spinner{
+  animation:tool-inline-spin .95s linear infinite;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-state="running"]) .tool-inline-spinner,
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-state="running"]) .tool-inline-label.shimmer-text{
+  animation:none;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="done"] .tool-inline-label{
+  color:hsl(var(--text-400));
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="stopped"] .tool-inline-label{
+  color:hsl(var(--text-500));
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-detail{
+  will-change:contents;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card[data-tool-state="running"] .agent-tool-state-icon::before{
+  animation:exec-artifact-spin .9s linear infinite;
+}
+.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card:not([data-tool-state="running"]) .agent-tool-state-icon::before{
+  animation:none;
+}
+@media(prefers-reduced-motion:reduce){
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-spinner,
+  .msg.assistant .msg-body:has(.tool-inline) .tool-inline-label.shimmer-text,
+  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon::before{animation:none!important}
+}
+
+/* ── Codex agent step stream ────────────────────────────────────────
+   A workspace-agent turn is a sequence of small actions (ran a command,
+   edited files, read files, updated the plan). They belong in the reading
+   flow at the point they happened, so they reuse the activity surface's
+   tokens and geometry rather than introducing a second card language:
+   no fills, no borders, a monochrome stroke icon, a muted label, and an
+   optional monospace excerpt. Anything worth inspecting (full command,
+   output tail, changed paths) hides behind the row's native disclosure.
+
+   A message that only contains agent steps must get the same quiet
+   surface as one containing tool rows, hence :has(.agent-run-host) in the
+   surface selectors above being mirrored here. */
+.msg.assistant .msg-body:has(.agent-run-host){
+  box-sizing:border-box;
+  color:var(--tool-activity-text);
+}
+.agent-run-host{display:block;margin:2px 0 0}
+.agent-run{
+  display:block;
+  margin:6px 0 10px;
+  padding:0 0 0 3px;
+  border-left:1px solid var(--tool-activity-border);
+  color:var(--tool-activity-row);
+}
+.agent-run-shell{display:block;border:0;background:none}
+.agent-run-summary{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-height:24px;
+  padding:0 0 0 11px;
+  list-style:none;
+  cursor:pointer;
+  color:hsl(var(--text-500));
+  font-size:12.5px;
+  line-height:1.4;
+}
+.agent-run-summary::-webkit-details-marker{display:none}
+.agent-run-summary::marker{content:""}
+.agent-run-summary:hover{color:var(--tool-activity-row-hover)}
+.agent-run-summary:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:3px;border-radius:6px}
+.agent-run-chev{
+  width:8px;height:8px;
+  border:solid currentColor;
+  border-width:0 1.3px 1.3px 0;
+  transform:rotate(45deg) translateY(-1px);
+  transition:transform .16s ease;
+  opacity:.75;
+}
+.agent-run-shell[open] > .agent-run-summary .agent-run-chev{transform:rotate(225deg) translate(-1px,-1px)}
+.agent-run[data-state="running"] .agent-run-elapsed{color:hsl(var(--accent-000)/.85)}
+.agent-run[data-state="failed"] .agent-run-elapsed{color:var(--tool-activity-danger)}
+.agent-run-steps{display:flex;flex-direction:column;gap:2px;padding:2px 0 0 11px}
+
+.agent-step{display:block;border:0;background:none;color:inherit}
+.agent-step-head{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:26px;
+  padding:1px 0;
+  list-style:none;
+  cursor:pointer;
+  color:var(--tool-activity-row);
+  transition:color .16s ease;
+}
+.agent-step-head::-webkit-details-marker{display:none}
+.agent-step-head::marker{content:""}
+.agent-step-head:hover{color:var(--tool-activity-row-hover)}
+.agent-step-head:focus-visible{outline:2px solid var(--tool-activity-focus);outline-offset:3px;border-radius:6px}
+.agent-step.is-flat > .agent-step-head{cursor:default}
+.agent-step-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 17px;width:17px;height:17px;
+  color:currentColor;opacity:.9;
+}
+.agent-step-icon svg{width:16px;height:16px;stroke-width:1.5}
+.agent-step-label{
+  flex:0 0 auto;
+  font-size:13.5px;
+  font-weight:450;
+  line-height:1.45;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.agent-step-cmd{
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding:0;
+  border:0;
+  background:none;
+  color:hsl(var(--text-500));
+  font:12px/1.45 var(--font-mono);
+}
+.agent-step-meta{
+  flex:0 0 auto;
+  margin-left:auto;
+  color:hsl(var(--text-500));
+  font:11px/1.3 var(--font-mono);
+  white-space:nowrap;
+}
+/* The activity surface gives every <code> a filled chip, which turns the
+   inline command excerpt into a wide block. A step's excerpt is prose-level
+   detail, so it stays unfilled and sits directly next to the label. */
+.msg.assistant .msg-body:has(.agent-run-host) .agent-step-cmd,
+.msg.assistant .msg-body:has(.tool-inline) .agent-step-cmd{
+  padding:0;
+  border-radius:0;
+  background:none;
+  color:hsl(var(--text-500));
+  font:12px/1.45 var(--font-mono);
+}
+.agent-step[data-state="running"] .agent-step-icon{opacity:1;color:hsl(var(--accent-000)/.9)}
+.agent-step[data-state="failed"] .agent-step-icon,
+.agent-step[data-state="failed"] .agent-step-label,
+.agent-step[data-state="failed"] .agent-step-meta{color:var(--tool-activity-danger)}
+.agent-step-body{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  margin:1px 0 6px;
+  padding:0 0 0 26px;
+}
+.agent-step-pre{
+  max-height:200px;
+  margin:0;
+  padding:6px 9px;
+  overflow:auto;
+  border-radius:7px;
+  background:var(--tool-activity-code-bg);
+  color:hsl(var(--text-400));
+  font:11.5px/1.5 var(--font-mono);
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.agent-step-pre[data-kind="command"]{color:hsl(var(--text-300))}
+.agent-step-paths{
+  display:flex;flex-direction:column;gap:2px;
+  margin:0;padding:0;
+  list-style:none;
+  color:hsl(var(--text-400));
+  font:11.5px/1.5 var(--font-mono);
+}
+
+/* The agent's own todo list. One card per run, rewritten in place as
+   Codex re-sends the whole list, so the reader watches items tick over
+   instead of scrolling through repeated snapshots. */
+.agent-plan{
+  display:block;
+  margin:2px 0 8px;
+  padding:9px 12px 10px;
+  border-radius:10px;
+  background:var(--tool-activity-code-bg);
+}
+.agent-plan-head{display:flex;align-items:center;gap:8px;color:var(--tool-activity-text);font-size:13px;font-weight:500}
+.agent-plan-icon{display:inline-flex;flex:0 0 16px;width:16px;height:16px}
+.agent-plan-icon svg{width:15px;height:15px;stroke-width:1.5}
+.agent-plan-list{
+  display:flex;flex-direction:column;gap:4px;
+  margin:7px 0 0;padding:0;
+  list-style:none;
+  counter-reset:agent-plan;
+}
+.agent-plan-item{
+  display:flex;align-items:flex-start;gap:8px;
+  color:hsl(var(--text-400));
+  font-size:13px;line-height:1.5;
+}
+.agent-plan-mark{
+  position:relative;
+  flex:0 0 13px;width:13px;height:13px;
+  margin-top:3px;
+  border:1.3px solid hsl(var(--border-300));
+  border-radius:4px;
+}
+.agent-plan-item[data-status="in_progress"]{color:hsl(var(--text-200))}
+.agent-plan-item[data-status="in_progress"] .agent-plan-mark{
+  border-color:hsl(var(--accent-000)/.7);
+  background:hsl(var(--accent-000)/.12);
+}
+.agent-plan-item[data-status="done"]{color:hsl(var(--text-500))}
+.agent-plan-item[data-status="done"] .agent-plan-text{text-decoration:line-through;text-decoration-thickness:1px}
+.agent-plan-item[data-status="done"] .agent-plan-mark{
+  border-color:hsl(var(--accent-000)/.4);
+  background:hsl(var(--accent-000)/.24);
+}
+.agent-plan-item[data-status="done"] .agent-plan-mark::after{
+  content:"";
+  position:absolute;left:3.2px;top:1px;
+  width:4px;height:7px;
+  border:solid hsl(var(--accent-000)/.9);
+  border-width:0 1.4px 1.4px 0;
+  transform:rotate(42deg);
+}
+.agent-plan-note{margin:7px 0 0;color:hsl(var(--text-500));font-size:12px;line-height:1.5}
+

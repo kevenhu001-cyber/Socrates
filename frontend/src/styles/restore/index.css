@@ -1,0 +1,39 @@
+/*
+ * styles/restore/index.css — consolidated pre-rework visual layer.
+ *
+ * Restores the UI that commit 54b7cea0 ("rework chat surfaces to reference
+ * capsule design") replaced. Each file below is one of the stylesheets that
+ * was actually loaded at 54b7cea0^, kept verbatim and imported in the
+ * original cascade order — later files win equal-specificity conflicts
+ * exactly as they did then:
+ *
+ *   1. chatgpt-ui.css     — ChatGPT-like visual language over the shell
+ *   2. chatgpt-v2.css     — desktop/mobile workspace geometry
+ *   3. ref-baseline.css   — ChatGPT reference baseline (shell + workspaces)
+ *   4. mobile-parity.css  — ≤768px monochrome phone layout
+ *   5. chat-surface.css   — unified conversation surface (composers/messages)
+ *   6. chatgpt-parity.css — final owner: shell, landing composer, tool menu,
+ *                           plugin directory
+ *   7. fixes.css          — post-restore adjustments against the current
+ *                           DOM/modular base (NOT history; add tweaks here)
+ *
+ * Excluded on purpose:
+ *   - lobe-overrides.css — present at 54b7cea0^ but never linked; dead code.
+ *   - tool-card.css      — still lives at components/tool-card.css.
+ *
+ * Self-containment: every custom property these rules consume is either
+ * defined inside this directory (--cg-*, --conversation-*, --chatgpt-* …) or
+ * referenced with an explicit fallback, so the layer does not depend on the
+ * retired themes.css token set.
+ *
+ * This directory is @imported LAST from styles/index.css so its rules
+ * outrank the modular styles tree wherever selectors overlap.
+ */
+
+@import './chatgpt-ui.css';
+@import './chatgpt-v2.css';
+@import './ref-baseline.css';
+@import './mobile-parity.css';
+@import './chat-surface.css';
+@import './chatgpt-parity.css';
+@import './fixes.css';
