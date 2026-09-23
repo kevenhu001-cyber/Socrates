@@ -109,7 +109,7 @@
 #appShell .workspace-dialog-card,
 #appShell .modal,
 #appShell .modal-card,
-#appShell .cmd-k-card {
+#appShell .cmd-k-modal {
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-2xl);
   background: var(--ui-bg-overlay);
