@@ -56,6 +56,10 @@ const SessionPayloadSchema = z.object({
     (v) => (v == null || v === '' ? null : (isUuid(v) ? v : null)),
     z.string().uuid().optional().nullable(),
   ),
+  assistantId: z.preprocess(
+    (v) => (v === undefined ? undefined : (v == null || v === '' ? null : (isUuid(v) ? v : null))),
+    z.string().uuid().optional().nullable(),
+  ),
   messages: z.array(z.object({
     role: z.string(),
     rawText: z.string().max(200000).optional().nullable(),
@@ -352,7 +356,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
     // over-capacity states truncate instead of 400-looping forever.
     // zod still throws ZodError on structurally malformed input → errorHandler returns 400.
     const { id, topic, title, domain, mode, phase, kind, examData,
-            projectId,
+            projectId, assistantId,
             messages: msgs, kbNodes, mistakes, pinned, totalQ, currentNode,
             teachingStage, currentExampleIdx, practiceAttempts, practicePhase,
             teachingPlan, boundariesHistory, mistakeFilter, branchedFrom } = SessionPayloadSchema.parse(sanitizeSessionPayload(req.body));
@@ -434,7 +438,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
 
       /* Tier-based session limit — only enforce when creating a NEW
        * session. Updates to existing sessions are always allowed. */
-      const [existingSession] = await tx.select({ id: sessions.id })
+      const [existingSession] = await tx.select({ id: sessions.id, assistantId: sessions.assistantId })
         .from(sessions)
         .where(eq(sessions.id, sid))
         .limit(1);
@@ -451,6 +455,13 @@ router.post('/', writeLimiter, async (req, res, next) => {
         }
       }
 
+      if (assistantId) {
+        const [ownedAssistant] = await tx.select({ id: artifacts.id }).from(artifacts)
+          .where(and(eq(artifacts.id, assistantId), eq(artifacts.userId, req.userId!), eq(artifacts.type, 'assistant'))).limit(1);
+        if (!ownedAssistant) throw new BadRequest('assistantId does not reference one of your assistants');
+      }
+      const storedAssistantId = assistantId === undefined ? existingSession?.assistantId || null : assistantId;
+
       // Upsert session
       await tx.insert(sessions).values({
         id: sid,
@@ -463,6 +474,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
         kind: kind || 'chat',
         examData: examData || null,
         projectId: projectId || null,
+        assistantId: storedAssistantId,
         pinned: !!pinned,
         kbNodes: kbNodes || [],
         mistakes: mistakes || [],
@@ -490,6 +502,7 @@ router.post('/', writeLimiter, async (req, res, next) => {
           kind: sql`EXCLUDED.kind`,
           examData: sql`EXCLUDED.exam_data`,
           projectId: sql`EXCLUDED.project_id`,
+          assistantId: sql`EXCLUDED.assistant_id`,
           pinned: sql`EXCLUDED.pinned`,
           kbNodes: sql`EXCLUDED.kb_nodes`,
           mistakes: sql`EXCLUDED.mistakes`,
@@ -746,6 +759,16 @@ router.patch('/:id', async (req, res, next) => {
     const patch: Record<string, unknown> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
+    }
+    if (req.body.assistantId !== undefined) {
+      const assistantId = req.body.assistantId;
+      if (assistantId !== null) {
+        if (!isUuid(assistantId)) throw new BadRequest('Invalid assistantId');
+        const [ownedAssistant] = await db.select({ id: artifacts.id }).from(artifacts)
+          .where(and(eq(artifacts.id, assistantId), eq(artifacts.userId, req.userId!), eq(artifacts.type, 'assistant'))).limit(1);
+        if (!ownedAssistant) throw new BadRequest('assistantId does not reference one of your assistants');
+      }
+      patch.assistantId = assistantId;
     }
     patch.updatedAt = new Date();
 

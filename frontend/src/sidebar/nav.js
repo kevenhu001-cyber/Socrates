@@ -3,6 +3,7 @@ import { stateStore } from "../state/store.js";
 import { showToast } from "../ui/toast.js";
 import { openPromptTemplatesModal } from "../ui/promptTemplates.js";
 import { getConnectorIconMarkup as connectorIcon } from "../connector-icons.ts";
+import { renderCreationSurface } from "../ui/creationSurfaces.js";
 
 /* React migration bridge — publishes scheduled task state so the React
    compatibility root can render the page. Installed by
@@ -47,9 +48,9 @@ function _publishWorkspaceState() {
   } catch (_) { /* swallow */ }
 }
 
-var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "exam", "admin", "more"];
+var NAV_NAMES = ["library", "projects", "scheduled", "plugins", "images", "assistants", "sites", "exam", "admin", "more"];
 var workspaceCache = { library: { files: [], artifacts: [], query: "", selection: {}, renameItem: null }, projects: [], tasks: [], connectors: [], mcp: [], mcpConfigured: false, mcpProjectId: null, openConnectorAvailable: false };
-var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", exam: "/exam", admin: "/admin" };
+var WORKSPACE_ROUTES = { library: "/library", projects: "/projects", scheduled: "/scheduled", plugins: "/plugins", images: "/images", assistants: "/assistants", sites: "/sites", exam: "/exam", admin: "/admin" };
 var CONNECTOR_RETURN_CONTEXT_KEY = "socrates-connector-return-v1";
 var CONNECTOR_RETURN_CONTEXT_TTL = 10 * 60 * 1000;
 
@@ -163,7 +164,7 @@ export function closeAllPanels() {
 
 /* Hide all main-content pages (library, projects, scheduled, plugins, exam, admin). */
 function hideMainPages() {
-  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "adminPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
+  ["libraryPanel", "spacesPanel", "scheduledPanel", "pluginsPanel", "imagesPanel", "assistantsPanel", "sitesPanel", "adminPanel", "examView"].forEach(function (id) { var p = byId(id); if (p) p.classList.add("hidden"); });
   document.body.classList.remove("workspace-active");
   document.body.classList.remove("plugins-active");
   var pluginTabs = byId("pluginWorkspaceTabs"); if (pluginTabs) pluginTabs.hidden = true;
@@ -360,7 +361,7 @@ function pushWorkspaceRoute(name) {
   if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
 }
 export function openNav(name, options) {
-  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, exam: openExam, admin: openAdmin, more: openMoreNav };
+  var openers = { library: openLibrary, projects: openProjects, scheduled: openScheduled, plugins: openPlugins, images: function () { openCreation('images'); }, assistants: function () { openCreation('assistants'); }, sites: function () { openCreation('sites'); }, exam: openExam, admin: openAdmin, more: openMoreNav };
   if (!openers[name]) return;
   if (name !== "more" && !(options && options.fromRoute)) pushWorkspaceRoute(name);
   setActiveNav(name);
@@ -380,6 +381,11 @@ export function openNav(name, options) {
       if (typeof window.syncSidebarBtns === "function") window.syncSidebarBtns();
     }
   }
+}
+function openCreation(name) {
+  hideChatAndTopic();
+  renderCreationSurface(name);
+  showMainPage(name + "Panel");
 }
 export function syncWorkspaceRoute() {
   var page = workspaceForPath(location.pathname);

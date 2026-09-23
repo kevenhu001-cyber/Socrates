@@ -310,7 +310,9 @@ function collectRecognitionResult(session, event) {
 
 function wireRecognition(session, recognition) {
   session.recognition = recognition;
-  recognition.lang = document.documentElement.lang || navigator.language || 'en-US';
+  var voiceLanguage = 'auto';
+  try { voiceLanguage = localStorage.getItem('socrates-voice-language') || 'auto'; } catch (_) {}
+  recognition.lang = voiceLanguage === 'auto' ? (document.documentElement.lang || navigator.language || 'en-US') : voiceLanguage;
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;

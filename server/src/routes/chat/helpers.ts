@@ -13,7 +13,7 @@
 
 import { z } from 'zod';
 import { and, eq, gte, sql } from 'drizzle-orm';
-import { TooManyRequests } from '../../lib/errors.js';
+import { TooManyRequests, NotFound } from '../../lib/errors.js';
 import { getBeagleQuota } from '../../lib/tiers.js';
 import { getDb } from '../../db/index.js';
 import { usageEvents } from '../../db/schema.js';
@@ -40,6 +40,27 @@ import { getTeacherModePrompt, getCodeInterpreterPrompt } from '../../lib/prompt
 export { getTeacherModePrompt, getCodeInterpreterPrompt };
 
 const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
+
+export async function appendAssistantInstructions(
+  messages: ChatMessage[], assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
+): Promise<ChatMessage[]> {
+  if (!userId) return messages;
+  const { artifacts, sessions } = await import('../../db/schema.js');
+  let selectedId = assistantId;
+  if (!selectedId && sessionId) {
+    const [session] = await getDb().select({ assistantId: sessions.assistantId }).from(sessions)
+      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId))).limit(1);
+    selectedId = session?.assistantId || undefined;
+  }
+  if (!selectedId) return messages;
+  const [assistant] = await getDb().select({ source: artifacts.source }).from(artifacts)
+    .where(and(eq(artifacts.id, selectedId), eq(artifacts.userId, userId), eq(artifacts.type, 'assistant'))).limit(1);
+  if (!assistant) throw new NotFound('Assistant not found');
+  try {
+    const config = JSON.parse(assistant.source) as { instructions?: string };
+    return appendServerPolicy(messages, '[User-selected assistant]', String(config.instructions || '').slice(0, 12000));
+  } catch { return messages; }
+}
 
 function appendServerPolicy(messages: ChatMessage[], marker: string, prompt: string | null): ChatMessage[] {
   if (!prompt) return messages;
@@ -629,6 +650,8 @@ export const ChatPayloadSchema = z.object({
      retrieval, so a forged sessionId yields an empty injection
      rather than another user's history. */
   ragSessionId: z.string().max(64).optional(),
+  assistantId: z.string().uuid().optional(),
+  sessionId: z.string().uuid().optional(),
   /* P_deepseek-mode — DeepSeek SDK flags that flip chain-of-
      thought on. The frontend sends these when the active model
      looks like a DeepSeek-family reasoning model. We forward
@@ -859,6 +882,7 @@ export async function prepareChatRequest(
   // failure modes degrade to no-injection; the chat turn never fails
   // because RAG failed.
   finalMessages = await appendRagContext(finalMessages, parsed.ragSessionId, req.userId ?? undefined);
+  finalMessages = await appendAssistantInstructions(finalMessages, parsed.assistantId, parsed.sessionId, req.userId ?? undefined);
   // Tool-specific routing is added by the streaming route only when the
   // matching native tool is present. Sync requests and unavailable tools do
   // not receive stale instructions that invite an impossible call.

@@ -281,6 +281,10 @@ export async function loadSession(id){
       "kb.boundariesHistory":Array.isArray(s.boundariesHistory)?s.boundariesHistory:[],
       "kb.mistakeFilter":s.mistakeFilter||"all"
     }});
+    try {
+      if (s.assistantId) sessionStorage.setItem("socrates-active-assistant", s.assistantId);
+      else sessionStorage.removeItem("socrates-active-assistant");
+    } catch (_) {}
     if(s.projectId){
       apiFetch("/api/projects").then(function(r){
         var rows=(r&&r.projects)||[];

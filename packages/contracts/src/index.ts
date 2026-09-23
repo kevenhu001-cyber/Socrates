@@ -152,6 +152,7 @@ export interface Session extends TutorState {
   kind?: 'chat' | 'tutor' | 'exam' | string;
   examData?: ExamData | null;
   projectId?: string | null;
+  assistantId?: string | null;
   pinned?: boolean;
   archivedAt?: string | null;
   preview?: string | null;
@@ -269,6 +270,8 @@ export interface ChatRequest {
   temperature?: number;
   max_tokens?: number;
   mode?: 'chat' | 'tutor';
+  assistantId?: string;
+  sessionId?: string;
   reasoning_effort?: 'low' | 'medium' | 'high';
   response_speed?: 'standard' | 'fast';
   extra_body?: JsonObject;

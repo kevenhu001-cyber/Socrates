@@ -106,6 +106,8 @@ export function buildChatRequestBody(messages, maxTokens, temperature) {
        chunk index, and injects the hits as an untrusted context
        block. An empty session index degrades to no injection. */
     if (activeSessionId) body.ragSessionId = activeSessionId;
+    var assistantId = sessionStorage.getItem('socrates-active-assistant');
+    if (assistantId) body.assistantId = assistantId;
   } catch (_) { /* keep request compatible with isolated test harnesses */ }
 
   var customInst = (typeof window.getCustomInstructionsString === "function") ? window.getCustomInstructionsString() : "";

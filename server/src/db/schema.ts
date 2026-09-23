@@ -92,6 +92,7 @@ export const sessions = pgTable('sessions', {
   examData: jsonb('exam_data'),
   domain: text('domain'),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  assistantId: uuid('assistant_id'),
   pinned: boolean('pinned').notNull().default(false),
   archivedAt: timestamp('archived_at', { withTimezone: true }),
   preview: text('preview'),
@@ -132,6 +133,7 @@ export const sessions = pgTable('sessions', {
   index('sessions_archived_at_idx').on(table.archivedAt),
   index('sessions_updated_at_idx').on(table.updatedAt),
   index('sessions_project_id_idx').on(table.projectId),
+  index('sessions_assistant_id_idx').on(table.assistantId),
   index('sessions_kind_idx').on(table.kind),
 ]);
 

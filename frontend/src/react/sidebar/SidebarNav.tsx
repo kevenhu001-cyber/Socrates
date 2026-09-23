@@ -47,6 +47,24 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v3"/><path d="M15 3v3"/><path d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M9 11h6"/><path d="M9 15h4"/></svg>',
   },
   {
+    key: 'images',
+    label: 'Images',
+    i18nKey: 'sidebar.nav.images',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m4 17 5-5 3 3 2-2 6 6"/></svg>',
+  },
+  {
+    key: 'assistants',
+    label: 'Assistants',
+    i18nKey: 'sidebar.nav.assistants',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9 10h.01M15 10h.01M9 15c1.8 1.6 4.2 1.6 6 0"/></svg>',
+  },
+  {
+    key: 'sites',
+    label: 'Sites',
+    i18nKey: 'sidebar.nav.sites',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18"/></svg>',
+  },
+  {
     key: 'skills',
     label: 'Skills',
     i18nKey: 'sidebar.nav.skills',
