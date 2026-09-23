@@ -62,6 +62,12 @@ export function useMorePopoverDispatch(): { pick: (action: MorePopoverAction) =>
     pick: (action: MorePopoverAction) => {
       nav.closeMorePopover();
       switch (action) {
+        case 'images':
+          nav.openNav('images');
+          return;
+        case 'assistants':
+          nav.openNav('assistants');
+          return;
         /* The desktop shell trims the sidebar nav to the five primary
            destinations, so Plugins and Exam route through here — without them the
            two panels had no entry point at all above 768px. */

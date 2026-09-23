@@ -7,7 +7,9 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
-import { enforceServerSystemBoundary, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
+import { enforceServerSystemBoundary, appendAssistantInstructions, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
+import { isUuid } from '../lib/validate.js';
+import { BadRequest } from '../lib/errors.js';
 
 const router = Router();
 
@@ -38,7 +40,8 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       });
     }
 
-    const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body } = req.body;
+    const { messages: rawMessages, model, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body, assistantId, sessionId } = req.body;
+    if ((assistantId && !isUuid(assistantId)) || (sessionId && !isUuid(sessionId))) throw new BadRequest('Invalid assistant or session id');
     const responseSpeed = response_speed === 'fast' ? 'fast' : 'standard';
 
     /* P_beagle-system-prompt — inject the full behavior spec from
@@ -69,6 +72,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
        this the built-in path silently skips the date / locale / image-
        injection rules that /api/chat enforces. */
     messages = injectUserContext(messages, req.user);
+    messages = await appendAssistantInstructions(messages, assistantId, sessionId, req.userId ?? undefined);
     if (beaglePrompt) {
       const BEAGLE_MARKER = '<!-- @beagle-system-prompt -->';
       const alreadyHasBeagle = messages.some(

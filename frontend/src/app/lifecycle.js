@@ -100,6 +100,7 @@ export async function resetApp(){
     try { await saveState.saveInFlight; } catch (_) {}
   }
   saveCurrentSession();
+  try { sessionStorage.removeItem('socrates-active-assistant'); } catch (_) {}
   /* P5.8 — clear the active prompt template. A new session
      is a fresh context; carrying over "summarize mode" from
      the previous chat would silently shape the first

@@ -143,6 +143,7 @@ function doSave(){
     title:stateStore.read("sessionTitle")||stateStore.read("topic"),
     domain:stateStore.read("domain")||stateStore.read("topic"),
     projectId:stateStore.read("currentProjectId")||null,
+    assistantId:sessionStorage.getItem("socrates-active-assistant")||null,
     mode:_appMode(),
     messages:messages,
     kbNodes:stateStore.read("kbNodes"),

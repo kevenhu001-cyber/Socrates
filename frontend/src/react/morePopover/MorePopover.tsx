@@ -36,6 +36,8 @@ const SETTINGS_ICON =
    affordance. Plugins, API settings, display/theme, and sign-out live
    in the primary sidebar/footer, so they are intentionally omitted here. */
 const ITEMS: MenuItemSpec[] = [
+  { action: 'images', labelKey: 'sidebar.nav.images', labelFallback: 'Images', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m4 17 5-5 3 3 2-2 6 6"/></svg>' },
+  { action: 'assistants', labelKey: 'sidebar.nav.assistants', labelFallback: 'Assistants', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9 10h.01M15 10h.01M9 15c2 2 4 2 6 0"/></svg>' },
   { action: 'exam', labelKey: 'sidebar.nav.exam', labelFallback: 'Exam', icon: EXAM_ICON },
   { action: 'skills', labelKey: 'sidebar.more.skills', labelFallback: 'Skills & shortcuts', icon: SKILLS_ICON },
   { action: 'incognito', labelKey: 'sidebar.nav.incognito', labelFallback: 'Incognito chat', icon: INCOGNITO_ICON },

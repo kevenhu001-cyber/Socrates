@@ -60,6 +60,8 @@ tags:
     description: Import from ChatGPT/Claude export (P5.7)
   - name: prompts
     description: Prompt templates (P5.8)
+  - name: creations
+    description: Images, configurable assistants, and publishable sites
 
 paths:
   /api/mobile/bootstrap:
@@ -2252,6 +2254,8 @@ paths:
         tool definitions are used only by the streaming endpoint. Requests may
         set `response_speed` to `standard` or `fast`; unsupported priority
         service automatically falls back to standard and is reported in meta.
+        An optional `assistantId` selects an owned configurable assistant; an
+        owned `sessionId` restores that session's assistant when omitted.
   /api/chat/stream:
     post:
       tags: [users]
@@ -2401,6 +2405,190 @@ paths:
       parameters: [{ $ref: '#/components/parameters/AgentRunId' }]
       responses:
         '202': { description: Retry run accepted }
+  /api/creations/items/{type}:
+    parameters:
+      - in: path
+        name: type
+        required: true
+        schema: { type: string, enum: [assistants, sites] }
+    get:
+      tags: [creations]
+      operationId: listCreationItems
+      summary: List the authenticated user's assistants or sites
+      responses:
+        '200':
+          description: Owned versioned artifacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Artifact' } }
+    post:
+      tags: [creations]
+      operationId: createCreationItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, source]
+              properties:
+                title: { type: string, maxLength: 120 }
+                source: { type: string, description: JSON assistant config or HTML site document }
+      responses:
+        '201': { description: Created versioned artifact }
+  /api/users/me/preferences:
+    get:
+      tags: [users]
+      operationId: getUserPreferences
+      responses:
+        '200': { description: User preference object }
+    patch:
+      tags: [users]
+      operationId: patchUserPreferences
+      description: Merges the supplied keys into current preferences; unrelated keys remain intact.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                theme: { type: string, enum: [system, light, dark] }
+                language: { type: string, enum: [zh, en] }
+                notifications: { type: boolean }
+                imageModel: { type: string, maxLength: 120 }
+                voiceLanguage: { type: string, enum: [auto, zh-CN, en-US] }
+      responses:
+        '200': { description: Merged user preference object }
+  /api/creations/items/{type}/{id}:
+    parameters:
+      - in: path
+        name: type
+        required: true
+        schema: { type: string, enum: [assistants, sites] }
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [creations]
+      operationId: updateCreationItem
+      description: Updates only an owned item; source changes create a version.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 120 }
+                source: { type: string }
+      responses:
+        '200': { description: Updated artifact }
+    delete:
+      tags: [creations]
+      operationId: deleteCreationItem
+      responses:
+        '204': { description: Deleted }
+  /api/creations/sites/{id}/publish:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [creations]
+      operationId: publishSite
+      description: Sets private, unlisted, or public visibility and returns the site URL when published.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [visibility]
+              properties:
+                visibility: { type: string, enum: [private, unlisted, public] }
+      responses:
+        '200': { description: Publication state and URL }
+  /api/creations/sites/generate:
+    post:
+      tags: [creations]
+      operationId: generateSiteDraft
+      description: Uses the active model to draft a standalone HTML document; it remains private until saved and published.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string, maxLength: 4000 }
+      responses:
+        '200': { description: Generated HTML source }
+        '503': { description: No active model configured }
+  /s/{token}:
+    get:
+      tags: [creations]
+      operationId: viewPublishedSite
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Static HTML with a sandboxed Content Security Policy }
+        '404': { description: Not published }
+  /api/creations/images:
+    get:
+      tags: [creations]
+      operationId: listCreationImages
+      responses:
+        '200': { description: User's images from the existing file store }
+    post:
+      tags: [creations]
+      operationId: generateImage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string, maxLength: 4000 }
+                model: { type: string, description: Optional image model ID; IMAGE_MODEL server setting takes precedence }
+      responses:
+        '201': { description: Generated image stored as a user-owned file }
+        '503': { description: Image provider or model is not configured }
+  /api/creations/images/{id}/edit:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [creations]
+      operationId: editImage
+      description: Edits a user-owned image with the active provider and stores the result as another file.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string, maxLength: 4000 }
+                model: { type: string }
+      responses:
+        '201': { description: Edited image stored as a user-owned file }
+
 components:
   securitySchemes:
     cookieAuth:
@@ -2589,6 +2777,7 @@ components:
         topic: { type: string, nullable: true }
         mode: { type: string, enum: [tutor, chat] }
         projectId: { type: string, format: uuid, nullable: true }
+        assistantId: { type: string, format: uuid, nullable: true }
         tags:
           type: array
           items: { type: string }

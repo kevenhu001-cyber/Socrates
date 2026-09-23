@@ -33,6 +33,7 @@ import fileRouter from './routes/files.js';
 import fileExtractRouter from './routes/fileExtract.js';
 import migrateRouter from './routes/migrate.js';
 import artifactRouter from './routes/artifacts.js';
+import creationsRouter from './routes/creations.js';
 import memoryRouter from './routes/memory.js';
 import promptRouter from './routes/prompts.js';
 import notificationRouter from './routes/notifications.js';
@@ -65,7 +66,7 @@ import { webSearch, imageSearch } from './services/webSearch.js';
 import { fetchBatch } from './services/fetchBatch.js';
 import { getActiveApiKey } from './services/apiKey.js';
 import { getDb } from './db/index.js';
-import { apiKeys, files as filesTable, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from './db/schema.js';
+import { apiKeys, artifacts as artifactsTable, files as filesTable, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from './db/schema.js';
 import { sql, and, eq, isNotNull, isNull, inArray } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
 
@@ -682,6 +683,7 @@ app.post('/api/fetch-batch', requireAuth, fetchLimiter, async (req, res, next) =
 
 // Artifacts (Phase 5)
 app.use('/api/artifacts', artifactRouter);
+app.use('/api/creations', creationsRouter);
 
 // Memory (Phase 5)
 app.use('/api/memory', memoryRouter);
@@ -740,6 +742,21 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
+// Published Socrates sites are static HTML documents in the versioned
+// artifact store. A sandboxed CSP keeps author content isolated from the
+// authenticated app even though the URL uses the same host.
+app.get('/s/:token', async (req, res, next) => {
+  try {
+    const [site] = await getDb().select().from(artifactsTable)
+      .where(and(eq(artifactsTable.shareToken, req.params.token), eq(artifactsTable.type, 'site')))
+      .limit(1);
+    if (!site || (site.visibility !== 'public' && site.visibility !== 'unlisted')) return res.status(404).send('Site not found');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; font-src https: data:; sandbox");
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.send(site.source);
+  } catch (error) { next(error); }
+});
 app.use(express.static(FRONTEND_DIST, {
   // index.html is the SPA shell — let the route below handle
   // history-mode navigations. Static assets (JS / CSS / images)

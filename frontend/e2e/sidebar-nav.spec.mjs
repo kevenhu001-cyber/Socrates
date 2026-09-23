@@ -19,14 +19,13 @@ test('sidebar exposes the reference primary destinations', async ({ page }) => {
     'navProjects',
     'navScheduled',
     'navPlugins',
-    'navSkills',
+    'navSites',
     'navMore',
   ]);
 
-  for (const id of ['navExam']) {
+  for (const id of ['navExam', 'navSkills', 'navImages', 'navAssistants']) {
     await expect(page.locator(`#${id}`)).toBeHidden();
   }
-  await expect(page.locator('#navSkills')).toContainText(/Skills|技能/);
   await expect(page.locator('#navMore')).toHaveCount(1);
 });
 
