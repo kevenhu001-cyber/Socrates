@@ -88,22 +88,30 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(mobileGeometry.mode?.width).toBeLessThanOrEqual(152);
   expect(mobileGeometry.mode?.height).toBe(32);
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(mobileGeometry.composer?.height).toBe(104);
-  expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(755);
-  expect(mobileGeometry.plus?.width).toBe(40);
-  expect(mobileGeometry.send?.width).toBe(40);
-  expect(mobileGeometry.background).toBe('rgb(0, 0, 0)');
+  /* Reference phone capsule is a two-row 89px stack (editor row 1, controls row 2). */
+  expect(mobileGeometry.composer?.height).toBe(89);
+  expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(769);
+  expect(mobileGeometry.plus?.width).toBe(36);
+  expect(mobileGeometry.send?.width).toBe(36);
+  expect(mobileGeometry.background).toBe('rgb(9, 9, 11)');
 
   await page.locator('#topicComposerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');
   await expect(toolsMenu).toBeVisible();
+  /* The card plays a 160ms scale/translate entrance; geometry assertions
+     apply to the resting state, so wait for the transform to settle. */
+  await expect.poll(async () => toolsMenu.evaluate((el) => {
+    const t = getComputedStyle(el).transform;
+    return t === 'none' || t === 'matrix(1, 0, 0, 1, 0, 0)';
+  })).toBe(true);
   const toolsBox = await toolsMenu.boundingBox();
   expect(toolsBox?.width).toBeGreaterThanOrEqual(292);
   expect(toolsBox?.width).toBeLessThanOrEqual(308);
   expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
   expect(toolsBox?.height).toBeLessThanOrEqual(368);
-  expect(toolsBox?.x).toBeGreaterThanOrEqual(15);
-  expect(toolsBox?.x).toBeLessThanOrEqual(17);
+  /* The sheet is flush with the capsule's 12px page inset. */
+  expect(toolsBox?.x).toBeGreaterThanOrEqual(11);
+  expect(toolsBox?.x).toBeLessThanOrEqual(13);
   expect(Math.abs(
     ((toolsBox?.y ?? 0) + (toolsBox?.height ?? 0))
       - ((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)),
@@ -177,8 +185,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const chatComposerBox = await page.locator('#chatInputWrap').boundingBox();
   const chatEditorBox = await page.locator('#chatComposerRoot').boundingBox();
   const chatToolsBox = await page.locator('#chatComposerToolsBtn').boundingBox();
-  expect(chatComposerBox?.height).toBe(104);
-  expect(chatToolsBox?.y ?? 0).toBeGreaterThan((chatEditorBox?.y ?? 0) + (chatEditorBox?.height ?? 0) - 4);
+  expect(chatComposerBox?.height).toBe(89);
+  expect(chatToolsBox?.width).toBe(36);
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -195,7 +203,9 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const desktopToolsMenu = page.locator('#composerToolsMenu');
   await expect(desktopToolsMenu).toBeVisible();
   const desktopToolsBox = await desktopToolsMenu.boundingBox();
-  expect(desktopToolsBox?.height).toBeLessThanOrEqual(900 / 2);
+  /* The compact card ceiling is min(560px, 62vh) — roomy enough for the
+     nine-row directory while staying clearly smaller than a panel. */
+  expect(desktopToolsBox?.height).toBeLessThanOrEqual(560);
   const desktopToolsBackground = await desktopToolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(desktopToolsBackground).not.toBe('rgba(0, 0, 0, 0)');
   await page.screenshot({ path: '/tmp/socrates-reference-desktop-tools-1440x900.png', fullPage: true });

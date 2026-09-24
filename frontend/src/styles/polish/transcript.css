@@ -1,0 +1,77 @@
+/*
+ * polish/transcript.css — message list, bubbles, toolbar, code, cursor.
+ */
+
+/* User bubble: slightly narrower + tighter pad; radius stays at the
+   reference-aligned 15px (restore/chat-surface.css). */
+#appShell#appShell .msg.user .msg-body {
+  max-width: min(72%, 560px) !important;
+  padding: 10px 16px !important;
+}
+
+/* Assistant column keeps full width, no bubble. */
+
+/* Hover toolbar — 26px ghost buttons, 6px radius. */
+#appShell .msg-toolbar { gap: 2px; height: 26px; }
+#appShell .msg-toolbar-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--ui-text-muted);
+}
+#appShell .msg-toolbar-btn:hover {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+#appShell .msg-toolbar-btn svg { width: 15px; height: 15px; }
+
+/* Tooltip micro-label — consistent with the rest of the shell. */
+#appShell .msg-toolbar-btn::after {
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 5px 8px;
+}
+
+/* Code blocks: one step above the page, hairline, 12px radius. */
+#appShell .msg-body pre {
+  border-radius: 12px;
+  border: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-raised);
+  padding: 12px 14px;
+}
+#appShell .msg-body code {
+  background: var(--ui-bg-surface);
+  border-radius: 5px;
+  padding: 1.5px 5px;
+}
+#appShell .msg-body pre code { background: transparent; padding: 0; }
+
+/* Prose rhythm. */
+#appShell .msg-body { line-height: 1.65; }
+#appShell .msg-body p { margin-bottom: 10px; }
+#appShell .msg-body p:last-child { margin-bottom: 0; }
+
+/* Streaming cursor — a soft pulse dot instead of a hard caret when the
+   turn is mid-flight (restore owns the exact glyph; refine its motion). */
+#appShell .stream-cursor {
+  animation: polishCursorPulse 1s ease-in-out infinite;
+}
+@keyframes polishCursorPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* "New reply" / scroll pill — floating chip, menu shadow. */
+#appShell .new-reply-pill,
+#appShell .scroll-pill {
+  border-radius: var(--ui-radius-pill);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-menu);
+}
+
+/* Toasts. */
+#appShell .msg-toast, .msg-toast {
+  border-radius: 10px;
+  border-color: var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-toast);
+}

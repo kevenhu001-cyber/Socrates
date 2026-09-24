@@ -128,6 +128,17 @@ function createRecordingBar(session) {
     wave.appendChild(waveBar);
   }
 
+  /* Discard affordance — left-edge ghost "×". Without it the only way out
+     of a recording was committing whatever transcript had accumulated. */
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'voice-recording-cancel';
+  cancelButton.type = 'button';
+  cancelButton.dataset.voiceCancel = 'true';
+  cancelButton.setAttribute('aria-label', copy('voice.cancel', 'Cancel voice input', '取消语音输入'));
+  cancelButton.title = copy('voice.cancel', 'Cancel voice input', '取消语音输入');
+  cancelButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+  cancelButton.addEventListener('click', cancelSpeechInput);
+
   const stopButton = document.createElement('button');
   stopButton.className = 'voice-recording-stop';
   stopButton.type = 'button';
@@ -137,6 +148,7 @@ function createRecordingBar(session) {
   stopButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>';
   stopButton.addEventListener('click', stopSpeechInput);
 
+  bar.appendChild(cancelButton);
   bar.appendChild(indicator);
   bar.appendChild(copyWrap);
   bar.appendChild(wave);
@@ -277,12 +289,13 @@ function finishSession(session) {
   if (activeSession === session) activeSession = null;
 
   const transcript = session.finalTranscript.trim();
-  if (transcript && !session.inserted) {
+  if (transcript && !session.inserted && !session.discard) {
     session.inserted = true;
     const existing = getComposerMarkdown(session.surface).trim();
     insertComposerText(session.surface, `${existing ? ' ' : ''}${transcript}`);
   }
 
+  if (session.discard) return;
   if (session.error === 'not-allowed' || session.error === 'service-not-allowed') {
     notify(copy('voice.permission', 'Please allow microphone access to use voice input.', '请允许麦克风权限后使用语音输入。'));
   } else if (session.error === 'no-speech' && !transcript && !session.stopRequested) {
@@ -359,6 +372,7 @@ async function startSpeechInput(surface) {
     stopRequested: false,
     stopping: false,
     inserted: false,
+    discard: false,
     finished: false,
   };
   activeSession = session;
@@ -410,6 +424,33 @@ export function stopSpeechInput() {
     session.stopFallbackId = window.setTimeout(function () {
       finishSession(session);
     }, 2500);
+  } catch (_) {
+    finishSession(session);
+  }
+  return true;
+}
+
+/* Discard path — abort() drops pending recognition results instead of
+   committing them, so nothing reaches the composer. finishSession still
+   runs cleanup through the same onend/fallback path as a normal stop. */
+export function cancelSpeechInput() {
+  const session = activeSession;
+  if (!session) return false;
+  if (session.stopping) return true;
+
+  session.discard = true;
+  session.stopRequested = true;
+  session.stopping = true;
+  if (!session.recognition) {
+    finishSession(session);
+    return true;
+  }
+
+  try {
+    session.recognition.abort();
+    session.stopFallbackId = window.setTimeout(function () {
+      finishSession(session);
+    }, 1500);
   } catch (_) {
     finishSession(session);
   }

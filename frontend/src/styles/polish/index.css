@@ -1,0 +1,35 @@
+/*
+ * styles/polish/index.css — Tier 5: design-polish layer (always last).
+ *
+ * Purpose: converge the shell on a single, quieter visual contract
+ * (hairline borders, unified radii, one shadow scale, consistent control
+ * sizes) without touching the historical restore/ files or the legacy
+ * slices. Everything here is skin-only: no geometry that JS measures
+ * (sidebar width, composer grid, keyboard inset) is changed.
+ *
+ * Cascade position is the mechanism: this file is @imported after
+ * restore/, so equal-specificity rules win by order. Rules that must beat
+ * an existing `!important` keep the same `!important` + equal-or-higher
+ * specificity (the `#appShell#appShell` convention used by restore/).
+ *
+ * Component map:
+ *   tokens.css      — semantic token refinement + shadow/focus primitives
+ *   sidebar.css     — nav, search field, recents rows, footer, more-popover
+ *   topbar.css      — 52px bar chrome, Chat/Tutor mode pill
+ *   composer.css    — capsule focus, effort chip, "+" tools menu, chips
+ *   transcript.css  — user bubble, msg toolbar, code blocks, cursor, toasts
+ *   overlays.css    — cmdk / settings / profile / share / usage / menus
+ *   workspace.css   — projects/directory page fixes
+ *   auth.css        — auth gate card
+ *   mobile.css      — ≤768px skin alignment only
+ */
+
+@import './tokens.css';
+@import './sidebar.css';
+@import './topbar.css';
+@import './composer.css';
+@import './transcript.css';
+@import './overlays.css';
+@import './workspace.css';
+@import './auth.css';
+@import './mobile.css';

@@ -207,6 +207,7 @@ function runningLabel(call: ToolCallLike): RunLabel {
   }
   if (name === 'create_plan') return { text: translate('tool.actionPlan', 'Drafting a plan…') };
   if (name === 'create_spec') return { text: translate('tool.actionSpec', 'Drafting a spec…') };
+  if (name === 'create_site') return { text: translate('tool.actionSite', 'Building and publishing the site…') };
   return { text: translate('tool.actionDefault', 'Using a tool') };
 }
 
@@ -272,6 +273,7 @@ function doneLabel(call: ToolCallLike): RunLabel {
   }
   if (name === 'create_plan') return { text: translate('tool.donePlan', 'Drafted a plan') };
   if (name === 'create_spec') return { text: translate('tool.doneSpec', 'Drafted a spec') };
+  if (name === 'create_site') return { text: translate('tool.doneSite', 'Site published') };
 
   const outcome = outcomeOf(call.output);
   if (outcome) meta.push(outcome);
@@ -304,6 +306,9 @@ function errorLabel(call: ToolCallLike): RunLabel {
   }
   if (name === 'workspace_agent') {
     return { text: translate('tool.codexFailed', 'The workspace task failed') };
+  }
+  if (name === 'create_site') {
+    return { text: translate('tool.siteFailed', 'Site creation failed') };
   }
   return {
     text: target

@@ -4,6 +4,12 @@ import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
+import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
+import {
+  displayPrefs, setDisplayFont, setDisplayWidth, toggleGrid,
+  setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
+  DISPLAY_FONT_STEPS, DISPLAY_WIDTH_STEPS, FONT_LABELS, WIDTH_LABELS,
+} from '../../displayPrefs.js';
 
 const OVERLAY_ID = 'settingsOverlay';
 const TRACK_ID = 'stgToggleTrack';
@@ -25,6 +31,12 @@ function SettingsModal() {
     try { return localStorage.getItem('socrates-image-model') || ''; } catch { return ''; }
   });
   const [voiceLanguage, setVoiceLanguage] = useState(() => localStorage.getItem('socrates-voice-language') || 'auto');
+  const profile = useProfileSnapshot();
+  const profileActions = useProfileDispatch();
+  /* displayPrefs is a live module binding — mirror it into state so the
+     segmented controls re-render when a step is picked. */
+  const [disp, setDisp] = useState(() => ({ ...displayPrefs }));
+  const applyDisp = (mutate: () => void) => { mutate(); setDisp({ ...displayPrefs }); };
   const lang = uiLang;
   const label = (zh: string, en: string) => lang === 'zh' ? zh : en;
   const savePreference = async (patch: Record<string, unknown>) => {
@@ -37,7 +49,8 @@ function SettingsModal() {
     }
   };
   const categories = [
-    ['general', label('通用', 'General')], ['notifications', label('通知', 'Notifications')],
+    ['general', label('通用', 'General')], ['display', label('外观', 'Display')],
+    ['notifications', label('通知', 'Notifications')],
     ['personalization', label('个性化', 'Personalization')], ['models', label('模型与语音', 'Models & voice')],
     ['apps', label('应用与连接', 'Apps & connections')], ['data', label('数据管理', 'Data controls')],
     ['account', label('账户', 'Account')],
@@ -114,7 +127,7 @@ function SettingsModal() {
           <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
             <input type="search" placeholder={label('搜索设置', 'Search settings')} aria-label={label('搜索设置', 'Search settings')} value={query} onChange={(event) => setQuery(event.target.value)} />
             {categories.filter(([, name]) => name.toLowerCase().includes(query.toLowerCase())).map(([key, name]) => (
-              <button key={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{name}</button>
+              <button key={key} data-section={key} className={section === key ? 'active' : ''} onClick={() => setSection(key)}>{name}</button>
             ))}
           </aside>
         <div className="settings-body">
@@ -134,6 +147,45 @@ function SettingsModal() {
               </select>
             </label>
           </section>
+          <section className="settings-pane" hidden={section !== 'display'}>
+            <h2>{label('外观', 'Display')}</h2>
+            <div className="settings-field">
+              <span className="settings-label">{label('文字大小', 'Text size')}</span>
+              <div className="display-prefs-segs" role="group" aria-label={label('文字大小', 'Text size')}>
+                {DISPLAY_FONT_STEPS.map((step, i) => (
+                  <button key={step} type="button" className={`display-prefs-seg${disp.font === step ? ' on' : ''}`} aria-pressed={disp.font === step} onClick={() => applyDisp(() => setDisplayFont(step))}>{FONT_LABELS[i]}</button>
+                ))}
+              </div>
+            </div>
+            <div className="settings-field">
+              <span className="settings-label">{label('内容宽度', 'Content width')}</span>
+              <div className="display-prefs-segs" role="group" aria-label={label('内容宽度', 'Content width')}>
+                {DISPLAY_WIDTH_STEPS.map((step, i) => (
+                  <button key={step} type="button" className={`display-prefs-seg${disp.width === step ? ' on' : ''}`} aria-pressed={disp.width === step} onClick={() => applyDisp(() => setDisplayWidth(step))}>{WIDTH_LABELS[i]}</button>
+                ))}
+              </div>
+            </div>
+            <label className="settings-choice">{label('对话背景网格', 'Conversation grid')}
+              <button type="button" className={`stg-toggle-track${disp.showGrid !== false ? ' on' : ''}`} role="switch" aria-checked={disp.showGrid !== false} onClick={() => applyDisp(() => toggleGrid())}>
+                <span className="stg-toggle-knob" />
+              </button>
+            </label>
+            <div className="settings-field">
+              <span className="settings-label">{label('自定义背景色', 'Custom background')}</span>
+              <div className="settings-bg-pickers">
+                <label className="settings-bg-picker">
+                  <input type="color" value={disp.darkBg || '#09090b'} onChange={(event) => applyDisp(() => setBackgroundDark(event.target.value))} />
+                  <span>{label('深色', 'Dark')}</span>
+                </label>
+                <button type="button" className="settings-btn secondary" onClick={() => applyDisp(() => resetBackgroundDark())}>{label('重置', 'Reset')}</button>
+                <label className="settings-bg-picker">
+                  <input type="color" value={disp.lightBg || '#ffffff'} onChange={(event) => applyDisp(() => setBackgroundLight(event.target.value))} />
+                  <span>{label('浅色', 'Light')}</span>
+                </label>
+                <button type="button" className="settings-btn secondary" onClick={() => applyDisp(() => resetBackgroundLight())}>{label('重置', 'Reset')}</button>
+              </div>
+            </div>
+          </section>
           <section className="settings-pane" hidden={section !== 'notifications'}>
             <h2>{label('通知', 'Notifications')}</h2>
             <label className="settings-choice">{label('显示任务与消息通知', 'Show task and message notifications')}
@@ -152,8 +204,49 @@ function SettingsModal() {
           </section>
           <section className="settings-pane" hidden={section !== 'account'}>
             <h2>{label('账户', 'Account')}</h2>
-            <p>{label('套餐与用量沿用当前 Socrates 账户。', 'Your plan and usage follow your current Socrates account.')}</p>
-            <button className="settings-btn secondary" onClick={() => (window as any).openProfile?.()}>{label('查看账户', 'View account')}</button>
+            <section className="settings-section">
+              <div className="settings-account-card">
+                <span className="user-avatar settings-account-avatar">{profile.user.initials || '?'}</span>
+                <div className="settings-account-id">
+                  <input
+                    className="settings-account-name"
+                    type="text"
+                    maxLength={50}
+                    defaultValue={profile.user.displayName}
+                    placeholder={label('你的名字', 'Your name')}
+                    aria-label={label('显示名称', 'Display name')}
+                    onBlur={(e) => profileActions.saveName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                  />
+                  <span className="settings-account-email">{profile.user.email || label('访客模式', 'Guest session')}</span>
+                </div>
+                <span className={`tier-badge tier-${profile.user.tier}`}>{profile.user.tier.charAt(0).toUpperCase() + profile.user.tier.slice(1)}</span>
+              </div>
+            </section>
+            <section className="settings-section">
+              <div className="settings-section-head"><h3>{label('账户详情', 'Account details')}</h3></div>
+              <div className="settings-choice"><span>{label('加入时间', 'Joined')}</span><span className="settings-choice-value">{profile.user.joinedAt || '—'}</span></div>
+              <div className="settings-choice"><span>{label('邮箱验证', 'Email verified')}</span><span className={`settings-choice-value${profile.user.verifiedAt ? ' is-yes' : ''}`}>{profile.user.verifiedAt ? label('已验证', 'Verified') : label('未验证', 'Not verified')}</span></div>
+              <div className="settings-choice"><span>{label('用户 ID', 'User ID')}</span><span className="settings-choice-value settings-mono">{profile.user.userId || '—'}</span></div>
+              <div className="settings-choice"><span>{label('续期', 'Renewal')}</span><span className="settings-choice-value">{profile.user.subEnd || '—'}</span></div>
+            </section>
+            <section className="settings-section">
+              <div className="settings-section-head"><h3>{label('数据与用量', 'Data & usage')}</h3></div>
+              <div className="settings-choice"><span>{label('Token 用量', 'Token usage')}</span>
+                <button type="button" className="settings-btn secondary" onClick={() => profileActions.openUsage()}>{label('查看', 'View')}</button></div>
+              <div className="settings-choice"><span>{label('已归档会话', 'Archived sessions')}</span>
+                <button type="button" className="settings-btn secondary" onClick={() => profileActions.openStorage()}>{label('管理', 'Manage')}</button></div>
+            </section>
+            <section className="settings-section">
+              <div className="settings-section-head"><h3>{label('会话', 'Session')}</h3></div>
+              <div className="settings-choice"><span>{label('退出当前设备上的登录状态', 'End the session on this device')}</span>
+                <button type="button" className="settings-btn secondary" onClick={() => profileActions.signOut()}>{label('退出登录', 'Sign out')}</button></div>
+            </section>
+            <section className="settings-section settings-danger-zone">
+              <div className="settings-section-head"><h3>{label('危险区', 'Danger zone')}</h3></div>
+              <div className="settings-choice"><span className="settings-danger-text">{label('永久删除账户及全部数据', 'Permanently delete your account and all data')}</span>
+                <button type="button" className="settings-btn danger" onClick={() => profileActions.deleteAccount()}>{label('删除账户', 'Delete account')}</button></div>
+            </section>
           </section>
           <section className="settings-pane" hidden={section !== 'personalization'}>
             <h2>{label('个性化', 'Personalization')}</h2>

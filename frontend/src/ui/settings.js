@@ -1,6 +1,7 @@
 import { confirmClearSettings } from './dangerConfirms.js';
 import { saveLastActiveId } from '../config/providers.js';
 import { showToast } from './toast.js';
+import { publishProfileSnapshot } from './profile.js';
 
 import { renderTonePresets } from '../config/tonePresets.js';
 
@@ -53,6 +54,9 @@ function openSettings() {
   syncToggleUI();
   renderProviderList();
   if (typeof renderTonePresets === "function") renderTonePresets();
+  /* The Account pane reads the profile bridge — republish on open so it
+     shows real data even when the profile modal has never been opened. */
+  if (typeof publishProfileSnapshot === "function") publishProfileSnapshot();
   _publishSettingsState();
 }
 

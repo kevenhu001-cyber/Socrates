@@ -16,6 +16,7 @@ const BG_VARS = [
   '--ui-bg-composer', '--ui-bg-bubble', '--ui-bg-chip', '--ui-bg-chip-hover', '--ui-bg-segment-active',
 ];
 
+/** @param {string} hex */
 export function parseHexColor(hex) {
   hex = hex.replace(/^#/, '');
   if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
@@ -36,6 +37,10 @@ export function parseHexColor(hex) {
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
+/**
+ * @param {string} hex
+ * @param {'light' | 'dark'} mode
+ */
 export function applyCustomBg(hex, mode) {
   var p = parseHexColor(hex);
   /* Neutral-black theme contract: a custom background must never tint the
@@ -103,6 +108,11 @@ export function removeCustomBg() {
   });
 }
 
+/**
+ * @param {number} h
+ * @param {number} s
+ * @param {number} l
+ */
 function _hslStr(h, s, l) {
   return Math.round(h) + ' ' + Math.round(s) + '% ' + Math.round(l) + '%';
 }

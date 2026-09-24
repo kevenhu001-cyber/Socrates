@@ -568,3 +568,569 @@
   outline: 2px solid var(--ui-accent-strong) !important;
   outline-offset: 2px !important;
 }
+
+/* ==========================================================================
+   2026-09-24 — reference re-measure pass (Playwright + CDP).
+
+   chatgpt.com was captured again at 1536×868 (desktop) and 400×890 (phone)
+   in both colour schemes with debug/cg-capture.mjs; the values below are the
+   measured geometry/colour facts, transcribed into this layer so the shell
+   matches the current reference instead of the 2026-09-23 baseline.
+
+   Measured deltas this section closes (desktop):
+     top bar            56px      -> 52px   (content rows stay 36px)
+     greeting           27px/48px -> 24px/28px, 36px above the capsule
+     capsule ring       none      -> inset 0 0 0 1px rgb(255 255 255 / 20%)
+     capsule (light)    #f4f4f4   -> #fff + 3-step shadow
+     capsule columns    44px      -> 36px hit areas, 6px side padding
+     editor line-height 22px      -> 26px
+     sidebar row        40px/w500 -> 36px/w400, 20px line, -0.2px tracking
+     "New chat" pill    transparent-> rgb(255 255 255 / 10%) (5% black in light)
+     disclaimer         #8e8e8e   -> #afafaf
+   ========================================================================== */
+@media (min-width: 769px) {
+  /* Reference header: 52px bar, 36px rows at 8px inset. */
+  #appShell#appShell#appShell .top-bar {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+  }
+
+  /* Landing greeting — the reference sets 24px/28px at weight 400 and leaves
+     a 36px gap down to the capsule. The size stays multiplied by the user's
+     text-scale preference, as it was before this pass. */
+  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
+    margin: 0 auto 36px !important;
+    font-size: calc(24px * var(--app-font-scale, 1)) !important;
+    font-weight: 400 !important;
+    line-height: 28px !important;
+    letter-spacing: normal !important;
+  }
+
+  /* Idle capsule — one 52px row of 36px hit areas around the editor. The
+     third track is the effort pill's slot (auto so "Beagle · 中" fits),
+     mirroring the phone capsule's column template. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline),
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) {
+    grid-template-columns: 36px minmax(0, 1fr) auto 36px 36px !important;
+    padding: 0 6px !important;
+  }
+
+  /* Reasoning-effort pill — chatgpt-parity.css hides every .effort-picker to
+     match the reference's bare capsule, but the pill is our own model/effort
+     control (the desktop configuration popover hangs off it) and the phone
+     surface already shows it. Re-arm it on the desktop idle capsule in the
+     third column; the later layer wins the equal-specificity tie. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-picker,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-picker {
+    display: inline-flex !important;
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    min-width: 0 !important;
+    margin: 0 4px 0 0 !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-trigger,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-trigger {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: var(--cg-text-secondary) !important;
+    font-size: 14px !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-trigger:hover,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-trigger:hover {
+    background: rgb(255 255 255 / 10%) !important;
+  }
+
+  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-trigger:hover,
+  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .effort-trigger:hover {
+    background: rgb(0 0 0 / 5%) !important;
+  }
+
+  /* Pin the dictation control to the fourth column (right of the effort
+     pill) so all controls share one grid cell row and therefore one optical
+     centre line. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) #topicMobileMicBtn,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) #chatMobileMicBtn {
+    grid-column: 4 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+  }
+
+  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline),
+  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) {
+    box-shadow: inset 0 0 1px 0 rgb(255 255 255 / 20%) !important;
+  }
+
+  /* Light capsule is white with the reference's three-step elevation; the
+     fill alone reads as a hole in the white page. */
+  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline),
+  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) {
+    background: #fff !important;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 4%),
+      0 2px 8px rgb(0 0 0 / 4%),
+      0 4px 80px 8px rgb(0 0 0 / 2.4%) !important;
+  }
+
+  /* Editor — reference ProseMirror metrics. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root {
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  /* The .rich-composer flex chain still carries min-height:44px from
+     components/composer.css, so it overflowed the 36px editor root by 4px
+     top and bottom — the placeholder line sat 4px above the capsule's
+     optical centre. Pin the whole chain to the same 36px row. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer,
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer > div,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .composer-editor-root .rich-composer > div {
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer-editor,
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer .tiptap,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer-editor,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline) .rich-composer .tiptap {
+    /* chat-surface.css still pins the topic editor to a hard 42px box
+       (height/min/max) — that is what pushed the idle placeholder 4px
+       above centre. The idle band is 36px on both surfaces now. */
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    padding: 5px 8px !important;
+    line-height: 26px !important;
+  }
+
+  /* Attach + dictation controls — 36px circles, matching the reference's
+     composer-btn hit areas (the send control already is 36px). These apply
+     in every composer state: the capsule geometry above is idle-only, but
+     the reference keeps its control size while the field grows. The composer
+     id is part of the selector so the two-id control-size rule in
+     chat-surface.css cannot win the tie. */
+  #appShell#appShell#appShell #topicInputWrap #topicComposerToolsBtn,
+  #appShell#appShell#appShell #chatInputWrap #chatComposerToolsBtn,
+  #appShell#appShell#appShell #topicInputWrap #topicMobileMicBtn,
+  #appShell#appShell#appShell #chatInputWrap #chatMobileMicBtn {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 50% !important;
+  }
+}
+
+/* Sidebar rows — reference is a 36px row, 14px/20px at weight 400 with
+   -0.2px tracking, 10px radius, 6px/10px padding. Phone drawer rows keep
+   their taller touch target (mobile-parity pins 40px there). */
+@media (min-width: 769px) {
+  #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn {
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    letter-spacing: -0.2px !important;
+  }
+}
+
+/* "New chat" is the reference's only filled row: a 10% white wash (5% black
+   on the light rail) that also answers hover. The body:not() prefix mirrors
+   the home-state rule in ref-baseline.css so this wins that tie. */
+#appShell#appShell#appShell #navNew.sidebar-nav-btn,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #navNew.sidebar-nav-btn {
+  background: rgb(255 255 255 / 10%) !important;
+}
+
+[data-mode="light"] #appShell#appShell#appShell #navNew.sidebar-nav-btn,
+[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #navNew.sidebar-nav-btn {
+  background: rgb(0 0 0 / 5%) !important;
+}
+
+#appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
+#appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #navNew.sidebar-nav-btn:hover,
+body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #navNew.sidebar-nav-btn:focus-visible {
+  background: rgb(255 255 255 / 10%) !important;
+}
+
+[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
+[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible {
+  background: rgb(0 0 0 / 5%) !important;
+}
+
+/* Footer disclaimer — the reference paints the legal line at #afafaf on the
+   black page (it sits two steps quieter than body text, not three). The
+   body:not() prefix mirrors the home-state rule in chatgpt-parity.css so
+   this wins that specificity tie. */
+[data-mode="dark"] #appShell#appShell#appShell #topicDisclaimer,
+[data-mode="dark"] body:not([data-conversation-active="true"]):not(.workspace-active)
+  #appShell#appShell#appShell
+  #topicDisclaimer {
+  color: #afafaf !important;
+}
+
+/* ==========================================================================
+   2026-09-24 — desktop disclaimer + suggestion rows (Playwright + CDP).
+
+   Measured on chatgpt.com landing (1536x868): the legal footer is a 768px
+   column centred under the composer at 14px, and the AI suggestion rows are
+   52px tall, radius 8px, 16px/24px text in the full-contrast body colour —
+   not the muted 14px the baseline layer ships. Both rules carry the same
+   specificity shape as the parity/baseline owners so they win the tie.
+   ========================================================================== */
+@media (min-width: 769px) {
+  body:not([data-conversation-active="true"]):not(.workspace-active)
+    #appShell#appShell#appShell
+    #topicDisclaimer {
+    left: 276px !important;
+    right: 0 !important;
+    width: min(768px, calc(100% - 32px)) !important;
+    max-width: 768px !important;
+    margin-inline: auto !important;
+    font-size: 14px !important;
+    line-height: 18px !important;
+  }
+
+  #appShell#appShell#appShell .home-quick-action {
+    min-height: 52px !important;
+    padding: 14px 10px 14px 8px !important;
+    border-radius: 8px !important;
+    color: var(--cg-text) !important;
+  }
+
+  #appShell#appShell#appShell .home-quick-action .home-quick-action-copy {
+    color: var(--cg-text) !important;
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  #appShell#appShell#appShell .home-quick-actions {
+    width: min(100%, 768px) !important;
+  }
+}
+
+/* ==========================================================================
+   Phone capsule — 2026-09-24 CDP re-measure shows the reference is a two-row
+   stack (editor on row 1, add/dictation/send controls on row 2): box
+   [12,428,376,89], radius 26px, min-height 52px, 12px page insets, drop
+   shadow 0 4px 16px rgb(0 0 0 / 5%). The leading "+" and dictation buttons
+   carry a 10% wash, the send control stays solid.
+
+   These selectors repeat the three-id + :not(:has(...)) shape used by the
+   104px rule above so they win that tie instead of losing to it.
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Idle phone capsule — 2026-09-24 CDP re-measure (400x890) shows the
+     reference is a two-row stack, not the single 56px row this layer
+     previously pinned: editor on row 1 (full width), the add/dictation/
+     send controls on row 2. Measured box [12,428,376,89], radius 26px,
+     min-height 52px, 12px page insets, drop shadow 0 4px 16px rgb(0 0 0 / 5%). */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)),
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    grid-template-rows: 32px 36px !important;
+    grid-template-columns: 36px minmax(0, 1fr) auto 36px 36px !important;
+    min-height: 52px !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 12px 12px 9px !important;
+    gap: 0 4px !important;
+    border: 0 solid transparent !important;
+    border-radius: 26px !important;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 5%) !important;
+  }
+
+  /* The reference keeps 12px of page inset on both sides of the capsule. */
+  #appShell#appShell#appShell #topicSetup {
+    padding: 0 12px max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .attachment-chips {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    align-self: center !important;
+    /* Explicit heights, not auto: while the shape controller holds its
+       animation lock the grid row can stretch the editor to the expanded
+       height, and a tall editor measures as multiline again — which
+       re-expands the capsule and loops. Pinning the collapsed band keeps
+       the measurement honest. The reference editor row is 32px. */
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer {
+    min-height: 26px !important;
+    height: 26px !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer[data-surface="chat"] .tiptap {
+    min-height: 26px !important;
+    height: 26px !important;
+    padding: 0 2px !important;
+    font-size: 16px !important;
+    line-height: 26px !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap #topicComposerToolsBtn,
+  #appShell#appShell#appShell #chatInputWrap #chatComposerToolsBtn,
+  #appShell#appShell#appShell #topicInputWrap #topicMobileMicBtn,
+  #appShell#appShell#appShell #chatInputWrap #chatMobileMicBtn,
+  #appShell#appShell#appShell #topicInputWrap .mobile-mic-btn,
+  #appShell#appShell#appShell #chatInputWrap .mobile-mic-btn {
+    grid-row: 2 !important;
+    align-self: center !important;
+  }
+
+  /* Control sizing applies in every state, including the multiline card.
+     The selector carries the composer id as well: a two-id rule in
+     chat-surface.css sizes these controls from
+     var(--conversation-control-size) and wins the tie otherwise. */
+  #appShell#appShell#appShell #topicInputWrap #topicComposerToolsBtn,
+  #appShell#appShell#appShell #chatInputWrap #chatComposerToolsBtn,
+  #appShell#appShell#appShell #topicInputWrap #topicMobileMicBtn,
+  #appShell#appShell#appShell #chatInputWrap #chatMobileMicBtn,
+  #appShell#appShell#appShell #topicInputWrap #startBtn,
+  #appShell#appShell#appShell #chatInputWrap #sendBtn,
+  #appShell#appShell#appShell #topicInputWrap .mobile-mic-btn,
+  #appShell#appShell#appShell #chatInputWrap .mobile-mic-btn {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 50% !important;
+    align-self: center !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatComposerToolsBtn {
+    grid-column: 1 !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-picker,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-picker {
+    grid-column: 3 !important;
+    grid-row: 2 !important;
+    align-self: center !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicMobileMicBtn,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatMobileMicBtn,
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
+    grid-column: 4 !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #startBtn,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #sendBtn {
+    grid-column: 5 !important;
+    grid-row: 2 !important;
+    align-self: center !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  /* The effort chip shares the control row's 36px height so the row reads
+     as one band of equal controls. It also drops its text label: the
+     labelled variant leaves the editor column ~78px wide, so every draft
+     wraps and the capsule can never rest at the reference's one-row
+     height. The value + caret still names the active level. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger {
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+  }
+
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger .effort-label,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .effort-trigger .effort-label {
+    display: none !important;
+  }
+
+  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
+  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatComposerToolsBtn,
+  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicMobileMicBtn,
+  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatMobileMicBtn,
+  [data-mode="dark"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn,
+  [data-mode="dark"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
+    background: rgb(255 255 255 / 10%) !important;
+  }
+
+  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicComposerToolsBtn,
+  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatComposerToolsBtn,
+  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #topicMobileMicBtn,
+  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) #chatMobileMicBtn,
+  [data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn,
+  [data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .mobile-mic-btn {
+    background: rgb(0 0 0 / 5%) !important;
+  }
+
+  /* Greeting — reference phone heading is 24px/28px at weight 400. */
+  #appShell#appShell#appShell #topicTitle.greeting {
+    font-size: calc(24px * var(--app-font-scale, 1)) !important;
+    line-height: 28px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Composer control sizing — every state, every surface.
+
+   The conversation-state rules in chat-surface.css carry a
+   ``body[data-conversation-active]`` prefix plus three ids, so a plain
+   three-id selector loses to them and the chat composer keeps 40px controls
+   while the landing composer is already 36px. These selectors repeat that
+   shape with one more id (and land later in the file) so both surfaces and
+   both the idle and multiline states resolve to the reference's 36px circle.
+   -------------------------------------------------------------------------- */
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active).composer-multiline
+  #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active).composer-multiline
+  #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  .chat-input-footer
+  #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active).composer-multiline
+  .chat-input-footer
+  #chatComposerToolsBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  .chat-input-footer
+  #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  .chat-input-footer
+  #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active).composer-multiline
+  .chat-input-footer
+  #chatMobileMicBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active).composer-multiline
+  #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active):not(.composer-multiline)
+  .chat-input-footer
+  #sendBtn,
+body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
+  #appShell#appShell#appShell
+  #chatInputWrap:not(.voice-recording-active).composer-multiline
+  .chat-input-footer
+  #sendBtn {
+  width: 36px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  border-radius: 50% !important;
+  align-self: center !important;
+}
+
+/* Multiline phone composers use row 2 for the editor and row 3 for controls.
+   The shared control rule above must not pull the add button into the editor. */
+@media (max-width: 768px) {
+  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicComposerToolsBtn,
+  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #topicMobileMicBtn,
+  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) #startBtn,
+  #appShell#appShell#appShell #topicInputWrap.composer-multiline:not(.voice-recording-active) .effort-picker,
+  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #chatComposerToolsBtn,
+  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #chatMobileMicBtn,
+  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) #sendBtn,
+  #appShell#appShell#appShell #chatInputWrap.composer-multiline:not(.voice-recording-active) .effort-picker {
+    grid-row: 3 !important;
+  }
+}
+
+/* The empty mobile landing page uses the same central prompt placement as
+   the captured ChatGPT phone page. The centered capsule stays put while the
+   composer holds focus and only returns to normal flow once the software
+   keyboard is actually open (the keyboard controller sets the root flag), so
+   tapping a capsule control can never yank the layout out from under the
+   pointer between mousedown and mouseup — that shift retargets the click to
+   #topicSetup and the directly-bound tools/mic/send listeners never run. */
+@media (max-width: 768px) {
+  :root:not([data-keyboard-open="true"])
+    body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #topicSetup
+    > #topicInputWrap:not(.voice-recording-active) {
+    position: absolute !important;
+    top: 50% !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell #topicSetup .home-quick-actions {
+    display: none !important;
+  }
+
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell #topicSetup .topic-title.greeting {
+    top: 41% !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(220px, 100%) !important;
+    max-width: 220px !important;
+    transform: translate(-50%, -50%) !important;
+  }
+}

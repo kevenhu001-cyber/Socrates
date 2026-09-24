@@ -1,0 +1,255 @@
+/*
+ * polish/composer.css — composer capsule + tools menu + effort picker.
+ * Grid geometry and control sizes stay owned by restore/chat-surface.css +
+ * fixes.css (JS measures them); this layer refines skin only.
+ */
+
+/* Capsule focus: brighten the hairline one step, no glow. */
+#appShell #topicInputWrap:focus-within,
+#appShell #chatInputWrap:focus-within {
+  border-color: var(--ui-border-strong);
+}
+
+/* Bundled brand face on the hero line and composer text. The parity layer
+   dropped these to the generic system stack (--chatgpt-font) while the rest
+   of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
+   also what the localization specs assert. */
+#appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting,
+#appShell#appShell#appShell#appShell #topicInputWrap .rich-composer-editor,
+#appShell#appShell#appShell#appShell #topicInputWrap .rich-composer .tiptap,
+#appShell#appShell#appShell#appShell #chatInputWrap .rich-composer-editor,
+#appShell#appShell#appShell#appShell #chatInputWrap .rich-composer .tiptap {
+  font-family: var(--cg-font) !important;
+}
+
+/* Greeting stays one line in every locale. The pool strings are short, but
+   long translations or an XL font scale must never wrap the hero line —
+   nowrap + ellipsis is the hard guarantee. */
+#appShell#appShell#appShell #topicSetup .topic-title.greeting {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Lift the landing hero off geometric center: the reference composition
+   keeps greeting + capsule in the upper-middle band (~40% of the viewport),
+   not dead center. Extra bottom padding shrinks the flex content box, which
+   moves the centered block up by half the added amount. */
+@media (min-width: 769px) {
+  #appShell#appShell#appShell #topicSetup {
+    padding-bottom: calc(80px + var(--conversation-safe-bottom) + 18vh) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* The phone greeting was capped at 220px (fixes.css), which wrapped every
+     longer pool string to two lines. Open the width to the viewport gutter
+     and cap the size so the longest pool string still fits on one line;
+     nowrap + ellipsis above is the backstop for XL font scale. The 4×
+     #appShell anchor is needed to outrank the body:not(...) landing-state
+     rule that owns these properties. */
+  #appShell#appShell#appShell#appShell #topicSetup .topic-title.greeting {
+    top: 35% !important;
+    width: auto !important;
+    max-width: min(92vw, 560px) !important;
+    font-size: calc(min(27px, 6vw) * var(--app-font-scale, 1)) !important;
+  }
+}
+
+/* Effort trigger reads as a chip: quieter type than the editor text. */
+#appShell#appShell .effort-trigger .effort-label {
+  font-size: 13px !important;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+#appShell#appShell .effort-trigger { gap: 4px !important; }
+#appShell#appShell .effort-trigger .effort-caret { opacity: 0.6; }
+
+/* "+" tools menu — menu radius/shadow converge on the overlay contract. */
+body #composerToolsMenu {
+  border-radius: 14px !important;
+  border-color: var(--ui-border-subtle) !important;
+  box-shadow: var(--ui-shadow-menu) !important;
+  padding: 6px !important;
+}
+
+/* "+" open animation — the card springs out of the trigger edge. The menu
+   lives on <body> and is shown by removing .hidden (display:none), so this
+   animation replays on every open without JS coordination. position() in
+   ui/composerTools.js stamps data-menu-side so transform-origin tracks the
+   edge the card is anchored to. */
+@keyframes composerToolsIn {
+  from { opacity: 0; transform: translateY(var(--_ct-dir, -6px)) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+body #composerToolsMenu.composer-tools-menu:not(.hidden) {
+  animation: composerToolsIn 160ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  transform-origin: top left;
+}
+body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden) {
+  --_ct-dir: 6px;
+  transform-origin: bottom left;
+}
+@media (prefers-reduced-motion: reduce) {
+  body #composerToolsMenu.composer-tools-menu:not(.hidden) { animation: none; }
+}
+body #composerToolsMenu .composer-tools-item,
+body #composerToolsMenu .composer-tools-plugin-item {
+  border-radius: 8px !important;
+  min-height: 40px;
+}
+body #composerToolsMenu .composer-tools-group-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ui-text-muted);
+}
+body #composerToolsMenu .composer-tools-copy small { color: var(--ui-text-muted); }
+body #composerToolsMenu .composer-tools-item kbd {
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: 5px;
+  font-size: 10px;
+}
+
+/* Desktop "+" card — compact single-line directory. The restore layer
+   re-enabled per-item descriptions, which stretched the card into a tall
+   narrow tower against the 52px capsule; the reference pattern (and our
+   own mobile sheet) is icon + label. Descriptions stay mounted for
+   aria-labels. */
+@media (min-width: 769px) {
+  body #composerToolsMenu .composer-tools-desktop-items .composer-tools-item,
+  body #composerToolsMenu .composer-tools-plugin-item {
+    min-height: 34px !important;
+    padding: 4px 10px !important;
+    gap: 10px !important;
+  }
+  body #composerToolsMenu .composer-tools-desktop-items .composer-tools-copy small {
+    display: none !important;
+  }
+  body #composerToolsMenu .composer-tools-icon {
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--ui-text-secondary);
+  }
+  body #composerToolsMenu .composer-tools-icon svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+  body #composerToolsMenu .composer-tools-group-label {
+    padding: 10px 10px 3px !important;
+  }
+  body #composerToolsMenu .composer-tools-group:first-child .composer-tools-group-label {
+    padding-top: 4px !important;
+  }
+  body #composerToolsMenu .composer-tools-plugin-state {
+    padding: 8px 10px !important;
+    font-size: 12px;
+  }
+  body #composerToolsMenu .composer-tools-plugin-state small { font-size: 11px; }
+  body #composerToolsMenu .composer-tools-footer-search { min-height: 34px; }
+  body #composerToolsMenu .composer-tools-footer-search input { min-height: 30px; }
+}
+
+/* Attachment chips inside the capsule — consistent pill + hairline. */
+#appShell .attachment-chips .attachment-chip,
+#appShell .msg-attachment {
+  border-radius: 10px;
+}
+
+/* Under-composer disclaimer: quiet centered microcopy. */
+#appShell .disclaimer {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+/* ── Voice recording bar ─────────────────────────────────────────
+   [✕ discard] [● Listening · 0:12] ~~~ wave ~~~ [■ done]
+   Keeps the 26-bar + .voice-recording-stop contract (voice-input e2e)
+   and the inverted confirm circle; adds the discard affordance and
+   tightens rhythm toward the shell's control language. */
+#appShell .voice-recording-bar {
+  gap: 10px;
+  height: 44px;
+  padding: 0 2px 0 4px;
+}
+
+/* Discard — quiet ghost circle at the leading edge. */
+#appShell .voice-recording-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  flex: 0 0 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+  transition: background-color .15s var(--ease-out, ease), color .15s ease, transform .12s ease;
+}
+#appShell .voice-recording-cancel:hover,
+#appShell .voice-recording-cancel:focus-visible {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+#appShell .voice-recording-cancel:active { transform: scale(0.9); }
+#appShell .voice-recording-cancel svg { display: block; width: 15px; height: 15px; }
+
+/* Live dot — solid core + expanding halo ring instead of the offset
+   shadow pulse; reads "recording" without leaving the mono palette. */
+#appShell .voice-recording-indicator {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  flex-basis: 8px;
+  box-shadow: none;
+}
+#appShell .voice-recording-indicator::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  animation: polishVoiceRing 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+@keyframes polishVoiceRing {
+  0% { transform: scale(0.6); opacity: 0.5; }
+  70%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* Label + timer inline — "Listening… 0:12" reads as one status line. */
+#appShell .voice-recording-copy {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 7px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+#appShell .voice-recording-label { font-size: 13px; }
+#appShell .voice-recording-live { flex-basis: 100%; }
+
+/* Waveform — slimmer bars on a tighter grid; the JS envelope already
+   supplies the amplitude shape. */
+#appShell .voice-recording-wave { gap: 2.5px; height: 34px; }
+#appShell .voice-recording-wave > span {
+  width: 2.5px;
+  min-width: 2px;
+  min-height: 2px;
+}
+
+/* Confirm — keep the inverted 36px circle; a slight hover grow instead of
+   only a shade change. */
+#appShell .voice-recording-stop:hover { transform: scale(1.05); }
+#appShell .voice-recording-stop:active { transform: scale(0.92); }
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell .voice-recording-indicator::after { animation: none; }
+}

@@ -17,12 +17,19 @@ test.beforeEach(async ({ page }) => {
   await login(page);
 });
 
-test('settings modal opens, renders React skeleton + legacy provider rows, and closes', async ({ page }) => {
-  // Open via the legacy window binding (the model-picker "add" path).
+/* The provider/tone skeleton lives in the "Models & voice" category pane;
+   the modal opens on General, so specs navigate there first. */
+async function openModelsPane(page) {
   await page.evaluate(() => window.openSettings());
-
   const overlay = page.locator('#settingsOverlay');
   await expect(overlay).toBeVisible();
+  await overlay.locator('.settings-nav [data-section="models"]').click();
+  return overlay;
+}
+
+test('settings modal opens, renders React skeleton + legacy provider rows, and closes', async ({ page }) => {
+  // Open via the legacy window binding (the model-picker "add" path).
+  const overlay = await openModelsPane(page);
 
   // React-owned skeleton: toggle + action buttons + containers.
   await expect(overlay.locator('#stgToggleTrack')).toBeVisible();
@@ -31,8 +38,10 @@ test('settings modal opens, renders React skeleton + legacy provider rows, and c
   await expect(overlay.locator('#cancelSettingsBtn')).toBeVisible();
   await expect(overlay.locator('#saveSettingsBtn')).toBeVisible();
 
-  // Legacy-rendered dynamic content: provider list + tone presets.
+  // Legacy-rendered dynamic content: provider list (Models & voice) +
+  // tone presets (Personalization).
   await expect(overlay.locator('#providerList')).toBeVisible();
+  await overlay.locator('.settings-nav [data-section="personalization"]').click();
   await expect(overlay.locator('#tonePresetOptions')).toBeVisible();
 
   // Close via the React close button.
@@ -57,8 +66,7 @@ test('settings modal closes on backdrop click and via Esc', async ({ page }) => 
 });
 
 test('settings toggle flips the track class and persists', async ({ page }) => {
-  await page.evaluate(() => window.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = await openModelsPane(page);
   const track = overlay.locator('#stgToggleTrack');
 
   const initialOn = await track.evaluate((el) => el.classList.contains('on'));
@@ -76,8 +84,7 @@ test('settings toggle flips the track class and persists', async ({ page }) => {
 });
 
 test('add provider renders editable rows into the legacy-rendered list', async ({ page }) => {
-  await page.evaluate(() => window.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = await openModelsPane(page);
 
   // Empty state: the built-in row is the empty-state affordance (historical
   // renderer behavior — it is replaced, not appended to, once a custom

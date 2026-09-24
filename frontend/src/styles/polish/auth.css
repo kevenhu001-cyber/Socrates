@@ -1,0 +1,63 @@
+/*
+ * polish/auth.css — auth gate card refinement.
+ * restore/chatgpt-ui.css owns the base skin via --cg-*; we refine shape,
+ * label type, and control radii on top of it.
+ */
+
+.auth-gate {
+  /* Same page color as the app shell so the transition into the app is
+     seamless; the card floats on it via border + shadow. */
+  padding: 24px 16px;
+}
+
+.auth-card {
+  border: 1px solid var(--ui-border-subtle) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--ui-shadow-modal) !important;
+}
+
+.auth-brand { letter-spacing: -0.01em; }
+
+/* Tabs: quiet underline tabs, muted → primary. */
+.auth-tabs { border-bottom: 1px solid var(--ui-border-subtle); }
+.auth-tab { color: var(--ui-text-muted); font-weight: 500; }
+.auth-tab:hover { color: var(--ui-text-secondary); }
+.auth-tab.active { color: var(--ui-text-primary); }
+
+/* Labels: small-caps microcopy, muted. */
+.auth-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ui-text-muted);
+}
+
+.auth-input {
+  border: 1px solid var(--ui-border-default) !important;
+  border-radius: 10px !important;
+  transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
+}
+.auth-input:focus {
+  border-color: var(--ui-border-strong) !important;
+  box-shadow: 0 0 0 3px var(--ui-bg-control) !important;
+}
+
+.auth-btn {
+  border-radius: 10px;
+  font-weight: 500;
+  transition: filter var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+}
+.auth-btn.primary:hover { filter: brightness(0.92); }
+.auth-btn.secondary {
+  border: 1px solid var(--ui-border-default);
+  border-radius: 10px;
+  color: var(--ui-text-secondary);
+}
+.auth-btn.secondary:hover { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+
+.auth-view-separator { color: var(--ui-text-muted); }
+.auth-foot, .auth-footnote { color: var(--ui-text-muted); }
+.auth-foot a, .auth-inline-link { color: var(--ui-text-secondary); }
+.auth-foot a:hover, .auth-inline-link:hover { color: var(--ui-text-primary); }
+
+.auth-error { border-radius: 8px; }

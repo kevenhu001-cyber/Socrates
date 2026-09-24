@@ -15,9 +15,60 @@ test('landing greeting stays one static line regardless of the hour', async ({ p
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  /* ChatGPT parity: no time-of-day, no name — the same short line at any
-     hour, in the ambient locale (en here). */
-  await expect(page.locator('#topicTitle')).toHaveText('Ready when you are');
+  /* ChatGPT parity: no time-of-day, no name — one short line drawn from
+     the greeting pool, in the ambient locale (en here). */
+  const greeting = await page.locator('#topicTitle').textContent();
+  expect([
+    "What's the plan for today?",
+    'What are we working on?',
+    "What's on your mind?",
+    'Where should we start?',
+    'Ready when you are.',
+    'What would you like to explore?',
+    'How can I help?',
+    "Let's get to it.",
+  ]).toContain(greeting);
+});
+
+test('greeting keeps its size and stays visible when the composer is focused', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const read = () => page.locator('#topicTitle').evaluate((el) => {
+    const style = getComputedStyle(el);
+    const box = el.getBoundingClientRect();
+    return { fontSize: style.fontSize, opacity: style.opacity, display: style.display, height: box.height };
+  });
+  const before = await read();
+  await page.locator('#topicInputWrap .tiptap').click();
+  await expect(page.locator('#topicInputWrap .tiptap')).toBeFocused();
+  const after = await read();
+  expect(after.fontSize).toBe(before.fontSize);
+  expect(after.display).not.toBe('none');
+  expect(parseFloat(after.opacity)).toBeGreaterThan(0.5);
+  expect(after.height).toBeGreaterThan(0);
+});
+
+test('mobile greeting keeps its size and stays visible while typing', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 769 });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const read = () => page.locator('#topicTitle').evaluate((el) => {
+    const style = getComputedStyle(el);
+    return { fontSize: style.fontSize, opacity: style.opacity, display: style.display, visibility: style.visibility };
+  });
+  const before = await read();
+  await page.locator('#topicInputWrap .tiptap').click();
+  await expect(page.locator('#topicInputWrap .tiptap')).toBeFocused();
+  await page.waitForTimeout(350);
+  const after = await read();
+  expect(after.fontSize).toBe(before.fontSize);
+  expect(after.display).not.toBe('none');
+  expect(after.visibility).not.toBe('hidden');
+  expect(parseFloat(after.opacity)).toBeGreaterThan(0.5);
 });
 
 test('display settings change theme, text scale, and content width', async ({ page }) => {

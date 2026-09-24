@@ -3,6 +3,7 @@ import { WEB_FETCH_TOOL } from './fetchBatch.js';
 import { READ_ATTACHMENT_TOOL } from './attachmentReader.js';
 import { VISUALIZATION_TOOL } from './visualization.js';
 import { PLAN_TOOL, SPEC_TOOL } from './planning.js';
+import { CREATE_SITE_TOOL } from './siteCreation.js';
 import {
   ARXIV_TOOL, ZOTERO_TOOL, NOTION_TOOL, GITHUB_TOOL, GITEE_TOOL,
   CONNECTOR_TOOL_NAMES,
@@ -62,6 +63,9 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
        validate a strict envelope and echo it back as a plan/spec card. */
     { name: 'create_plan', modelDefinition: PLAN_TOOL, enabled: true, pure: true, sessionSerial: false },
     { name: 'create_spec', modelDefinition: SPEC_TOOL, enabled: true, pure: true, sessionSerial: false },
+    /* Sites the agent builds land in the same artifacts store the Sites
+       page lists; publishing mints the /s/<token> share URL. */
+    { name: 'create_site', modelDefinition: CREATE_SITE_TOOL, enabled: true, pure: false, sessionSerial: false },
 
     // ── Connector tools (gated on per-user connection) ──────
     { name: CONNECTOR_TOOL_NAMES.ARXIV,  modelDefinition: ARXIV_TOOL,    enabled: true, pure: true, sessionSerial: false },

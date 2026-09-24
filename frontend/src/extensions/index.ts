@@ -23,6 +23,7 @@ import { uploadExtension } from './modules/upload';
 import { webSearchExtension } from './modules/webSearch';
 import { skillsExtension } from './modules/skills';
 import { createImageExtension } from './modules/createImage';
+import { createSiteExtension } from './modules/createSite';
 
 let installed = false;
 
@@ -45,7 +46,8 @@ export function installExtensions(): void {
     .register(uploadExtension)
     .register(webSearchExtension)
     .register(skillsExtension)
-    .register(createImageExtension);
+    .register(createImageExtension)
+    .register(createSiteExtension);
 }
 
 /**

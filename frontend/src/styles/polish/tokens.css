@@ -1,0 +1,135 @@
+/*
+ * polish/tokens.css — Tier-5 design-token refinement.
+ *
+ * One visual vocabulary across the token families. themes.css owns the
+ * canonical cool-neutral ramp (--ui-*); this file re-pins the older
+ * --chatgpt-* / --cg-* palettes onto the same steps so a "surface" means the
+ * same gray everywhere it lands. hsl(var(--bg-*)) channels stay untouched —
+ * too many legacy surfaces consume them.
+ *
+ * Two invariants from earlier passes still hold:
+ *   - --cg-* must stay SOLID (no alpha): the identity avatar and sidebar rows
+ *     consume them, and alpha washes out the neutral-gray contract.
+ *   - Selectors mirror the restore layer exactly (:root = dark defaults,
+ *     [data-mode="light"] overrides) so equal specificity + later order wins.
+ */
+
+:root {
+  /* Elevation — flat surfaces stay flat; only floating layers carry a shadow. */
+  --ui-shadow-menu: 0 8px 28px rgb(0 0 0 / 14%), 0 0 0 1px rgb(0 0 0 / 4%);
+  --ui-shadow-modal: 0 24px 80px rgb(0 0 0 / 22%), 0 0 0 1px rgb(0 0 0 / 5%);
+  --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 14%);
+
+  /* Focus — single hairline ring, never the UA blue. */
+  --ui-focus-ring: 0 0 0 2px var(--ui-bg-page), 0 0 0 4px var(--ui-border-strong);
+
+  /* Font convergence: every parity rule that pins --chatgpt-font now lands
+     on the bundled brand face instead of the bare system stack. */
+  --chatgpt-font: var(--cg-font);
+
+  /* parity palette → canonical dark ramp. --chatgpt-composer was never
+     defined (consumers fell back to #303030 even in light mode) — defined
+     here for real. */
+  --chatgpt-page: #09090b;
+  --chatgpt-rail: #09090b;
+  --chatgpt-surface: #1e2025;
+  --chatgpt-menu: #2e3239;
+  --chatgpt-hover: #22252b;
+  --chatgpt-composer: #272a30;
+  --chatgpt-text: #f2f3f5;
+  --chatgpt-muted: #a4a8b0;
+  --chatgpt-faint: #8a8d94;
+  --chatgpt-line: rgb(148 163 184 / 13%);
+}
+
+/* Literal #000 pins in restore (chat-surface, mobile-parity, fixes) keep the
+   page chrome pure black even though the token ramp moved to near-black.
+   Repin them to the ramp — identical selectors + !important + later order. */
+html[data-theme="socrates"][data-mode="dark"] body,
+html[data-theme="socrates"][data-mode="dark"] #appShell,
+html[data-theme="socrates"][data-mode="dark"] #appShell .main,
+html[data-theme="socrates"][data-mode="dark"] #appShell .main-content,
+html[data-theme="socrates"][data-mode="dark"] #appShell .main-bg,
+html[data-theme="socrates"][data-mode="dark"] #appShell .top-bar {
+  background: var(--chatgpt-page) !important;
+  background-color: var(--chatgpt-page) !important;
+}
+html[data-theme="socrates"][data-mode="dark"] #appShell#appShell .sidebar {
+  background: var(--chatgpt-rail) !important;
+}
+
+/* chat-surface pins --conversation-page/--cg-page/--cg-rail to pure black at
+   html[data-theme][data-mode] (0,2,1) on desktop — a plain [data-mode] block
+   loses, so the dark remap lives at the same specificity and wins by order. */
+html[data-theme="socrates"][data-mode="dark"] {
+  --ui-shadow-menu: 0 8px 28px rgb(0 0 0 / 50%), 0 0 0 1px rgb(255 255 255 / 7%);
+  --ui-shadow-modal: 0 24px 80px rgb(0 0 0 / 60%), 0 0 0 1px rgb(255 255 255 / 8%);
+  --ui-shadow-toast: 0 6px 22px rgb(0 0 0 / 45%);
+
+  /* chatgpt-ui palette → same ramp. */
+  --cg-page: #09090b;
+  --cg-rail: #0f1114;
+  --cg-surface: #2e3239;
+  --cg-surface-raised: #363a42;
+  --cg-surface-hover: #31353c;
+  --cg-border: rgb(148 163 184 / 13%);
+  --cg-border-strong: rgb(148 163 184 / 19%);
+  --cg-text: #f2f3f5;
+  --cg-text-secondary: #d7dade;
+  --cg-text-muted: #9a9ea6;
+  --cg-text-faint: #686c75;
+  --cg-accent: #f2f3f5;
+  --cg-accent-strong: #ffffff;
+  --cg-accent-ink: #09090b;
+  --cg-danger: #ea6a6a;
+
+  /* conversation palette → same ramp (page chrome consumes --conversation-page). */
+  --conversation-page: #09090b;
+  --conversation-surface: #1e2025;
+  --conversation-control: #272a30;
+  --conversation-control-hover: #31353c;
+  --conversation-border: rgb(148 163 184 / 13%);
+  --conversation-text: #f2f3f5;
+  --conversation-text-muted: #a4a8b0;
+  --conversation-user: #26292e;
+}
+
+[data-mode="light"] {
+  --chatgpt-page: #ffffff;
+  --chatgpt-rail: #f6f7f9;
+  --chatgpt-surface: #edf0f3;
+  --chatgpt-menu: #ffffff;
+  --chatgpt-hover: #f0f2f5;
+  --chatgpt-composer: #ffffff;
+  --chatgpt-text: #17181c;
+  --chatgpt-muted: #565a62;
+  --chatgpt-faint: #646872;
+  --chatgpt-line: rgb(15 23 42 / 10%);
+
+  --conversation-page: #ffffff;
+  --conversation-surface: #edf0f3;
+  --conversation-control: #eaecf0;
+  --conversation-control-hover: #e1e4e7;
+  --conversation-border: rgb(15 23 42 / 10%);
+  --conversation-text: #17181c;
+  --conversation-text-muted: #565a62;
+  --conversation-user: #eceef1;
+
+  --cg-page: #ffffff;
+  --cg-rail: #f6f7f9;
+  --cg-surface: #ffffff;
+  --cg-surface-raised: #f0f2f5;
+  --cg-surface-hover: #e7e9ed;
+  --cg-border: rgb(15 23 42 / 10%);
+  --cg-border-strong: rgb(15 23 42 / 16%);
+  --cg-text: #17181c;
+  --cg-text-secondary: #565a62;
+  --cg-text-muted: #646872;
+  --cg-text-faint: #9aa0a8;
+  --cg-accent: #17181c;
+  --cg-accent-strong: #0b0c0e;
+  --cg-accent-ink: #ffffff;
+  --cg-danger: #b93a3a;
+
+  --conversation-user: #eceef1;
+}

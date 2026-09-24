@@ -254,4 +254,5 @@ export {
   onCustomInstructionsChange, buildCustomInstructionsString, updateInstSaveState,
   getCustomInstructionsString, toggleProfileWebSearch, syncProfileWebSearchUI,
   loadUserMemories,
+  _publishProfileState as publishProfileSnapshot,
 };

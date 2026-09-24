@@ -15,6 +15,19 @@ async function heightOf(locator) {
   return locator.evaluate((node) => node.getBoundingClientRect().height);
 }
 
+/* Wait until the capsule reports the same height on two consecutive frames,
+   so a sample window never starts inside the tail of the previous motion. */
+async function settle(locator) {
+  let previous = -1;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const current = await heightOf(locator);
+    if (Math.abs(current - previous) < 0.5) return current;
+    previous = current;
+    await locator.page().waitForTimeout(32);
+  }
+  return previous;
+}
+
 async function sampleDuring(page, wrapSelector, action, duration = 450) {
   await page.evaluate(({ selector, durationMs }) => {
     const wrap = document.querySelector(selector);
@@ -71,10 +84,16 @@ test('topic composer changes geometry only after a second rendered line', async 
   /* The collapse probe measures at the *collapsed* row width — with the
      effort pill inline that editor column is ~100px, so the probe string
      must be short enough to fit one collapsed line. */
+  /* Let the expansion finish before sampling the collapse: the sample window
+     otherwise starts inside the growth animation's tail, which reads as a
+     bounce. */
+  await settle(wrap);
   const shrink = await sampleDuring(page, '#topicInputWrap', async () => {
     await editor.fill('Back');
   });
-  expect(await heightOf(wrap)).toBe(baseline);
+  /* The capsule glides back to the one-row baseline; poll for the settled
+     height instead of reading a frame that is still animating. */
+  await expect.poll(() => heightOf(wrap)).toBe(baseline);
   /* Shrinking glides from the tall two-tier height down to the one-row
      baseline — it must never bounce back upward on the way down. */
   const shrinkValues = shrink.map(({ height }) => height);
@@ -87,7 +106,6 @@ test('topic composer changes geometry only after a second rendered line', async 
   await editor.fill('');
   expect(await heightOf(wrap)).toBe(baseline);
 });
-
 test('chat composer stays continuous through paste, rapid delete and resize', async ({ page }) => {
   await openApp(page);
   const topic = page.locator('#topicComposerRoot .rich-composer-editor');
@@ -118,10 +136,13 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
       .toBeLessThan(2);
   }
 
+  await settle(wrap);
   const shrink = await sampleDuring(page, '#chatInputWrap', async () => {
     await editor.fill('short');
   });
-  expect(await heightOf(wrap)).toBe(baseline);
+  /* Same settled-height poll as the topic composer above: the capsule
+     animates from the two-tier card back to the one-row baseline. */
+  await expect.poll(() => heightOf(wrap)).toBe(baseline);
   /* Shrinking glides from the tall two-tier height down to the one-row
      baseline — it must never bounce back upward on the way down. */
   const shrinkValues = shrink.map(({ height }) => height);
@@ -130,7 +151,9 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
 
   await page.setViewportSize({ width: 320, height: 844 });
   await editor.fill('This text stays stable while the narrower container wraps it onto additional rendered lines.');
-  expect(await heightOf(wrap)).toBeGreaterThan(baseline);
+  /* The resize + rewrap needs a layout pass before the wrap grows — poll
+     for it instead of sampling the first frame after fill. */
+  await expect.poll(() => heightOf(wrap)).toBeGreaterThan(baseline);
   await page.setViewportSize(MOBILE);
   await editor.fill('');
   await expect.poll(() => heightOf(wrap)).toBe(baseline);
