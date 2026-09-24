@@ -121,6 +121,10 @@ body.sidebar-resizing{cursor:col-resize;-webkit-user-select:none;user-select:non
 .recent-item-tag-btn{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background-color .18s var(--ease-out),color .18s var(--ease-out)}
 .recent-item-tag-btn:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
 .recent-item-tag-btn svg{width:12px;height:12px}
+/* Soft-hide action between tags and hard delete — same quiet icon size. */
+.recent-item-archive{width:22px;height:22px;border-radius:4px;background:transparent;border:0;color:hsl(var(--text-500));cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background-color .18s var(--ease-out),color .18s var(--ease-out);flex-shrink:0}
+.recent-item-archive:hover{background:hsl(var(--bg-300));color:hsl(var(--text-200))}
+.recent-item-archive svg{width:12px;height:12px}
 .recent-item-del{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:hsl(var(--text-500));opacity:1;transition:opacity .18s var(--ease-out),background .18s var(--ease-out),color .18s var(--ease-out);flex-shrink:0;background:transparent;border:0;cursor:pointer;padding:0}
 .recent-item-del:hover{background:hsl(0 60% 30%/0.4);color:hsl(0 60% 70%)}
 .recent-item-del svg{width:12px;height:12px}

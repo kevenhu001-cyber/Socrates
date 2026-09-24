@@ -22,7 +22,8 @@ export type ComposerToolsAction =
   | 'extensiveThinking'
   | 'analyze'
   | 'exam'
-  | 'skills';
+  | 'skills'
+  | 'managePlugins';
 
 export interface ComposerToolsSnapshot {
   isOpen: boolean;
@@ -40,6 +41,5 @@ export interface ComposerToolsBridge {
 declare global {
   interface Window {
     __socratesComposerToolsBridge?: ComposerToolsBridge;
-    toggleWebSearch?: () => void;
   }
 }

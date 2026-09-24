@@ -89,3 +89,22 @@ test('thumbnail box renders a file-type glyph', async ({ page }) => {
   const docx = await shapes('lab_report.docx');
   expect(docx).toEqual({ rect: 0, circle: 0, path: 3 });
 });
+
+test('phone library filters actual images and selects only visible rows', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 769 });
+  await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+  });
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
+  await expect(page.locator('.library-directory')).toBeVisible();
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-library-list-390x769.png' });
+  await page.getByRole('tab', { name: 'Images' }).click();
+  await expect(page.locator('.library-row')).toHaveCount(1);
+  await expect(page.locator('.library-row')).toContainText('grid_mapping.png');
+  await page.locator('.library-row .library-checkbox').click();
+  await expect(page.locator('.library-selection-bar')).toContainText('1 selected');
+  await page.locator('.library-select-all .library-checkbox').click();
+  await expect(page.locator('.library-selection-bar')).toBeHidden();
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-library-images-390x769.png' });
+});

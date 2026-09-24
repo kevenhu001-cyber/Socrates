@@ -73,6 +73,14 @@ test('site can be saved, published and previewed', async ({ page }) => {
   await page.locator('.creation-editor [name=visibility]').selectOption('unlisted');
   await page.locator('.creation-editor [type=submit]').click();
   await expect(page.locator('#sitesPanel .creation-row')).toContainText('Course notes');
+  await page.setViewportSize({ width: 390, height: 769 });
+  await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
+  });
+  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-sites-list-390x769.png' });
+  await page.locator('#sitesPanel [data-action=site-menu]').click();
   await page.locator('#sitesPanel [data-action=preview]').click();
   await expect(page.locator('.creation-preview-frame')).toBeVisible();
   await expect(page.frameLocator('.creation-preview-frame').getByRole('heading', { name: 'Course notes' })).toBeVisible();
@@ -106,6 +114,7 @@ test('new pages and settings fit a phone viewport in both themes', async ({ page
     await page.evaluate((value) => document.querySelector(`[data-theme-option="${value}"]`)?.click(), theme);
     await page.evaluate(() => window.openNav('sites'));
     await expect(page.locator('#sitesPanel')).toBeInViewport();
+    await page.screenshot({ path: `/tmp/socrates-reference-mobile-sites-empty-${theme}-390x844.png` });
     const sizes = await page.evaluate(() => ({
       panel: document.getElementById('sitesPanel').getBoundingClientRect().width,
       viewport: document.documentElement.clientWidth,

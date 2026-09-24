@@ -1,6 +1,16 @@
 export var RECENTS_CAP = 200;
 export var ARCHIVE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
+/* Server JSON ships archivedAt as an ISO string; optimistic UI stamps use
+   ms numbers. Normalise before any retention comparison — `iso > msNumber`
+   is always false under JS coercion and silently emptied Storage. */
+function archiveMs(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  var parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 export function getChatIdFromURL() {
   return new URLSearchParams(location.search).get("chat") || null;
 }
@@ -61,15 +71,15 @@ export function getVisibleSessions(sessions, now) {
 export function getArchivedSessionsFrom(sessions, now) {
   var cutoff = (now || Date.now()) - ARCHIVE_RETENTION_MS;
   return (sessions || [])
-    .filter(function (s) { return s && s.archivedAt && s.archivedAt > cutoff; })
-    .sort(function (a, b) { return (b.archivedAt || 0) - (a.archivedAt || 0); });
+    .filter(function (s) { return s && archiveMs(s.archivedAt) > cutoff; })
+    .sort(function (a, b) { return archiveMs(b.archivedAt) - archiveMs(a.archivedAt); });
 }
 
 export function sweepExpiredArchivesFrom(sessions, now) {
   var list = Array.isArray(sessions) ? sessions : [];
   var cutoff = (now || Date.now()) - ARCHIVE_RETENTION_MS;
   var next = list.filter(function (s) {
-    return !s || !s.archivedAt || s.archivedAt > cutoff;
+    return !s || !archiveMs(s.archivedAt) || archiveMs(s.archivedAt) > cutoff;
   });
   return { sessions: next, changed: next.length !== list.length };
 }

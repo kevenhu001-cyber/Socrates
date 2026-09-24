@@ -23,6 +23,18 @@ function fileSize(item: { size?: number }): string {
     : i18n('library.metaCreated', 'Created');
 }
 
+function libraryDate(value?: string): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const locale = document.documentElement.lang.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US';
+  const elapsedHours = Math.round((Date.now() - date.getTime()) / 3600000);
+  if (elapsedHours >= 0 && elapsedHours < 24) {
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-Math.max(1, elapsedHours), 'hour');
+  }
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date);
+}
+
 function SearchIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>;
 }
@@ -156,6 +168,7 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
   itemKey: string; tab: string; selection: Record<string, boolean>; renameItem: string | null;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const name = item.name || item.title || i18n('library.untitled', 'Untitled');
   const isSelected = !!selection[item.id];
   const isRenaming = renameItem === item.id;
@@ -173,10 +186,14 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
     );
   }
 
-  const actions = tab === 'files' ? (
-    <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.deleteFile(item.id); }}>{i18n('common.delete', 'Delete')}</button>
-  ) : (
-    <button className="workspace-row-action" onClick={(e) => { e.stopPropagation(); dispatch.renameArtifact(item.id); }}>{i18n('library.rename', 'Rename')}</button>
+  const actions = (
+    <div className="library-row-menu-wrap">
+      <button type="button" className="workspace-row-action library-row-menu-trigger" aria-label={`${name}: ${i18n('sidebar.nav.more', 'More')}`} aria-expanded={menuOpen} onClick={(e) => { e.stopPropagation(); setMenuOpen((open) => !open); }}><MoreIcon /></button>
+      {menuOpen && <div className="library-row-menu" role="menu">
+        <button type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); dispatch.startRename(item.id, itemKey); }}>{i18n('library.rename', 'Rename')}</button>
+        {tab === 'files' && <button type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); dispatch.deleteFile(item.id); }}>{i18n('common.delete', 'Delete')}</button>}
+      </div>}
+    </div>
   );
 
   return (
@@ -189,9 +206,9 @@ function LibraryItemRow({ item, itemKey, tab, selection, renameItem, dispatch }:
       </span>
       <div className="workspace-row-copy" onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}>
         {nameEl}
-        <span className="library-mobile-meta">{item.uploadedAt || item.updatedAt || '—'} · {fileSize(item)}</span>
+        <span className="library-mobile-meta">{libraryDate(item.uploadedAt || item.updatedAt)}</span>
       </div>
-      <span className="library-updated">{item.uploadedAt || item.updatedAt || '—'}</span>
+      <span className="library-updated">{libraryDate(item.uploadedAt || item.updatedAt)}</span>
       <span className="library-size">{fileSize(item)}</span>
       <span className="library-row-actions">{actions}</span>
     </div>
@@ -202,8 +219,10 @@ function LibraryView({ data, dispatch }: {
   data: { tab: string; query: string; files: ReadonlyArray<any>; artifacts: ReadonlyArray<any>; selection: Readonly<Record<string, boolean>>; renameItem: string | null };
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
-  const key = data.tab === 'artifacts' ? 'artifacts' : 'files';
+  const [view, setView] = useState<'files' | 'artifacts' | 'images'>('files');
+  const key = view === 'artifacts' ? 'artifacts' : 'files';
   const items = data[key].filter((item: any) => {
+    if (view === 'images' && item.kind !== 'image' && !/\.(png|jpe?g|webp|gif|svg|avif)$/i.test(item.name || '')) return false;
     if (!data.query) return true;
     return (item.name || item.title || '').toLowerCase().includes(data.query.toLowerCase());
   });
@@ -227,15 +246,19 @@ function LibraryView({ data, dispatch }: {
       </div>
       <div className="workspace-toolbar">
         <div className="workspace-tabs" role="tablist" aria-label={i18n('sidebar.library.title', 'Library')}>
-          <button type="button" role="tab" aria-selected={key === 'files'} className={key === 'files' ? 'active' : ''} onClick={() => dispatch.switchTab('files')}>{i18n('sidebar.library.files', 'Files')}</button>
-          <button type="button" role="tab" aria-selected={key === 'artifacts'} className={key === 'artifacts' ? 'active' : ''} onClick={() => dispatch.switchTab('artifacts')}>{i18n('sidebar.library.artifacts', 'Created')}</button>
+          <button type="button" role="tab" aria-selected={view === 'files'} className={view === 'files' ? 'active' : ''} onClick={() => { setView('files'); dispatch.switchTab('files'); }}>{i18n('sidebar.library.files', 'Files')}</button>
+          <button type="button" role="tab" aria-selected={view === 'artifacts'} className={view === 'artifacts' ? 'active' : ''} onClick={() => { setView('artifacts'); dispatch.switchTab('artifacts'); }}>{i18n('sidebar.library.artifacts', 'Created')}</button>
+          <button type="button" role="tab" aria-selected={view === 'images'} className={view === 'images' ? 'active' : ''} onClick={() => { setView('images'); dispatch.switchTab('files'); }}>{i18n('library.filter.images', 'Images')}</button>
         </div>
       </div>
       {anySelected && (
         <div className="library-selection-bar visible">
           <label className="library-select-all">
-            <input type="checkbox" className="library-checkbox" checked={allSelected} onChange={(e) => dispatch.toggleSelectAll(e.target.checked)} aria-label={i18n('library.selectAll', 'Select all')} />
-            <span>{i18n('library.selectedCount', '{n} selected').replace('{n}', String(Object.keys(data.selection).length))}</span>
+            <input type="checkbox" className="library-checkbox" checked={allSelected} onChange={(e) => {
+              if (view === 'images') items.forEach((item) => dispatch.toggleSelect(item.id, e.target.checked));
+              else dispatch.toggleSelectAll(e.target.checked);
+            }} aria-label={i18n('library.selectAll', 'Select all')} />
+            <span>{i18n('library.selectedCount', '{n} selected').replace('{n}', String(items.filter((item) => !!data.selection[item.id]).length))}</span>
           </label>
           <button className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={!anySelected}>{i18n('library.deleteSelected', 'Delete selected')}</button>
         </div>
@@ -244,6 +267,8 @@ function LibraryView({ data, dispatch }: {
         <div className="workspace-empty">
           {data.query ? (
             <><strong>{i18n('library.noMatch', 'No matching items')}</strong><span>{i18n('library.noMatchDesc', 'Try a different search.')}</span></>
+          ) : view === 'images' ? (
+            <><strong>{i18n('library.emptyImages', 'No images yet')}</strong><span>{i18n('library.emptyImagesDesc', 'Images you add will appear here.')}</span></>
           ) : key === 'files' ? (
             <><strong>{i18n('library.emptyFiles', 'Your library is ready')}</strong><span>{i18n('library.emptyFilesDesc', 'Upload a file or attach one in a chat.')}</span></>
           ) : (

@@ -18,7 +18,7 @@ import { ExtensionToken } from './extensionToken';
 import { useAutoHeight } from './useAutoHeight';
 import type { ComposerExtensionToken } from './types';
 import { addComposerFiles } from '../../attachments/render.js';
-import { i18n } from '../legacy/gateway';
+import { getLegacyActions, i18n } from '../legacy/gateway';
 import {
   removeComposerPlugin,
   useComposerPluginSelectionSnapshot,
@@ -125,8 +125,8 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   const openTools = () => {
     const triggerId = surface === 'topic' ? 'topicComposerToolsBtn' : 'chatComposerToolsBtn';
     const trigger = document.getElementById(triggerId);
-    if (trigger && typeof window.toggleComposerTools === 'function') {
-      window.toggleComposerTools(trigger, surface);
+    if (trigger) {
+      getLegacyActions().composer.toggleTools?.(trigger, surface);
     }
   };
 

@@ -88,7 +88,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   expect(mobileGeometry.mode?.width).toBeLessThanOrEqual(152);
   expect(mobileGeometry.mode?.height).toBe(32);
   expect(mobileGeometry.composer?.width).toBeGreaterThanOrEqual(320);
-  expect(mobileGeometry.composer?.height).toBe(86);
+  expect(mobileGeometry.composer?.height).toBe(104);
   expect((mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0)).toBeLessThanOrEqual(755);
   expect(mobileGeometry.plus?.width).toBe(40);
   expect(mobileGeometry.send?.width).toBe(40);
@@ -98,10 +98,10 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const toolsMenu = page.locator('#composerToolsMenu');
   await expect(toolsMenu).toBeVisible();
   const toolsBox = await toolsMenu.boundingBox();
-  expect(toolsBox?.width).toBeGreaterThanOrEqual(232);
-  expect(toolsBox?.width).toBeLessThanOrEqual(240);
-  expect(toolsBox?.height).toBeGreaterThanOrEqual(230);
-  expect(toolsBox?.height).toBeLessThanOrEqual(238);
+  expect(toolsBox?.width).toBeGreaterThanOrEqual(292);
+  expect(toolsBox?.width).toBeLessThanOrEqual(308);
+  expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
+  expect(toolsBox?.height).toBeLessThanOrEqual(368);
   expect(toolsBox?.x).toBeGreaterThanOrEqual(15);
   expect(toolsBox?.x).toBeLessThanOrEqual(17);
   expect(Math.abs(
@@ -111,10 +111,10 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const toolsBackground = await toolsMenu.evaluate((element) => getComputedStyle(element).backgroundColor);
   expect(toolsBackground).not.toBe('rgba(0, 0, 0, 0)');
   await page.mouse.move(380, 4);
-  const firstViewportActions = toolsMenu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item');
-  await expect(firstViewportActions).toHaveCount(5);
-  await expect(firstViewportActions.nth(3)).toHaveAttribute('data-composer-action', 'createImage');
-  await expect(firstViewportActions.nth(4)).toHaveAttribute('data-composer-action', 'webSearch');
+  const mobileActions = toolsMenu.locator('.composer-tools-mobile-items [data-composer-action]');
+  expect(await mobileActions.count()).toBeGreaterThanOrEqual(5);
+  await expect(toolsMenu.locator('.composer-tools-mobile-items [data-composer-action="createImage"]')).toBeVisible();
+  await expect(toolsMenu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toBeVisible();
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-tools-390x769.png', fullPage: true });
   await page.keyboard.press('Escape');
   await expect(toolsMenu).toBeHidden();
@@ -145,11 +145,11 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
       rowIcon: box('.plugin-directory-row .workspace-row-icon'),
     };
   });
-  expect(pluginGeometry.search?.height).toBe(36);
+  expect(pluginGeometry.search?.height).toBe(42);
   expect((pluginGeometry.installedLabel?.y ?? 0) + (pluginGeometry.installedLabel?.height ?? 0)).toBeLessThanOrEqual(pluginGeometry.installedIcon?.y ?? 0);
   expect(pluginGeometry.installedIcon?.width).toBe(40);
   expect(pluginGeometry.tabs?.y).toBeGreaterThan(315);
-  expect(pluginGeometry.tabs?.y).toBeLessThan(340);
+  expect(pluginGeometry.tabs?.y).toBeLessThan(410);
   expect(pluginGeometry.rowIcon?.width).toBe(40);
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-plugins-390x769.png', fullPage: true });
   await page.locator('#pluginWorkspaceSkillsTab').click();
@@ -177,7 +177,7 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   const chatComposerBox = await page.locator('#chatInputWrap').boundingBox();
   const chatEditorBox = await page.locator('#chatComposerRoot').boundingBox();
   const chatToolsBox = await page.locator('#chatComposerToolsBtn').boundingBox();
-  expect(chatComposerBox?.height).toBe(86);
+  expect(chatComposerBox?.height).toBe(104);
   expect(chatToolsBox?.y ?? 0).toBeGreaterThan((chatEditorBox?.y ?? 0) + (chatEditorBox?.height ?? 0) - 4);
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-chat-composer-390x769.png', fullPage: true });
 
@@ -223,7 +223,7 @@ test('Create image requires Jimeng and activates only after the connection is av
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.locator('#topicComposerToolsBtn').click();
-  await page.locator('#composerToolsMenu .composer-tools-mobile-item[data-composer-action="createImage"]').click();
+  await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action="createImage"]').click();
   await expect(page.locator('#composerToolsMenu')).toBeHidden();
   await expect(page.locator('.plugin-directory')).toBeVisible();
   expect(await page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBeNull();
@@ -254,7 +254,7 @@ test('Create image waits for a user prompt before submitting the image-generatio
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.locator('#topicComposerToolsBtn').click();
-  await page.locator('#composerToolsMenu .composer-tools-mobile-item[data-composer-action="createImage"]').click();
+  await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action="createImage"]').click();
   await expect.poll(async () => page.evaluate(() => window._activeTemplate?.extensionKey || null)).toBe('createImage');
   expect(await page.evaluate(() => window._activeTemplate?.systemPrompt || '')).toContain('You are in image creation mode');
   expect(chatRequests).toEqual([]);

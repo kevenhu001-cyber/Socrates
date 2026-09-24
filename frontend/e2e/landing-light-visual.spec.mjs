@@ -67,6 +67,17 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
 
   const editor = page.locator('#topicComposerRoot .rich-composer-editor');
+  await page.locator('#navNew').focus();
+  await page.keyboard.press('Tab');
+  const focusedControl = await page.evaluate(() => ({
+    matchesVisible: document.activeElement?.matches(':focus-visible') ?? false,
+    outlineStyle: getComputedStyle(document.activeElement).outlineStyle,
+    outlineWidth: getComputedStyle(document.activeElement).outlineWidth,
+  }));
+  expect(focusedControl.matchesVisible).toBe(true);
+  expect(focusedControl.outlineStyle).toBe('solid');
+  expect(focusedControl.outlineWidth).toBe('2px');
+
   const beforeFocus = await page.locator('#topicInputWrap').boundingBox();
   await editor.click();
   await expect(page.locator('#topicInputWrap')).toHaveClass(/composer-focused/);

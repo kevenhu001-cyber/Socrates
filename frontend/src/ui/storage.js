@@ -21,7 +21,9 @@ function _publishStorageState() {
     if (bridge && typeof bridge.publish === "function") {
       bridge.publish({
         archived: (window.getArchivedSessions ? window.getArchivedSessions() : []).map(function (s) {
-          return { id: s.id, title: s.title, topic: s.topic, archivedAt: s.archivedAt };
+          var raw = s.archivedAt;
+          var ms = typeof raw === 'number' ? raw : Date.parse(raw || '') || 0;
+          return { id: s.id, title: s.title, topic: s.topic, archivedAt: ms };
         }),
         open: _storageOpen,
       });

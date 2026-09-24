@@ -165,6 +165,13 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
 
   /* ⋯ overflow → small dropdown with the row's tag/delete actions. */
   #appShell .recent-item-actions { position: relative; opacity: 1; }
+  /* `contain: layout` on .recent-item isolates each row into its own
+     stacking context, so a later sibling row would paint over this row's
+     absolutely-positioned menu. Lift the open row above its neighbors. */
+  #appShell .recent-item.actions-open {
+    z-index: var(--ui-z-popover, 200);
+    position: relative;
+  }
   #appShell .recent-item-overflow {
     display: inline-flex;
     align-items: center;
@@ -184,7 +191,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     position: absolute;
     right: 0;
     top: calc(100% + 2px);
-    z-index: 6;
+    z-index: var(--ui-z-popover, 200);
     min-width: 148px;
     flex-direction: column;
     gap: 1px;
@@ -193,9 +200,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: 12px;
     background: var(--ui-bg-overlay);
     box-shadow: var(--ui-shadow-popover);
+    overflow: visible;
   }
   #appShell .recent-item.actions-open .recent-item-menu { display: flex; }
   #appShell .recent-item-menu .recent-item-tag-btn,
+  #appShell .recent-item-menu .recent-item-archive,
   #appShell .recent-item-menu .recent-item-del {
     display: flex;
     align-items: center;
@@ -209,10 +218,35 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     color: var(--ui-text-primary);
     font-size: 14px;
     text-align: left;
+    opacity: 1;
   }
   #appShell .recent-item-menu .recent-item-tag-btn:hover,
+  #appShell .recent-item-menu .recent-item-archive:hover,
   #appShell .recent-item-menu .recent-item-del:hover { background: var(--ui-bg-hover); }
-  #appShell .recent-item-menu .recent-item-action-icon { display: inline-flex; width: 16px; height: 16px; color: var(--ui-text-secondary); }
-  #appShell .recent-item-menu .recent-item-action-icon svg { width: 16px; height: 16px; }
-  #appShell .recent-item-menu .recent-item-action-text { display: inline; }
+  #appShell .recent-item-menu .recent-item-del { opacity: 1; }
+  #appShell .recent-item-menu .recent-item-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--ui-text-secondary);
+    overflow: hidden;
+  }
+  #appShell .recent-item-menu .recent-item-action-icon svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    max-width: 16px;
+    max-height: 16px;
+    flex: 0 0 16px;
+  }
+  #appShell .recent-item-menu .recent-item-action-text {
+    display: inline;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

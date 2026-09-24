@@ -5,7 +5,7 @@
 - 决策者：项目所有者 + AI 协作会话
 - 关联：`docs/adr/0003-structural-debt-categories.md` (P2.4)、`docs/audits/2026-09-20-structural-review.md` F-009
 
-## 背景
+## 背景（2026-09-20 决策快照）
 
 `frontend/src/` 当前有 **27 个一级子目录**。其中：
 
@@ -19,6 +19,13 @@
 1. **Onboarding 心智成本**：新人"找消息流相关代码"必须在 3 个目录间跳转，"找状态代码"在 2-3 个目录间跳转。
 2. **跨目录 import 堆积**：`frontend/src/app/legacyBridge.js` import 自 state/store/chat/render/util，每个 PR 改动相关面都要扫多个目录。
 3. **CI 影响面噪音**：`eslint` 与 `dependency-cruiser` 边界规则按目录粒度生效；目录越多，"触发"对读 PR diff 的人来说越难读。
+
+## 实施现状（截至 2026-09-23）
+
+- `frontend/src/` 当前有 25 个一级目录；本轮没有移动或批量重命名目录。
+- 前端仍是混合架构：`react/` 管理一批 React/TypeScript 界面，`chat/`、`session/`、`render/` 和 `ui/` 保留 JavaScript 运行逻辑与兼容层。目录之间有跨层引用，迁移应沿用户流程逐段进行。
+- `frontend/README.md` 现在列出入口、运行职责和样式级联。同名 `.js` / `.ts` 模块不应据文件名推断为重复实现，迁移前需要检查导入方与导出契约。
+- 本轮把 composer 工具调用与编辑器打开菜单的入口接到 `getLegacyActions().composer`，但会话流、旧菜单别名和多数 `window.*` 兼容访问仍保留。目录合并路线仍待独立 PR 和逐项验证。
 
 ## 备选方案
 

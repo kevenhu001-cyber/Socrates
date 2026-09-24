@@ -71,6 +71,8 @@ export interface LegacySessions {
   onRecentsFilterChipClick(value: string): void;
   openTagEditor(sessionId: string, event?: Event): void;
   deleteSession(sessionId: string, event?: Event): Promise<void> | void;
+  /** Soft-hide into Storage (30-day retention); not a hard delete. */
+  archiveSession(sessionId: string, event?: Event): Promise<void> | void;
   onSessionDragStart(event: Event, sessionId: string): void;
   onSessionDragEnd(event: Event): void;
   restoreSession(sessionId: string): Promise<void> | void;
@@ -79,6 +81,9 @@ export interface LegacySessions {
 
 export interface LegacyComposer {
   openAttachmentPicker(mode: string): void;
+  toggleWebSearch?(): void;
+  exploreAction?(): void;
+  toggleTools?(trigger: HTMLElement, mode: 'topic' | 'chat'): void;
   composeAction(): void;
   researchAction(): void;
   deepResearchAction(): void;

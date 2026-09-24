@@ -36,23 +36,23 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const landing = await measure('#topicInputWrap', [
     '#topicComposerToolsBtn', '#topicMobileMicBtn', '#startBtn',
   ]);
-  /* The phone capsule is the reference's single row: + · editor · 高⌄ ·
-     mic · voice/send, ~54px tall. */
-  expect(landing.wrap?.height).toBeGreaterThanOrEqual(50);
-  expect(landing.wrap?.height).toBeLessThanOrEqual(66);
+  /* The phone capsule is the reference's two-storey card: editor band
+     above, control rail below — ~104px at rest. */
+  expect(landing.wrap?.height).toBeGreaterThanOrEqual(96);
+  expect(landing.wrap?.height).toBeLessThanOrEqual(112);
   expect(landing.radius).toBe('28px');
   /* + and the primary control are 40px circles; the mic is a quieter
-     ghost icon. All three sit on one row, left to right. */
+     ghost icon. All three sit on the same control row, left to right. */
   expect(landing.controls[0]?.width).toBe(40);
   expect(landing.controls[0]?.height).toBe(40);
-  expect(landing.controls[1]?.width).toBe(34);
-  expect(landing.controls[1]?.height).toBe(36);
+  expect(landing.controls[1]?.width).toBe(40);
+  expect(landing.controls[1]?.height).toBe(40);
   expect(landing.controls[2]?.width).toBe(40);
   expect(landing.controls[2]?.height).toBe(40);
   expect(landing.controls[2]?.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(Math.abs((landing.controls[0]?.top ?? 0) - (landing.controls[2]?.top ?? 0))).toBeLessThanOrEqual(4);
   expect((landing.controls[0]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[1]?.left ?? 0);
-  expect((landing.controls[1]?.left ?? 0) + 34).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
+  expect((landing.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
   await page.screenshot({ path: '/tmp/socrates-mobile-unified-landing.png', fullPage: true });
 
   await page.evaluate(() => {
@@ -66,15 +66,18 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   const conversation = await measure('#chatInputWrap', [
     '#chatComposerToolsBtn', '#chatMobileMicBtn', '#sendBtn',
   ]);
-  /* Same capsule geometry on both surfaces; the vertical offset differs
-     because the landing column and the chat bar own different chrome. */
-  expect({ ...conversation.wrap, top: undefined }).toEqual({ ...landing.wrap, top: undefined });
+  /* Same two-storey capsule height and chrome on both surfaces; the
+     horizontal inset differs because the landing column owns 16px page
+     padding while the chat bar runs nearly full-bleed. */
+  expect(conversation.wrap?.height).toBe(landing.wrap?.height);
+  expect(conversation.wrap?.height).toBeGreaterThanOrEqual(96);
+  expect(conversation.wrap?.height).toBeLessThanOrEqual(112);
   expect(conversation.radius).toBe(landing.radius);
   expect(conversation.background).toBe(landing.background);
   expect(conversation.controls[0]?.width).toBe(40);
-  expect(conversation.controls[1]?.width).toBe(34);
+  expect(conversation.controls[1]?.width).toBe(40);
   expect(conversation.controls[2]?.width).toBe(40);
-  expect((conversation.controls[1]?.left ?? 0) + 34).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
+  expect((conversation.controls[1]?.left ?? 0) + 40).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
   await page.screenshot({ path: '/tmp/socrates-mobile-unified-composer.png', fullPage: true });
 });
 
@@ -129,9 +132,9 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(effort).toBeVisible();
 
   await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
-  /* Keyboard open keeps the compact single-row capsule; only actual
+  /* Keyboard open keeps the same two-storey capsule; only actual
      multiline content increases its height. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(66);
+  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
@@ -147,10 +150,10 @@ test('mobile composer keeps model selector and reference controls discoverable',
       send: rect('#sendBtn'),
     };
   });
-  /* Every control shares the editor's single row. */
-  for (const key of ['attach', 'model', 'mic', 'send']) {
-    expect(Math.abs((rows[key]?.top ?? 0) - (rows.editor?.top ?? 0)), key).toBeLessThanOrEqual(4);
-  }
+  /* Every control shares the same control-row top (second storey). */
+  const controlTops = ['attach', 'model', 'mic', 'send'].map((key) => rows[key]?.top ?? 0);
+  expect(Math.max(...controlTops) - Math.min(...controlTops)).toBeLessThanOrEqual(4);
+  expect(Math.min(...controlTops)).toBeGreaterThanOrEqual((rows.editor?.bottom ?? 0) - 8);
 
   await effort.locator('.effort-trigger').click();
   const pop = page.locator('.chat-config-pop');

@@ -21,8 +21,6 @@ interface MenuItemSpec {
 
 const SHORTCUTS_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M6 16h12"/></svg>';
-const SKILLS_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg>';
 const EXAM_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>';
 const INCOGNITO_ICON =
@@ -36,10 +34,10 @@ const SETTINGS_ICON =
    affordance. Plugins, API settings, display/theme, and sign-out live
    in the primary sidebar/footer, so they are intentionally omitted here. */
 const ITEMS: MenuItemSpec[] = [
+  { action: 'skills', labelKey: 'sidebar.nav.skills', labelFallback: 'Skills', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7"/></svg>' },
   { action: 'images', labelKey: 'sidebar.nav.images', labelFallback: 'Images', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m4 17 5-5 3 3 2-2 6 6"/></svg>' },
   { action: 'assistants', labelKey: 'sidebar.nav.assistants', labelFallback: 'Assistants', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9 10h.01M15 10h.01M9 15c2 2 4 2 6 0"/></svg>' },
   { action: 'exam', labelKey: 'sidebar.nav.exam', labelFallback: 'Exam', icon: EXAM_ICON },
-  { action: 'skills', labelKey: 'sidebar.more.skills', labelFallback: 'Skills & shortcuts', icon: SKILLS_ICON },
   { action: 'incognito', labelKey: 'sidebar.nav.incognito', labelFallback: 'Incognito chat', icon: INCOGNITO_ICON },
   { action: 'display', labelKey: 'sidebar.more.display', labelFallback: 'Display & theme', icon: DISPLAY_ICON },
   { action: 'settings', labelKey: 'sidebar.more.settings', labelFallback: 'API settings', icon: SETTINGS_ICON },

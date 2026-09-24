@@ -13,7 +13,400 @@
   display: flex !important;
 }
 
+/* Socrates-specific Skills stays reachable from More while the primary
+   destinations match the compact reference drawer. */
+#appShell #navSkills.sidebar-nav-btn {
+  display: none !important;
+}
+
+#appShell #navMore.sidebar-nav-btn {
+  order: 7 !important;
+}
+
+/* One geometry contract for the legacy host and React-owned navigation.
+   The historical layers set different row heights and flex bases, which
+   made the glyph and text appear to sit on different vertical centers. */
+#appShell #sidebarNav.sidebar-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 4px 6px 8px !important;
+}
+#appShell #sidebarNav .sidebar-nav-btn {
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  column-gap: 10px !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  padding: 7px 10px !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+  line-height: 22px !important;
+  text-align: left !important;
+}
+#appShell #sidebarNav .sidebar-nav-btn > span:first-child {
+  display: grid !important;
+  place-items: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  line-height: 0 !important;
+}
+#appShell #sidebarNav .sidebar-nav-btn > svg,
+#appShell #sidebarNav .sidebar-nav-btn > span:first-child svg {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  flex: none !important;
+  stroke-width: 1.8 !important;
+}
+#appShell #sidebarNav .sidebar-nav-btn > span[data-i18n-key] {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#appShell #sidebarNav #navSkills.sidebar-nav-btn,
+#appShell #sidebarNav #navExam.sidebar-nav-btn,
+#appShell #sidebarNav #navImages.sidebar-nav-btn,
+#appShell #sidebarNav #navAssistants.sidebar-nav-btn { display: none !important; }
+#appShell #sidebarNav #navNew { order: 0 !important; }
+#appShell #sidebarNav #navLibrary { order: 1 !important; }
+#appShell #sidebarNav #navProjects { order: 2 !important; }
+#appShell #sidebarNav #navScheduled { order: 3 !important; }
+#appShell #sidebarNav #navPlugins { order: 4 !important; }
+#appShell #sidebarNav #navSites { order: 5 !important; }
+#appShell #sidebarNav #navMore { order: 6 !important; }
+
+#appShell #sidebarUserRow.user-row {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 !important;
+}
+#appShell .sidebar-account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--chatgpt-text);
+  text-align: left;
+  cursor: pointer;
+}
+#appShell .sidebar-account-trigger:hover,
+#appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--chatgpt-hover); }
+#appShell .sidebar-account-trigger .user-identity {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+#appShell .sidebar-account-trigger .user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#appShell .sidebar-account-chevron { width: 18px; height: 18px; flex: none; opacity: .65; }
+#appShell .sidebar-account-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 90;
+  box-sizing: border-box;
+  width: min(100%, 254px);
+  padding: 8px;
+  border: 1px solid var(--chatgpt-line);
+  border-radius: 16px;
+  background: var(--chatgpt-menu);
+  color: var(--chatgpt-text);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 25%);
+}
+#appShell .sidebar-account-menu-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 6px 9px 12px;
+}
+#appShell .sidebar-account-menu-heading > span:last-child { display: flex; min-width: 0; flex-direction: column; }
+#appShell .sidebar-account-menu-heading strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
+#appShell .sidebar-account-menu-heading small { color: var(--chatgpt-muted); font-size: 12px; }
+#appShell .sidebar-account-menu-group { padding: 6px 0; border-top: 1px solid var(--chatgpt-line); }
+#appShell .sidebar-account-menu-group button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+#appShell .sidebar-account-menu-group button svg { display: block; width: 20px; height: 20px; }
+#appShell .sidebar-account-menu-group button:hover,
+#appShell .sidebar-account-menu-group button:focus-visible { background: var(--chatgpt-hover); }
+
+/* Directory rows share the same quiet hierarchy across Library, Projects,
+   Plugins and Scheduled. Keep controls visible on touch devices. */
+#appShell .library-directory .workspace-page-head,
+#appShell .projects-directory .workspace-page-head,
+#appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
+#appShell .library-directory .workspace-tabs { display: flex; gap: 4px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+#appShell .library-directory .workspace-tabs button { white-space: nowrap; }
+#appShell .library-row-menu-wrap { position: relative; }
+#appShell .library-row-menu-trigger {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--chatgpt-muted);
+}
+#appShell .library-row-menu-trigger:hover,
+#appShell .library-row-menu-trigger[aria-expanded="true"] { background: var(--chatgpt-hover); color: var(--chatgpt-text); }
+#appShell .library-row-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  display: grid;
+  min-width: 126px;
+  padding: 5px;
+  border: 1px solid var(--chatgpt-line);
+  border-radius: 10px;
+  background: var(--chatgpt-menu);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 20%);
+}
+#appShell .library-row-menu button { padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: var(--chatgpt-text); font: inherit; text-align: left; cursor: pointer; }
+#appShell .library-row-menu button:hover { background: var(--chatgpt-hover); }
+#appShell .library-row .library-mobile-meta { color: var(--chatgpt-muted); }
+#appShell .scheduled-recommendation-add { visibility: visible !important; }
+
 @media (max-width: 768px) {
+  [data-mode="dark"] #appShell#appShell .sidebar { background: #000 !important; }
+  /* Recents row ⋯ menu: later sibling rows paint over an open menu because
+     .recent-item has `contain: layout` (own stacking context). Lift the open
+     row; keep every menu item clickable (legacy .recent-item-del opacity:0). */
+  #appShell .recent-item.actions-open {
+    z-index: var(--ui-z-popover, 200) !important;
+    position: relative;
+  }
+  #appShell .recent-item-menu {
+    z-index: var(--ui-z-popover, 200) !important;
+  }
+  #appShell .recent-item-menu .recent-item-del,
+  #appShell .recent-item-menu .recent-item-archive,
+  #appShell .recent-item-menu .recent-item-tag-btn {
+    opacity: 1 !important;
+  }
+  #appShell#appShell#appShell #sidebarOpenBtn {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #appShell #libraryPanel.main-page {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 18px 16px 48px !important;
+  }
+  #appShell .library-directory .workspace-page-head {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px 10px;
+    align-items: start;
+  }
+  #appShell .library-directory .workspace-page-head > div:first-child { grid-column: 1; }
+  #appShell .library-directory .workspace-page-head h1 { font-size: 27px !important; line-height: 36px !important; }
+  #appShell .library-directory .workspace-page-head p { display: none !important; }
+  #appShell .library-directory .workspace-head-actions { display: contents !important; }
+  #appShell .library-directory .workspace-create-button {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 40px !important;
+    border-radius: 999px !important;
+  }
+  #appShell .library-directory .workspace-search-field {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    border-radius: 999px !important;
+  }
+  #appShell .library-directory .workspace-toolbar { margin: 20px -16px 10px; padding: 0 16px; }
+  #appShell .library-directory .workspace-tabs { gap: 8px; }
+  #appShell .library-directory .workspace-tabs button { min-height: 38px !important; height: 38px !important; border-radius: 999px !important; font-size: 14px !important; }
+  #appShell .library-directory .workspace-table-head { display: none !important; }
+  #appShell .library-directory .library-row {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) 34px !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 62px !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid var(--chatgpt-line) !important;
+  }
+  #appShell .library-directory .library-file-icon { grid-column: 1; width: 34px !important; height: 34px !important; min-width: 34px !important; border-radius: 8px !important; }
+  #appShell .library-directory .workspace-row-copy { grid-column: 2; min-width: 0; }
+  #appShell .library-directory .library-row-actions { grid-column: 3; display: block !important; }
+  #appShell .library-directory .library-updated,
+  #appShell .library-directory .library-size { display: none !important; }
+  #appShell .library-directory .library-mobile-meta { display: block !important; margin-top: 3px; font-size: 12px !important; }
+  #appShell .library-directory .library-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px !important; }
+
+  #appShell .scheduled-directory-head { margin-bottom: 22px !important; }
+  #appShell .scheduled-directory-head p { display: block !important; }
+  #appShell .scheduled-task-composer { height: 86px !important; min-height: 86px !important; border-radius: 26px !important; }
+  #appShell .scheduled-task-composer input { font-size: 16px !important; }
+  #appShell .scheduled-recommendations { display: grid !important; grid-template-columns: 1fr !important; }
+  #appShell .scheduled-recommendation { min-height: 72px !important; }
+  #appShell .scheduled-recommendation-add { visibility: visible !important; }
+  #appShell .scheduled-task-list .task-row { min-height: 70px; }
+  #appShell .projects-directory .workspace-page-head,
+  #appShell .plugin-directory .plugin-directory-head { margin-bottom: 20px !important; }
+}
+
+@media (max-width: 768px) {
+  #appShell#appShell .sidebar {
+    width: min(254px, calc(100vw - 54px)) !important;
+    min-width: min(254px, calc(100vw - 54px)) !important;
+    border-radius: 0 !important;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn { min-height: 40px !important; padding-block: 7px !important; font-size: 15px !important; }
+  #appShell #sidebarNav.sidebar-nav { padding-inline: 6px !important; }
+  #appShell #apiSettingsBtn { display: none !important; }
+  #appShell .sidebar-footer-actions > .icon-btn { display: none !important; }
+  #appShell .sidebar-account-trigger { min-height: 52px; }
+  #appShell .sidebar-account-menu { width: 100%; }
+}
+
+/* Task-oriented composer menu: category labels and short descriptions explain
+   what each action does. Keep this in the post-restore layer because the
+   restored parity sheets intentionally hide the older description rows. */
+#composerToolsMenu .composer-tools-group-label {
+  display: block !important;
+  padding: 8px 12px 3px !important;
+  color: var(--cg-text-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+}
+
+#composerToolsMenu .composer-tools-desktop-items .composer-tools-item {
+  height: auto !important;
+  min-height: 48px !important;
+  align-items: center !important;
+}
+
+#composerToolsMenu .composer-tools-desktop-items .composer-tools-copy {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 1px !important;
+  min-width: 0 !important;
+}
+
+#composerToolsMenu .composer-tools-desktop-items .composer-tools-copy > span {
+  max-width: 100% !important;
+  font-size: 14px !important;
+  line-height: 18px !important;
+  white-space: normal !important;
+}
+
+#composerToolsMenu .composer-tools-desktop-items .composer-tools-copy small {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  color: var(--cg-text-muted) !important;
+  font-size: 11px !important;
+  line-height: 15px !important;
+  white-space: normal !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+#composerToolsMenu .composer-tools-state-action {
+  width: fit-content !important;
+  min-height: 32px !important;
+  padding: 5px 10px !important;
+  border: 1px solid var(--cg-border) !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: var(--cg-text) !important;
+  font: inherit !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+}
+
+#composerToolsMenu .composer-tools-state-action:hover,
+#composerToolsMenu .composer-tools-state-action:focus-visible {
+  background: var(--cg-surface-raised) !important;
+}
+
+#composerToolsMenu .composer-tools-footer-search input {
+  min-height: 32px;
+}
+
+@media (max-width: 768px) {
+  /* Keep the plus menu attached to the composer as a floating card sized
+     like the reference sheet: wide enough for icon + label rows and tall
+     enough that the first screenful is not a cramped four-item strip.
+     Height is content-driven up to ~52dvh so short phones still scroll. */
+  body #composerToolsMenu:not(.hidden).composer-tools-menu {
+    left: 16px !important;
+    right: auto !important;
+    width: min(300px, calc(100vw - 32px)) !important;
+    min-width: min(300px, calc(100vw - 32px)) !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: min(52dvh, 360px) !important;
+    border-radius: 20px !important;
+  }
+
+  /* Reference rows are full-height touch targets with a 44px chip, not the
+     denser 44px/36px desktop leftovers from menu.css. */
+  body #composerToolsMenu .composer-tools-item,
+  body #composerToolsMenu .composer-tools-mobile-item,
+  body #composerToolsMenu .composer-tools-plugin-item {
+    min-height: 56px !important;
+    padding: 6px 10px !important;
+  }
+
+  body #composerToolsMenu .composer-tools-icon,
+  body #composerToolsMenu .composer-plugin-mark {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  body #composerToolsMenu .composer-tools-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
   /* The restored parity layer grows the phone top bar to 72px while no
      mobile rule re-centres the mode pill, so it inherited the modular
      top:12px and floated ~10px above the 44px header controls. Anchor it
@@ -23,10 +416,155 @@
     transform: translate(-50%, -50%) !important;
   }
 
-  /* The post-rework sidebar hides the footer icon cluster on phones
-     (components/sidebar.css). The restored footer keeps theme, display
-     and API settings visible at the row's right edge again. */
-  #appShell .sidebar-footer-actions > .icon-btn {
+  /* The filter now works on the mobile tool and connected-app lists too. */
+  body #composerToolsMenu .composer-tools-footer-search {
     display: flex !important;
+    align-items: center !important;
+    min-height: 36px !important;
+    margin: 4px 4px 0 !important;
+    padding: 0 8px !important;
+    border-top: 1px solid var(--cg-border) !important;
   }
+
+  #composerToolsMenu .composer-tools-footer-search input {
+    width: 100% !important;
+    min-height: 36px !important;
+    color: var(--cg-text) !important;
+    font-size: 12px !important;
+  }
+
+  #composerToolsMenu .composer-tools-mobile-items .composer-tools-item .composer-tools-copy small {
+    display: none !important;
+  }
+
+  #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
+    padding-top: 8px !important;
+    padding-bottom: 2px !important;
+  }
+
+  #composerToolsMenu .composer-tools-plugin-state {
+    padding: 10px 8px !important;
+    text-align: left !important;
+  }
+
+  #composerToolsMenu .composer-tools-plugin-state small {
+    display: block !important;
+    color: var(--cg-text-muted) !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
+
+  #appShell#appShell .top-mode-tabs {
+    box-sizing: border-box !important;
+    width: min(152px, calc(100vw - 112px)) !important;
+    min-width: 0 !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 3px !important;
+  }
+
+  #appShell#appShell .top-mode-tabs .app-mode-toggle {
+    flex: 1 1 50% !important;
+    min-width: 0 !important;
+    height: 26px !important;
+    min-height: 26px !important;
+  }
+
+  #appShell#appShell#appShell #sidebarOpenBtn,
+  #appShell#appShell#appShell #mobileIncognitoBtn,
+  #appShell#appShell#appShell #mobileNewChatBtn,
+  #appShell#appShell#appShell #findBtn,
+  #appShell#appShell#appShell #shareBtn {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  #appShell#appShell #mainInner:has(> #topicSetup:not(.hidden)) {
+    padding-bottom: 0 !important;
+  }
+
+  #appShell#appShell#appShell #topicSetup {
+    min-height: 0 !important;
+  }
+
+  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
+    top: 42% !important;
+    font-family: var(--chatgpt-font) !important;
+    font-size: calc(24px * var(--app-font-scale, 1)) !important;
+    font-weight: 400 !important;
+  }
+
+  /* Idle two-row capsule: a taller editor band so one wrapped line of
+     17px text is comfortable, plus the 40px control rail. 104px total
+     (6 + 48 + 40 + 6 + 2 border) replaces the previous 86px/32px field
+     that read as a thin strip next to the reference. */
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    grid-template-rows: 0 minmax(48px, auto) 40px !important;
+    min-height: 104px !important;
+    height: 104px !important;
+    max-height: 104px !important;
+    padding: 6px 10px !important;
+  }
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    grid-template-rows: 0 minmax(48px, auto) 40px !important;
+    min-height: 104px !important;
+    height: 104px !important;
+    max-height: 104px !important;
+    padding: 6px 10px !important;
+  }
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root,
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding-top: 8px !important;
+    padding-bottom: 6px !important;
+  }
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .composer-editor-root,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer-editor,
+  #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) .rich-composer .tiptap {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding-top: 8px !important;
+    padding-bottom: 6px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  #appShell#appShell#appShell #topicSetup > #topicInputWrap:not(.voice-recording-active):not(.composer-multiline):not(:has(.composer-plugin-chips)) {
+    width: min(100%, calc(768px * var(--app-width-scale, 1))) !important;
+    max-width: calc(768px * var(--app-width-scale, 1)) !important;
+  }
+
+  #appShell#appShell#appShell #topicSetup .topic-title.greeting {
+    font-size: calc(24px * var(--app-font-scale, 1)) !important;
+  }
+}
+
+[data-mode="light"] #appShell#appShell#appShell #topicInputWrap:not(.voice-recording-active),
+[data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active) {
+  border: 1px solid var(--ui-border-default) !important;
+  background: var(--ui-bg-composer) !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%) !important;
+}
+
+[data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active) #sendBtn {
+  background: #111 !important;
+  color: #fff !important;
+}
+
+[data-mode="light"] #appShell#appShell#appShell #chatInputWrap:not(.voice-recording-active) #sendBtn:hover {
+  background: #000 !important;
+}
+
+#appShell#appShell#appShell button:focus-visible,
+#appShell#appShell#appShell a:focus-visible,
+#appShell#appShell#appShell [role="button"]:focus-visible,
+#appShell#appShell#appShell input:focus-visible,
+#appShell#appShell#appShell textarea:focus-visible,
+#appShell#appShell#appShell select:focus-visible {
+  outline: 2px solid var(--ui-accent-strong) !important;
+  outline-offset: 2px !important;
 }

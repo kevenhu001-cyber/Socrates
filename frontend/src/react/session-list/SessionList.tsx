@@ -1,5 +1,5 @@
 import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import React, { useCallback, useEffect, useState, memo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, t } from '../legacy/gateway';
@@ -10,6 +10,9 @@ import type { SessionItem } from './types';
 
 const TAG_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
+
+const ARCHIVE_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>';
 
 const DELETE_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
@@ -74,29 +77,38 @@ interface SessionRowProps {
   nowTick: number;
   onPick: (id: string) => void;
   onTag: (id: string, e: React.MouseEvent) => void;
+  onArchive: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnd: (e: React.DragEvent) => void;
 }
 
-function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
+function SessionRowBase({ session, isActive, onPick, onTag, onArchive, onDelete, onDragStart, onDragEnd }: SessionRowProps) {
   const ml = modeLabel(session);
   const meta = buildMeta(session);
   const sid = safeId(session.id);
   const label = session.label || '';
   /* Phone drawers expose the row overflow as a "⋯" affordance (the desktop
-     keeps the hover icon pair). Any click — inside or outside — closes it;
-     the item buttons still receive their own click first. */
+     keeps the hover icon pair). Outside clicks close it; clicks inside the
+     row (overflow toggle + menu item buttons) are handled by their own
+     handlers so a capture-phase close cannot swallow the archive/tag/delete
+     click before React sees it. */
   const [actionsOpen, setActionsOpen] = useState(false);
+  const rowRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!actionsOpen) return undefined;
-    const close = () => setActionsOpen(false);
+    const close = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Node && rowRef.current?.contains(target)) return;
+      setActionsOpen(false);
+    };
     document.addEventListener('click', close, true);
     return () => document.removeEventListener('click', close, true);
   }, [actionsOpen]);
 
   return (
     <div
+      ref={rowRef}
       className={`recent-item${isActive ? ' active' : ''}${session.pinned ? ' pinned' : ''}${actionsOpen ? ' actions-open' : ''}`}
       data-recent-id={sid}
       data-recent-actual={session.id}
@@ -165,7 +177,7 @@ function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStar
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></svg>
         </button>
-        {/* Desktop keeps the two icons inline (display:contents); on phones
+        {/* Desktop keeps the icon trio inline (display:contents); on phones
             the wrap becomes the ⋯ dropdown listing icon + label rows. */}
         <div className="recent-item-menu" role="menu" onClick={(e) => e.stopPropagation()}>
           <button
@@ -177,6 +189,18 @@ function SessionRowBase({ session, isActive, onPick, onTag, onDelete, onDragStar
           >
             <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: TAG_ICON }} />
             <span className="recent-item-action-text" data-i18n-key="session.editTags">{t('session.editTags')}</span>
+          </button>
+          <button
+            className="recent-item-archive"
+            data-archive-session="1"
+            title={t('session.ctxArchive')}
+            aria-label={t('session.ctxArchive')}
+            data-i18n-title="session.ctxArchive"
+            data-i18n-aria="session.ctxArchive"
+            onClick={(e) => { setActionsOpen(false); onArchive(session.id, e); }}
+          >
+            <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: ARCHIVE_ICON }} />
+            <span className="recent-item-action-text" data-i18n-key="session.ctxArchive">{t('session.ctxArchive')}</span>
           </button>
           <button
             className="recent-item-del"
@@ -213,6 +237,7 @@ const SessionRow = memo(SessionRowBase, (prev, next) => (
   && prev.nowTick === next.nowTick
   && prev.onPick === next.onPick
   && prev.onTag === next.onTag
+  && prev.onArchive === next.onArchive
   && prev.onDelete === next.onDelete
   && prev.onDragStart === next.onDragStart
   && prev.onDragEnd === next.onDragEnd
@@ -234,6 +259,12 @@ function SessionListInner() {
     e.stopPropagation();
     e.preventDefault();
     getLegacyActions().sessions.openTagEditor(id, e.nativeEvent);
+  }, []);
+
+  const handleArchive = useCallback((id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    getLegacyActions().sessions.archiveSession(id, e.nativeEvent);
   }, []);
 
   const handleDelete = useCallback((id: string, e: React.MouseEvent) => {
@@ -325,6 +356,7 @@ function SessionListInner() {
               nowTick={nowTick}
               onPick={handlePick}
               onTag={handleTag}
+              onArchive={handleArchive}
               onDelete={handleDelete}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}

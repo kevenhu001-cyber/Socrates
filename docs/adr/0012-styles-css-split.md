@@ -1,11 +1,11 @@
 # ADR 0012 — `frontend/src/styles.css` 拆分（按 `styles/` 子目录模块化）
 
-- 状态：Accepted (ADR 层面；实施进入多 PR 路线图，**前置：视觉基线**)
+- 状态：Accepted；根样式表已切片，组件归属与级联治理继续分阶段推进
 - 日期：2026-09-20
 - 决策者：项目所有者 + AI 协作会话
 - 关联：`docs/adr/0003-structural-debt-categories.md` (P2.3)、`docs/audits/2026-09-20-structural-review.md` F-002/F-010
 
-## 背景
+## 背景（2026-09-20 决策快照）
 
 `frontend/src/styles.css` 当前 11 708 行 / 675 KB；README 自述 `~3800 lines`、ADR 0001 line 13 引用 `main.js ~9,900 行` —— **两个数字都过时**。
 
@@ -25,6 +25,14 @@
 1. **新增 CSS 与既有 specificity 冲突时无法定位**：11 708 行单文件中没有结构化导航，"为什么我的规则被覆盖"只能 grep。
 2. **设计令牌 / 主题切换 / 组件样式三股力量混在一起**：tokens、themes、components 之间的边界被 styles.css 一笔抹掉，对 LobeChat 与 ChatGPT 风格的兼容层（`chatgpt-v2.css`、`lobe-overrides.css`）和 `ref-baseline.css` 之间的来源关系也搅在一起。
 3. **构建时 Vite inline 整个 styles.css**：在 prod 不可分块，缓存命中率低；改动一行 chatview 颜色，hash 全变。
+
+## 实施现状（截至 2026-09-23）
+
+- `frontend/src/styles.css` 已删除。`styles/index.css` 是唯一 CSS 入口，按顺序加载 token/theme、17 个 legacy 切片、modular styles，以及 7 个 restore 样式表。
+- 这完成了文件拆分，不代表每个界面已有唯一的样式所有者。Restore 层仍会覆盖模块化样式；新增局部规则放在 `styles/restore/fixes.css`，并按触及的界面逐步收敛。
+- 本次在 composer 工具菜单上整理了分组、描述和移动端样式，并移除一个覆盖菜单圆角的重复高 specificity 规则。其它 legacy 与 restore 规则尚未整体迁移。
+- `e2e/composer-tools-visual-baseline.spec.mjs` 固化菜单的桌面/移动、明暗和中英文截图；全站其它界面仍需按改动范围建立基线。
+- 尚未实现 `lint:css:order`。`styles/index.css` 的导入顺序仍是维护者需要遵守的级联契约。
 
 ## 备选方案
 

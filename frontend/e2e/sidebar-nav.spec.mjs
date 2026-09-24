@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('sidebar exposes the reference primary destinations', async ({ page }) => {
+test('sidebar exposes the primary destinations', async ({ page }) => {
   const visibleIds = await page.locator('#sidebarNav > .sidebar-nav-btn').evaluateAll((buttons) =>
     buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => button.id),
   );
@@ -23,7 +23,7 @@ test('sidebar exposes the reference primary destinations', async ({ page }) => {
     'navMore',
   ]);
 
-  for (const id of ['navExam', 'navSkills', 'navImages', 'navAssistants']) {
+  for (const id of ['navExam', 'navImages', 'navAssistants', 'navSkills']) {
     await expect(page.locator(`#${id}`)).toBeHidden();
   }
   await expect(page.locator('#navMore')).toHaveCount(1);
@@ -90,11 +90,47 @@ test('Exam is a direct sidebar destination', async ({ page }) => {
   await expect(page.locator('#examView')).toBeVisible();
 });
 
-test('More opens a working popover with Skills & shortcuts', async ({ page }) => {
+test('More keeps secondary settings and Skills reachable', async ({ page }) => {
   await page.locator('#navMore').click();
   await expect(page.locator('#moreNavPopover')).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Skills & shortcuts' }).click();
-  await expect(page.locator('#promptTemplatesOverlay')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /Skills|技能/ })).toBeVisible();
+  await page.getByRole('menuitem', { name: /Keyboard shortcuts|键盘快捷键/ }).click();
+  await expect(page.locator('#cheatsheetOverlay')).toBeVisible();
+});
+
+test('account row opens a compact menu and its profile action works', async ({ page }) => {
+  const trigger = page.locator('.sidebar-account-trigger');
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const menu = page.getByRole('menu', { name: /Account menu|账户菜单/ });
+  await expect(menu).toBeVisible();
+  await menu.getByRole('menuitem', { name: /Profile|个人资料/ }).click();
+  await expect(page.locator('#profileOverlay')).toBeVisible();
+});
+
+test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 769 });
+  await page.evaluate(() => {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar?.classList.contains('collapsed')) window.toggleSidebar?.();
+  });
+  const rows = await page.locator('#sidebarNav .sidebar-nav-btn:visible').evaluateAll((buttons) => buttons.map((button) => {
+    const row = button.getBoundingClientRect();
+    const glyph = button.querySelector('svg')?.getBoundingClientRect();
+    const label = button.querySelector('[data-i18n-key]')?.getBoundingClientRect();
+    return { height: row.height, glyphCenter: glyph && glyph.y + glyph.height / 2, labelCenter: label && label.y + label.height / 2 };
+  }));
+  expect(rows).toHaveLength(7);
+  for (const row of rows) {
+    expect(row.height).toBe(40);
+    expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
+  }
+  await page.locator('.sidebar-account-trigger').click();
+  const menu = page.getByRole('menu', { name: /Account menu|账户菜单/ });
+  await expect(menu).toBeInViewport();
+  await page.screenshot({ path: '/tmp/socrates-reference-mobile-account-390x769.png' });
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
 });
 
 test('Admin console is a standalone /admin page with no sidebar entry', async ({ page }) => {

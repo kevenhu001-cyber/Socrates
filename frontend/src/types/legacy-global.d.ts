@@ -128,6 +128,7 @@ declare global {
     // ── Legacy inline handler functions (windowExports.js) ──────────
 
     exploreAction?: () => void;
+    toggleWebSearch?: () => void;
     toggleComposerTools?: (trigger: HTMLElement, mode: string) => void;
   }
 }
