@@ -135,7 +135,7 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.wrapRadius).toBe(24);
   expect(composed.wrapBorder).toBe('0px');
   expect(composed.sendSize).toBe(36);
-  expect(composed.attachSize).toBe(44);
+  expect(composed.attachSize).toBe(36);
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
@@ -165,15 +165,23 @@ test('desktop idle composer keeps its edge controls circular and optically align
 
   expect(geometry.wrap?.height).toBe(52);
   expect(geometry.wrap?.radius).toBe('28px');
-  expect(geometry.attach?.width).toBe(44);
-  expect(geometry.attach?.height).toBe(44);
+  /* The reference's composer controls are 36px circles; the plus and the
+     primary action share one optical row with the dictation control. */
+  expect(geometry.attach?.width).toBe(36);
+  expect(geometry.attach?.height).toBe(36);
   expect(geometry.attach?.radius).toBe('50%');
   expect(geometry.attach?.background).toBe('rgba(0, 0, 0, 0)');
   expect(geometry.send?.width).toBe(36);
   expect(geometry.send?.height).toBe(36);
   expect(geometry.send?.radius).toBe('50%');
-  expect(Math.abs((geometry.attach?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(0.5);
-  expect(Math.abs((geometry.mic?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(0.5);
+  /* All three controls share the capsule's one control row. The ±2px
+     tolerance (instead of sub-pixel) covers the fractional grid-row height
+     Chrome reports for the 52px capsule: two 36px circles centred in the
+     same row can land 1px apart after rounding. A control that actually
+     moved to another row is off by tens of pixels, so the check still
+     catches real misalignment. */
+  expect(Math.abs((geometry.attach?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(2);
+  expect(Math.abs((geometry.mic?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(2);
 });
 
 test('mobile chat workbench keeps a focusable multiline composer without horizontal overflow', async ({ page }) => {
@@ -238,8 +246,8 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(geometry.overflow).toBeLessThanOrEqual(0);
   expect(mobileComposer.focusedHeight).toBeGreaterThanOrEqual(initial.height + 24);
   expect(mobileComposer.fontSize).toBe(16);
-  expect(mobileComposer.sendSize).toBe(40);
-  expect(mobileComposer.attachSize).toBe(40);
+  expect(mobileComposer.sendSize).toBe(36);
+  expect(mobileComposer.attachSize).toBe(36);
   expect(mobileComposer.activeEditor).toBe(true);
 
   /* A soft wrap used to oscillate: expanding gives the editor a wider first
@@ -275,6 +283,15 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   await page.waitForTimeout(360);
   await editor.press('Enter');
   await expect(page.locator('#msgList .msg.assistant').last()).toContainText('Sent without changing');
+  /* The capsule animates back from the multiline card to the idle row, so
+     wait for the height to settle before comparing the rest of the
+     geometry — measuring mid-transition reads an intermediate value. */
+  await expect
+    .poll(async () => {
+      const height = await wrap.evaluate((node) => node.getBoundingClientRect().height);
+      return Math.abs(height - initial.height) <= 2;
+    })
+    .toBe(true);
   const afterSend = await wrap.evaluate((node) => {
     const style = getComputedStyle(node);
     return {

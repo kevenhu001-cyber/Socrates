@@ -1,0 +1,47 @@
+/*
+ * polish/mobile.css — ≤768px refinement. Geometry (drawer transform,
+ * keyboard inset, capsule placement) is owned by restore/mobile-parity.css
+ * + fixes.css; this file only aligns skins with the desktop polish pass.
+ */
+
+@media (max-width: 768px) {
+  /* Drawer: same surface as desktop rail + hairline edge. */
+  #appShell .sidebar {
+    border-right: 1px solid var(--ui-border-subtle);
+  }
+  #appShell .sidebar-backdrop {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* Top bar icons keep 40px touch targets, quieter color. */
+  #appShell .top-bar .toggle-sidebar,
+  #appShell .top-bar .mobile-newchat-btn,
+  #appShell .top-bar .mobile-incognito-btn {
+    color: var(--ui-text-secondary);
+  }
+
+  /* Nav rows stay at the desktop rhythm (34px / 8px). */
+  #appShell .sidebar-nav-btn { border-radius: 8px; }
+  #appShell .recent-item { border-radius: 8px; }
+
+  /* Mobile tools sheet radius matches the desktop popover contract. */
+  body #composerToolsMenu.composer-tools-menu {
+    border-radius: 16px !important;
+    border-color: var(--ui-border-subtle) !important;
+    box-shadow: var(--ui-shadow-menu) !important;
+  }
+
+  /* The greeting stays on screen — and at full size — when the composer
+     takes focus. The restore layer hid it once the keyboard owned the
+     lower half of the viewport; the resting 35% anchor already clears the
+     keyboard band, so no re-anchoring is needed. No shrink, no dim, no
+     jump. */
+  :root:has(#topicInputWrap:focus-within) #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-open="true"] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase="opening"] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase="open"] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase="closing"] #appShell#appShell #topicTitle.greeting {
+    visibility: visible !important;
+  }
+}

@@ -1,64 +1,67 @@
-/* Theme values are the single source of truth for every first-party surface. */
+/* Theme values are the single source of truth for every first-party surface.
+   The ramp is a subtly cool neutral scale (hue ~220): blacks stay near-black
+   instead of pure #000, and every text level clears WCAG AA on every surface
+   it can land on (verified against the surface steps below). */
 [data-mode="dark"] {
   color-scheme: dark;
-  --ui-bg-page: #000;
-  --ui-bg-sidebar: #000;
-  --ui-bg-raised: #171717;
-  --ui-bg-surface: #212121;
-  --ui-bg-control: #303030;
-  --ui-bg-hover: #2a2a2a;
-  --ui-bg-overlay: #303030;
-  --ui-text-primary: #fff;
-  --ui-text-secondary: #f5f5f5;
-  --ui-text-tertiary: #d1d1d1;
-  --ui-text-muted: #8e8e8e;
-  --ui-text-disabled: #676767;
-  --ui-border-subtle: rgb(255 255 255 / 8%);
-  --ui-border-default: rgb(255 255 255 / 12%);
-  --ui-border-strong: rgb(255 255 255 / 18%);
+  --ui-bg-page: #09090b;
+  --ui-bg-sidebar: #09090b;
+  --ui-bg-raised: #14161a;
+  --ui-bg-surface: #1e2025;
+  --ui-bg-control: #272a30;
+  --ui-bg-hover: #22252b;
+  --ui-bg-overlay: #2e3239;
+  --ui-text-primary: #f2f3f5;
+  --ui-text-secondary: #d7dade;
+  --ui-text-tertiary: #a4a8b0;
+  --ui-text-muted: #9a9ea6;
+  --ui-text-disabled: #686c75;
+  --ui-border-subtle: rgb(148 163 184 / 9%);
+  --ui-border-default: rgb(148 163 184 / 13%);
+  --ui-border-strong: rgb(148 163 184 / 19%);
   --ui-backdrop: rgb(0 0 0 / 58%);
   --ui-on-accent: #000;
-  --ui-accent-strong: #fff;
-  --ui-danger: #ef6666;
+  --ui-accent-strong: #f4f5f7;
+  --ui-danger: #ea6a6a;
   --ui-success: #55b685;
   /* The composer capsule sits one step above the page; the small controls
      inside it sit one step above the capsule. */
-  --ui-bg-composer: #303030;
-  --ui-bg-chip: rgb(255 255 255 / 9%);
-  --ui-bg-chip-hover: rgb(255 255 255 / 15%);
-  --ui-bg-bubble: #2f2f2f;
-  --ui-bg-segment-active: rgb(255 255 255 / 13%);
+  --ui-bg-composer: #272a30;
+  --ui-bg-chip: rgb(148 163 184 / 10%);
+  --ui-bg-chip-hover: rgb(148 163 184 / 16%);
+  --ui-bg-bubble: #26292e;
+  --ui-bg-segment-active: rgb(148 163 184 / 14%);
   --ui-shadow-popover: 0 18px 48px rgb(0 0 0 / 46%), 0 1px 0 rgb(255 255 255 / 5%) inset;
 }
 
 [data-mode="light"] {
   color-scheme: light;
-  --ui-bg-page: #fff;
-  --ui-bg-sidebar: #f9f9f9;
-  --ui-bg-raised: #f7f7f7;
-  --ui-bg-surface: #f2f2f2;
-  --ui-bg-control: #e7e7e7;
-  --ui-bg-hover: #e9e9e9;
-  --ui-bg-overlay: #fff;
-  --ui-text-primary: #171717;
-  --ui-text-secondary: #343434;
-  --ui-text-tertiary: #5d5d5d;
-  --ui-text-muted: #737373;
-  --ui-text-disabled: #a2a2a2;
-  --ui-border-subtle: rgb(0 0 0 / 7%);
-  --ui-border-default: rgb(0 0 0 / 10%);
-  --ui-border-strong: rgb(0 0 0 / 17%);
-  --ui-backdrop: rgb(0 0 0 / 35%);
+  --ui-bg-page: #ffffff;
+  --ui-bg-sidebar: #f6f7f9;
+  --ui-bg-raised: #f0f2f5;
+  --ui-bg-surface: #edf0f3;
+  --ui-bg-control: #e5e7ea;
+  --ui-bg-hover: #e7e9ed;
+  --ui-bg-overlay: #ffffff;
+  --ui-text-primary: #17181c;
+  --ui-text-secondary: #34373d;
+  --ui-text-tertiary: #565a62;
+  --ui-text-muted: #646872;
+  --ui-text-disabled: #9aa0a8;
+  --ui-border-subtle: rgb(15 23 42 / 7%);
+  --ui-border-default: rgb(15 23 42 / 10%);
+  --ui-border-strong: rgb(15 23 42 / 16%);
+  --ui-backdrop: rgb(15 23 42 / 32%);
   --ui-on-accent: #fff;
-  --ui-accent-strong: #171717;
-  --ui-danger: #c84242;
-  --ui-success: #267a4e;
+  --ui-accent-strong: #17181c;
+  --ui-danger: #b93a3a;
+  --ui-success: #237448;
   /* Light composer is a white capsule on the white page — the hairline
      border (desktop) and shadow carry the separation, not a fill step. */
   --ui-bg-composer: #fff;
-  --ui-bg-chip: rgb(0 0 0 / 5%);
-  --ui-bg-chip-hover: rgb(0 0 0 / 9%);
-  --ui-bg-bubble: #f0f0f0;
+  --ui-bg-chip: rgb(15 23 42 / 5%);
+  --ui-bg-chip-hover: rgb(15 23 42 / 9%);
+  --ui-bg-bubble: #eceef1;
   --ui-bg-segment-active: #fff;
-  --ui-shadow-popover: 0 18px 48px rgb(0 0 0 / 16%), 0 1px 0 rgb(255 255 255 / 85%) inset;
+  --ui-shadow-popover: 0 18px 48px rgb(15 23 42 / 16%), 0 1px 0 rgb(255 255 255 / 85%) inset;
 }

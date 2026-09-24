@@ -104,7 +104,10 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
     };
   });
-  expect(geometry.paddingBottom).toBe(0);
+  /* The 24px is the constant reading-column breathing margin from
+     components/chat.css, not a keyboard reserve — the exact 300px linear
+     lift above proves the inset pipeline never consumes it. */
+  expect(geometry.paddingBottom).toBe(24);
   expect(geometry.barPosition).toBe('relative');
   expect(geometry.appVh).toBe('');
   expect(geometry.measuredBarHeight).toBe('');
@@ -323,7 +326,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
   });
 
   expect(after.barHeight).toBeGreaterThan(before.barHeight);
-  expect(after.paddingBottom).toBe(0);
+  expect(after.paddingBottom).toBe(24);
   expect(after.listBottom).toBeLessThanOrEqual(after.barTop);
   expect(after.distanceFromBottom).toBeLessThanOrEqual(2);
   expect(after.clearance).toBeGreaterThanOrEqual(8);
@@ -367,7 +370,7 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
       barTop: Math.round(bar.getBoundingClientRect().top),
     };
   });
-  expect(geometry.paddingBottom).toBe(0);
+  expect(geometry.paddingBottom).toBe(24);
   expect(geometry.listBottom).toBeLessThanOrEqual(geometry.barTop);
   expect(geometry.clearance).toBeGreaterThanOrEqual(8);
 });
@@ -460,7 +463,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
     };
   });
 
-  expect(geometry.paddingBottom).toBe(0);
+  expect(geometry.paddingBottom).toBe(24);
   expect(geometry.listBottom).toBeLessThanOrEqual(geometry.barTop);
   expect(geometry.distanceFromBottom, JSON.stringify(geometry)).toBeLessThanOrEqual(2);
   expect(geometry.clearance, JSON.stringify(geometry)).toBeGreaterThanOrEqual(8);

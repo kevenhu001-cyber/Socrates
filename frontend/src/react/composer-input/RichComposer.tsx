@@ -281,6 +281,18 @@ export function RichComposer({ surface, placeholder, onSubmit, onEscape, showToo
       const lineHeight = Number.parseFloat(style.lineHeight) || 24;
       const isMultiline = wrap.classList.contains('composer-multiline');
       const wrapWidth = wrap.getBoundingClientRect().width;
+      /* A shape animation in flight means the shell sits between two tiers:
+         the editor still reports the tier it is leaving for a frame or two,
+         which reads as a wrapped draft and re-expands the capsule — an
+         expand/collapse loop that never settles. Defer the decision to the
+         frame after the animation lands instead of classifying a mid-flight
+         box. Read through a local so the rest of this function keeps its own
+         narrowing of the ref. */
+      const inFlightAnimation = shapeAnimationRef.current;
+      if (inFlightAnimation) {
+        shapeFrameRef.current = requestAnimationFrame(run);
+        return;
+      }
       if (!isMultiline) {
         /* The browser may have already let the editor's intrinsic height grow
            before this synchronous update runs. Do not replace the compact

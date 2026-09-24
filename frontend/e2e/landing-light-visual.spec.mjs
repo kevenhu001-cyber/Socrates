@@ -55,10 +55,10 @@ test('light conversation home has a neutral readable palette and balanced compos
   /* ChatGPT.html measures 768 x 52 with a 16px editor at 1440x900. */
   expect(geometry.composer?.height).toBe(52);
   expect(geometry.topicFontSize).toBe(16);
-  /* Current ChatGPT landing geometry leaves a deliberate 48px pause between
-     the 24/28 greeting and the 768×52 composer. */
-  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(44);
-  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(52);
+  /* Current ChatGPT landing geometry leaves a 36px pause between the 24/28
+     greeting and the 768×52 composer. */
+  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(34);
+  expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(38);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
@@ -103,8 +103,8 @@ test('light conversation home has a neutral readable palette and balanced compos
   await expect(page.locator('#topicInputWrap')).toBeVisible();
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   const mobileComposer = await page.locator('#topicInputWrap').boundingBox();
-  /* The compact empty state keeps the composer near the safe-area bottom. */
-  expect(mobileComposer?.y ?? 844).toBeGreaterThan(600);
-  expect(mobileComposer?.y ?? 844).toBeLessThan(820);
+  /* The empty state places the prompt in the same central band as the phone reference. */
+  expect(mobileComposer?.y ?? 844).toBeGreaterThan(430);
+  expect(mobileComposer?.y ?? 844).toBeLessThan(550);
   await page.screenshot({ path: '/tmp/socrates-landing-light-mobile.png', fullPage: true });
 });

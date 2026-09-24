@@ -46,7 +46,7 @@ function popoverStyle(anchor: ChatConfigurationAnchor | null): React.CSSProperti
   const viewportHeight = viewport ? viewport.height : window.innerHeight;
   const viewportBottom = viewportTop + viewportHeight;
   const viewportWidth = viewport ? viewport.width : window.innerWidth;
-  const width = Math.min(300, viewportWidth - 32);
+  const width = Math.min(264, viewportWidth - 32);
   if (!anchor) {
     return { left: Math.max(16, (viewportWidth - width) / 2), bottom: 96, width };
   }

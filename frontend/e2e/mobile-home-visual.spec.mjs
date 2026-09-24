@@ -57,23 +57,25 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeTabs?.width).toBeLessThanOrEqual(152);
   expect(geometry.modeTabs?.height).toBe(32);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
-  /* Empty-home mobile composer uses the reference's two-storey capsule. */
-  expect(geometry.composer?.height).toBe(104);
+  /* Empty-home mobile composer uses the reference's two-row 89px stack
+     (editor on row 1, add/dictation/send controls on row 2). */
+  expect(geometry.composer?.height).toBe(89);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
-  expect(geometry.composer?.y).toBeGreaterThan(600);
-  expect(geometry.composer?.y).toBeLessThan(820);
-  /* P_mobile-black-canvas — the dark mobile canvas is pure #000. */
-  expect(geometry.background).toBe('rgb(0, 0, 0)');
-  expect(geometry.pageToken).toBe('#000');
+  expect(geometry.composer?.y).toBeGreaterThan(430);
+  expect(geometry.composer?.y).toBeLessThan(550);
+  /* P_mobile-black-canvas — the dark mobile canvas rides the near-black
+     ramp (#09090b), not a warm or tinted black. */
+  expect(geometry.background).toBe('rgb(9, 9, 11)');
+  expect(geometry.pageToken).toBe('#09090b');
 
   /* P_greeting-mobile-center — the landing greeting must be visually
      centred horizontally on the viewport and sit just above the optical
      middle on phones. The previous absolute + dual left/right inset could
      land sub-pixel off when the parent's 16px padding and the viewport
      settled (URL-bar collapse, soft keyboard); the absolute box anchored
-     at 42% of the surface always lands the line on the reference hero
+     at 35% of the surface always lands the line on the reference hero
      position regardless of those shifts. */
   const centering = await page.evaluate(() => {
     const greet = document.querySelector('#topicTitle.greeting');
@@ -98,7 +100,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      greeting's parent flex column. */
   expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
     .toBeLessThanOrEqual(1);
-  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.42;
+  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.35;
   expect(Math.abs(centering.centerY - expectedCenterY))
     .toBeLessThanOrEqual(1);
 

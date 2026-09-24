@@ -69,10 +69,14 @@ function position(el, trigger) {
   var viewportBottom = viewport ? (viewportTop + viewport.height) : window.innerHeight;
   var viewportWidth = viewport ? viewport.width : window.innerWidth;
   var mode = trigger.dataset ? trigger.dataset.composerMode : null;
-  /* The expanded card never grows past the viewport's vertical midline
-     (50vh). The list scrolls instead, so the greeting/composer above it
-     stays visible on every surface. */
-  var menuHeightCap = Math.max(120, (viewportBottom - viewportTop) / 2);
+  /* The expanded card never grows past ~62vh on desktop (560px absolute
+     ceiling) so it reads as a menu next to the capsule, not a second panel.
+     With nine grouped rows the directory needs ~565px — a shorter cap hides
+     trailing groups behind scroll. When the space beside the composer is
+     smaller the list still scrolls, keeping the greeting visible. */
+  var menuHeightCap = viewportWidth > 768
+    ? Math.max(120, Math.min(560, (viewportBottom - viewportTop) * 0.62))
+    : Math.max(120, (viewportBottom - viewportTop) / 2);
 
   /* The landing reference anchors the popover to the composer's left edge
      and always opens downward. Connected plugin rows scroll inside the card
@@ -86,6 +90,7 @@ function position(el, trigger) {
     el.style.maxHeight = Math.min(room, menuHeightCap) + "px";
     el.style.left = Math.max(8, Math.min(wrapRect.left, viewportWidth - 228)) + "px";
     el.style.top = menuTop + "px";
+    el.dataset.menuSide = "below";
     return;
   }
 
@@ -121,6 +126,7 @@ function position(el, trigger) {
     el.style.setProperty('right', 'auto', 'important');
     el.style.setProperty('top', mobileTop + "px", 'important');
     el.style.setProperty('bottom', 'auto', 'important');
+    el.dataset.menuSide = "above";
     return;
   }
   var anchorTop = wrapRect.top;
@@ -133,26 +139,33 @@ function position(el, trigger) {
   var belowSpace = viewportBottom - belowTop - 8;
   var aboveSpace = anchorTop - viewportTop - 8;
   var top;
+  var side;
   if (belowSpace >= height) {
     top = belowTop;
+    side = "below";
   } else if (aboveSpace >= height) {
     top = aboveTop;
+    side = "above";
   } else if (belowSpace >= 120 && belowSpace >= aboveSpace) {
     /* A short desktop viewport may not have room for the full directory.
        Prefer a scrollable menu below the composer so selected chips and the
        trigger never become an accidental hit-test target underneath it. */
     el.style.maxHeight = Math.min(belowSpace, menuHeightCap) + "px";
     top = belowTop;
+    side = "below";
   } else if (aboveSpace >= 120) {
     el.style.maxHeight = Math.min(aboveSpace, menuHeightCap) + "px";
     top = anchorTop - aboveSpace - 8;
+    side = "above";
   } else {
     el.style.maxHeight = Math.min(Math.max(120, Math.max(belowSpace, aboveSpace)), menuHeightCap) + "px";
     top = belowSpace >= aboveSpace ? belowTop : viewportTop + 8;
+    side = belowSpace >= aboveSpace ? "below" : "above";
   }
   top = Math.max(viewportTop + 8, Math.min(viewportBottom - (el.offsetHeight || height) - 8, top));
   el.style.left = left + "px";
   el.style.top = top + "px";
+  el.dataset.menuSide = side;
 }
 
 function reposition() {

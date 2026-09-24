@@ -720,11 +720,13 @@
     font-size: 15px !important;
   }
 
+  /* The tools menu anchors to the capsule's 12px page inset (the reference
+     keeps the sheet flush with the composer's leading edge). */
   body #composerToolsMenu {
-    left: 16px !important;
+    left: 12px !important;
     right: auto !important;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 96px) !important;
-    width: min(252px, calc(100vw - 32px)) !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 72px) !important;
+    width: min(252px, calc(100vw - 24px)) !important;
     max-width: none !important;
     max-height: min(50vh, 520px) !important;
     padding: 6px !important;

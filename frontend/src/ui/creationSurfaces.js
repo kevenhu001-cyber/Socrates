@@ -96,7 +96,20 @@ async function handleClick(name, event) {
   if (action === 'retry') return load(name);
   if (action === 'site-view') { state.siteView = button.dataset.view === 'grid' ? 'grid' : 'list'; return render(name); }
   if (action === 'site-menu' && item) { state.siteMenu = state.siteMenu === item.id ? null : item.id; return render(name); }
-  if (action === 'new') { if (name === 'images') return panel(name).querySelector('textarea[name="prompt"]')?.focus(); state.editor = { type: name, item: null }; return render(name); }
+  if (action === 'new') {
+    if (name === 'images') return panel(name).querySelector('textarea[name="prompt"]')?.focus();
+    /* Sites are built by the agent now — "Create" returns to the composer
+       with the create-site extension armed, the same as picking it from
+       the "+" tools menu. The editor modal stays for editing existing
+       sites (data-action="edit"). */
+    if (name === 'sites') {
+      const didReset = await window.resetApp?.();
+      if (didReset === false) return;
+      window.__socratesExtensionDispatch?.('createSite');
+      return;
+    }
+    state.editor = { type: name, item: null }; return render(name);
+  }
   if (action === 'close') { state.editor = null; return render(name); }
   if (action === 'edit' && item) { state.editor = { type: name, item }; return render(name); }
   if (action === 'edit-image' && item) { state.editor = { type: 'images', item }; render(name); return panel(name).querySelector('textarea[name="prompt"]')?.focus(); }

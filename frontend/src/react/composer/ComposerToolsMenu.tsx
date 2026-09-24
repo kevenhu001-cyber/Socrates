@@ -72,7 +72,7 @@ const TOOL_GROUPS: ReadonlyArray<{
     key: 'create',
     labelKey: 'composer.tools.group.create',
     label: 'Create & analyze',
-    actions: ['write', 'analyze', 'createImage', 'exam', 'skills'],
+    actions: ['write', 'analyze', 'createImage', 'createSite', 'exam', 'skills'],
   },
 ];
 

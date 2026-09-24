@@ -11,7 +11,8 @@
  *                                  slices override each other by order.
  *   Tier 3  modular              — foundations/layout/components/features:
  *                                  the current component-owned styles.
- *   Tier 4  restore/             — the pre-rework visual layer; must stay
+ *   Tier 4  restore/             — the pre-rework visual layer.
+ *   Tier 5  polish/              — the design-polish layer; must stay
  *                                  last so it outranks everything above.
  */
 
@@ -32,5 +33,8 @@
 @import './features/surfaces.css';
 @import './components/tool-card.css';
 
-/* Tier 4 — restored pre-rework visual layer (always last) */
+/* Tier 4 — restored pre-rework visual layer */
 @import './restore/index.css';
+
+/* Tier 5 — design-polish layer (always last; see polish/index.css) */
+@import './polish/index.css';

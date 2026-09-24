@@ -1,0 +1,208 @@
+/*
+ * polish/sidebar.css — sidebar refinement (nav, search, recents, footer).
+ *
+ * Loaded after restore/, so equal-specificity rules win without !important.
+ * Geometry owned by JS (--app-sidebar-width, drawer transform) untouched.
+ */
+
+/* The parity layer pins the whole shell to --chatgpt-font (ui-sans-serif →
+   Segoe UI on Windows) while chat surfaces render Plus Jakarta Sans via
+   --cg-font — the brand wordmark and nav read as a different face from the
+   conversation. Converge the shell on the bundled brand stack. */
+#appShell,
+#composerToolsMenu {
+  font-family: var(--cg-font) !important;
+}
+
+#appShell .sidebar-inner {
+  padding: 8px 8px 6px;
+}
+
+/* ── Header ── */
+#appShell .sidebar-header {
+  min-height: 48px;
+  padding: 4px 6px 4px 10px;
+}
+#appShell .sidebar-logo {
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+#appShell .sidebar-logo-img { width: 20px; height: 20px; border-radius: 5px; }
+#appShell .sidebar-header .icon-btn {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  color: var(--ui-text-tertiary);
+}
+#appShell .sidebar-header .icon-btn svg { width: 18px; height: 18px; }
+#appShell .sidebar-header .icon-btn:hover {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+
+/* ── Primary nav — one row rhythm: 34px, 8px radius, 20px glyphs ── */
+#appShell .sidebar-nav {
+  gap: 1px;
+  padding: 2px 4px 10px;
+}
+#appShell .sidebar-nav-btn {
+  min-height: 34px;
+  height: 34px;
+  padding: 6px 10px;
+  gap: 10px;
+  border-radius: 8px;
+  color: var(--ui-text-secondary);
+  font-size: 13.5px;
+  font-weight: 450;
+  line-height: 20px;
+  letter-spacing: -0.1px;
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+}
+#appShell .sidebar-nav-btn svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  stroke-width: 1.8;
+}
+#appShell .sidebar-nav-btn:hover { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); font-weight: 500; }
+#appShell .sidebar-nav-btn .nav-kbd {
+  color: var(--ui-text-muted);
+  font-size: 11px;
+}
+
+/* ── Search — a quiet raised field instead of a bare icon+input row ── */
+#appShell .sidebar-search-row {
+  padding: 0 4px 6px;
+  gap: 4px;
+}
+#appShell .sidebar-search {
+  height: 34px;
+  padding: 0 10px;
+  gap: 8px;
+  border-radius: 8px;
+  background: var(--ui-bg-raised);
+  border: 1px solid transparent;
+  transition: border-color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+}
+#appShell .sidebar-search:focus-within {
+  background: var(--ui-bg-surface);
+  border-color: var(--ui-border-default);
+}
+#appShell .sidebar-search .sidebar-search-icon { width: 15px; height: 15px; color: var(--ui-text-muted); }
+#appShell .sidebar-search input { font-size: 13px; color: var(--ui-text-primary); }
+#appShell .sidebar-search input::placeholder { color: var(--ui-text-muted); }
+#appShell .sidebar-view-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--ui-text-tertiary);
+}
+#appShell .sidebar-view-btn:hover { background: var(--ui-bg-raised); color: var(--ui-text-primary); }
+#appShell .sidebar-view-btn.active { background: var(--ui-bg-surface); color: var(--ui-text-primary); }
+
+/* ── Recents — tighter rows, quieter labels ── */
+#appShell .recents-header {
+  padding: 10px 10px 4px;
+}
+#appShell .recents-title,
+#appShell .recents-time-label {
+  color: var(--ui-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+#appShell .recents-time-label { padding: 12px 10px 4px; }
+#appShell .recents-time-label:first-child { padding-top: 2px; }
+
+#appShell .recent-item {
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  transition: background-color var(--ui-duration-fast) ease;
+}
+#appShell .recent-item-text {
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 18px;
+}
+#appShell .recent-item-meta {
+  font-size: 11px;
+  color: var(--ui-text-muted);
+}
+#appShell .recent-tag-pill {
+  border-radius: 6px;
+  font-size: 10px;
+}
+#appShell .recent-item-tag-btn,
+#appShell .recent-item-archive,
+#appShell .recent-item-del {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+#appShell .recent-item-tag-btn svg,
+#appShell .recent-item-archive svg,
+#appShell .recent-item-del svg { width: 14px; height: 14px; }
+
+#appShell .recents-filter-chip-btn {
+  border-radius: var(--ui-radius-pill);
+}
+
+/* ── Footer — hairline separation, compact identity row ── */
+/* The account row is a static identity label now — settings live behind
+   the gear button. Kill the button affordances on both the React-rendered
+   element and its .user-row host (legacy gives that row pointer + hover). */
+#appShell .sidebar-account-static,
+#appShell #sidebarUserRow.user-row {
+  cursor: default;
+}
+#appShell .sidebar-account-static:hover,
+#appShell #sidebarUserRow.user-row:hover {
+  background: transparent;
+}
+#appShell #sidebarUserRow.user-row:active {
+  transform: none;
+}
+#appShell .sidebar-footer {
+  min-height: 56px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--ui-border-subtle);
+  background: transparent;
+}
+#appShell .user-row { gap: 10px; }
+#appShell .user-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+#appShell .user-name { font-size: 13px; font-weight: 500; }
+#appShell .user-plan { font-size: 11px; color: var(--ui-text-muted); }
+#appShell .sidebar-footer .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--ui-text-tertiary);
+}
+#appShell .sidebar-footer .icon-btn:hover {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+#appShell .sidebar-footer .icon-btn svg { width: 17px; height: 17px; }
+
+/* ── More popover ── */
+#appShell .sidebar-more-popover {
+  border-radius: 12px;
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-menu);
+  padding: 4px;
+}
+#appShell .sidebar-more-item {
+  border-radius: 8px;
+  min-height: 34px;
+}

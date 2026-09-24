@@ -5,3 +5,5 @@ wasm/
 .DS_Store
 playwright-report/
 test-results/
+analysis/
+.cg-ref/

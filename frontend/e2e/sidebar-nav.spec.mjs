@@ -98,14 +98,22 @@ test('More keeps secondary settings and Skills reachable', async ({ page }) => {
   await expect(page.locator('#cheatsheetOverlay')).toBeVisible();
 });
 
-test('account row opens a compact menu and its profile action works', async ({ page }) => {
-  const trigger = page.locator('.sidebar-account-trigger');
-  await trigger.click();
-  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  const menu = page.getByRole('menu', { name: /Account menu|账户菜单/ });
-  await expect(menu).toBeVisible();
-  await menu.getByRole('menuitem', { name: /Profile|个人资料/ }).click();
-  await expect(page.locator('#profileOverlay')).toBeVisible();
+test('account row is a static identity label; settings live behind the gear', async ({ page }) => {
+  /* The row renders as a plain div — no button role, no popup menu, no
+     pointer affordance. Profile/sign-out moved into Settings → Account. */
+  const row = page.locator('#sidebarUserRow .sidebar-account-static');
+  await expect(row).toBeVisible();
+  await expect(row).not.toHaveAttribute('role', 'button');
+  await expect(row).toHaveCSS('cursor', 'default');
+  await row.click();
+  await expect(page.getByRole('menu', { name: /Account menu|账户菜单/ })).toHaveCount(0);
+  // The gear still opens the settings modal, whose account pane carries
+  // the profile entry.
+  await page.locator('#apiSettingsBtn').click();
+  const overlay = page.locator('#settingsOverlay');
+  await expect(overlay).toBeVisible();
+  await overlay.locator('.settings-nav button').last().click();
+  await expect(overlay.locator('.settings-account-card')).toBeVisible();
 });
 
 test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ page }) => {
@@ -125,12 +133,12 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
     expect(row.height).toBe(40);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
-  await page.locator('.sidebar-account-trigger').click();
-  const menu = page.getByRole('menu', { name: /Account menu|账户菜单/ });
-  await expect(menu).toBeInViewport();
+  // The account row is a static label — no menu opens from it.
+  const accountRow = page.locator('#sidebarUserRow .sidebar-account-static');
+  await expect(accountRow).toBeInViewport();
+  await accountRow.click();
+  await expect(page.getByRole('menu', { name: /Account menu|账户菜单/ })).toHaveCount(0);
   await page.screenshot({ path: '/tmp/socrates-reference-mobile-account-390x769.png' });
-  await page.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
 });
 
 test('Admin console is a standalone /admin page with no sidebar entry', async ({ page }) => {

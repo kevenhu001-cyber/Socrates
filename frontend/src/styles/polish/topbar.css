@@ -1,0 +1,51 @@
+/*
+ * polish/topbar.css — top bar + mode pill refinement.
+ * Height (52px) and geometry stay owned by restore/fixes.css.
+ */
+
+#appShell .top-bar {
+  padding: 6px 14px;
+}
+
+/* Icon buttons: quiet ghost controls, hairline-free until hover. */
+#appShell .top-bar .icon-btn,
+#appShell .top-bar .toggle-sidebar,
+#appShell .top-bar .find-btn,
+#appShell .top-bar .share-btn {
+  color: var(--ui-text-tertiary);
+  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+}
+#appShell .top-bar .icon-btn:hover,
+#appShell .top-bar .toggle-sidebar:hover,
+#appShell .top-bar .find-btn:hover,
+#appShell .top-bar .share-btn:hover {
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-primary);
+}
+
+/* Mode pill — calmer border, tighter hit rows. */
+#appShell #modeSegmentedTop {
+  border-color: var(--ui-border-subtle);
+  background: var(--ui-bg-raised);
+}
+#appShell #modeSegmentedTop .app-mode-toggle {
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ui-text-tertiary);
+  transition: color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+}
+#appShell #modeSegmentedTop .app-mode-toggle:hover { color: var(--ui-text-secondary); }
+#appShell #modeSegmentedTop .app-mode-toggle.active {
+  color: var(--ui-text-primary);
+  font-weight: 550;
+}
+[data-mode="dark"] #appShell #modeSegmentedTop .app-mode-toggle.active {
+  background: rgb(255 255 255 / 10%);
+}
+[data-mode="light"] #appShell #modeSegmentedTop .app-mode-toggle.active {
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px rgb(0 0 0 / 4%);
+}
+
+/* In-chat affordances (share/find/model) keep the same quiet skin. */
+#appShell .top-bar-right .share-btn .share-btn-label { font-weight: 500; }

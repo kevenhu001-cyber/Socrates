@@ -34,13 +34,13 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'webSearch', 'explore', 'write', 'analyze', 'createImage', 'exam', 'skills']);
+  expect(actions).toEqual(['upload', 'webSearch', 'explore', 'write', 'analyze', 'createImage', 'createSite', 'exam', 'skills']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
   expect(mobileActions).toEqual([
     'camera', 'photos', 'upload', 'webSearch', 'explore', 'write',
-    'analyze', 'createImage', 'exam', 'skills', 'extensiveThinking',
+    'analyze', 'createImage', 'createSite', 'exam', 'skills', 'extensiveThinking',
   ]);
 });
 
@@ -70,14 +70,14 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
   /* Expanded card: every workflow is visible at once with no disclosure. */
   const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
-  await expect(desktopItems).toHaveCount(8);
+  await expect(desktopItems).toHaveCount(9);
   await expect(desktopItems.nth(0)).toContainText('Upload files');
   /* Footer filter narrows the expanded list. */
   await menu.locator('.composer-tools-footer-search input').fill('exam');
   await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(1);
   await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]').first()).toContainText('Generate exam');
   await menu.locator('.composer-tools-footer-search input').fill('');
-  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(8);
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(9);
   await expect(menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first())
     .toContainText(/Add context|添加资料/);
   await page.screenshot({

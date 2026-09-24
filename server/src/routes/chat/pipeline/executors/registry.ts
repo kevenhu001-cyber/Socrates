@@ -19,6 +19,7 @@ import { executeWebSearch } from './webSearch.js';
 import { executeWebFetch } from './webFetch.js';
 import { executeReadAttachment } from './readAttachment.js';
 import { executePlanSpec } from './planSpec.js';
+import { executeCreateSite } from './createSite.js';
 import {
   executePersonalConnector,
   executeProjectConnector,
@@ -44,6 +45,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['read_attachment', executeReadAttachment],
     ['create_plan', executePlanSpec],
     ['create_spec', executePlanSpec],
+    ['create_site', executeCreateSite],
   ]);
 
   const families: Array<{ includes: (name: string) => boolean; executor: ToolExecutor }> = [
