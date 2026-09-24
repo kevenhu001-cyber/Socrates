@@ -62,28 +62,13 @@ test('assistant can be created and started from More', async ({ page }) => {
   await expect(page.locator('#topicComposerRoot')).toContainText('Help me with algebra');
 });
 
-test('site can be saved, published and previewed', async ({ page }) => {
+test('Create site returns to chat and activates create-site mode', async ({ page }) => {
   await page.locator('#navSites').click();
   await page.getByRole('button', { name: 'Create site' }).click();
-  await page.locator('.creation-editor [name=title]').fill('Course notes');
-  await page.locator('.creation-editor [name=prompt]').fill('A simple course landing page');
-  await page.locator('.creation-editor [data-action=generate-site]').click();
-  await expect(page.locator('.creation-editor [name=source]')).toHaveValue(/Generated course/);
-  await page.locator('.creation-editor [name=source]').fill('<h1>Course notes</h1>');
-  await page.locator('.creation-editor [name=visibility]').selectOption('unlisted');
-  await page.locator('.creation-editor [type=submit]').click();
-  await expect(page.locator('#sitesPanel .creation-row')).toContainText('Course notes');
-  await page.setViewportSize({ width: 390, height: 769 });
-  await page.evaluate(() => {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.toggleSidebar?.();
-  });
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(-254);
-  await page.screenshot({ path: '/tmp/socrates-reference-mobile-sites-list-390x769.png' });
-  await page.locator('#sitesPanel [data-action=site-menu]').click();
-  await page.locator('#sitesPanel [data-action=preview]').click();
-  await expect(page.locator('.creation-preview-frame')).toBeVisible();
-  await expect(page.frameLocator('.creation-preview-frame').getByRole('heading', { name: 'Course notes' })).toBeVisible();
+  await expect(page.locator('#sitesPanel')).toBeHidden();
+  await expect(page.locator('#topicSetup')).toBeVisible();
+  await expect(page.locator('#topicComposerRoot [data-extension-key="createSite"]')).toBeVisible();
+  await expect(page.locator('.creation-editor[data-editor="sites"]')).toHaveCount(0);
 });
 
 test('image gallery supports generation and editing', async ({ page }) => {

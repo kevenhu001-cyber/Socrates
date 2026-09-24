@@ -70,17 +70,14 @@ test('settings toggle flips the track class and persists', async ({ page }) => {
   const track = overlay.locator('#stgToggleTrack');
 
   const initialOn = await track.evaluate((el) => el.classList.contains('on'));
+  const expectedClass = initialOn ? /^stg-toggle-track$/ : /^stg-toggle-track on$/;
   await overlay.locator('#stgToggle').click();
-  const toggledOn = await track.evaluate((el) => el.classList.contains('on'));
-  expect(toggledOn).toBe(!initialOn);
+  await expect(track).toHaveClass(expectedClass);
 
   // Persisted value survives a reopen.
   await overlay.locator('#settingsCloseBtn').click();
   await page.evaluate(() => window.openSettings());
-  const afterReopen = await page
-    .locator('#settingsOverlay #stgToggleTrack')
-    .evaluate((el) => el.classList.contains('on'));
-  expect(afterReopen).toBe(toggledOn);
+  await expect(track).toHaveClass(expectedClass);
 });
 
 test('add provider renders editable rows into the legacy-rendered list', async ({ page }) => {

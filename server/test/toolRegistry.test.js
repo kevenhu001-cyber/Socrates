@@ -6,9 +6,9 @@ import { PI_AGENT_ENABLED } from '../src/services/piAgent.js';
 test('tool registry exposes the same native search and visual tools in tutor mode', () => {
   const chat = createToolRegistry({ codeInterpreterToolDef: { function: { name: 'code_interpreter' } }, mode: 'chat' });
   const workspaceTools = PI_AGENT_ENABLED ? ['workspace_agent', 'initialize_workspace'] : [];
-  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', ...workspaceTools, 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'create_plan', 'create_spec', 'arxiv_search']);
+  assert.deepEqual(chat.definitions.map((tool) => tool.function.name), ['code_interpreter', ...workspaceTools, 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
   const tutor = createToolRegistry({ codeInterpreterToolDef: null, mode: 'tutor' });
-  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), [...workspaceTools, 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'create_plan', 'create_spec', 'arxiv_search']);
+  assert.deepEqual(tutor.definitions.map((tool) => tool.function.name), [...workspaceTools, 'render_visualization', 'web_search', 'web_fetch', 'read_attachment', 'create_plan', 'create_spec', 'create_site', 'arxiv_search']);
   /* sessionSerial carries the lane name: workspace tools share 'workspace'
      (a reset must not overlap an agent run); code_interpreter's scratch
      dir is an independent 'code' lane. */
