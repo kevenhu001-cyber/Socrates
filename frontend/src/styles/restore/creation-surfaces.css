@@ -133,3 +133,76 @@
   #appShell .creation-row { align-items:flex-start; }
   #appShell .creation-row-actions { flex-wrap:wrap; justify-content:flex-end; }
 }
+
+/* Sites uses the same search, action and list rhythm as the other
+   workspace destinations. The source site preview and publish flow remains
+   owned by creationSurfaces.js. */
+#appShell #sitesPanel .creation-sites-header { margin-bottom: 18px; }
+#appShell #sitesPanel .creation-sites-new { min-width: 72px; border-radius: 999px; }
+#appShell #sitesPanel .creation-sites-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid var(--chatgpt-line);
+  border-radius: 999px;
+  background: var(--chatgpt-surface);
+}
+#appShell #sitesPanel .creation-sites-search svg { width: 19px; height: 19px; flex: none; color: var(--chatgpt-muted); }
+#appShell #sitesPanel .creation-sites-search input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--chatgpt-text);
+  font: inherit;
+  font-size: 15px;
+}
+#appShell #sitesPanel .creation-sites-view { margin: 18px 0 14px; }
+#appShell #sitesPanel .creation-sites-view button { display: grid; place-items: center; width: 38px; height: 38px; }
+#appShell #sitesPanel .creation-sites-view svg { width: 20px; height: 20px; }
+#appShell #sitesPanel .creation-site-banner-icon svg { width: 23px; height: 23px; }
+#appShell #sitesPanel .creation-site-thumb { pointer-events: none; background: #fff; }
+#appShell #sitesPanel .creation-sites-table .creation-row-actions { position: relative; }
+#appShell #sitesPanel .creation-sites-table .creation-row-actions > button { min-width: 34px; min-height: 34px; font-size: 20px; }
+#appShell #sitesPanel .creation-site-row-menu {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  top: calc(100% + 4px);
+  display: grid;
+  width: 134px;
+  padding: 5px;
+  border: 1px solid var(--chatgpt-line);
+  border-radius: 10px;
+  background: var(--chatgpt-menu);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 22%);
+}
+#appShell #sitesPanel .creation-site-row-menu button { text-align: left; color: var(--chatgpt-text); }
+#appShell #sitesPanel .creation-site-row-menu button:hover { background: var(--chatgpt-hover); }
+
+@media(max-width:768px) {
+  #appShell #sitesPanel { padding: 18px 16px 48px !important; }
+  #appShell #sitesPanel .creation-sites-header { flex-direction: row; align-items: center; min-height: 40px; }
+  #appShell #sitesPanel .creation-sites-header h1 { font-size: 27px; line-height: 36px; }
+  #appShell #sitesPanel .creation-sites-search input { width: 100%; }
+  #appShell #sitesPanel .creation-site-banner { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; min-height: 130px; padding: 16px; }
+  #appShell #sitesPanel .creation-site-banner button { grid-column: 1 / -1; width: 100%; min-height: 38px; margin: 0; }
+  #appShell #sitesPanel .creation-sites-table { margin-top: 24px; }
+  #appShell #sitesPanel .creation-sites-table .creation-table-head { grid-template-columns: 1fr; }
+  #appShell #sitesPanel .creation-sites-table .creation-table-head span:nth-child(2) { display: none; }
+  #appShell #sitesPanel .creation-sites-table .creation-row { grid-template-columns: minmax(0, 1fr) 34px; min-height: 70px; gap: 9px; border-bottom: 1px solid var(--chatgpt-line); }
+  #appShell #sitesPanel .creation-sites-table .creation-row-actions { display: flex; grid-column: 2; }
+  #appShell #sitesPanel .creation-site-main { min-width: 0; gap: 12px; }
+  #appShell #sitesPanel .creation-site-thumb { width: 74px; height: 48px; }
+  #appShell #sitesPanel .creation-site-visibility { display: none; }
+  #appShell #sitesPanel .creation-sites-table.is-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #appShell #sitesPanel .creation-sites-table.is-grid .creation-row { position: relative; }
+  #appShell #sitesPanel .creation-sites-table.is-grid .creation-row-actions { align-self: flex-end; }
+}

@@ -41,6 +41,7 @@ test('mobile conversation home matches the compact dark reference layout', async
       modeTabs: rect('#modeSegmentedTop'),
       composer: rect('#topicInputWrap'),
       topicFontSize: parseFloat(getComputedStyle(document.querySelector('#topicComposerRoot .rich-composer-editor')).fontSize),
+      viewportHeight: window.innerHeight,
       /* .main is a transparent layout box; the painted surface is
          .main-content (the shell's page colour). Dark mode uses a layered
          charcoal canvas so the shell has depth without pure black. */
@@ -57,7 +58,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.modeTabs?.height).toBe(32);
   expect(geometry.composer?.width).toBeGreaterThanOrEqual(320);
   /* Empty-home mobile composer uses the reference's two-storey capsule. */
-  expect(geometry.composer?.height).toBe(86);
+  expect(geometry.composer?.height).toBe(104);
+  expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
   expect(geometry.composer?.y).toBeGreaterThan(600);
@@ -96,7 +98,7 @@ test('mobile conversation home matches the compact dark reference layout', async
      greeting's parent flex column. */
   expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
     .toBeLessThanOrEqual(1);
-  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.40;
+  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.42;
   expect(Math.abs(centering.centerY - expectedCenterY))
     .toBeLessThanOrEqual(1);
 
@@ -177,20 +179,20 @@ test('mobile conversation home matches the compact dark reference layout', async
   await page.locator('#topicComposerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  /* The first screen keeps the capture, attachment, image creation, and
-     web search actions together before the remaining scrollable tools. */
-  await expect(menu.locator('.composer-tools-mobile-items > .composer-tools-mobile-item')).toHaveCount(5);
+  /* Grouped mobile actions retain the common capture, file, create, and
+     search workflows. */
+  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action]')).not.toHaveCount(0);
   await expect(menu).toContainText('Camera');
   await expect(menu).toContainText('Photos');
-  await expect(menu).toContainText('Files');
+  await expect(menu).toContainText('Upload files');
   await expect(menu).toContainText('Create image');
   await expect(menu).toContainText('Web search');
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
   /* On phones the add-content menu is a floating card anchored above the
      composer, matching the mobile reference. */
-  expect(menuBox?.width).toBeLessThanOrEqual(300);
-  expect(menuBox?.width).toBeGreaterThanOrEqual(232);
+  expect(menuBox?.width).toBeLessThanOrEqual(310);
+  expect(menuBox?.width).toBeGreaterThanOrEqual(292);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });
 

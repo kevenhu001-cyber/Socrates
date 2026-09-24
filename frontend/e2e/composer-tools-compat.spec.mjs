@@ -34,13 +34,13 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
-  expect(actions).toEqual(['upload', 'webSearch', 'write', 'explore', 'analyze', 'exam', 'skills', 'createImage']);
+  expect(actions).toEqual(['upload', 'webSearch', 'explore', 'write', 'analyze', 'createImage', 'exam', 'skills']);
   const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
     els.map((el) => el.getAttribute('data-composer-action')),
   );
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'createImage', 'webSearch', 'write',
-    'explore', 'analyze', 'exam', 'skills', 'extensiveThinking',
+    'camera', 'photos', 'upload', 'webSearch', 'explore', 'write',
+    'analyze', 'createImage', 'exam', 'skills', 'extensiveThinking',
   ]);
 });
 
@@ -69,15 +69,17 @@ test('Composer tools menu opens via legacy entry point and React mirrors state',
   });
   expect(snap).toEqual({ isOpen: true, mode: 'topic', triggerId: 'topicComposerToolsBtn' });
   /* Expanded card: every workflow is visible at once with no disclosure. */
-  const desktopItems = menu.locator('.composer-tools-desktop-items > .composer-tools-item');
+  const desktopItems = menu.locator('.composer-tools-desktop-items [data-composer-action]');
   await expect(desktopItems).toHaveCount(8);
   await expect(desktopItems.nth(0)).toContainText('Upload files');
   /* Footer filter narrows the expanded list. */
   await menu.locator('.composer-tools-footer-search input').fill('exam');
-  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(1);
-  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item').first()).toContainText('Generate exam');
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(1);
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]').first()).toContainText('Generate exam');
   await menu.locator('.composer-tools-footer-search input').fill('');
-  await expect(menu.locator('.composer-tools-desktop-items > .composer-tools-item')).toHaveCount(8);
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(8);
+  await expect(menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first())
+    .toContainText(/Add context|添加资料/);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,
@@ -194,8 +196,8 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
       bottomRadius: style.borderBottomLeftRadius,
     };
   });
-  // Mobile presents the menu as a floating card anchored above the plus
-  // key: solid surface, full outline, drop shadow, 16px corners.
+  // Mobile presents the menu as a floating card over the composer's left
+  // half, with a solid surface and a full outline.
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
@@ -210,8 +212,8 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   // a full-width bottom sheet.
   expect(sheetBox.x).toBeGreaterThanOrEqual(12);
   expect(sheetBox.x).toBeLessThanOrEqual(20);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(232);
-  expect(sheetBox.width).toBeLessThanOrEqual(240);
+  expect(sheetBox.width).toBeGreaterThanOrEqual(292);
+  expect(sheetBox.width).toBeLessThanOrEqual(308);
   expect(sheetBox.y + sheetBox.height).toBeLessThanOrEqual(830);
   expect(Math.abs((sheetBox.y + sheetBox.height) - (before.y + before.height))).toBeLessThanOrEqual(2);
   // The expanded card never grows past the viewport's vertical midline.
@@ -310,4 +312,36 @@ test('composer plus menu lists only connected plugins', async ({ page }) => {
   await expect(github).toHaveClass(/is-selected/);
   await expect(github.locator('.composer-tools-check')).toHaveCount(1);
   await expect(github).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('composer plugin catalog exposes a retry after a failed request', async ({ page }) => {
+  await mockAuthedApp(page);
+  let requestCount = 0;
+  await page.route(/\/api\/(?:v2\/)?project-connectors(?:\?|$)/, async (route) => {
+    requestCount += 1;
+    if (requestCount === 1) {
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'offline' }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        configured: true,
+        connectors: [
+          { id: 'github', name: 'GitHub', description: 'Repository context.', capabilities: ['Repositories'], authType: 'oauth', configured: true, connection: { status: 'connected' } },
+        ],
+      }),
+    });
+  });
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+  await page.locator('#topicComposerToolsBtn').click();
+
+  const menu = page.locator('#composerToolsMenu');
+  await expect(menu.locator('.composer-tools-plugin-state')).toContainText(/could not be loaded|加载失败/);
+  await menu.getByRole('menuitem', { name: /Try again|重试/ }).click();
+  await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
+  expect(requestCount).toBe(2);
 });

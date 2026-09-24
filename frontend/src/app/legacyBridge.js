@@ -16,7 +16,7 @@ import { syncSidebarBtns, toggleSidebarView } from '../ui/sidebarChrome.js';
 import { loadSession } from '../session/loader.js';
 import { toggleKBDetail } from '../ui/knowledgeDetail.js';
 import { refreshApiConfig } from '../config/providers.js';
-import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, restoreSession, confirmPurgeSession, getArchivedSessions } from '../session/recents.js';
+import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions } from '../session/recents.js';
 import { renderRecents } from '../ui/recentsView.js';
 import { deleteUserMessage, sendFeedback, restorePersistedMessageExtras } from '../ui/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
@@ -155,6 +155,7 @@ window.__socratesLegacy = {
     onRecentsFilterChipClick: window.onRecentsFilterChipClick,
     openTagEditor: openTagEditor,
     deleteSession: actuallyDeleteSession,
+    archiveSession: archiveSession,
     onSessionDragStart: onSessionDragStart,
     onSessionDragEnd: onSessionDragEnd,
     restoreSession: restoreSession,
@@ -162,6 +163,9 @@ window.__socratesLegacy = {
   },
   composer: {
     openAttachmentPicker: window.openAttachmentPicker,
+    toggleWebSearch: window.toggleWebSearch,
+    exploreAction: window.exploreAction,
+    toggleTools: window.toggleComposerTools,
     composeAction: window.composeAction,
     researchAction: window.researchAction,
     deepResearchAction: window.deepResearchAction,

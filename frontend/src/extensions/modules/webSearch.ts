@@ -8,6 +8,8 @@ export const webSearchExtension: ExtensionDefinition = {
   kind: 'toggle',
   nameKey: 'composer.tools.webSearch',
   nameFallback: 'Web search',
+  descriptionKey: 'composer.tools.webSearchHint',
+  descriptionFallback: 'Find current information on the web',
   icon: WEB_SEARCH_ICON,
   placement: { tools: 2 },
   onActivate(ctx) {

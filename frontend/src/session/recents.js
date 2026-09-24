@@ -69,8 +69,10 @@ export async function refreshServerSessions(){
      console.debug so they stay available under Verbose level without
      polluting the default console. */
   var ok=false;
+  /* Include archived rows so the Storage modal can list them without a
+     second fetch. getRecents()/getVisibleSessions still hide archivedAt. */
   try{
-    var r=await apiFetch("/api/sessions?limit=200");
+    var r=await apiFetch("/api/sessions?limit=200&archived=true");
     serverCache.sessions=Array.isArray(r&&r.sessions)?r.sessions:[];
     ok=true;
   }catch(e){
@@ -88,7 +90,7 @@ export async function refreshServerSessions(){
     if(retryable){
       try{
         await new Promise(function(res){setTimeout(res,400)});
-        var r2=await apiFetch("/api/sessions?limit=200");
+        var r2=await apiFetch("/api/sessions?limit=200&archived=true");
         serverCache.sessions=Array.isArray(r2&&r2.sessions)?r2.sessions:[];
         ok=true;
       }catch {/* still failing — surface below */}
@@ -211,11 +213,57 @@ export async function actuallyDeleteSession(id,ev){
   });
 }
 
+/* Quick archive from the Recents row menu. Soft-hide only: the row leaves
+   Recents immediately, lands in Storage (Profile → Archived), and can be
+   restored for 30 days. Distinct from deleteSession, which hard-deletes. */
+export async function archiveSession(id, ev){
+  if(!_currentUser())return;
+  if(ev&&ev.stopPropagation)ev.stopPropagation();
+  if(ev&&ev.preventDefault)ev.preventDefault();
+  if(saveState.saveInFlight){
+    try{await saveState.saveInFlight}catch(_){}
+  }
+  var wasActive=stateStore.read("currentSessionId")===id;
+  if(wasActive){
+    if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(_){}}
+    if(window._activeChatAbort){try{window._activeChatAbort("session-archived")}catch(_){}}
+    bounceOutOfArchivedSession();
+  }
+  var stamp=Date.now();
+  var idx=findServerSessionIndex(id);
+  if(idx>=0){
+    serverCache.sessions[idx].archivedAt=stamp;
+  }else{
+    serverCache.sessions.push({ id:id, archivedAt:stamp, updatedAt:stamp, createdAt:stamp });
+  }
+  _renderRecents();
+  _renderArchivedList();
+  try{
+    await apiFetch("/api/sessions/"+encodeURIComponent(id)+"/archive",{
+      method:"POST"
+    });
+    showToast(_t("session.archived"));
+    await refreshServerSessions();
+    _renderRecents();
+    _renderArchivedList();
+    if(wasActive||getRecents().length===0){
+      bounceOutOfArchivedSession();
+    }
+  }catch(err){
+    /* Roll the optimistic stamp so a failed POST doesn't hide the row. */
+    var back=findServerSessionIndex(id);
+    if(back>=0)serverCache.sessions[back].archivedAt=null;
+    try{showToast(_t("session.archiveFailed").replace("{msg}", err&&err.message||"server error"),4000)}catch(_){}
+    try{await refreshServerSessions()}catch(_){}
+    _renderRecents();
+    _renderArchivedList();
+  }
+}
+
 /* P2.3 — record the archive timestamp locally. The local copy
    is the source of truth for the UI (filtered out of
    Recents, surfaced in the Storage modal). The server mirrors
-   it via the POST /api/sessions/<id>/archive call in
-   actuallyDeleteSession. */
+   it via the DELETE /api/sessions/<id>/archive call below. */
 export function restoreSession(id){
   if(!_currentUser())return;
   var idx=findServerSessionIndex(id);

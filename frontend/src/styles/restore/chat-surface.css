@@ -799,16 +799,10 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
   [data-mode="light"] { --conversation-page: #fff; }
 }
 
-/* Mobile: the add-content menu is a 16px floating card, the reasoning
+/* Mobile: the add-content menu is a floating card, the reasoning
    pill stays visible at rest like the reference "高⌄" affordance, and the
    header utilities are 44px. */
 @media (max-width: 768px) {
-  /* The add-content menu is portaled to <body>, outside #appShell, so the
-     id is doubled to step over `body #composerToolsMenu`. */
-  body #composerToolsMenu#composerToolsMenu {
-    border-radius: 16px !important;
-  }
-
   /* A legacy ≤480px rule still hides the caret; the reference pill shows
      the level label plus a chevron on every phone width. Scoped to the
      wrap ids so it also beats the focused/multiline caret-hiding layer. */
@@ -1126,4 +1120,3 @@ body[data-conversation-active="true"]:not(.workspace-active) #appShell#appShell 
 @media (prefers-reduced-motion: reduce) {
   .chat-config-pop { animation: none !important; }
 }
-

@@ -25,10 +25,10 @@ function StorageModal() {
       ),
       React.createElement('div', { className: 'storage-modal-body' },
         React.createElement('div', { className: 'storage-modal-desc' },
-          'These sessions are pending permanent deletion. Deleting a session in Recents first archives it for up to 30 days as a safety net; this list shows any that have not yet been purged. Use Restore to bring one back, or Delete forever to remove it now.',
+          'Archived chats stay here for 30 days. Use Archive on a Recents row to tuck one away without deleting it; Restore brings it back, or Delete forever erases it now.',
         ),
         archived.length === 0
-          ? React.createElement('div', { className: 'storage-empty' }, 'No archived sessions. Long-press a session in Recents to send it here.')
+          ? React.createElement('div', { className: 'storage-empty' }, 'No archived sessions. Archive one from a Recents row to keep it out of the way for up to 30 days.')
           : React.createElement('div', { className: 'storage-list' },
               ...archived.map((s) => {
                 const ageDays = Math.max(0, Math.floor((Date.now() - (s.archivedAt || 0)) / (24 * 60 * 60 * 1000)));

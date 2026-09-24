@@ -71,12 +71,10 @@ test('Sidebar React nav buttons call window.openNav and reflect active state', a
   await expect(pluginsBtn).toHaveClass(/active/);
 });
 
-test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', async ({ page }) => {
+test('Sidebar React recents filter bridge remains wired while the compact drawer hides chips', async ({ page }) => {
   await mockAuthedApp(page);
-  /* Narrow viewport on purpose: the desktop shell hides the tag-filter chip
-     row (the reference task list has no chips), so the chips are only
-     clickable under 769px — where the sidebar also starts off-canvas and has
-     to be opened first. The bridge wiring is identical on both. */
+  /* The reference drawer shows a flat recents list, so the legacy chips
+     remain mounted for compatibility but are visually hidden. */
   await page.setViewportSize({ width: 420, height: 860 });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -102,10 +100,10 @@ test('Sidebar React recents filter chips call window.onRecentsFilterChipClick', 
   await expect(allChip).toBeAttached();
   await expect(allChip).toHaveClass(/active/);
 
-  // The bar is empty of project/tag chips (the mocked session list has no
-  // tags and the projects cache is empty in this test) — click "All" and
-  // confirm the legacy handler is invoked with 'all'.
-  await allChip.click();
+  await expect(allChip).toBeHidden();
+  // Dispatch through the mounted button to check the bridge without making
+  // a hidden control user-facing again.
+  await allChip.evaluate((button) => button.click());
   const calls = await page.evaluate(() => window.__chipCalls);
   expect(calls).toContain('all');
 

@@ -133,6 +133,7 @@ frontend/index.html.bak
 !assets/buildResources/icon_android_1024.png
 !assets/buildResources/icon_android_foreground_1024.png
 !frontend/src/assets/connector-icons/*.png
+!frontend/e2e/composer-tools-visual-baseline.spec.mjs-snapshots/*.png
 
 # ── Local Playwright debug probe scripts/artifacts ──
 frontend/debug/

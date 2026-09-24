@@ -208,7 +208,7 @@ function ProfileModal() {
           <div className="profile-action-row">
             <div>
               <div className="profile-action-label">{i18n('profile.archivedSessions', 'Archived sessions')}</div>
-              <div className="profile-action-desc">{i18n('profile.archivedSessionsDesc', 'Sessions you deleted are kept here for 30 days before being permanently erased.')}</div>
+              <div className="profile-action-desc">{i18n('profile.archivedSessionsDesc', 'Archived chats stay here for 30 days. Archive from a Recents row, then Restore or Delete forever.')}</div>
             </div>
             <button
               type="button"

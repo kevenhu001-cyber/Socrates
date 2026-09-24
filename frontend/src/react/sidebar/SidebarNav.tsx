@@ -65,12 +65,6 @@ const BUTTONS: NavButtonSpec[] = [
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18"/></svg>',
   },
   {
-    key: 'skills',
-    label: 'Skills',
-    i18nKey: 'sidebar.nav.skills',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5 8.6 8.1 5 9.5l3.6 1.4L10 14.5l1.4-3.6L15 9.5l-3.6-1.4z"/><path d="M17.5 13.5l-.9 2.1-2.1.9 2.1.9.9 2.1.9-2.1 2.1-.9-2.1-.9z"/></svg>',
-  },
-  {
     key: 'exam',
     label: 'Exam',
     i18nKey: 'sidebar.nav.exam',
@@ -129,9 +123,6 @@ function SidebarNav() {
           >
             <span dangerouslySetInnerHTML={{ __html: button.icon }} />
             <span data-i18n-key={button.i18nKey}>{label}</span>
-            {button.key === 'skills' ? (
-              <span className="nav-new-badge">{i18n('sidebar.nav.newBadge', 'New')}</span>
-            ) : null}
             {button.key === 'new' ? (
               <span className="nav-kbd">{i18n('sidebar.nav.kbd', '⌘K')}</span>
             ) : null}

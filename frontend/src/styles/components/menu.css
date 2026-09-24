@@ -67,6 +67,14 @@ body #composerToolsMenu.composer-tools-menu::before { display: none; }
 #composerToolsMenu .composer-tools-item kbd { display: none; }
 #composerToolsMenu .composer-tools-divider { display: none; }
 
+#composerToolsMenu .composer-tools-group-label {
+  padding: 8px 8px 4px;
+  color: var(--ui-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
 .chat-config-pop {
   position: fixed;
   z-index: var(--ui-z-popover);

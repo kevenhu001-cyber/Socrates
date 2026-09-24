@@ -123,7 +123,7 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       openMobileAttachmentPicker(mode, action);
       return;
     case 'webSearch':
-      if (typeof window.toggleWebSearch === 'function') window.toggleWebSearch();
+      composer.toggleWebSearch?.();
       return;
     case 'createImage':
       void loadPluginCatalog(true).then((plugins) => {
@@ -146,9 +146,7 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       composer.researchAction();
       return;
     case 'explore':
-      /* Explore ships as a window-level action (windowExports.js) — the
-         typed legacy gateway predates it, so fall through to window. */
-      if (typeof window.exploreAction === 'function') window.exploreAction();
+      composer.exploreAction?.();
       return;
     case 'deepResearch':
       composer.deepResearchAction();
@@ -164,6 +162,9 @@ function dispatchAction(action: ComposerToolsAction, mode: ComposerMode | null):
       return;
     case 'skills':
       nav.openPromptTemplatesModal();
+      return;
+    case 'managePlugins':
+      nav.openNav('plugins');
       return;
   }
 }
@@ -184,8 +185,8 @@ export function useComposerToolsDispatch(): {
       const snap = getComposerToolsSnapshot();
       dispatchAction(action, snap.mode);
       const trigger = snap.triggerId ? document.getElementById(snap.triggerId) : null;
-      if (trigger && snap.mode && typeof window.toggleComposerTools === 'function') {
-        window.toggleComposerTools(trigger, snap.mode);
+      if (trigger && snap.mode) {
+        getLegacyActions().composer.toggleTools?.(trigger, snap.mode);
       }
     },
   };

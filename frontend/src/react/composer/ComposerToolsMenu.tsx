@@ -1,8 +1,8 @@
 import { clearHostMounted, hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { t as _t } from '../legacy/gateway';
+import { getLegacyGlobalValue, t as _t } from '../legacy/gateway';
 import { repositionComposerTools } from '../../ui/composerTools';
 import { installComposerToolsBridge } from './composerTools.bridge';
 import {
@@ -31,7 +31,7 @@ type MenuItemSpec = ExtensionDefinition;
 const MOBILE_MENU_ICON_OPEN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 
 const MOBILE_MENU_ITEMS: ReadonlyArray<{
-  action: ComposerToolsAction;
+  action: 'camera' | 'photos';
   labelKey: string;
   label: string;
   icon: string;
@@ -48,29 +48,33 @@ const MOBILE_MENU_ITEMS: ReadonlyArray<{
     label: 'Photos',
     icon: MOBILE_MENU_ICON_OPEN + '<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
   },
-  {
-    action: 'upload',
-    labelKey: 'composer.tools.files',
-    label: 'Files',
-    icon: MOBILE_MENU_ICON_OPEN + '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
-  },
-  {
-    action: 'createImage',
-    labelKey: 'composer.tools.createImage',
-    label: 'Create image',
-    icon: MOBILE_MENU_ICON_OPEN + '<path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.64 5.64l2.12 2.12m8.48 8.48 2.12 2.12m0-12.72-2.12 2.12m-8.48 8.48-2.12 2.12"/><circle cx="12" cy="12" r="4.5"/><path d="m19 3 .6 1.4L21 5l-1.4.6L19 7l-.6-1.4L17 5l1.4-.6L19 3Z"/></svg>',
-  },
-  {
-    action: 'webSearch',
-    labelKey: 'composer.tools.webSearch',
-    label: 'Web search',
-    icon: MOBILE_MENU_ICON_OPEN + '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>',
-  },
 ];
 
-/* Expanded desktop list shows every workflow at once; mobile keeps its own
-   compact list below. Both are flat, scrollable regions — no disclosure. */
-const WORKFLOW_ORDER = ['write', 'explore', 'analyze', 'exam', 'skills'] as const;
+const TOOL_GROUPS: ReadonlyArray<{
+  key: string;
+  labelKey: string;
+  label: string;
+  actions: ReadonlyArray<string>;
+}> = [
+  {
+    key: 'context',
+    labelKey: 'composer.tools.group.context',
+    label: 'Add context',
+    actions: ['upload'],
+  },
+  {
+    key: 'research',
+    labelKey: 'composer.tools.group.research',
+    label: 'Search & research',
+    actions: ['webSearch', 'explore'],
+  },
+  {
+    key: 'create',
+    labelKey: 'composer.tools.group.create',
+    label: 'Create & analyze',
+    actions: ['write', 'analyze', 'createImage', 'exam', 'skills'],
+  },
+];
 
 const MOBILE_THINKING_SPEC: MenuItemSpec = {
   ...extensiveThinkingExtension,
@@ -113,6 +117,7 @@ function MenuItem({
       role="menuitem"
       data-composer-action={spec.key}
       aria-label={description ? `${label}: ${description}` : label}
+      aria-pressed={spec.kind === 'toggle' ? active : undefined}
       aria-keyshortcuts={spec.shortcut || undefined}
       onClick={(event) => {
         event.stopPropagation();
@@ -125,7 +130,7 @@ function MenuItem({
         {description ? <small>{description}</small> : null}
       </span>
       {spec.shortcut ? <kbd>{spec.shortcut}</kbd> : null}
-      {active ? <span className="composer-tools-active-dot" aria-label="Active" /> : null}
+      {active ? <span className="composer-tools-active-dot" aria-hidden="true" /> : null}
     </button>
   );
 }
@@ -209,12 +214,15 @@ function PluginItems({
   isOpen,
   mode,
   query,
+  onPick,
 }: {
   isOpen: boolean;
   mode: 'topic' | 'chat' | null;
   query: string;
+  onPick: (action: ComposerToolsAction) => void;
 }) {
   const [plugins, setPlugins] = useState<ReadonlyArray<PluginCatalogEntry>>([]);
+  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPlugins = mode ? selectionSnapshot[mode] : [];
 
@@ -223,12 +231,16 @@ function PluginItems({
       return undefined;
     }
     let cancelled = false;
+    setLoadState('loading');
     loadPluginCatalog()
       .then((entries) => {
-        if (!cancelled) setPlugins(entries);
+        if (!cancelled) {
+          setPlugins(entries);
+          setLoadState('ready');
+        }
       })
       .catch(() => {
-        /* An unreachable catalog simply leaves the menu plugin-free. */
+        if (!cancelled) setLoadState('error');
       });
     return () => { cancelled = true; };
   }, [isOpen]);
@@ -245,25 +257,75 @@ function PluginItems({
     });
   }, [plugins, query]);
 
-  if (connectedPlugins.length === 0) return null;
-
   const togglePlugin = (plugin: PluginCatalogEntry) => {
     if (!mode) return;
     toggleComposerPlugin(mode, plugin, pluginIconMarkup(plugin.id));
   };
 
+  const connectedCount = plugins.filter((plugin) => plugin.connectionStatus === 'connected').length;
+  const retry = () => {
+    setLoadState('loading');
+    loadPluginCatalog(true)
+      .then((entries) => {
+        setPlugins(entries);
+        setLoadState('ready');
+      })
+      .catch(() => setLoadState('error'));
+  };
+
+  const managePlugins = () => onPick('managePlugins');
+
   return (
-    <section className="composer-tools-plugins" aria-label="Plugins">
-      <div className="composer-tools-plugin-list">
-        {connectedPlugins.map((plugin) => (
-          <ComposerPluginItem
-            key={plugin.id}
-            plugin={plugin}
-            selected={selectedPlugins.some((selectedPlugin) => selectedPlugin.id === plugin.id)}
-            onPick={togglePlugin}
-          />
-        ))}
-      </div>
+    <section className="composer-tools-plugins" aria-label={i18n('composer.tools.connectedApps', 'Connected apps')}>
+      <div className="composer-tools-group-label">{i18n('composer.tools.connectedApps', 'Connected apps')}</div>
+      {loadState === 'loading' || loadState === 'idle' ? (
+        <div className="composer-tools-plugin-state" role="status">{i18n('composer.tools.plugins.loading', 'Loading connected apps…')}</div>
+      ) : null}
+      {loadState === 'error' ? (
+        <div className="composer-tools-plugin-state" role="status">
+          <span>{i18n('composer.tools.plugins.error', 'Connected apps could not be loaded.')}</span>
+          <button
+            type="button"
+            className="composer-tools-state-action"
+            role="menuitem"
+            onClick={(event) => {
+              event.stopPropagation();
+              retry();
+            }}
+          >
+            {i18n('composer.tools.plugins.retry', 'Try again')}
+          </button>
+        </div>
+      ) : null}
+      {loadState === 'ready' && connectedPlugins.length > 0 ? (
+        <div className="composer-tools-plugin-list">
+          {connectedPlugins.map((plugin) => (
+            <ComposerPluginItem
+              key={plugin.id}
+              plugin={plugin}
+              selected={selectedPlugins.some((selectedPlugin) => selectedPlugin.id === plugin.id)}
+              onPick={togglePlugin}
+            />
+          ))}
+        </div>
+      ) : null}
+      {loadState === 'ready' && connectedCount === 0 ? (
+        <div className="composer-tools-plugin-state">
+          <span>{i18n('composer.tools.plugins.empty', 'No connected apps yet.')}</span>
+          <small>{i18n('composer.tools.plugins.emptyHint', 'Connect an app to add its context to a chat.')}</small>
+          <button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
+            {i18n('composer.tools.plugins.manage', 'Manage apps')}
+          </button>
+        </div>
+      ) : null}
+      {loadState === 'ready' && connectedCount > 0 && connectedPlugins.length === 0 ? (
+        <div className="composer-tools-plugin-state" role="status">
+          <span>{i18n('composer.tools.plugins.noMatch', 'No connected apps match this search.')}</span>
+          <button type="button" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
+            {i18n('composer.tools.plugins.manage', 'Manage apps')}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -300,54 +362,66 @@ function MenuItems({
     const { label, description } = menuCopy(spec);
     return [label, description, spec.key].join(' ').toLowerCase().includes(normalizedQuery);
   };
-  const expandedTools = definitions.filter(matchesQuery);
-  const footerPlaceholder = i18n('composer.tools.searchFooter', '输入以搜索插件、文件、文件夹和技能');
-  /* Keep the five everyday actions in the first viewport; workflows and
-     connected app shortcuts remain reachable in the same scroll card. */
-  const mobileSecondary = [
-    ...WORKFLOW_ORDER
+  const footerPlaceholder = i18n('composer.tools.searchFooter', 'Search tools and connected apps');
+  const mobileStaticItems = MOBILE_MENU_ITEMS.filter((item) => {
+    if (!normalizedQuery) return true;
+    return [i18n(item.labelKey, item.label), item.action].join(' ').toLowerCase().includes(normalizedQuery);
+  });
+  const groups = TOOL_GROUPS.map((group) => ({
+    ...group,
+    label: i18n(group.labelKey, group.label),
+    tools: group.actions
       .map((key) => definitions.find((spec) => spec.key === key))
-      .filter((spec): spec is MenuItemSpec => Boolean(spec)),
-    ...definitions.filter((spec) => !['upload', 'webSearch', 'createImage'].includes(spec.key) && !WORKFLOW_ORDER.includes(spec.key as typeof WORKFLOW_ORDER[number])),
-    MOBILE_THINKING_SPEC,
-  ];
+      .filter((spec): spec is MenuItemSpec => Boolean(spec))
+      .filter(matchesQuery),
+  }));
+  const mobileGroupTools = groups.map((group) => ({
+    ...group,
+    tools: group.key === 'create'
+      ? [...group.tools, ...(matchesQuery(MOBILE_THINKING_SPEC) ? [MOBILE_THINKING_SPEC] : [])]
+      : group.tools,
+  }));
+  const hasMobileToolMatch = mobileStaticItems.length > 0 || mobileGroupTools.some((group) => group.tools.length > 0);
 
   return (
     <>
       <div className="composer-tools-desktop-items composer-tools-expanded">
-        {expandedTools.length === 0 ? (
-          <div className="composer-tools-plugin-state">{i18n('composer.tools.noMatch', 'No matching tools.')}</div>
+        {groups.map((group) => group.tools.length ? (
+          <div className="composer-tools-group" role="group" aria-label={group.label} key={group.key}>
+            <div className="composer-tools-group-label">{group.label}</div>
+            {group.tools.map((spec) => (
+              <MenuItem key={spec.key} spec={spec} active={spec.key === activeKey} onPick={onPick} />
+            ))}
+          </div>
+        ) : null)}
+        {normalizedQuery && groups.every((group) => group.tools.length === 0) ? (
+          <div className="composer-tools-plugin-state" role="status">{i18n('composer.tools.noMatch', 'No matching actions.')}</div>
         ) : null}
-        {expandedTools.map((spec, index) => (
-          <Fragment key={spec.key}>
-            <MenuItem
-              spec={spec}
-              active={spec.key === activeKey}
-              onPick={onPick}
-            />
-            {index === 1 ? <div className="composer-tools-divider" role="separator" /> : null}
-          </Fragment>
-        ))}
       </div>
       <div className="composer-tools-mobile-items">
-        {MOBILE_MENU_ITEMS.map((item) => (
-          <MobileMenuItem
-            key={item.action}
-            {...item}
-            active={item.action === activeKey}
-            onPick={onPick}
-          />
-        ))}
-        {mobileSecondary.map((spec) => (
-          <MenuItem
-            key={spec.key}
-            spec={spec}
-            active={spec.key === activeKey}
-            onPick={onPick}
-          />
-        ))}
+        {mobileGroupTools.map((group) => {
+          const staticItems = group.key === 'context'
+            ? mobileStaticItems.filter((item) => item.action === 'camera' || item.action === 'photos')
+            : [];
+          const tools = group.tools;
+          if (!staticItems.length && !tools.length) return null;
+          return (
+            <div className="composer-tools-group" role="group" aria-label={group.label} key={group.key}>
+              <div className="composer-tools-group-label">{group.label}</div>
+              {staticItems.map((item) => (
+                <MobileMenuItem key={item.action} {...item} active={item.action === activeKey} onPick={onPick} />
+              ))}
+              {tools.map((spec) => (
+                <MenuItem key={spec.key} spec={spec} active={spec.key === activeKey} onPick={onPick} />
+              ))}
+            </div>
+          );
+        })}
+        {normalizedQuery && !hasMobileToolMatch ? (
+          <div className="composer-tools-plugin-state" role="status">{i18n('composer.tools.noMatch', 'No matching actions.')}</div>
+        ) : null}
       </div>
-      <PluginItems isOpen={isOpen} mode={mode} query={query} />
+      <PluginItems isOpen={isOpen} mode={mode} query={query} onPick={onPick} />
       <label className="composer-tools-footer-search composer-tools-search">
         <input
           value={query}
@@ -363,14 +437,12 @@ function MenuItems({
 function ComposerToolsMenu() {
   const snapshot = useComposerToolsSnapshot();
   const { pick } = useComposerToolsDispatch();
-  const extensionState = window as unknown as {
-    _activeTemplate?: { extensionKey?: string } | null;
-    extensiveThinkingOn?: boolean;
-    webSearchOn?: boolean;
-  };
-  const activeKey = extensionState._activeTemplate?.extensionKey
-    ?? (extensionState.webSearchOn ? 'webSearch' : null)
-    ?? (extensionState.extensiveThinkingOn ? 'extensiveThinking' : null);
+  const activeTemplate = getLegacyGlobalValue('_activeTemplate', null as { extensionKey?: string } | null);
+  const webSearchOn = getLegacyGlobalValue('webSearchOn', false);
+  const extensiveThinkingOn = getLegacyGlobalValue('extensiveThinkingOn', false);
+  const activeKey = activeTemplate?.extensionKey
+    ?? (webSearchOn ? 'webSearch' : null)
+    ?? (extensiveThinkingOn ? 'extensiveThinking' : null);
 
   return <MenuItems activeKey={activeKey} onPick={pick} isOpen={snapshot.isOpen} mode={snapshot.mode} />;
 }

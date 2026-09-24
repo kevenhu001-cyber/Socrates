@@ -52,12 +52,17 @@ function close() {
   if (el) el.classList.add("hidden");
   if (activeTrigger) activeTrigger.setAttribute("aria-expanded", "false");
   activeTrigger = null;
-  /* Drops the mobile bottom-sheet scrim (body.composer-tools-open::after). */
+  /* Clears the mobile open marker used by menu styling and outside-click logic. */
   document.body.classList.remove("composer-tools-open");
   _publishComposerTools();
 }
 
 function position(el, trigger) {
+  /* Clear measurements from a prior viewport before calculating this pass. */
+  el.style.removeProperty('top');
+  el.style.removeProperty('bottom');
+  el.style.removeProperty('left');
+  el.style.removeProperty('right');
   var r = trigger.getBoundingClientRect();
   var viewport = window.visualViewport;
   var viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
@@ -100,14 +105,22 @@ function position(el, trigger) {
   var wrap = trigger.closest ? trigger.closest('#topicInputWrap, #chatInputWrap') : null;
   var wrapRect = wrap ? wrap.getBoundingClientRect() : r;
   var anchorLeft = viewportWidth <= 768 ? wrapRect.left : r.left;
-  var left = Math.max(8, Math.min(anchorLeft, viewportWidth - width - 8));
+  /* Phones keep a 12px gutter so the card never sits flush against the
+     viewport edge even when the composer itself is only 8–16px inset. */
+  var minLeft = viewportWidth <= 768 ? 12 : 8;
+  var left = Math.max(minLeft, Math.min(anchorLeft, viewportWidth - width - 8));
   /* On phones the reference card shares the composer's bottom edge and
      covers its left half; the mic and primary control remain visible on the
      right. This is a deliberate stacked state, not an above-composer gap. */
   if (viewportWidth <= 768) {
     var mobileTop = Math.max(viewportTop + 8, wrapRect.bottom - height);
-    el.style.left = left + "px";
-    el.style.top = mobileTop + "px";
+    /* Restore sheets include `top:auto` and `bottom` overrides from an older
+       bottom-sheet layout. Inline important placement keeps the current
+       floating card anchored to the composer's measured bottom edge. */
+    el.style.setProperty('left', left + "px", 'important');
+    el.style.setProperty('right', 'auto', 'important');
+    el.style.setProperty('top', mobileTop + "px", 'important');
+    el.style.setProperty('bottom', 'auto', 'important');
     return;
   }
   var anchorTop = wrapRect.top;
@@ -163,8 +176,8 @@ export function toggleComposerTools(trigger, mode) {
   el.classList.remove("hidden");
   trigger.setAttribute("aria-expanded", "true");
   position(el, trigger);
-  /* On phones the menu renders as a bottom sheet (CSS overrides the inline
-     left/top); this class shows the scrim behind it. */
+  /* The phone card follows its measured composer anchor; CSS owns its size
+     and appearance. Keep the open marker for dismissal state. */
   document.body.classList.add("composer-tools-open");
   _publishComposerTools();
 }
