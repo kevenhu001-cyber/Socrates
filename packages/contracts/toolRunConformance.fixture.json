@@ -1,0 +1,132 @@
+{
+  "_comment": [
+    "Shared conformance fixture for the ToolRun phase state machine.",
+    "",
+    "The machine is implemented TWICE:",
+    "  packages/core/src/toolRun.ts              (TypeScript, used by mobile + web)",
+    "  tools-rust/crates/socrates-protocol/src/phases.rs  (Rust, compiled to WASM)",
+    "",
+    "Until 2026-09-25 nothing compared them. The Rust tests carried the comment",
+    "'Ported 1:1 from frontend/test/toolRunState.test.mjs', i.e. the only thing",
+    "keeping the two in agreement was a human copying cases between files. A",
+    "divergence would surface as the WASM path and the pure-JS fallback",
+    "disagreeing about whether a tool run had finished — and since WASM is used",
+    "when available and JS otherwise, that shows up as a bug that reproduces on",
+    "some clients and not others.",
+    "",
+    "Both sides read THIS file and assert against `expected`. Adding a case here",
+    "obliges both implementations; changing one implementation alone fails the",
+    "other's test run.",
+    "",
+    "Consumers:",
+    "  packages/core/src/toolRunConformance.test.ts",
+    "  tools-rust/crates/socrates-protocol/src/phases.rs  (mod conformance)"
+  ],
+
+  "phases": {
+    "queued": "queued",
+    "preparing": "preparing",
+    "running": "running",
+    "succeeded": "succeeded",
+    "failed": "failed",
+    "cancelled": "cancelled",
+    "timed_out": "timed_out"
+  },
+
+  "isTerminal": [
+    { "phase": "succeeded", "expected": true },
+    { "phase": "failed", "expected": true },
+    { "phase": "cancelled", "expected": true },
+    { "phase": "timed_out", "expected": true },
+    { "phase": "queued", "expected": false },
+    { "phase": "preparing", "expected": false },
+    { "phase": "running", "expected": false },
+    { "phase": "", "expected": false },
+    { "phase": "not_a_phase", "expected": false },
+    { "phase": "SUCCEEDED", "expected": false }
+  ],
+
+  "phaseFromProgress": [
+    { "input": "queued", "expected": "queued" },
+    { "input": "ready", "expected": "preparing" },
+    { "input": "preparing", "expected": "preparing" },
+    { "input": "booting", "expected": "preparing" },
+    { "input": "completed", "expected": "succeeded" },
+    { "input": "complete", "expected": "succeeded" },
+    { "input": "cancelled", "expected": "cancelled" },
+    { "input": "skipped", "expected": "cancelled" },
+    { "input": "timeout", "expected": "timed_out" },
+    { "input": "failed", "expected": "failed" },
+    { "input": "error", "expected": "failed" },
+    { "input": "running", "expected": "running" },
+    { "input": "", "expected": "running" },
+    { "input": "something_unknown", "expected": "running" },
+    {
+      "input": "timeout_warning",
+      "expected": "running",
+      "why": "a timeout WARNING is not a timeout: the run is still going, and mapping it to timed_out would terminalise a live run and drop its result"
+    },
+    {
+      "input": "COMPLETED",
+      "expected": "succeeded",
+      "why": "upstream phase strings are lowercased before matching"
+    }
+  ],
+
+  "transition": [
+    { "current": "preparing", "next": "running", "expected": "running" },
+    { "current": "running", "next": "succeeded", "expected": "succeeded" },
+    { "current": "queued", "next": "preparing", "expected": "preparing" },
+    {
+      "current": "running",
+      "next": "",
+      "expected": "running",
+      "why": "an empty target is a no-op, not a reset"
+    },
+    {
+      "current": "running",
+      "next": "not_a_phase",
+      "expected": "not_a_phase",
+      "why": "unknown phases pass through so a newer server vocabulary is not silently swallowed by an older client"
+    },
+    {
+      "current": "succeeded",
+      "next": "running",
+      "expected": "succeeded",
+      "why": "terminal phases are sticky — the FIRST terminal result wins, so a late frame cannot revive a finished run"
+    },
+    { "current": "failed", "next": "succeeded", "expected": "failed" },
+    { "current": "cancelled", "next": "running", "expected": "cancelled" },
+    { "current": "timed_out", "next": "succeeded", "expected": "timed_out" }
+  ],
+
+  "summarize": [
+    {
+      "runs": ["succeeded", "succeeded", "failed", "running", "queued", "cancelled", "timed_out"],
+      "expected": { "total": 7, "succeeded": 2, "failed": 1, "cancelled": 1, "timed_out": 1, "active": 2 }
+    },
+    {
+      "runs": [],
+      "expected": { "total": 0, "succeeded": 0, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 0 }
+    },
+    {
+      "runs": ["running", "preparing", "queued"],
+      "expected": { "total": 3, "succeeded": 0, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 3 }
+    },
+    {
+      "runs": [null, "succeeded", null],
+      "expected": { "total": 3, "succeeded": 1, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 0 },
+      "why": "`total` counts SLOTS, not classified runs: both implementations use runs.length / runs.len(). A null slot is a run the caller has not populated yet, so it belongs in the total but in no bucket — the buckets therefore need not sum to total."
+    },
+    {
+      "runs": ["", "succeeded"],
+      "expected": { "total": 2, "succeeded": 1, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 0 },
+      "why": "an empty phase is treated like a null slot: counted in total, classified into nothing. Notably it is NOT counted as active, unlike an unrecognised non-empty phase."
+    },
+    {
+      "runs": ["unknown_phase"],
+      "expected": { "total": 1, "succeeded": 0, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 1 },
+      "why": "an unrecognised phase counts as active: assuming it finished would let a stuck run disappear from the UI"
+    }
+  ]
+}
