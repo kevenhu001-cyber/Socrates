@@ -1,69 +1,68 @@
 /* Theme values are the single source of truth for every first-party surface.
-   The ramp is a subtly cool neutral scale (hue ~220): blacks stay near-black
-   instead of pure #000, and every text level clears WCAG AA on every surface
-   it can land on (verified against the surface steps below). */
+   The ramp is a subtly warm neutral scale (hue ~40), with pure black for the
+   dark page and text levels that remain readable across the surface steps. */
 [data-mode="dark"] {
   color-scheme: dark;
-  --ui-bg-page: #09090b;
+  --ui-bg-page: #000000;
   /* The rail sits one step above the page so the sidebar reads as a distinct
-     band in dark mode (明度即层级), matching the --cg-ramp step #0f1114. */
-  --ui-bg-sidebar: #0f1114;
-  --ui-bg-raised: #14161a;
-  --ui-bg-surface: #1e2025;
-  --ui-bg-control: #272a30;
-  --ui-bg-hover: #22252b;
-  --ui-bg-overlay: #2e3239;
-  --ui-text-primary: #f2f3f5;
-  --ui-text-secondary: #d7dade;
-  --ui-text-tertiary: #a4a8b0;
-  --ui-text-muted: #9a9ea6;
-  --ui-text-disabled: #686c75;
-  --ui-border-subtle: rgb(148 163 184 / 9%);
-  --ui-border-default: rgb(148 163 184 / 13%);
-  --ui-border-strong: rgb(148 163 184 / 19%);
+     band in dark mode (明度即层级), matching the --cg-ramp step #0d0c0a. */
+  --ui-bg-sidebar: #0d0c0a;
+  --ui-bg-raised: #141310;
+  --ui-bg-surface: #1c1b17;
+  --ui-bg-control: #24231e;
+  --ui-bg-hover: #211f1a;
+  --ui-bg-overlay: #302e28;
+  --ui-text-primary: #f4f1ea;
+  --ui-text-secondary: #dedacf;
+  --ui-text-tertiary: #aaa59a;
+  --ui-text-muted: #9a958a;
+  --ui-text-disabled: #716c62;
+  --ui-border-subtle: rgb(190 181 161 / 8%);
+  --ui-border-default: rgb(190 181 161 / 12%);
+  --ui-border-strong: rgb(190 181 161 / 18%);
   --ui-backdrop: rgb(0 0 0 / 58%);
   --ui-on-accent: #000;
-  --ui-accent-strong: #f4f5f7;
-  --ui-danger: #ea6a6a;
-  --ui-success: #55b685;
+  --ui-accent-strong: #f4f1ea;
+  --ui-danger: #e77770;
+  --ui-success: #67b58d;
   /* The composer capsule sits one step above the page; the small controls
      inside it sit one step above the capsule. */
-  --ui-bg-composer: #272a30;
-  --ui-bg-chip: rgb(148 163 184 / 10%);
-  --ui-bg-chip-hover: rgb(148 163 184 / 16%);
-  --ui-bg-bubble: #26292e;
-  --ui-bg-segment-active: rgb(148 163 184 / 14%);
+  --ui-bg-composer: #25231f;
+  --ui-bg-chip: rgb(190 181 161 / 10%);
+  --ui-bg-chip-hover: rgb(190 181 161 / 16%);
+  --ui-bg-bubble: #24231e;
+  --ui-bg-segment-active: rgb(190 181 161 / 14%);
   --ui-shadow-popover: 0 18px 48px rgb(0 0 0 / 46%), 0 1px 0 rgb(255 255 255 / 5%) inset;
 }
 
 [data-mode="light"] {
   color-scheme: light;
   --ui-bg-page: #ffffff;
-  --ui-bg-sidebar: #f6f7f9;
-  --ui-bg-raised: #f0f2f5;
-  --ui-bg-surface: #edf0f3;
-  --ui-bg-control: #e5e7ea;
-  --ui-bg-hover: #e7e9ed;
+  --ui-bg-sidebar: #f7f5ef;
+  --ui-bg-raised: #f4f2ec;
+  --ui-bg-surface: #eeece5;
+  --ui-bg-control: #e7e4dc;
+  --ui-bg-hover: #eae7df;
   --ui-bg-overlay: #ffffff;
-  --ui-text-primary: #17181c;
-  --ui-text-secondary: #34373d;
-  --ui-text-tertiary: #565a62;
-  --ui-text-muted: #646872;
-  --ui-text-disabled: #9aa0a8;
-  --ui-border-subtle: rgb(15 23 42 / 7%);
-  --ui-border-default: rgb(15 23 42 / 10%);
-  --ui-border-strong: rgb(15 23 42 / 16%);
-  --ui-backdrop: rgb(15 23 42 / 32%);
+  --ui-text-primary: #1b1a17;
+  --ui-text-secondary: #393730;
+  --ui-text-tertiary: #5e5a51;
+  --ui-text-muted: #6c675d;
+  --ui-text-disabled: #989388;
+  --ui-border-subtle: rgb(55 47 31 / 7%);
+  --ui-border-default: rgb(55 47 31 / 10%);
+  --ui-border-strong: rgb(55 47 31 / 16%);
+  --ui-backdrop: rgb(20 17 12 / 32%);
   --ui-on-accent: #fff;
-  --ui-accent-strong: #17181c;
-  --ui-danger: #b93a3a;
-  --ui-success: #237448;
+  --ui-accent-strong: #1b1a17;
+  --ui-danger: #a73632;
+  --ui-success: #276c49;
   /* Light composer is a white capsule on the white page — the hairline
      border (desktop) and shadow carry the separation, not a fill step. */
   --ui-bg-composer: #fff;
-  --ui-bg-chip: rgb(15 23 42 / 5%);
-  --ui-bg-chip-hover: rgb(15 23 42 / 9%);
-  --ui-bg-bubble: #eceef1;
+  --ui-bg-chip: rgb(55 47 31 / 5%);
+  --ui-bg-chip-hover: rgb(55 47 31 / 9%);
+  --ui-bg-bubble: #f0eee8;
   --ui-bg-segment-active: #fff;
-  --ui-shadow-popover: 0 18px 48px rgb(15 23 42 / 16%), 0 1px 0 rgb(255 255 255 / 85%) inset;
+  --ui-shadow-popover: 0 18px 48px rgb(35 29 18 / 14%), 0 1px 0 rgb(255 255 255 / 85%) inset;
 }

@@ -75,3 +75,103 @@
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-toast);
 }
+
+#appShell .msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-chev {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  opacity: .6;
+}
+#appShell .msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-chev svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+#appShell .msg.assistant .msg-body:has(.tool-run-group) .tool-inline[data-nested="1"] {
+  margin-left: 16px;
+}
+
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech,
+.tool-run-sheet .tool-inline-tech {
+  margin-top: 4px;
+  padding-top: 2px;
+  border-top: 1px solid var(--tool-activity-border);
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-summary,
+.tool-run-sheet .tool-inline-tech-summary {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 2px;
+  border-radius: var(--ui-radius-sm, 6px);
+  color: var(--tool-activity-row);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  touch-action: manipulation;
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-summary::-webkit-details-marker,
+.tool-run-sheet .tool-inline-tech-summary::-webkit-details-marker {
+  display: none;
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-summary:hover,
+.tool-run-sheet .tool-inline-tech-summary:hover {
+  color: var(--tool-activity-row-hover);
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-summary:focus-visible,
+.tool-run-sheet .tool-inline-tech-summary:focus-visible {
+  outline: 2px solid var(--tool-activity-focus);
+  outline-offset: 2px;
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-icon,
+.tool-run-sheet .tool-inline-tech-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  transition: transform .16s ease;
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-icon svg,
+.tool-run-sheet .tool-inline-tech-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech[open] > .tool-inline-tech-summary .tool-inline-tech-icon,
+.tool-run-sheet .tool-inline-tech[open] > .tool-inline-tech-summary .tool-inline-tech-icon {
+  transform: rotate(90deg);
+}
+#appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech [data-kind="technical"]:not([data-retryable]) .tool-inline-detail-value,
+.tool-run-sheet .tool-inline-tech [data-kind="technical"]:not([data-retryable]) .tool-inline-detail-value {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 220px;
+  margin: 0;
+  padding: 9px 11px;
+  overflow: auto;
+  border: 1px solid var(--tool-activity-border);
+  border-radius: var(--tool-card-radius-sm, 11px);
+  background: var(--tool-activity-code-bg);
+  color: var(--tool-activity-text);
+  font: 12px/1.55 var(--font-mono);
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  #appShell .msg.assistant .msg-body:has(.tool-inline) .tool-inline-tech-summary,
+  .tool-run-sheet .tool-inline-tech-summary {
+    min-height: 40px;
+  }
+}

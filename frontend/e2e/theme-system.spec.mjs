@@ -23,6 +23,15 @@ test('theme selector follows the operating system and persists explicit modes', 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-theme'))).toBe('dark');
+  const darkPalette = await page.evaluate(() => {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      page: styles.getPropertyValue('--ui-bg-page').trim(),
+      raised: styles.getPropertyValue('--ui-bg-raised').trim(),
+    };
+  });
+  expect(darkPalette.page).toBe('#000000');
+  expect(darkPalette.raised).toBe('#141310');
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');

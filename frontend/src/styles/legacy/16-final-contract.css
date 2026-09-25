@@ -460,7 +460,7 @@
   box-shadow:none!important;
 }
 
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-nested="1"]){
   margin:10px 0!important;
   background:transparent!important;
 }
@@ -653,9 +653,9 @@
 }
 
 /* Screenshot-faithful activity rows: a short icon-and-label line only.
-   Details still open on click, but the closed state carries no card chrome,
-   duration column or disclosure glyph. */
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline{
+   Details still open on click, without card chrome or a duration column;
+   expandable rows keep a quiet disclosure glyph. */
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-nested="1"]){
   margin:12px 0!important;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline-head{
@@ -682,9 +682,14 @@
   line-height:1.45!important;
   color:inherit!important;
 }
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta,
-.msg.assistant .msg-body:has(.tool-inline) .tool-inline-chev{
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline-meta{
   display:none!important;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline:not([data-expandable="1"]) .tool-inline-chev{
+  display:none;
+}
+.msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-expandable="1"] .tool-inline-chev{
+  display:inline-flex;
 }
 .msg.assistant .msg-body:has(.tool-inline) .tool-inline[data-state="running"] .tool-inline-label.shimmer-text{
   color:hsl(var(--text-400))!important;

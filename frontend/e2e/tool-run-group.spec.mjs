@@ -99,7 +99,7 @@ const FIXTURE_CALLS = [
    `localStorage['socrates-theme']` at boot, so a screenshot pass has to pin it
    before navigation rather than poke an attribute afterwards. Later init
    scripts run later, so calling this again on the same page re-themes it. */
-async function loadFixtureSession(page, { theme = 'dark', html = null } = {}) {
+async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS } = {}) {
   await mockAuthedApp(page);
   await page.addInitScript((name) => {
     try {
@@ -130,7 +130,7 @@ async function loadFixtureSession(page, { theme = 'dark', html = null } = {}) {
             html: html === null
               ? '<p>Lead paragraph.</p><details class="tool-inline"><summary>baked row</summary></body></details>'
               : html,
-            toolCalls: FIXTURE_CALLS,
+            toolCalls,
           },
         ],
         kbNodes: [],
@@ -235,6 +235,45 @@ test('expanding a row shows the result, and the argument dump sits behind Techni
   /* And an opened row stays a readable block, not a 900px gap. */
   const rowBox = await row.boundingBox();
   expect(rowBox.height).toBeLessThan(300);
+});
+
+test('long technical arguments stay within the expanded tool detail', async ({ page }) => {
+  const longCall = {
+    ...searchCall('wide-args', 'wide detail', []),
+    input: { query: 'wide detail', payload: 'x'.repeat(2048) },
+  };
+  const body = await loadFixtureSession(page, { toolCalls: [longCall] });
+  const row = body.locator('.tool-inline[data-tcid="wide-args"]');
+  await row.locator('summary').click();
+  await row.locator('.tool-inline-tech-summary').click();
+
+  const value = row.locator('[data-kind="technical"] .tool-inline-detail-value');
+  await expect(value).toBeVisible();
+  const metrics = await value.evaluate((element) => {
+    const detail = element.closest('.tool-inline-detail');
+    const body = element.closest('.msg-body');
+    const techSummary = element.closest('.tool-inline-tech').querySelector('summary');
+    const valueStyle = getComputedStyle(element);
+    return {
+      valueRight: element.getBoundingClientRect().right,
+      detailRight: detail.getBoundingClientRect().right,
+      valueWidth: element.getBoundingClientRect().width,
+      detailWidth: detail.getBoundingClientRect().width,
+      bodyClientWidth: body.clientWidth,
+      bodyScrollWidth: body.scrollWidth,
+      valueDisplay: valueStyle.display,
+      valueMaxWidth: valueStyle.maxWidth,
+      valueWrap: valueStyle.overflowWrap,
+      techSummaryDisplay: getComputedStyle(techSummary).display,
+    };
+  });
+  expect(metrics.valueDisplay).toBe('block');
+  expect(metrics.valueMaxWidth).toBe('100%');
+  expect(metrics.valueWrap).toBe('anywhere');
+  expect(metrics.techSummaryDisplay).toBe('flex');
+  expect(metrics.valueRight).toBeLessThanOrEqual(metrics.detailRight + 1);
+  expect(metrics.valueWidth).toBeLessThanOrEqual(metrics.detailWidth + 1);
+  expect(metrics.bodyScrollWidth).toBeLessThanOrEqual(metrics.bodyClientWidth + 1);
 });
 
 test('a lone call gets no aggregate header, and its failure keeps a visible Retry', async ({ page }) => {

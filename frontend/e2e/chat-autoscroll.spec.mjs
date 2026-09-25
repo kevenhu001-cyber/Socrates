@@ -286,7 +286,7 @@ test('sticky bottom resumes once the answer outgrows the prompt reserve', async 
 
   /* A delta far larger than the reserved room: the tail must stay visible
      (sticky bottom) even though the prompt-anchor row is still mounted. */
-  await page.evaluate(() => window.__pushDelta('Long streamed content keeps arriving. '.repeat(70)));
+  await page.evaluate(() => window.__pushDelta('Long streamed content keeps arriving. '.repeat(140)));
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   expect(await page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
   const tailVisible = await page.evaluate(() => {
