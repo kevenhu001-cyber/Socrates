@@ -1,18 +1,77 @@
 /**
  * usageTracker — record per-completion token usage into the
- * `usage_events` table so the heatmap on the My Account page can
- * aggregate hourly buckets.
+ * `usage_events` table.
  *
- * Token estimation: most LLM providers do not return `usage` in
- * their streaming SSE frames unless `stream_options.include_usage`
- * is set, and even then some providers ignore it. To stay portable
- * across OpenAI, Anthropic (via gateway), DeepSeek, MiniMax, etc.
- * we estimate from character count using the well-known "chars/4"
- * approximation. The heatmap cares about magnitude not exactness,
- * and this is good enough to surface activity patterns.
+ * Two sources, in priority order:
+ *
+ *   1. `provider` — the numbers the upstream actually billed, taken from
+ *      the `usage` object on a non-streaming response or from the final
+ *      `stream_options.include_usage` frame of a stream. These are exact.
+ *
+ *   2. `estimate` — the chars/4 approximation below, used only when the
+ *      provider reported nothing. Some OpenAI-compatible gateways ignore
+ *      `stream_options`, and a stream aborted mid-flight never reaches the
+ *      usage frame, so the fallback has to stay.
+ *
+ * Until 2026-09-25 only (2) existed, which meant the billing surface on the
+ * My Account page was an activity heatmap wearing a cost label — the old
+ * comment here said as much ("the heatmap cares about magnitude not
+ * exactness"). Every row is now tagged with `usageSource` so an aggregate
+ * can state which part of a total is measured and which part is guessed,
+ * instead of silently mixing them.
  */
 import { getDb } from '../db/index.js';
 import { usageEvents } from '../db/schema.js';
+
+/** Where a usage row's numbers came from. Persisted on every row. */
+export type UsageSource = 'provider' | 'estimate';
+
+export interface NormalizedUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+function asCount(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
+  return Math.round(value);
+}
+
+/**
+ * Extract prompt/completion counts from whatever shape the provider used.
+ *
+ * Returns null when nothing usable is present, which is the signal for the
+ * caller to fall back to an estimate. Deliberately tolerant: this runs on
+ * untrusted upstream JSON, and a malformed `usage` object must degrade to
+ * "no data" rather than poison the billing table with NaN or negatives.
+ *
+ * Shapes handled:
+ *   OpenAI / most compatible gateways  { prompt_tokens, completion_tokens }
+ *   Anthropic (direct or via gateway)  { input_tokens, output_tokens }
+ *   Google Gemini                      { promptTokenCount, candidatesTokenCount }
+ */
+export function normalizeProviderUsage(raw: unknown): NormalizedUsage | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const u = raw as Record<string, unknown>;
+
+  const prompt = asCount(u.prompt_tokens) ?? asCount(u.input_tokens) ?? asCount(u.promptTokenCount);
+  const completion = asCount(u.completion_tokens) ?? asCount(u.output_tokens) ?? asCount(u.candidatesTokenCount);
+
+  if (prompt === null && completion === null) return null;
+
+  const promptTokens = prompt ?? 0;
+  const completionTokens = completion ?? 0;
+  /* Prefer the provider's own total when it reports one — for models with
+     cached or reasoning tokens it can exceed prompt+completion, and the
+     billed figure is the one that matters. */
+  const reportedTotal = asCount(u.total_tokens) ?? asCount(u.totalTokenCount);
+  const totalTokens = reportedTotal !== null && reportedTotal >= promptTokens + completionTokens
+    ? reportedTotal
+    : promptTokens + completionTokens;
+
+  if (totalTokens <= 0) return null;
+  return { promptTokens, completionTokens, totalTokens };
+}
 
 /* P_attachments — rough token estimate for a single image part.
  *
@@ -71,10 +130,36 @@ interface RecordUsageInput {
   promptTokens?: number | null;
   completionTokens?: number | null;
   source?: string;
+  /** Provenance of the numbers. Defaults to 'estimate' so an un-migrated
+   *  caller is recorded honestly rather than claiming provider accuracy. */
+  usageSource?: UsageSource;
 }
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Pick the numbers to bill: the provider's if it reported any, otherwise the
+ * estimate. Returns the chosen counts plus the provenance tag so the caller
+ * can hand both to recordUsage in one step.
+ *
+ * `providerUsage` is the raw upstream object — normalisation happens here so
+ * every call site cannot get the shape handling subtly different.
+ */
+export function resolveUsage(
+  providerUsage: unknown,
+  fallback: { promptTokens: number; completionTokens: number },
+): { promptTokens: number; completionTokens: number; usageSource: UsageSource } {
+  const measured = normalizeProviderUsage(providerUsage);
+  if (measured) {
+    return {
+      promptTokens: measured.promptTokens,
+      completionTokens: measured.completionTokens,
+      usageSource: 'provider',
+    };
+  }
+  return { ...fallback, usageSource: 'estimate' };
 }
 
 /* Persist a usage event. Safe to call fire-and-forget — errors are
@@ -87,6 +172,7 @@ export function recordUsage({
   promptTokens,
   completionTokens,
   source = 'chat',
+  usageSource = 'estimate',
 }: RecordUsageInput): void {
   if (!userId) return;
   const total = (promptTokens || 0) + (completionTokens || 0);
@@ -103,6 +189,7 @@ export function recordUsage({
       completionTokens: completionTokens || 0,
       totalTokens: total,
       source,
+      usageSource,
     }).catch((err: unknown) => {
       console.warn('[usage] record failed:', errorMessage(err));
     });

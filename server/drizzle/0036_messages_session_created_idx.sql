@@ -1,0 +1,48 @@
+-- Audit P-M2 — composite index on messages (session_id, created_at).
+--
+-- Transcript reads are all `WHERE session_id = ? ORDER BY created_at`:
+-- routes/messages.ts (history rebuild, edit truncation, regenerate),
+-- routes/publicShares.ts (/s/:token, LIMIT 200), routes/sessions.ts
+-- (GET /:id), routes/account.ts (export), routes/suggestions.ts (DESC LIMIT).
+--
+-- Measured before/after on a seeded 3.08M-row `messages` table (2k sessions,
+-- target session 60k rows):
+--
+--   ORDER BY created_at DESC LIMIT 20   2.7-9.1 ms  ->  0.05 ms
+--   ORDER BY created_at LIMIT 200       ~0.1 ms     ->  ~0.1 ms  (unchanged)
+--   full 60k-row transcript             ~34 ms      ->  ~34 ms   (unchanged)
+--
+-- The win is in the bounded and DESC queries: without this index the planner
+-- walks messages_created_at_idx across ALL sessions and filters, so the cost
+-- scales with total table size rather than session size. The unbounded
+-- transcript read remains a bitmap scan plus sort in both cases (60k random
+-- index fetches cost more than sorting), so this index does not fix that
+-- path — pagination would.
+--
+-- messages_created_at_idx is deliberately kept: routes/usage.ts aggregates by
+-- DATE(created_at) across all sessions and needs created_at leading.
+--
+-- Hand-written rather than emitted by `drizzle-kit generate`, because the
+-- generator also re-emitted three statements that migrations 0034 and 0035
+-- already applied (sessions.assistant_id, the files→sessions FK, and
+-- sessions_assistant_id_idx) in a NON-idempotent form — `ADD COLUMN` with
+-- no IF NOT EXISTS would abort the deploy on any database that has already
+-- run 0035. Those two migrations were hand-written and never refreshed the
+-- drizzle snapshot, so the snapshot had drifted two versions behind. The
+-- accompanying meta/0036_snapshot.json from that generate run IS kept, which
+-- repairs the drift for future `db:generate` calls.
+--
+-- Locking note: plain CREATE INDEX takes a ShareLock and blocks writes to
+-- `messages` while it builds. CONCURRENTLY is not available here because the
+-- drizzle migrator wraps migrations in a transaction. This matches the
+-- existing convention (see 0024_active_session_index.sql). On a large
+-- `messages` table, build it out-of-band first and let this migration
+-- no-op via IF NOT EXISTS:
+--
+--   CREATE INDEX CONCURRENTLY "messages_session_created_idx"
+--     ON "messages" USING btree ("session_id","created_at");
+--
+-- Idempotent: safe to re-run.
+
+CREATE INDEX IF NOT EXISTS "messages_session_created_idx"
+  ON "messages" USING btree ("session_id","created_at");
