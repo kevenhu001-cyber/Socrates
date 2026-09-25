@@ -61,9 +61,9 @@ export function bootstrapApp(options) {
     try { ensureKatex().catch(() => { /* idle preload is best effort */ }); } catch (_) {}
   };
   if (typeof requestIdleCallback === 'function') {
-    try { requestIdleCallback(loadIdleVendors, { timeout: 3000 }); }
-    catch (_) { setTimeout(loadIdleVendors, 1500); }
+    try { requestIdleCallback(loadIdleVendors, { timeout: 15000 }); }
+    catch (_) { setTimeout(loadIdleVendors, 15000); }
   } else {
-    setTimeout(loadIdleVendors, 1500);
+    setTimeout(loadIdleVendors, 15000);
   }
 }
