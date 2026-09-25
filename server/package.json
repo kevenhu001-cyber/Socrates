@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "allowScripts": {
-    "*": true
+    "esbuild": true
   },
   "description": "Socrates AI tutor — backend API server",
   "type": "module",
@@ -17,12 +17,19 @@
     "db:seed": "tsx src/db/seed.js",
     "lint": "npm run typecheck",
     "test": "node scripts/run-tests.mjs",
-    "test:strict": "node scripts/run-tests.mjs --strict"
+    "test:strict": "node scripts/run-tests.mjs --strict",
+    "test:coverage": "node --import dotenv/config --import tsx --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-coverage-exclude='scripts/**' --test-coverage-exclude='**/*.generated.ts' test/*.test.js test/*.test.mjs"
   },
   "dependencies": {
-    "@mozilla/readability": "^0.6.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@mozilla/readability": "^0.6.0",
     "@oomol-lab/connector": "^1.0.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/instrumentation-express": "^0.70.0",
+    "@opentelemetry/instrumentation-http": "^0.222.0",
+    "@opentelemetry/instrumentation-pg": "^0.74.0",
+    "@opentelemetry/sdk-node": "^0.222.0",
     "bcryptjs": "^3.0.2",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
