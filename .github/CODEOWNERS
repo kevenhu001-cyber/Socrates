@@ -1,0 +1,83 @@
+# CODEOWNERS — mandatory review routing for the high-blast-radius surfaces.
+#
+# Added 2026-09-25. The repository previously had no CODEOWNERS at all, and
+# the git history shows 43 commits with 2 merge commits — i.e. changes land
+# directly on main, and README's "branch off main → open a PR → squash
+# merge" contributing flow was documentation rather than practice. Single
+# commits routinely touched 60 files / +3,000 lines.
+#
+# This file does not by itself require review; it only names who gets
+# requested. It becomes a control once branch protection enables
+# "Require review from Code Owners" on main. Until then, treat it as the
+# written record of which paths must not be changed casually.
+#
+# Ordering: later rules win, so the broad default comes first and the
+# sensitive paths override it.
+
+# ─── Default ──────────────────────────────────────────────────────────
+*                                   @kevenhu001-cyber
+
+# ─── Authentication, sessions, CSRF ───────────────────────────────────
+# Cookie auth, CSRF double-submit, rate limiting, login lockout. A silent
+# regression here is an account-takeover class bug and is not visible in
+# any UI test.
+/server/src/middleware/                @kevenhu001-cyber
+/server/src/routes/auth.ts             @kevenhu001-cyber
+/server/src/routes/oauth.ts            @kevenhu001-cyber
+/server/src/services/auth.ts           @kevenhu001-cyber
+/server/src/services/adminAuth.ts      @kevenhu001-cyber
+/server/src/services/loginLockout.ts   @kevenhu001-cyber
+/server/src/services/oauthTokens.ts    @kevenhu001-cyber
+/server/src/services/agentKeys.ts      @kevenhu001-cyber
+
+# ─── Cryptography and secret handling ─────────────────────────────────
+# crypto.ts derives the AES-256-GCM key (HKDF) that protects every stored
+# LLM provider key and connector token. apiKey.ts is the only reader.
+/server/src/lib/crypto.ts              @kevenhu001-cyber
+/server/src/services/apiKey.ts         @kevenhu001-cyber
+/scripts/rotate-secrets.sh             @kevenhu001-cyber
+/scripts/backup-secrets.sh             @kevenhu001-cyber
+
+# ─── Database schema and migrations ───────────────────────────────────
+# Migrations are forward-only in production. A bad one is the hardest
+# change in the repo to roll back.
+/server/src/db/                        @kevenhu001-cyber
+/server/drizzle/                       @kevenhu001-cyber
+
+# ─── Deployment and edge configuration ────────────────────────────────
+# deploy.sh is the single writer for the production web roots and the
+# systemd restart; it must keep its flock, dist.previous retention, and
+# restore-on-failed-health-gate behaviour. ops/nginx carries the SPA's
+# security headers.
+/deploy.sh                             @kevenhu001-cyber
+/ops/                                  @kevenhu001-cyber
+
+# ─── CI, supply chain, and the gates themselves ───────────────────────
+# Weakening a gate must be as visible as weakening the code it guards.
+# This is the path that let a `continue-on-error: true` audit and a
+# database-less test run survive unnoticed.
+/.github/                              @kevenhu001-cyber
+/scripts/audit-ratchet.mjs             @kevenhu001-cyber
+/scripts/audit.baseline.json           @kevenhu001-cyber
+/scripts/gen-csp-hashes.mjs            @kevenhu001-cyber
+
+# ─── Security policy surfaces ─────────────────────────────────────────
+# app.ts owns the CSP / HSTS / CORP header set. The generated artifacts are
+# derived, but a hand-edit to them would silently desynchronise the policy.
+/server/src/app.ts                     @kevenhu001-cyber
+/server/src/generated/                 @kevenhu001-cyber
+/ops/nginx/csp-spa.conf                @kevenhu001-cyber
+
+# ─── SSRF / sandbox / tool-execution boundaries ───────────────────────
+# fetchBatch walks redirect chains manually to block SSRF; codeInterpreter
+# and pyodideWorker are the Python sandbox; toolCallSafety is the guard on
+# model-initiated tool calls.
+/server/src/services/fetchBatch.ts     @kevenhu001-cyber
+/server/src/services/codeInterpreter.ts @kevenhu001-cyber
+/server/src/services/pyodideWorker.ts  @kevenhu001-cyber
+/server/src/services/toolCallSafety.ts @kevenhu001-cyber
+
+# ─── Brand assets locked by AGENTS.md ─────────────────────────────────
+# favicon.png must stay byte-identical to its logo.png sibling.
+/frontend/public/favicon.png           @kevenhu001-cyber
+/site/favicon.png                      @kevenhu001-cyber

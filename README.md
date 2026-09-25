@@ -467,6 +467,9 @@ the SPA reads no config from disk (its settings live in
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | no | — | Required for email verification and password reset |
 | `FCM_SERVER_KEY` | no | — | Push notifications for the Android client |
 | `BEAGLE_BUILT_IN.key` | no | empty | If set, the built-in provider uses this key (overrides `BEAGLE_SYSTEM_KEY`) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | no | — | **Turns tracing on.** OTLP/HTTP base URL of a collector (e.g. `http://collector:4318`). Unset means no SDK is loaded at all — see [`server/src/lib/telemetry.ts`](server/src/lib/telemetry.ts) |
+| `OTEL_SERVICE_NAME` | no | `socrates-api` | Service name on exported spans |
+| `OTEL_TRACES_SAMPLER_ARG` | no | `1.0` | Sampling ratio when tracing is enabled |
 
 The user configures their own provider at runtime in
 *Account → API keys* — the backend never logs the key in plaintext,
@@ -620,9 +623,45 @@ workflow and secret contract.
 - **Document uploads.** Non-image files are force-downloaded via
   `Content-Disposition: attachment`; HTML/XHTML uploads are blocked
   at the multer level to prevent XSS.
-- **CSP.** Recommended for production (not currently shipped in
-  the static SPA; the operator is expected to set headers at the
-  nginx layer).
+- **CSP.** Shipped, from a single generated source. `server/src/app.ts`
+  sets the policy on every Express response via helmet, and
+  [`ops/nginx/csp-spa.conf`](ops/nginx/csp-spa.conf) carries the same
+  policy for the nginx-served SPA document (the API and the SPA are the
+  same origin behind the `/api/v2` reverse proxy). Both artifacts — plus
+  the `script-src` `'sha256-…'` hashes of the two pre-paint inline
+  scripts in `index.html` — are emitted by
+  [`scripts/gen-csp-hashes.mjs`](scripts/gen-csp-hashes.mjs); `npm run lint`
+  in `frontend/` fails when they drift. `object-src` and `frame-ancestors`
+  are `'none'`, `base-uri` / `form-action` are `'self'`, and `'unsafe-eval'`
+  is only present under an explicit `ALLOW_DEV_EVAL=1`.
+  `deploy.sh` installs the snippet and wires the `include` into
+  every HTML-serving nginx location block on each deploy
+  (`install_spa_csp` → `ops/nginx/insert-csp-include.awk`): backup-first,
+  `nginx -t`-validated, restored on failure, idempotent per block. Verify
+  with `curl -sI https://app.topodrive.top/ | grep -i content-security`.
+
+  `script-src` carries `'unsafe-inline'` rather than relying on the hashes,
+  and that is a deliberate, measured trade. An `<iframe srcdoc>` inherits the
+  embedding document's CSP, and the viz cards render model-authored HTML whose
+  scripts are inline by construction — a hash-only parent policy blocked every
+  interactive visualization (23 failing Playwright specs, each card stuck in
+  `loading`). `sandbox="allow-scripts"` does not change this: CSP inheritance
+  follows the local scheme, not the origin. The hashes are still generated and
+  still drift-checked so the policy can be tightened the moment the viz iframes
+  are served from a real same-origin URL, where their own response CSP applies
+  instead of the parent's — the pattern `/s/:token` already uses. Note that a
+  policy cannot carry both: browsers ignore `'unsafe-inline'` whenever a hash
+  is present, so `server/test/csp.test.js` asserts the two never coexist.
+  `frontend/e2e/dist-server.mjs` serves this exact header, so every Playwright
+  run exercises the production policy.
+
+  One known consequence: Cloudflare's edge-injected
+  `static.cloudflareinsights.com/beacon.min.js` is now blocked by
+  `script-src 'self'`. Nothing in the app depends on it and no user-facing
+  behaviour changes, but Cloudflare Web Analytics will stop receiving page
+  views. Add that host to `script-src` in `scripts/gen-csp-hashes.mjs` if the
+  analytics matter more than refusing a third-party script the application
+  never requested.
 - **Email verification.** Required before the first session can
   be created; rate-limited per IP.
 
