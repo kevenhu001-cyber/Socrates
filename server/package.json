@@ -2,6 +2,9 @@
   "name": "socrates-api",
   "version": "0.1.0",
   "private": true,
+  "allowScripts": {
+    "*": true
+  },
   "description": "Socrates AI tutor — backend API server",
   "type": "module",
   "scripts": {
