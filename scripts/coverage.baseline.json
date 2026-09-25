@@ -1,0 +1,14 @@
+{
+  "server": {
+    "line": 81.4,
+    "branch": 77.82,
+    "func": 58.03,
+    "recorded": "2026-09-25"
+  },
+  "frontend": {
+    "line": 65.18,
+    "branch": 69.99,
+    "func": 57.01,
+    "recorded": "2026-09-25"
+  }
+}

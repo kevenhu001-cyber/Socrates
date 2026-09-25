@@ -36,10 +36,33 @@ location ~* ^/(?:favicon\.png|logo\.png|robots\.txt|site\.webmanifest)$ {
 location / {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    # Content-Security-Policy for the SPA document. deploy.sh installs and
+    # wires this automatically (install_spa_csp); the line is shown here so
+    # the example matches a deployed config. Repeated per HTML location
+    # because nginx add_header does not inherit into a location that
+    # declares its own.
+    include /etc/nginx/snippets/socrates-csp-spa.conf;
     try_files $uri /__APP_INDEX__;
 }
 
 location ~ ^/index\.[0-9]+\.html$ {
     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    include /etc/nginx/snippets/socrates-csp-spa.conf;
 }
+
+# The CSP is applied by deploy.sh — no manual step is required:
+#
+#   1. scripts/gen-csp-hashes.mjs emits ops/nginx/csp-spa.conf from the same
+#      directive map helmet uses in server/src/app.ts. `npm run lint` in
+#      frontend/ fails if the two drift.
+#   2. deploy.sh install_spa_csp copies it to
+#      /etc/nginx/snippets/socrates-csp-spa.conf and inserts the `include`
+#      into every HTML-serving location block via
+#      ops/nginx/insert-csp-include.awk. Backup-first, `nginx -t`-validated,
+#      restored on failure, idempotent per block.
+#
+# Verify after a deploy:
+#   curl -sI https://app.topodrive.top/ | grep -i content-security-policy
+#
+# Override the install location with NGINX_SNIPPETS_DIR when testing.

@@ -1,0 +1,210 @@
+name: Image
+
+# Builds the API server as an immutable, signed OCI image.
+#
+# Why: deploy.sh runs `npm ci --include=dev` and `tsc` on the production host,
+# so (a) the production machine carries the build toolchain, (b) there is no
+# artifact identifying what is live beyond .deploy-state.json, and (c) rollback
+# depth is one directory (`dist.previous`). A registry tag plus a digest fixes
+# all three.
+#
+# This workflow does NOT deploy. Switching deploy.sh from "build on the host"
+# to "pull this digest" is a separate change with its own risk; until then the
+# image is built and verified on every push so the cutover starts from
+# something known to work rather than from a Dockerfile nobody has run.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'prompts/**'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'prompts/**'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/socrates-api
+
+jobs:
+  build:
+    name: Build, verify, sign
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write        # push to GHCR
+      id-token: write        # cosign keyless signing (OIDC)
+      attestations: write    # build provenance
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Only authenticate for pushes. A pull_request from a fork has no
+      # package-write permission, so those runs build and verify without
+      # pushing — the verification is the valuable part on a PR anyway.
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=long
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Build context is the repository ROOT: src/lib/prompts.ts resolves the
+      # shipped prompts relative to the repo root, so prompts/ must sit beside
+      # server/ inside the image.
+      - name: Build
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: server/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      # Boot the image against a real Postgres and require /api/health to
+      # report a live database connection. A "it builds" check would pass on an
+      # image that is missing prompts/ or a production dependency and only
+      # fails on the first chat turn.
+      - name: Verify the image actually runs
+        env:
+          TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+          LOCAL_TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}
+        run: |
+          set -euo pipefail
+          IMAGE="$LOCAL_TAG"
+          if [ "${{ github.event_name }}" != "pull_request" ]; then IMAGE="$TAG"; fi
+          echo "verifying $IMAGE"
+
+          docker network create socrates-verify
+          docker run -d --name pg --network socrates-verify \
+            -e POSTGRES_USER=socrates -e POSTGRES_PASSWORD=socrates -e POSTGRES_DB=socrates \
+            pgvector/pgvector:pg16
+          for i in $(seq 1 60); do
+            docker exec pg pg_isready -U socrates -d socrates >/dev/null 2>&1 && break
+            sleep 1
+          done
+
+          DB_URL="postgres://socrates:socrates@pg:5432/socrates"
+
+          # Migrations ship inside the image and are runnable with plain node
+          # (tsconfig.build.json compiles src/db/migrate.ts to
+          # dist/db/migrate.js), so no tsx is needed in the runtime layer. This
+          # step is what proves the drizzle/ files are present AND readable by
+          # the `node` user: a mode-600 migration on the build host used to
+          # produce the misleading error "No file ./drizzle/0016_*.sql found".
+          docker run --rm --network socrates-verify \
+            -e DATABASE_URL="$DB_URL" \
+            -e SESSION_SECRET=ci-verify-only-not-a-production-secret \
+            --entrypoint node "$IMAGE" dist/db/migrate.js
+
+          docker run -d --name api --network socrates-verify \
+            -e DATABASE_URL="$DB_URL" \
+            -e SESSION_SECRET=ci-verify-only-not-a-production-secret \
+            -e PORT=8080 "$IMAGE"
+
+          ok=0
+          for i in $(seq 1 60); do
+            body="$(docker run --rm --network socrates-verify curlimages/curl:latest \
+                     -s http://api:8080/api/health || true)"
+            case "$body" in *'"ok":true'*) ok=1; echo "health: $body"; break;; esac
+            sleep 2
+          done
+          if [ "$ok" != "1" ]; then
+            echo "::error::the image did not become healthy"
+            docker logs api | tail -60
+            exit 1
+          fi
+
+          # The shipped system prompts are read at runtime and asserted by
+          # server/test/prompts.test.js. An image without them boots fine and
+          # then fails on the first chat turn, so check explicitly.
+          docker run --rm --entrypoint sh "$IMAGE" -c \
+            'test -f /repo/prompts/teacher-mode.md && test -f /repo/prompts/beagle.md'
+
+          # The runtime layer must not carry build tooling.
+          for pkg in typescript tsx vite drizzle-kit; do
+            if docker run --rm --entrypoint sh "$IMAGE" -c "test -d node_modules/$pkg"; then
+              echo "::error::$pkg leaked into the runtime image"
+              exit 1
+            fi
+          done
+
+          # Must not run as root.
+          who="$(docker run --rm --entrypoint sh "$IMAGE" -c 'id -un')"
+          [ "$who" = "node" ] || { echo "::error::image runs as $who, expected node"; exit 1; }
+
+          docker rm -f api pg >/dev/null 2>&1 || true
+          docker network rm socrates-verify >/dev/null 2>&1 || true
+
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@v3
+
+      # Keyless signing: the signature is bound to this workflow's OIDC
+      # identity, so "which workflow at which commit produced this digest" is
+      # verifiable without managing a private key.
+      #
+      # Verify with:
+      #   cosign verify ghcr.io/<owner>/socrates-api@sha256:... \
+      #     --certificate-identity-regexp '.*' \
+      #     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+      - name: Sign the digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${REGISTRY}/${IMAGE_NAME}@${DIGEST}"
+
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Image"
+            echo
+            echo '```'
+            echo "digest: ${{ steps.build.outputs.digest }}"
+            echo "tags:"
+            echo "${{ steps.meta.outputs.tags }}" | sed 's/^/  /'
+            echo '```'
+            echo
+            echo "Deploy by digest, not by tag — a tag can move, a digest cannot."
+          } >> "$GITHUB_STEP_SUMMARY"
