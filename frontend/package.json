@@ -2,6 +2,9 @@
   "name": "socrates-app",
   "private": true,
   "version": "1.0.0",
+  "allowScripts": {
+    "*": true
+  },
   "type": "module",
   "description": "Socrates — single-page learning app (Vite-bundled)",
   "scripts": {

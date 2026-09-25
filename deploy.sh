@@ -220,8 +220,12 @@ trap handle_deploy_error ERR
 
 # Dependencies are part of the release input. In particular, the TypeScript
 # migration adds build-only tooling that will not exist in an older checkout.
+# Mavis / opencode shells export `NPM_CONFIG_ALLOW_SCRIPTS` globally so it
+# reaches npm's CLI layer; npm 11 then refuses project-scoped installs with
+# `EALLOWSCRIPTS` even when package.json declares `allowScripts`. Strip those
+# two env entries for the install calls below so the project policy wins.
 echo "Installing backend dependencies from package-lock.json…"
-(cd "$SERVER_DIR" && npm ci --include=dev)
+(cd "$SERVER_DIR" && env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm ci --include=dev)
 
 BACKEND_CANDIDATE=$(mktemp -d "$SERVER_DIR/.dist-next.XXXXXX")
 echo "Building backend candidate (TypeScript)…"
@@ -307,7 +311,7 @@ if [[ "${1:-}" != "" && -f "${1}" ]]; then
 else
   # Production mode: build the Vite bundle and copy dist/* into the web root.
   echo "Installing frontend dependencies from package-lock.json…"
-  (cd "$FRONTEND_DIR" && npm ci --include=dev)
+  (cd "$FRONTEND_DIR" && env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm ci --include=dev)
   echo "Building frontend (Vite)…"
   (cd "$FRONTEND_DIR" && NODE_OPTIONS="$FRONTEND_NODE_OPTIONS" npm run build 2>&1 | tail -20)
   DIST_DIR="$FRONTEND_DIR/dist"
