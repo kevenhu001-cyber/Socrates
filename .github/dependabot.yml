@@ -1,56 +1,35 @@
 # Dependabot — weekly security and version updates.
 #
-# We track three ecosystems:
-#   1. gradle        — Android app dependencies (libs.versions.toml)
-#   2. github-actions — CI workflow versions
-#   3. npm           — placeholder, in case any JS tooling is added
+# Rewritten 2026-09-25. The previous version declared three ecosystems and
+# only one of them worked:
 #
-# The groups below coalesce minor + patch updates into single PRs
-# (so we get one PR per week with 5-10 grouped updates rather than
-# 50 single-version PRs). Major version updates stay as separate
-# PRs because they often need code changes.
+#   - gradle @ /android — DEAD. There is no `android/` directory at the
+#     repository root: mobile/'s native tree is produced by `expo prebuild`
+#     and is not committed, and the only checked-in Gradle files live under
+#     capacitor/android/ (a frozen WebView shell). The config also claimed to
+#     track `libs.versions.toml`, which does not exist anywhere in the repo,
+#     and carried 40 lines of grouping rules plus an ignore entry for
+#     `io.coil-kt:coil-compose` — a dependency that is likewise absent.
+#     Removed rather than repointed: capacitor/ is frozen (AGENTS.md), so
+#     automated bumps there would generate review load for a subsystem
+#     nobody intends to change.
+#
+#   - github-actions @ / — worked, kept.
+#
+#   - npm — described in a comment as a "placeholder, in case any JS tooling
+#     is added" but never actually declared. The repository is four npm
+#     projects totalling well over a thousand dependencies, and it had no
+#     automated dependency updates at all. That is the gap that let 8
+#     high-severity advisories accumulate across server/, frontend/ and
+#     mobile/ until a manual review found them.
+#
+# Grouping keeps minor+patch in one PR per project per week. Majors stay
+# separate because they usually need code changes. Security updates are not
+# grouped and are not rate-limited by the group settings.
+
 version: 2
 updates:
-  - package-ecosystem: "gradle"
-    directory: "/android"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 5
-    groups:
-      kotlin:
-        patterns:
-          - "kotlin*"
-          - "org.jetbrains.kotlin*"
-          - "androidx.compose*"
-          - "com.google.devtools.ksp*"
-        update-types: ["minor", "patch"]
-      android-core:
-        patterns:
-          - "androidx.*"
-          - "com.google.android.material*"
-        update-types: ["minor", "patch"]
-      networking:
-        patterns:
-          - "com.squareup.*"
-          - "io.coil-kt*"
-          - "org.jetbrains.kotlinx*"
-        update-types: ["minor", "patch"]
-    # Surface insecure / yanked versions as a separate security PR.
-    security-updates-only: false
-    # Don't bump Compose BOM major versions automatically — they
-    # often need material3 API reviews.
-    ignore:
-      - dependency-name: "androidx.compose:compose-bom"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "io.coil-kt:coil-compose"
-        # P6.4 — coil-compose is dead code; we plan to remove it
-        # entirely. Until the removal lands, ignore Dependabot
-        # PRs so we don't waste review time.
-        versions: ["*"]
-
+  # ─── CI actions ──────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -63,3 +42,99 @@ updates:
         patterns:
           - "*"
         update-types: ["minor", "patch"]
+
+  # ─── Backend ─────────────────────────────────────────────────────────
+  # Highest-risk surface: this is the tree that carried the multer file-size
+  # bypass and the nodemailer domain allow-list bypass.
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    groups:
+      server-runtime:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+      server-tooling:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+    ignore:
+      # Drizzle minor releases have carried schema-generation changes that
+      # need a migration review, so they go through a human-opened PR.
+      - dependency-name: "drizzle-orm"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "drizzle-kit"
+        update-types: ["version-update:semver-major"]
+
+  # ─── Web SPA ─────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    groups:
+      # @tiptap/* must move as a set: the packages peer-depend on EXACT
+      # matching versions of @tiptap/core and @tiptap/pm, so a partial bump
+      # produces two copies of core and fails the type-check. Grouping them
+      # is what makes these PRs mergeable at all.
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+        update-types: ["minor", "patch"]
+      frontend-runtime:
+        dependency-type: "production"
+        update-types: ["minor", "patch"]
+        exclude-patterns:
+          - "@tiptap/*"
+      frontend-tooling:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+    ignore:
+      # Playwright bumps change visual-snapshot rendering; baselines have to
+      # be refreshed in the same PR, which Dependabot cannot do.
+      - dependency-name: "@playwright/test"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "playwright"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+
+  # ─── Android / Expo client ───────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    groups:
+      mobile-tooling:
+        dependency-type: "development"
+        update-types: ["minor", "patch"]
+    ignore:
+      # Expo pins the RN / native module matrix per SDK. Individual bumps
+      # break `expo prebuild`; upgrades go through `expo install --fix`.
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+
+  # ─── Shared packages ─────────────────────────────────────────────────
+  # Consumed by path (file:../packages/*) rather than from the registry, so
+  # their own dependency sets still need watching.
+  - package-ecosystem: "npm"
+    directory: "/packages/core"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2
+
+  - package-ecosystem: "npm"
+    directory: "/packages/contracts"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 2

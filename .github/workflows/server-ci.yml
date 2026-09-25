@@ -1,5 +1,29 @@
 name: Server CI
 
+# Fast-feedback typecheck for server/ changes. Seconds, no services.
+#
+# Scope was narrowed on 2026-09-25 because this workflow had become a
+# liability rather than a gate:
+#
+#   - `npm test` here duplicated ci.yml's Server job while running WITHOUT
+#     a database, so every DB-backed suite (OAuth flow, auth middleware,
+#     login lockout, agent keys, chat turns, chunk index) reported green via
+#     t.skip(). Two workflows claiming to test the server, neither of them
+#     executing the security-critical paths. The real gate now lives in
+#     ci.yml with a Postgres service and `npm run test:strict`, which fails
+#     loudly instead of skipping.
+#
+#   - `find src/ -name '*.js' -exec node --check` was vestigial: the backend
+#     is TypeScript, and the only .js left under src/ is the systemd
+#     compatibility shim. `tsc --noEmit` subsumes it.
+#
+#   - `npm audit` ran with `continue-on-error: true`, i.e. it was a report
+#     styled as a check. It is now a blocking job in security.yml.
+#
+# Keeping this workflow (rather than deleting it) preserves the existing
+# required-check name while the duplicated work is gone. If branch
+# protection is reconciled later, folding it into ci.yml is the next step.
+
 on:
   push:
     branches: [main]
@@ -14,6 +38,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   check:
@@ -35,21 +62,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
 
+      # --ignore-scripts: package.json sets `allowScripts: { "*": true }`,
+      # so a transitive postinstall runs arbitrary code. A typecheck does
+      # not need any of it, and CI is the last place to hand out that
+      # privilege for free.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
-      - name: Check syntax (node --check)
-        run: |
-          echo "Checking server source files..."
-          find src/ -name '*.js' -exec node --check {} \;
-          echo "All files pass syntax check."
-
-      - name: Run lint
+      - name: Typecheck
         run: npm run lint
-
-      - name: Run unit tests
-        run: npm test
-
-      - name: Run npm audit
-        run: npm audit --audit-level=high
-        continue-on-error: true

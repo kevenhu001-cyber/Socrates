@@ -1,6 +1,6 @@
 # ADR 0009 — CI workflow paths 触发规则整改
 
-- 状态：Accepted
+- 状态：Accepted（决策 2026-09-20；落地 2026-09-25，见「决策补充 — 落地」）
 - 日期：2026-09-20
 - 决策者：项目所有者 + AI 协作会话
 - 关联：`docs/adr/0003-structural-debt-categories.md` (P1)、`docs/audits/2026-09-20-structural-review.md` (F-004)、`AGENTS.md`（CI 覆盖描述修订段）
@@ -67,6 +67,32 @@ GitHub 的语义是：被 `paths` / `paths-ignore` 跳过的 workflow **不会�
   1. 在 branch protection 中取消这三个 job 的 required 标记（接受 docs-only PR 无门禁）；或
   2. 增加一个同 job 名的 no-op mirror workflow（以相同路径的 `paths:` 正向触发），让 required check 始终有人上报。
 - `ci.yml` 的 `paths-ignore` 注释内已写明同样警告；选择哪种缓解取决于仓库保护规则，未在本 PR 内决定。
+
+## 决策补充 — 落地（2026-09-25）
+
+上面留下的二选一在此关闭。**两个选项都没有采用**，因为方案 2（同名 no-op mirror workflow）在复核时被判定为不安全：
+
+> 一个同时修改 `docs/` 与代码的 PR 会让 `ci.yml` 与 mirror workflow **同时**触发。GitHub 的 required status check 以 check run 的名字（即 job 名）为键，workflow 名只是元数据，因此两者都会上报一个名为 `Frontend` 的 check。no-op 的那个必然成功，可能满足一个真实 job 刚刚失败的 required check——把门变成了掩盖。
+
+实际落地的是第三种方案，它具备方案 2 想要的性质而没有其缺陷：
+
+**`ci.yml` 取消 `paths-ignore`，改为永远触发、永远上报；新增一个秒级的 `changes` job 做变更分类，`frontend` / `server` / `shared` 三个 job 通过 `needs: changes` + `if: needs.changes.outputs.code == 'true'` 门控。**
+
+关键性质：GitHub 把被 `if:` 跳过的 job 视为 required check 的**成功**。于是
+
+| PR 类型 | `changes` | 三个重 job | required checks |
+| --- | --- | --- | --- |
+| 纯文档 | 运行（约 10s） | skipped | 通过（skipped 记为成功）→ 可合并 |
+| 含代码 | 运行 | 真实执行 | 由真实结果决定 |
+| 文档 + 代码 | 运行 | 真实执行 | 由真实结果决定，无同名 check 冲突 |
+
+判定规则是**白名单**而非黑名单：无法识别的路径一律算 code。新增一棵源码树因此不可能静默绕过门禁。`changes` 在任何无法可靠取得 diff 的情况下（浅历史、force push、分支首次 push、未知事件类型）一律输出 `code=true`——浪费 CI 分钟是可接受的失败模式，跳过门禁不是。
+
+`docs/api/openapi.yaml` 按本 ADR 原判定仍归入文档桶，并在 workflow 内以注释写明理由（本 workflow 的三个 job 都不读这个文件，跑它们无法证明任何关于 spec 变更的事），以及解除条件（一旦引入 contract test 就移出）。
+
+验证：分类函数直接从 `ci.yml` 中抽出，对 14 组代表性路径集做了断言（纯 docs / README / .gitignore / CODEOWNERS / openapi → `code=false`；server 源文件 / 文档+代码混合 / workflow / lockfile / nginx conf / migration / deploy.sh / 未知新目录 / audit 基线 → `code=true`），全部通过。
+
+不再需要改动 branch protection：三个 required check 在任何 PR 上都会得到上报。
 
 ## 可逆性
 
