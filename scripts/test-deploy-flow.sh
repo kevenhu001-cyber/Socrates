@@ -21,6 +21,8 @@ make_fixture() {
   # App nginx config with the managed SPA fallback that deploy.sh
   # set_app_index_target() rewrites to the freshly deployed entry.
   printf 'try_files $uri $uri/ /__APP_INDEX__;\n' > "$base/etc/app.conf"
+  printf 'active\n' > "$base/systemctl.state"
+  : > "$base/systemctl.log"
 
   tr -d '\r' < "$ROOT/deploy.sh" > "$base/deploy.sh"
   chmod +x "$base/deploy.sh"
@@ -39,6 +41,10 @@ SH
 #!/usr/bin/env bash
 set -e
 if [[ "${1:-}" == "run" && "${2:-}" == "build" ]]; then
+  if [[ "${MOCK_FRONTEND_BUILD_FAIL:-0}" == "1" ]]; then
+    echo "mock frontend build failure" >&2
+    exit 1
+  fi
   if [[ "${NODE_OPTIONS:-}" != *"--max-old-space-size=1024"* ]]; then
     echo "frontend build heap limit missing: ${NODE_OPTIONS:-unset}" >&2
     exit 1
@@ -60,7 +66,17 @@ SH
   cat > "$base/bin/systemctl" <<'SH'
 #!/usr/bin/env bash
 case "${1:-}" in
-  is-active) exit 0 ;;
+  stop)
+    printf 'stop\n' >> "$SYSTEMCTL_LOG"
+    printf 'inactive\n' > "$SYSTEMCTL_STATE"
+    ;;
+  start)
+    printf 'start\n' >> "$SYSTEMCTL_LOG"
+    printf 'active\n' > "$SYSTEMCTL_STATE"
+    ;;
+  is-active)
+    [[ "$(cat "$SYSTEMCTL_STATE")" == "active" ]]
+    ;;
   show) printf '4242\n' ;;
   *) exit 0 ;;
 esac
@@ -179,6 +195,8 @@ run_deploy() {
     NGINX_APP_CONF="$base/etc/app.conf" \
     DEPLOY_LOCK_FILE="$base/deploy.lock" \
     STATE_FILE="$base/deploy-state.json" \
+    SYSTEMCTL_STATE="$base/systemctl.state" \
+    SYSTEMCTL_LOG="$base/systemctl.log" \
     DEPLOY_USER="tester" \
     DEPLOY_GROUP="tester" \
     CODEX_ENABLED="0" \
@@ -211,6 +229,23 @@ grep -q '"adminConfigFailClosed": true' "$success_base/deploy-state.json"
 grep -q '"schemaTablesVerified": true' "$success_base/deploy-state.json"
 if compgen -G "$success_base/server/.dist-next.*" >/dev/null; then
   echo "candidate cleanup failed on success" >&2
+  exit 1
+fi
+
+build_failure_base=$(make_fixture build-failure)
+if run_deploy "$build_failure_base" MOCK_FRONTEND_BUILD_FAIL=1 >"$build_failure_base/output.log" 2>&1; then
+  echo "frontend build failure unexpectedly succeeded" >&2
+  exit 1
+fi
+grep -q 'mock frontend build failure' "$build_failure_base/output.log"
+grep -q 'old backend' "$build_failure_base/server/dist/index.runtime.js"
+if [[ "$(cat "$build_failure_base/systemctl.state")" != "active" ]]; then
+  echo "backend remained stopped after frontend build failure" >&2
+  exit 1
+fi
+build_failure_starts=$(grep -c '^start$' "$build_failure_base/systemctl.log" || true)
+if [[ "$build_failure_starts" != "1" ]]; then
+  echo "expected one backend restart after frontend build failure, got $build_failure_starts" >&2
   exit 1
 fi
 
