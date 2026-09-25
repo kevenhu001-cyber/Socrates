@@ -14,6 +14,8 @@ make_fixture() {
   mv "$base/server/dist-marker" "$base/server/dist/index.runtime.js"
   printf 'old frontend\n' > "$base/app-root/index.html"
   printf 'old asset\n' > "$base/app-root/assets/old.js"
+  printf 'aged asset\n' > "$base/app-root/assets/aged.js"
+  touch -d '40 days ago' "$base/app-root/assets/aged.js"
   printf '<html>status</html>\n' > "$base/server/src/status.html"
   printf 'try_files /status.1.html =404;\n' > "$base/etc/status.conf"
   # App nginx config with the managed SPA fallback that deploy.sh
@@ -139,6 +141,10 @@ while [[ $# -gt 0 ]]; do
 done
 dest="${args[${#args[@]}-1]}"
 unset 'args[${#args[@]}-1]'
+if [[ "$dest" == */app-root/index.*.html && ! -f "$(dirname "$dest")/assets/app.js" ]]; then
+  echo 'frontend entry published before assets' >&2
+  exit 1
+fi
 mkdir -p "$(dirname "$dest")"
 if [[ ${#args[@]} -gt 1 || -d "$dest" ]]; then
   mkdir -p "$dest"
@@ -176,6 +182,7 @@ run_deploy() {
     DEPLOY_USER="tester" \
     DEPLOY_GROUP="tester" \
     CODEX_ENABLED="0" \
+    PI_AGENT_BIN="$base/no-pi" \
     CODEX_DROPIN="$base/etc/codex.conf" \
     "$@" \
     "$base/deploy.sh"
@@ -185,6 +192,9 @@ success_base=$(make_fixture success)
 run_deploy "$success_base" >"$success_base/output.log"
 grep -q 'new backend' "$success_base/server/dist/index.runtime.js"
 grep -q 'old backend' "$success_base/server/dist.previous/index.runtime.js"
+grep -q 'old asset' "$success_base/app-root/assets/old.js"
+grep -q 'new asset' "$success_base/app-root/assets/app.js"
+test ! -e "$success_base/app-root/assets/aged.js"
 # The app entry is deployed as a versioned index.<TS>.html (CDN cache-bust);
 # there is no stable index.html any more.
 if ! grep -rlq 'new frontend' "$success_base/app-root"/index.*.html; then
@@ -210,6 +220,8 @@ if run_deploy "$rollback_base" MOCK_GATE_FAIL=1 >"$rollback_base/output.log" 2>&
   exit 1
 fi
 grep -q 'old backend' "$rollback_base/server/dist/index.runtime.js"
+grep -q 'old asset' "$rollback_base/app-root/assets/old.js"
+test -e "$rollback_base/app-root/assets/aged.js"
 test ! -e "$rollback_base/deploy-state.json"
 if compgen -G "$rollback_base/server/.dist-next.*" >/dev/null; then
   echo "candidate cleanup failed on rollback" >&2

@@ -23,13 +23,14 @@ export var SERVER_HAS_BEAGLE_KEY=false;
 
 export async function authBoot(){
   /* Prime the CSRF cookie before any API calls. */
-  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(_){}
+  var csrfReady=fetch("/api/v2/auth/csrf-token",{credentials:"include"}).catch(function(){});
   var params=new URLSearchParams(location.search);
   /* P_local-dev-bypass — when the app is served from localhost (vite dev
    * server, `npm run dev`) append `?dev=1` to skip the sign-in flow.
    * The hostname guard means this branch is unreachable on any deployed
    * host, so the bypass cannot be exercised in production. */
   if(params.get("dev")==="1"&&/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)){
+    await csrfReady;
     history.replaceState(null,"",location.pathname+(params.get("next")?"?next="+encodeURIComponent(params.get("next")):""));
     try{
       var BEAGLE_BUILT_IN=window.BEAGLE_BUILT_IN;
@@ -78,6 +79,7 @@ export async function authBoot(){
   var resetToken=params.get("reset_token");
   /* Verification link — consume token first. */
   if(token){
+    await csrfReady;
     history.replaceState(null,"",location.pathname+(params.get("redirect")?"?redirect="+encodeURIComponent(params.get("redirect")):""));
     window.showGate&&window.showGate();
     if(typeof submitAuthVerify==="function")await submitAuthVerify(token);
@@ -109,9 +111,17 @@ export async function authBoot(){
   }
   /* Fetch the built-in Beagle API key from the server's public config
      endpoint so the key lives in the server environment, not the source. */
+  var meRequest=apiFetch("/api/auth/me",{_authEndpoint:true}).then(function(value){return {value:value}},function(error){return {error:error}});
+  var configRequest=fetch("/api/v2/config",{credentials:"include"}).then(function(response){return response.json()}).catch(function(){return {}});
+  var initialMe=await meRequest;
+  if(initialMe.error&&initialMe.error.status===401&&!window.isInAuthGraceWindow?.()){
+    window.showGate&&window.showGate();
+    window.showAuthSignin&&window.showAuthSignin();
+    return;
+  }
   var cfgOk=false;
   try{
-    var cfg=await fetch("/api/v2/config",{credentials:"include"}).then(function(r){return r.json()}).catch(function(){return{}});
+    var cfg=await configRequest;
     if(cfg&&cfg.hasBeagleKey){
       /* The server proxies Beagle requests using its own env key.
          The raw key is never sent to the client, so cfg.beagleKey
@@ -153,16 +163,14 @@ export async function authBoot(){
   var me=null;
   for(var meAttempt=1;meAttempt<=3;meAttempt++){
     try{
-      me=await apiFetch("/api/auth/me",{_authEndpoint:true});
+      if(meAttempt===1){
+        if(initialMe.error)throw initialMe.error;
+        me=initialMe.value;
+      }else me=await apiFetch("/api/auth/me",{_authEndpoint:true});
       break;
     }catch(e){
       if(e&&e.status===401){
-        /* Genuine session expiry. Don't immediately kick to the gate on the
-         * very first 401 — a transient race or a Set-Cookie propagation
-         * delay can produce a 401 even when the session is still valid.
-         * Retry once more after a short delay before declaring the user
-         * logged out, so a single bad response doesn't force a re-login. */
-        if(meAttempt<3){
+        if(meAttempt<3&&window.isInAuthGraceWindow?.()){
           await new Promise(function(r){setTimeout(r,500)});
           continue;
         }
@@ -174,6 +182,7 @@ export async function authBoot(){
     }
   }
   if(me&&me.user){
+    await csrfReady;
     if(typeof window.setCurrentUser==="function")window.setCurrentUser(me.user);
     else window.CURRENT_USER=me.user;
     /* Grace window for the Set-Cookie to settle (see notes in

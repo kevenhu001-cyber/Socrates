@@ -103,8 +103,10 @@ test('light conversation home has a neutral readable palette and balanced compos
   await expect(page.locator('#topicInputWrap')).toBeVisible();
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   const mobileComposer = await page.locator('#topicInputWrap').boundingBox();
-  /* The empty state places the prompt in the same central band as the phone reference. */
-  expect(mobileComposer?.y ?? 844).toBeGreaterThan(430);
-  expect(mobileComposer?.y ?? 844).toBeLessThan(550);
+  /* The empty state pins the prompt to the bottom action band: the capsule's
+     bottom edge rests on the safe-area inset above the viewport foot. */
+  const mobileComposerBottom = (mobileComposer?.y ?? 0) + (mobileComposer?.height ?? 0);
+  expect(mobileComposerBottom).toBeGreaterThanOrEqual(844 - 24);
+  expect(mobileComposerBottom).toBeLessThanOrEqual(844);
   await page.screenshot({ path: '/tmp/socrates-landing-light-mobile.png', fullPage: true });
 });

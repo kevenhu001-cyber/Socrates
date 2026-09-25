@@ -1,6 +1,7 @@
 import { hostIsMountedBy, markHostMountedBy } from '../lib/boot/ownership';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
@@ -354,5 +355,5 @@ export function mountSettingsModal(): void {
 
   installSettingsBridge();
   const root = createRoot(container);
-  root.render(<SettingsModal />);
+  flushSync(() => root.render(<SettingsModal />));
 }
