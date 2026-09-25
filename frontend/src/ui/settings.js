@@ -49,8 +49,19 @@ function _publishSettingsState() {
 }
 
 /* ─── Open / Close ─── */
-function openSettings() {
-  document.getElementById("settingsOverlay").classList.remove("hidden");
+async function openSettings() {
+  if (!document.getElementById("settingsOverlay")) {
+    try {
+      const { mountSettingsModal } = await import('../react/settings/SettingsModal.tsx');
+      mountSettingsModal();
+    } catch (_) {
+      showToast("Could not load settings. Please try again.");
+      return;
+    }
+  }
+  const overlay = document.getElementById("settingsOverlay");
+  if (!overlay) return;
+  overlay.classList.remove("hidden");
   syncToggleUI();
   renderProviderList();
   if (typeof renderTonePresets === "function") renderTonePresets();
@@ -61,7 +72,7 @@ function openSettings() {
 }
 
 function closeSettings() {
-  document.getElementById("settingsOverlay").classList.add("hidden");
+  document.getElementById("settingsOverlay")?.classList.add("hidden");
   _publishSettingsState();
 }
 

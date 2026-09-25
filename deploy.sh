@@ -26,6 +26,11 @@ NGINX_SITE_CONF="${NGINX_SITE_CONF:-/etc/nginx/sites-available/status.topodrive.
 NGINX_APP_CONF="${NGINX_APP_CONF:-/etc/nginx/sites-available/app.topodrive.top}"
 DEPLOY_LOCK_FILE="${DEPLOY_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/socrates-deploy.lock}"
 STATE_FILE="${STATE_FILE:-/home/ubuntu/User/Socrates/.deploy-state.json}"
+ASSET_RETENTION_DAYS="${ASSET_RETENTION_DAYS:-30}"
+if [[ ! "$ASSET_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+  echo "ERROR: ASSET_RETENTION_DAYS must be a non-negative integer" >&2
+  exit 1
+fi
 
 # The app nginx config is normally a symlink from sites-enabled to
 # sites-available, but older hosts have used a copied file instead. Keep the
@@ -339,10 +344,6 @@ else
     APP_FILE="index.${APP_TS}.html"
   done
 
-  # Wipe + copy the bundle (versioned index.<TS>.html + assets/) so we
-  # don't leave stale hash-named JS files behind after a code change.
-  $SUDO rm -rf "$APP_WEB_ROOT/assets"
-  $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html" "$APP_WEB_ROOT/$APP_FILE"
   $SUDO mkdir -p "$APP_WEB_ROOT/assets"
   # Copy top-level asset files only. install(1) returns non-zero when its
   # source list contains a directory ("omitting directory"), which under
@@ -368,6 +369,8 @@ else
     [[ "$fname" == "index.html" ]] && continue
     $SUDO install -m 644 -o www-data -g www-data "$f" "$APP_WEB_ROOT/$fname"
   done
+
+  $SUDO install -m 644 -o www-data -g www-data "$DIST_DIR/index.html" "$APP_WEB_ROOT/$APP_FILE"
 
   # Repoint the nginx SPA fallback at the freshly deployed versioned file.
   # This handles both the initial placeholder and a previous timestamp, and
@@ -872,6 +875,9 @@ if [[ $GATE_FAILED -eq 0 ]]; then
 EOF
   mv "$tmp" "$STATE_FILE"
   GATE_RESULTS+=("  state: $STATE_FILE updated")
+  if ! $SUDO find "$APP_WEB_ROOT/assets" -type f -mtime +"$ASSET_RETENTION_DAYS" -delete; then
+    echo "WARNING: old asset cleanup failed; retained assets remain available" >&2
+  fi
 else
   rollback_backend
   GATE_RESULTS+=("  state: NOT updated (gate failed — last known-good preserved)")

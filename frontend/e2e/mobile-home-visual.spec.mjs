@@ -61,10 +61,13 @@ test('mobile conversation home matches the compact dark reference layout', async
      (editor on row 1, add/dictation/send controls on row 2). */
   expect(geometry.composer?.height).toBe(89);
   expect(geometry.composer?.bottom).toBeLessThanOrEqual((geometry.viewportHeight ?? 844) - 16);
+  /* The empty-state capsule pins to the bottom action band: its foot rests
+     on the safe-area inset above the viewport bottom, not in the old
+     centred band. */
+  expect(geometry.composer?.bottom).toBeGreaterThanOrEqual((geometry.viewportHeight ?? 844) - 24);
   expect(geometry.topicFontSize).toBeGreaterThanOrEqual(16);
   expect(geometry.topicFontSize).toBeLessThanOrEqual(18);
-  expect(geometry.composer?.y).toBeGreaterThan(430);
-  expect(geometry.composer?.y).toBeLessThan(550);
+  expect(geometry.composer?.y).toBeGreaterThan(550);
   /* P_mobile-black-canvas — the dark mobile canvas rides the near-black
      ramp (#09090b), not a warm or tinted black. */
   expect(geometry.background).toBe('rgb(9, 9, 11)');

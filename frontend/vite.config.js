@@ -287,7 +287,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    cssCodeSplit: false,
+    cssCodeSplit: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -295,7 +295,7 @@ export default defineConfig({
           if (f.includes('/node_modules/')) {
             if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/')) return 'vendor-react';
             if (f.includes('/node_modules/zustand/')) return 'vendor-react';
-            return 'vendor';
+            return;
           }
           if (!f.includes('/src/')) return;
           if (f.includes('/src/i18n.js')) return 'i18n';

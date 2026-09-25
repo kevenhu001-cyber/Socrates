@@ -267,19 +267,21 @@ export async function afterAuthEnter(){
     }
   }
   /* Pull the user's server-side chat sessions into the local cache. */
-  await bootFetch("refreshServerSessions", window.refreshServerSessions);
   /* Load the user's saved API providers and model configs.
      Wrap the call so the `await` waits for the returned Promise;
      bootFetch retries 401s during the grace window so the model
      picker isn't left empty when the sid cookie is still settling. */
-  var _r=await bootFetch("refreshApiConfig", window.refreshApiConfig);
   /* Load the user's saved memories for long-term context. AWAIT this
      so the first chat request the user fires after sign-in sees their
      own memories (and not the previous user's, which would otherwise
      be visible during the fire-and-forget window). loadUserMemories
      also clears _userMemories before fetching, so awaiting is safe
      even if the request fails. */
-  try{await loadUserMemories()}catch(_){/* handled inside */}
+  await Promise.all([
+    bootFetch("refreshServerSessions", window.refreshServerSessions),
+    bootFetch("refreshApiConfig", window.refreshApiConfig),
+    loadUserMemories().catch(function(){/* handled inside */}),
+  ]);
   /* Update sidebar footer with user info. */
   renderUserFooter&&renderUserFooter();
   /* Once the user object is available, paint the personalized greeting. */

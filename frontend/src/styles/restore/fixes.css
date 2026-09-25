@@ -1098,24 +1098,24 @@ body[data-conversation-active="true"]:not(.workspace-active):not(.exam-active)
   }
 }
 
-/* The empty mobile landing page uses the same central prompt placement as
-   the captured ChatGPT phone page. The centered capsule stays put while the
-   composer holds focus and only returns to normal flow once the software
-   keyboard is actually open (the keyboard controller sets the root flag), so
-   tapping a capsule control can never yank the layout out from under the
-   pointer between mousedown and mouseup — that shift retargets the click to
-   #topicSetup and the directly-bound tools/mic/send listeners never run. */
+/* The empty mobile landing page pins the prompt capsule to the bottom
+   action band: #topicSetup's flex-end column (chat-surface.css) owns the
+   position and its padding-bottom already carries --keyboard-inset, so the
+   capsule sits at the foot of the page at rest and rides the keyboard edge
+   1:1 from the very first frame. Keeping the wrap in flow also removes the
+   absolute→flow jump the previous centered variant needed
+   data-keyboard-open to mask — a mid-gesture shift that could retarget a
+   tap to #topicSetup and skip the tools/mic/send listeners. */
 @media (max-width: 768px) {
-  :root:not([data-keyboard-open="true"])
-    body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
     #appShell#appShell#appShell
     #topicSetup
     > #topicInputWrap:not(.voice-recording-active) {
-    position: absolute !important;
-    top: 50% !important;
-    left: 12px !important;
-    right: 12px !important;
-    width: auto !important;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
     margin: 0 !important;
   }
 
