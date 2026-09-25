@@ -123,6 +123,26 @@ frontend/e2e/zz-*.mjs
 frontend/e2e/tmp-*.mjs
 frontend/e2e/probe-*.mjs
 frontend/e2e/__probe*
+
+# ── Agent / IDE tool output committed by mistake (2026-09-25 review) ──
+# AGENTS.md already says "do not commit generated dist/, test reports,
+# secrets, or deployment state", but commit ca0bbd54 ("build(ui): 完成生产
+# 环境构建并生成资源文件", 42 files / +2,914 lines) brought ~440 KB of raw
+# build, typecheck, unit-test and Playwright logs into the tree along with a
+# scratch probe directory. These are regenerable tool output: ignore the
+# patterns so the class cannot come back, not just the instances.
+.qoder-*
+.vite-dev.log
+*.tmp-repro/
+frontend/.tmp-repro/
+
+# Stray debug screenshots at the repo root. The documented convention
+# (README "Capture convention", audit F-006) is that only
+# screenshot_<n>_<view>[_zh].png is referenced from README.md; anything else
+# at the root is a one-off capture.
+/form-label-issue.png
+/debug-*.png
+/repro-*.png
 frontend/verify-cdn.mjs
 frontend/index.html.bak
 
