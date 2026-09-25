@@ -1,0 +1,158 @@
+name: Security
+
+# Supply-chain and static-analysis gate. Before 2026-09-25 the repository
+# had none of these: no secret scanning, no SAST, and the only dependency
+# audit (`server-ci.yml`) carried `continue-on-error: true`, so it could
+# never fail a merge. Nine workflows existed and none of them would have
+# noticed a committed credential or an injected sink.
+#
+# Deliberately NOT path-filtered. A security gate that skips because "only
+# the lockfile changed" is the wrong shape, and ci.yml already documents
+# how path filtering leaves required checks Pending forever (ADR 0009).
+
+on:
+  push:
+    branches: [main, 'feat/*']
+  pull_request:
+    branches: [main]
+  schedule:
+    # Advisories land continuously; a weekly run catches a new CVE in an
+    # unchanged dependency, which a push-triggered job never would.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Gitleaks scans history, not just the worktree. A secret that was
+          # committed and then "removed" in a later commit is still in the
+          # pack and still compromised, so the full history is the unit of
+          # review. This repo has a force-pushed history
+          # (backup-main-before-force-20260907) which makes a baseline scan
+          # especially worth having.
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # If this job fails on its first run, the fix is NOT to relax it.
+      # Unlike a stale CVE, a committed credential is immediately
+      # actionable: rotate the credential first (scripts/rotate-secrets.sh),
+      # then, only for a confirmed false positive, record the finding
+      # fingerprint in a `.gitleaksignore` file at the repo root with a
+      # one-line reason. Deleting or soft-failing this job would recreate
+      # exactly the `continue-on-error: true` pattern that let the
+      # dependency backlog accumulate unnoticed.
+      #
+      # Pre-flight at the time this gate was added: a heuristic scan of all
+      # 919 reachable commits for OpenAI/GitHub/AWS key shapes and PEM
+      # private-key headers found no credential-shaped strings, so the gate
+      # was expected to start green.
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # javascript-typescript covers frontend/, server/, mobile/ and
+        # packages/ in one database. tools-rust/ is not supported by CodeQL;
+        # `cargo clippy`/`cargo audit` is the equivalent there and is
+        # tracked separately rather than faked here.
+        language: [javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          language: ${{ matrix.language }}
+          # security-extended adds the taint-tracking queries that matter
+          # for this codebase's shape: SSRF, path traversal in the agent
+          # workspace file routes, and unsafe HTML sinks in the renderer.
+          queries: security-extended
+
+      # No build step: the JS/TS extractor works from source. Skipping
+      # autobuild avoids failing on the four independent npm projects.
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+
+  dependencies:
+    name: Dependency audit (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [frontend, server, mobile]
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+      # A real gate: no continue-on-error. It runs through
+      # scripts/audit-ratchet.mjs rather than bare `npm audit` because the
+      # repo inherited a backlog — a gate that is red on every run from day
+      # one gets ignored exactly like the `continue-on-error: true` audit it
+      # replaces. The ratchet fails on any NEW high/critical advisory, and
+      # also fails when a baselined one stops reproducing, so the accepted
+      # list can only shrink. Every accepted entry carries a written reason
+      # in scripts/audit.baseline.json.
+      - name: Dependency audit ratchet
+        working-directory: .
+        run: node scripts/audit-ratchet.mjs ${{ matrix.project }}
+
+  sbom:
+    name: SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # An SBOM per client is the prerequisite for answering "are we
+      # affected by CVE-X" without re-resolving trees by hand, and for
+      # signing releases later. Generated from the lockfiles so it reflects
+      # what actually installs.
+      - name: Generate CycloneDX SBOMs
+        run: |
+          mkdir -p sbom
+          for project in frontend server mobile; do
+            echo "::group::$project"
+            (cd "$project" && npm ci --ignore-scripts --no-audit --no-fund)
+            npx --yes @cyclonedx/cyclonedx-npm@6.0.1 \
+              --output-format JSON \
+              --output-file "sbom/${project}.cdx.json" \
+              "$project/package-lock.json"
+            echo "::endgroup::"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
+          retention-days: 90

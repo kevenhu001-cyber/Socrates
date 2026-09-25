@@ -1,0 +1,83 @@
+# Build context is the repository root (see server/Dockerfile), so this file
+# decides what a `docker build` can even see. Two jobs:
+#
+#   1. Keep the context small. Without this, Docker uploads node_modules from
+#      four npm projects plus every build output — hundreds of megabytes per
+#      build.
+#   2. Make it impossible for a secret or deployment state to end up in an
+#      image layer. A layer is immutable and gets pushed to a registry, so
+#      "delete it later" is not available.
+
+# ── Never (secrets / deployment state) ──
+.env
+.env.*
+*.pem
+*.key
+.deploy-state.json
+scripts/backup-secrets.sh
+**/secrets/
+
+# ── Dependency trees (reinstalled from the lockfile inside the image) ──
+**/node_modules
+
+# ── Build output (the image builds its own) ──
+server/dist
+server/dist.previous
+server/.dist-next.*
+frontend/dist
+frontend/dist-*
+site/dist
+desktop/dist
+desktop/dist-*
+mobile/dist
+mobile/dist-*
+mobile/android
+mobile/ios
+tools-rust/target
+capacitor/android
+
+# ── Test / tooling artifacts ──
+**/playwright-report
+**/test-results
+**/test-results.bak
+**/coverage
+**/.nyc_output
+mobile/e2e-artifacts
+frontend/.tmp-repro
+graphify-out
+.qoder-*
+.vite-dev.log
+*.log
+
+# ── VCS and editor / agent state ──
+.git
+.github
+.gitignore
+.claude
+.codex
+.devin
+.kilo
+.kiro
+.omo
+.opencode
+.firecrawl
+.playwright-mcp
+.agents
+.codegraph
+
+# ── Not needed by the API image ──
+# The SPA and the marketing site are served by nginx from their own web roots.
+# frontend/ is excluded wholesale rather than selectively: app.ts only touches
+# frontend/dist as a local-dev fallback, and that path is not used in a
+# container deployment.
+frontend
+site
+mobile
+desktop
+capacitor
+docs
+tasks
+assets
+screenshot_*.png
+*.md
+!prompts/*.md
