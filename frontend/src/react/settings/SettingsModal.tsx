@@ -6,6 +6,7 @@ import { flushSync } from 'react-dom';
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import { installSettingsBridge, useSettingsSnapshot } from './settings.bridge';
 import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.bridge';
+import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
 import {
   displayPrefs, setDisplayFont, setDisplayWidth, toggleGrid,
   setBackgroundDark, setBackgroundLight, resetBackgroundDark, resetBackgroundLight,
@@ -74,6 +75,8 @@ function SettingsModal() {
       if (e.key === 'Escape') {
         e.stopPropagation();
         legacy.navigation.closeSettings();
+      } else if (e.key === 'Tab') {
+        trapFocus(e, overlay);
       }
     }
     overlay.addEventListener('keydown', onKey, true);
@@ -82,6 +85,7 @@ function SettingsModal() {
 
   useEffect(() => {
     if (!snap.open) return;
+    setModalOpen(OVERLAY_ID, true);
     const t1 = window.setTimeout(() => {
       const explicit = overlayRef.current?.querySelector('[data-initial-focus]') as
         | HTMLElement
@@ -90,7 +94,10 @@ function SettingsModal() {
         try { explicit.focus({ preventScroll: true }); } catch (_err) { /* focus is best-effort */ }
       }
     }, 50);
-    return () => window.clearTimeout(t1);
+    return () => {
+      window.clearTimeout(t1);
+      setModalOpen(OVERLAY_ID, false);
+    };
   }, [snap.open]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {

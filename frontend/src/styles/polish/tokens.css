@@ -3,9 +3,8 @@
  *
  * One visual vocabulary across the token families. themes.css owns the
  * canonical cool-neutral ramp (--ui-*); this file re-pins the older
- * --chatgpt-* / --cg-* palettes onto the same steps so a "surface" means the
- * same gray everywhere it lands. hsl(var(--bg-*)) channels stay untouched —
- * too many legacy surfaces consume them.
+ * --chatgpt-* / --cg-* palettes and legacy --bg-* channels onto the same steps
+ * so a "surface" means the same gray everywhere it lands.
  *
  * Two invariants from earlier passes still hold:
  *   - --cg-* must stay SOLID (no alpha): the identity avatar and sidebar rows
@@ -31,7 +30,10 @@
      defined (consumers fell back to #303030 even in light mode) — defined
      here for real. */
   --chatgpt-page: #09090b;
-  --chatgpt-rail: #09090b;
+  /* Rail is one step above the page (matches --cg-rail below and
+     --ui-bg-sidebar in themes.css); the page/rail split is the dark-mode
+     sidebar hierarchy. */
+  --chatgpt-rail: #0f1114;
   --chatgpt-surface: #1e2025;
   --chatgpt-menu: #2e3239;
   --chatgpt-hover: #22252b;
@@ -92,6 +94,12 @@ html[data-theme="socrates"][data-mode="dark"] {
   --conversation-text: #f2f3f5;
   --conversation-text-muted: #a4a8b0;
   --conversation-user: #26292e;
+
+  /* Bridge legacy HSL channels to the cool-neutral ramp */
+  --bg-000: 240 10% 3.7%;
+  --bg-100: 220 14% 6.5%;
+  --bg-200: 220 10% 13%;
+  --bg-300: 220 10% 17%;
 }
 
 [data-mode="light"] {
@@ -131,5 +139,9 @@ html[data-theme="socrates"][data-mode="dark"] {
   --cg-accent-ink: #ffffff;
   --cg-danger: #b93a3a;
 
-  --conversation-user: #eceef1;
+  /* Bridge legacy HSL channels to light equivalents */
+  --bg-000: 0 0% 100%;
+  --bg-100: 220 14% 97.5%;
+  --bg-200: 216 18% 95%;
+  --bg-300: 210 17% 94%;
 }

@@ -21,14 +21,16 @@
   --ui-space-xl: 24px;
   --ui-space-xxl: 32px;
 
-  /* Radii */
+  /* Radii — canonical scale */
   --ui-radius-none: 0;
-  --ui-radius-sm: 4px;
+  --ui-radius-xs: 4px;
+  --ui-radius-sm: 6px;
+  --ui-radius-control: 8px;
   --ui-radius-md: 8px;
   --ui-radius-lg: 12px;
   --ui-radius-xl: 16px;
-  --ui-radius-2xl: 22px;
-  --ui-radius-composer: 28px;
+  --ui-radius-2xl: 20px;
+  --ui-radius-composer: 24px;
   --ui-radius-pill: 999px;
 
   /* Controls and responsive shell */

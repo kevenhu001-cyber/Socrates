@@ -67,7 +67,7 @@
 
 /* "+" tools menu — menu radius/shadow converge on the overlay contract. */
 body #composerToolsMenu {
-  border-radius: 14px !important;
+  border-radius: var(--ui-radius-lg, 12px) !important;
   border-color: var(--ui-border-subtle) !important;
   box-shadow: var(--ui-shadow-menu) !important;
   padding: 6px !important;
@@ -95,7 +95,7 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"]:not(.hidden)
 }
 body #composerToolsMenu .composer-tools-item,
 body #composerToolsMenu .composer-tools-plugin-item {
-  border-radius: 8px !important;
+  border-radius: var(--ui-radius-control, 8px) !important;
   min-height: 40px;
 }
 body #composerToolsMenu .composer-tools-group-label {
@@ -107,7 +107,7 @@ body #composerToolsMenu .composer-tools-group-label {
 body #composerToolsMenu .composer-tools-copy small { color: var(--ui-text-muted); }
 body #composerToolsMenu .composer-tools-item kbd {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 5px;
+  border-radius: var(--ui-radius-xs, 4px);
   font-size: 10px;
 }
 
@@ -156,7 +156,7 @@ body #composerToolsMenu .composer-tools-item kbd {
 /* Attachment chips inside the capsule — consistent pill + hairline. */
 #appShell .attachment-chips .attachment-chip,
 #appShell .msg-attachment {
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control, 8px);
 }
 
 /* Under-composer disclaimer: quiet centered microcopy. */

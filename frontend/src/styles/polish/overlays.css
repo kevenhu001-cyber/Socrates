@@ -1,6 +1,6 @@
 /*
  * polish/overlays.css — one contract for every floating surface:
- * hairline border, unified radii (menu 12 / popover 14 / modal 16),
+ * hairline border, unified radii (menu/popover 12 / modal 16),
  * token shadows, soft backdrop blur.
  */
 
@@ -22,9 +22,9 @@
 .extensions-menu,
 .tag-editor-popover,
 .mobile-mode-menu {
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg, 12px);
 }
-.chat-config-pop { border-radius: 14px; }
+.chat-config-pop { border-radius: var(--ui-radius-lg, 12px); }
 
 /* Generation-config popover — converge on the same density as the "+"
    tools menu: 14px type, 40px rows, quiet hairline divider. The card
@@ -50,16 +50,16 @@
 .display-prefs-popover .display-prefs-seg,
 .mobile-mode-menu .mobile-mode-item,
 .model-picker-menu button {
-  border-radius: 8px;
+  border-radius: var(--ui-radius-control, 8px);
 }
 
 /* Display-prefs segmented control + toggles. */
 .display-prefs-popover .display-prefs-segs {
   background: var(--ui-bg-surface);
-  border-radius: 9px;
+  border-radius: var(--ui-radius-md, 8px);
 }
 .display-prefs-popover .display-prefs-seg {
-  border-radius: 7px;
+  border-radius: var(--ui-radius-sm, 6px);
   color: var(--ui-text-tertiary);
 }
 .display-prefs-popover .display-prefs-seg.active,
@@ -83,7 +83,7 @@
 /* ── CmdK palette ── */
 .cmd-k-modal {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 16px;
+  border-radius: var(--ui-radius-xl, 16px);
   box-shadow: var(--ui-shadow-modal);
 }
 .cmd-k-input-row { border-bottom: 1px solid var(--ui-border-subtle); }
@@ -94,7 +94,7 @@
 }
 .cmd-k-foot kbd {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 4px;
+  border-radius: var(--ui-radius-xs, 4px);
 }
 
 /* ── Modals (share / usage / confirm / generic) ── */
@@ -103,32 +103,32 @@
 .confirm-box,
 .modal-card {
   border: 1px solid var(--ui-border-subtle) !important;
-  border-radius: 16px !important;
+  border-radius: var(--ui-radius-xl, 16px) !important;
   box-shadow: var(--ui-shadow-modal) !important;
 }
-.confirm-btn, .share-copy-btn { border-radius: 8px; }
+.confirm-btn, .share-copy-btn { border-radius: var(--ui-radius-control, 8px); }
 
 /* ── Settings modal — keep the nav rail, refine chrome ── */
 .settings-modal {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 18px;
+  border-radius: var(--ui-radius-xl, 16px);
   box-shadow: var(--ui-shadow-modal);
 }
 .settings-overlay { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.settings-nav button { border-radius: 8px; }
+.settings-nav button { border-radius: var(--ui-radius-control, 8px); }
 .settings-nav button.active { background: var(--ui-bg-surface); }
-.settings-btn { border-radius: 9px; }
-.settings-close { border-radius: 8px; }
+.settings-btn { border-radius: var(--ui-radius-control, 8px); }
+.settings-close { border-radius: var(--ui-radius-control, 8px); }
 
 /* ── Profile modal ── */
 .profile-modal {
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 18px;
+  border-radius: var(--ui-radius-xl, 16px);
   box-shadow: var(--ui-shadow-modal);
 }
-.profile-btn { border-radius: 9px; }
-.profile-lang-toggle { border-radius: 9px; }
-.stg-toggle-track { border-radius: 999px; }
+.profile-btn { border-radius: var(--ui-radius-control, 8px); }
+.profile-lang-toggle { border-radius: var(--ui-radius-control, 8px); }
+.stg-toggle-track { border-radius: var(--ui-radius-pill, 999px); }
 
 /* ── Settings · Account pane ── */
 .settings-account-card {
@@ -137,7 +137,7 @@
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--ui-border-subtle);
-  border-radius: 14px;
+  border-radius: var(--ui-radius-lg, 12px);
   background: var(--ui-bg-raised);
 }
 .settings-account-avatar {
@@ -161,7 +161,7 @@
   color: var(--ui-text-primary);
   font: 600 16px/1.3 var(--cg-font);
   outline: none;
-  border-radius: 4px;
+  border-radius: var(--ui-radius-xs, 4px);
   min-width: 0;
 }
 .settings-account-name:focus { box-shadow: var(--ui-focus-ring); }
@@ -191,13 +191,13 @@
   gap: 2px;
   padding: 3px;
   background: var(--ui-bg-surface);
-  border-radius: 9px;
+  border-radius: var(--ui-radius-md, 8px);
 }
 .settings-pane .display-prefs-seg {
   min-width: 44px;
   min-height: 30px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--ui-radius-sm, 6px);
   background: transparent;
   color: var(--ui-text-tertiary);
   font-size: 12.5px;
@@ -227,12 +227,12 @@
   height: 30px;
   padding: 2px;
   border: 1px solid var(--ui-border-default);
-  border-radius: 8px;
+  border-radius: var(--ui-radius-control, 8px);
   background: var(--ui-bg-surface);
   cursor: pointer;
 }
 
 /* ── Tag editor popover rows ── */
 .tag-editor-popover input {
-  border-radius: 8px;
+  border-radius: var(--ui-radius-control, 8px);
 }

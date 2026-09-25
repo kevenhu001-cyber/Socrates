@@ -115,13 +115,16 @@ export const spacing = {
 
 export type SpacingToken = keyof typeof spacing;
 
-/* Radii — keep the ladder narrow so all surfaces round together. */
+/* Radii — canonical scale */
 export const radius = {
   none: 0,
-  sm: 4,
+  xs: 4,
+  sm: 6,
   md: 8,
   lg: 12,
   xl: 16,
+  '2xl': 20,
+  composer: 24,
   pill: 999,
 } as const;
 

@@ -24,6 +24,70 @@
 var _wired = {};
 var _openTracker = new Map(); // overlay id -> previous activeElement
 
+function updateAppShellInert() {
+  if (typeof document === 'undefined') return;
+  var appShell = document.getElementById('appShell');
+  if (!appShell) return;
+  if (_openTracker.size > 0) {
+    appShell.setAttribute('inert', '');
+  } else {
+    appShell.removeAttribute('inert');
+  }
+}
+
+export function setModalOpen(id, isOpen, previousElement) {
+  if (isOpen) {
+    _openTracker.set(id, previousElement || (typeof document !== 'undefined' ? document.activeElement : null));
+  } else {
+    _openTracker.delete(id);
+  }
+  updateAppShellInert();
+}
+
+export function trapFocus(e, container) {
+  if (e.key !== 'Tab' || !container) return;
+  var candidates = Array.from(container.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )).filter(function (el) {
+    return el.offsetParent !== null || el.getClientRects().length > 0;
+  });
+  if (candidates.length === 0) {
+    e.preventDefault();
+    return;
+  }
+  var first = candidates[0];
+  var last = candidates[candidates.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first || !container.contains(document.activeElement)) {
+      e.preventDefault();
+      try { last.focus(); } catch (_) {}
+    }
+  } else {
+    if (document.activeElement === last || !container.contains(document.activeElement)) {
+      e.preventDefault();
+      try { first.focus(); } catch (_) {}
+    }
+  }
+}
+
+function bindModalTabTrap(overlay) {
+  overlay.addEventListener('keydown', function (e) {
+    trapFocus(e, overlay);
+  }, true);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || _openTracker.size === 0) return;
+    var keys = Array.from(_openTracker.keys());
+    var activeOverlayId = keys[keys.length - 1];
+    var overlay = document.getElementById(activeOverlayId);
+    if (overlay && !overlay.classList.contains('hidden')) {
+      trapFocus(e, overlay);
+    }
+  }, true);
+}
+
 function focusFirst(overlay) {
   /* Find the first focusable element inside the overlay.
      Focus is normally directed at inputs/textareas/selects; modals
@@ -77,6 +141,7 @@ export function installModalA11y(opts) {
 
   function handleOpen() {
     try { _openTracker.set(opts.overlayId, document.activeElement); } catch (_) {}
+    updateAppShellInert();
     setTimeout(function () { focusFirst(overlay); }, 50);
     if (typeof opts.onOpen === 'function') opts.onOpen();
   }
@@ -84,6 +149,7 @@ export function installModalA11y(opts) {
   function handleClose() {
     var prev = _openTracker.get(opts.overlayId);
     _openTracker.delete(opts.overlayId);
+    updateAppShellInert();
     if (prev && typeof prev.focus === 'function') {
       try { prev.focus({ preventScroll: true }); } catch (_) {}
     }
@@ -91,6 +157,7 @@ export function installModalA11y(opts) {
   }
 
   if (opts.closeFn) bindModalEsc(overlay, opts.closeFn);
+  bindModalTabTrap(overlay);
 
   if (opts.skipObserve) {
     overlay.__handleOpen = handleOpen;

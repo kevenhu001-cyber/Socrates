@@ -5,7 +5,9 @@
 [data-mode="dark"] {
   color-scheme: dark;
   --ui-bg-page: #09090b;
-  --ui-bg-sidebar: #09090b;
+  /* The rail sits one step above the page so the sidebar reads as a distinct
+     band in dark mode (明度即层级), matching the --cg-ramp step #0f1114. */
+  --ui-bg-sidebar: #0f1114;
   --ui-bg-raised: #14161a;
   --ui-bg-surface: #1e2025;
   --ui-bg-control: #272a30;

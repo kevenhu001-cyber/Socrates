@@ -16,7 +16,7 @@
 #appShell .msg-toolbar-btn {
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--ui-radius-sm, 6px);
   color: var(--ui-text-muted);
 }
 #appShell .msg-toolbar-btn:hover {
@@ -27,21 +27,21 @@
 
 /* Tooltip micro-label — consistent with the rest of the shell. */
 #appShell .msg-toolbar-btn::after {
-  border-radius: 6px;
+  border-radius: var(--ui-radius-sm, 6px);
   font-size: 11px;
   padding: 5px 8px;
 }
 
 /* Code blocks: one step above the page, hairline, 12px radius. */
 #appShell .msg-body pre {
-  border-radius: 12px;
+  border-radius: var(--ui-radius-lg, 12px);
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-raised);
   padding: 12px 14px;
 }
 #appShell .msg-body code {
   background: var(--ui-bg-surface);
-  border-radius: 5px;
+  border-radius: var(--ui-radius-xs, 4px);
   padding: 1.5px 5px;
 }
 #appShell .msg-body pre code { background: transparent; padding: 0; }
@@ -71,7 +71,7 @@
 
 /* Toasts. */
 #appShell .msg-toast, .msg-toast {
-  border-radius: 10px;
+  border-radius: var(--ui-radius-control, 8px);
   border-color: var(--ui-border-subtle);
   box-shadow: var(--ui-shadow-toast);
 }

@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import { installConfirmBridge, useConfirmSnapshot } from './confirm.bridge';
+import { trapFocus, setModalOpen } from '../../ui/modalA11y.js';
 
 /* M4 step 4.5c — React owns the confirm-dialog overlay. Legacy
    ui/confirm.js publishes `{ open, title, msg, danger }` and keeps the
@@ -23,6 +24,7 @@ function ConfirmDialog() {
      and restore focus to the trigger when the dialog closes. */
   useEffect(() => {
     if (snap.open) {
+      setModalOpen('confirmDialog', true);
       prevFocusRef.current =
         document.activeElement instanceof HTMLElement
           ? document.activeElement
@@ -44,7 +46,10 @@ function ConfirmDialog() {
           }
         }
       }, 50);
-      return () => window.clearTimeout(t1);
+      return () => {
+        window.clearTimeout(t1);
+        setModalOpen('confirmDialog', false);
+      };
     }
     const prev = prevFocusRef.current;
     prevFocusRef.current = null;
@@ -67,6 +72,8 @@ function ConfirmDialog() {
       if (e.key === 'Escape') {
         e.stopPropagation();
         legacy.confirm.closeConfirm(false);
+      } else if (e.key === 'Tab') {
+        trapFocus(e, overlay);
       }
     }
     overlay.addEventListener('keydown', onKey, true);
