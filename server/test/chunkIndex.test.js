@@ -72,6 +72,23 @@ before(async () => {
     }
     dbAvailable = true;
   } catch (err) {
+    /* `npm run test:strict` promises "no silent skips". Honour that here:
+       with DATABASE_URL set, a failing probe means the database is real but
+       its schema is wrong — most often migration 0031 took its
+       graceful-degradation branch because the pgvector extension was
+       missing, so session_chunks has no `embedding` column while the
+       Drizzle schema selects it. Without this guard the suite reports 8
+       skipped and CI stays green over an unexercised retrieval path, which
+       is exactly the failure mode strict mode exists to prevent.
+       CI pins pgvector/pgvector:pg16 so this branch should not fire there. */
+    if (process.env.SOCRATES_TEST_STRICT === '1') {
+      throw new Error(
+        '[chunkIndex] strict mode: DATABASE_URL is set but session_chunks is ' +
+        'not queryable, so the suite would silently skip. Run migrations, and ' +
+        'use a Postgres image with pgvector so 0031 installs the embedding ' +
+        `column. Underlying error: ${err.message}`,
+      );
+    }
     console.log('[chunkIndex] DB not reachable — skipping integration tests:', err.message);
   }
 });

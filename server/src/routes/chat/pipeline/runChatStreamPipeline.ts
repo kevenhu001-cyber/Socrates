@@ -31,7 +31,8 @@ import {
 } from '../../../services/toolCallSafety.js';
 import { hashToolArguments } from '../../../services/toolTurnPolicy.js';
 import { dispatchToolCalls } from '../../../services/toolDispatch.js';
-import { estimateMessageTokens, estimateTokens, recordUsage } from '../../../services/usageTracker.js';
+import { estimateMessageTokens, estimateTokens, normalizeProviderUsage, recordUsage, resolveUsage } from '../../../services/usageTracker.js';
+import { annotateSpan, withSpan } from '../../../lib/telemetry.js';
 import { trackSseConnection, startSseKeepalive } from '../../../lib/sse.js';
 import {
   appendNativeToolContract,
@@ -108,12 +109,36 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
 
   let fullText = '';
   let fullReasoning = '';  // P_streaming-survival
-  /* Token accounting — compute prompt tokens once from the
-     incoming messages, then increment completion tokens as
-     chunks arrive. On done/error, persist a usage event into
-     `usage_events` so the heatmap has data to draw. */
+  /* Token accounting — the chars/4 estimate is the fallback. The
+     authoritative numbers come from the provider's `usage` frame, which
+     `stream_options.include_usage` now asks for (see services/llm.ts).
+
+     One chat turn can make SEVERAL upstream calls: every tool iteration is
+     its own streamChatCompletion, each with its own usage frame. Summing is
+     therefore required — taking only the last frame would under-report a
+     tool-using turn by however many iterations preceded it, which is the
+     expensive kind of turn. */
   const promptTokens = estimateMessageTokens(finalMessages);
   let completionTokens = 0;
+  let usagePromptTotal = 0;
+  let usageCompletionTotal = 0;
+  let sawProviderUsage = false;
+
+  function addProviderUsage(raw: unknown): void {
+    const u = normalizeProviderUsage(raw);
+    if (!u) return;
+    sawProviderUsage = true;
+    usagePromptTotal += u.promptTokens;
+    usageCompletionTotal += u.completionTokens;
+  }
+
+  /* Shaped like a provider usage object so resolveUsage can consume it
+     uniformly; returns null when no iteration reported anything, which is
+     the signal to fall back to the estimate. */
+  function accumulatedProviderUsage(): { prompt_tokens: number; completion_tokens: number } | null {
+    if (!sawProviderUsage) return null;
+    return { prompt_tokens: usagePromptTotal, completion_tokens: usageCompletionTotal };
+  }
 
   const abortController = new AbortController();
   let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
@@ -330,7 +355,15 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     const toolCallsThisTurn: ToolCall[] = [];
 
     let upstreamErr: Error | null = null;
-    await streamChatCompletion(
+    /* One span per upstream call. A tool-using turn makes several, so the
+       iteration index is an attribute rather than a separate span name —
+       that keeps them groupable while still showing which hop was slow.
+       This is the span that answers "was it the provider or was it us". */
+    await withSpan('llm.stream', {
+      'llm.model': provider.model,
+      'llm.tools_offered': toolsAllowed ? activeToolDefs.length : 0,
+      'socrates.tool_iteration': iter,
+    }, async () => await streamChatCompletion(
       {
         apiBase: provider.url,
         apiKey: provider.keyPlaintext,
@@ -364,9 +397,13 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         completionTokens = estimateTokens(fullText);
         emitter.content(chunk);
       },
-      // onDone — capture finish_reason so the loop can dispatch
-      ({ finishReason }: { finishReason: string | null }) => {
+      // onDone — capture finish_reason so the loop can dispatch, and the
+      // provider's `usage` object when it sent one. The tool loop can run
+      // several upstream calls per turn, so usage accumulates across
+      // iterations rather than being overwritten by the last one.
+      ({ finishReason, usage }: { finishReason: string | null; usage?: unknown }) => {
         iterFinishReason = finishReason;
+        addProviderUsage(usage);
       },
       // onError
       (err: Error) => {
@@ -396,7 +433,18 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       (delta: ToolCallDelta) => {
         emitter.toolCallDelta(delta);
       },
-    );
+    ));
+
+    /* Recorded after the call so a slow turn can be attributed without
+       correlating logs: whether the provider reported real token counts is
+       itself diagnostic, since a missing usage frame means the stream ended
+       early. */
+    annotateSpan({
+      'llm.finish_reason': iterFinishReason || 'none',
+      'llm.response_chars': fullText.length,
+      'llm.usage_reported': sawProviderUsage,
+      'llm.tool_calls': toolCallsThisTurn.length,
+    });
 
     if (upstreamErr) {
       // Error path already wrote [DONE] and ended the response.
@@ -639,13 +687,19 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * own saveCurrentSession() will persist the full message. */
   emitter.finish();
   if (req.userId) {
+    /* Prefer what the provider says it billed. resolveUsage falls back to
+       the chars/4 estimate when the upstream reported nothing (gateway
+       ignored stream_options, or the stream ended before the usage frame)
+       and tags the row so an aggregate can separate measured from guessed. */
+    const settled = resolveUsage(accumulatedProviderUsage(), { promptTokens, completionTokens });
     recordUsage({
       userId: req.userId,
       model: provider.model,
       sessionId: sessionIdFromQuery,
-      promptTokens,
-      completionTokens,
+      promptTokens: settled.promptTokens,
+      completionTokens: settled.completionTokens,
       source: 'chat',
+      usageSource: settled.usageSource,
     });
   }
   // P_streaming-survival — mark stream as completed BEFORE clearing
