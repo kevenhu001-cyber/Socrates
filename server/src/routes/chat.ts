@@ -15,7 +15,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { audit } from '../middleware/audit.js';
 import { callChatCompletion } from '../services/llm.js';
-import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
+import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../services/usageTracker.js';
 
 import {
   prepareChatRequest,
@@ -60,15 +60,22 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
       extra_body: safeExtraBody,
     });
 
-    const completionTokens = estimateTokens(completion.content || '');
+    /* Non-streaming responses always carry `usage` on OpenAI-compatible
+       providers, so this path is normally exact; the chars/4 estimate is
+       only reached when a gateway omits it. */
+    const settled = resolveUsage(completion.usage, {
+      promptTokens,
+      completionTokens: estimateTokens(completion.content || ''),
+    });
     if (req.userId) {
       recordUsage({
         userId: req.userId,
         model: provider.model,
         sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
-        promptTokens,
-        completionTokens,
+        promptTokens: settled.promptTokens,
+        completionTokens: settled.completionTokens,
         source: 'chat',
+        usageSource: settled.usageSource,
       });
     }
 
@@ -82,7 +89,15 @@ router.post('/', requireAuth, resourceScope('chat'), chatRateLimitDispatch, audi
       content,
       choices: [{ message: { role: 'assistant', content } }],
       reasoning_content: completion.reasoning_content || null,
-      usage: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens },
+      /* Report the same numbers that were billed, plus where they came from.
+         Previously this always echoed the chars/4 estimate, so a client had
+         no way to know the figure was approximate. */
+      usage: {
+        promptTokens: settled.promptTokens,
+        completionTokens: settled.completionTokens,
+        totalTokens: settled.promptTokens + settled.completionTokens,
+        source: settled.usageSource,
+      },
       meta: completion.meta,
     });
   } catch (err) { next(err); }

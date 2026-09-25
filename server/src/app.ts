@@ -3,6 +3,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import helmet from 'helmet';
+import { CSP_INLINE_SCRIPT_HASHES } from './generated/cspInlineHashes.js';
 
 import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
@@ -110,38 +111,53 @@ app.disable('x-powered-by');
 // CSP source list — keep this minimal and reviewed. Anything that
 // appears here is a deliberate allow-list entry, not a wildcard.
 //
-//   cdn.jsdelivr.net    — third-party JS/CSS we ship with SRI:
-//                          marked, katex (+ mhchem), mermaid, highlight.js,
-//                          fuse.js. All pinned with `integrity=` so the
-//                          browser still refuses a tampered file.
-//   fonts.googleapis.com — Google Fonts CSS API.
-//   fonts.gstatic.com    — Google Fonts woff2 binary CDN.
-//   'sha256-FUWgNE60…'   — the inline pre-boot script in index.html that
-//                          flips document.documentElement.dataset.bootState
-//                          to "checking" before main.js loads. CSP3
-//                          accepts hash-based per-script allow-listing in
-//                          place of `'unsafe-inline'`, which is safer.
+// 2026-09-25 review: this list used to allow cdn.jsdelivr.net in
+// script-src/style-src and fonts.googleapis.com / fonts.gstatic.com in
+// style-src/font-src, with a comment describing SRI-pinned CDN loads of
+// marked / katex / mermaid / highlight.js / fuse.js. That stopped being
+// true when P_perf-self-host moved every one of those to an npm import
+// bundled by Vite — frontend/index.html now states outright that "nothing
+// on this page depends on fonts.googleapis.com or cdn.jsdelivr.net", and
+// mermaid / echarts / plotly are dynamic imports of vendored UMD files.
+// The entries survived the migration, so the policy was handing out a
+// third-party arbitrary-script-execution surface for a dependency that no
+// longer existed. Removed.
+//
+// Remaining non-'self' entries, each with a live consumer:
+//   https://www.geogebra.org — the GeoGebra applet host, loaded as both a
+//                              script and an iframe by the visualization
+//                              renderer (see frameSrc/scriptSrc below).
+//   data:                    — inline SVG/PNG data URIs in tokens + icons.
+//   blob:                    — object URLs for generated images/downloads.
+//   https: (img-src only)    — see the note on CSP_IMG_SOURCES.
+//
+// Note on scope: in production nginx serves the SPA from
+// /var/www/app.topodrive.top and proxies /api/v2 to this process on the
+// same origin, so these helmet headers reach API responses but NOT the SPA
+// document. The SPA vhost needs its own header; ops/nginx/csp-spa.conf is
+// generated from the same policy by scripts/gen-csp-hashes.mjs so the two
+// cannot drift.
+// 'unsafe-inline' is required, not preferred: `<iframe srcdoc>` inherits this
+// document's CSP, and the viz cards render model-authored inline scripts. See
+// the long note in scripts/gen-csp-hashes.mjs for the measurement (23 failing
+// specs without it) and the route to removing it.
 const CSP_SCRIPT_SOURCES = [
   "'self'",
-  'https://cdn.jsdelivr.net',
-];
-const CSP_SCRIPT_HASHES = [
-  // Pre-boot inline script in frontend/index.html (no <script> tags).
-  // If you edit that script you MUST recompute the hash here or the
-  // page will fail to load with "Refused to execute inline script".
-  "'sha256-FUWgNE60lf0IIcMKXL3LpcSKKY9E3uXAiD7xZUcUuQo='",
+  "'unsafe-inline'",
 ];
 const CSP_STYLE_SOURCES = [
   "'self'",
   "'unsafe-inline'",        // Vite emits a small inline style block
-  'https://cdn.jsdelivr.net',
-  'https://fonts.googleapis.com',
 ];
 const CSP_FONT_SOURCES = [
   "'self'",
   'data:',
-  'https://fonts.gstatic.com',
 ];
+// img-src keeps `https:` deliberately: assistant replies routinely contain
+// markdown images pointing at arbitrary hosts, and /api/image-search
+// returns third-party thumbnail URLs. Narrowing this would silently break
+// both features. Images cannot execute, so the residual risk is referrer
+// leakage / tracking pixels, already bounded by referrerPolicy above.
 const CSP_IMG_SOURCES = [
   "'self'",
   'data:',
@@ -186,7 +202,15 @@ app.use(helmet({
       scriptSrc: [
         ...CSP_SCRIPT_SOURCES,
         'https://www.geogebra.org',
-        ...CSP_SCRIPT_HASHES,
+        // Hashes are deliberately NOT appended while 'unsafe-inline' is in
+        // CSP_SCRIPT_SOURCES: CSP3 makes a browser ignore 'unsafe-inline' as
+        // soon as a hash is present, which would re-enable hash-only
+        // enforcement and break every `<iframe srcdoc>` viz card (measured:
+        // 23 failing Playwright specs). scripts/gen-csp-hashes.mjs applies the
+        // same rule to ops/nginx/csp-spa.conf, and CSP_INLINE_SCRIPT_HASHES
+        // stays imported and drift-checked for the day the viz iframes move to
+        // a real URL and this can become hash-only.
+        ...(CSP_SCRIPT_SOURCES.includes("'unsafe-inline'") ? [] : CSP_INLINE_SCRIPT_HASHES),
         ...(process.env.ALLOW_DEV_EVAL === '1' ? ["'unsafe-eval'"] : []),
       ],
       styleSrc: CSP_STYLE_SOURCES,
@@ -222,13 +246,19 @@ app.use(helmet({
   // Restrict powerful APIs the SPA doesn't need.
   permittedCrossDomainPolicies: { permittedPolicies: 'none' },
   // Cross-Origin-Embedder-Policy defaults to "require-corp" in helmet,
-  // which would force every cross-origin script to opt-in via CORP
-  // headers — including cdn.jsdelivr.net. Disable COEP entirely; we
-  // don't need SharedArrayBuffer / cross-origin isolation for the SPA.
+  // which would force every cross-origin subresource to opt in via CORP
+  // headers. We don't need SharedArrayBuffer / cross-origin isolation, and
+  // enabling it would break remote markdown images (img-src https:) and the
+  // GeoGebra embed. Disabled deliberately.
   crossOriginEmbedderPolicy: false,
-  // CORP must be "cross-origin" so the SPA can still load SRI-pinned
-  // scripts from cdn.jsdelivr.net (without this, the browser refuses
-  // them under same-site policy).
+  // CORP is left at "cross-origin" rather than tightened to "same-origin".
+  // The pre-2026-09-25 comment justified it with SRI-pinned
+  // cdn.jsdelivr.net scripts, which no longer exist — and the SPA reaches
+  // the API same-origin through the nginx /api/v2 reverse proxy, so that
+  // rationale never applied either. The honest reason to keep it wide is
+  // that the non-browser clients (Expo web build, the frozen Capacitor
+  // shell) have not been audited for no-cors subresource loads against the
+  // API host; narrowing this is a separate, testable change.
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   // Same-origin opener — prevents window.opener leaks.
   crossOriginOpenerPolicy: { policy: 'same-origin' },
@@ -748,6 +778,7 @@ app.use('/api/vision', visionRouter);
    static handler never wins over an API match.
    ──────────────────────────── */
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -777,8 +808,18 @@ app.use(express.static(FRONTEND_DIST, {
 }));
 // SPA fallback: any non-/api GET that didn't match a static file
 // returns index.html so client-side routing keeps working.
+//
+// The bundle is NOT always colocated with the API. In production nginx serves
+// it from /var/www/app.topodrive.top, and the container image (server/Dockerfile)
+// deliberately omits frontend/ entirely. Before 2026-09-25 that made every
+// request to `/` throw ENOENT into the error handler and return 500 — which
+// also means a naive uptime probe on the root path reports the service as down
+// while it is serving API traffic perfectly. Fall through to the 404 handler
+// instead: "this process does not serve the SPA" is a not-found, not a fault.
 app.get(/^\/(?!api\/).*/, (_req, res, next) => {
-  res.sendFile(path.join(FRONTEND_DIST, 'index.html'), (err) => {
+  const shell = path.join(FRONTEND_DIST, 'index.html');
+  if (!existsSync(shell)) return next();
+  res.sendFile(shell, (err) => {
     if (err) next(err);
   });
 });

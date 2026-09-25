@@ -109,6 +109,16 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     max_tokens: maxTokens || DEFAULT_MAX_TOKENS,
     temperature,
     stream,
+    /* Ask the upstream to report what it actually billed. Without this a
+       streaming response carries no `usage` object at all, which is why
+       services/usageTracker.ts had nothing but a chars/4 estimate to work
+       with. Non-streaming responses include `usage` unconditionally, so this
+       only needs to be set for streams.
+
+       Generic OpenAI-compatible gateways sometimes reject unknown top-level
+       fields with a 400, so `stream_options` is stripped by the first
+       compatibility variant below rather than being sent unconditionally. */
+    ...(stream ? { stream_options: { include_usage: true } } : {}),
     ...(reasoning_effort ? { reasoning_effort } : {}),
     ...(response_speed === 'fast' ? { service_tier: 'priority' } : {}),
     ...(extra_body ? { ...extra_body } : {}),
@@ -128,27 +138,54 @@ function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean
     { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' ? 'fast' : 'standard' },
   ];
   let compatibilityBase = withTools;
+
+  /* `stream_options` is the newest field we send and a plausible source of a
+   * 400 on an older OpenAI-compatible gateway. It is dropped by the FIRST
+   * compatibility variant rather than by a variant of its own: each variant
+   * costs another upstream round-trip, and losing exact usage accounting is
+   * strictly cheaper than another request. Folding it in keeps the retry
+   * count identical to what it was before usage accounting existed for every
+   * request shape that already had a fallback. */
+  const dropStreamOptions = (body: Record<string, unknown>) => {
+    if (!stream) return body;
+    const { stream_options: _streamOptions, ...rest } = body;
+    return rest;
+  };
+
   /* Priority service is provider-specific. Its fallback is deliberately the
      first compatibility variant so tools, reasoning_effort and extra_body
      survive when a generic OpenAI-compatible gateway rejects service_tier. */
   if (response_speed === 'fast') {
-    const { service_tier: _serviceTier, ...withoutPriority } = withTools;
-    compatibilityBase = withoutPriority;
-    variants.push({ body: withoutPriority, reason: 'provider-400-without-priority', speedApplied: 'standard' });
+    const { service_tier: _serviceTier, ...withoutPriority } = compatibilityBase;
+    compatibilityBase = dropStreamOptions(withoutPriority);
+    variants.push({ body: compatibilityBase, reason: 'provider-400-without-priority', speedApplied: 'standard' });
   }
   if (hasTools) {
     const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;
-    compatibilityBase = withoutTools;
-    variants.push({ body: withoutTools, reason: 'provider-400-with-tools', speedApplied: 'standard' });
+    compatibilityBase = dropStreamOptions(withoutTools);
+    variants.push({ body: compatibilityBase, reason: 'provider-400-with-tools', speedApplied: 'standard' });
   }
   /* Optional reasoning fields are another common source of 400s on generic
    * gateways. Only try this stricter form after the previous compatibility
    * variant, never on a successful request. */
   if (reasoning_effort || extra_body) {
     const { reasoning_effort: _effort, ...withoutReasoning } = compatibilityBase;
-    const withoutOptional = { ...withoutReasoning };
+    const withoutOptional = dropStreamOptions({ ...withoutReasoning });
     for (const key of Object.keys(extra_body || {})) delete withoutOptional[key];
+    compatibilityBase = withoutOptional;
     variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
+  }
+  /* Only when NO other compatibility variant exists does stream_options get
+   * one of its own — otherwise a plain streaming request (no tools, no
+   * priority, no reasoning fields) would have no recovery path at all for a
+   * gateway that rejects the field, which is a capability the pre-usage code
+   * never needed. */
+  if (stream && variants.length === 1) {
+    variants.push({
+      body: dropStreamOptions(withTools),
+      reason: 'provider-400-with-stream-options',
+      speedApplied: response_speed === 'fast' ? 'fast' : 'standard',
+    });
   }
   return variants;
 }
@@ -216,7 +253,12 @@ export function mergeToolNameDelta(previous: unknown, incoming: unknown): string
  * @param {Array}  [opts.tools]       - OpenAI-style tool definitions
  * @param {string} [opts.tool_choice] - 'auto' | 'none' | 'required' | {type:'function', function:{name}}
  * @param {function} onChunk     - Called with each text chunk
- * @param {function} onDone      - Called when streaming completes; receives { finishReason } so the
+ * @param {function} onDone      - Called when streaming completes; receives
+ *                                { finishReason, usage } where `usage` is the raw
+ *                                upstream usage object from the final
+ *                                stream_options.include_usage frame (null when the
+ *                                provider sent none, or the stream ended early). The
+ *                                finishReason is used so the
  *                                  caller can decide whether to dispatch tool calls
  * @param {function} onError     - Called on error
  * @param {function} [onReasoning] - Called with each reasoning_content chunk (DeepSeek-style)
@@ -235,7 +277,7 @@ export function mergeToolNameDelta(previous: unknown, incoming: unknown): string
 export async function streamChatCompletion(
   opts: ChatCompletionRequestOptions,
   onChunk: (chunk: string) => void,
-  onDone: (info: { finishReason: string | null }) => void,
+  onDone: (info: { finishReason: string | null; usage?: unknown }) => void,
   onError: (err: Error) => void,
   onReasoning?: (reasoning: string) => void,
   onToolUse?: (tc: { id: string; type: 'function'; function: { name: string; arguments: string } }) => void,
@@ -377,6 +419,10 @@ export async function streamChatCompletion(
     const decoder = new TextDecoder();
     let buffer = '';
     let finishReason: string | null = null;
+    /* Raw `usage` object from the upstream, if it sent one. Kept raw rather
+       than normalised here so services/usageTracker.ts owns the per-provider
+       shape handling in exactly one place. */
+    let providerUsage: unknown = null;
     /* tool_call deltas arrive indexed by `index`. We accumulate them
        into full {id, type, function:{name, arguments}} objects that
        mirror what the model would have produced in a non-streaming
@@ -469,8 +515,20 @@ export async function streamChatCompletion(
 
         try {
           const json = JSON.parse(trimmed.slice(6));
+          /* Usage arrives in its OWN frame, after the last content delta,
+             with `choices: []`. It must be read BEFORE the `!delta` guard
+             below — that guard is why `stream_options.include_usage` data
+             was silently discarded even on providers that honour it, leaving
+             usageTracker with nothing but a chars/4 estimate. */
+          if (json.usage && typeof json.usage === 'object') providerUsage = json.usage;
           const delta = json.choices?.[0]?.delta;
-          if (!delta) continue;
+          if (!delta) {
+            /* Still worth checking for finish_reason: some gateways send a
+               final choices entry with no delta. */
+            const finalChoice = json.choices?.[0];
+            if (finalChoice && finalChoice.finish_reason) finishReason = finalChoice.finish_reason;
+            continue;
+          }
           /* P_deepseek-mode — reasoning_content arrives on a separate
              field on DeepSeek-family models when the request included
              `extra_body.thinking.type: enabled`. Surface it through a
@@ -520,6 +578,11 @@ export async function streamChatCompletion(
     if (tail.startsWith('data: ')) {
       try {
         const json = JSON.parse(tail.slice(6));
+        /* The usage frame is the LAST frame of the stream, so it very often
+           ends up here rather than in the loop above — the buffer keeps it
+           when the upstream closes without a trailing newline. Read it
+           before the `if (delta)` guard for the same reason as above. */
+        if (json.usage && typeof json.usage === 'object') providerUsage = json.usage;
         const delta = json.choices?.[0]?.delta;
         if (delta) {
           if (typeof onReasoning === 'function') {
@@ -571,7 +634,7 @@ export async function streamChatCompletion(
       }
     }
 
-    onDone({ finishReason });
+    onDone({ finishReason, usage: providerUsage });
   } catch (err) {
     if (silenceTimer) clearTimeout(silenceTimer);
     if (firstByteTimer) clearTimeout(firstByteTimer);
@@ -662,6 +725,11 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
 
   const json = await response.json() as {
     choices?: Array<{ message?: { content?: string; reasoning_content?: unknown; tool_calls?: unknown }; finish_reason?: string | null }>;
+    /* Non-streaming responses carry `usage` unconditionally on every
+       OpenAI-compatible provider. It used to be parsed and thrown away,
+       which is why even the non-streaming path billed from a chars/4
+       estimate. Surfaced below so callers can prefer measured numbers. */
+    usage?: unknown;
   };
   /* P_deepseek-mode — preserve reasoning_content on the final
      message so the client can persist it for the next turn. */
@@ -672,6 +740,9 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
     reasoning_content: typeof message.reasoning_content === 'string' ? message.reasoning_content : undefined,
     tool_calls: Array.isArray(message.tool_calls) ? message.tool_calls : undefined,
     finish_reason: finishReason,
+    /* Raw upstream usage object, or undefined when the provider omitted it.
+       Normalisation lives in services/usageTracker.ts (resolveUsage). */
+    usage: json.usage,
     meta: {
       response_speed_applied: successfulVariant?.speedApplied || 'standard',
     },

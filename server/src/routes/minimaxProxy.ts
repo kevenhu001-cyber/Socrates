@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getActiveApiKey } from '../services/apiKey.js';
 import { streamChatCompletion, callChatCompletion } from '../services/llm.js';
-import { estimateMessageTokens, estimateTokens, recordUsage } from '../services/usageTracker.js';
+import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../services/usageTracker.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
@@ -189,19 +189,23 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           } catch { /* client disconnected */ }
         },
         // onDone
-        () => {
+        ({ usage }) => {
           try {
             res.write('data: [DONE]\n\n');
             res.end();
           } catch { /* ignore */ }
           if (req.userId) {
+            /* Built-in MiniMax provider: prefer its reported usage, fall
+               back to the chars/4 estimate when the frame is absent. */
+            const settled = resolveUsage(usage, { promptTokens, completionTokens });
             recordUsage({
               userId: req.userId,
               model: upstreamModel,
               sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
-              promptTokens,
-              completionTokens,
+              promptTokens: settled.promptTokens,
+              completionTokens: settled.completionTokens,
               source: 'chat',
+              usageSource: settled.usageSource,
             });
           }
         },

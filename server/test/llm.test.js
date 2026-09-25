@@ -110,7 +110,11 @@ describe('streamChatCompletion: happy path', () => {
 
     assert.equal(error, null, 'no error expected');
     assert.deepEqual(chunks, ['Hello', ' world']);
-    assert.deepEqual(donePayload, { finishReason: 'stop' });
+    /* onDone widened to { finishReason, usage } when provider token
+       accounting landed. `usage` is null here because this fixture sends no
+       stream_options.include_usage frame — see test/usageAccounting.test.js
+       for the frames that populate it. */
+    assert.deepEqual(donePayload, { finishReason: 'stop', usage: null });
 
     const call = globalThis.fetch.mock.calls[0];
     assert.equal(call.arguments[0], `${BASE_OPTS.apiBase}/chat/completions`);
@@ -513,7 +517,9 @@ describe('streamChatCompletion: error & edge cases', () => {
     await p;
 
     assert.equal(error, null, 'client abort should not surface as error');
-    assert.deepEqual(done, { finishReason: null });
+    /* A client abort never reaches the upstream's final usage frame, so
+       usage is null and the caller falls back to the chars/4 estimate. */
+    assert.deepEqual(done, { finishReason: null, usage: null });
   });
 });
 
