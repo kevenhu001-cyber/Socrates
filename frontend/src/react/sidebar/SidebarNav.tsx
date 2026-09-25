@@ -113,7 +113,7 @@ function SidebarNav() {
                   window.openCmdK?.();
                   return;
                 }
-                getLegacyActions().navigation.resetApp();
+                getLegacyActions().navigation.startNewChat();
               } else if (button.key === 'skills') {
                 getLegacyActions().navigation.openPromptTemplatesModal();
               } else if (button.key !== null) {

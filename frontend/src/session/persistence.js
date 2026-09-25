@@ -67,6 +67,22 @@ export function saveCurrentSession(){
 }
 
 
+/* New-session path: persist the current conversation without blocking the
+   UI on an in-flight save. When a POST is already running, the state is
+   snapshotted now (before the caller resets it) and sent right after the
+   running request settles, so the reset never waits on the network. */
+export function saveSessionBeforeReset(){
+  if(!saveState.saveInFlight)return saveCurrentSession();
+  if(typeof window!=="undefined"&&window.incognitoOn)return null;
+  if(!stateStore.read("topic"))return null;
+  if(!(typeof window!=="undefined"&&window.CURRENT_USER))return null;
+  if(saveState.loadingSession)return null;
+  if(deletedSessionGuard.has(stateStore.read("currentSessionId")))return null;
+  saveState.pendingSnapshot=captureSessionPayload();
+  saveState.saveDirty=false;
+  return saveState.saveInFlight;
+}
+
 function doSave(){
   /* Guard against saving after state has been reset — the
      saveState.saveDirty cascade in saveCurrentSession bypasses the
@@ -88,6 +104,45 @@ function doSave(){
     return;
   }
   if(!stateStore.read("topic"))return;
+  var payload=captureSessionPayload();
+  var sessionId=payload.id;
+  /* P_dup-session — sync the namespace mirror too. Without this,
+     a second saveCurrentSession in the same tick reads
+     stateStore.read("currentSessionId") (still null because line 1228
+     only fires after the server responds), regenerates a new id,
+     and the server creates a SECOND session record — the user
+     sees the same chat appear twice in Recents. The two fields
+     have to stay in lock-step synchronously, not just on the
+     async POST response. */
+  stateStore.dispatch({type:"state/set",key:"currentSessionId",value:sessionId});
+  toggleShareBtn();
+  /* Kick off AI title generation based on the user's first input. */
+  if(!stateStore.read("sessionTitle"))generateSessionTitle();
+  /* P1.2 — rebuild the Cmd-K search index after every save so the
+     user can immediately find the message they just sent.
+     P_lag-fix — Fuse builds over SERVER_SESSIONS + stateStore.read("messages")
+     and can stall the click→paint path on the new-session click by
+     100-500ms when there are many sessions. Defer to idle time so
+     the greeting stream starts unblocked; Cmd-K still rebuilds
+     synchronously the first time it's opened (lazy guard at line 893). */
+  if(typeof requestIdleCallback==="function"){
+    requestIdleCallback(function(){rebuildCmdKIndex()},{timeout:2000});
+  }else{
+    setTimeout(function(){rebuildCmdKIndex()},0);
+  }
+  /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
+     refreshed on next renderRecents; we don't block the UI on the roundtrip.
+     P0.0 — adopt the server's canonical session id when it differs
+     from what we sent. Pre-UUID fix the client generated identifiers
+     like "mq61wc16-ayb8j6" and the server swapped in a fresh UUID
+     before inserting. Without this adoption step, every subsequent
+     save kept sending the original (rejected) id, breaking the upsert
+     and producing duplicate rows. */
+  postSession(payload);
+}
+
+/* Snapshot the active session into a POST payload without touching state. */
+function captureSessionPayload(){
   var now=Date.now();
   /* P1.1 — read from the authoritative stateStore.read("messages") list, NOT
      from the live DOM. The DOM may still hold a half-rendered
@@ -131,12 +186,6 @@ function doSave(){
     };
   });
   var sessionId=stateStore.read("currentSessionId")||generateId();
-  /* P_context-race — snapshot the session ID at capture time so the
-     POST callback can detect whether a session switch happened while
-     the request was in-flight. If the active session changed, the
-     POST response (server-adopted id) must NOT overwrite the new
-     session's URL / state. */
-  var capturedSessionId=sessionId;
   var payload={
     id:sessionId,
     topic:stateStore.read("topic"),
@@ -170,38 +219,17 @@ function doSave(){
     branchedFrom:stateStore.read("branchedFrom")||null,
     updatedAt:now,
   };
-  /* P_dup-session — sync the namespace mirror too. Without this,
-     a second saveCurrentSession in the same tick reads
-     stateStore.read("currentSessionId") (still null because line 1228
-     only fires after the server responds), regenerates a new id,
-     and the server creates a SECOND session record — the user
-     sees the same chat appear twice in Recents. The two fields
-     have to stay in lock-step synchronously, not just on the
-     async POST response. */
-  stateStore.dispatch({type:"state/set",key:"currentSessionId",value:sessionId});
-  toggleShareBtn();
-  /* Kick off AI title generation based on the user's first input. */
-  if(!stateStore.read("sessionTitle"))generateSessionTitle();
-  /* P1.2 — rebuild the Cmd-K search index after every save so the
-     user can immediately find the message they just sent.
-     P_lag-fix — Fuse builds over SERVER_SESSIONS + stateStore.read("messages")
-     and can stall the click→paint path on the new-session click by
-     100-500ms when there are many sessions. Defer to idle time so
-     the greeting stream starts unblocked; Cmd-K still rebuilds
-     synchronously the first time it's opened (lazy guard at line 893). */
-  if(typeof requestIdleCallback==="function"){
-    requestIdleCallback(function(){rebuildCmdKIndex()},{timeout:2000});
-  }else{
-    setTimeout(function(){rebuildCmdKIndex()},0);
-  }
-  /* Fire-and-forget write to server. The local SERVER_SESSIONS cache is
-     refreshed on next renderRecents; we don't block the UI on the roundtrip.
-     P0.0 — adopt the server's canonical session id when it differs
-     from what we sent. Pre-UUID fix the client generated identifiers
-     like "mq61wc16-ayb8j6" and the server swapped in a fresh UUID
-     before inserting. Without this adoption step, every subsequent
-     save kept sending the original (rejected) id, breaking the upsert
-     and producing duplicate rows. */
+  return payload;
+}
+
+function postSession(payload){
+  var sessionId=payload.id;
+  /* P_context-race — snapshot the session ID at capture time so the
+     POST callback can detect whether a session switch happened while
+     the request was in-flight. If the active session changed, the
+     POST response (server-adopted id) must NOT overwrite the new
+     session's URL / state. */
+  var capturedSessionId=sessionId;
   saveState.saveInFlight=apiFetch("/api/sessions",{method:"POST",body:payload}).then(function(r){
     /* P_delete-resurrect — if this session was deleted while the
        POST was in-flight (rememberDeletedSession set a tombstone),
@@ -209,6 +237,9 @@ function doSave(){
        have processed this upsert after the DELETE (race), potentially
        resurrecting the row. Instead, just refresh the server list
        which will reflect the DELETE (or the next DELETE cycle). */
+    if(r&&r.id&&r.id!==sessionId&&saveState.pendingSnapshot&&saveState.pendingSnapshot.id===sessionId){
+      saveState.pendingSnapshot.id=r.id;
+    }
     if(deletedSessionGuard.has(capturedSessionId)){
       return _refreshServerSessions();
     }
@@ -256,6 +287,11 @@ function doSave(){
        queued save picks up the latest state (and the just-adopted
        server id, if any) instead of re-sending a stale id. */
     saveState.saveInFlight=null;
+    if(saveState.pendingSnapshot){
+      var queued=saveState.pendingSnapshot;
+      saveState.pendingSnapshot=null;
+      if(!deletedSessionGuard.has(queued.id)){postSession(queued);return;}
+    }
     if(saveState.saveDirty){
       saveState.saveDirty=false;
       doSave();

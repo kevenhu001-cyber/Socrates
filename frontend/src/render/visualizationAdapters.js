@@ -154,7 +154,8 @@ async function mountThree(spec, stage) {
   camera.position.set(6, 5, 8);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(stage.clientWidth, stage.clientHeight);
+  renderer.setSize(Math.max(stage.clientWidth, 1), Math.max(stage.clientHeight, 1), false);
+  renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
   stage.appendChild(renderer.domElement);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x273149, 2.1));
   const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(5, 8, 4); scene.add(key);
@@ -175,11 +176,30 @@ async function mountThree(spec, stage) {
   const controls = new controlsModule.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   let frame = 0;
-  const draw = () => { controls.update(); renderer.render(scene, camera); frame = requestAnimationFrame(draw); };
+  let visible = true;
+  const draw = () => {
+    frame = 0;
+    controls.update();
+    renderer.render(scene, camera);
+    if (visible) frame = requestAnimationFrame(draw);
+  };
   draw();
+  /* Only animate while the card is on screen; an offscreen WebGL loop
+     keeps the main thread and GPU busy for the whole session. */
+  const visibility = typeof IntersectionObserver === 'function'
+    ? new IntersectionObserver(([entry]) => {
+      visible = !!entry?.isIntersecting;
+      if (visible && !frame) frame = requestAnimationFrame(draw);
+    })
+    : null;
+  visibility?.observe(stage);
+  let lastWidth = 0, lastHeight = 0;
   const resize = new ResizeObserver(() => {
     const width = Math.max(stage.clientWidth, 1), height = Math.max(stage.clientHeight, 1);
-    camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height);
+    if (width === lastWidth && height === lastHeight) return;
+    lastWidth = width; lastHeight = height;
+    camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height, false);
+    if (!frame) renderer.render(scene, camera);
   });
   resize.observe(stage);
   return {
@@ -188,7 +208,7 @@ async function mountThree(spec, stage) {
       dispatchAction() { camera.position.set(6, 5, 8); controls.target.set(0, 0, 0); controls.update(); },
       getDataURL() { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
     },
-    cleanup() { cancelAnimationFrame(frame); resize.disconnect(); controls.dispose(); renderer.dispose(); scene.clear(); },
+    cleanup() { visible = false; cancelAnimationFrame(frame); resize.disconnect(); visibility?.disconnect(); controls.dispose(); renderer.dispose(); scene.clear(); },
   };
 }
 

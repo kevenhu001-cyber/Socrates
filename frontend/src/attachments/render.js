@@ -251,6 +251,39 @@ export function openAttachmentPicker(inputId){
   input.click();
 }
 
+/* Camera / photo-library pickers use their own inputs instead of mutating
+ * the shared composer input. A dedicated `accept="image/*" capture` input
+ * without `multiple` is what mobile browsers and the Android WebView need
+ * to launch the camera directly (no intermediate chooser), and it keeps the
+ * regular Upload action from inheriting a stale camera-only accept list. */
+const MEDIA_INPUTS = {};
+function mediaInput(kind){
+  if(MEDIA_INPUTS[kind] && MEDIA_INPUTS[kind].isConnected) return MEDIA_INPUTS[kind];
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.hidden = true;
+  input.id = kind === "camera" ? "cameraCaptureInput" : "photoPickerInput";
+  if(kind === "camera") input.setAttribute("capture", "environment");
+  else input.multiple = true;
+  input.addEventListener("change", async function(){
+    if(!input.files || !input.files.length) return;
+    const res = await addFiles(input.files, renderAndRefresh, updateProgressOnly);
+    refreshAllSendBtns();
+    surfaceRejectionToast(res);
+  });
+  document.body.appendChild(input);
+  MEDIA_INPUTS[kind] = input;
+  return input;
+}
+
+export function openMediaPicker(kind){
+  if(typeof document === "undefined" || !document.body) return;
+  const input = mediaInput(kind === "camera" ? "camera" : "photos");
+  input.value = "";
+  input.click();
+}
+
 /* Hook into module load — wire document-level drag/drop once,
  * then call setupAttachmentInput for each known composer. */
 let docDragWired = false;

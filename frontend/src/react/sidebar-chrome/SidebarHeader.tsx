@@ -60,7 +60,7 @@ export function SidebarHeader() {
           aria-label="Start a new chat"
           onClick={(e) => {
             e.preventDefault();
-            getLegacyActions().navigation.resetApp();
+            getLegacyActions().navigation.startNewChat();
           }}
           dangerouslySetInnerHTML={{ __html: NEW_CHAT_ICON }}
         />

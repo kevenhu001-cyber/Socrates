@@ -131,6 +131,11 @@ export function installGlobalErrorGuard() {
   }
 
   window.addEventListener('error', (ev) => {
+    /* Browsers report a ResizeObserver callback that resized observed
+       content as a window error. It is a benign layout notice (the
+       remaining notifications are simply delivered next frame), not a
+       crash, so it must not raise the red banner. */
+    if (ev && /ResizeObserver loop/i.test(String(ev.message || ''))) return true;
     // ev.error holds the Error object when available; fall back to
     // ev.message for the rare case the browser only reports a string.
     handle('error', ev && (ev.error || ev.message) || 'unknown');

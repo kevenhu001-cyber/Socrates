@@ -152,7 +152,7 @@ export function installKeyboardShortcuts() {
     /* Cmd+Shift+O — new chat. */
     if(cmd&&!e.altKey&&e.shiftKey&&key==="o"){
       e.preventDefault();
-      if(typeof resetApp==="function")window.resetApp();
+      if(typeof window.startNewChat==="function")window.startNewChat();
       return;
     }
     /* Cmd+Shift+S — share. */

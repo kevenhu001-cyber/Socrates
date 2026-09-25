@@ -36,7 +36,7 @@ export function bootstrapApp(options) {
 
   mountLegacyShellListeners({
     toggleSidebar: options.toggleSidebar,
-    resetApp: options.resetApp,
+    startNewChat: options.startNewChat,
     toggleIncognito: options.toggleIncognito,
     openFind: options.openFind,
     openShare: options.openShare,

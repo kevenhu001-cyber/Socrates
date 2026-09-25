@@ -21,7 +21,7 @@ import { resetShareToken, toggleChatTopBarEls, toggleShareBtn } from '../ui/shar
 import { setChatIdInURL, setExamIdInURL } from '../session/store.js';
 import { scrollContainer } from '../ui/scroll.js';
 import { updateStartBtn } from '../ui/topicSetup.js';
-import { saveCurrentSession } from '../session/persistence.js';
+import { saveCurrentSession, saveSessionBeforeReset } from '../session/persistence.js';
 import { syncModelPills } from '../pickers.js';
 import { renderUserFooter } from '../ui/profile.js';
 import { resetCrossSessionKBCache } from '../ui/knowledgeCrossSession.js';
@@ -73,7 +73,17 @@ export function clearUserMemories() { try { _userMemories = []; } catch (_) {} }
 var _lastAuthSuccessAt = 0;
 var AUTH_GRACE_MS = 3000;
 
-export async function resetApp(){
+/* Explicit "new chat" entry points (sidebar compose button, nav item,
+   mobile top bar, ⌘⇧O). The current conversation is persisted to Recents
+   automatically, so asking "start a new session?" there is pure friction:
+   switch immediately. The confirm is kept only where work would be lost —
+   a reply that is still streaming, or an exam in progress. */
+export function startNewChat(){
+  return resetApp({ confirmActiveSession: false });
+}
+
+export async function resetApp(options){
+  var confirmActiveSession = !(options && options.confirmActiveSession === false);
   /* React owns #msgList and always leaves a wrapper element inside it,
      so DOM child count no longer signals an active session — use state.
      P_exam-confirm — also fire the "Start a new session?" confirm when
@@ -88,18 +98,18 @@ export async function resetApp(){
     || (typeof stateStore.read("examTopic") === "string" && stateStore.read("examTopic").length > 0
         && Array.isArray(stateStore.read("examQuestions")) && stateStore.read("examQuestions").length > 0)
     || !!stateStore.read("examSubmitted");
-  if(stateStore.read("topic")||stateStore.read("kbNodes").length>0||(Array.isArray(stateStore.read("messages"))&&stateStore.read("messages").length>0)||_examDirty){
+  var _hasActiveSession = stateStore.read("topic")||stateStore.read("kbNodes").length>0||(Array.isArray(stateStore.read("messages"))&&stateStore.read("messages").length>0);
+  var _needsConfirm = _examDirty || (_hasActiveSession && (confirmActiveSession || turnState.chatStreaming));
+  if(_needsConfirm){
     var ok=await showConfirm(_t("confirm.newSession.title"),_t("confirm.newSession.msg"),false);
     if(!ok){ window._nextProjectId=null; return false; }
   }
   publishThinkingTurnStart();
-  /* Drain any previous in-flight save first so the dirty cascade
-     fires before resetState. Then fire the new save with the current
-     snapshot — don't block the UI on the network roundtrip. */
-  if (saveState.saveInFlight) {
-    try { await saveState.saveInFlight; } catch (_) {}
-  }
-  saveCurrentSession();
+  /* Persist the current conversation without waiting on the network.
+     If a save is already in flight, the state is snapshotted now and
+     posted as soon as that request settles, so the new-session switch
+     never stalls behind a POST + session-list roundtrip. */
+  saveSessionBeforeReset();
   try { sessionStorage.removeItem('socrates-active-assistant'); } catch (_) {}
   /* P5.8 — clear the active prompt template. A new session
      is a fresh context; carrying over "summarize mode" from

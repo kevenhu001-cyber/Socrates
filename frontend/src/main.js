@@ -64,7 +64,7 @@ import { initLinkFavicons } from './ui/linkFavicons.js';
    e2e hook, both of which import it themselves. */
 import { installDiagnosticFlowListeners } from './tutor/diagnosticFlow.js';
 import { startSession } from './chat/sessionBootstrap.js';
-import { resetApp, toggleIncognito, isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.js';
+import { startNewChat, toggleIncognito, isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.js';
 import { deletedSessionGuard } from './session/saveState.js';
 import { setRecentsSearch } from './ui/recentsView.js';
 import { installLiveTurnRetryListener } from './chat/liveTurn.js';
@@ -914,7 +914,7 @@ bootstrapApp({
   loadTonePreset: loadTonePreset,
   loadMemories: loadMemories,
   toggleSidebar: toggleSidebar,
-  resetApp: resetApp,
+  startNewChat: startNewChat,
   toggleIncognito: toggleIncognito,
   openFind: openFindInSession,
   openShare: openShareModal,
