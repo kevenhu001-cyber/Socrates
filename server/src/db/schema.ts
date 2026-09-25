@@ -177,6 +177,27 @@ export const messages = pgTable('messages', {
   index('messages_session_id_idx').on(table.sessionId),
   index('messages_parent_id_idx').on(table.parentId),
   index('messages_created_at_idx').on(table.createdAt),
+  /* Audit P-M2 — transcript reads are all `WHERE session_id = ? ORDER BY
+     created_at`: routes/messages.ts (history rebuild, edit truncation,
+     regenerate), routes/publicShares.ts (/s/:token, LIMIT 200),
+     routes/sessions.ts (GET /:id), routes/account.ts (export) and
+     routes/suggestions.ts (DESC LIMIT).
+
+     Measured on 3.08M messages / 2k sessions, target session 60k rows:
+       ORDER BY created_at DESC LIMIT 20  →  2.7-9.1ms  becomes  0.05ms
+       ORDER BY created_at LIMIT 200      →  ~0.1ms     unchanged
+       full 60k-row transcript            →  ~34ms      unchanged
+     So the win is concentrated in the bounded/DESC queries, where the
+     planner can walk this index in order instead of scanning
+     messages_created_at_idx and filtering. The unbounded transcript read
+     stays a bitmap scan + sort either way (60k random index fetches would
+     cost more than the sort), so this index is not a fix for that path —
+     pagination would be.
+
+     messages_created_at_idx is deliberately kept: routes/usage.ts
+     aggregates by DATE(created_at) across all sessions and needs
+     created_at leading. */
+  index('messages_session_created_idx').on(table.sessionId, table.createdAt),
   /* P_message-dedup — unique constraint on (sessionId, clientId) so
      concurrent POST /api/sessions cannot create duplicate rows for the
      same logical message. clientId can be NULL (messages without a
@@ -778,6 +799,17 @@ export const usageEvents = pgTable('usage_events', {
   completionTokens: integer('completion_tokens').notNull().default(0),
   totalTokens: integer('total_tokens').notNull().default(0),
   source: text('source').notNull().default('chat'),   /* chat | agent | title */
+  /* Provenance of the token counts: 'provider' when the upstream reported a
+     `usage` object (non-streaming response, or the final
+     stream_options.include_usage frame), 'estimate' when they came from the
+     chars/4 approximation in services/usageTracker.ts.
+
+     Defaults to 'estimate' so the ~history that predates this column is
+     labelled truthfully rather than being silently promoted to "measured".
+     Any aggregate that presents cost must separate the two — mixing a
+     measured total with a guessed one produces a number that is wrong in an
+     unknowable direction. */
+  usageSource: text('usage_source').notNull().default('estimate'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index('usage_events_user_id_idx').on(table.userId),
