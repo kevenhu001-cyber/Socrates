@@ -147,13 +147,9 @@ test('cursor trails the whole turn, below a tool row mounted last', async ({ pag
   });
 
   const bubble = page.locator('.msg.assistant').last().locator('.msg-body');
-  // Finished first paragraph, then the tool fires at the end with nothing
-  // after it yet: the row mounts last, stream stays open. The 7 trailing
-  // chars are deliberate: the stream scanner holds back up to 7 chars per
-  // frame for split <think> tags, so the blank line only reaches rawText
-  // once further bytes arrive — while the stream stays open those bytes
-  // never render (nothing follows the row in the layout).
-  await page.evaluate(() => window.__pushText('我先尝试获取那一节。\n\nabcdefg'));
+  // Finish the paragraph before the tool fires, then keep the stream open:
+  // the row mounts at the turn tail, so its cursor must follow it.
+  await page.evaluate(() => window.__pushText('我先尝试获取那一节。\n\nabcdefg。\n\n'));
   await page.evaluate(() => window.__pushToolUse());
   const row = bubble.locator('.tool-inline[data-tcid="w-tail"]');
   await expect(row).toHaveCount(1);
