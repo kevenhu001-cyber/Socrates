@@ -461,8 +461,17 @@ app.get('/.well-known/openid-configuration', sendOauthMetadata);
 // the underlying model lets any unauthenticated visitor learn the
 // operator's LLM choice. The actual model is selected server-side
 // from the DB at chat time, so the SPA doesn't need to know.
+let cachedBeagleKeyResult: { hasBeagleKey: boolean; expiry: number } | null = null;
+
 app.get('/api/config', async (_req, res) => {
   res.set('Cache-Control', 'no-store');
+  const now = Date.now();
+  if (cachedBeagleKeyResult && cachedBeagleKeyResult.expiry > now) {
+    return res.json({
+      hasBeagleKey: cachedBeagleKeyResult.hasBeagleKey,
+      isReasoning: process.env.BEAGLE_IS_REASONING !== 'false',
+    });
+  }
   let hasBeagleKey = false;
   try {
     const db = getDb();
@@ -472,6 +481,7 @@ app.get('/api/config', async (_req, res) => {
       .orderBy(apiKeys.createdAt)
       .limit(1);
     hasBeagleKey = !!row;
+    cachedBeagleKeyResult = { hasBeagleKey, expiry: now + 30_000 };
   } catch (_) { /* best-effort */ }
   res.json({
     hasBeagleKey,
