@@ -102,6 +102,13 @@ pub fn summarize(runs: &[Option<ToolRun>]) -> ToolRunSummary {
     summary
 }
 
+/* Twin-implementation conformance against the shared fixture consumed by
+ * packages/core/src/toolRunConformance.test.ts. Kept in its own module so the
+ * hand-ported cases below and the shared cases cannot be confused. */
+#[cfg(test)]
+#[path = "conformance.rs"]
+mod conformance;
+
 #[cfg(test)]
 mod tests {
     use super::*;
