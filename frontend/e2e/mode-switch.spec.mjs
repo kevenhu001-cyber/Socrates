@@ -52,10 +52,11 @@ test('mode tabs reappear on the topic page after a conversation and new chat', a
 
   /* Returning to the topic-input page via "new chat" restores the
      switch so the user can pick Chat or Tutor for the next session.
-     resetApp() first asks to confirm the new session — accept it. */
+     The explicit new-chat entry switches immediately once the reply is
+     done; it only confirms while a reply is still streaming. */
   await page.locator('#navNew').click();
-  await expect(page.locator('#confirmOkBtn')).toBeVisible();
-  await page.locator('#confirmOkBtn').click();
+  const confirmOk = page.locator('#confirmOkBtn');
+  if (await confirmOk.isVisible().catch(() => false)) await confirmOk.click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(tabs).toBeVisible();
   await expect(tabs.getByRole('tab', { name: '聊天' })).toBeVisible();

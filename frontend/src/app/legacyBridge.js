@@ -6,7 +6,7 @@
  * except the documented optional surfaces that remain window.* reads).
  */
 import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.js';
-import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, updateModeBadge, resetApp, signOut, toggleIncognito } from './lifecycle.js';
+import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, updateModeBadge, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.js';
 import { getExplanation } from '../tutor/socraticTurn.js';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.js';
 import { openTagEditor, closeTagEditor, onSessionDragStart, onSessionDragEnd, cycleActiveProject } from '../session/organize.js';
@@ -25,7 +25,7 @@ import { addMessage } from '../chat/messages.js';
 import { askNextQuestion } from '../tutor/socraticTurn.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { fetchWebContext } from '../chat/webSearch.js';
-import { openAttachmentPicker } from '../attachments/render.js';
+import { openAttachmentPicker, openMediaPicker } from '../attachments/render.js';
 import { getCustomInstructionsString, saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch } from '../ui/profile.js';
 import { editUserMessage, regenerateAssistantMessage, branchFromMessage } from '../chat/editBranch.js';
 import { toggleReadAloud } from '../ui/readAloud.js';
@@ -88,6 +88,7 @@ window.askNextQuestion = askNextQuestion;
 window.saveCurrentSession = saveCurrentSession;
 window.fetchWebContext = fetchWebContext;
 window.openAttachmentPicker = openAttachmentPicker;
+window.openMediaPicker = openMediaPicker;
 window.getArchivedSessions = getArchivedSessions;
 window.getCustomInstructionsString = getCustomInstructionsString;
 window.editUserMessage = editUserMessage;
@@ -99,6 +100,7 @@ window.restorePersistedMessageExtras = restorePersistedMessageExtras;
 window.renderAssistantHTML = renderAssistantHTML;
 window.showToast = showToast;
 window.resetApp = resetApp;
+window.startNewChat = startNewChat;
 window.startSession = startSession;
 window.submitChatMessage = submitChatMessage;
 window.cycleActiveProject = cycleActiveProject;
@@ -117,6 +119,7 @@ window.__socratesLegacy = {
   },
   navigation: {
     resetApp: window.resetApp,
+    startNewChat: window.startNewChat,
     toggleSidebar: window.toggleSidebar,
     openNav: window.openNav,
     openSettings: window.openSettings,
@@ -163,6 +166,7 @@ window.__socratesLegacy = {
   },
   composer: {
     openAttachmentPicker: window.openAttachmentPicker,
+    openMediaPicker: window.openMediaPicker,
     toggleWebSearch: window.toggleWebSearch,
     exploreAction: window.exploreAction,
     toggleTools: window.toggleComposerTools,

@@ -1013,6 +1013,13 @@ var I18N={
        these keys localize the four actions plus the fallback
        retry button. */
     "viz.action.table":"Data",
+    "viz.table.item":"Item",
+    "viz.table.value":"Value",
+    "viz.table.detail":"Detail",
+    "viz.table.function":"Function",
+    "viz.table.expression":"Expression",
+    "viz.table.domain":"Domain",
+    "viz.table.autoDomain":"Automatic domain",
     "viz.action.reset":"Reset view",
     "viz.action.download":"Download PNG",
     "viz.action.fullscreen":"Fullscreen",
@@ -2019,6 +2026,13 @@ var I18N={
     "tool.hideTechDetails":"收起技术细节",
     /* P_viz-actions (zh) — see en block for context. */
     "viz.action.table":"数据",
+    "viz.table.item":"项目",
+    "viz.table.value":"数值",
+    "viz.table.detail":"说明",
+    "viz.table.function":"函数",
+    "viz.table.expression":"表达式",
+    "viz.table.domain":"定义域",
+    "viz.table.autoDomain":"自动定义域",
     "viz.action.reset":"重置视图",
     "viz.action.download":"下载 PNG",
     "viz.action.fullscreen":"全屏",

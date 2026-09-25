@@ -397,8 +397,18 @@ function optionForChart(spec, colors) {
 
 function dataRows(spec) {
   var payload = spec.payload || {};
-  if (spec.template === 'function') return (payload.functions || []).map(function (fn) { return [fn.label || fn.expression, fn.expression, fn.domain ? fn.domain.join(' to ') : 'Automatic domain']; });
-  if (!payload.series) return (payload.items || []).map(function (item) { return [item.label, item.value || '', item.detail || '']; });
+  if (spec.template === 'function') {
+    var fns = payload.functions || [];
+    if (!fns.length) return [];
+    return [[vizT('viz.table.function', 'Function'), vizT('viz.table.expression', 'Expression'), vizT('viz.table.domain', 'Domain')]]
+      .concat(fns.map(function (fn) { return [fn.label || fn.expression, fn.expression, fn.domain ? fn.domain.join(' to ') : vizT('viz.table.autoDomain', 'Automatic domain')]; }));
+  }
+  if (!payload.series) {
+    var items = payload.items || payload.nodes || [];
+    if (!items.length) return [];
+    return [[vizT('viz.table.item', 'Item'), vizT('viz.table.value', 'Value'), vizT('viz.table.detail', 'Detail')]]
+      .concat(items.map(function (item) { return [item.label, item.value != null ? item.value : '', item.detail || '']; }));
+  }
   var rows = [['Category'].concat(payload.series.map(function (series) { return series.name || 'Series'; }))];
   var max = Math.max.apply(null, payload.series.map(function (series) { return series.data.length; }));
   for (var index = 0; index < max; index++) rows.push([payload.categories && payload.categories[index] != null ? payload.categories[index] : index + 1].concat(payload.series.map(function (series) { var value = series.data[index]; return Array.isArray(value) ? value.join(', ') : (value && typeof value === 'object' ? JSON.stringify(value) : value); })));
@@ -509,7 +519,7 @@ function renderExtension(spec, cardId) {
     'window.addEventListener("error",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.message)||"runtime error").slice(0,300)})});' +
     'window.addEventListener("unhandledrejection",function(e){post({type:"socrates-viz-error",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + ',message:String((e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection").slice(0,300)})});' +
     'post({type:"socrates-viz-ready",cardId:' + JSON.stringify(cardId) + ',nonce:' + JSON.stringify(nonce) + '})' +
-    '})()<\\/script>';
+    '})()<\/script>';
   var documentSource = '<!doctype html><meta http-equiv="Content-Security-Policy" content="' + csp + '">' + fontPreload + headScript + source;
   return '<iframe class="visualization-extension" sandbox="allow-scripts" title="' + esc(spec.title) + '" data-card-id="' + esc(cardId) + '" data-nonce="' + esc(nonce) + '" srcdoc="' + esc(documentSource) + '"></iframe>';
 }
@@ -546,13 +556,41 @@ function downloadDataUrl(name, dataUrl) {
   var link = document.createElement('a'); link.href = dataUrl; link.download = name; document.body.appendChild(link); link.click(); link.remove();
 }
 
-function bindCard(card, spec, chart) {
+function dataUrlExtension(dataUrl) {
+  var mime = /^data:([^;,]+)/.exec(String(dataUrl || ''));
+  return mime && mime[1] === 'image/svg+xml' ? '.svg' : '.png';
+}
+
+/* Structure diagrams are plain inline SVG; expose the same download contract
+   the chart renderers provide so the Download button is never a dead end. */
+function svgStageChart(stage) {
+  return {
+    dispatchAction: function () {},
+    getDataURL: function () {
+      var svg = stage.querySelector('svg');
+      return svg ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg)) : '';
+    },
+  };
+}
+
+function hideAction(btn) {
+  if (btn) { btn.hidden = true; btn.setAttribute('aria-hidden', 'true'); }
+}
+
+function bindCard(card, spec, chart, opts) {
+  opts = opts || {};
   var table = card.querySelector('.visualization-data');
   var tableBtn = card.querySelector('[data-viz-action="table"]');
+  if (!table.querySelector('table')) hideAction(tableBtn);
   tableBtn.addEventListener('click', function () { table.hidden = !table.hidden; this.setAttribute('aria-expanded', String(!table.hidden)); });
   var fsBtn = card.querySelector('[data-viz-action="fullscreen"]');
+  var requestFs = card.requestFullscreen || card.webkitRequestFullscreen;
+  if (!requestFs) hideAction(fsBtn);
   fsBtn.addEventListener('click', function () {
-    if (!card.requestFullscreen) return;
+    if (!card.requestFullscreen) {
+      if (card.webkitRequestFullscreen) card.webkitRequestFullscreen();
+      return;
+    }
     /* P_viz-fullscreen-err — surface the failure instead of
        silently swallowing. Common causes: not in a user-gesture
        handler (we are), element hidden (rare), or the browser
@@ -564,13 +602,18 @@ function bindCard(card, spec, chart) {
     });
   });
   var reset = card.querySelector('[data-viz-action="reset"]');
-  if (reset) reset.addEventListener('click', function () { if (chart) chart.dispatchAction({ type: 'restore' }); });
+  if (!chart || opts.noReset) hideAction(reset);
+  if (reset) reset.addEventListener('click', function () {
+    if (opts.onReset) { opts.onReset(); return; }
+    if (chart) chart.dispatchAction({ type: 'restore' });
+  });
   var download = card.querySelector('[data-viz-action="download"]');
+  if (!chart) hideAction(download);
   download.addEventListener('click', function () {
     if (!chart) return;
     var dataUrl = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: token('--bg-100', '#fff') });
     Promise.resolve(dataUrl).then(function (resolved) {
-      if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + '.png', resolved);
+      if (resolved) downloadDataUrl((spec.title || 'visualization').replace(/[^\w-]+/g, '-') + dataUrlExtension(resolved), resolved);
     });
   });
 }
@@ -749,9 +792,22 @@ export async function mountVisualization(spec, host, options) {
       card._visualizationCleanup = function () { window.removeEventListener('message', receiveExtensionMsg); };
     } else {
       stage.innerHTML = renderStructure(spec);
+      chart = svgStageChart(stage);
     }
     if (isCancelled()) { disposeCard(card); return null; }
-    bindCard(card, spec, chart);
+    var echartsInstance = chartTemplates.includes(spec.template) ? chart : null;
+    bindCard(card, spec, chart, {
+      /* ECharts' toolbox `restore` action crashes some series types
+         (radar: "reading 'childAt'"); re-applying the option is the
+         reliable way to return to the initial view. */
+      onReset: echartsInstance ? function () {
+        if (echartsInstance.isDisposed()) return;
+        var fresh = optionForChart(spec, palette());
+        if (!fresh) return;
+        echartsInstance.clear();
+        echartsInstance.setOption(fresh, { notMerge: true });
+      } : null,
+      noReset: card.dataset.visualizationRenderer === 'mermaid' || !usesSpecializedRenderer(spec.template) && !chartTemplates.includes(spec.template) });
   } catch (error) {
     /* A cancelled mount must not paint a fallback into a host React has
        already abandoned; dispose and let the caller's teardown stay final. */

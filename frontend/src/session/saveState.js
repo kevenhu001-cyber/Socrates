@@ -21,6 +21,9 @@ export function forgetDeletedSession(id) {
 export var saveState = {
   saveInFlight: null,
   saveDirty: false,
+  /* Payload captured by saveSessionBeforeReset while another save was in
+     flight; posted as soon as that request settles. */
+  pendingSnapshot: null,
   loadingSession: false,
   loadSessionId: null,
 };

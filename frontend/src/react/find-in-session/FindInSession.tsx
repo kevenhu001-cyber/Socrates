@@ -14,8 +14,17 @@ function FindInSession() {
   const [snapshot, setSnapshot] = useState<FindInSessionSnapshot>(getFindInSessionSnapshot);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLElement | null>(null);
+  /* The input value is local state: the bridge flushes on the next
+     animation frame, and a controlled value that lags behind the DOM makes
+     React restore the stale value after each keystroke — fast typing and
+     IME (pinyin) composition lost characters. */
+  const [inputValue, setInputValue] = useState(snapshot.query);
   const queryRef = useRef(snapshot.query);
   queryRef.current = snapshot.query;
+
+  useEffect(() => {
+    if (!snapshot.isOpen) setInputValue('');
+  }, [snapshot.isOpen]);
 
   useEffect(() => {
     containerRef.current = document.getElementById(FIND_BAR_ID);
@@ -34,6 +43,20 @@ function FindInSession() {
     el.classList.toggle('hidden', !snapshot.isOpen);
   }, [snapshot.isOpen]);
 
+  /* The bar lives at body level, so it no longer disappears with the chat
+     view. Dismiss it whenever the chat view is hidden (new chat, library,
+     plugins, …) so it never floats over another page. */
+  useEffect(() => {
+    if (!snapshot.isOpen) return undefined;
+    const chatView = document.getElementById('chatView');
+    if (!chatView) return undefined;
+    const sync = () => { if (chatView.classList.contains('hidden')) closeFind(); };
+    const observer = new MutationObserver(sync);
+    observer.observe(chatView, { attributes: true, attributeFilter: ['class'] });
+    sync();
+    return () => observer.disconnect();
+  }, [snapshot.isOpen]);
+
   useEffect(() => {
     if (snapshot.isOpen) {
       const id = window.setTimeout(() => {
@@ -46,7 +69,9 @@ function FindInSession() {
   }, [snapshot.isOpen]);
 
   const handleInput = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
     const q = e.target.value.trim();
+    queryRef.current = q;
     const result = runHighlightQuery(q);
     publishFind({ isOpen: true, query: q, ...result });
   }, []);
@@ -97,7 +122,7 @@ function FindInSession() {
         placeholder="Find in conversation…"
         autoComplete="off"
         spellCheck={false}
-        value={snapshot.query}
+        value={inputValue}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
       />
@@ -132,6 +157,12 @@ function publishFind(state: { isOpen: boolean; query: string; matchCount: number
 
 export function openFindInSession(): void {
   publishFind({ isOpen: true, query: '', matchCount: 0, activeIndex: -1 });
+  /* Reveal and focus synchronously, inside the click gesture: mobile
+     browsers only raise the soft keyboard for a focus() that happens
+     during the user activation, not in a later effect tick. */
+  document.getElementById(FIND_BAR_ID)?.classList.remove('hidden');
+  const input = document.getElementById(FIND_INPUT_ID) as HTMLInputElement | null;
+  input?.focus();
 }
 
 export function closeFindInSession(): void {
@@ -191,6 +222,12 @@ export function hydrateFindInSession(): FindInSessionReactRootHandle | null {
   }
 
   installFindInSessionBridge();
+
+  /* The bar is position:fixed, but inside #mainContent it is trapped in
+     that element's stacking context (z-index 1) and renders underneath
+     the top bar (z-index 5) — the search button looked like it did
+     nothing. Host it at the body level so its own z-index applies. */
+  if (bar.parentElement !== document.body) document.body.appendChild(bar);
 
   const root = createRoot(bar);
   root.render(<FindInSession />);

@@ -72,3 +72,30 @@ test('Ctrl-F find highlights matches, navigates, and clears on close', async ({ 
   await expect(page.locator('#msgList mark.find-hl')).toHaveCount(0);
   await expect(page.locator('#msgList')).toContainText('A photon is a quantum of light.');
 });
+
+test('find bar sits above the top bar and keeps every typed character', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    document.getElementById('topicSetup')?.classList.add('hidden');
+    document.getElementById('chatView')?.classList.remove('hidden');
+    const list = document.getElementById('msgList');
+    if (list) list.innerHTML = '<div class="msg assistant"><div class="msg-body">导数描述函数的变化率。</div></div>';
+  });
+  await page.evaluate(() => window.openFindInSession());
+  await expect(page.locator('#findInput')).toBeFocused();
+  const hit = await page.evaluate(() => {
+    const r = document.getElementById('findBar').getBoundingClientRect();
+    const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return !!el && !!el.closest('#findBar');
+  });
+  expect(hit).toBe(true);
+  await page.keyboard.type('导数描述');
+  await expect(page.locator('#findInput')).toHaveValue('导数描述');
+  await expect(page.locator('#findCount')).toHaveText('1/1');
+
+  await page.evaluate(() => document.getElementById('chatView')?.classList.add('hidden'));
+  await expect(page.locator('#findBar')).toBeHidden();
+});

@@ -24,6 +24,7 @@ export interface LegacyMessages {
 
 export interface LegacyNavigation {
   resetApp(): void;
+  startNewChat(): void;
   toggleSidebar(): void;
   openNav(key: string): void;
   openSettings(): void;
@@ -81,6 +82,7 @@ export interface LegacySessions {
 
 export interface LegacyComposer {
   openAttachmentPicker(mode: string): void;
+  openMediaPicker?(kind: 'camera' | 'photos'): void;
   toggleWebSearch?(): void;
   exploreAction?(): void;
   toggleTools?(trigger: HTMLElement, mode: 'topic' | 'chat'): void;
