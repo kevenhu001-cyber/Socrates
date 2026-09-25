@@ -1,0 +1,15 @@
+{
+  "totals": {
+    "live": {
+      "important": 109,
+      "hexColor": 109,
+      "literalRadius": 45
+    },
+    "frozen": {
+      "important": 2867,
+      "hexColor": 309,
+      "literalRadius": 541
+    }
+  },
+  "generatedBy": "check-css-debt.mjs --update"
+}

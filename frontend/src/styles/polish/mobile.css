@@ -22,12 +22,12 @@
   }
 
   /* Nav rows stay at the desktop rhythm (34px / 8px). */
-  #appShell .sidebar-nav-btn { border-radius: 8px; }
-  #appShell .recent-item { border-radius: 8px; }
+  #appShell .sidebar-nav-btn { border-radius: var(--ui-radius-control, 8px); }
+  #appShell .recent-item { border-radius: var(--ui-radius-control, 8px); }
 
   /* Mobile tools sheet radius matches the desktop popover contract. */
   body #composerToolsMenu.composer-tools-menu {
-    border-radius: 16px !important;
+    border-radius: var(--ui-radius-xl, 16px) !important;
     border-color: var(--ui-border-subtle) !important;
     box-shadow: var(--ui-shadow-menu) !important;
   }

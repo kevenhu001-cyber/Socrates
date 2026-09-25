@@ -3,6 +3,7 @@ import { syncThemeUI } from './displayPrefs.js';
 
 var I18N={
   en:{
+    "a11y.skipToContent":"Skip to content",
     "chat.placeholder":"Type your thinking...",
     "chat.inputPlaceholder":"Ask Socrates...",
     "chat.hint":"Shift+Enter for new line",
@@ -1040,6 +1041,7 @@ var I18N={
     "consent.learnMore":"Privacy policy"
   },
   zh:{
+    "a11y.skipToContent":"跳到主要内容",
     "chat.placeholder":"输入你的想法...",
     "chat.inputPlaceholder":"问问 Socrates…",
     "chat.hint":"Shift+Enter 换行",

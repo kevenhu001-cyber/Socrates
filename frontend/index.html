@@ -83,6 +83,11 @@
 </head>
 <body>
 
+<!-- a11y skip link: first Tab stop on the page, parked off-screen until
+     keyboard focus. The target carries tabindex="-1" so activating the
+     link moves focus into the main content, not just the scroll position. -->
+<a class="skip-link" href="#mainContent" data-i18n-key="a11y.skipToContent">Skip to content</a>
+
 <!-- P0.6 — pre-boot loading shell. Visible only while
      data-boot-state="checking" (i.e. between the synchronous
      pre-boot script and authBoot() finishing /api/auth/me). The
@@ -551,7 +556,7 @@
       </button>
     </div>
   </div>
-  <div class="main-content" id="mainContent">
+  <div class="main-content" id="mainContent" tabindex="-1">
     <div class="main-inner" id="mainInner">
 
       <div class="topic-setup" id="topicSetup">

@@ -73,3 +73,21 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
     border-radius: 24px;
   }
 }
+
+/* P_perf-scroll — long-conversation scrolling: settled assistant turns skip
+   layout/paint while off-screen. Scoped to [data-stream-settled] so the live
+   streaming row — whose height the streaming turn's rAF scheduler measures
+   and the turn anchor reads — is never size-contained. `auto` in
+   contain-intrinsic-size keeps each row's last remembered height so the
+   scrollbar does not jitter when a row re-enters the viewport.
+   Desktop only: on phones the keyboard open/close resizes the viewport while
+   a send is anchoring the transcript (chat-send "top offset across viewport
+   changes"), and rows that were never painted report the 240px intrinsic
+   guess during that reflow, which the anchor hold cannot correct per-frame.
+   Message virtualization (P2) is the mobile-safe version of this win. */
+@media (min-width: 769px) {
+  #appShell #msgList > .msg.assistant[data-stream-settled="true"] {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 240px;
+  }
+}

@@ -34,6 +34,7 @@ import { formatMsgProgressive } from '../render/markdown.js';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { appendLocalMemory } from '../storage/localMemory.js';
 import { scrollContainer, isPinnedToBottom } from '../ui/scroll.js';
+import { announceTranscript } from '../ui/liveRegion.js';
 import { saveCurrentSession } from '../session/persistence.js';
 import { updateChatStats } from './stats.js';
 
@@ -756,6 +757,16 @@ export function addStreamingMessage(opts){
            React MessageToolbar component renders the same action buttons
            from the snapshot, so the legacy toolbar path is unreachable. */
         try{appendLocalMemory("assistant",full)}catch(_){}
+        /* a11y — the transcript has no live region during streaming (a
+           token-cadence announcer floods AT queues), so surface the
+           completed reply once here. `visibleFinal` is the prose with
+           think blocks / chat artifacts stripped; it is skipped when the
+           render path threw and the var was never assigned. */
+        try{
+          if(typeof visibleFinal==="string"&&visibleFinal.trim()){
+            announceTranscript(visibleFinal);
+          }
+        }catch(_){}
         if(stateStore.read("phase")==="chat"||(stateStore.read("topic")&&stateStore.read("kbNodes").length)){
           saveCurrentSession();
         }
