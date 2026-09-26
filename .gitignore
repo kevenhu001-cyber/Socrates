@@ -161,5 +161,10 @@ frontend/debug/
 
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md
+
+# IDEA 检查报告导出残留。历史上当这两个路径还走 LFS 时，每次导出 HTML
+# 再被 add 都会吞成 134 字节指针（累积 size 虚报到几百 MB）；现在仓库
+# 已无任何 LFS 规则，导出请只用 XML。注意 debug/ 下的 XML 报告是有意
+# 跟踪的（需要留存查看），不要放进这里。
 /index.html
 /debug/index.html
