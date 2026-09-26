@@ -17,11 +17,11 @@
  * handler; the stages only differ in where the closures live.
  */
 
-import { and, eq } from 'drizzle-orm';
-import { getDb } from '../../../db/index.js';
-import { chatTurns, sessions } from '../../../db/schema.js';
-import { publishChatTurnEvent, setChatTurnStatus } from '../../../services/chatTurns.js';
-import { streamChatCompletion } from '../../../services/llm.js';
+import {and, eq} from 'drizzle-orm';
+import {getDb} from '../../../db/index.js';
+import {chatTurns, sessions} from '../../../db/schema.js';
+import {publishChatTurnEvent, setChatTurnStatus} from '../../../services/chatTurns.js';
+import {streamChatCompletion} from '../../../services/llm.js';
 import {
   normalizeToolCalls,
   repairToolArguments,
@@ -29,27 +29,27 @@ import {
   sanitizeToolCallForProtocol,
   validateToolArguments,
 } from '../../../services/toolCallSafety.js';
-import { hashToolArguments } from '../../../services/toolTurnPolicy.js';
-import { dispatchToolCalls } from '../../../services/toolDispatch.js';
-import { estimateMessageTokens, estimateTokens, normalizeProviderUsage, recordUsage, resolveUsage } from '../../../services/usageTracker.js';
-import { annotateSpan, withSpan } from '../../../lib/telemetry.js';
-import { trackSseConnection, startSseKeepalive } from '../../../lib/sse.js';
+import {hashToolArguments} from '../../../services/toolTurnPolicy.js';
+import {dispatchToolCalls} from '../../../services/toolDispatch.js';
+import {
+  estimateMessageTokens,
+  estimateTokens,
+  normalizeProviderUsage,
+  recordUsage,
+  resolveUsage
+} from '../../../services/usageTracker.js';
+import {annotateSpan, withSpan} from '../../../lib/telemetry.js';
+import {startSseKeepalive, trackSseConnection} from '../../../lib/sse.js';
 import {
   appendNativeToolContract,
   appendToolRoutingHints,
   prependCodeInterpreterPrompt,
   SSE_PRIME,
 } from '../helpers.js';
-import { SseEmitter } from './sseEmitter.js';
-import { createStreamToolContext } from './toolContext.js';
-import { createToolRunner } from './toolExecutors.js';
-import type {
-  ChatStreamPipelineContext,
-  PreparedCall,
-  StreamMessage,
-  ToolCall,
-  ToolCallDelta,
-} from './types.js';
+import {SseEmitter} from './sseEmitter.js';
+import {createStreamToolContext} from './toolContext.js';
+import {createToolRunner} from './toolExecutors.js';
+import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} from './types.js';
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
@@ -314,6 +314,15 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
    * knows they never ran (they are not echoed upstream either). */
   let lastDroppedCalls = 0;
   let speedFallbackEmitted = false;
+  /* finish_reason='length' means the upstream hit max_tokens mid-answer.
+     Rather than ending the turn on a truncated sentence, we re-ask the
+     model to continue exactly where it stopped — bounded so a pathological
+     loop cannot run forever. */
+  const rawMaxLengthContinues = Number(process.env.CHAT_LENGTH_CONTINUE_MAX);
+  const MAX_LENGTH_CONTINUES = Number.isFinite(rawMaxLengthContinues) && rawMaxLengthContinues >= 0
+    ? Math.min(5, Math.floor(rawMaxLengthContinues))
+    : 2;
+  let lengthContinues = 0;
 
   for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
     const toolsAllowed = toolPolicy.toolsAllowed(iter);
@@ -489,12 +498,35 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       maxCalls: toolPolicy.maxCallsPerIteration,
     }) as ToolCall[];
 
-    // No tool call → done. The extra tools-disabled iteration lets the
-    // model summarize the fourth and final execution round in prose.
-    // streamChatCompletion only emits calls it intends us to dispatch
-    // (tool finish reasons, missing finish_reason, or 'length'), so a
-    // non-empty list here always means "run them".
-    if (boundedToolCalls.length === 0) break;
+    // No tool call → done — unless the answer was truncated by the output
+    // token limit. In that case the partial text is echoed back as an
+    // assistant turn plus a "continue" instruction, and the next hop keeps
+    // streaming into the same assistant bubble. Bounded by
+    // CHAT_LENGTH_CONTINUE_MAX (default 2).
+    if (boundedToolCalls.length === 0) {
+      if (
+        iterFinishReason === 'length'
+        && iterContent
+        && lengthContinues < MAX_LENGTH_CONTINUES
+        && !abortController.signal.aborted
+      ) {
+        lengthContinues += 1;
+        const continueAssistant: Record<string, unknown> = { role: 'assistant', content: iterContent };
+        if (iterReasoning) {
+          continueAssistant.reasoning_content = iterReasoning;
+          continueAssistant.reasoning_details = [{ type: 'reasoning.text', text: iterReasoning }];
+        }
+        workingMessages = workingMessages.concat([
+          continueAssistant,
+          {
+            role: 'user',
+            content: '[System note: your previous reply was cut off at the output token limit. Continue exactly where you stopped — do not restart, repeat earlier text, or add a preamble.]',
+          },
+        ]);
+        continue;
+      }
+      break;
+    }
     if (!toolsAllowed) {
       emitter.event('error', {
         error: 'tool_iteration_limit_reached',

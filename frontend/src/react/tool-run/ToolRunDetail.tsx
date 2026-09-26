@@ -11,10 +11,11 @@
  * (tool-inline-detail-section / -title / -value, tool-inline-src*) so the one
  * stylesheet covers both until Stage 2 removes the old path.
  */
-import { formatToolOutput } from '../../render/toolOutput.js';
-import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
-import { basename, translate } from './labels.js';
-import type { DetailSection, TechSection, ToolRunView } from './toolRunModel';
+import {useState} from 'react';
+import {formatToolOutput} from '../../render/toolOutput.js';
+import {STROKE_ICONS} from '../../ui/icons/toolIcons.js';
+import {basename, tf, translate} from './labels.js';
+import type {DetailSection, TechSection, ToolRunView} from './toolRunModel';
 
 export interface ToolRunDetailProps {
   view: ToolRunView;
@@ -72,7 +73,43 @@ function ResultSection({ section }: { section: DetailSection }) {
 
   /* Output gets the sanitized rich formatter (fences, JSON pretty-print,
      tracebacks); errors stay plain text so the message reads verbatim. */
-  const rich = section.kind === 'output' ? formatToolOutput(section.text) : null;
+  return <ExpandableTextSection section={section} />;
+}
+
+/* Long outputs are stored head/tail-truncated in `text`; `fullText`
+   keeps the untruncated source so the middle is no longer lost — the
+   reader can expand it in place or copy it verbatim. The rich formatter
+   only runs on the truncated view: a 200 KB dump gets plain-text
+   treatment instead of a sanitize pass the reader can't afford anyway. */
+function ExpandableTextSection({ section }: { section: Extract<DetailSection, { kind: 'output' | 'error' }> }) {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const expandable = !!section.fullText && section.fullText !== section.text;
+  const shown = expanded && section.fullText ? section.fullText : section.text;
+  const rich = section.kind === 'output' && !expanded ? formatToolOutput(shown) : null;
+
+  const copy = async () => {
+    const text = section.fullText || section.text;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      /* Clipboard can be denied (permissions, insecure context) — fall
+         back to a selection copy path. */
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      } catch (_) { /* leave copied=false */ }
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
     <section className="tool-inline-detail-section" data-kind={section.kind}>
       <div className="tool-inline-detail-title">{section.title}</div>
@@ -82,8 +119,20 @@ function ResultSection({ section }: { section: DetailSection }) {
           dangerouslySetInnerHTML={{ __html: rich.html }}
         />
       ) : (
-        <pre className="tool-inline-detail-value">{section.text}</pre>
+        <pre className="tool-inline-detail-value">{shown}</pre>
       )}
+      <div className="tool-inline-detail-actions">
+        {expandable ? (
+          <button type="button" className="tool-inline-action" onClick={() => setExpanded((v) => !v)}>
+            {expanded
+              ? translate('tool.showLess', 'Show less')
+              : tf('tool.showAll', 'Show all ({n} chars)', { n: (section.fullText || '').length.toLocaleString() })}
+          </button>
+        ) : null}
+        <button type="button" className="tool-inline-action" onClick={copy}>
+          {copied ? translate('tool.copied', 'Copied') : translate('tool.copy', 'Copy')}
+        </button>
+      </div>
     </section>
   );
 }

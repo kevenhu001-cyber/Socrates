@@ -1,5 +1,5 @@
-import { renderGreeting } from './ui/greeting.js';
-import { syncThemeUI } from './displayPrefs.js';
+import {renderGreeting} from './ui/greeting.js';
+import {syncThemeUI} from './displayPrefs.js';
 
 var I18N={
   en:{
@@ -1008,6 +1008,9 @@ var I18N={
     "tool.retry":"Retry search",
     "tool.techDetails":"Technical details",
     "tool.hideTechDetails":"Hide technical details",
+    "tool.showAll":"Show all ({n} chars)",
+    "tool.showLess":"Show less",
+    "tool.copy":"Copy",
     /* P_viz-actions — native visualization card action buttons.
        Previously hardcoded Chinese in render/visualization.js —
        these keys localize the four actions plus the fallback
@@ -2024,6 +2027,9 @@ var I18N={
     "tool.retry":"重试搜索",
     "tool.techDetails":"技术细节",
     "tool.hideTechDetails":"收起技术细节",
+    "tool.showAll":"显示全部（{n} 字符）",
+    "tool.showLess":"收起",
+    "tool.copy":"复制",
     /* P_viz-actions (zh) — see en block for context. */
     "viz.action.table":"数据",
     "viz.table.item":"项目",

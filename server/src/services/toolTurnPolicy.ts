@@ -84,6 +84,10 @@ export interface ToolTurnPolicy {
   recordResult(tool: string, ok: boolean, reason?: string): void;
   /** Corrected attempts the model still has for this tool. */
   remainingRetries(tool: string): number;
+  /** Milliseconds to wait before this tool's next attempt — exponential
+   * backoff after consecutive failures so a rate-limited upstream is not
+   * hammered on every hop. 0 means "run now". */
+  retryDelayMs(tool: string): number;
   /** Non-null when the turn must stop offering tools. */
   budgetExhausted(): { code: string; message: string } | null;
   snapshot(): ToolTurnPolicySnapshot;
@@ -100,10 +104,13 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
     ?? envInt('CHAT_TOOL_FAILURE_LIMIT', DEFAULT_PER_TOOL_FAILURE_LIMIT, 1, 10);
   const wallClockMs = options.wallClockMs
     ?? envInt('CHAT_TOOL_WALL_CLOCK_MS', 15 * 60_000, 30_000, 60 * 60_000);
+  const backoffBaseMs = envInt('CHAT_TOOL_BACKOFF_BASE_MS', 1_500, 0, 60_000);
+  const backoffMaxMs = envInt('CHAT_TOOL_BACKOFF_MAX_MS', 15_000, 1_000, 120_000);
   const now = options.now || (() => Date.now());
 
   const startedAt = now();
   const consecutiveFailures = new Map<string, number>();
+  const lastFailureAt = new Map<string, number>();
   const disabled = new Map<string, string>();
   const seenCalls = new Set<string>();
   let iterationsUsed = 0;
@@ -165,10 +172,12 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
       if (!tool) return;
       if (ok) {
         consecutiveFailures.delete(tool);
+        lastFailureAt.delete(tool);
         return;
       }
       const failures = (consecutiveFailures.get(tool) || 0) + 1;
       consecutiveFailures.set(tool, failures);
+      lastFailureAt.set(tool, now());
       if (failures >= perToolFailureLimit && !disabled.has(tool)) {
         disabled.set(tool, reason || 'repeated_failures');
       }
@@ -177,6 +186,17 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
     remainingRetries(tool: string) {
       if (disabled.has(tool)) return 0;
       return Math.max(0, perToolFailureLimit - (consecutiveFailures.get(tool) || 0));
+    },
+
+    retryDelayMs(tool: string) {
+      const failures = consecutiveFailures.get(tool) || 0;
+      if (failures <= 0 || backoffBaseMs <= 0) return 0;
+      /* Exponential: 1.5s, 3s, 6s, 12s … capped. The next model hop
+         usually lands seconds after the failure anyway, so we subtract
+         the elapsed wait and only sleep the remainder. */
+      const target = Math.min(backoffBaseMs * Math.pow(2, failures - 1), backoffMaxMs);
+      const elapsed = now() - (lastFailureAt.get(tool) || 0);
+      return Math.max(0, Math.ceil(target - elapsed));
     },
 
     budgetExhausted,

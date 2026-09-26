@@ -5,12 +5,11 @@
  * verification for scope='project'.
  */
 
-import { and, eq } from 'drizzle-orm';
-import { getDb } from '../../../../db/index.js';
-import { memories, projects } from '../../../../db/schema.js';
-import type { ToolExecutor, ToolExecutionResult } from './types.js';
-import type { ToolCall, ToolResult } from '../types.js';
-import type { ToolExecutorContext } from './types.js';
+import {and, eq} from 'drizzle-orm';
+import {getDb} from '../../../../db/index.js';
+import {memories, projects} from '../../../../db/schema.js';
+import type {ToolExecutionResult, ToolExecutor, ToolExecutorContext} from './types.js';
+import type {ToolCall, ToolResult} from '../types.js';
 
 const TEXT_LIMIT = 500;
 

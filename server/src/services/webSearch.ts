@@ -1,12 +1,23 @@
-import { BadRequest } from '../lib/errors.js';
-import { detectLanguageCluster } from './scoring.js';
+import {BadRequest} from '../lib/errors.js';
+import {
+  detectLanguageCluster,
+  scoreAuthority,
+  scoreCrossSource,
+  scoreDateFromUrlPath,
+  scoreFreshness,
+  scoreKeywordSignals,
+  scoreLanguageMatch,
+  scoreSpamPenalty,
+  tokenBigrams,
+  tokenizeQuery,
+} from './scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
-import { expandQuery } from './queryExpander.js';
-import { searchMinimax } from './searchEngines/minimax.js';
-import { searchMmx } from './searchEngines/mmx.js';
-import { searchFirecrawl } from './searchEngines/firecrawl.js';
-import { searchSearxng } from './searchEngines/searxng.js';
-import { searchBing } from './searchEngines/bing.js';
+import {expandQuery} from './queryExpander.js';
+import {searchMinimax} from './searchEngines/minimax.js';
+import {searchMmx} from './searchEngines/mmx.js';
+import {searchFirecrawl} from './searchEngines/firecrawl.js';
+import {searchSearxng} from './searchEngines/searxng.js';
+import {searchBing} from './searchEngines/bing.js';
 
 /**
  * Aggregate result shape produced by merging the per-engine search
@@ -48,8 +59,9 @@ export class WebSearchUnavailableError extends Error {
  *      a recent result, return it directly.
  *   1. Detect query language cluster (cjk | cyrillic | latin | other).
  *   2. Expand the user's query into 1–3 variants via the LLM (cached).
- *   3. Run ALL engines in parallel and merge by priority:
- *      mmx (MiniMax CLI) → firecrawl-cli → MiniMax HTTP → Bing.
+ *   3. Run ALL engines in parallel, merge by URL, and rerank by estimated
+ *      relevance (see rankSearchResults). Engine priority
+ *      (mmx → firecrawl → MiniMax HTTP → Bing) only breaks ties.
  *   4. If all four return nothing, fall back to searXNG (self-hosted
  *      metasearch, configured with China-friendly engines).
  *   5. Cache the result for 5 minutes and return.
@@ -104,7 +116,7 @@ export const WEB_SEARCH_TOOL = {
       '- Bad:  "what is the latest version of python and when was it released"\n' +
       '- Good: "Python latest version release date"\n\n' +
       '## Output format\n' +
-      'Results are returned numbered [1], [2], … in order of relevance. ' + WEB_SEARCH_CITATION_GUIDANCE + '\n\n' +
+      'Results are numbered [1], [2], … and sorted by an estimated relevance score (query-term match, agreement across engines, source authority, freshness). The order is a heuristic, not ground truth — judge each result by its title, URL, and snippet before deciding what to open with web_fetch. ' + WEB_SEARCH_CITATION_GUIDANCE + '\n\n' +
       '## Caching\n' +
       'Identical queries within the same session are cached for 5 minutes. Re-running the same query does NOT re-hit the engines and will not surface fresher results — wait 5 minutes or change the query wording if you need a refresh.',
     parameters: {
@@ -331,25 +343,7 @@ async function runWebSearch(
   const minimaxResults = outcomes[2].results;
   const bingResults = outcomes[3].results;
 
-  let finalResults: SearchResult[] = [];
-  const seen = new Set();
-  const push = (r: SearchResult) => {
-    if (r && r.url && !seen.has(r.url)) {
-      seen.add(r.url);
-      finalResults.push(r);
-      return true;
-    }
-    return false;
-  };
-
-  // mmx first
-  for (const r of mmxResults) { if (push(r)) { if (finalResults.length >= limit) break; } }
-  // then firecrawl
-  for (const r of firecrawlResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
-  // then direct MiniMax
-  for (const r of minimaxResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
-  // then Bing to fill
-  for (const r of bingResults) { if (finalResults.length >= limit) break; if (push(r)) {} }
+  let finalResults = rankSearchResults(outcomes.map((o) => o.results), query, langCluster, limit);
 
   if (finalResults.length === 0) {
     const fallbackController = new AbortController();
@@ -418,6 +412,53 @@ async function runWebSearch(
   } catch { /* cache is best-effort */ }
 
   return finalResults;
+}
+
+/**
+ * Merge per-engine result lists (in engine-priority order) by URL and
+ * sort by an estimated relevance score. A URL returned by several engines
+ * is kept once, with its cross-engine agreement and per-engine ranks
+ * feeding the score. Array.prototype.sort is stable, so equal scores keep
+ * engine-priority order.
+ */
+export function rankSearchResults(
+  engineResults: SearchResult[][],
+  query: string,
+  langCluster: string,
+  limit: number,
+): SearchResult[] {
+  type Candidate = { result: SearchResult; sourceCount: number; _engineRanks: number[] };
+  const byUrl = new Map<string, Candidate>();
+  for (const results of engineResults) {
+    const seenInEngine = new Set<string>();
+    results.forEach((r, rank) => {
+      if (!r || !r.url || seenInEngine.has(r.url)) return;
+      seenInEngine.add(r.url);
+      const existing = byUrl.get(r.url);
+      if (existing) {
+        existing.sourceCount++;
+        existing._engineRanks.push(rank);
+        if (!existing.result.date && r.date) existing.result.date = r.date;
+        if ((r.snippet || '').length > (existing.result.snippet || '').length) existing.result.snippet = r.snippet;
+      } else {
+        byUrl.set(r.url, { result: { ...r }, sourceCount: 1, _engineRanks: [rank] });
+      }
+    });
+  }
+  const words = tokenizeQuery(query);
+  const bigrams = tokenBigrams(words);
+  const scored = [...byUrl.values()].map((c) => {
+    const { title, snippet, url, date, authority } = c.result;
+    const score = scoreKeywordSignals(title, snippet, words, bigrams)
+      + scoreAuthority(authority)
+      + scoreFreshness(date || scoreDateFromUrlPath(url))
+      + scoreCrossSource(c)
+      + scoreLanguageMatch(langCluster, `${title || ''} ${snippet || ''}`)
+      - scoreSpamPenalty(url, title);
+    return { result: c.result, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((s) => s.result);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

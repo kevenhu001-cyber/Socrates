@@ -25,7 +25,7 @@
 @import "@fontsource/newsreader/500.css";
 @import "@fontsource/newsreader/400-italic.css";
 
-:root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px}
+:root{--always-white:0 0% 100%;--always-black:0 0% 0%;--keyboard-inset:0px;/* defaults — displayPrefs.js writes the real values at runtime */--app-font-scale:1;--app-width-scale:1}
 /* Shared timing tokens for composer focus expansion. Keyboard avoidance is
    deliberately not part of this CSS timeline: ui/keyboard/index.ts owns the
    inset animation frame by frame so a browser resize cannot drop the input
