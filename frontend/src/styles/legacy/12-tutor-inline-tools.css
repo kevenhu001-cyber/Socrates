@@ -498,6 +498,37 @@ body[data-app-mode="chat"] .tutor-only{display:none !important}
   font-size:12px;
   line-height:1;
 }
+/* Expand/copy affordance for long tool outputs — same pill look as
+   .tool-inline-retry but without the leading icon, and left-aligned so
+   it reads as part of the section, not an error action. */
+.tool-inline-detail-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:8px;
+}
+.tool-inline-action{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:3px 10px;
+  border:1px solid color-mix(in srgb, hsl(var(--accent-000)) 24%, var(--tool-card-border-strong));
+  border-radius:999px;
+  background:transparent;
+  color:hsl(var(--accent-000));
+  font:500 calc(11px * var(--app-font-scale,1))/1 var(--font-sans);
+  cursor:pointer;
+  transition:background .14s ease,color .14s ease,border-color .14s ease,transform .12s ease;
+}
+.tool-inline-action:hover{
+  background:color-mix(in srgb, hsl(var(--accent-000)) 10%, transparent);
+  border-color:hsl(var(--accent-000));
+}
+.tool-inline-action:active{transform:translateY(1px)}
+.tool-inline-action:focus-visible{
+  outline:2px solid color-mix(in srgb, hsl(var(--accent-000)) 55%, transparent);
+  outline-offset:2px;
+}
 .tool-inline-detail-empty{margin:0;color:hsl(var(--text-500));font-size:12px}
 .tool-inline-sources{display:flex;flex-direction:column;gap:1px}
 .tool-inline-src{

@@ -7,10 +7,10 @@
  * paths are DB-backed; when the db is not initialised the executor must
  * surface a retryable memory_write_failed rather than throwing.
  */
-import { test, describe } from 'node:test';
+import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 
-import { executeSaveMemory } from '../src/routes/chat/pipeline/executors/saveMemory.js';
+import {executeSaveMemory} from '../src/routes/chat/pipeline/executors/saveMemory.js';
 
 const call = { id: 'call-1', name: 'save_memory', arguments: {} };
 

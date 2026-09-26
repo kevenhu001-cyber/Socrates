@@ -15,17 +15,14 @@
  * the dispatcher stays untouched.
  */
 
-import { buildToolErrorFeedback } from '../../../services/toolErrorFeedback.js';
-import { wrapUntrustedToolResult } from '../../../services/toolCallSafety.js';
-import { hashToolArguments, type ToolTurnPolicy } from '../../../services/toolTurnPolicy.js';
-import { SseEmitter } from './sseEmitter.js';
-import { formatToolResultContent } from './toolFeedback.js';
-import { createToolExecutorRegistry } from './executors/registry.js';
-import type { ToolExecutorContext } from './executors/types.js';
-import type {
-  PreparedCall,
-  StreamMessage,
-} from './types.js';
+import {buildToolErrorFeedback} from '../../../services/toolErrorFeedback.js';
+import {wrapUntrustedToolResult} from '../../../services/toolCallSafety.js';
+import {hashToolArguments, type ToolTurnPolicy} from '../../../services/toolTurnPolicy.js';
+import {SseEmitter} from './sseEmitter.js';
+import {formatToolResultContent} from './toolFeedback.js';
+import {createToolExecutorRegistry} from './executors/registry.js';
+import type {ToolExecutorContext} from './executors/types.js';
+import type {PreparedCall, StreamMessage,} from './types.js';
 
 export interface ToolRunnerDeps {
   req: import('express').Request & { userId?: string; user?: { tier?: string } | null };
@@ -117,6 +114,20 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
     const executor = registry.get(toolName);
     let outcome: Awaited<ReturnType<NonNullable<typeof executor>>>;
     if (executor) {
+      /* Server-side backoff: after a failure the policy asks the next
+         attempt of THIS tool to wait out an exponential delay, so a
+         rate-limited or flaky upstream is not re-hit on every hop. The
+         sleep is abortable and bounded (policy caps it at
+         CHAT_TOOL_BACKOFF_MAX_MS). */
+      const backoffMs = deps.toolPolicy.retryDelayMs(toolName);
+      if (backoffMs > 0 && !deps.abortSignal.aborted) {
+        await new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, backoffMs);
+          const onAbort = () => { clearTimeout(timer); resolve(); };
+          if (deps.abortSignal.aborted) { onAbort(); return; }
+          deps.abortSignal.addEventListener('abort', onAbort, { once: true });
+        });
+      }
       try {
         outcome = await executor(entry.args, tc, executorContext, { activeToolNames });
       } catch (err) {

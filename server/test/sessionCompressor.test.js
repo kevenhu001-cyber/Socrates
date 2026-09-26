@@ -5,10 +5,10 @@
  * With SESSION_COMPRESS_DISABLE=1 the summarizer is bypassed, so these
  * cases exercise the pure budget/tail logic only.
  */
-import { test, describe } from 'node:test';
+import {describe, test} from 'node:test';
 import assert from 'node:assert/strict';
 
-import { compressSessionMessages } from '../src/services/sessionCompressor.js';
+import {compressSessionMessages} from '../src/services/sessionCompressor.js';
 
 function makeMessages(n) {
   const out = [];
@@ -43,7 +43,11 @@ describe('sessionCompressor: over-budget histories compress', () => {
       assert.equal(result.didCompress, true);
       assert.equal(result.summarizer, 'tail-only');
       assert.ok(result.messages.length < input.length);
-      assert.equal(result.droppedTurns, input.length - result.messages.length);
+      /* tail-only prepends a visible drop marker, so messages =
+         marker + kept tail; droppedTurns counts the dropped head. */
+      assert.equal(result.messages[0].type, 'summary');
+      assert.match(result.messages[0].rawText, /removed to fit the context window|no summary was available/i);
+      assert.equal(result.droppedTurns, input.length - (result.messages.length - 1));
       // Tail preserved in order: last message identical.
       assert.equal(result.messages[result.messages.length - 1].clientId, 'c-29');
     } finally {

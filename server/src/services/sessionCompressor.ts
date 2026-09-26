@@ -17,9 +17,9 @@
  *    and operators that want zero LLM spend on saves).
  */
 
-import { callChatCompletion } from './llm.js';
-import { getActiveApiKey } from './apiKey.js';
-import { estimateMessageTokens } from './usageTracker.js';
+import {callChatCompletion} from './llm.js';
+import {getActiveApiKey} from './apiKey.js';
+import {estimateMessageTokens} from './usageTracker.js';
 
 export interface CompressibleMessage {
   role?: unknown;
@@ -81,10 +81,11 @@ const SUMMARY_SYSTEM_PROMPT =
 
 export async function compressSessionMessages(
   input: CompressibleMessage[],
+  opts: { keepTurns?: number; triggerTokens?: number } = {},
 ): Promise<CompressionResult> {
   const messages = Array.isArray(input) ? input.slice() : [];
-  const keepTurns = numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
-  const triggerTokens = numEnv('SESSION_COMPRESS_TOKENS', 24000);
+  const keepTurns = opts.keepTurns ?? numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
+  const triggerTokens = opts.triggerTokens ?? numEnv('SESSION_COMPRESS_TOKENS', 24000);
   const none: CompressionResult = {
     didCompress: false,
     messages,
@@ -108,12 +109,35 @@ export async function compressSessionMessages(
   const tail = messages.slice(messages.length - keepTurns).map(stripHeavyPayloads);
   const head = messages.slice(0, messages.length - keepTurns);
   const headLines = head.map(asHistoryLine).filter((l): l is string => !!l);
+
+  /* Tail-only fallback — used whenever no summary can be produced. The
+     marker message mirrors the [Context summary] notice so the reader
+     (and the model) can see that earlier turns were dropped rather than
+     silently disappearing. */
+  const tailOnly = (): CompressionResult => ({
+    ...none,
+    didCompress: true,
+    messages: [
+      {
+        role: 'system',
+        clientId: `dropped-${Date.now()}`,
+        rawText: `[Context notice — ${head.length} earlier messages were removed to fit the context window; no summary was available, so they are lost.]`,
+        type: 'summary',
+      },
+      ...tail,
+    ],
+    keptTurns: tail.length + 1,
+    droppedTurns: head.length,
+    summaryTokens: 0,
+    summarizer: 'tail-only',
+  });
+
   if (headLines.length === 0) {
-    return { ...none, didCompress: true, messages: tail, keptTurns: tail.length, droppedTurns: head.length, summarizer: 'tail-only' };
+    return tailOnly();
   }
 
   if (process.env.SESSION_COMPRESS_DISABLE === '1') {
-    return { ...none, didCompress: true, messages: tail, keptTurns: tail.length, droppedTurns: head.length, summarizer: 'tail-only' };
+    return tailOnly();
   }
 
   let provider: Awaited<ReturnType<typeof getActiveApiKey>> | null = null;
@@ -123,7 +147,7 @@ export async function compressSessionMessages(
     provider = null;
   }
   if (!provider || !provider.isBuiltIn || !provider.keyPlaintext || !provider.url || !provider.model) {
-    return { ...none, didCompress: true, messages: tail, keptTurns: tail.length, droppedTurns: head.length, summarizer: 'tail-only' };
+    return tailOnly();
   }
 
   const transcript = headLines.join('\n\n').slice(0, 60000);
@@ -155,7 +179,7 @@ export async function compressSessionMessages(
     summary = '';
   }
   if (!summary) {
-    return { ...none, didCompress: true, messages: tail, keptTurns: tail.length, droppedTurns: head.length, summarizer: 'tail-only' };
+    return tailOnly();
   }
 
   let summaryTokens = 0;

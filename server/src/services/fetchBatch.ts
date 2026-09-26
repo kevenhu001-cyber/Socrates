@@ -1,8 +1,8 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
-import { Agent } from 'undici';
-import { extractArticle } from './contentExtractor.js';
-import { fetchWithRust, rustExtractionEnabled, type RustFetchResponse } from './rustFetchWorker.js';
+import {Agent} from 'undici';
+import {extractArticle} from './contentExtractor.js';
+import {fetchWithRust, rustExtractionEnabled, type RustFetchResponse} from './rustFetchWorker.js';
 import * as urlCache from '../lib/urlCache.js';
 
 interface ExtractedArticle {
@@ -222,6 +222,59 @@ async function materializeRustResponse(url: string, cached: urlCache.CacheEntry 
   return { ok: true, url, title, content: text, truncated, chars: text.length };
 }
 
+/** True when the response advertises a PDF body. `octet-stream` +
+    a .pdf path covers servers that mislabel downloads. */
+function isPdfContent(contentType: string, url: string): boolean {
+  if (/application\/pdf\b/i.test(contentType)) return true;
+  return /octet-stream/i.test(contentType) && /\.pdf(?:[?#]|$)/i.test(url);
+}
+
+/**
+ * Binary counterpart of readBoundedText: PDF bodies cannot survive the
+ * UTF-8 decode (replacement chars corrupt the xref tables), so they are
+ * accumulated as bytes and handed to pdf-parse.
+ */
+async function readBoundedBuffer(response: Response, maxBytes: number) {
+  const reader = response.body?.getReader();
+  if (!reader) return { buffer: Buffer.alloc(0), truncated: false };
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  let finished = false;
+  let truncated = false;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { finished = true; break; }
+      const remaining = maxBytes - bytes;
+      if (value.byteLength > remaining) {
+        chunks.push(value.subarray(0, Math.max(0, remaining)));
+        truncated = true;
+        break;
+      }
+      chunks.push(value);
+      bytes += value.byteLength;
+    }
+  } finally {
+    if (!finished) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+  return { buffer: Buffer.concat(chunks.map((c) => Buffer.from(c))), truncated };
+}
+
+/* pdf-parse ships with the server for attachmentReader; reuse it here so
+   papers, reports and standards documents stop being a research blind
+   spot. Dynamic import keeps startup cost off the hot path. */
+async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount: number } | null> {
+  try {
+    const mod = await import('pdf-parse');
+    const pdfParse = (mod as { default?: unknown }).default || mod;
+    const result = await (pdfParse as (b: Buffer) => Promise<{ text?: string; numpages?: number }>)(buffer);
+    return { text: String(result?.text || ''), pageCount: Number(result?.numpages || 0) };
+  } catch {
+    return null;
+  }
+}
+
 async function readBoundedText(response: Response, maxBytes: number) {
   const reader = response.body?.getReader();
   if (!reader) return { text: '', truncated: false };
@@ -291,7 +344,15 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
         timeoutMs: timeout,
         extract: rustExtractionEnabled() && maxSize <= 200_000,
       });
-      if (rustResponse) return materializeRustResponse(url, reusableCache, rustResponse, maxSize);
+      if (rustResponse) {
+        /* PDF bodies are binary — the worker decodes them as UTF-8 text,
+           which corrupts the bytes before pdf-parse can see them. Fall
+           through to the Node path, which reads bytes for PDFs. */
+        const rustContentType = String(rustResponse.headers?.['content-type'] || '');
+        if (!isPdfContent(rustContentType, url)) {
+          return materializeRustResponse(url, reusableCache, rustResponse, maxSize);
+        }
+      }
 
       // Resolve DNS and pin the IP to prevent DNS rebinding.
       let pinnedRecords;
@@ -390,6 +451,35 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
           }
 
           const contentType = response.headers.get('content-type') || '';
+
+          /* PDFs get their own bounded-bytes read + pdf-parse extraction.
+             Research sources (papers, government reports, spec sheets)
+             are disproportionately PDF, so rejecting them here used to
+             blind the whole fetch pipeline to primary sources. */
+          if (isPdfContent(contentType, currentUrl)) {
+            const { buffer, truncated } = await readBoundedBuffer(response, maxSize);
+            const parsed = await extractPdfText(buffer);
+            if (parsed && parsed.text.trim()) {
+              return {
+                ok: true,
+                url,
+                title: '',
+                content: parsed.text.replace(/\r\n/g, '\n'),
+                wordCount: parsed.pageCount,
+                pageCount: parsed.pageCount,
+                method: 'pdf',
+                truncated,
+                chars: buffer.length,
+              };
+            }
+            return {
+              ok: false,
+              url,
+              code: 'pdf_parse_failed',
+              reason: 'Could not extract text from this PDF (it may be scanned images, encrypted, or corrupt).',
+            };
+          }
+
           if (!contentType.includes('text') && !contentType.includes('json') && !contentType.includes('html')) {
             return { ok: false, url, code: 'unsupported_content_type', reason: `Unsupported content type: ${contentType}` };
           }
@@ -485,30 +575,38 @@ export const WEB_FETCH_TOOL = {
     name: 'web_fetch',
     description:
       '## What this tool does\n' +
-      'Fetches a single web page by URL and returns its main text content with boilerplate removed (Readability), plus the page title and, when available, its publication date. Only http(s) pages that return text, HTML, or JSON are supported.\n\n' +
+      'Fetches web pages by URL and returns their main text content with boilerplate removed (Readability), plus the page title and, when available, its publication date. Provide a single `url`, or `urls` to read up to 4 pages in one call — batch mode is the cheapest way to triage several search results. http(s) pages returning text, HTML, or JSON are supported; PDF documents are parsed to text (page count reported). Other binaries (images, archives) are not.\n\n' +
       '## When to call\n' +
       '- The user gives a URL and asks what it says, or asks you to summarize or analyze it.\n' +
       '- A web_search result looks relevant and you need the full article text, not just the snippet.\n' +
+      '- Several web_search results look promising — pass them together as `urls` instead of fetching one per call.\n' +
       '- You need to quote or verify a detail the search snippet does not contain.\n\n' +
       '## When NOT to call\n' +
       '- You do not have a concrete URL yet — call web_search first to find one.\n' +
       '- The relevant page text is already in your context (a [Referenced page] block or a prior web_fetch range this turn).\n' +
-      '- The target needs a login, or is a binary file such as a PDF or image — this tool only returns text.\n\n' +
+      '- The target needs a login — this tool cannot authenticate.\n\n' +
       '## Output\n' +
-      'Returns at most max_chars of extracted text starting at offset (defaults: 20000 and 0). Start at offset 0; then use next_offset with the same URL to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
+      'Each page returns at most max_chars of extracted text starting at offset (defaults: 20000 and 0; in batch mode offset is unsupported and each page starts at 0). Start at offset 0; then use next_offset with the same single url to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
     parameters: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
-          description: 'The absolute http(s) URL of the page to fetch, including the scheme (for example https://example.com/article).',
+          description: 'The absolute http(s) URL of the page to fetch, including the scheme (for example https://example.com/article). Use this alone, or `urls` — not both.',
           minLength: 8,
           maxLength: 2000,
         },
-        offset: { type: 'integer', minimum: 0, maximum: 1000000, description: 'Character offset in the available extracted text; use next_offset to continue.' },
-        max_chars: { type: 'integer', minimum: 1, maximum: 30000, description: 'Maximum number of characters returned in this call (default 20000).' },
+        urls: {
+          type: 'array',
+          description: 'Batch mode: 1-4 absolute http(s) URLs fetched in parallel in one call. Each page is returned from its start (offset is unsupported in batch mode); reopen a single url with offset to page further.',
+          items: { type: 'string', minLength: 8, maxLength: 2000 },
+          minItems: 1,
+          maxItems: 4,
+        },
+        offset: { type: 'integer', minimum: 0, maximum: 1000000, description: 'Character offset in the available extracted text; use next_offset to continue. Single-URL calls only.' },
+        max_chars: { type: 'integer', minimum: 1, maximum: 30000, description: 'Maximum number of characters returned per page in this call (default 20000).' },
       },
-      required: ['url'],
+      required: [],
       additionalProperties: false,
     },
   },

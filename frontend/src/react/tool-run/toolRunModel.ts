@@ -12,10 +12,10 @@
  * `node --experimental-strip-types --test`.
  */
 
-import { toolCategory } from '../../render/toolCategory.js';
-import { isParagraphStart, snapToolOffsetOutOfBlock, toolRowAnchorOffset } from '../../render/streaming.js';
-import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.js';
-import { isTerminalToolPhase, summarizeToolRuns, type ToolRun } from '../../chat/toolRunState.js';
+import {toolCategory} from '../../render/toolCategory.js';
+import {isParagraphStart, snapToolOffsetOutOfBlock, toolRowAnchorOffset} from '../../render/streaming.js';
+import type {AgentPlanData, AgentStepData} from '../../ui/agentSteps.js';
+import {isTerminalToolPhase, summarizeToolRuns, type ToolRun} from '../../chat/toolRunState.js';
 import {
   basename,
   clip,
@@ -23,10 +23,10 @@ import {
   filePathOf,
   formatSeconds,
   queryOf,
+  type ToolCallLike,
   toolRunGroupLabel,
   toolRunLabel,
   translate,
-  type ToolCallLike,
 } from './labels.js';
 
 export type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
@@ -39,11 +39,13 @@ export interface SourceItem {
   source?: string;
 }
 
-/** A block shown when the row is expanded. */
+/** A block shown when the row is expanded. `fullText` is present only
+ * when `text` was truncated for display — it powers the expand/copy
+ * affordance so the middle of a long output is no longer unrecoverable. */
 export type DetailSection =
   | { kind: 'sources'; title: string; items: SourceItem[] }
-  | { kind: 'output'; title: string; text: string }
-  | { kind: 'error'; title: string; text: string }
+  | { kind: 'output'; title: string; text: string; fullText?: string }
+  | { kind: 'error'; title: string; text: string; fullText?: string }
   | { kind: 'files'; title: string; paths: string[] };
 
 /** A block behind the secondary "Technical details" toggle. */
@@ -729,19 +731,29 @@ export function truncateLines(
   return { lines: kept, omittedLines };
 }
 
+/** Flattened, UNBOUNDED text for a detail block (kept for expand/copy). */
+export function rawDetailText(value: unknown): string {
+  if (value == null || value === '') return '';
+  if (typeof value === 'string') return value;
+  try { return JSON.stringify(value, null, 2); } catch (_) { return String(value); }
+}
+
 /** Flattened, bounded text for a detail block. */
 export function detailText(value: unknown): string {
-  if (value == null || value === '') return '';
-  let text = '';
-  if (typeof value === 'string') {
-    text = value;
-  } else {
-    try { text = JSON.stringify(value, null, 2); } catch (_) { text = String(value); }
-  }
+  const text = rawDetailText(value);
   if (text.length <= DETAIL_LIMIT) return text;
   const { lines, omittedLines } = truncateLines(text);
   if (omittedLines <= 0) return text;
   return [...lines, `… +${omittedLines} lines`].join('\n');
+}
+
+/** Display text + the untruncated source when truncation actually fired. */
+export function clippedText(value: unknown): { text: string; fullText?: string } {
+  const full = rawDetailText(value);
+  const shown = detailText(full);
+  return shown.length < full.length
+    ? { text: shown.trim(), fullText: full }
+    : { text: shown.trim() };
 }
 
 export function normalizeSources(results: ReadonlyArray<unknown> | null | undefined): SourceItem[] {
@@ -826,17 +838,19 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
   };
 
   const sources = normalizeSources(call.results);
-  const output = detailText(call.output).trim();
+  const outputClip = clippedText(call.output);
+  const output = outputClip.text;
   const failed = state === 'error';
 
   if (failed) {
     const errorMessage = [call.userMessage, call.error].filter(Boolean).join('\n');
-    const errorText = errorMessage || output || detailText(call.detail).trim();
+    const errorText = errorMessage || output || clippedText(call.detail).text;
     if (errorText) {
       view.sections.push({ kind: 'error', title: translate('tool.errorDetails', 'Error details'), text: errorText });
     }
     if (call.stderr) {
-      view.sections.push({ kind: 'error', title: 'stderr', text: detailText(call.stderr) });
+      const stderr = clippedText(call.stderr);
+      view.sections.push({ kind: 'error', title: 'stderr', text: stderr.text, fullText: stderr.fullText });
     }
     if (call.errorCode) {
       view.tech.push({ kind: 'fact', title: translate('tool.errorCode', 'Error code'), text: String(call.errorCode) });
@@ -864,10 +878,11 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
       view.sections.push({ kind: 'sources', title: translate('tool.sources', 'Sources'), items: sources });
     }
     if (output && !isEchoOutput(output)) {
-      view.sections.push({ kind: 'output', title: translate('tool.result', 'Result'), text: output });
+      view.sections.push({ kind: 'output', title: translate('tool.result', 'Result'), text: output, fullText: outputClip.fullText });
     }
     if (call.stderr) {
-      view.sections.push({ kind: 'error', title: 'stderr', text: detailText(call.stderr) });
+      const stderr = clippedText(call.stderr);
+      view.sections.push({ kind: 'error', title: 'stderr', text: stderr.text, fullText: stderr.fullText });
     }
   }
 

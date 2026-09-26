@@ -1,17 +1,22 @@
-import { WEB_SEARCH_TOOL } from './webSearch.js';
-import { WEB_FETCH_TOOL } from './fetchBatch.js';
-import { READ_ATTACHMENT_TOOL } from './attachmentReader.js';
-import { VISUALIZATION_TOOL } from './visualization.js';
-import { PLAN_TOOL, SPEC_TOOL } from './planning.js';
-import { CREATE_SITE_TOOL } from './siteCreation.js';
+import {WEB_SEARCH_TOOL} from './webSearch.js';
+import {WEB_FETCH_TOOL} from './fetchBatch.js';
+import {READ_ATTACHMENT_TOOL} from './attachmentReader.js';
+import {SAVE_MEMORY_TOOL} from './memoryTool.js';
+import {VISUALIZATION_TOOL} from './visualization.js';
+import {PLAN_TOOL, SPEC_TOOL} from './planning.js';
+import {CREATE_SITE_TOOL} from './siteCreation.js';
 import {
-  ARXIV_TOOL, ZOTERO_TOOL, NOTION_TOOL, GITHUB_TOOL, GITEE_TOOL,
+  ARXIV_TOOL,
   CONNECTOR_TOOL_NAMES,
+  GITEE_TOOL,
+  GITHUB_TOOL,
+  NOTION_TOOL,
+  ZOTERO_TOOL,
 } from './connectorTools.js';
-import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from './projectConnectorTools.js';
-import { OPEN_CONNECTOR_CHAT_TOOLS } from './openConnectorChatTools.js';
-import { WORKSPACE_AGENT_TOOL, INITIALIZE_WORKSPACE_TOOL } from './agentRuntime.js';
-import { PI_AGENT_ENABLED } from './piAgent.js';
+import {PROJECT_CONNECTOR_TOOL_NAMES, PROJECT_CONNECTOR_TOOLS} from './projectConnectorTools.js';
+import {OPEN_CONNECTOR_CHAT_TOOLS} from './openConnectorChatTools.js';
+import {INITIALIZE_WORKSPACE_TOOL, WORKSPACE_AGENT_TOOL} from './agentRuntime.js';
+import {PI_AGENT_ENABLED} from './piAgent.js';
 
 /** The model-facing capability registry. Route-specific executors retain
  * their streaming/session semantics while availability is defined once.
@@ -59,6 +64,10 @@ export function createToolRegistry({ codeInterpreterToolDef, mode, connectorConn
        in every mode; the model only calls it when a message carries an
        [Attached file: …] pointer. */
     { name: 'read_attachment', modelDefinition: READ_ATTACHMENT_TOOL, enabled: true, pure: true, sessionSerial: false },
+    /* Long-term memory write path — durable user facts persist to the
+       memories table (deduped server-side). Side-effecting, so `pure`
+       stays false and fuzzy name recovery can never reach it. */
+    { name: 'save_memory', modelDefinition: SAVE_MEMORY_TOOL, enabled: true, pure: false, sessionSerial: false },
     /* Planning artifacts — pure structuring tools (no side effects) that
        validate a strict envelope and echo it back as a plan/spec card. */
     { name: 'create_plan', modelDefinition: PLAN_TOOL, enabled: true, pure: true, sessionSerial: false },

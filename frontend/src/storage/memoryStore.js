@@ -37,36 +37,43 @@ function loadMemories() {
   return _memories;
 }
 
-/* Persist the current memory array to localStorage. */
+/* Persist the current memory array to localStorage. The local store is
+   the source of truth for the key/value UI; there is no bulk-sync
+   endpoint — server-side memories live in the memories table behind
+   /api/memory (GET/POST/PATCH/DELETE) and are recalled server-side. */
 function saveMemories() {
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(_memories || []));
   } catch { /* localStorage full or private mode */ }
-  /* Fire-and-forget sync to server. */
-  _syncToServer();
 }
 
-/* Sync memories to the server. Non-blocking; failures are ignored. */
-function _syncToServer() {
-  if (typeof window.apiFetch !== "function") return;
-  try {
-    window.apiFetch("/api/memory", {
-      method: "PUT",
-      body: { memories: _memories || [] },
-    }).catch(function () { /* server sync failed — local state is preserved */ });
-  } catch { /* ignore */ }
-}
-
-/* Load memories from the server on boot. Merges with local state. */
+/* Load memories from the server on boot. Server rows carry { text,
+   enabled, scope, ... } rather than key/value, so map them into the
+   local shape and merge by id — overwriting wholesale would drop any
+   locally-added entries. */
 function loadFromServer() {
   if (typeof window.apiFetch !== "function") return;
   try {
     window.apiFetch("/api/memory", { method: "GET" })
       .then(function (res) {
-        if (res && Array.isArray(res.memories) && res.memories.length) {
-          _memories = res.memories;
-          saveMemories();
-        }
+        if (!res || !Array.isArray(res.memories)) return;
+        var serverRows = res.memories.map(function (m) {
+          return m && {
+            id: m.id || _genId(),
+            key: m.key || (m.scope === "project" ? "project" : "fact"),
+            value: m.value || m.text || "",
+            createdAt: m.createdAt || Date.now(),
+            updatedAt: m.updatedAt || m.createdAt || Date.now(),
+          };
+        }).filter(function (m) { return m && m.enabled !== false && m.value; });
+        if (!serverRows.length) return;
+        var seen = {};
+        serverRows.forEach(function (m) { seen[m.id] = true; });
+        var merged = serverRows.concat(
+          loadMemories().filter(function (m) { return m && !seen[m.id]; })
+        );
+        _memories = merged.slice(-MEMORY_CAP);
+        saveMemories();
       })
       .catch(function () { /* server fetch failed — use local */ });
   } catch { /* ignore */ }
