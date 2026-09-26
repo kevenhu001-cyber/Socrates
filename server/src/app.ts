@@ -57,6 +57,7 @@ import { buildAuthorizationServerMetadata } from './lib/oauthMeta.js';
 import { apiDefaultLimiter } from './middleware/rateLimit.js';
 import { idempotencyMiddleware } from './middleware/idempotency.js';
 import { recordRequestSample } from './services/statusMonitor.js';
+import { recordHttpMetrics } from './lib/telemetry.js';
 import executionRouter from './routes/execution.js';
 import scheduledTasksRouter from './routes/scheduledTasks.js';
 import pluginsRouter from './routes/plugins.js';
@@ -277,6 +278,16 @@ app.use(function requestTiming(req, res, next) {
     // instead of pinning at 100% (only <500 would hide 429/404/400).
     const ok = res.statusCode >= 200 && res.statusCode < 400;
     recordRequestSample(ms, ok);
+    // OTLP request metrics share the tracer's health/status exclusion:
+    // those two endpoints would dominate the histogram without saying
+    // anything about real traffic. No-op when telemetry is off. The /api/v2
+    // alias is stripped first — this middleware runs before apiV2Rewrite,
+    // so mobile's /api/v2/health probes would otherwise slip the filter.
+    const url = (req.originalUrl || req.url || '').replace(/^\/api\/v2/, '');
+    if (!url.startsWith('/api/health') && !url.startsWith('/api/status')) {
+      const route = `${req.baseUrl || ''}${(req.route as { path?: string } | undefined)?.path || ''}`;
+      recordHttpMetrics(ms, route, req.method, res.statusCode);
+    }
   });
   next();
 });

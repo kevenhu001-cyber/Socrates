@@ -217,51 +217,105 @@ export function isToolFinishReason(reason: unknown): boolean {
 /** Normalize provider-specific tool argument streaming.
  *
  * OpenAI sends JSON fragments, while several compatible providers send an
- * object or repeat the complete accumulated JSON on every delta. Blind string
- * concatenation turns those valid variants into `[object Object]` or two JSON
- * objects stuck together, which then fails strict argument parsing.
+ * object or repeat the complete accumulated JSON on every delta. The two
+ * shapes need opposite handling (append vs replace), and no per-delta
+ * heuristic can tell them apart safely: the previous implementation dropped
+ * any delta that happened to be a suffix of what was already accumulated,
+ * which silently truncated every call whose arguments end in `}}` (the
+ * upstream emits the two closing braces as separate tokens) and corrupted
+ * repeated tokens inside strings.
+ *
+ * So the mode is decided ONCE per tool call, on the second delta, and then
+ * obeyed for the rest of the stream:
+ *
+ *   - snapshot — the delta repeats the accumulated prefix, or both the old
+ *     and the new value are complete JSON objects in their own right;
+ *   - fragment — anything else: deltas are appended verbatim, with no
+ *     de-duplication, so no byte of the model's JSON can be lost.
+ */
+export type ToolArgumentStreamMode = 'unknown' | 'snapshot' | 'fragment';
+
+export interface ToolArgumentStream {
+  /** Accumulated argument text so far. */
+  text: string;
+  /** How this provider streams; 'unknown' until the second delta. */
+  mode: ToolArgumentStreamMode;
+}
+
+export function createToolArgumentStream(): ToolArgumentStream {
+  return { text: '', mode: 'unknown' };
+}
+
+/** Placeholders some gateways send before the real arguments start. */
+const PLACEHOLDER_ARGUMENTS = new Set(['{}', '[]', 'null', '""']);
+
+function isCompleteJsonObject(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{')) return false;
+  try {
+    const value = JSON.parse(trimmed) as unknown;
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+  } catch {
+    return false;
+  }
+}
+
+function incomingToText(incoming: unknown): { text: string; wasObject: boolean } {
+  if (typeof incoming === 'string') return { text: incoming, wasObject: false };
+  if (incoming && typeof incoming === 'object') {
+    try { return { text: JSON.stringify(incoming), wasObject: true }; } catch { return { text: '', wasObject: true }; }
+  }
+  return { text: incoming == null ? '' : String(incoming), wasObject: false };
+}
+
+/**
+ * Fold one streamed delta into `stream`, returning the updated state.
+ *
+ * The same function serves function names and argument text: a name stream
+ * never looks like JSON, so it can only ever resolve to snapshot (the
+ * provider repeats the prefix) or fragment (it appends).
+ */
+export function appendToolArgumentDelta(
+  stream: ToolArgumentStream,
+  incoming: unknown,
+): ToolArgumentStream {
+  const { text: next, wasObject } = incomingToText(incoming);
+  if (!next) return stream;
+
+  /* A provider that hands us a real object is authoritative and complete:
+     there is nothing to append to and nothing to detect. */
+  if (wasObject) return { text: next, mode: 'snapshot' };
+
+  if (!stream.text) return { text: next, mode: stream.mode };
+
+  /* `{}` (or `[]`/`null`) followed by the start of a real object is a
+     placeholder, not the arguments. Replace it and leave the mode
+     undecided: keeping the placeholder locked the accumulator and every
+     later fragment was discarded, while deciding a mode here would
+     mis-classify the very next delta. */
+  if (PLACEHOLDER_ARGUMENTS.has(stream.text.trim()) && next.trim().startsWith('{')) {
+    return { text: next, mode: stream.mode };
+  }
+
+  let mode = stream.mode;
+  if (mode === 'unknown') {
+    if (next.startsWith(stream.text)) mode = 'snapshot';
+    else if (isCompleteJsonObject(stream.text) && isCompleteJsonObject(next)) mode = 'snapshot';
+    else mode = 'fragment';
+  }
+
+  if (mode === 'snapshot') return { text: next, mode };
+  return { text: stream.text + next, mode };
+}
+
+/**
+ * Stateless convenience wrapper: folds one delta with no memory of the
+ * stream's mode. Prefer `appendToolArgumentDelta` with a persistent
+ * `ToolArgumentStream` — without state, every delta re-runs mode detection.
  */
 export function mergeToolArgumentDelta(previous: unknown, incoming: unknown): string {
   const prev = typeof previous === 'string' ? previous : String(previous ?? '');
-  let next = '';
-  if (typeof incoming === 'string') next = incoming;
-  else if (incoming && typeof incoming === 'object') {
-    try { next = JSON.stringify(incoming); } catch { next = ''; }
-  } else if (incoming != null) next = String(incoming);
-  if (!next) return prev;
-  if (!prev) return next;
-  if (next === prev || next.startsWith(prev)) return next;
-  if (prev.endsWith(next)) return prev;
-
-  /* A number of OpenAI-compatible gateways send the complete accumulated
-     JSON object on every delta instead of sending a fragment. If the new
-     value is already a complete object, it is the latest snapshot and must
-     replace the previous snapshot. Concatenating the two objects here was
-     the main source of `invalid_tool_arguments` on otherwise valid calls. */
-  try {
-    const parsedNext = JSON.parse(next) as unknown;
-    if (parsedNext && typeof parsedNext === 'object' && !Array.isArray(parsedNext)) {
-      return next;
-    }
-  } catch {
-    // The incoming value is a fragment; append it below.
-  }
-
-  /* Mirror image of the snapshot case: `prev` already parses as a
-     complete object (a provider that sent the whole arguments object in
-     a single delta — sometimes `{}` as a placeholder), while `next` is a
-     bare fragment. A closed JSON object cannot be extended, so
-     concatenating produces `{...}fragment` which is guaranteed to fail
-     argument parsing. Keep the complete object and drop the stray tail. */
-  try {
-    const parsedPrev = JSON.parse(prev) as unknown;
-    if (parsedPrev && typeof parsedPrev === 'object' && !Array.isArray(parsedPrev)) {
-      return prev;
-    }
-  } catch {
-    // prev is still a fragment — genuine continuation, concatenate below.
-  }
-  return prev + next;
+  return appendToolArgumentDelta({ text: prev, mode: 'unknown' }, incoming).text;
 }
 
 export function mergeToolNameDelta(previous: unknown, incoming: unknown): string {
@@ -269,8 +323,11 @@ export function mergeToolNameDelta(previous: unknown, incoming: unknown): string
   const next = typeof incoming === 'string' ? incoming : String(incoming ?? '');
   if (!next) return prev;
   if (!prev) return next;
-  if (next === prev || next.startsWith(prev)) return next;
-  if (prev.startsWith(next) || prev.endsWith(next)) return prev;
+  /* A snapshot repeat in either direction resolves to the longer value; a
+     genuine fragment is appended. Unlike the previous implementation this
+     never drops a fragment that merely looks like the accumulated tail. */
+  if (next.startsWith(prev)) return next.slice(0, 128);
+  if (prev.startsWith(next)) return prev;
   return (prev + next).slice(0, 128);
 }
 
@@ -469,8 +526,12 @@ export async function streamChatCompletion(
     /* tool_call deltas arrive indexed by `index`. We accumulate them
        into full {id, type, function:{name, arguments}} objects that
        mirror what the model would have produced in a non-streaming
-       response. */
+       response. Providers that omit `index` are tracked by id instead
+       (see _accumulateToolCall). */
     const toolCallAcc = new Map();
+    const _toolSlotById = new Map<string, number>();
+    let _nextToolSlot = 0;
+    let _lastToolSlot = -1;
     /* P_silence_fix — do NOT arm the silence watchdog before the first
        read. Reasoning models (DeepSeek R1, QwQ, MiniMax reasoning variants)
        routinely think for 60-120 s before emitting their first token. Arming
@@ -501,29 +562,54 @@ export async function streamChatCompletion(
         arguments: entry.function.arguments,
       }); } catch { /* ignore listener errors */ }
     };
-    const _accumulateToolCall = (tc: Record<string, unknown>, fallbackIndex = 0) => {
+    const _accumulateToolCall = (tc: Record<string, unknown>, positionInDelta = 0, entriesInDelta = 1) => {
       const rawIndex = tc.index;
-      const i = Number.isInteger(rawIndex) ? rawIndex as number : fallbackIndex;
+      const id = typeof tc.id === 'string' && tc.id ? tc.id : '';
+      /* Slot resolution, most reliable signal first:
+         1. `index` — the OpenAI contract, present on every delta of a call.
+         2. a known id — the provider omits `index` but identifies the call.
+         3. a NEW id with no index — a second call; it gets its own slot.
+            Folding it onto slot 0 (the old fallback) overwrote the first
+            call's arguments and lost one of the two calls entirely.
+         4. several entries packed into one delta with neither field — the
+            array position is the only ordering we have.
+         5. a single anonymous entry — a continuation of the open call. */
+      let slot: number;
+      if (Number.isInteger(rawIndex)) slot = rawIndex as number;
+      else if (id && _toolSlotById.has(id)) slot = _toolSlotById.get(id)!;
+      else if (id) slot = _nextToolSlot;
+      else if (entriesInDelta > 1) slot = positionInDelta;
+      else slot = _lastToolSlot >= 0 ? _lastToolSlot : _nextToolSlot;
+      if (id) _toolSlotById.set(id, slot);
+      _nextToolSlot = Math.max(_nextToolSlot, slot + 1);
+      _lastToolSlot = slot;
+
       const functionPart = tc.function && typeof tc.function === 'object'
         ? tc.function as Record<string, unknown>
         : undefined;
       const incomingName = functionPart?.name ?? tc.name;
       const incomingArguments = functionPart?.arguments ?? tc.arguments;
-      const prev = toolCallAcc.get(i) || {
+      const prev = toolCallAcc.get(slot) || {
         id: undefined,
         type: 'function',
         function: { name: '', arguments: '' },
+        __index: slot,
+        __argStream: createToolArgumentStream(),
       };
+      /* The stream mode is per call slot, so a provider that snapshots
+         arguments is detected once and then trusted for the whole call. */
+      const argStream = appendToolArgumentDelta(prev.__argStream, incomingArguments);
       const next = {
-        id: typeof tc.id === 'string' && tc.id ? tc.id : prev.id,
+        id: id || prev.id,
         type: 'function' as const,
         function: {
           name: mergeToolNameDelta(prev.function.name, incomingName),
-          arguments: mergeToolArgumentDelta(prev.function.arguments, incomingArguments),
+          arguments: argStream.text,
         },
-        __index: i,
+        __index: slot,
+        __argStream: argStream,
       };
-      toolCallAcc.set(i, next);
+      toolCallAcc.set(slot, next);
       _emitToolDelta(next, next.function.arguments);
     };
 
@@ -595,7 +681,7 @@ export async function streamChatCompletion(
                that omit `index` but pack several tool_calls into one
                delta must not collapse every entry into slot 0. */
             for (let i = 0; i < delta.tool_calls.length; i++) {
-              _accumulateToolCall(delta.tool_calls[i], i);
+              _accumulateToolCall(delta.tool_calls[i], i, delta.tool_calls.length);
             }
           }
           /* Older OpenAI-compatible gateways use the pre-tools
@@ -641,7 +727,7 @@ export async function streamChatCompletion(
           }
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
             for (let i = 0; i < delta.tool_calls.length; i++) {
-              _accumulateToolCall(delta.tool_calls[i], i);
+              _accumulateToolCall(delta.tool_calls[i], i, delta.tool_calls.length);
             }
           }
           if (delta.function_call && typeof delta.function_call === 'object') {
@@ -690,7 +776,10 @@ export async function streamChatCompletion(
     if (toolCallAcc.size > 0 && typeof onToolUse === 'function') {
       if (isToolFinishReason(finishReason) || finishReason == null || finishReason === 'length') {
         for (const tc of toolCallAcc.values()) {
-          try { onToolUse(tc); } catch { /* ignore listener errors */ }
+          /* Hand out the protocol shape only — the accumulator's slot index
+             and stream-mode state must not leak into the tool-call object
+             the pipeline echoes back to the provider. */
+          try { onToolUse({ id: tc.id, type: 'function', function: { ...tc.function } }); } catch { /* ignore listener errors */ }
         }
       } else {
         console.warn('[LLM] streamed tool calls dropped — upstream finish_reason was', JSON.stringify(finishReason));

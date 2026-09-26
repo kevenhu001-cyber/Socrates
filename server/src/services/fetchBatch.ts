@@ -268,7 +268,7 @@ async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount
   try {
     const mod = await import('pdf-parse');
     const pdfParse = (mod as { default?: unknown }).default || mod;
-    const result = await (pdfParse as (b: Buffer) => Promise<{ text?: string; numpages?: number }>)(buffer);
+    const result = await (pdfParse as (b: Uint8Array) => Promise<{ text?: string; numpages?: number }>)(new Uint8Array(buffer));
     return { text: String(result?.text || ''), pageCount: Number(result?.numpages || 0) };
   } catch {
     return null;

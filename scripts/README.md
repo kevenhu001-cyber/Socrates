@@ -9,8 +9,15 @@
 scripts/
 ├── README.md                    ← 你正在读
 ├── archive/                     ← 一次性、已完结的 audit 历史（参见下文"归档"）
+├── backup/                      ← 生产数据备份（参见下文"backup"）
 ├── utils/                       ← 复用率低、有命名子域的工具集（参见下文"utils"）
 ├── backup-secrets.sh            ← 把 secrets/ 加密备份到 ~/.socrates-backups
+├── check-drizzle-drift.mjs      ← **CI 门禁**：drizzle migration 元数据漂移（server job）
+├── check-openapi-drift.mjs      ← **CI 门禁**：路由 ↔ openapi.yaml 双向漂移棘轮（sanity job）
+├── audit-ratchet.mjs            ← **CI 门禁**：npm audit 棘轮（security.yml）
+├── coverage-ratchet.mjs         ← **CI 门禁**：覆盖率棘轮（ci.yml）
+├── gen-csp-hashes.mjs           ← 生成 SPA CSP hash 片段（deploy.sh 用）
+├── *.baseline.json              ← 各棘轮的基线数据（audit / coverage / openapi）
 ├── clean-local-artifacts.sh     ← 移除本仓库未跟踪的临时产物（shots、debug.log 等）
 ├── gen-oc-cloud-auth.mjs        ← 生成 server 的 openConnector cloud auth 文件（CI 用）
 ├── restart-server.sh            ← 停 + 起 socrates-api systemd 服务
@@ -46,6 +53,19 @@ archive/
 不删的原因：
 1. 两份 audit 的输出会作为后续 audit（如果发生）的对照基线。
 2. 它们是历史决策的**可复现证据**——参照 `docs/audits/` 才是当代工作面。
+
+## `scripts/backup/` — 生产数据备份
+
+```
+backup/
+└── backup-db.sh                 ← pg_dump -Fc → GPG 加密 → /var/backups/socrates/ 轮转
+```
+
+- 与 `backup-secrets.sh` 是同一信任边界（root-only、读同一个 env 文件、同一
+  `BACKUP_PASSPHRASE` 约定），但它备份的是**数据库本体**——secrets 脚本只覆盖
+  env/SESSION_SECRET。2026-09-26 审查发现 DB 无任何备份路径后补建。
+- 加密前会先 `pg_restore --list` 验证 TOC，写盘即失败而不是备份失败。
+- 调度与异地副本的注意事项写在脚本头注释（cron 样例 + rclone/rsync 说明）。
 
 ## `scripts/utils/` — 复用率低的工具集
 

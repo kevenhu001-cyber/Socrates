@@ -83,4 +83,12 @@ describe('telemetry: disabled by default', () => {
     const { annotateSpan } = await telemetry();
     annotateSpan({ 'llm.model': 'test', 'llm.usage_reported': false });
   });
+
+  test('recordHttpMetrics is a no-op when telemetry is off', async () => {
+    delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+    const { recordHttpMetrics } = await telemetry();
+    // Must not throw, must not need an SDK — the delegating meter absorbs it.
+    recordHttpMetrics(12.3, '/api/chat/stream', 'POST', 200);
+    recordHttpMetrics(0.4, '', 'GET', 404);
+  });
 });

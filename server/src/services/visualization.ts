@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
+
 /**
  * The visual tool deliberately accepts content, not presentation.  Palette,
  * typography, layout and renderer selection are owned by the client so every
@@ -74,7 +76,10 @@ const teachingPayload = z.object({
 }).passthrough();
 
 const extensionPayload = z.object({
-  source: z.string().min(1).max(100000),
+  /* Capped by the transport, not by taste: an argument object larger than
+     MAX_TOOL_ARGUMENT_CHARS is truncated before it reaches this validator,
+     so promising 100 KB here guaranteed an unparseable call. */
+  source: z.string().min(1).max(MAX_TOOL_STRING_FIELD_CHARS),
   description: z.string().max(800).optional(),
 }).passthrough();
 
@@ -336,7 +341,7 @@ export const VISUALIZATION_TOOL = {
         title: { type: 'string', maxLength: 120 },
         caption: { type: 'string', maxLength: 500 },
         accessibilitySummary: { type: 'string', maxLength: 800 },
-        payload: { type: 'object', description: 'Template-specific semantic content. function: {functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?}. line/area/bar/scatter/pie/histogram/heatmap/radar/boxplot/paper_chart: {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?}. flowchart/sequence/state/tree/mindmap/network/concept_map: {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. math_construction: {appName?,commands:[GeoGebra commands]}. geometry_3d: {objects:[{type:box|sphere|cylinder|cone,position?,size?,label?}]}. whiteboard: {items? or nodes?}. timeline/comparison/process/number_line/geometry: {items:[{label,detail?,value?,role?}]}. svg_illustration/interactive_simulation: {source}.' },
+        payload: { type: 'object', description: `Template-specific semantic content. function: {functions:[{expression,label?,domain?,role?}],xLabel?,yLabel?}. line/area/bar/scatter/pie/histogram/heatmap/radar/boxplot/paper_chart: {categories?,series:[{name?,role?,data:[numbers]}],xLabel?,yLabel?}. flowchart/sequence/state/tree/mindmap/network/concept_map: {nodes:[{id,label,detail?}],edges:[{from,to,label?}],direction?}. math_construction: {appName?,commands:[GeoGebra commands]}. geometry_3d: {objects:[{type:box|sphere|cylinder|cone,position?,size?,label?}]}. whiteboard: {items? or nodes?}. timeline/comparison/process/number_line/geometry: {items:[{label,detail?,value?,role?}]}. svg_illustration/interactive_simulation: {source} — source must be at most ${Math.floor(MAX_TOOL_STRING_FIELD_CHARS / 1024)} KB so the call fits in one request.` },
       },
       additionalProperties: false,
     },

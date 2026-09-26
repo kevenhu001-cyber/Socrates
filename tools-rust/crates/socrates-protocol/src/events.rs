@@ -124,7 +124,8 @@ pub struct ToolResult {
     pub stdout: Option<String>,
     pub stderr: Option<String>,
     pub error: Option<String>,
-    /// invalid_tool_arguments / tool_not_available / execution_timeout /
+    /// arguments_parse_failed / arguments_schema_failed /
+    /// arguments_too_large / tool_not_available / execution_timeout /
     /// web_search_failed / unknown_tool / …
     pub error_code: Option<String>,
     pub error_message: Option<String>,

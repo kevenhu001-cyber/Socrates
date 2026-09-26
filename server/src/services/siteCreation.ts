@@ -9,6 +9,7 @@
 import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
 import { artifacts } from '../db/schema.js';
+import { MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
 
 export const CREATE_SITE_TOOL = {
   type: 'function',
@@ -38,9 +39,13 @@ export const CREATE_SITE_TOOL = {
         },
         source: {
           type: 'string',
-          description: 'The complete standalone HTML document for the site — doctype through closing </html>, CSS inline, no scripts.',
+          description: `The complete standalone HTML document for the site — doctype through closing </html>, CSS inline, no scripts. Must fit in one tool call: at most ${Math.floor(MAX_TOOL_STRING_FIELD_CHARS / 1024)} KB.`,
           minLength: 15,
-          maxLength: 200000,
+          /* Derived from the transport cap: advertising 200 KB here meant a
+             model that obeyed the schema had its call truncated mid-JSON
+             and rejected as unparseable arguments. The stored artifact can
+             still be larger when it arrives through the REST route. */
+          maxLength: MAX_TOOL_STRING_FIELD_CHARS,
         },
         visibility: {
           type: 'string',

@@ -1,8 +1,19 @@
 /* Advertised tool schemas must never promise a larger payload than this
  * transport cap accepts — a model that follows the schema would otherwise
- * be rejected as `invalid_tool_arguments` for a compliant call. */
+ * be rejected as `arguments_too_large` for a compliant call. */
 export const MAX_TOOL_ARGUMENT_CHARS = 80_000;
+/**
+ * Largest single string field a tool schema may advertise.
+ *
+ * One call's whole argument JSON has to fit in MAX_TOOL_ARGUMENT_CHARS, so
+ * the biggest field gets the cap minus headroom for the sibling fields and
+ * for JSON escaping of quotes/newlines. Every tool that takes a document,
+ * source file, or code body must derive its `maxLength` from this constant
+ * rather than picking its own number.
+ */
+export const MAX_TOOL_STRING_FIELD_CHARS = MAX_TOOL_ARGUMENT_CHARS - 8192;
 const MAX_TOOL_RESULT_CHARS = 60_000;
+
 
 export interface NormalizedToolCall {
   id: string;
@@ -32,15 +43,80 @@ export function sanitizeToolCallForProtocol(call: NormalizedToolCall): Normalize
   };
 }
 
+/**
+ * Machine-readable reasons an argument object was rejected.
+ *
+ * These used to be one code (`invalid_tool_arguments`), which meant a
+ * truncated SSE stream, a schema violation and an oversized payload all
+ * rendered identically in the UI and read identically to the model — so
+ * the model could not tell which of the three it had to change.
+ */
+export const TOOL_ARGUMENT_ERRORS = {
+  /** The argument text is not recoverable JSON (truncated / mangled). */
+  parse: 'arguments_parse_failed',
+  /** Parseable JSON that violates the tool's declared schema. */
+  schema: 'arguments_schema_failed',
+  /** The argument text hit the transport cap and cannot be parsed. */
+  tooLarge: 'arguments_too_large',
+} as const;
+
+export type ToolArgumentErrorCode = typeof TOOL_ARGUMENT_ERRORS[keyof typeof TOOL_ARGUMENT_ERRORS];
+
+/** True when `text` is at or over the cap, i.e. it was (or will be) cut. */
+export function isOversizedToolArguments(text: unknown): boolean {
+  return typeof text === 'string' && text.length >= MAX_TOOL_ARGUMENT_CHARS;
+}
+
+/**
+ * Every complete top-level `{…}` region in `source`, longest first.
+ *
+ * Used to recover from a stream that carried more than the argument object:
+ * a placeholder in front of it (`{}{"query":"x"}`) or stray text behind it
+ * (`{"query":"x"}"`). Only regions that open AND close at depth 0 count, so
+ * a genuinely truncated object (`{"a":{"b":1}`) yields nothing and still
+ * fails honestly instead of being "repaired" into its inner object.
+ */
+function extractTopLevelObjects(source: string): string[] {
+  const found: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    if (inString) {
+      if (escaped) { escaped = false; continue; }
+      if (char === '\\') { escaped = true; continue; }
+      if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') { inString = true; continue; }
+    if (char === '{') {
+      if (depth === 0) start = index;
+      depth++;
+      continue;
+    }
+    if (char === '}') {
+      if (depth === 0) continue;
+      depth--;
+      if (depth === 0 && start >= 0) {
+        found.push(source.slice(start, index + 1));
+        start = -1;
+      }
+    }
+  }
+  if (found.length < 2) return found;
+  return found.sort((a, b) => b.length - a.length).slice(0, 4);
+}
+
 export function parseToolArguments(raw: unknown):
   | { ok: true; value: Record<string, unknown> }
-  | { ok: false; error: string } {
+  | { ok: false; error: ToolArgumentErrorCode } {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     return { ok: true, value: raw as Record<string, unknown> };
   }
-  if (typeof raw !== 'string' || raw.length > MAX_TOOL_ARGUMENT_CHARS) {
-    return { ok: false, error: 'invalid_tool_arguments' };
-  }
+  if (typeof raw !== 'string') return { ok: false, error: TOOL_ARGUMENT_ERRORS.parse };
+  if (raw.length > MAX_TOOL_ARGUMENT_CHARS) return { ok: false, error: TOOL_ARGUMENT_ERRORS.tooLarge };
 
   /* Several OpenAI-compatible providers occasionally wrap otherwise-valid
      function arguments in a Markdown JSON fence, prefix them with
@@ -60,10 +136,13 @@ export function parseToolArguments(raw: unknown):
     if (!prefix && !suffix) candidate = candidate.slice(firstObject, lastObject + 1);
   }
 
-  const attempts = [
-    candidate,
-    candidate.replace(/,\s*([}\]])/g, '$1'),
-  ];
+  const withoutTrailingCommas = (text: string) => text.replace(/,\s*([}\]])/g, '$1');
+  const attempts = [candidate, withoutTrailingCommas(candidate)];
+  /* A placeholder in front of, or junk behind, a complete object. */
+  for (const region of extractTopLevelObjects(candidate)) {
+    if (region === candidate) continue;
+    attempts.push(region, withoutTrailingCommas(region));
+  }
   for (const attempt of attempts) {
     try {
       let value = JSON.parse(attempt) as unknown;
@@ -71,13 +150,19 @@ export function parseToolArguments(raw: unknown):
         value = JSON.parse(value) as unknown;
       }
       if (value && typeof value === 'object' && !Array.isArray(value)) {
+        /* `{}` is only an answer when it is all the model sent: when a
+           larger object is also present in the text, that object is the
+           real payload (see extractTopLevelObjects). */
+        if (Object.keys(value).length === 0 && attempts.some((other) => other !== attempt && other.length > attempt.length && other.includes('{'))) {
+          continue;
+        }
         return { ok: true, value: value as Record<string, unknown> };
       }
     } catch {
       // Try the next conservative representation.
     }
   }
-  return { ok: false, error: 'invalid_tool_arguments' };
+  return { ok: false, error: TOOL_ARGUMENT_ERRORS.parse };
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -118,7 +203,21 @@ export interface JsonSchemaNode {
 
 export type RepairToolArgumentsResult =
   | { ok: true; value: Record<string, unknown>; repairs: string[] }
-  | { ok: false; error: string; repairs: string[] };
+  | { ok: false; error: ToolArgumentErrorCode; repairs: string[] };
+
+export interface RepairToolArgumentsOptions {
+  /**
+   * Delete keys the schema does not declare when it sets
+   * `additionalProperties: false`. Default true.
+   *
+   * Pass `false` for tools whose executor owns a tolerant normalizer
+   * (render_visualization, create_plan, create_spec): those normalizers
+   * exist precisely to move a mis-placed key where it belongs, and dropping
+   * the key here deleted the evidence first, turning a recoverable call
+   * into "missing required field".
+   */
+  dropUnknown?: boolean;
+}
 
 /**
  * Parse tool-call arguments, repairing the unambiguous provider/model
@@ -126,9 +225,15 @@ export type RepairToolArgumentsResult =
  *
  * @param raw    The arguments as streamed by the provider.
  * @param schema The tool's JSON Schema `parameters` node (optional).
+ * @param options See RepairToolArgumentsOptions.
  */
-export function repairToolArguments(raw: unknown, schema?: JsonSchemaNode): RepairToolArgumentsResult {
+export function repairToolArguments(
+  raw: unknown,
+  schema?: JsonSchemaNode,
+  options: RepairToolArgumentsOptions = {},
+): RepairToolArgumentsResult {
   const repairs: string[] = [];
+  const dropUnknown = options.dropUnknown !== false;
 
   let candidate: Record<string, unknown> | null = null;
   const strict = parseToolArguments(raw);
@@ -141,11 +246,16 @@ export function repairToolArguments(raw: unknown, schema?: JsonSchemaNode): Repa
       repairs.push('loose_literals');
     }
   }
-  if (!candidate) return { ok: false, error: 'invalid_tool_arguments', repairs };
+  if (!candidate) {
+    const error = !strict.ok && strict.error === TOOL_ARGUMENT_ERRORS.tooLarge
+      ? TOOL_ARGUMENT_ERRORS.tooLarge
+      : isOversizedToolArguments(raw) ? TOOL_ARGUMENT_ERRORS.tooLarge : TOOL_ARGUMENT_ERRORS.parse;
+    return { ok: false, error, repairs };
+  }
 
   candidate = unwrapArgumentWrapper(candidate, schema, repairs);
   if (schema && schema.properties) {
-    candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0) as Record<string, unknown>;
+    candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0, dropUnknown) as Record<string, unknown>;
   }
   return { ok: true, value: candidate, repairs };
 }
@@ -293,6 +403,7 @@ function coerceObjectToSchema(
   repairs: string[],
   path: string,
   depth: number,
+  dropUnknown = true,
 ): Record<string, unknown> {
   if (depth > MAX_SCHEMA_DEPTH) return value;
   const properties = schema.properties || {};
@@ -300,14 +411,14 @@ function coerceObjectToSchema(
   for (const [key, raw] of Object.entries(value)) {
     const propertySchema = properties[key];
     if (!propertySchema) {
-      if (schema.additionalProperties === false) {
+      if (schema.additionalProperties === false && dropUnknown) {
         repairs.push(`dropped_unknown:${path ? `${path}.` : ''}${key}`);
         continue;
       }
       out[key] = raw;
       continue;
     }
-    out[key] = coerceValueToSchema(raw, propertySchema, repairs, path ? `${path}.${key}` : key, depth + 1);
+    out[key] = coerceValueToSchema(raw, propertySchema, repairs, path ? `${path}.${key}` : key, depth + 1, dropUnknown);
   }
   return out;
 }
@@ -323,6 +434,7 @@ function coerceValueToSchema(
   repairs: string[],
   path: string,
   depth: number,
+  dropUnknown = true,
 ): unknown {
   if (depth > MAX_SCHEMA_DEPTH) return value;
   const type = schemaTypeOf(schema);
@@ -378,7 +490,7 @@ function coerceValueToSchema(
     case 'array': {
       const itemSchema = schema.items || {};
       if (Array.isArray(value)) {
-        return value.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1));
+        return value.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
       }
       if (typeof value === 'string') {
         const trimmed = value.trim();
@@ -387,7 +499,7 @@ function coerceValueToSchema(
             const parsed = JSON.parse(trimmed) as unknown;
             if (Array.isArray(parsed)) {
               repairs.push(`coerced:${path}:json_string_to_array`);
-              return parsed.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1));
+              return parsed.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
             }
           } catch { /* fall through to delimiter split */ }
         }
@@ -397,17 +509,17 @@ function coerceValueToSchema(
         const parts = trimmed.split(/\s*[\n,]\s*/).map((part) => part.trim()).filter(Boolean);
         if (parts.length > 1) {
           repairs.push(`coerced:${path}:delimited_string_to_array`);
-          return parts.map((part, index) => coerceValueToSchema(part, itemSchema, repairs, `${path}[${index}]`, depth + 1));
+          return parts.map((part, index) => coerceValueToSchema(part, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
         }
       }
       if (value == null) return value;
       repairs.push(`coerced:${path}:scalar_to_array`);
-      return [coerceValueToSchema(value, itemSchema, repairs, `${path}[0]`, depth + 1)];
+      return [coerceValueToSchema(value, itemSchema, repairs, `${path}[0]`, depth + 1, dropUnknown)];
     }
     case 'object': {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         return schema.properties
-          ? coerceObjectToSchema(value as Record<string, unknown>, schema, repairs, path, depth)
+          ? coerceObjectToSchema(value as Record<string, unknown>, schema, repairs, path, depth, dropUnknown)
           : value;
       }
       if (typeof value === 'string') {
@@ -417,7 +529,7 @@ function coerceValueToSchema(
           if (parsed) {
             repairs.push(`coerced:${path}:string_to_object`);
             return schema.properties
-              ? coerceObjectToSchema(parsed, schema, repairs, path, depth)
+              ? coerceObjectToSchema(parsed, schema, repairs, path, depth, dropUnknown)
               : parsed;
           }
         }
