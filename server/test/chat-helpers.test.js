@@ -14,6 +14,7 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { drizzle } from 'drizzle-orm/pg-proxy';
 
 import {
   enforceServerSystemBoundary,
@@ -28,7 +29,62 @@ import {
   appendToolRoutingHints,
   FINAL_OUTPUT_CONSTRAINTS,
   ChatPayloadSchema,
+  appendMemoryContext,
 } from '../src/routes/chat/helpers.js';
+
+test('saved memory context leaves messages unchanged without a user or a database', async () => {
+  const messages = [{ role: 'system', content: 'Base policy' }, { role: 'user', content: 'Hello' }];
+  assert.equal(await appendMemoryContext(messages, undefined, undefined), messages);
+  assert.equal(await appendMemoryContext(messages, 'no-db-user', 'project-1'), messages);
+  assert.equal(messages[0].content, 'Base policy');
+});
+
+describe('appendMemoryContext: scoped recall', () => {
+  const userId = '00000000-0000-0000-0000-000000000001';
+  const projectId = '00000000-0000-0000-0000-000000000002';
+  const messages = [{ role: 'system', content: 'Base policy' }, { role: 'user', content: 'Hello' }];
+
+  test('queries enabled owner memories, global plus current project, newest first', async () => {
+    const queries = [];
+    const db = drizzle(async (sql, params) => {
+      queries.push({ sql, params });
+      return { rows: [['recent project fact'], ['older global fact']] };
+    });
+    const result = await appendMemoryContext(messages, userId, projectId, db);
+    assert.equal(queries.length, 1);
+    assert.match(queries[0].sql, /"user_id" = \$1/);
+    assert.match(queries[0].sql, /"enabled" = \$2/);
+    assert.match(queries[0].sql, /"scope" = \$3/);
+    assert.match(queries[0].sql, /"scope" = \$4/);
+    assert.match(queries[0].sql, /"project_id" = \$5/);
+    assert.match(queries[0].sql, /order by "memories"\."created_at" desc limit \$6/);
+    assert.deepEqual(queries[0].params, [userId, true, 'global', 'project', projectId, 50]);
+    assert.match(result[0].content, /\[Server context: saved-memories\]/);
+    assert.ok(result[0].content.indexOf('recent project fact') < result[0].content.indexOf('older global fact'));
+    assert.equal(messages[0].content, 'Base policy');
+    assert.equal((await appendMemoryContext(result, userId, projectId, db))[0].content, result[0].content);
+  });
+
+  test('without an active project queries only global memories', async () => {
+    const queries = [];
+    const db = drizzle(async (sql, params) => {
+      queries.push({ sql, params });
+      return { rows: [] };
+    });
+    assert.equal(await appendMemoryContext(messages, userId, undefined, db), messages);
+    assert.deepEqual(queries[0].params, [userId, true, 'global', 50]);
+    assert.doesNotMatch(queries[0].sql, /"project_id"/);
+  });
+
+  test('caps each entry at 500 characters and total memory text at 6000', async () => {
+    const db = drizzle(async () => ({ rows: Array.from({ length: 50 }, (_, i) => [`${i}:` + 'x'.repeat(600)]) }));
+    const result = await appendMemoryContext(messages, userId, projectId, db);
+    const memoryLines = result[0].content.split('\n').filter((line) => line.startsWith('- '));
+    assert.equal(memoryLines.length, 12);
+    assert.ok(memoryLines.every((line) => line.length <= 502));
+    assert.equal(memoryLines.some((line) => line.includes('12:')), false);
+  });
+});
 
 /* ── server system boundary ───────────────────────────────────── */
 

@@ -18,6 +18,26 @@ import {OPEN_CONNECTOR_CHAT_TOOLS} from './openConnectorChatTools.js';
 import {INITIALIZE_WORKSPACE_TOOL, WORKSPACE_AGENT_TOOL} from './agentRuntime.js';
 import {PI_AGENT_ENABLED} from './piAgent.js';
 
+/**
+ * Tools whose executor already owns a tolerant normalizer AND a strict
+ * validator (zod) for its own arguments.
+ *
+ * For these the pipeline must NOT drop keys the JSON Schema does not
+ * declare, and must NOT pre-validate against that schema: the executor's
+ * normalizer exists to move a mis-placed key where it belongs (top-level
+ * chart keys into `payload`, `items`/`tasks` into `steps`, a bare string
+ * step into `{title}`), and every pre-pass that deleted or rejected those
+ * shapes first turned a recoverable call into `missing required field`.
+ * The executors return their own field-level errors
+ * (`visual_spec_invalid` / `plan_spec_invalid`), so nothing is lost.
+ */
+export const SELF_NORMALIZING_TOOLS: ReadonlySet<string> = new Set([
+  'render_visualization',
+  'create_plan',
+  'create_spec',
+]);
+
+
 /** The model-facing capability registry. Route-specific executors retain
  * their streaming/session semantics while availability is defined once.
  *

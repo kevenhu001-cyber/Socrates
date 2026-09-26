@@ -380,6 +380,46 @@ describe('fetchBatch — response handling', () => {
     assert.match(out.results[0].reason, /content type|Unsupported/);
   });
 
+  test('extracts text and page count from a remote PDF', async () => {
+    const objects = [
+      '<</Type/Catalog/Pages 2 0 R>>',
+      '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+      '<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>',
+      '<</Length 39>>\nstream\nBT /F1 12 Tf 72 770 Td (Hello PDF) Tj ET\nendstream',
+      '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
+    ];
+    let source = '%PDF-1.4\n';
+    const offsets = objects.map((object, index) => {
+      const offset = Buffer.byteLength(source, 'binary');
+      source += `${index + 1} 0 obj\n${object}\nendobj\n`;
+      return offset;
+    });
+    const startXref = Buffer.byteLength(source, 'binary');
+    source += `xref\n0 6\n0000000000 65535 f \r\n${offsets.map((offset) => `${String(offset).padStart(10, '0')} 00000 n \r\n`).join('')}trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n${startXref}\n%%EOF`;
+    stubDns({ 'valid-pdf.test': [{ address: '8.8.8.8', family: 4 }] });
+    globalThis.fetch = mock.fn(async () => makeResponse({
+      headers: { 'content-type': 'application/pdf' },
+      body: Buffer.from(source, 'binary'),
+    }));
+    const out = await fetchBatch(['https://valid-pdf.test/report.pdf']);
+    assert.equal(out.results[0].ok, true);
+    assert.equal(out.results[0].method, 'pdf');
+    assert.equal(out.results[0].pageCount, 1);
+    assert.match(out.results[0].content, /Hello PDF/);
+  });
+
+  test('reports corrupt PDF responses as a structured parse failure', async () => {
+    stubDns({ 'corrupt-pdf.test': [{ address: '8.8.8.8', family: 4 }] });
+    globalThis.fetch = mock.fn(async () => makeResponse({
+      headers: { 'content-type': 'application/pdf' },
+      body: '%PDF-1.4\nnot a valid document',
+    }));
+    const out = await fetchBatch(['https://corrupt-pdf.test/document.pdf']);
+    assert.equal(out.results[0].ok, false);
+    assert.equal(out.results[0].code, 'pdf_parse_failed');
+    assert.match(out.results[0].reason, /Could not extract text from this PDF/);
+  });
+
   test('truncates response bodies larger than 200 KB', async () => {
     stubDns({ 'a.test': [{ address: '8.8.8.8', family: 4 }] });
     const huge = '<html><title>Big</title>' + 'x'.repeat(500_000) + '</html>';
@@ -411,6 +451,46 @@ describe('fetchBatch — response handling', () => {
     assert.equal(globalThis.fetch.mock.calls.length, 1, 'continuation should reuse extracted page');
     assert.equal(WEB_FETCH_TOOL.function.parameters.properties.offset.type, 'integer');
     assert.equal(WEB_FETCH_TOOL.function.parameters.properties.max_chars.maximum, 30_000);
+  });
+
+  test('web_fetch batch keeps input order and reports each failed URL inline', async () => {
+    stubDns({
+      'batch-one.test': [{ address: '8.8.8.8', family: 4 }],
+      'batch-two.test': [{ address: '8.8.4.4', family: 4 }],
+      'batch-private.test': [{ address: '10.0.0.1', family: 4 }],
+    });
+    globalThis.fetch = mock.fn(async (url) => makeResponse({
+      headers: { 'content-type': 'text/plain' },
+      body: url.includes('batch-one') ? 'First page text' : 'Second page text',
+    }));
+    const events = [];
+    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const call = { id: 'batch-fetch', function: { name: 'web_fetch' } };
+    const urls = [
+      'https://batch-two.test/article',
+      'https://batch-private.test/article',
+      'https://batch-one.test/article',
+    ];
+    const { result } = await executeWebFetch({ urls }, call, ctx, { activeToolNames: [] });
+    assert.equal(result.status, 'completed');
+    assert.match(result.output, /\[page 1\/3\][\s\S]*Second page text[\s\S]*\[page 2\/3\][\s\S]*\[error: dns_failure[\s\S]*\[page 3\/3\][\s\S]*First page text/);
+    assert.deepEqual(events[0].pages.map((p) => p.url), urls);
+    assert.deepEqual(events[0].pages.map((p) => p.ok), [true, false, true]);
+    assert.equal(events[0].truncated, true);
+    assert.equal(globalThis.fetch.mock.calls.length, 2);
+  });
+
+  test('web_fetch batch limits requests to four URLs', async () => {
+    stubDns({ 'batch-cap.test': [{ address: '8.8.8.8', family: 4 }] });
+    globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Page content' }));
+    const events = [];
+    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const call = { id: 'batch-cap', function: { name: 'web_fetch' } };
+    const urls = Array.from({ length: 6 }, (_, i) => `https://batch-cap.test/${i}`);
+    const { result } = await executeWebFetch({ urls }, call, ctx, { activeToolNames: [] });
+    assert.equal(result.status, 'completed');
+    assert.deepEqual(events[0].pages.map((p) => p.url), urls.slice(0, 4));
+    assert.equal(globalThis.fetch.mock.calls.length, 4);
   });
 
   test('continuation without its earlier snapshot asks to restart instead of mixing pages', async () => {

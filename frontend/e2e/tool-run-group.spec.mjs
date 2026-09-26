@@ -239,6 +239,29 @@ test('expanding a row shows the result, and the argument dump sits behind Techni
   expect(rowBox.height).toBeLessThan(300);
 });
 
+test('long tool output expands and copies the complete source text', async ({ page }) => {
+  const output = Array.from({ length: 30 }, (_, i) => `line-${i}: ${'x'.repeat(500)}`).join('\n');
+  const call = { id: 'long-output', name: 'code_interpreter', input: { code: 'print(1)' }, output, status: 'completed', textOffset: 0 };
+  const body = await loadFixtureSession(page, { toolCalls: [call] });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (text) => { window.__copiedToolOutput = text; } },
+    });
+  });
+  const row = body.locator('.tool-inline[data-tcid="long-output"]');
+  await row.locator('summary').click();
+  const section = row.locator('[data-kind="output"]');
+  await expect(section.locator('.tool-inline-detail-value')).toContainText('line-0:');
+  await expect(section.locator('.tool-inline-detail-value')).not.toContainText('line-15:');
+  await section.getByRole('button', { name: /Show all/ }).click();
+  await expect(section.locator('.tool-inline-detail-value')).toContainText('line-15:');
+  await section.getByRole('button', { name: 'Copy' }).click();
+  expect(await page.evaluate(() => window.__copiedToolOutput)).toBe(output);
+  await section.getByRole('button', { name: 'Show less' }).click();
+  await expect(section.locator('.tool-inline-detail-value')).not.toContainText('line-15:');
+});
+
 test('long technical arguments stay within the expanded tool detail', async ({ page }) => {
   const longCall = {
     ...searchCall('wide-args', 'wide detail', []),

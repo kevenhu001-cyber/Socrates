@@ -78,10 +78,13 @@ jobs:
           # minutes — the safe direction.
           #
           # docs/api/openapi.yaml is inside this bucket on purpose (ADR 0009
-          # weighed it explicitly): it is a cross-client contract, but no job
-          # in this workflow reads it, so running them proves nothing about a
-          # spec-only edit. Move it out of `docs/*` the moment a contract
-          # test (Schemathesis / Dredd / generated types) exists to run.
+          # weighed it explicitly): it is a cross-client contract, and its
+          # guardian — scripts/check-openapi-drift.mjs — runs in the
+          # always-on `sanity` job, so a spec-only edit is still checked
+          # while the expensive build/test jobs stay skipped. A deeper
+          # runtime contract test (Schemathesis/Dredd) would belong in the
+          # server job and would NOT cover spec-only edits for the same
+          # reason.
           is_docs_only_path() {
             case "$1" in
               docs/*|README.md|README.zh.md|AGENTS.md|CLAUDE.md|.gitignore|.hintrc|\
@@ -136,6 +139,39 @@ jobs:
             echo "documentation-only change: the build/test jobs will be skipped,"
             echo "and a skipped job reports as successful so required checks pass."
           fi
+
+  sanity:
+    name: Repo sanity
+    runs-on: ubuntu-latest
+    # Deliberately NOT gated on `changes`: a conflict marker inside a
+    # docs-only PR is still a broken file, and this job costs seconds.
+    steps:
+      - uses: actions/checkout@v4
+
+      # 2026-09-26: merge ee20d6df committed qodana.yaml and
+      # .github/workflows/qodana_code_quality.yml with live
+      # <<<<<<< / ======= / >>>>>>> markers — the Qodana workflow was
+      # unparseable on main and nothing noticed.
+      #
+      # The side markers anchored at column 0 have no benign meaning in
+      # tracked text. `^={7}$` is included too: it is git's conflict
+      # divider, and this repo writes headings with '#' rather than
+      # setext underlines — a false positive means "make the markdown
+      # underline a different length", not a broken check.
+      - name: No merge-conflict markers
+        run: |
+          if git grep -nE '^(<{7}|>{7}|\|{7})([[:space:]]|$)|^={7}$' -- .; then
+            echo "::error::merge-conflict markers committed — resolve or remove them"
+            exit 1
+          fi
+          echo "clean: no conflict markers in tracked files"
+
+      # Route↔spec drift ratchet. Lives here rather than in the `server`
+      # job on purpose: docs/api/openapi.yaml is classified docs-only, so
+      # a spec-only edit never triggers the server job — but this job
+      # always runs. New divergence fails; the baseline only shrinks.
+      - name: OpenAPI drift ratchet
+        run: node scripts/check-openapi-drift.mjs
 
   frontend:
     name: Frontend

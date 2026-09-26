@@ -177,6 +177,7 @@ export async function appendMemoryContext(
   messages: ChatMessage[],
   userId: string | undefined,
   projectId: string | undefined,
+  db?: ReturnType<typeof getDb>,
 ): Promise<ChatMessage[]> {
   if (!userId) return messages;
   try {
@@ -184,9 +185,9 @@ export async function appendMemoryContext(
     /* Global rows plus rows tagged to THIS project only — a memory
        scoped to a different project must not leak across projects. */
     const scopeCond = projectId
-      ? (or(eq(memories.scope, 'global'), eq(memories.projectId, projectId)) ?? eq(memories.scope, 'global'))
+      ? (or(eq(memories.scope, 'global'), and(eq(memories.scope, 'project'), eq(memories.projectId, projectId))) ?? eq(memories.scope, 'global'))
       : eq(memories.scope, 'global');
-    const rows = await getDb()
+    const rows = await (db ?? getDb())
       .select({ text: memories.text })
       .from(memories)
       .where(and(eq(memories.userId, userId), eq(memories.enabled, true), scopeCond))

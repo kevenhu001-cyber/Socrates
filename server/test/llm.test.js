@@ -12,13 +12,18 @@
  *
  * Run with: npm test
  */
-import { test, describe, mock, afterEach } from 'node:test';
+import { test, describe, mock, afterEach, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { runChatStreamPipeline } from '../src/routes/chat/pipeline/runChatStreamPipeline.js';
+import { shutdownPubsub } from '../src/lib/pubsub.js';
 
 import {
   streamChatCompletion,
   callChatCompletion,
   isToolFinishReason,
+  appendToolArgumentDelta,
+  createToolArgumentStream,
   mergeToolArgumentDelta,
   mergeToolNameDelta,
 } from '../src/services/llm.js';
@@ -74,6 +79,10 @@ function makeEmptyResponse(status = 200) {
 
 afterEach(() => {
   globalThis.fetch = ORIG_FETCH;
+});
+
+after(async () => {
+  await shutdownPubsub();
 });
 
 /* ── Shared opts ──────────────────────────────────────────────── */
@@ -349,6 +358,58 @@ describe('streamChatCompletion: tool_calls', () => {
     assert.equal(tools[0].function.arguments, '{"q":"docs"}');
   });
 
+  test('gives each id its own slot when the provider omits `index`', async () => {
+    /* Regression: without `index` every entry fell into slot 0, so the
+       second call overwrote the first and one of the two vanished. */
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          id: 'call_a', function: { name: 'web_search', arguments: '{"query":"a"}' },
+        }] } }] },
+        { choices: [{ delta: { tool_calls: [{
+          id: 'call_b', function: { name: 'web_fetch', arguments: '{"url":"https://example.com"}' },
+        }] } }] },
+        { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 2);
+    assert.deepEqual(tools.map((tc) => tc.id), ['call_a', 'call_b']);
+    assert.equal(tools[0].function.arguments, '{"query":"a"}');
+    assert.equal(tools[1].function.arguments, '{"url":"https://example.com"}');
+    /* Only the protocol shape is handed out — no accumulator internals. */
+    assert.deepEqual(Object.keys(tools[0]).sort(), ['function', 'id', 'type']);
+  });
+
+  test('continues an id-only call across deltas that carry neither id nor index', async () => {
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          id: 'call_a', function: { name: 'web_search', arguments: '{"query":' },
+        }] } }] },
+        { choices: [{ delta: { tool_calls: [{ function: { arguments: '"deep' } }] } }] },
+        { choices: [{ delta: { tool_calls: [{ function: { arguments: ' work"}' } }] } }] },
+        { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 1);
+    assert.equal(tools[0].id, 'call_a');
+    assert.equal(tools[0].function.arguments, '{"query":"deep work"}');
+  });
+
   test('does NOT dispatch onToolUse when finish_reason is "stop" even if tool_calls were streamed', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
@@ -524,10 +585,12 @@ describe('tool-call compatibility helpers', () => {
   });
 
   test('never concatenates a fragment onto an already-complete arguments object', () => {
-    /* prev is a closed JSON object; a trailing fragment cannot extend it
-       and concatenation used to produce `{"q":"x"}"junk` — guaranteed
-       invalid_tool_arguments downstream. */
-    assert.equal(mergeToolArgumentDelta('{"q":"x"}', '"junk'), '{"q":"x"}');
+    /* Stray text behind a complete object is no longer dropped at the
+       merge boundary — dropping "a suffix we have already seen" also ate
+       the legitimate final `}` of every nested object (see the fragment
+       test below). The junk is carried through and parseToolArguments
+       recovers the real object from it instead. */
+    assert.equal(mergeToolArgumentDelta('{"q":"x"}', '"junk'), '{"q":"x"}"junk');
     /* A `{}` placeholder followed by the real snapshot still resolves to
        the latest complete object. */
     assert.equal(mergeToolArgumentDelta('{}', '{"q":"x"}'), '{"q":"x"}');
@@ -535,6 +598,49 @@ describe('tool-call compatibility helpers', () => {
     assert.equal(mergeToolArgumentDelta('{"q":"x"}', '{"q":"y"}'), '{"q":"y"}');
     /* An incomplete prev still concatenates fragments normally. */
     assert.equal(mergeToolArgumentDelta('{"q":"x', '"}'), '{"q":"x"}');
+  });
+
+  test('keeps a fragment that repeats the accumulated tail', () => {
+    const fold = (fragments) => fragments.reduce((acc, part) => mergeToolArgumentDelta(acc, part), '');
+    /* Regression: the closing braces of a nested object arrive as separate
+       deltas, and the old "prev.endsWith(next)" rule dropped the second one,
+       truncating the JSON of every call with a nested payload. */
+    assert.equal(fold(['{"a":{"b":1', '}', '}']), '{"a":{"b":1}}');
+    assert.equal(
+      fold(['{"version":1,"payload":{"series":[{"data":[1,2]}]}', '}']),
+      '{"version":1,"payload":{"series":[{"data":[1,2]}]}}',
+    );
+    /* Same rule corrupted repeated characters inside a string value. */
+    assert.equal(fold(['{"q":"aa', 'a', '"}']), '{"q":"aaa"}');
+  });
+
+  test('drops a `{}` placeholder instead of locking the accumulator', () => {
+    const fold = (fragments) => fragments.reduce((acc, part) => mergeToolArgumentDelta(acc, part), '');
+    /* A gateway that sends `{}` before the real fragments used to freeze
+       the accumulator: `{}` parses, so every later fragment was discarded
+       and the call ran with empty arguments. */
+    assert.equal(fold(['{}', '{"query":', '"x"}']), '{"query":"x"}');
+  });
+
+  test('locks the stream mode once per call', () => {
+    const snapshot = ['{"q":"x"}', '{"q":"xy"}', '{"q":"xy","n":1}']
+      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    assert.equal(snapshot.mode, 'snapshot');
+    assert.equal(snapshot.text, '{"q":"xy","n":1}');
+
+    const fragment = ['{"q":', '"xy"', '}']
+      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    assert.equal(fragment.mode, 'fragment');
+    assert.equal(fragment.text, '{"q":"xy"}');
+
+    /* A `{}` placeholder must not decide the mode: the provider that sent
+       it may go on to stream either snapshots or fragments. */
+    const afterPlaceholderSnapshot = ['{}', '{"a":1}', '{"a":1,"b":2}']
+      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    assert.equal(afterPlaceholderSnapshot.text, '{"a":1,"b":2}');
+    const afterPlaceholderFragment = ['{}', '{"a":', '1}']
+      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    assert.equal(afterPlaceholderFragment.text, '{"a":1}');
   });
 
   test('merges split function names without duplicating snapshots', () => {
@@ -691,5 +797,68 @@ describe('callChatCompletion', () => {
     assert.ok(err, 'expected throw');
     assert.equal(err.status, 429);
     assert.equal(err.code, 'LLM_API_ERROR');
+  });
+});
+
+async function runLengthPipeline(reasons) {
+  const originalLimit = process.env.CHAT_LENGTH_CONTINUE_MAX;
+  process.env.CHAT_LENGTH_CONTINUE_MAX = '2';
+  const requests = [];
+  const frames = [];
+  const req = new EventEmitter();
+  req.app = { locals: {} };
+  const res = new EventEmitter();
+  res.writeHead = () => res;
+  res.flushHeaders = () => {};
+  res.write = (frame) => { frames.push(frame); return true; };
+  res.end = () => { res.writableEnded = true; res.emit('finish'); };
+  globalThis.fetch = mock.fn(async (_url, opts) => {
+    const body = JSON.parse(opts.body);
+    requests.push(body);
+    const index = requests.length - 1;
+    const content = `part-${index + 1}`;
+    return makeSseResponse([
+      { choices: [{ delta: { reasoning_content: `reason-${index + 1}` } }] },
+      { choices: [{ delta: { content } }] },
+      { choices: [{ delta: {}, finish_reason: reasons[index] ?? 'length' }] },
+      sseDone(),
+    ]);
+  });
+  try {
+    await runChatStreamPipeline({
+      req, res,
+      prep: { payload: {
+        messages: [{ role: 'system', content: 'Base' }, { role: 'user', content: 'Question' }],
+        provider: { url: BASE_OPTS.apiBase, keyPlaintext: BASE_OPTS.apiKey, model: BASE_OPTS.model },
+        mode: 'chat', maxTokens: 256,
+      } },
+      sessionIdFromQuery: null, projectIdFromBody: null, turnId: null,
+    });
+    return { requests, frames };
+  } finally {
+    if (originalLimit === undefined) delete process.env.CHAT_LENGTH_CONTINUE_MAX;
+    else process.env.CHAT_LENGTH_CONTINUE_MAX = originalLimit;
+  }
+}
+
+describe('runChatStreamPipeline: length continuation', () => {
+  test('replays partial content and reasoning, then streams a completed continuation', async () => {
+    const { requests, frames } = await runLengthPipeline(['length', 'stop']);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[1].messages.at(-2).content, 'part-1');
+    assert.equal(requests[1].messages.at(-2).reasoning_content, 'reason-1');
+    assert.deepEqual(requests[1].messages.at(-2).reasoning_details, [{ type: 'reasoning.text', text: 'reason-1' }]);
+    assert.match(requests[1].messages.at(-1).content, /Continue exactly where you stopped/);
+    const streamed = frames.filter((frame) => frame.includes('"content":"part-')).join('');
+    assert.match(streamed, /part-1/);
+    assert.match(streamed, /part-2/);
+    assert.equal(frames.filter((frame) => frame === 'data: [DONE]\n\n').length, 1);
+  });
+
+  test('stops after the configured two continuations even if the provider keeps returning length', async () => {
+    const { requests, frames } = await runLengthPipeline(['length', 'length', 'length', 'stop']);
+    assert.equal(requests.length, 3);
+    assert.equal(requests[2].messages.at(-2).content, 'part-2');
+    assert.equal(frames.filter((frame) => frame === 'data: [DONE]\n\n').length, 1);
   });
 });

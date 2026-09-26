@@ -37,7 +37,7 @@ import { publish, subscribe as pubsubSubscribe, getStatus as pubsubStatus } from
 import { parseChatSessionId, requireOwnedSession } from '../lib/sessionOwnership.js';
 import { isUuid } from '../lib/validate.js';
 import { createSessionExecutionLock } from './sessionExecutionLock.js';
-import { MAX_TOOL_ARGUMENT_CHARS } from './toolCallSafety.js';
+import { MAX_TOOL_ARGUMENT_CHARS, MAX_TOOL_STRING_FIELD_CHARS } from './toolCallSafety.js';
 
 /* ─── Execution progress pub/sub ───
  * P_pubsub — replaces the in-process EventEmitter so SSE clients on
@@ -112,7 +112,7 @@ const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10)
  * the advertised schema must not promise more — a model writing to the
  * documented limit would otherwise be turned away as malformed. ~8 KB of
  * headroom covers JSON escaping of the code string plus sibling fields. */
-const ADVERTISED_MAX_CODE_CHARS = Math.min(MAX_CODE_CHARS, MAX_TOOL_ARGUMENT_CHARS - 8192);
+const ADVERTISED_MAX_CODE_CHARS = Math.min(MAX_CODE_CHARS, MAX_TOOL_STRING_FIELD_CHARS);
 const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
   || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : path.join(os.tmpdir(), 'socrates-exec'));
 

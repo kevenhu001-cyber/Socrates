@@ -23,12 +23,15 @@ import {chatTurns, sessions} from '../../../db/schema.js';
 import {publishChatTurnEvent, setChatTurnStatus} from '../../../services/chatTurns.js';
 import {streamChatCompletion} from '../../../services/llm.js';
 import {
+  MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,
   repairToolArguments,
   resolveToolName,
   sanitizeToolCallForProtocol,
+  TOOL_ARGUMENT_ERRORS,
   validateToolArguments,
 } from '../../../services/toolCallSafety.js';
+import {SELF_NORMALIZING_TOOLS} from '../../../services/toolRegistry.js';
 import {hashToolArguments} from '../../../services/toolTurnPolicy.js';
 import {dispatchToolCalls} from '../../../services/toolDispatch.js';
 import {
@@ -579,7 +582,16 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       }
       const registryEntry = resolved.name ? toolRegistry.get(resolved.name) : null;
       const schema = resolved.name ? schemaForTool(resolved.name) : null;
-      const repaired = repairToolArguments(call.function?.arguments, schema || undefined);
+      /* Tools that normalize their own arguments keep every key they were
+         sent and skip the pipeline's schema pre-pass (see
+         SELF_NORMALIZING_TOOLS): their executor rescues mis-placed keys and
+         reports its own field errors. */
+      const selfNormalizing = !!resolved.name && SELF_NORMALIZING_TOOLS.has(resolved.name);
+      const repaired = repairToolArguments(
+        call.function?.arguments,
+        schema || undefined,
+        { dropUnknown: !selfNormalizing },
+      );
       if (repaired.ok && repaired.repairs.length > 0) {
         /* Log the repair kinds only — never the argument values. */
         console.info('[tool-repair]', JSON.stringify({
@@ -605,18 +617,27 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
           hint: `\`${resolved.name}\` was withdrawn for the rest of this turn (${toolPolicy.disabledReason(resolved.name)}).`,
         };
       } else if (!repaired.ok) {
+        /* Distinct codes: an oversized payload needs a smaller call, a
+           parse failure needs the arguments re-emitted as one JSON
+           object. One shared code left the model guessing. */
         rejection = {
-          code: 'invalid_tool_arguments',
+          code: repaired.error,
           retryable: toolPolicy.remainingRetries(resolved.name) > 1,
+          ...(repaired.error === TOOL_ARGUMENT_ERRORS.tooLarge ? {
+            hint: `The arguments hit the ${Math.floor(MAX_TOOL_ARGUMENT_CHARS / 1024)} KB transport limit and were cut off, so they could not be parsed. Send a smaller payload — split the work across several calls.`,
+          } : {}),
         };
       } else {
         /* Repair coerced the shape; now enforce the declared contract
          * (required fields, bounds, enums) so a malformed call gets the
-         * correction package instead of a wasted execution. */
-        const validation = validateToolArguments(args, schema);
+         * correction package instead of a wasted execution. Self-
+         * normalizing tools validate inside their executor instead. */
+        const validation = selfNormalizing
+          ? { ok: true, fieldErrors: [] as string[] }
+          : validateToolArguments(args, schema);
         if (!validation.ok) {
           rejection = {
-            code: 'invalid_tool_arguments',
+            code: TOOL_ARGUMENT_ERRORS.schema,
             retryable: toolPolicy.remainingRetries(resolved.name) > 1,
             fieldErrors: validation.fieldErrors.join('; '),
           };

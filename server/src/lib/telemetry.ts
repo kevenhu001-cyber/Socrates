@@ -1,5 +1,5 @@
 /**
- * telemetry — opt-in OpenTelemetry tracing.
+ * telemetry — opt-in OpenTelemetry tracing + request metrics.
  *
  * Why
  * ---
@@ -9,6 +9,12 @@
  * its 12s budget, or the Pyodide worker cold-started, and there was no way to
  * tell them apart after the fact. `/api/health` plus a single-file logger
  * answers "is it up", not "why was that turn slow".
+ *
+ * Metrics ride the same switch: when the OTLP endpoint is set, a
+ * PeriodicExportingMetricReader pushes `http.server.request.duration`
+ * (histogram, seconds, attrs: method / route template / status code) every
+ * 30 s alongside the traces. Unmatched paths collapse to 'unmatched' so
+ * scanner traffic cannot explode label cardinality.
  *
  * Design constraints
  * ------------------
@@ -35,7 +41,7 @@
  * exporter. HTTP (not gRPC) is deliberate: one fewer transport dependency, and
  * it traverses ordinary proxies.
  */
-import { SpanStatusCode, trace, type Span } from '@opentelemetry/api';
+import { metrics, SpanStatusCode, trace, type Span } from '@opentelemetry/api';
 
 const TRACER_NAME = 'socrates-api';
 
@@ -60,6 +66,8 @@ export async function startTracing(): Promise<void> {
     const [
       { NodeSDK },
       { OTLPTraceExporter },
+      { OTLPMetricExporter },
+      { PeriodicExportingMetricReader },
       { HttpInstrumentation },
       { ExpressInstrumentation },
       { PgInstrumentation },
@@ -67,12 +75,15 @@ export async function startTracing(): Promise<void> {
     ] = await Promise.all([
       import('@opentelemetry/sdk-node'),
       import('@opentelemetry/exporter-trace-otlp-http'),
+      import('@opentelemetry/exporter-metrics-otlp-http'),
+      import('@opentelemetry/sdk-metrics'),
       import('@opentelemetry/instrumentation-http'),
       import('@opentelemetry/instrumentation-express'),
       import('@opentelemetry/instrumentation-pg'),
       import('@opentelemetry/resources'),
     ]);
 
+    const otlpBase = process.env.OTEL_EXPORTER_OTLP_ENDPOINT!.replace(/\/$/, '');
     const sdk = new NodeSDK({
       resource: resourceFromAttributes({
         'service.name': process.env.OTEL_SERVICE_NAME || TRACER_NAME,
@@ -80,7 +91,14 @@ export async function startTracing(): Promise<void> {
         'deployment.environment': process.env.NODE_ENV || 'development',
       }),
       traceExporter: new OTLPTraceExporter({
-        url: `${process.env.OTEL_EXPORTER_OTLP_ENDPOINT!.replace(/\/$/, '')}/v1/traces`,
+        url: `${otlpBase}/v1/traces`,
+      }),
+      /* Traces answer "why was THIS turn slow"; metrics answer "is the
+         service degrading". Push interval is deliberately coarse — this
+         exporter feeds a collector, not a per-request scrape. */
+      metricReader: new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter({ url: `${otlpBase}/v1/metrics` }),
+        exportIntervalMillis: 30_000,
       }),
       instrumentations: [
         /* Ignore the endpoints that would otherwise dominate the trace volume
@@ -158,4 +176,33 @@ export function annotateSpan(attributes: Record<string, string | number | boolea
   const span = trace.getActiveSpan();
   if (!span) return;
   for (const [k, v] of Object.entries(attributes)) span.setAttribute(k, v);
+}
+
+/* Instruments are created through the API's delegating meter: before the SDK
+   registers a MeterProvider these are inert proxies, so call sites never
+   branch on whether telemetry is on. */
+const meter = metrics.getMeter(TRACER_NAME);
+const requestDuration = meter.createHistogram('http.server.request.duration', {
+  unit: 's',
+  description: 'Duration of inbound HTTP requests, by method/route/status.',
+});
+
+/**
+ * Record one completed request. Called from the requestTiming middleware in
+ * app.ts (the same hook that feeds the status-page sampler), so streaming
+ * responses are timed end-to-end rather than to first byte. `route` must be
+ * the Express route template (req.baseUrl + req.route.path) — never the raw
+ * URL — or user-supplied path segments would explode label cardinality.
+ */
+export function recordHttpMetrics(
+  durationMs: number,
+  route: string,
+  method: string,
+  statusCode: number,
+): void {
+  requestDuration.record(durationMs / 1000, {
+    'http.request.method': method,
+    'http.route': route || 'unmatched',
+    'http.response.status_code': statusCode,
+  });
 }

@@ -188,7 +188,13 @@ function normalizeFieldErrors(fieldErrors?: string | string[] | null): string {
 }
 
 const USER_MESSAGES: Record<string, string> = {
+  /* Legacy umbrella code, still emitted by the connector executors. */
   invalid_tool_arguments: '工具参数格式无效，已把正确格式示例反馈给模型。',
+  /* The three replacements — one per actual cause, so the card says what
+     went wrong instead of blaming "格式" for all of them. */
+  arguments_parse_failed: '工具参数没能完整解析（传输中被截断或不是单个 JSON 对象），已请模型重发。',
+  arguments_schema_failed: '工具参数缺少必填字段或类型不符，已附上字段说明请模型修正。',
+  arguments_too_large: '工具参数超出单次调用上限，已请模型拆分成多次调用。',
   duplicate_tool_call: '模型重复了同一个工具调用，本次已跳过执行。',
   tool_not_available: '该工具未启用或不可用，已告知模型可用的工具。',
   unknown_tool: '该工具不存在，已告知模型可用的工具。',
@@ -196,6 +202,14 @@ const USER_MESSAGES: Record<string, string> = {
   plan_spec_invalid: '计划结构有字段不符合要求，已附上正确示例请模型修正。',
   spec_spec_invalid: '规格结构有字段不符合要求，已附上正确示例请模型修正。',
 };
+
+/** Extra model-facing line per code — what to actually change. */
+const MODEL_HINTS: Record<string, string> = {
+  arguments_parse_failed: 'The arguments did not parse as a single JSON object. Re-emit them as one complete JSON object — no Markdown fence, no `input`/`arguments` wrapper, no prose around it, and no second object.',
+  arguments_schema_failed: 'The JSON parsed, but it does not satisfy the schema below. Fix the listed fields and keep every required one.',
+  arguments_too_large: 'The arguments were too large for one call and got cut off. Send a smaller payload and split the work across several calls.',
+};
+
 
 /**
  * Build the correction package for one rejected tool call.
@@ -208,6 +222,10 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
 
   const lines: string[] = [`[error] ${errorCode}: the call to \`${toolName}\` was rejected before execution.`];
   if (fieldErrors) lines.push(`[fields] ${fieldErrors}`);
+  /* A per-code instruction, so "wrong shape" / "too big" / "not JSON" read
+     as three different problems with three different fixes. */
+  const codeHint = MODEL_HINTS[errorCode];
+  if (codeHint) lines.push(codeHint);
   if (input.hint) lines.push(input.hint);
 
   if (errorCode === 'unknown_tool' || errorCode === 'tool_not_available') {

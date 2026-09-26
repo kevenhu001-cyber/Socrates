@@ -16,7 +16,14 @@
  */
 
 import {buildToolErrorFeedback} from '../../../services/toolErrorFeedback.js';
-import {wrapUntrustedToolResult} from '../../../services/toolCallSafety.js';
+import {TOOL_ARGUMENT_ERRORS, wrapUntrustedToolResult} from '../../../services/toolCallSafety.js';
+
+/** Every code that means "the arguments were wrong", for logging. */
+const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
+  ...Object.values(TOOL_ARGUMENT_ERRORS),
+  'invalid_tool_arguments',
+]);
+
 import {hashToolArguments, type ToolTurnPolicy} from '../../../services/toolTurnPolicy.js';
 import {SseEmitter} from './sseEmitter.js';
 import {formatToolResultContent} from './toolFeedback.js';
@@ -76,15 +83,16 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         fieldErrors: fieldErrors || null,
         availableTools: activeToolNames,
       });
-      if (code === 'invalid_tool_arguments') {
-        /* `stage` distinguishes a JSON parse failure (provider emitted
-           malformed argument text) from a schema failure (parseable JSON
-           that violates the declared contract) — the two have different
-           fixes and previously logged identically. */
+      if (ARGUMENT_ERROR_CODES.has(code)) {
+        /* The code itself now carries the stage (parse / schema / size),
+           which used to be a single `invalid_tool_arguments` for all three;
+           `stage` is kept in the log line for continuity with old logs. */
         console.warn('[chat/stream] invalid tool arguments', JSON.stringify({
           id: tc.id,
           name: toolName || 'unknown_tool',
-          stage: fieldErrors ? 'schema' : 'parse',
+          code,
+          stage: code === TOOL_ARGUMENT_ERRORS.schema ? 'schema'
+            : code === TOOL_ARGUMENT_ERRORS.tooLarge ? 'size' : 'parse',
           fieldErrors: fieldErrors ? String(fieldErrors).slice(0, 300) : undefined,
           length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
           remainingRetries: deps.toolPolicy.remainingRetries(toolName),
