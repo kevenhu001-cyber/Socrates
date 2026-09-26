@@ -290,8 +290,8 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
 .tool-inline-flash{background-color:hsl(var(--text-400)/.06)}
 .tool-run-summary:hover{background:var(--tool-card-bg-hover);color:var(--tool-card-text)}
 .tool-run-summary:active{transform:none}
-.tool-run-summary-dot,.tool-run-group[data-state="running"] .tool-run-summary-dot,.tool-run-group[data-state="complete"] .tool-run-summary-dot,.tool-run-group[data-state="cancelled"] .tool-run-summary-dot{background:var(--tool-card-text-subtle)}
-.tool-run-group[data-state="error"] .tool-run-summary-dot{background:var(--tool-card-danger)}
+.tool-run-summary-icon,.tool-run-group[data-state="running"] .tool-run-summary-icon,.tool-run-group[data-state="complete"] .tool-run-summary-icon,.tool-run-group[data-state="cancelled"] .tool-run-summary-icon{color:var(--tool-card-text-subtle)}
+.tool-run-group[data-state="error"] .tool-run-summary-icon{color:var(--tool-card-danger)}
 .tool-run-summary-label{color:var(--tool-card-text)}
 .tool-run-summary-meta{color:var(--tool-card-text-subtle)}
 
@@ -595,13 +595,12 @@ a.tool-inline-src:hover{background:var(--inline-hover-bg);color:var(--tool-card-
   color:inherit;
   font-weight:400;
 }
-.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-dot,
-.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary-dot{
-  width:18px;
-  height:18px;
-  border:1.5px solid currentColor;
-  background:transparent!important;
-  border-radius:5px;
+.msg.assistant .msg-body:has(.tool-run-group) .tool-run-summary-icon,
+.msg.assistant .msg-body:has(.agent-tool-card) .tool-run-summary-icon{
+  width:17px;
+  height:17px;
+  color:inherit;
+  opacity:.75;
 }
 .msg.assistant .msg-body:has(.tool-run-group) .tool-run-list,
 .msg.assistant .msg-body:has(.agent-tool-card) .tool-run-list{
