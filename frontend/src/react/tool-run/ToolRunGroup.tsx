@@ -21,7 +21,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 
-import { STROKE_ICONS } from '../../ui/icons/toolIcons.js';
+import { categoryIcon, STROKE_ICONS } from '../../ui/icons/toolIcons.js';
 import { formatSeconds } from './labels.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import {
@@ -48,8 +48,25 @@ const CSS_STATE: Record<ToolRunState, string> = {
   stopped: 'cancelled',
 };
 
-export interface ToolRunGroupProps {
-  segment: GroupSegment;
+/**
+ * The mark on the aggregate line.
+ *
+ * A failed run reports the failure with the shared alert glyph — the category
+ * is the least useful thing to know about a run that did not work. Everything
+ * else shows what kind of work happened, so the eye can skip or stop before it
+ * reads the label.
+ *
+ * The category comes from the *segment*, not from `view.category`: the view
+ * reports the first member's category (which is what `data-category` has always
+ * carried), while the segment resolves a run whose members disagree to `mixed`.
+ * An icon is a claim about the whole run, so it has to use the honest one.
+ */
+function summaryIcon(state: ToolRunState, category: string): string {
+  if (state === 'error') return STROKE_ICONS.alert;
+  return categoryIcon(category);
+}
+
+export interface ToolRunGroupProps {  segment: GroupSegment;
   /** Passed down so a member row can file an approval against its turn. */
   messageId?: string;
   /** Share / history-replay surfaces hide the actions that mutate state. */
@@ -129,7 +146,11 @@ export function ToolRunGroup({ segment, messageId, readOnly }: ToolRunGroupProps
             setOpen((value) => !value);
           }}
         >
-          <span className="tool-run-summary-dot" aria-hidden="true" />
+          <span
+            className="tool-run-summary-icon"
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: summaryIcon(view.state, segment.category) }}
+          />
           <span className={`tool-run-summary-label${inFlight ? ' shimmer-text' : ''}`}>
             {view.headerLabel}
           </span>

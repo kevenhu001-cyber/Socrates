@@ -64,6 +64,12 @@ export const STROKE_ICONS: Record<string, string> = {
   mcp: icon('<path d="M8.6 11.4 7.2 12.8a2.7 2.7 0 0 1-3.8-3.8l2.4-2.4a2.7 2.7 0 0 1 3.8 0"/><path d="m11.4 8.6 1.4-1.4a2.7 2.7 0 0 1 3.8 3.8l-2.4 2.4a2.7 2.7 0 0 1-3.8 0"/>'),
   /* Sliders — the generic "some tool ran" mark. */
   tool: icon('<path d="M3.5 7.1h3M9.9 7.1h6.6"/><circle cx="8.2" cy="7.1" r="1.7"/><path d="M3.5 12.9h6.6M13.4 12.9h3.1"/><circle cx="11.8" cy="12.9" r="1.7"/>'),
+  /* Run of several operations — a chain of steps read top-to-bottom: two
+     nodes on one rail, each with its own line of work to the right. This
+     is the aggregate header's mark, so it has to say "a sequence of
+     actions happened here" at 18px without borrowing `plan`'s ticks
+     (intent) or `tool`'s sliders (one unnamed call). */
+  runGroup: icon('<circle cx="5.5" cy="6.1" r="1.9"/><circle cx="5.5" cy="14.1" r="1.9"/><path d="M5.5 8v4.2"/><path d="M9.8 6.1h6.7M9.8 14.1h4.3"/>'),
 
   /* ── status glyphs ──────────────────────────────────────────────
      Shared with the inline rows so a settled row's mark carries the
@@ -100,6 +106,7 @@ export function agentStepIcon(kind: string): string {
 }
 
 export function toolIcon(name: string): string {
+
   switch (name) {
     case 'web_search':
     case 'arxiv_search':
@@ -136,5 +143,31 @@ export function toolIcon(name: string): string {
       return STROKE_ICONS.command;
     default:
       return STROKE_ICONS.tool;
+  }
+}
+
+/**
+ * The glyph for a *run* of tool calls, keyed off the group's category.
+ *
+ * The aggregate header used to carry an 18×18 rounded-square outline, which at
+ * that size is an unchecked checkbox: it invited a click that does nothing and
+ * said nothing about what the run did. A run is already named by its label
+ * ("找到 3 个来源 · 共 3 次搜索"), so the mark's job is to let the eye classify the
+ * row before reading it — the same job `toolIcon` does for a single call. A
+ * uniform run therefore reuses its member glyph, and only a genuinely mixed run
+ * falls back to the neutral step-chain.
+ */
+export function categoryIcon(category: string): string {
+  switch (category) {
+    case 'search': return STROKE_ICONS.search;
+    case 'fetch': return STROKE_ICONS.fetch;
+    case 'code': return STROKE_ICONS.code;
+    case 'visual': return STROKE_ICONS.visual;
+    case 'plan': return STROKE_ICONS.plan;
+    case 'spec': return STROKE_ICONS.spec;
+    case 'agent': return STROKE_ICONS.agent;
+    case 'read': return STROKE_ICONS.read;
+    case 'write': return STROKE_ICONS.fileChange;
+    default: return STROKE_ICONS.runGroup;
   }
 }
