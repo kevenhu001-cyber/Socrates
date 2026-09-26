@@ -160,3 +160,5 @@ frontend/debug/
 
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md
+/index.html
+/debug/index.html
