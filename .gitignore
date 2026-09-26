@@ -101,6 +101,10 @@ graphify-out-*/
 mobile/e2e-artifacts/
 mobile/docs/qa-*.xml
 debug.log
+# esbuild/Playwright transform + node compile cache; swept into 3f195e49 by an
+# over-broad `git add`. Regenerable, and the cache key embeds the Node version.
+frontend/.tmp-esbuild/
+
 # ── Root-level probe files named "-", "%TEMP%", "*.tgz" etc. left by tooling ──
 # ("nul" is a Windows device name; tools that redirect to it under git-bash
 # create a real file that git cannot index.)
