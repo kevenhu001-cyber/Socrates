@@ -37,6 +37,8 @@ test('socratic prompt notes live research when search context exists', () => {
   try {
     const prompt = buildSocraticPrompt('Topic', 'level');
     assert.match(prompt, /separate \[Web research\] context block follows/);
+    assert.match(prompt, /Markdown link/);
+    assert.doesNotMatch(prompt, /do NOT paste result URLs into your reply/i);
     assert.match(prompt, /diagnostic question/);
   } finally {
     stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: previousSearch ?? '' });

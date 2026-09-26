@@ -66,6 +66,23 @@ test('duplicate identical calls are detected before execution', () => {
   assert.equal(policy.isDuplicate('web_search', hashToolArguments({ query: 'other' })), false);
 });
 
+test('a failed call releases its duplicate slot so an identical retry can run', () => {
+  /* Transient failures (timeout, 429, flaky engine) make a same-args
+     retry the correct recovery — the pair must not stay pinned. */
+  const policy = createToolTurnPolicy();
+  const hash = hashToolArguments({ query: 'flaky' });
+  policy.registerCall('web_search', hash);
+  assert.equal(policy.isDuplicate('web_search', hash), true);
+  policy.unmarkCall('web_search', hash);
+  assert.equal(policy.isDuplicate('web_search', hash), false);
+  /* The call still counted against the budget — unmarking only frees
+     the seen-pair, it is not a refund. */
+  assert.equal(policy.snapshot().callsUsed, 1);
+  /* Unmarking an unknown pair is a no-op, not an error. */
+  policy.unmarkCall('web_search', 'never-registered');
+  assert.equal(policy.isDuplicate('web_search', 'never-registered'), false);
+});
+
 test('hashToolArguments ignores key order but not values', () => {
   assert.equal(hashToolArguments({ a: 1, b: [2, { c: 3 }] }), hashToolArguments({ b: [2, { c: 3 }], a: 1 }));
   assert.notEqual(hashToolArguments({ a: 1 }), hashToolArguments({ a: 2 }));

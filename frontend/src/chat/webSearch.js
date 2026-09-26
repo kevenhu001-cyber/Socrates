@@ -135,79 +135,38 @@ export async function fetchWebContext(topic,opts){
       try{setSearchPill("ok",0,"No results")}catch(_){}
       return{ok:true,reason:"empty",results:0,context:""};
     }
-    /* Step 2: webfetch the top 8 results to get the full article text.
-       The model can quote, summarize, and reason about the actual page
-       contents. Failed fetches fall back to the snippet we already have. */
-    var topUrls=d.results.slice(0,8).map(function(x){return x.url});
-    var fetched=[];
-    if(topUrls.length){
-      _emit("fetching",{urls:topUrls,count:topUrls.length});
-      try{
-        var fb=await apiFetchRaw("/api/fetch-batch",{
-          method:"POST",
-          body:{urls:topUrls}
-        });
-        var fd=await fb.json();
-        fetched=fd.results||[];
-        var okN=fetched.filter(function(x){return x&&x.ok}).length;
-        _emit("fetched",{okCount:okN,total:topUrls.length});
-      }catch(e){
-        console.log("[web fetch] batch failed");
-        _emit("fetched",{okCount:0,total:topUrls.length,error:e&&e.message});
-      }
-    }
-    /* Merge: for each result, attach the fetched body if successful. */
-    var byUrl={};
-    fetched.forEach(function(f){if(f&&f.url)byUrl[f.url]=f});
-    var enriched=d.results.map(function(x){
-      var f=byUrl[x.url];
-      return Object.assign({},x,{fullContent:f&&f.ok?f.content:null,truncated:f&&f.ok&&f.truncated});
-    });
-    var origEnriched=enriched.slice();  /* keep unfiltered copy for fallback */
-    /* Relevance scoring: measure how well each result actually matches
-       the user's topic. Uses multiple signals for better accuracy than
-       simple keyword counting. Also handles cross-language matching:
-       a Chinese topic should match Chinese results even if the query
-       was in English. */
-    var topicNorm=(topic||"").toLowerCase();
-    var topicWords=topicNorm.split(/\W+/).filter(function(w){return w.length>2});
+    /* Step 2: rank search snippets without fetching every page. The model
+       can use web_fetch on relevant URLs when it needs more detail. */
+    var enriched=d.results.map(function(x){return Object.assign({},x)});
+    /* Keep unfiltered results for the low-relevance fallback. */
+    var origEnriched=enriched.slice();
+    /* Relevance scoring: compare title and snippet with the original topic.
+       Unicode words preserve Chinese queries instead of scoring them all 0. */
+    var topicWords=((topic||"").toLowerCase().match(/[\p{L}\p{N}]+/gu)||[])
+      .filter(function(w){return w.length>2||/[^\p{ASCII}]/u.test(w)});
     var topicBigrams=[];
     for(var tb=0;tb<topicWords.length-1;tb++)topicBigrams.push(topicWords[tb]+" "+topicWords[tb+1]);
     enriched.forEach(function(x){
       var title=(x.title||"").toLowerCase();
       var snippet=(x.snippet||"").toLowerCase();
-      var full=(x.fullContent||"").toLowerCase();
-      var score=0;
-      /* Signal 1: How many topic words appear in title (weighted high). */
+      /* Signal 1: Topic coverage in the title. */
       var titleMatch=0;
       for(var tw=0;tw<topicWords.length;tw++){
         if(title.indexOf(topicWords[tw])!==-1)titleMatch++;
       }
-      score+=titleMatch*15;
-      /* Signal 2: Exact phrase match in title (very strong signal). */
+      /* Signal 2: Exact adjacent terms in the title. */
+      var phraseMatch=false;
       for(var bg=0;bg<topicBigrams.length;bg++){
-        if(title.indexOf(topicBigrams[bg])!==-1)score+=20;
+        if(title.indexOf(topicBigrams[bg])!==-1){phraseMatch=true;break}
       }
-      /* Signal 3: Topic words in snippet. */
+      /* Signal 3: Topic coverage in the snippet, even without title matches. */
       var snippetMatch=0;
       for(var sw=0;sw<topicWords.length;sw++){
         if(snippet.indexOf(topicWords[sw])!==-1)snippetMatch++;
       }
-      score+=snippetMatch*8;
-      /* Signal 4: If we have full content, check deeper match. */
-      if(full){
-        var fullMatch=0;
-        for(var fw=0;fw<topicWords.length;fw++){
-          if(full.indexOf(topicWords[fw])!==-1)fullMatch++;
-        }
-        score+=fullMatch*5;
-        for(var fbg=0;fbg<topicBigrams.length;fbg++){
-          if(full.indexOf(topicBigrams[fbg])!==-1)score+=10;
-        }
-      }
-      /* Normalize to 0-100 range. Max possible: len*15 + (len-1)*20 + len*8 + len*5 + (len-1)*10 */
-      var maxScore=topicWords.length*28+(topicWords.length-1)*30;
-      x._relevance=Math.round(Math.min(100,score/Math.max(1,maxScore)*100));
+      /* Normalize to 0-100; a fully matching snippet alone can pass the filter. */
+      var termCount=Math.max(1,topicWords.length);
+      x._relevance=Math.min(100,Math.round(titleMatch/termCount*60+snippetMatch/termCount*40+(phraseMatch?10:0)));
     });
     /* Phase 3: emit a summary of the relevance distribution. The UI uses
        this to render "Top match: 78% relevance" or similar. */
@@ -230,37 +189,29 @@ export async function fetchWebContext(topic,opts){
     /* If filtering gutted the list, keep at least the top 3 (they might
        still be useful even if weakly matched). */
     if(!enriched.length){
-      /* All results were below threshold — keep best 3 as-is. */
-      enriched=origEnriched.slice(0,3);
-      enriched.forEach(function(x){x._relevance=Math.max(x._relevance||0,25)});
+      /* All results were below threshold — keep the best 3 as-is. */
+      enriched=origEnriched.sort(function(a,b){return b._relevance-a._relevance}).slice(0,3);
     }
     /* Sort by relevance descending so the most on-point results appear
        first in the context block the model sees. */
     enriched.sort(function(a,b){return b._relevance-a._relevance});
-    /* Build the [Web research] block. Each entry has a snippet (always
-       present) and optionally a "Full text:" excerpt (when fetch
-       succeeded). The model uses whichever it needs. Include the
-       matched query and relevance hint per result. */
+    /* Build the [Web research] block from bounded snippets. Include the
+       matched query and relevance hint; full pages are read by web_fetch. */
     var lines=enriched.map(function(x,i){
       var relTag=x._relevance>=70?"[high relevance]":x._relevance>=45?"[medium relevance]":"[low relevance]";
       var head="["+(i+1)+"] "+relTag+" "+x.title;
-      if(x.snippet)head+=" — "+x.snippet;
+      if(x.snippet)head+=" — "+String(x.snippet).slice(0,500);
       head+=" ( "+x.url+" )";
       head+="\n    Source query: \""+(x.matchedQuery||topic)+"\"";
-      if(x.fullContent){
-        var trimmed=(x.fullContent.length>3000)?x.fullContent.slice(0,3000)+"…":x.fullContent;
-        head+="\n    Full text: "+trimmed;
-      }else{
-        head+="\n    (snippet only — full text unavailable)";
-      }
+      head+="\n    (snippet only — page not read)";
       return head;
     });
     var ctx="\n\n[Web research] — original query: \""+topic+"\". "+
-      "Each result below was retrieved live from the web, scored for relevance, and sorted by estimated accuracy. "+
+      "These results were scored using titles and snippets, then sorted by estimated relevance. "+
       "[high relevance] results closely match what the user is asking about. [medium relevance] are related but may be tangential. "+
       "[low relevance] results are included only as supplementary context — use them cautiously.\n\n"+
-      "Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers, do NOT append a \"Sources:\"/\"References:\" list, and do NOT paste result URLs into your reply (the UI already shows every source to the user). "+
-      "Do NOT invent facts not supported by the results. "+
+      "Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers or append a \"Sources:\"/\"References:\" list. Attribute claims drawn only from these snippets with a Markdown link to the source URL when no tool source card covers them. "+
+      "These are snippets, not verified page text: if a claim needs details beyond them, call web_fetch on the relevant URL when available. Do NOT invent facts not supported by the results. "+
       "If multiple results contradict each other, prefer [high relevance] sources.\n"+
       lines.join("\n");
     stateStore.dispatch({type:'state/batch',patch:{
@@ -270,8 +221,7 @@ export async function fetchWebContext(topic,opts){
       searchContextError:null,
       searchContextQuery:topic,
       searchResults:enriched
-    }});   /* searchResults: [{title,url,snippet,fullContent?,truncated?}] */
-    var fetchedCount=enriched.filter(function(x){return!!x.fullContent}).length;
+    }});   /* searchResults: [{title,url,snippet,date?,source?,matchedQuery?}] */
     /* Phase 3: emit per-source engine breakdown so the UI can render
        "Wikipedia ×2, arXiv ×1, Bing ×3" in the summary. */
     {
@@ -280,10 +230,10 @@ export async function fetchWebContext(topic,opts){
         var s=enriched[ei].source||"web";
         engineCounts[s]=(engineCounts[s]||0)+1;
       }
-      _emit("done",{finalCount:enriched.length,fetchedCount:fetchedCount,engines:engineCounts});
+      _emit("done",{finalCount:enriched.length,fetchedCount:0,engines:engineCounts});
     }
     console.log("[web search]",enriched.length,"results for:",topic);
-    try{setSearchPill("ok",enriched.length,enriched.length+" sources"+(fetchedCount?" · "+fetchedCount+" full":""))}catch(_){}
+    try{setSearchPill("ok",enriched.length,enriched.length+" sources")}catch(_){}
     return{ok:true,reason:"ok",results:enriched.length,context:ctx,sources:enriched};
   }catch(e){
     var emsg=(e&&e.message)||String(e);

@@ -26,6 +26,13 @@ test('canonical examples pass the executors that validate them', () => {
   assert.equal(visual.status, 'completed', `visual example rejected: ${JSON.stringify(visual.detail)}`);
 });
 
+test('web search asks for natural prose and separately displayed sources instead of raw citation markers', () => {
+  const description = WEB_SEARCH_TOOL.function.description;
+  assert.match(description, /Do NOT add \[1\]\/\[2\] citation markers/);
+  assert.match(description, /source card/i);
+  assert.doesNotMatch(description, /cite material claims inline/i);
+});
+
 test('canonical examples satisfy their own schemas without repair', () => {
   const cases = [
     ['web_search', WEB_SEARCH_TOOL.function.parameters],

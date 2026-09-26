@@ -45,7 +45,7 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await page.route('**/api/**/chat/stream', async (route) => {
     const stream = [
       'event: tool_use\ndata: [{"id":"search-1","name":"web_search","input":{"query":"Socrates learning"}}]\n\n',
-      'event: tool_result\ndata: {"id":"search-1","ok":true,"status":"completed","output":"two sources","results":[{"title":"Trusted source","url":"https://example.test/source","snippet":"A concise result.","date":"2026-07-15"},{"title":"Unsafe source","url":"javascript:alert(1)","snippet":"Must not become executable."}]}\n\n',
+      'event: tool_result\ndata: {"id":"search-1","ok":true,"status":"completed","output":"two sources","results":[{"title":"Trusted source","url":"https://example.test/source","snippet":"A concise result.","date":"2026-07-15","source":"bing"},{"title":"Unsafe source","url":"javascript:alert(1)","snippet":"Must not become executable."}]}\n\n',
       'data: {"choices":[{"delta":{"content":"Completed the requested work."}}]}\n\n',
       'data: [DONE]\n\n',
     ].join('');
@@ -82,6 +82,8 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(searchRow).toHaveAttribute('open', '');
   await expect(searchRow.locator('.tool-inline-sources')).toContainText('Trusted source');
   await expect(searchRow.locator('.tool-inline-src[href]')).toHaveCount(1);
+  await expect(searchRow.locator('.tool-inline-src-date')).toHaveText('2026-07-15');
+  await expect(searchRow.locator('.tool-inline-src-engine')).toHaveText('bing');
 });
 
 test('tool activity lands behind its paragraph without splitting it', async ({ page }) => {

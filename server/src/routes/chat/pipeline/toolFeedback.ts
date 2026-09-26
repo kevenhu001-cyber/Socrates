@@ -100,6 +100,15 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
   }
 
   if (result.status !== 'completed' && toolName === 'web_fetch') {
+    if (result.errorCode === 'offset_out_of_range') {
+      return `[status: failed]\n[error_code: offset_out_of_range]\n${result.detail || ''}\nThere is no next page at that offset; use the previous next_offset or restart at offset 0.`;
+    }
+    if (result.errorCode === 'page_cache_miss') {
+      return `[status: failed]\n[error_code: page_cache_miss]\n${result.detail || ''}\nRestart this URL at offset 0 to establish a fresh page snapshot before continuing.`;
+    }
+    if (result.errorCode === 'invalid_paging_arguments') {
+      return '[status: failed]\n[error_code: invalid_paging_arguments]\nUse an integer offset from 0 to 1000000 and max_chars from 1 to 30000.';
+    }
     return `[status: failed]\n[error_code: ${result.errorCode || 'web_fetch_failed'}]\n[retryable: ${result.retryable === false ? 'no' : 'yes'}]\n${result.detail || result.error || ''}\nThe page could not be fetched (blocked, private IP, HTTP error, or timeout). Try a different URL, or fall back to web_search and rely on the snippets.`;
   }
 

@@ -75,6 +75,11 @@ export interface ToolTurnPolicy {
   isDuplicate(tool: string, argumentsHash: string): boolean;
   /** Count a call that is about to execute. */
   registerCall(tool: string, argumentsHash: string): void;
+  /* Reverse of registerCall for a call that FAILED: the (tool,args)
+     pair must not stay in seenCalls or a legitimate same-arguments
+     retry after a transient error gets rejected as a duplicate.
+     callsUsed stays incremented — the budget was spent either way. */
+  unmarkCall(tool: string, argumentsHash: string): void;
   /** Feed back the outcome so failures accumulate per tool. */
   recordResult(tool: string, ok: boolean, reason?: string): void;
   /** Corrected attempts the model still has for this tool. */
@@ -150,6 +155,10 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
     registerCall(tool: string, argumentsHash: string) {
       seenCalls.add(`${tool}:${argumentsHash}`);
       callsUsed += 1;
+    },
+
+    unmarkCall(tool: string, argumentsHash: string) {
+      seenCalls.delete(`${tool}:${argumentsHash}`);
     },
 
     recordResult(tool: string, ok: boolean, reason?: string) {

@@ -366,6 +366,18 @@ test('source lists are capped, deduped by url, and keep https links only', () =>
   assert.equal(dupes[1].url, '', 'non-http urls are not linkable');
 });
 
+test('source cards preserve available publication dates and search engines', () => {
+  const sources = normalizeSources([
+    { title: 'Alpha', url: 'https://a.dev/x', date: '2026-07-15', source: 'bing' },
+    { title: 'Beta', url: 'https://b.dev/y', date: null, source: null },
+  ]);
+  assert.deepEqual(sources[0], {
+    title: 'Alpha', url: 'https://a.dev/x', host: 'a.dev', date: '2026-07-15', source: 'bing',
+  });
+  assert.equal(sources[1].date, undefined);
+  assert.equal(sources[1].source, undefined);
+});
+
 test('group sources dedupe across members and cap higher than a single row', () => {
   const group = groupViewOf({
     kind: 'group',

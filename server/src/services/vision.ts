@@ -22,7 +22,7 @@ import { writeFile, unlink, stat } from 'node:fs/promises';
 import { tmpdir, homedir } from 'node:os';
 import nodePath from 'node:path';
 import crypto from 'node:crypto';
-import { runMmx } from '../lib/spawnMmx.js';
+import { isMmxCliAvailable, runMmx } from '../lib/spawnMmx.js';
 
 const MAX_BYTES = 8 * 1024 * 1024;          // 8 MB
 const REQUEST_TIMEOUT = 30_000;             // VLM calls are slower than text
@@ -131,6 +131,11 @@ export async function describeImageFile({ path, prompt }: { path?: string; promp
   }
   if (info.size > MAX_BYTES) {
     throw reject(413, `Image too large (${info.size} > ${MAX_BYTES} bytes)`);
+  }
+  /* Fail fast with a meaningful error rather than letting spawn throw
+     a raw ENOENT when the mmx CLI is not installed. */
+  if (!isMmxCliAvailable()) {
+    throw reject(503, 'Vision backend unavailable: mmx CLI is not installed');
   }
 
   const start = Date.now();

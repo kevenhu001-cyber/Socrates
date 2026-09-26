@@ -65,7 +65,7 @@ export type WebSearchError = { code?: string; message?: string; diagnostics?: un
 export type StreamMessage =
   | Record<string, unknown>
   | { role: 'assistant'; content: string; tool_calls: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }> }
-  | { role: 'tool'; tool_call_id: string; content: string };
+  | { role: 'tool'; tool_call_id: string; name?: string; content: string };
 
 /** A call after canonical-name resolution + argument repair. */
 export interface PreparedCall {

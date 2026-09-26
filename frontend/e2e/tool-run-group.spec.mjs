@@ -48,7 +48,7 @@ function searchCall(id, query, sources) {
 
 const FIXTURE_CALLS = [
   searchCall('s1', 'alpha theory', [
-    { title: 'Alpha one', url: 'https://example.test/alpha-one', snippet: 'First' },
+    { title: 'Alpha one', url: 'https://example.test/alpha-one', snippet: 'First', date: '2026-07-15', source: 'bing' },
     { title: 'Alpha two', url: 'https://example.test/alpha-two', snippet: 'Second' },
   ]),
   searchCall('s2', 'beta theory', [
@@ -209,6 +209,8 @@ test('expanding a row shows the result, and the argument dump sits behind Techni
   await expect(detail.locator('.tool-inline-detail-title').first()).toHaveText('Sources');
   await expect(detail.locator('.tool-inline-src-title')).toHaveCount(2);
   await expect(detail.locator('.tool-inline-src[rel="noopener noreferrer"]')).toHaveCount(2);
+  await expect(detail.locator('.tool-inline-src-date')).toHaveText('2026-07-15');
+  await expect(detail.locator('.tool-inline-src-engine')).toHaveText('bing');
 
   /* The collapsed line keeps its count and its disclosure glyph. Both were
      `display:none!important` in the stylesheet's "compact activity row" pass,

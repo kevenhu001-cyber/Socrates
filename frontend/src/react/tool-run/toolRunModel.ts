@@ -35,6 +35,8 @@ export interface SourceItem {
   title: string;
   url: string;
   host: string;
+  date?: string;
+  source?: string;
 }
 
 /** A block shown when the row is expanded. */
@@ -747,7 +749,7 @@ export function normalizeSources(results: ReadonlyArray<unknown> | null | undefi
   const out: SourceItem[] = [];
   const seen = new Set<string>();
   for (let i = 0; i < list.length && out.length < MAX_SOURCE_HOSTS; i++) {
-    const item = list[i] as { title?: unknown; url?: unknown } | null;
+    const item = list[i] as { title?: unknown; url?: unknown; date?: unknown; source?: unknown } | null;
     if (!item) continue;
     const url = String(item.url || '').trim();
     const title = String(item.title || url || '').trim();
@@ -759,7 +761,13 @@ export function normalizeSources(results: ReadonlyArray<unknown> | null | undefi
     try {
       if (/^https?:\/\//i.test(url)) host = new URL(url).hostname.replace(/^www\./i, '');
     } catch (_) { /* unparseable url keeps an empty host */ }
-    out.push({ title: clip(title, 120), url: /^https?:\/\//i.test(url) ? url : '', host });
+    const date = typeof item.date === 'string' ? item.date.trim() : '';
+    const source = typeof item.source === 'string' ? item.source.trim() : '';
+    out.push({
+      title: clip(title, 120), url: /^https?:\/\//i.test(url) ? url : '', host,
+      ...(date ? { date: clip(date, 30) } : {}),
+      ...(source ? { source: clip(source, 32) } : {}),
+    });
   }
   return out;
 }

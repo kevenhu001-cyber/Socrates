@@ -118,6 +118,7 @@ test('appendClientContextMessages composes memories, project, and research', () 
     assert.match(withResearch[1].content, /saved memories/);
     assert.match(withResearch[2].content, /Active project/);
     assert.match(withResearch[3].content, /Web research handling/);
+    assert.match(withResearch[3].content, /Markdown link/);
 
     const withoutResearch = appendClientContextMessages(base);
     assert.equal(withoutResearch.length, 3);

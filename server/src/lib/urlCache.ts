@@ -33,7 +33,7 @@ const MAX_BYTES = parseInt(process.env.URL_CACHE_MAX_BYTES ?? '', 10) || DEFAULT
  * @property {string=} etag
  * @property {string=} lastModified
  * @property {string}  contentType
- * @property {string}  html             Raw response body (truncated by fetchBatch at 200KB)
+ * @property {string}  html             Raw response body (truncated at the fetchBatch caller's bounded byte limit)
  * @property {number}  bytes            Length of `html` in chars
  * @property {number}  fetchedAt        ms-since-epoch
  * @property {boolean} truncated        Whether fetchBatch already truncated

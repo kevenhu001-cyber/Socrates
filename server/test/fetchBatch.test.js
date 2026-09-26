@@ -22,7 +22,9 @@ import { test, describe, mock, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import dns from 'node:dns/promises';
 
-import { fetchBatch } from '../src/services/fetchBatch.js';
+import { fetchBatch, WEB_FETCH_TOOL } from '../src/services/fetchBatch.js';
+import { executeWebFetch } from '../src/routes/chat/pipeline/executors/webFetch.js';
+import { formatToolResultContent } from '../src/routes/chat/pipeline/toolFeedback.js';
 import { stopContentExtractorPool } from '../src/services/contentExtractor.js';
 
 const ORIG_DNS_LOOKUP = dns.lookup;
@@ -388,6 +390,71 @@ describe('fetchBatch — response handling', () => {
     assert.equal(out.results[0].ok, true);
     assert.equal(out.results[0].truncated, true);
     assert.ok(out.results[0].content.length <= 200_000, 'body truncated to <=200KB');
+  });
+
+  test('web_fetch continues beyond 20k and the ordinary 200 KB page limit', async () => {
+    stubDns({ 'paged.test': [{ address: '8.8.8.8', family: 4 }] });
+    const body = 'A'.repeat(220_000) + 'PAGED_MARKER' + 'B'.repeat(25_000);
+    globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body }));
+    const events = [];
+    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const call = { id: 'fetch-page', function: { name: 'web_fetch' } };
+    const url = 'https://paged.test/article';
+    const first = await executeWebFetch({ url }, call, ctx, { activeToolNames: [] });
+    assert.match(first.result.output, /\[range: 0-20000 of \d+ available chars\]/);
+    assert.match(first.result.output, /\[has_more: yes\]/);
+    assert.match(first.result.output, /\[next_offset: 20000\]/);
+    const later = await executeWebFetch({ url, offset: 220_000, max_chars: 100 }, call, ctx, { activeToolNames: [] });
+    assert.match(later.result.output, /PAGED_MARKER/);
+    assert.match(later.result.output, /\[range: 220000-220100 of \d+ available chars\]/);
+    assert.equal(events[1].hasMore, true);
+    assert.equal(globalThis.fetch.mock.calls.length, 1, 'continuation should reuse extracted page');
+    assert.equal(WEB_FETCH_TOOL.function.parameters.properties.offset.type, 'integer');
+    assert.equal(WEB_FETCH_TOOL.function.parameters.properties.max_chars.maximum, 30_000);
+  });
+
+  test('continuation without its earlier snapshot asks to restart instead of mixing pages', async () => {
+    const ctx = { emitter: { event: () => {} } };
+    const call = { id: 'missing-snapshot', function: { name: 'web_fetch' } };
+    const result = await executeWebFetch({ url: 'https://uncached.test/page', offset: 20000 }, call, ctx, { activeToolNames: [] });
+    assert.equal(result.result.errorCode, 'page_cache_miss');
+    assert.match(formatToolResultContent('web_fetch', result.result), /restart this URL at offset 0/i);
+  });
+
+  test('a source cap is not misreported as another readable page', async () => {
+    stubDns({ 'bounded.test': [{ address: '8.8.8.8', family: 4 }] });
+    globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Z'.repeat(1_050_000) }));
+    const events = [];
+    const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
+    const call = { id: 'bounded', function: { name: 'web_fetch' } };
+    const url = 'https://bounded.test/page';
+    await executeWebFetch({ url }, call, ctx, { activeToolNames: [] });
+    const response = await executeWebFetch({ url, offset: 999_500, max_chars: 1000 }, call, ctx, { activeToolNames: [] });
+    assert.match(response.result.output, /\[source_truncated: yes/);
+    assert.match(response.result.output, /\[has_more: no\]/);
+    assert.equal(events[1].hasMore, false);
+    assert.equal(events[1].sourceTruncated, true);
+    const invalid = await executeWebFetch({ url, offset: 1_000_000 }, call, ctx, { activeToolNames: [] });
+    assert.equal(invalid.result.errorCode, 'offset_out_of_range');
+    assert.match(formatToolResultContent('web_fetch', invalid.result), /restart at offset 0/i);
+    assert.equal(globalThis.fetch.mock.calls.length, 1);
+  });
+
+  test('a larger tool read does not reuse a truncated 200 KB HTTP validator', async () => {
+    stubDns({ 'expand.test': [{ address: '8.8.8.8', family: 4 }] });
+    const body = 'A'.repeat(250_000);
+    const sentHeaders = [];
+    globalThis.fetch = mock.fn(async (_url, opts) => {
+      sentHeaders.push(opts.headers);
+      if (opts.headers['If-None-Match']) return makeResponse({ status: 304 });
+      return makeResponse({ headers: { 'content-type': 'text/plain', etag: '"version1"' }, body });
+    });
+    const url = 'https://expand.test/page';
+    const first = await fetchBatch([url]);
+    const second = await fetchBatch([url], { maxBytes: 1_000_000 });
+    assert.equal(first.results[0].truncated, true);
+    assert.equal(sentHeaders[1]['If-None-Match'], undefined);
+    assert.ok(second.results[0].content.length > 200_000);
   });
 
   test('returns ok:true with extracted title on a successful HTML fetch', async () => {

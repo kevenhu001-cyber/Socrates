@@ -21,7 +21,7 @@
  * Default source is `web` (not `news` or `images`).
  */
 
-import { runFirecrawl } from '../../lib/spawnFirecrawl.js';
+import { isFirecrawlCliAvailable, runFirecrawl } from '../../lib/spawnFirecrawl.js';
 
 const REQUEST_TIMEOUT = 10_000;
 
@@ -50,6 +50,10 @@ function unavailable(reason: string): SearchResult[] {
  */
 export async function searchFirecrawl(query: string, limit = 10, signal?: AbortSignal | null): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
+  /* Skip the spawn entirely when the CLI is not installed — an ENOENT
+     per query used to waste a child-process attempt and log a warning on
+     every web_search call. */
+  if (!isFirecrawlCliAvailable()) return unavailable('cli_missing');
 
   const cap = Math.max(1, Math.min(100, Number.isFinite(limit) ? limit : 10));
 

@@ -21,7 +21,7 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
 import { chatTurns, sessions } from '../../../db/schema.js';
 import { publishChatTurnEvent, setChatTurnStatus } from '../../../services/chatTurns.js';
-import { isToolFinishReason, streamChatCompletion } from '../../../services/llm.js';
+import { streamChatCompletion } from '../../../services/llm.js';
 import {
   normalizeToolCalls,
   repairToolArguments,
@@ -353,6 +353,14 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
     }
     let iterFinishReason: string | null = null;
     const toolCallsThisTurn: ToolCall[] = [];
+    /* Content and reasoning emitted during THIS hop only. When the hop
+       ends in tool_calls, both must be replayed on the assistant message
+       we append to workingMessages — reasoning providers (DeepSeek
+       `reasoning_content`, MiniMax `reasoning_details`) treat a bare
+       assistant tool-call turn as a protocol violation or silently
+       degrade the next hop into re-asking the question. */
+    let iterContent = '';
+    let iterReasoning = '';
 
     let upstreamErr: Error | null = null;
     /* One span per upstream call. A tool-using turn makes several, so the
@@ -394,6 +402,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       // onChunk
       (chunk: string) => {
         fullText += chunk;
+        iterContent += chunk;
         completionTokens = estimateTokens(fullText);
         emitter.content(chunk);
       },
@@ -415,6 +424,7 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       // streaming_text captures it on disconnect.
       (reasoning: string) => {
         fullReasoning += reasoning;
+        iterReasoning += reasoning;
         emitter.reasoning(reasoning);
       },
       // onToolUse — accumulate tool calls for this iteration. Flush
@@ -479,16 +489,12 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
       maxCalls: toolPolicy.maxCallsPerIteration,
     }) as ToolCall[];
 
-    /* Keep the raw calls for execution and diagnostics, but only echo a
-     * canonical protocol-safe copy to the next provider hop. If a model
-     * emitted malformed JSON, sending that exact string back in the
-     * assistant message can make the gateway reject the entire retry
-     * before it has a chance to read the structured tool error. */
-    const protocolToolCalls = boundedToolCalls.map(sanitizeToolCallForProtocol);
-
     // No tool call → done. The extra tools-disabled iteration lets the
     // model summarize the fourth and final execution round in prose.
-    if (!isToolFinishReason(iterFinishReason) || boundedToolCalls.length === 0) break;
+    // streamChatCompletion only emits calls it intends us to dispatch
+    // (tool finish reasons, missing finish_reason, or 'length'), so a
+    // non-empty list here always means "run them".
+    if (boundedToolCalls.length === 0) break;
     if (!toolsAllowed) {
       emitter.event('error', {
         error: 'tool_iteration_limit_reached',
@@ -529,6 +535,11 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         resolved.match = 'none';
       }
       const toolName = resolved.name || requestedName;
+      /* Executors and the protocol echo both read call.function.name;
+         rewrite it to the canonical name so an aliased or fuzzy call
+         (`search` → `web_search`) reaches the right executor instead of
+         being routed by the raw model-supplied string. */
+      if (resolved.name && call.function) call.function.name = resolved.name;
       if (resolved.name && resolved.match !== 'exact') {
         console.info('[tool-resolve]', JSON.stringify({
           requested: requestedName, resolved: resolved.name, match: resolved.match,
@@ -544,6 +555,11 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
         }));
       }
       const args = (repaired.ok ? repaired.value : {}) as Record<string, any>;
+      /* Persist the repaired arguments back onto the call so the
+         assistant-message echo below replays the same canonical JSON the
+         executor consumed rather than the raw (possibly malformed)
+         provider text. */
+      if (repaired.ok && call.function) call.function.arguments = JSON.stringify(args);
 
       let rejection: PreparedCall['rejection'] = null;
       if (!resolved.name) {
@@ -595,18 +611,34 @@ export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Pro
 
     // Echo the assistant's tool_calls back as a role:'assistant'
     // message — required by the OpenAI protocol so the next hop
-    // can reference the tool_call_id.
-    workingMessages = workingMessages.concat([{
+    // can reference the tool_call_id. The echo uses the CANONICAL
+    // tool names and REPAIRED argument JSON (the same view the
+    // executors consumed), run through sanitizeToolCallForProtocol
+    // so any remnant the repair pass could not fix still reaches the
+    // provider as syntactically valid JSON.
+    const protocolToolCalls = prepared.map((entry) => sanitizeToolCallForProtocol(entry.call));
+    const assistantToolMessage: Record<string, unknown> = {
       role: 'assistant',
       /* Empty string is valid OpenAI content and is accepted by
-       * compatibility gateways that reject `content: null`. */
-      content: '',
+       * compatibility gateways that reject `content: null`. The
+       * hop's streamed prose is replayed here so the model keeps its
+       * own wording in context instead of an artificial blank. */
+      content: iterContent || '',
       tool_calls: protocolToolCalls.map((t) => ({
         id: t.id,
         type: 'function',
         function: t.function,
       })),
-    }]);
+    };
+    if (iterReasoning) {
+      /* Reasoning providers require the thinking that produced the
+         tool_calls to survive the round-trip: DeepSeek reads
+         `reasoning_content`, MiniMax requires `reasoning_details`
+         entries. Providers that emit neither never see these fields. */
+      assistantToolMessage.reasoning_content = iterReasoning;
+      assistantToolMessage.reasoning_details = [{ type: 'reasoning.text', text: iterReasoning }];
+    }
+    workingMessages = workingMessages.concat([assistantToolMessage]);
 
     // Abort guard — if the client disconnected during this turn's
     // LLM streaming, skip tool execution and terminate the loop.

@@ -72,11 +72,13 @@ export class WebSearchUnavailableError extends Error {
 /* ─── Tool definition (sent to upstream on every chat turn) ───
  *
  * P_tool-contract — the description is a structured contract. Hard
- * rules: query must be 1-6 words, output uses [1]/[2] citation
- * markers aligned with the system prompt's existing sources card.
+ * rules: query must be 1-6 words, results are numbered for reference,
+ * and the answer uses the existing separate sources card.
  * Cache key includes the query string, so identical queries within
  * 5 minutes return identical results without re-running engines.
  */
+export const WEB_SEARCH_CITATION_GUIDANCE = 'Use relevant results to support factual claims in natural prose. Do NOT add [1]/[2] citation markers, append a separate "Sources:" / "References:" list, or paste result URLs into your reply; the UI displays source cards separately when available.';
+
 export const WEB_SEARCH_TOOL = {
   type: 'function',
   function: {
@@ -102,7 +104,7 @@ export const WEB_SEARCH_TOOL = {
       '- Bad:  "what is the latest version of python and when was it released"\n' +
       '- Good: "Python latest version release date"\n\n' +
       '## Output format\n' +
-      'Results are returned numbered [1], [2], … in order of relevance. Weave the facts into your reply as natural prose and cite material claims inline with the matching [1], [2] marker so the UI can link them to the source card. Do NOT append a separate "Sources:" / "References:" list or paste result URLs into your reply.\n\n' +
+      'Results are returned numbered [1], [2], … in order of relevance. ' + WEB_SEARCH_CITATION_GUIDANCE + '\n\n' +
       '## Caching\n' +
       'Identical queries within the same session are cached for 5 minutes. Re-running the same query does NOT re-hit the engines and will not surface fresher results — wait 5 minutes or change the query wording if you need a refresh.',
     parameters: {

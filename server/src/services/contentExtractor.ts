@@ -54,6 +54,7 @@ export interface ExtractedArticle {
   length: number;
   date: string | null;
   method: string;
+  truncated?: boolean;
 }
 
 class WorkerSlot {
@@ -262,7 +263,7 @@ function getPool() {
   return pool;
 }
 
-async function runOne(html: string, url: string): Promise<ExtractedArticle | null> {
+async function runOne(html: string, url: string, maxChars?: number): Promise<ExtractedArticle | null> {
   const p = getPool();
   p._reapDeadSlots();
   const slot = await p.acquireSlot();
@@ -304,7 +305,7 @@ async function runOne(html: string, url: string): Promise<ExtractedArticle | nul
       resolve(null);
     }, EXTRACT_TIMEOUT_MS);
     try {
-      worker.postMessage({ id, type: 'extract', html, url });
+      worker.postMessage({ id, type: 'extract', html, url, maxChars });
     } catch (e) {
       finish(null);
     }
@@ -316,10 +317,10 @@ async function runOne(html: string, url: string): Promise<ExtractedArticle | nul
  * input HTML is too small to be useful. Safe to call from any code
  * path — never throws and never blocks the main event loop.
  */
-export async function extractArticle(html: string, url: string): Promise<ExtractedArticle | null> {
+export async function extractArticle(html: string, url: string, options: { maxChars?: number } = {}): Promise<ExtractedArticle | null> {
   if (!html || !url) return null;
   try {
-    return await runOne(html, url);
+    return await runOne(html, url, options.maxChars);
   } catch {
     return null;
   }
