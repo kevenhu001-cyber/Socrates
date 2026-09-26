@@ -1,0 +1,134 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>104</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>729</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>79</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>79</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>517</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>517</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>align</highlighted_element>
+  <language>XML</language>
+  <offset>5</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>type</highlighted_element>
+  <language>XML</language>
+  <offset>27</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="HtmlDeprecatedAttribute" severity="WARNING" attribute_key="DEPRECATED_ATTRIBUTES">废弃的特性</problem_class>
+  <description>废弃的特性 #loc</description>
+  <highlighted_element>type</highlighted_element>
+  <language>XML</language>
+  <offset>27</offset>
+  <length>4</length>
+</problem>
+</problems>

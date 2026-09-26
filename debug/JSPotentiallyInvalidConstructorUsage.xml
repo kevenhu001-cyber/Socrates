@@ -1,0 +1,3410 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>tt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2555</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>lt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4535</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4819</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>qt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4969</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>5215</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6161</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8035</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>lr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10109</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>wr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10217</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10366</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ui</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12294</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>si</highlighted_element>
+  <language>JavaScript</language>
+  <offset>13362</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>di</highlighted_element>
+  <language>JavaScript</language>
+  <offset>13930</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>mi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14184</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ki</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14207</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18446</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18478</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>me</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18552</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19120</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19938</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20557</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20950</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21101</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21125</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25768</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26026</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>jo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29315</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>jo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29365</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>jo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29419</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>jo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29475</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30481</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>qo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30693</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ko</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30804</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>nf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34050</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ao</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34333</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ho</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34367</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>lo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34412</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>go</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34481</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>go</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34548</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>go</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34616</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34685</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>go</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34728</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>wo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34786</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34835</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34866</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ds</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35619</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35677</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>st</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35739</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>co</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36557</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36564</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ns</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38790</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>os</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39007</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>40694</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ys</highlighted_element>
+  <language>JavaScript</language>
+  <offset>40745</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ys</highlighted_element>
+  <language>JavaScript</language>
+  <offset>40770</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42071</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>oc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42078</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ds</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42149</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42156</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42163</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42480</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42636</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>oc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42643</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43097</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>oc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43104</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ft</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44383</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44691</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44823</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45066</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45102</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45187</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45386</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45443</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45450</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45514</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45906</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>48793</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ac</highlighted_element>
+  <language>JavaScript</language>
+  <offset>48894</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49005</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>lc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49116</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49877</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>53477</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>54098</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>at</highlighted_element>
+  <language>JavaScript</language>
+  <offset>62069</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ht</highlighted_element>
+  <language>JavaScript</language>
+  <offset>62111</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>dt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>62774</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>mt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>63875</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ar</highlighted_element>
+  <language>JavaScript</language>
+  <offset>67631</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>jr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>68888</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>70411</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ei</highlighted_element>
+  <language>JavaScript</language>
+  <offset>73953</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>74431</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>74863</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ai</highlighted_element>
+  <language>JavaScript</language>
+  <offset>75024</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>77833</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>77903</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>78416</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ke</highlighted_element>
+  <language>JavaScript</language>
+  <offset>78458</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>xo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>87237</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>xf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>91156</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>91290</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>91342</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>91449</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>92876</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>93567</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ss</highlighted_element>
+  <language>JavaScript</language>
+  <offset>93626</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ss</highlighted_element>
+  <language>JavaScript</language>
+  <offset>93719</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>93782</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>93841</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ds</highlighted_element>
+  <language>JavaScript</language>
+  <offset>94274</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>qs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>95997</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ks</highlighted_element>
+  <language>JavaScript</language>
+  <offset>96061</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>96153</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>dc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>100680</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>tf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>104471</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>xo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>104530</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>106391</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>106431</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>106494</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>106534</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>106824</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107436</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ds</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107470</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107477</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107484</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107595</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>oc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107602</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107776</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ds</highlighted_element>
+  <language>JavaScript</language>
+  <offset>108469</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>js</highlighted_element>
+  <language>JavaScript</language>
+  <offset>108476</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>108483</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>dc</highlighted_element>
+  <language>JavaScript</language>
+  <offset>108717</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>1944</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>nt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>3022</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4666</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>5244</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>5276</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>kt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>5350</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9210</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10028</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10647</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11040</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11191</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11215</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12734</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15600</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ri</highlighted_element>
+  <language>JavaScript</language>
+  <offset>16679</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>su</highlighted_element>
+  <language>JavaScript</language>
+  <offset>24696</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>24859</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>qu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25728</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25768</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ot</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27142</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>33420</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fa</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36629</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>io</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36784</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>eo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36811</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36833</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>po</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36912</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ko</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36946</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36991</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>qo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37025</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>jo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37264</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>xo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37414</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37445</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37556</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>to</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37791</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ku</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37868</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ro</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37900</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38084</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38119</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38174</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>at</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38236</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pa</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38245</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>mo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39055</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39062</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39089</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>eo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39180</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39187</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>du</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39325</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41121</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41334</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42616</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42631</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42644</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42659</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42673</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42689</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42706</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42723</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42742</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42758</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42774</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42790</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42805</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>rf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42818</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>xf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43011</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>xf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43036</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44332</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44339</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44407</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44414</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44421</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44750</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44757</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44903</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44910</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45358</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45365</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46166</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46508</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46515</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46640</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46647</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ao</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46773</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46879</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>oo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46886</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46915</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47000</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47213</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47220</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47267</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47274</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47338</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>fo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47559</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>eo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47604</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>io</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47638</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ls</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47673</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50554</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>gs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50655</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ds</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50766</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ws</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50877</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50988</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ms</highlighted_element>
+  <language>JavaScript</language>
+  <offset>51623</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>mf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>55372</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>mf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>55979</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>56955</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>no</highlighted_element>
+  <language>JavaScript</language>
+  <offset>56965</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>63228</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>63298</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>63811</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>yt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>63853</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>65372</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>66967</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>gi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>67042</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>wi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>68558</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ru</highlighted_element>
+  <language>JavaScript</language>
+  <offset>76708</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>gu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>78052</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>wu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>78195</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>78451</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>79352</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>to</highlighted_element>
+  <language>JavaScript</language>
+  <offset>82347</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ro</highlighted_element>
+  <language>JavaScript</language>
+  <offset>82971</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>af</highlighted_element>
+  <language>JavaScript</language>
+  <offset>95697</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>lf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>96396</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>96608</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>vf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>96667</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>97104</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>99003</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ps</highlighted_element>
+  <language>JavaScript</language>
+  <offset>103705</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>bt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107269</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>tu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107308</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>eu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107317</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cu</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107326</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>oa</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107351</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ef</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107379</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>qf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107389</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>sa</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107777</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>za</highlighted_element>
+  <language>JavaScript</language>
+  <offset>109692</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>109752</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>109792</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>109855</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>so</highlighted_element>
+  <language>JavaScript</language>
+  <offset>109895</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>uo</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110599</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110760</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110794</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110801</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110808</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110919</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>hs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110926</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>pf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>111790</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>zf</highlighted_element>
+  <language>JavaScript</language>
+  <offset>111797</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>cs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>111804</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>ps</highlighted_element>
+  <language>JavaScript</language>
+  <offset>112038</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPotentiallyInvalidConstructorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可能无效的构造函数用法</problem_class>
+  <description>构造函数名称通常以大写字母开头。拼写错误?</description>
+  <highlighted_element>za</highlighted_element>
+  <language>JavaScript</language>
+  <offset>112408</offset>
+  <length>2</length>
+</problem>
+</problems>

@@ -1,6 +1,6 @@
 /* Pure catalog mapping for OpenConnector-backed directory apps.
  *
- * The vendored OpenConnector sidecar owns provider metadata; this module
+ * The OOMOL-hosted runtime owns provider metadata and execution; this module
  * owns how Socrates presents it: stable oc_<service> ids (never colliding
  * with the OOMOL-gateway catalog), user-confirmed display names from the
  * inventory, and credential forms shaped for the existing frontend dialog.
@@ -8,14 +8,12 @@
 
 import { OPEN_CONNECTOR_APP_INVENTORY, READY_CONNECTOR_APPS } from './openConnectorAppInventory.js';
 import type { OpenConnectorAppEntry } from './openConnectorAppInventory.js';
-import type { SidecarProvider } from './openConnectorSidecar.js';
 import { OPEN_CONNECTOR_CLOUD_AUTH } from './openConnectorCloudAuth.generated.js';
 
 export const OC_ID_PREFIX = 'oc_';
 
-/* Minimal provider metadata shared by the sidecar path (live SidecarProvider)
- * and the OOMOL-cloud path (static OPEN_CONNECTOR_CLOUD_AUTH snapshot).
- * SidecarProvider is structurally assignable to OcProviderMeta. */
+/* Provider metadata shape used to render a catalog row. The OOMOL-cloud path
+ * feeds this from the static OPEN_CONNECTOR_CLOUD_AUTH snapshot. */
 export interface OcAuthField {
   key: string;
   label?: string;
@@ -60,7 +58,7 @@ export interface OcCatalogItem {
   description: string;
   capabilities: string[];
   authType: OcAuthType;
-  /** False when the OpenConnector sidecar is not serving this app yet
+  /** False when the app has no entry in the cloud auth snapshot yet
    * (catalog is shown anyway so the directory stays full; the frontend
    * renders the Connect action disabled). */
   available: boolean;
@@ -143,18 +141,6 @@ export function ocOAuthAppForm(auth: {
   };
 }
 
-export function buildOpenConnectorCatalogItems(providers: SidecarProvider[]): OcCatalogItem[] {
-  const byService = new Map(providers.map((item) => [item.service, item]));
-  const items: OcCatalogItem[] = [];
-  for (const entry of OPEN_CONNECTOR_APP_INVENTORY) {
-    if (entry.status !== 'ready' || !entry.ocService) continue;
-    const meta = byService.get(entry.ocService);
-    if (!meta) continue;
-    items.push(ocCatalogItem(entry, meta));
-  }
-  return items;
-}
-
 export function ocStubCatalogItem(entry: OpenConnectorAppEntry): OcCatalogItem {
   return {
     id: `${OC_ID_PREFIX}${entry.ocService}`,
@@ -167,27 +153,24 @@ export function ocStubCatalogItem(entry: OpenConnectorAppEntry): OcCatalogItem {
   };
 }
 
-/* Full directory builder: every phase-1 inventory service appears in the
- * catalog. Apps the sidecar actually serves get the real provider
- * metadata (available: true); the rest become disabled stubs so the
- * plugin page stays complete even before the sidecar comes online.
- * Pass null when the sidecar is unreachable to stub everything.
+/* Disabled directory: every phase-1 inventory service appears as a stub. Used
+ * when the OOMOL project gateway is not configured, so the plugin page stays
+ * complete (Connect greyed out) rather than empty.
  *
  * The inventory can map several entries onto one ocService (e.g. 网易邮箱
  * and 网易企业邮箱 both use netease_mail); the directory dedupes by
- * service so every row has a unique id and connects one sidecar app. */
-export function buildOpenConnectorCatalogWithFallback(providers: SidecarProvider[] | null): OcCatalogItem[] {
-  const byService = new Map((providers || []).map((item) => [item.service, item]));
+ * service so every row has a unique id. */
+export function buildOpenConnectorStubCatalog(): OcCatalogItem[] {
   const seen = new Set<string>();
   const items: OcCatalogItem[] = [];
   for (const entry of READY_CONNECTOR_APPS) {
     if (!entry.ocService || seen.has(entry.ocService)) continue;
     seen.add(entry.ocService);
-    const meta = byService.get(entry.ocService);
-    items.push(meta ? ocCatalogItem(entry, meta) : ocStubCatalogItem(entry));
+    items.push(ocStubCatalogItem(entry));
   }
   return items;
 }
+
 export function ocCatalogItem(
   entry: (typeof OPEN_CONNECTOR_APP_INVENTORY)[number],
   meta: OcProviderMeta,
@@ -206,10 +189,10 @@ export function ocCatalogItem(
   };
 }
 
-/* OOMOL-cloud directory builder: same inventory rows as the sidecar fallback,
- * but every snapshotted service is connectable through the OOMOL project
- * gateway (the user provisions providers in the OOMOL cloud console).
- * Services missing from the snapshot stay disabled stubs. */
+/* OOMOL-hosted directory builder: every snapshotted service is connectable
+ * through the OOMOL project gateway (the user provisions providers in the
+ * OOMOL cloud console). Services missing from the snapshot stay disabled
+ * stubs. */
 export function buildOpenConnectorCatalogForCloud(): OcCatalogItem[] {
   const seen = new Set<string>();
   const items: OcCatalogItem[] = [];

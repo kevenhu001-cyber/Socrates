@@ -1,0 +1,650 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>57</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 text-decoration 与属性 text-decoration 重复</description>
+  <highlighted_element>text-decoration: underline dotted</highlighted_element>
+  <language>CSS</language>
+  <offset>4</offset>
+  <length>33</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/components/tool-card.css</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/components/tool-card.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 max-height 已被覆盖</description>
+  <highlighted_element>max-height: min(84vh, 780px)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/components/tool-card.css</file>
+  <line>74</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/components/tool-card.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 max-height 覆盖属性 max-height</description>
+  <highlighted_element>max-height: min(84dvh, 780px)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>29</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css</file>
+  <line>193</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 height 已被覆盖</description>
+  <highlighted_element>height:100vh</highlighted_element>
+  <language>CSS</language>
+  <offset>18</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css</file>
+  <line>193</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 height 覆盖属性 height</description>
+  <highlighted_element>height:100dvh</highlighted_element>
+  <language>CSS</language>
+  <offset>31</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/02-modals-library.css</file>
+  <line>78</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/02-modals-library.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 font-family 与属性 font 重复</description>
+  <highlighted_element>font-family:inherit</highlighted_element>
+  <language>CSS</language>
+  <offset>252</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css</file>
+  <line>50</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 margin-top 与属性 margin 重复</description>
+  <highlighted_element>margin-top:0</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css</file>
+  <line>603</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 position 与属性 position 重复</description>
+  <highlighted_element>position:relative</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 margin 已被覆盖</description>
+  <highlighted_element>margin:0 auto</highlighted_element>
+  <language>CSS</language>
+  <offset>235</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 transition 已被覆盖</description>
+  <highlighted_element>transition:border-color var(--composer-motion-duration) var(--composer-motion-ease),box-shadow var(-...</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>431</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 margin 覆盖属性 margin</description>
+  <highlighted_element>margin:0 12px</highlighted_element>
+  <language>CSS</language>
+  <offset>434</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/07-composer-settings.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 transition 覆盖属性 transition</description>
+  <highlighted_element>transition:box-shadow var(--composer-motion-duration) var(--composer-motion-ease),border-color var(-...</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>231</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css</file>
+  <line>451</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 font-weight 与属性 font 重复</description>
+  <highlighted_element>font-weight:500</highlighted_element>
+  <language>CSS</language>
+  <offset>244</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/11-agent-tools.css</file>
+  <line>396</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/11-agent-tools.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 font-size 与属性 font 重复</description>
+  <highlighted_element>font-size:inherit</highlighted_element>
+  <language>CSS</language>
+  <offset>141</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css</file>
+  <line>46</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 background-color 与属性 background 重复</description>
+  <highlighted_element>background-color: #000000 !important</highlighted_element>
+  <language>CSS</language>
+  <offset>4</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 background-color 与属性 background 重复</description>
+  <highlighted_element>background-color: #1a1a1a !important</highlighted_element>
+  <language>CSS</language>
+  <offset>4</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css</file>
+  <line>870</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 background-color 与属性 background 重复</description>
+  <highlighted_element>background-color: #1a1a1a !important</highlighted_element>
+  <language>CSS</language>
+  <offset>4</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>205</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 已被覆盖</description>
+  <highlighted_element>box-shadow: 0 0 0 3px var(--cg-accent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>38</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>206</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 覆盖属性 box-shadow</description>
+  <highlighted_element>box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 14%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>75</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>426</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 已被覆盖</description>
+  <highlighted_element>border-color: var(--cg-border-strong) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>48</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>427</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 覆盖属性 border-color</description>
+  <highlighted_element>border-color: color-mix(in srgb, var(--cg-accent) 48%, var(--cg-border-strong)) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>90</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>428</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 已被覆盖</description>
+  <highlighted_element>box-shadow: 0 0 0 3px var(--cg-accent), 0 16px 42px rgb(0 0 0 / 22%) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>79</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>429</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 覆盖属性 box-shadow</description>
+  <highlighted_element>box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 12%, transparent), 0 16px 42px rgb(0 0 0 /...</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>116</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>905</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 已被覆盖</description>
+  <highlighted_element>border-color: var(--cg-border-strong)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>906</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 覆盖属性 border-color</description>
+  <highlighted_element>border-color: color-mix(in srgb, var(--cg-accent) 48%, var(--cg-border-strong))</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>79</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>907</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 已被覆盖</description>
+  <highlighted_element>box-shadow: 0 0 0 3px var(--cg-accent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>38</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>908</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 覆盖属性 box-shadow</description>
+  <highlighted_element>box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 12%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>75</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1298</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 与属性 outline 重复</description>
+  <highlighted_element>outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>72</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1298</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 与属性 outline 重复</description>
+  <highlighted_element>outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>72</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1714</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 已被覆盖</description>
+  <highlighted_element>border-color: var(--cg-border-strong) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>48</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1715</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 覆盖属性 border-color</description>
+  <highlighted_element>border-color: color-mix(in srgb, var(--cg-accent) 62%, var(--cg-border-strong)) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>90</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1716</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 已被覆盖</description>
+  <highlighted_element>box-shadow: 0 0 0 3px var(--cg-accent) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>49</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1717</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 覆盖属性 box-shadow</description>
+  <highlighted_element>box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 13%, transparent) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>86</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>2511</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 已被覆盖</description>
+  <highlighted_element>border-color: var(--cg-text)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>2512</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 覆盖属性 border-color</description>
+  <highlighted_element>border-color: color-mix(in srgb, var(--cg-text) 36%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>65</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>2556</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 与属性 outline 重复</description>
+  <highlighted_element>outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>72</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>2556</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 与属性 outline 重复</description>
+  <highlighted_element>outline: 2px solid color-mix(in srgb, var(--cg-accent) 65%, transparent)</highlighted_element>
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>72</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>729</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 已被覆盖</description>
+  <highlighted_element>border-color: var(--cg-text) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>730</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 border-color 覆盖属性 border-color</description>
+  <highlighted_element>border-color: color-mix(in srgb, var(--cg-text) 34%, transparent) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>76</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>731</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 已被覆盖</description>
+  <highlighted_element>box-shadow: 0 0 0 3px var(--cg-text) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>47</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>732</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 box-shadow 覆盖属性 box-shadow</description>
+  <highlighted_element>box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-text) 7%, transparent) !important</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>83</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 text-wrap 已被覆盖</description>
+  <highlighted_element>text-wrap: normal</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>162</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 text-wrap 覆盖属性 text-wrap</description>
+  <highlighted_element>text-wrap: balance</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>57</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 text-decoration 与属性 text-decoration 重复</description>
+  <highlighted_element>text-decoration: underline dotted</highlighted_element>
+  <language>CSS</language>
+  <offset>4</offset>
+  <length>33</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>328</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 已被覆盖</description>
+  <highlighted_element>outline: 2px solid rgba(0, 0, 0, .40)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>328</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 已被覆盖</description>
+  <highlighted_element>outline: 2px solid rgba(0, 0, 0, .40)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>328</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 已被覆盖</description>
+  <highlighted_element>outline: 2px solid rgba(0, 0, 0, .40)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>328</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 已被覆盖</description>
+  <highlighted_element>outline: 2px solid rgba(0, 0, 0, .40)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>330</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 覆盖属性 outline</description>
+  <highlighted_element>outline: 0</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>330</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 覆盖属性 outline</description>
+  <highlighted_element>outline: 0</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>330</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 覆盖属性 outline</description>
+  <highlighted_element>outline: 0</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.css</file>
+  <line>330</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 覆盖属性 outline</description>
+  <highlighted_element>outline: 0</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2021</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 已被覆盖</description>
+  <highlighted_element>outline: none</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2024</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssOverwrittenProperties" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">覆盖的属性</problem_class>
+  <description>属性 outline 覆盖属性 outline</description>
+  <highlighted_element>outline: 2px solid rgba(0, 0, 0, .40)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>37</length>
+</problem>
+</problems>

@@ -1,0 +1,15 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/.github/workflows/qodana_code_quality.yml</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/.github/workflows/qodana_code_quality.yml" />
+  <problem_class id="UndefinedAction" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未定义的操作/文件引用</problem_class>
+  <description>未解析的操作/工作流引用:“JetBrains/qodana-action@v2026.2”
+错误 404 消息: https://github.com/JetBrains/qodana-action@v2026.2: Cannot find or failed to download action file 'JetBrains/qodana-action@v2026.2'</description>
+  <highlighted_element>JetBrains/qodana-action@v2026.2</highlighted_element>
+  <language>yaml</language>
+  <offset>14</offset>
+  <length>31</length>
+</problem>
+</problems>

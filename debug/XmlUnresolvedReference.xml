@@ -1,0 +1,14 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/crisp.svg</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/crisp.svg" />
+  <problem_class id="XmlUnresolvedReference" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未解析的引用</problem_class>
+  <description>错误的 attribute 值</description>
+  <highlighted_element>square</highlighted_element>
+  <language>SVG</language>
+  <offset>928</offset>
+  <length>6</length>
+</problem>
+</problems>

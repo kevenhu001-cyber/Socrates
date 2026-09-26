@@ -19,7 +19,6 @@ scripts/
 ├── gen-csp-hashes.mjs           ← 生成 SPA CSP hash 片段（deploy.sh 用）
 ├── *.baseline.json              ← 各棘轮的基线数据（audit / coverage / openapi）
 ├── clean-local-artifacts.sh     ← 移除本仓库未跟踪的临时产物（shots、debug.log 等）
-├── gen-oc-cloud-auth.mjs        ← 生成 server 的 openConnector cloud auth 文件（CI 用）
 ├── restart-server.sh            ← 停 + 起 socrates-api systemd 服务
 ├── rotate-secrets.sh            ← 重新生成 secrets/SESSION_SECRET 等敏感值
 ├── search.sh                    ← 全仓 ripgrep 助手（用法见脚本注释）
@@ -28,7 +27,7 @@ scripts/
 
 ## 关于「根目录里的脚本」
 
-下列 6 个 `.sh` / `.mjs` **必须保留在 `scripts/` 根**，因为外部有不可移动的引用：
+下列 5 个 `.sh` / `.mjs` **必须保留在 `scripts/` 根**，因为外部有不可移动的引用：
 
 | 脚本 | 外部引用 |
 | --- | --- |
@@ -36,7 +35,6 @@ scripts/
 | `restart-server.sh` | 自包含 |
 | `rotate-secrets.sh` | `scripts/backup-secrets.sh` 内部调用 |
 | `clean-local-artifacts.sh` | `scripts/README.md`（本文）引用方式说明 |
-| `gen-oc-cloud-auth.mjs` | `server/test/openConnectorCatalog.test.js`、`server/src/services/openConnectorCloudAuth.generated.ts`（消费其产物） |
 | `test-deploy-flow.sh` | `.github/workflows/build-apk.yml:189`（**CI 强约束**） |
 
 **严禁把上表脚本移入子目录**。如需调整，先改所有调用点 + 更新 CI 流水线。

@@ -32,7 +32,7 @@ const PI_BIN_CANDIDATES = [
 ];
 
 /* Environment variables the Pi subprocess may inherit. Everything else —
- * database DSNs, sidecar/admin tokens, session secrets, LLM keys — stays
+ * database DSNs, admin tokens, session secrets, LLM keys — stays
  * out of the agent's environment so a bash step cannot leak them. Extend
  * at deploy time with PI_AGENT_ENV_ALLOWLIST="FOO,BAR". */
 const PI_ENV_ALLOWLIST = [
@@ -226,7 +226,7 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
 
     /* The agent's bash tool runs with exactly this environment, so it must
      * NOT inherit process.env: the server environment carries DATABASE_URL,
-     * sidecar admin tokens, session secrets, and API keys that an `env` or
+     * admin tokens, session secrets, and API keys that an `env` or
      * `printenv` call would otherwise copy into model context and the chat.
      * Only innocuous runtime variables cross the boundary; operators can
      * extend the list via PI_AGENT_ENV_ALLOWLIST (comma-separated names). */

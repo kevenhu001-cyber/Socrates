@@ -110,7 +110,7 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('#taskForm textarea[name="prompt"]')).toHaveValue(/daily briefing/i);
 });
 
-test('OpenConnector apps the sidecar does not serve yet render disabled', async ({ page }) => {
+test('OpenConnector apps the hosted runtime does not serve yet render disabled', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.route('**/api/**', async (route) => {
     if (!route.request().url().includes('project-connectors')) {
@@ -140,7 +140,8 @@ test('OpenConnector apps the sidecar does not serve yet render disabled', async 
 
   /* Legacy OOMOL apps stay connectable when the gateway is configured. */
   await expect(page.locator('[data-connector-id="github"] button.plugin-directory-icon-action')).toBeEnabled();
-  /* Sidecar-stubbed apps are greyed out with the setup-needed title. */
+  /* Stub-catalog apps (not covered by the gateway snapshot) are greyed out
+     with the setup-needed title. */
   const slack = page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action');
   await expect(slack).toBeDisabled();
   await expect(slack).toHaveAttribute('title', 'Server setup needed');

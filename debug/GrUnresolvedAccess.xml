@@ -1,0 +1,3422 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'android'</description>
+  <highlighted_element>android</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'namespace'</description>
+  <highlighted_element>namespace</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'compileSdk'</description>
+  <highlighted_element>compileSdk</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>15</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'defaultConfig'</description>
+  <highlighted_element>defaultConfig</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'applicationId'</description>
+  <highlighted_element>applicationId</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'minSdkVersion'</description>
+  <highlighted_element>minSdkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>22</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'targetSdkVersion'</description>
+  <highlighted_element>targetSdkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>25</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'versionCode'</description>
+  <highlighted_element>versionCode</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'versionName'</description>
+  <highlighted_element>versionName</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'testInstrumentationRunner'</description>
+  <highlighted_element>testInstrumentationRunner</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'aaptOptions'</description>
+  <highlighted_element>aaptOptions</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'ignoreAssetsPattern'</description>
+  <highlighted_element>ignoreAssetsPattern</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>26</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildTypes'</description>
+  <highlighted_element>buildTypes</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'release'</description>
+  <highlighted_element>release</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'minifyEnabled'</description>
+  <highlighted_element>minifyEnabled</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'proguardFiles'</description>
+  <highlighted_element>proguardFiles</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'getDefaultProguardFile'</description>
+  <highlighted_element>getDefaultProguardFile</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>35</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'flatDir'</description>
+  <highlighted_element>flatDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dirs'</description>
+  <highlighted_element>dirs</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'fileTree'</description>
+  <highlighted_element>fileTree</highlighted_element>
+  <language>Groovy</language>
+  <offset>19</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidxAppCompatVersion'</description>
+  <highlighted_element>androidxAppCompatVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>50</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidxCoordinatorLayoutVersion'</description>
+  <highlighted_element>androidxCoordinatorLayoutVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>66</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'coreSplashScreenVersion'</description>
+  <highlighted_element>coreSplashScreenVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>53</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>19</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>46</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'testImplementation'</description>
+  <highlighted_element>testImplementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>46</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'junitVersion'</description>
+  <highlighted_element>junitVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>37</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>47</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidTestImplementation'</description>
+  <highlighted_element>androidTestImplementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>47</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidxJunitVersion'</description>
+  <highlighted_element>androidxJunitVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>56</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>48</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidTestImplementation'</description>
+  <highlighted_element>androidTestImplementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>48</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidxEspressoCoreVersion'</description>
+  <highlighted_element>androidxEspressoCoreVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>69</offset>
+  <length>27</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>49</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>49</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>19</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>52</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>55</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'file'</description>
+  <highlighted_element>file</highlighted_element>
+  <language>Groovy</language>
+  <offset>23</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>57</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build.gradle</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'logger'</description>
+  <highlighted_element>logger</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'android'</description>
+  <highlighted_element>android</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'compileOptions'</description>
+  <highlighted_element>compileOptions</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'sourceCompatibility'</description>
+  <highlighted_element>sourceCompatibility</highlighted_element>
+  <language>Groovy</language>
+  <offset>6</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'JavaVersion'</description>
+  <highlighted_element>JavaVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'targetCompatibility'</description>
+  <highlighted_element>targetCompatibility</highlighted_element>
+  <language>Groovy</language>
+  <offset>6</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'JavaVersion'</description>
+  <highlighted_element>JavaVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'hasProperty'</description>
+  <highlighted_element>hasProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/capacitor.build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'postBuildExtras'</description>
+  <highlighted_element>postBuildExtras</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildscript'</description>
+  <highlighted_element>buildscript</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'google'</description>
+  <highlighted_element>google</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'mavenCentral'</description>
+  <highlighted_element>mavenCentral</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'classpath'</description>
+  <highlighted_element>classpath</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'classpath'</description>
+  <highlighted_element>classpath</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'allprojects'</description>
+  <highlighted_element>allprojects</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'google'</description>
+  <highlighted_element>google</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'mavenCentral'</description>
+  <highlighted_element>mavenCentral</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'task'</description>
+  <highlighted_element>task</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'Delete'</description>
+  <highlighted_element>Delete</highlighted_element>
+  <language>Groovy</language>
+  <offset>17</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'delete'</description>
+  <highlighted_element>delete</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build.gradle</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>11</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'ext'</description>
+  <highlighted_element>ext</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>31</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>81</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>28</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>75</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildscript'</description>
+  <highlighted_element>buildscript</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'google'</description>
+  <highlighted_element>google</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'mavenCentral'</description>
+  <highlighted_element>mavenCentral</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'classpath'</description>
+  <highlighted_element>classpath</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'android'</description>
+  <highlighted_element>android</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'namespace'</description>
+  <highlighted_element>namespace</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'compileSdk'</description>
+  <highlighted_element>compileSdk</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>15</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>58</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'defaultConfig'</description>
+  <highlighted_element>defaultConfig</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'minSdkVersion'</description>
+  <highlighted_element>minSdkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>22</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>61</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'targetSdkVersion'</description>
+  <highlighted_element>targetSdkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>25</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>67</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>24</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'versionCode'</description>
+  <highlighted_element>versionCode</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'versionName'</description>
+  <highlighted_element>versionName</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'lintOptions'</description>
+  <highlighted_element>lintOptions</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'abortOnError'</description>
+  <highlighted_element>abortOnError</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>30</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'compileOptions'</description>
+  <highlighted_element>compileOptions</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>31</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'sourceCompatibility'</description>
+  <highlighted_element>sourceCompatibility</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>31</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'JavaVersion'</description>
+  <highlighted_element>JavaVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>28</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'targetCompatibility'</description>
+  <highlighted_element>targetCompatibility</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'JavaVersion'</description>
+  <highlighted_element>JavaVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>28</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'google'</description>
+  <highlighted_element>google</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'mavenCentral'</description>
+  <highlighted_element>mavenCentral</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'flatDir'</description>
+  <highlighted_element>flatDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dirs'</description>
+  <highlighted_element>dirs</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'fileTree'</description>
+  <highlighted_element>fileTree</highlighted_element>
+  <language>Groovy</language>
+  <offset>19</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>46</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>46</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidxAppCompatVersion'</description>
+  <highlighted_element>androidxAppCompatVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>50</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>47</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>47</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'cordovaAndroidVersion'</description>
+  <highlighted_element>cordovaAndroidVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>50</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>54</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle</file>
+  <line>57</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'cdvPluginPostBuildExtras'</description>
+  <highlighted_element>cdvPluginPostBuildExtras</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/cordova.variables.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/cordova.variables.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'ext'</description>
+  <highlighted_element>ext</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/cordova.variables.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/cordova.variables.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>21</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/cordova.variables.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/cordova.variables.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>60</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor.settings.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor.settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'include'</description>
+  <highlighted_element>include</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor.settings.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor.settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/settings.gradle</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'include'</description>
+  <highlighted_element>include</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/settings.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'include'</description>
+  <highlighted_element>include</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/settings.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'project'</description>
+  <highlighted_element>project</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/settings.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/variables.gradle</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/variables.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'ext'</description>
+  <highlighted_element>ext</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>18</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'react'</description>
+  <highlighted_element>react</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'file'</description>
+  <highlighted_element>file</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'execute'</description>
+  <highlighted_element>execute</highlighted_element>
+  <language>Groovy</language>
+  <offset>115</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>129</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'execute'</description>
+  <highlighted_element>execute</highlighted_element>
+  <language>Groovy</language>
+  <offset>98</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>112</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'execute'</description>
+  <highlighted_element>execute</highlighted_element>
+  <language>Groovy</language>
+  <offset>159</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>173</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'execute'</description>
+  <highlighted_element>execute</highlighted_element>
+  <language>Groovy</language>
+  <offset>162</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>176</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>31</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'toBoolean'</description>
+  <highlighted_element>toBoolean</highlighted_element>
+  <language>Groovy</language>
+  <offset>89</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'execute'</description>
+  <highlighted_element>execute</highlighted_element>
+  <language>Groovy</language>
+  <offset>126</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>140</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>63</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'autolinkLibrariesWithApp'</description>
+  <highlighted_element>autolinkLibrariesWithApp</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>69</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>35</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>69</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'toBoolean'</description>
+  <highlighted_element>toBoolean</highlighted_element>
+  <language>Groovy</language>
+  <offset>97</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'android'</description>
+  <highlighted_element>android</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'ndkVersion'</description>
+  <highlighted_element>ndkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>15</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>87</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildToolsVersion'</description>
+  <highlighted_element>buildToolsVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>87</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>22</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>88</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'compileSdk'</description>
+  <highlighted_element>compileSdk</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>88</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>15</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>90</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'namespace'</description>
+  <highlighted_element>namespace</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>91</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'defaultConfig'</description>
+  <highlighted_element>defaultConfig</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>92</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'applicationId'</description>
+  <highlighted_element>applicationId</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'minSdkVersion'</description>
+  <highlighted_element>minSdkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>22</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>94</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'targetSdkVersion'</description>
+  <highlighted_element>targetSdkVersion</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>94</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>25</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>95</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'versionCode'</description>
+  <highlighted_element>versionCode</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>96</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'versionName'</description>
+  <highlighted_element>versionName</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>98</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildConfigField'</description>
+  <highlighted_element>buildConfigField</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>98</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>70</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>100</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfigs'</description>
+  <highlighted_element>signingConfigs</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>101</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'debug'</description>
+  <highlighted_element>debug</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>102</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'storeFile'</description>
+  <highlighted_element>storeFile</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>102</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'file'</description>
+  <highlighted_element>file</highlighted_element>
+  <language>Groovy</language>
+  <offset>22</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>103</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'storePassword'</description>
+  <highlighted_element>storePassword</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>104</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'keyAlias'</description>
+  <highlighted_element>keyAlias</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>105</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'keyPassword'</description>
+  <highlighted_element>keyPassword</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>108</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfigs'</description>
+  <highlighted_element>signingConfigs</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>109</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'socratesRelease'</description>
+  <highlighted_element>socratesRelease</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>112</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'storeFile'</description>
+  <highlighted_element>storeFile</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>112</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'file'</description>
+  <highlighted_element>file</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>113</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'storePassword'</description>
+  <highlighted_element>storePassword</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>114</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'keyAlias'</description>
+  <highlighted_element>keyAlias</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>115</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'keyPassword'</description>
+  <highlighted_element>keyPassword</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>119</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildTypes'</description>
+  <highlighted_element>buildTypes</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>120</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'debug'</description>
+  <highlighted_element>debug</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfig'</description>
+  <highlighted_element>signingConfig</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfigs'</description>
+  <highlighted_element>signingConfigs</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>123</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'release'</description>
+  <highlighted_element>release</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>126</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfig'</description>
+  <highlighted_element>signingConfig</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>126</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfigs'</description>
+  <highlighted_element>signingConfigs</highlighted_element>
+  <language>Groovy</language>
+  <offset>67</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>126</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'signingConfigs'</description>
+  <highlighted_element>signingConfigs</highlighted_element>
+  <language>Groovy</language>
+  <offset>100</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>127</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>40</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>128</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'shrinkResources'</description>
+  <highlighted_element>shrinkResources</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>128</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'toBoolean'</description>
+  <highlighted_element>toBoolean</highlighted_element>
+  <language>Groovy</language>
+  <offset>50</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'minifyEnabled'</description>
+  <highlighted_element>minifyEnabled</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>130</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'proguardFiles'</description>
+  <highlighted_element>proguardFiles</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>130</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'getDefaultProguardFile'</description>
+  <highlighted_element>getDefaultProguardFile</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>131</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>43</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>132</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'crunchPngs'</description>
+  <highlighted_element>crunchPngs</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>132</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'toBoolean'</description>
+  <highlighted_element>toBoolean</highlighted_element>
+  <language>Groovy</language>
+  <offset>48</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'packagingOptions'</description>
+  <highlighted_element>packagingOptions</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>136</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'jniLibs'</description>
+  <highlighted_element>jniLibs</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>137</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>40</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>138</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'useLegacyPackaging'</description>
+  <highlighted_element>useLegacyPackaging</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>138</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'toBoolean'</description>
+  <highlighted_element>toBoolean</highlighted_element>
+  <language>Groovy</language>
+  <offset>53</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>141</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'androidResources'</description>
+  <highlighted_element>androidResources</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>142</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'ignoreAssetsPattern'</description>
+  <highlighted_element>ignoreAssetsPattern</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>149</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'each'</description>
+  <highlighted_element>each</highlighted_element>
+  <language>Groovy</language>
+  <offset>51</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>151</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>19</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>153</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'size'</description>
+  <highlighted_element>size</highlighted_element>
+  <language>Groovy</language>
+  <offset>26</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>158</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'println'</description>
+  <highlighted_element>println</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>160</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'each'</description>
+  <highlighted_element>each</highlighted_element>
+  <language>Groovy</language>
+  <offset>16</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'android'</description>
+  <highlighted_element>android</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>166</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>168</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>170</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>24</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>171</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>25</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>172</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'findProperty'</description>
+  <highlighted_element>findProperty</highlighted_element>
+  <language>Groovy</language>
+  <offset>33</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>176</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>176</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoLibs'</description>
+  <highlighted_element>expoLibs</highlighted_element>
+  <language>Groovy</language>
+  <offset>59</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>181</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>181</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoLibs'</description>
+  <highlighted_element>expoLibs</highlighted_element>
+  <language>Groovy</language>
+  <offset>58</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>184</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>184</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoLibs'</description>
+  <highlighted_element>expoLibs</highlighted_element>
+  <language>Groovy</language>
+  <offset>64</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>188</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'hermesEnabled'</description>
+  <highlighted_element>hermesEnabled</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>189</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>191</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'implementation'</description>
+  <highlighted_element>implementation</highlighted_element>
+  <language>Groovy</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'buildscript'</description>
+  <highlighted_element>buildscript</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'google'</description>
+  <highlighted_element>google</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'mavenCentral'</description>
+  <highlighted_element>mavenCentral</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'dependencies'</description>
+  <highlighted_element>dependencies</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'classpath'</description>
+  <highlighted_element>classpath</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'classpath'</description>
+  <highlighted_element>classpath</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'classpath'</description>
+  <highlighted_element>classpath</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'allprojects'</description>
+  <highlighted_element>allprojects</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'repositories'</description>
+  <highlighted_element>repositories</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'google'</description>
+  <highlighted_element>google</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'mavenCentral'</description>
+  <highlighted_element>mavenCentral</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'maven'</description>
+  <highlighted_element>maven</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'url'</description>
+  <highlighted_element>url</highlighted_element>
+  <language>Groovy</language>
+  <offset>12</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build.gradle</file>
+  <line>24</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'apply'</description>
+  <highlighted_element>apply</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'pluginManagement'</description>
+  <highlighted_element>pluginManagement</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'providers'</description>
+  <highlighted_element>providers</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'workingDir'</description>
+  <highlighted_element>workingDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>6</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>17</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'commandLine'</description>
+  <highlighted_element>commandLine</highlighted_element>
+  <language>Groovy</language>
+  <offset>6</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'includeBuild'</description>
+  <highlighted_element>includeBuild</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'providers'</description>
+  <highlighted_element>providers</highlighted_element>
+  <language>Groovy</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'workingDir'</description>
+  <highlighted_element>workingDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>6</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootDir'</description>
+  <highlighted_element>rootDir</highlighted_element>
+  <language>Groovy</language>
+  <offset>17</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'commandLine'</description>
+  <highlighted_element>commandLine</highlighted_element>
+  <language>Groovy</language>
+  <offset>6</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'includeBuild'</description>
+  <highlighted_element>includeBuild</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'plugins'</description>
+  <highlighted_element>plugins</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'id'</description>
+  <highlighted_element>id</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'id'</description>
+  <highlighted_element>id</highlighted_element>
+  <language>Groovy</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'extensions'</description>
+  <highlighted_element>extensions</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'com'</description>
+  <highlighted_element>com</highlighted_element>
+  <language>Groovy</language>
+  <offset>21</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoAutolinking'</description>
+  <highlighted_element>expoAutolinking</highlighted_element>
+  <language>Groovy</language>
+  <offset>36</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoAutolinking'</description>
+  <highlighted_element>expoAutolinking</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'rootProject'</description>
+  <highlighted_element>rootProject</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoAutolinking'</description>
+  <highlighted_element>expoAutolinking</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'include'</description>
+  <highlighted_element>include</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'includeBuild'</description>
+  <highlighted_element>includeBuild</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'expoAutolinking'</description>
+  <highlighted_element>expoAutolinking</highlighted_element>
+  <language>Groovy</language>
+  <offset>13</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'gradle'</description>
+  <highlighted_element>gradle</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>55</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>55</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>55</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'gradle'</description>
+  <highlighted_element>gradle</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>49</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>49</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>49</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>49</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>37</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>37</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>37</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>24</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>37</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'gradle'</description>
+  <highlighted_element>gradle</highlighted_element>
+  <language>Groovy</language>
+  <offset>0</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'any'</description>
+  <highlighted_element>any</highlighted_element>
+  <language>Groovy</language>
+  <offset>52</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>31</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>31</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>31</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/gradle-init-china.gradle</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/gradle-init-china.gradle" />
+  <problem_class id="GrUnresolvedAccess" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未解析的引用表达式</problem_class>
+  <description>无法解析符号'uri'</description>
+  <highlighted_element>uri</highlighted_element>
+  <language>Groovy</language>
+  <offset>31</offset>
+  <length>3</length>
+</problem>
+</problems>

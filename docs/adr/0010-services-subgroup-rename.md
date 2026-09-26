@@ -42,7 +42,7 @@
 | --- | --- | --- |
 | `services/core/` | 与 LLM proxy / 认证 / 业务流水线紧密耦合的核心服务 | `llm.ts`、`auth.ts`、`chatTurns.ts`、`planning.ts`、`scheduler.ts`、`usageTracker.ts`、`apiKey.ts`、`email.ts`、`adminAuth.ts`、`agentKeys.ts`、`loginLockout.ts` |
 | `services/integrations/` | 第三方 SaaS / 项目平台 connector，每个一个文件 | `arxivConnector.ts`、`feishuConnector.ts`、`giteeConnector.ts`、`githubConnector.ts`、`notionConnector.ts`、`oomolProjectConnector.ts`、`zoteroConnector.ts`、`oauthTokens.ts` |
-| `services/integrations/openConnector/` | open-connector 整个集成面（Apache-2.0 vendored fork 的 wrapper） | `openConnectorCatalog.ts`、`openConnectorChatTools.ts`、`openConnectorSidecar.ts`、`openConnectorAppInventory.ts`、`openConnectorCloudAuth.generated.ts` |
+| `services/integrations/openConnector/` | ~~open-connector 整个集成面（Apache-2.0 vendored fork 的 wrapper）~~ **作废，见 ADR 0014** | `openConnectorCatalog.ts`、`openConnectorChatTools.ts`、~~`openConnectorSidecar.ts`（已删除）~~、`openConnectorAppInventory.ts`、`openConnectorCloudAuth.generated.ts` |
 | `services/tools/` | agent / tool registry / tool-call-safety 周边 | `toolRegistry.ts`、`toolCallSafety.ts`、`toolDispatch.ts`、`toolErrorFeedback.ts`、`toolTurnPolicy.ts`、`agentRuntime.ts`、`agentStepProjection.ts`、`piAgent.ts`、`toolRegistry.ts` |
 | `services/embeddings/` | 文本向量化、chunkIndex、RAG、tts 等模型边缘 | `embedding.ts`、`rag.ts`、`chunkIndex.ts`、`ttsCache.ts`、`ttsStore.ts`、`vision.ts`、`scoring.ts`、`sessionCompressor.ts`、`attachmentReader.ts`、`contentExtractor.ts`、`contentExtractorWorker.ts`（包含现有 `fileParsers/` 与 `searchEngines/` 子目录） |
 | `services/util/` | 跨切面工具，不属于上述任意域 | `cleanupDb.ts`、`fetchBatch.ts`、`statusMonitor.ts`、`workspacePaths.ts`、`workspaceResources.ts`、`artifactOwnership.ts`、`fileArtifacts.ts`、`connectorTools.ts`、`projectConnectorTools.ts` |
@@ -56,7 +56,7 @@
   2. PR-0010.2：迁 `services/core/`（影响 20+ 文件 + 多数 test 文件 + `routes/` import）。
   3. PR-0010.3：迁 `services/embeddings/`（含现有 `fileParsers/` 与 `searchEngines/`）。
   4. PR-0010.4：迁 `services/tools/`（agent / tool-call 周边）。
-  5. PR-0010.5：迁 `services/integrations/openConnector/`（open-connector wrapper）。
+  5. ~~PR-0010.5：迁 `services/integrations/openConnector/`（open-connector wrapper）。~~ **作废（2026-09-26）**：open-connector 集成已收敛为 cloud-only 且 sidecar 删除，见 `docs/adr/0014-open-connector-removal-cloud-only.md`；剩余 `openConnector*` 服务文件并入 PR-0010.6 的 `services/integrations/` 即可。
   6. PR-0010.6：迁 `services/integrations/`（第三方 SaaS connectors）。
 - **代码**：每次迁移涉及相对路径批量更新，IDE 全局重写 + grep 双保险；跨子目录的循环 import 风险由每个 PR 末的 ESLint `import/no-cycle` 验证。
 - **CI**：`server-ci.yml` 与 `ci.yml:server` job 跑 `server/test/`；每 PR 跑回归。

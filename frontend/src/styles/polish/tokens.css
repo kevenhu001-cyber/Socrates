@@ -33,19 +33,19 @@
   /* Rail is one step above page (matches --cg-rail below and
      --ui-bg-sidebar in themes.css); the page/rail split is the dark-mode
      sidebar hierarchy. */
-  --chatgpt-rail: #0d0c0a;
-  --chatgpt-surface: #1c1b17;
-  --chatgpt-menu: #302e28;
-  --chatgpt-hover: #211f1a;
-  --chatgpt-composer: #25231f;
-  --chatgpt-text: #f4f1ea;
-  --chatgpt-muted: #aaa59a;
-  --chatgpt-faint: #817c72;
-  --chatgpt-line: rgb(190 181 161 / 12%);
+  --chatgpt-rail: #0c0d10;
+  --chatgpt-surface: #1a1d22;
+  --chatgpt-menu: #2d313a;
+  --chatgpt-hover: #20242b;
+  --chatgpt-composer: #23262e;
+  --chatgpt-text: #f2f4f7;
+  --chatgpt-muted: #a6acb8;
+  --chatgpt-faint: #7b8291;
+  --chatgpt-line: rgb(160 172 192 / 12%);
 }
 
 /* Literal #000 pins in restore (chat-surface, mobile-parity, fixes) keep the
-   page chrome pure black while the raised surfaces use warm charcoal steps.
+   page chrome pure black while the raised surfaces use cool charcoal steps.
    Repin them to the ramp — identical selectors + !important + later order. */
 html[data-theme="socrates"][data-mode="dark"] body,
 html[data-theme="socrates"][data-mode="dark"] #appShell,
@@ -70,85 +70,85 @@ html[data-theme="socrates"][data-mode="dark"] {
 
   /* chatgpt-ui palette → same ramp. */
   --cg-page: #000000;
-  --cg-rail: #0d0c0a;
-  --cg-surface: #1c1b17;
-  --cg-surface-raised: #24231e;
-  --cg-surface-hover: #211f1a;
-  --cg-border: rgb(190 181 161 / 12%);
-  --cg-border-strong: rgb(190 181 161 / 18%);
-  --cg-text: #f4f1ea;
-  --cg-text-secondary: #dedacf;
-  --cg-text-muted: #9a958a;
-  --cg-text-faint: #716c62;
-  --cg-accent: #f4f1ea;
+  --cg-rail: #0c0d10;
+  --cg-surface: #1a1d22;
+  --cg-surface-raised: #22262d;
+  --cg-surface-hover: #20242b;
+  --cg-border: rgb(160 172 192 / 12%);
+  --cg-border-strong: rgb(160 172 192 / 18%);
+  --cg-text: #f2f4f7;
+  --cg-text-secondary: #d8dce3;
+  --cg-text-muted: #959ca8;
+  --cg-text-faint: #6e747f;
+  --cg-accent: #f2f4f7;
   --cg-accent-strong: #ffffff;
   --cg-accent-ink: #000000;
   --cg-danger: #e77770;
 
   /* conversation palette → same ramp (page chrome consumes --conversation-page). */
   --conversation-page: #000000;
-  --conversation-surface: #1c1b17;
-  --conversation-control: #24231e;
-  --conversation-control-hover: #302e28;
-  --conversation-border: rgb(190 181 161 / 12%);
-  --conversation-text: #f4f1ea;
-  --conversation-text-muted: #aaa59a;
-  --conversation-user: #24231e;
+  --conversation-surface: #1a1d22;
+  --conversation-control: #22262d;
+  --conversation-control-hover: #2d313a;
+  --conversation-border: rgb(160 172 192 / 12%);
+  --conversation-text: #f2f4f7;
+  --conversation-text-muted: #a6acb8;
+  --conversation-user: #22262d;
 
-  /* Bridge legacy HSL channels to the warm-neutral ramp */
+  /* Bridge legacy HSL channels to the cool-neutral ramp */
   --bg-000: 0 0% 0%;
-  --bg-100: 40 7% 5%;
-  --bg-200: 40 5% 11%;
-  --bg-300: 40 4% 15%;
-  --text-000: 42 15% 97%;
-  --text-100: 40 9% 94%;
-  --text-200: 40 6% 82%;
-  --text-300: 40 5% 73%;
-  --text-400: 40 4% 63%;
-  --text-500: 40 3% 52%;
-  --border-100: 40 5% 17%;
-  --border-200: 40 5% 19%;
-  --border-300: 40 5% 21%;
-  --border-400: 40 5% 23%;
+  --bg-100: 222 12% 5%;
+  --bg-200: 222 9% 11%;
+  --bg-300: 222 9% 15%;
+  --text-000: 222 18% 97%;
+  --text-100: 222 12% 94%;
+  --text-200: 222 9% 82%;
+  --text-300: 222 8% 73%;
+  --text-400: 222 7% 63%;
+  --text-500: 222 6% 52%;
+  --border-100: 222 8% 17%;
+  --border-200: 222 8% 19%;
+  --border-300: 222 8% 21%;
+  --border-400: 222 8% 23%;
 }
 
 [data-mode="light"] {
   --chatgpt-page: #ffffff;
-  --chatgpt-rail: #f7f5ef;
-  --chatgpt-surface: #eeece5;
+  --chatgpt-rail: #f5f6f8;
+  --chatgpt-surface: #eceef2;
   --chatgpt-menu: #ffffff;
-  --chatgpt-hover: #f2f0e9;
+  --chatgpt-hover: #f0f2f5;
   --chatgpt-composer: #ffffff;
-  --chatgpt-text: #1b1a17;
-  --chatgpt-muted: #5e5a51;
-  --chatgpt-faint: #777168;
-  --chatgpt-line: rgb(55 47 31 / 10%);
-  --ui-shadow-menu: 0 8px 28px rgb(35 29 18 / 12%), 0 0 0 1px rgb(35 29 18 / 4%);
-  --ui-shadow-modal: 0 24px 80px rgb(35 29 18 / 18%), 0 0 0 1px rgb(35 29 18 / 5%);
-  --ui-shadow-toast: 0 6px 22px rgb(35 29 18 / 12%);
+  --chatgpt-text: #171a1f;
+  --chatgpt-muted: #565b64;
+  --chatgpt-faint: #727883;
+  --chatgpt-line: rgb(34 43 60 / 10%);
+  --ui-shadow-menu: 0 8px 28px rgb(20 26 36 / 12%), 0 0 0 1px rgb(20 26 36 / 4%);
+  --ui-shadow-modal: 0 24px 80px rgb(20 26 36 / 18%), 0 0 0 1px rgb(20 26 36 / 5%);
+  --ui-shadow-toast: 0 6px 22px rgb(20 26 36 / 12%);
 
   --conversation-page: #ffffff;
-  --conversation-surface: #eeece5;
-  --conversation-control: #e7e4dc;
-  --conversation-control-hover: #e1ded5;
-  --conversation-border: rgb(55 47 31 / 10%);
-  --conversation-text: #1b1a17;
-  --conversation-text-muted: #5e5a51;
-  --conversation-user: #f0eee8;
+  --conversation-surface: #eceef2;
+  --conversation-control: #e4e7ec;
+  --conversation-control-hover: #dfe3e9;
+  --conversation-border: rgb(34 43 60 / 10%);
+  --conversation-text: #171a1f;
+  --conversation-text-muted: #565b64;
+  --conversation-user: #eef0f4;
 
   --cg-page: #ffffff;
-  --cg-rail: #f7f5ef;
-  --cg-surface: #eeece5;
-  --cg-surface-raised: #f4f2ec;
-  --cg-surface-hover: #e9e8e4;
-  --cg-border: rgb(55 47 31 / 10%);
-  --cg-border-strong: rgb(55 47 31 / 16%);
-  --cg-text: #1b1a17;
-  --cg-text-secondary: #393730;
-  --cg-text-muted: #6c675d;
-  --cg-text-faint: #989388;
-  --cg-accent: #1b1a17;
-  --cg-accent-strong: #11100d;
+  --cg-rail: #f5f6f8;
+  --cg-surface: #eceef2;
+  --cg-surface-raised: #f2f4f7;
+  --cg-surface-hover: #e9ebef;
+  --cg-border: rgb(34 43 60 / 10%);
+  --cg-border-strong: rgb(34 43 60 / 16%);
+  --cg-text: #171a1f;
+  --cg-text-secondary: #31353c;
+  --cg-text-muted: #656b75;
+  --cg-text-faint: #8f95a0;
+  --cg-accent: #171a1f;
+  --cg-accent-strong: #0f1115;
   --cg-accent-ink: #ffffff;
   --cg-danger: #a73632;
 }
@@ -156,17 +156,17 @@ html[data-theme="socrates"][data-mode="dark"] {
 html[data-theme="socrates"][data-mode="light"] {
   /* Bridge legacy HSL channels to light equivalents */
   --bg-000: 0 0% 100%;
-  --bg-100: 40 6% 98%;
-  --bg-200: 40 6% 95%;
-  --bg-300: 40 6% 91%;
-  --text-000: 40 4% 8%;
-  --text-100: 40 4% 12%;
-  --text-200: 40 4% 26%;
-  --text-300: 40 4% 36%;
-  --text-400: 40 4% 45%;
-  --text-500: 40 4% 53%;
-  --border-100: 40 9% 89%;
-  --border-200: 40 9% 84%;
-  --border-300: 40 9% 77%;
-  --border-400: 40 9% 70%;
+  --bg-100: 222 15% 98%;
+  --bg-200: 222 12% 95%;
+  --bg-300: 222 10% 91%;
+  --text-000: 222 15% 8%;
+  --text-100: 222 12% 12%;
+  --text-200: 222 9% 26%;
+  --text-300: 222 8% 36%;
+  --text-400: 222 7% 45%;
+  --text-500: 222 6% 53%;
+  --border-100: 222 11% 89%;
+  --border-200: 222 11% 84%;
+  --border-300: 222 11% 77%;
+  --border-400: 222 11% 70%;
 }

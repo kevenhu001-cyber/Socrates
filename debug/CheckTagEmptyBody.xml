@@ -1,0 +1,722 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/AndroidManifest.xml</file>
+  <line>49</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/AndroidManifest.xml" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;meta-data android:name=&quot;android.support.FILE_PROVIDER_PATHS&quot; androi...</highlighted_element>
+  <language>XML</language>
+  <offset>12</offset>
+  <length>141</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/baidu.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/baidu.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M8.859 11.735c1.017-1.71 4.059-3.083 6.202.286 1.579 2.284 4.284 4.397 4.284 4.397s2.027 1....</highlighted_element>
+  <language>SVG</language>
+  <offset>91</offset>
+  <length>1241</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/baidu_maps.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/baidu_maps.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M8.859 11.735c1.017-1.71 4.059-3.083 6.202.286 1.579 2.284 4.284 4.397 4.284 4.397s2.027 1....</highlighted_element>
+  <language>SVG</language>
+  <offset>91</offset>
+  <length>1241</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect x=&quot;0.5&quot; width=&quot;288&quot; height=&quot;200&quot; rx=&quot;16&quot; fill=&quot;#F3F2F0&quot;&gt;&lt;/rect&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>69</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M46.0056 122.958H61.4664V92.3759H92.2921V76.9785H46.0056V122.958Z&quot; fill=&quot;#001B38&quot;&gt;&lt;/path&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>98</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M78.9579 123.878C86.6608 123.878 92.9052 117.634 92.9052 109.931C92.9052 102.228 86.6608 95...</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>242</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M233.673 122.317C230.825 122.317 228.634 121.566 227.101 120.064C225.599 118.562 224.848 11...</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>353</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M187.196 91.9443H195.927V94.4793C196.929 93.3839 198.149 92.5389 199.589 91.9443C201.06 91....</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>680</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M166.856 123.115C163.695 123.115 160.816 122.411 158.218 121.003C155.652 119.626 153.617 11...</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>1204</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M128.492 91.9443H137.176V95.559C138.209 94.2759 139.445 93.2901 140.885 92.6015C142.356 91....</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>429</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/front.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M100.802 76.4999H125.4V85.654H110.707V94.6203H125.119V103.446H110.707V122.317H100.802V76.49...</highlighted_element>
+  <language>SVG</language>
+  <offset>2</offset>
+  <length>127</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop stop-color=&quot;#FF0057&quot; stop-opacity=&quot;0.16&quot; offset=&quot;0%&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>12</offset>
+  <length>66</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop stop-color=&quot;#FF0057&quot; offset=&quot;86.1354%&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>12</offset>
+  <length>52</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M0,60.8538006 C0,27.245261 27.245304,0 60.8542121,0 L117.027019,0 L255.996549,0 L255.996549...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>424</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;circle fill=&quot;url(#linearGradient-1)&quot; transform=&quot;translate(147.013244, 147.014675) rotate(90.000000)...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>195</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;circle fill=&quot;url(#linearGradient-1)&quot; opacity=&quot;0.5&quot; transform=&quot;translate(147.013244, 147.014675) rot...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>209</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M251.845416,97.6423982 L251.516654,96.6561113 L216.667852,5.75333996 C216.010327,3.9451474 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>1149</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M251.845416,97.6423982 L251.516654,96.6561113 C234.256634,100.272496 218.311663,107.505267 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>417</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M79.2452171,212.380435 L105.5462,232.270553 L121.491171,244.270377 C125.271937,247.229237 1...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>394</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gitlab.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M51.4648042,117.696897 C37.8211694,107.505267 21.8761987,100.108115 4.61617877,96.6561113 L...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>484</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M19.3542312,196.033928 L30.644172,215.534816 C32.9900287,219.64014 36.3622164,222.86588 40....</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>480</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M215.681443,225.211737 C219.64032,222.86588 223.012507,219.64014 225.358364,215.534816 L230...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>499</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M128.001268,73.3111515 C141.121182,57.4655263 150.162898,45.2470011 155.126415,36.6555757 C...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>444</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M175.360141,155.41973 L80.6420959,155.41973 L40.3210929,225.211737 C44.2799694,227.557893 4...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>280</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M128.001268,73.3111515 L87.680265,3.51893479 C83.7213885,5.86488134 80.3489013,9.09044179 7...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>262</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googledrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M215.241501,77.7099697 L177.999492,13.1960654 C175.653635,9.09044179 172.281148,5.86488134 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>304</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-1-_R_0_)&quot; height=&quot;666.506&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>219</offset>
+  <length>138</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-1-_R_0_)&quot; height=&quot;666.506&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>357</offset>
+  <length>162</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-1-_R_0_)&quot; height=&quot;666.506&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>519</offset>
+  <length>162</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-1-_R_0_)&quot; height=&quot;666.506&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>681</offset>
+  <length>160</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-3-_R_0_)&quot; height=&quot;1485.61&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>982</offset>
+  <length>138</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-3-_R_0_)&quot; height=&quot;1485.61&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>1120</offset>
+  <length>162</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-3-_R_0_)&quot; height=&quot;1485.61&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>1282</offset>
+  <length>162</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;rect fill=&quot;url(#lobe-icons-jimeng-3-_R_0_)&quot; height=&quot;1485.61&quot; opacity=&quot;1&quot; shape-rendering=&quot;crispEdge...</highlighted_element>
+  <language>SVG</language>
+  <offset>1444</offset>
+  <length>160</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M5.25711 1.80765C8.76812 6.74075 14.4314 9.45056 20.0636 8.40323C20.4619 8.32917 20.8947 8....</highlighted_element>
+  <language>SVG</language>
+  <offset>1659</offset>
+  <length>651</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M19.529 13.6948C17.2056 16.5579 16.7138 19.6388 17.1514 22.2781C17.1594 22.3264 17.1678 22....</highlighted_element>
+  <language>SVG</language>
+  <offset>2362</offset>
+  <length>367</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop stop-color=&quot;#27B2F0&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>2850</offset>
+  <length>34</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop offset=&quot;0.203234&quot; stop-color=&quot;#26DFFB&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>2884</offset>
+  <length>52</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop offset=&quot;0.406468&quot; stop-color=&quot;#30F5FE&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>2936</offset>
+  <length>52</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop offset=&quot;0.652506&quot; stop-color=&quot;#F0FEFC&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>2988</offset>
+  <length>52</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop offset=&quot;0.863327&quot; stop-color=&quot;#FBC610&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>3040</offset>
+  <length>52</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop offset=&quot;1&quot; stop-color=&quot;#FD9C22&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>3092</offset>
+  <length>45</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop stop-color=&quot;#1C6FFF&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>3264</offset>
+  <length>34</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;stop offset=&quot;1&quot; stop-color=&quot;#24B5EF&quot;&gt;&lt;/stop&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>3298</offset>
+  <length>45</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M31.8458633,153.488694 C20.3244423,153.513586 9.68073708,147.337265 3.98575204,137.321731 C...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>533</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M130.25575,153.488484 C118.683837,153.488484 108.035731,147.301291 102.444261,137.358197 C9...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>504</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;ellipse fill=&quot;#00CA72&quot; cx=&quot;226.465527&quot; cy=&quot;125.324379&quot; rx=&quot;29.5375538&quot; ry=&quot;28.9176274&quot;&gt;&lt;/ellipse&gt;</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>98</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M154.66056,110.681557 L207.502052,60.1479482 C196.525811,17.3487078 152.932256,-8.44908883 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>4</offset>
+  <length>278</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M97.6181022,45.5520619 L97.6156169,45.5607606 C87.5186874,39.307156 75.8741386,36.001658 63...</highlighted_element>
+  <language>SVG</language>
+  <offset>4</offset>
+  <length>419</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M207.502052,60.1481967 C206.340406,60.0706542 205.173043,60.016946 203.992011,60.016946 C19...</highlighted_element>
+  <language>SVG</language>
+  <offset>4</offset>
+  <length>457</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M11.4981977,136.595916 C23.4514253,153.781772 43.063467,164.023845 63.9974594,164.012918 L2...</highlighted_element>
+  <language>SVG</language>
+  <offset>4</offset>
+  <length>259</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/qianfan.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/qianfan.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M21.715 5.61l-3.983 2.31a.903.903 0 01-.896 0L12.44 5.384a.903.903 0 00-.897 0L7.156 7.92a....</highlighted_element>
+  <language>SVG</language>
+  <offset>99</offset>
+  <length>176</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/qianfan.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/qianfan.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M18.641 9.467a.89.89 0 00-.438.77v5.072a.896.896 0 01-.445.77l-4.428 2.51a.884.884 0 00-.44...</highlighted_element>
+  <language>SVG</language>
+  <offset>275</offset>
+  <length>177</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/qianfan.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/qianfan.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M10.98 18.941a.936.936 0 00-.305-.352l-4.429-2.516a.903.903 0 01-.431-.764v-5.078a.89.89 0 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>452</offset>
+  <length>216</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;path d=&quot;M256.000405,0 L256.000405,170.666936 L170.666936,170.666936 L170.666936,255.996382 L0.00201...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>237</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;polygon fill=&quot;#3F72AB&quot; points=&quot;0.00201096905 255.996382 85.3354791 255.996382 85.3354791 170.662915...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>137</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;polygon fill=&quot;#00A9D1&quot; points=&quot;170.666936 170.666936 256.000405 170.666936 256.000405 85.3314569 17...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>131</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;polygon fill=&quot;#00A9D1&quot; points=&quot;85.3334681 85.3334679 170.666936 85.3334679 170.666936 0 85.3334681 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>113</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;polygon fill=&quot;#2191C4&quot; points=&quot;85.3334681 170.664925 170.666936 170.664925 170.666936 85.3314569 85...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>131</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="CheckTagEmptyBody" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">空元素内容</problem_class>
+  <description>XML 标签具有空体</description>
+  <highlighted_element>&lt;polygon fill=&quot;#3F72AB&quot; points=&quot;170.666936 85.3334679 256.000405 85.3334679 256.000405 0 170.666936 ...</highlighted_element>
+  <language>SVG</language>
+  <offset>8</offset>
+  <length>113</length>
+</problem>
+</problems>

@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/dist-visual/index.html</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/dist-visual/index.html" />
+  <problem_class id="HtmlUnknownAttribute" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知特性</problem_class>
+  <description>此处不允许使用特性 httpEquiv</description>
+  <highlighted_element>httpEquiv</highlighted_element>
+  <language>XML</language>
+  <offset>10</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/dist-web/index.html</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/dist-web/index.html" />
+  <problem_class id="HtmlUnknownAttribute" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知特性</problem_class>
+  <description>此处不允许使用特性 httpEquiv</description>
+  <highlighted_element>httpEquiv</highlighted_element>
+  <language>XML</language>
+  <offset>10</offset>
+  <length>9</length>
+</problem>
+</problems>

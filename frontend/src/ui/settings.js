@@ -239,7 +239,7 @@ function _onProviderListClick(e) {
   if (target.classList.contains("provider-del")) {
     var id = _getProviderId(target);
     if (id) removeProvider(id);
-    return;
+
   }
 }
 

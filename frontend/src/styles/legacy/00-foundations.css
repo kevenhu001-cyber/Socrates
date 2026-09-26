@@ -99,17 +99,17 @@ html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-
 }
 
 [data-theme=socrates][data-mode=light]{
-  --tool-card-bg:hsla(40,10%,16%,.05);
-  --tool-card-bg-hover:hsla(40,10%,16%,.08);
-  --tool-card-bg-sunken:hsla(40,10%,16%,.032);
-  --tool-card-border:hsla(40,12%,10%,.11);
-  --tool-card-border-strong:hsla(40,12%,10%,.19);
+  --tool-card-bg:hsla(222,10%,16%,.05);
+  --tool-card-bg-hover:hsla(222,10%,16%,.08);
+  --tool-card-bg-sunken:hsla(222,10%,16%,.032);
+  --tool-card-border:hsla(222,12%,10%,.11);
+  --tool-card-border-strong:hsla(222,12%,10%,.19);
   --tool-card-text:hsl(var(--text-200));
   --tool-card-text-muted:hsl(var(--text-350,var(--text-400)));
   --tool-card-text-subtle:hsl(var(--text-500));
   --tool-card-icon:hsl(var(--text-350,var(--text-400)));
   --tool-card-icon-hover:hsl(var(--text-100));
-  --tool-card-focus:hsla(40,12%,10%,.35)
+  --tool-card-focus:hsla(222,12%,10%,.35)
 }
 /* ── Inline tool row tokens (P_tool-inline-minimal) ────────────────
    Borderless row language: a bare line icon plus one muted text line.
@@ -129,8 +129,8 @@ html.vt-scoped-swap::view-transition-group(*){animation-duration:.18s;animation-
   --crossfade-duration:.22s
 }
 [data-theme=socrates][data-mode=light]{
-  --inline-sunken-bg:hsla(40,10%,16%,.04);
-  --inline-hover-bg:hsla(40,10%,16%,.06)
+  --inline-sunken-bg:hsla(222,10%,16%,.04);
+  --inline-hover-bg:hsla(222,10%,16%,.06)
 }
 body{font-family:var(--font-sans);font-size:calc(14px * var(--app-font-scale, 1));line-height:1.5;color:hsl(var(--text-100));background:hsl(var(--bg-100));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.01em}
 button,input,textarea{font-family:inherit;font-size:inherit;color:inherit;letter-spacing:inherit}

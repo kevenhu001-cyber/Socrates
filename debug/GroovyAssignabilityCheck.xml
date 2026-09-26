@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GroovyAssignabilityCheck" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">不兼容的类型赋值</problem_class>
+  <description>无法推断实参类型</description>
+  <highlighted_element>([&quot;node&quot;, &quot;--print&quot;, &quot;require.resolve('react-native/package.json')&quot;].execute(null, rootDir).text.tri...</highlighted_element>
+  <language>Groovy</language>
+  <offset>29</offset>
+  <length>104</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GroovyAssignabilityCheck" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">不兼容的类型赋值</problem_class>
+  <description>无法推断实参类型</description>
+  <highlighted_element>([&quot;node&quot;, &quot;--print&quot;, &quot;require.resolve('hermes-compiler/package.json', { paths: [require.resolve('rea...</highlighted_element>
+  <language>Groovy</language>
+  <offset>28</offset>
+  <length>166</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GroovyAssignabilityCheck" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">不兼容的类型赋值</problem_class>
+  <description>无法推断实参类型</description>
+  <highlighted_element>([&quot;node&quot;, &quot;--print&quot;, &quot;require.resolve('@react-native/codegen/package.json', { paths: [require.resolv...</highlighted_element>
+  <language>Groovy</language>
+  <offset>25</offset>
+  <length>172</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build.gradle</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build.gradle" />
+  <problem_class id="GroovyAssignabilityCheck" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">不兼容的类型赋值</problem_class>
+  <description>无法推断实参类型</description>
+  <highlighted_element>([&quot;node&quot;, &quot;--print&quot;, &quot;require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] }...</highlighted_element>
+  <language>Groovy</language>
+  <offset>22</offset>
+  <length>139</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GroovyAssignabilityCheck" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">不兼容的类型赋值</problem_class>
+  <description>无法推断实参类型</description>
+  <highlighted_element>( providers.exec { workingDir(rootDir) commandLine(&quot;node&quot;, &quot;--print&quot;, &quot;require.resol...</highlighted_element>
+  <language>Groovy</language>
+  <offset>40</offset>
+  <length>252</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/settings.gradle</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/settings.gradle" />
+  <problem_class id="GroovyAssignabilityCheck" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">不兼容的类型赋值</problem_class>
+  <description>无法推断实参类型</description>
+  <highlighted_element>( providers.exec { workingDir(rootDir) commandLine(&quot;node&quot;, &quot;--print&quot;, &quot;require.resol...</highlighted_element>
+  <language>Groovy</language>
+  <offset>32</offset>
+  <length>278</length>
+</problem>
+</problems>

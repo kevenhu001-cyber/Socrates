@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/metadata_library_dependencies_report/release/collectReleaseDependencies/dependencies.pb</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/metadata_library_dependencies_report/release/collectReleaseDependencies/dependencies.pb" />
+  <problem_class id="LossyEncoding" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">有损编码</problem_class>
+  <description>该文件以错误的编码加载: 'UTF-8'</description>
+  <highlighted_element>W - ?org.jetbrains.kotlin? kotlin-stdlib*?2.2.20?&quot; �6���X_�ڙ?$K �)?���X?X�CN/����???? N $ org.jet...</highlighted_element>
+  <language>prototext</language>
+  <offset>0</offset>
+  <length>20468</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/sdk_dependency_data/release/sdkReleaseDependencyData/sdkDependencyData.pb</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/sdk_dependency_data/release/sdkReleaseDependencyData/sdkDependencyData.pb" />
+  <problem_class id="LossyEncoding" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">有损编码</problem_class>
+  <description>该文件以错误的编码加载: 'UTF-8'</description>
+  <highlighted_element>?��_��iHv�wN�љu?�h&lt;?|t�a�?�c���s}~]P�,?? ?�?�*!?2j??J^�P�BO�K�i��j�mB��?���t^R�N&quot;��)��1Gϑȧ��e:&amp;���'...</highlighted_element>
+  <language>prototext</language>
+  <offset>0</offset>
+  <length>11549</length>
+</problem>
+</problems>

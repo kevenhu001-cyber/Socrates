@@ -19,7 +19,6 @@ TARGETS=(
   "frontend/.vite"
   "server/node_modules"
   "server/dist"
-  "open-connector/node_modules"
   "capacitor/node_modules"
   ".opencode/node_modules"
   ".kilo/node_modules"

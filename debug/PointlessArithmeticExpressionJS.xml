@@ -1,0 +1,146 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/agentSteps.test.mjs</file>
+  <line>58</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/agentSteps.test.mjs" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>1 * 3600 可被替换为 3600</description>
+  <highlighted_element>1 * 3600</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>30</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>354</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 1 可被替换为 4</description>
+  <highlighted_element>4 * 1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>355</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 0 可被替换为 0</description>
+  <highlighted_element>4 * 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>360</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>8 * 1 可被替换为 8</description>
+  <highlighted_element>8 * 1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>52</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>361</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 0 可被替换为 0</description>
+  <highlighted_element>4 * 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>372</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 1 可被替换为 4</description>
+  <highlighted_element>4 * 1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>373</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 0 可被替换为 0</description>
+  <highlighted_element>4 * 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>411</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>8 * 1 可被替换为 8</description>
+  <highlighted_element>8 * 1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>51</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>412</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 0 可被替换为 0</description>
+  <highlighted_element>4 * 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>419</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 1 可被替换为 4</description>
+  <highlighted_element>4 * 1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>420</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>4 * 0 可被替换为 0</description>
+  <highlighted_element>4 * 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>568</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="PointlessArithmeticExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的算术表达式</problem_class>
+  <description>offset + 0 可被替换为 offset</description>
+  <highlighted_element>offset + 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>22</offset>
+  <length>10</length>
+</problem>
+</problems>

@@ -9,15 +9,10 @@ import {
   getProjectConnector, getProjectConnectorProvider, isProjectConnectorConfigured,
 } from '../services/oomolProjectConnector.js';
 import {
-  OC_ID_PREFIX, buildOpenConnectorCatalogForCloud, buildOpenConnectorCatalogWithFallback, ocAuthType, ocInventoryEntry, ocOAuthAppForm,
-  type OcCatalogItem, type OcInventoryRef,
+  OC_ID_PREFIX, buildOpenConnectorCatalogForCloud, buildOpenConnectorStubCatalog, ocAuthType, ocInventoryEntry,
+  type OcCatalogItem,
 } from '../services/openConnectorCatalog.js';
 import { OPEN_CONNECTOR_CLOUD_AUTH } from '../services/openConnectorCloudAuth.generated.js';
-import {
-  SidecarError, connectionNameForUser, deleteSidecarConnection, getSidecarConnectionStatus, getSidecarOAuthConfig,
-  isOpenConnectorSidecarConfigured, listSidecarProviders, startSidecarOAuth,
-  upsertSidecarConnection, upsertSidecarOAuthConfig, type SidecarProvider,
-} from '../services/openConnectorSidecar.js';
 
 const router = Router();
 const CONNECTION_NAME = 'socrates';
@@ -93,7 +88,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 router.post('/:provider/connect', requireAuth, async (req, res, next) => {
   const oc = ocInventoryEntry(req.params.provider);
   if (oc) {
-    await connectOpenConnector(req, res, next, oc.entry, oc.service, `${OC_ID_PREFIX}${oc.service}`);
+    await connectOpenConnector(req, res, next, oc.service, `${OC_ID_PREFIX}${oc.service}`);
     return;
   }
   const provider = getProjectConnectorProvider(req.params.provider);
@@ -181,7 +176,7 @@ async function connectViaGateway(
 router.get('/:provider/status', requireAuth, async (req, res, next) => {
   const oc = ocInventoryEntry(req.params.provider);
   if (oc) {
-    await pollOpenConnectorStatus(req, res, next, oc.service, `${OC_ID_PREFIX}${oc.service}`);
+    await pollOpenConnectorStatus(req, res, next, `${OC_ID_PREFIX}${oc.service}`);
     return;
   }
   const provider = getProjectConnectorProvider(req.params.provider);
@@ -189,11 +184,9 @@ router.get('/:provider/status', requireAuth, async (req, res, next) => {
   await pollGatewayConnection(req, res, next, provider.id);
 });
 
-/* Disconnect: forget the binding Socrates-side. In sidecar mode the sidecar
- * connection is dropped too (best effort — a sidecar failure never blocks
- * the local unbind). In OOMOL-cloud mode the gateway grant itself stays
- * until revoked at the provider; only our row (and its UI state) is
- * removed, matching what the directory renders. */
+/* Disconnect: forget the binding Socrates-side. The OOMOL gateway grant
+ * itself stays until revoked at the provider; only our row (and its UI
+ * state) is removed, matching what the directory renders. */
 router.delete('/:provider/connection', requireAuth, async (req, res, next) => {
   const id = String(req.params.provider || '');
   const oc = ocInventoryEntry(id);
@@ -201,13 +194,6 @@ router.delete('/:provider/connection', requireAuth, async (req, res, next) => {
     return res.status(404).json({ error: 'Unknown connector provider' });
   }
   try {
-    if (oc && isOpenConnectorSidecarConfigured()) {
-      try {
-        await deleteSidecarConnection({ service: oc.service, connectionName: connectionNameForUser(req.userId) });
-      } catch {
-        /* Local unbind stays authoritative; surfaced via updatedAt below. */
-      }
-    }
     const db = getDb();
     await db.delete(projectConnectorConnections).where(and(
       eq(projectConnectorConnections.userId, req.userId!),
@@ -248,249 +234,78 @@ async function pollGatewayConnection(
 
 /* ---- OpenConnector-backed apps (oc_<service>) ----
  *
- * The vendored OpenConnector sidecar owns provider metadata, credential
- * storage and action execution for these entries. Socrates owns the curated
- * list (openConnectorAppInventory), the per-user connectionName mapping, and
- * the opaque rows in projectConnectorConnections. Secrets never touch
- * Socrates storage; only sidecar connection names and request ids do.
+ * The OOMOL-hosted runtime owns provider metadata, credential storage and
+ * action execution for these entries. Socrates owns the curated list
+ * (openConnectorAppInventory), the per-user connectionName mapping, and the
+ * opaque rows in projectConnectorConnections. Secrets never touch Socrates
+ * storage; only gateway connection names, account ids and request ids do.
  *
  * Ids are prefixed so they can never collide with the OOMOL-gateway catalog
  * above (e.g. oc_gmail vs gmail); existing gateway connections keep working
  * untouched. Pure mapping lives in openConnectorCatalog.ts (unit-tested);
- * only the HTTP/DB orchestration stays here. */
+ * only the gateway/DB orchestration stays here. */
 
 async function listOpenConnectorCatalogItems(): Promise<{ available: boolean; cloud: boolean; items: OcCatalogItem[] }> {
-  /* The full phase-1 inventory always renders in the directory — apps
-     the sidecar cannot serve yet come back as disabled stubs
-     (available: false) so the plugin page is complete before the
-     sidecar is online. When the sidecar is configured, served apps
-     switch to their real provider metadata (available: true).
-     OOMOL-cloud mode (sidecar down, project key configured): every
-     snapshotted service is connectable through the OOMOL gateway the
-     user provisioned in the cloud console. */
-  if (!isOpenConnectorSidecarConfigured()) {
-    if (isProjectConnectorConfigured()) {
-      return { available: false, cloud: true, items: buildOpenConnectorCatalogForCloud() };
-    }
-    return { available: false, cloud: false, items: buildOpenConnectorCatalogWithFallback(null) };
+  /* The full phase-1 inventory always renders in the directory. When the
+     OOMOL project gateway is configured, every snapshotted service is
+     connectable through it (available: true); services missing from the
+     snapshot stay disabled stubs. Without a configured gateway the whole
+     directory is stubbed so the plugin page stays complete. */
+  if (isProjectConnectorConfigured()) {
+    return { available: false, cloud: true, items: buildOpenConnectorCatalogForCloud() };
   }
-  try {
-    const providers = await listSidecarProviders();
-    return { available: true, cloud: false, items: buildOpenConnectorCatalogWithFallback(providers) };
-  } catch {
-    if (isProjectConnectorConfigured()) {
-      return { available: false, cloud: true, items: buildOpenConnectorCatalogForCloud() };
-    }
-    return { available: false, cloud: false, items: buildOpenConnectorCatalogWithFallback(null) };
-  }
-}
-
-async function findSidecarProvider(service: string): Promise<SidecarProvider> {
-  const providers = await listSidecarProviders();
-  const meta = providers.find((item) => item.service === service);
-  if (!meta) throw new SidecarError(503, 'sidecar_provider_missing', `The sidecar does not serve ${service}.`);
-  return meta;
+  return { available: false, cloud: false, items: buildOpenConnectorStubCatalog() };
 }
 
 async function connectOpenConnector(
   req: Request, res: Response, next: NextFunction,
-  entry: OcInventoryRef['entry'], service: string, id: string,
+  service: string, id: string,
 ): Promise<void> {
-  /* OOMOL-cloud mode: drive the provider through the project gateway the
-   * user provisioned in the OOMOL cloud console (same contracts as the
-   * legacy provider routes). */
-  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
-    const meta = OPEN_CONNECTOR_CLOUD_AUTH[service];
-    await connectViaGateway(req, res, next, {
-      id,
-      service,
-      authType: ocAuthType(meta ?? { authTypes: ['oauth2'], auth: [] }),
-    });
-    return;
-  }
-  try {
-    const meta = await findSidecarProvider(service);
-    const authType = ocAuthType(meta);
-    const connectionName = connectionNameForUser(req.userId);
-    if (authType === 'api_key') {
-      const apiKey = req.body && typeof req.body.apiKey === 'string' ? req.body.apiKey.trim() : '';
-      if (!apiKey) { res.status(400).json({ error: 'Missing apiKey', code: 'missing_api_key' }); return; }
-      const summary = await upsertSidecarConnection({ service, connectionName, authType: 'api_key', values: { apiKey } });
-      await saveOpenConnectorConnection(req.userId!, id, connectionName, summary);
-      res.status(201).json({ status: 'connected' });
-      return;
-    }
-    if (authType === 'custom_credential') {
-      const values = req.body && req.body.values && typeof req.body.values === 'object' && !Array.isArray(req.body.values)
-        ? req.body.values as Record<string, unknown> : null;
-      if (!values) { res.status(400).json({ error: 'Missing values object', code: 'missing_values' }); return; }
-      const summary = await upsertSidecarConnection({ service, connectionName, authType: 'custom_credential', values });
-      await saveOpenConnectorConnection(req.userId!, id, connectionName, summary);
-      res.status(201).json({ status: 'connected' });
-      return;
-    }
-    if (authType === 'no_auth') {
-      const summary = await upsertSidecarConnection({ service, connectionName, authType: 'no_auth' });
-      await saveOpenConnectorConnection(req.userId!, id, connectionName, summary);
-      res.status(201).json({ status: 'connected' });
-      return;
-    }
-    const authorization = await startSidecarOAuth({ service, connectionName });
-    await saveRequest(req.userId!, id, {
-      id: authorization.state || `oauth_${Date.now()}`,
-      status: 'pending',
-      connectionName,
-    });
-    res.status(201).json({ authorizationUrl: authorization.authorizationUrl });
-  } catch (error) {
-    if (error instanceof SidecarError) {
-      res.status(error.status).json({ error: error.message, code: error.code });
-      return;
-    }
-    next(error);
-  }
-}
-
-async function saveOpenConnectorConnection(
-  userId: string, id: string, connectionName: string, summary: unknown,
-): Promise<void> {
-  const data = ((summary || {}) as { data?: Record<string, unknown> });
-  const flat = (data.data && typeof data.data === 'object' ? data.data : summary || {}) as Record<string, unknown>;
-  await saveRequest(userId, id, {
-    id: typeof flat.id === 'string' && flat.id ? flat.id : `sync_${Date.now()}`,
-    status: 'connected',
-    connectionName,
+  /* Drive the provider through the OOMOL project gateway the user provisioned
+   * in the cloud console (same contracts as the legacy provider routes). */
+  const meta = OPEN_CONNECTOR_CLOUD_AUTH[service];
+  await connectViaGateway(req, res, next, {
+    id,
+    service,
+    authType: ocAuthType(meta ?? { authTypes: ['oauth2'], auth: [] }),
   });
 }
 
 async function pollOpenConnectorStatus(
   req: Request, res: Response, next: NextFunction,
-  service: string, id: string,
+  id: string,
 ): Promise<void> {
-  /* OOMOL-cloud mode: poll the gateway connection request like legacy. */
-  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
-    await pollGatewayConnection(req, res, next, id);
-    return;
-  }
-  try {
-    const db = getDb();
-    const [row] = await db.select().from(projectConnectorConnections).where(and(
-      eq(projectConnectorConnections.userId, req.userId!),
-      eq(projectConnectorConnections.provider, id),
-    )).limit(1);
-    if (!row) { res.json({ connection: null }); return; }
-    try {
-      const live = await getSidecarConnectionStatus({
-        service,
-        connectionName: row.connectionName || connectionNameForUser(req.userId),
-      });
-      const status = live.connected ? 'connected' : (row.status === 'connected' ? 'disconnected' : row.status);
-      await saveRequest(req.userId!, id, {
-        id: row.requestId || `poll_${Date.now()}`,
-        status,
-        connectionName: row.connectionName,
-        connectedAccountId: row.connectedAccountId,
-      });
-    } catch {
-      /* Sidecar unreachable: report the last known row instead of failing. */
-    }
-    const [updated] = await db.select().from(projectConnectorConnections).where(and(
-      eq(projectConnectorConnections.userId, req.userId!),
-      eq(projectConnectorConnections.provider, id),
-    )).limit(1);
-    res.json({ connection: publicConnection(updated) });
-  } catch (error) {
-    next(error);
-  }
+  await pollGatewayConnection(req, res, next, id);
 }
 
 export default router;
 
-/* User-supplied OAuth app configuration.
+/* OAuth app configuration.
  *
- * The sidecar intentionally requires users to bring their own OAuth app, so
- * Socrates exposes a gateway entry for it: the frontend first reads the
- * expected redirect URI plus the required fields here, the user registers
- * that URI in their own provider OAuth app, submits the client credentials,
- * and only then starts the authorize redirect. The client secret is accepted
- * on write and never echoed back. Note the app registration itself is shared
- * per service on the sidecar; each user's grant stays isolated through their
- * namespaced connection. */
+ * With the OOMOL-hosted runtime, OAuth apps are provisioned in the OOMOL
+ * cloud console rather than bring-your-own, so Socrates no longer collects
+ * client credentials here. GET tells the frontend to proceed straight to the
+ * gateway authorize redirect; PUT is retained only to reject stale clients
+ * that still try to submit an OAuth app. */
 
 router.get('/:provider/oauth-config', requireAuth, async (req, res) => {
   const oc = ocInventoryEntry(req.params.provider);
   if (!oc) return res.status(404).json({ error: 'Unknown connector provider' });
-  /* OOMOL-cloud mode: OAuth apps are provisioned in the OOMOL cloud console,
-   * so there is nothing to bring-your-own here — tell the frontend to
-   * proceed straight to the gateway authorize redirect. */
-  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
-    return res.json({
-      service: oc.service,
-      configured: true,
-      clientId: null,
-      expectedRedirectUri: null,
-      clientSecretRequired: false,
-      extraFields: [],
-    });
+  if (!isProjectConnectorConfigured()) {
+    return res.status(503).json({ error: 'OOMOL ProjectConnector is not configured', code: 'project_connector_not_configured' });
   }
-  try {
-    const meta = await findSidecarProvider(oc.service);
-    if (ocAuthType(meta) !== 'oauth') {
-      return res.status(400).json({ error: 'This app does not use OAuth', code: 'not_oauth' });
-    }
-    const summary = await getSidecarOAuthConfig(oc.service);
-    const form = ocOAuthAppForm(summary?.auth);
-    return res.json({
-      service: oc.service,
-      configured: summary?.configured === true,
-      clientId: summary?.clientId || null,
-      expectedRedirectUri: summary?.expectedRedirectUri || null,
-      clientSecretRequired: form.clientSecretRequired,
-      extraFields: form.extraFields,
-    });
-  } catch (error) {
-    if (error instanceof SidecarError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
-    throw error;
-  }
+  return res.json({
+    service: oc.service,
+    configured: true,
+    clientId: null,
+    expectedRedirectUri: null,
+    clientSecretRequired: false,
+    extraFields: [],
+  });
 });
 
 router.put('/:provider/oauth-config', requireAuth, async (req, res) => {
   const oc = ocInventoryEntry(req.params.provider);
   if (!oc) return res.status(404).json({ error: 'Unknown connector provider' });
-  if (!isOpenConnectorSidecarConfigured() && isProjectConnectorConfigured()) {
-    return res.status(400).json({ error: 'OAuth apps are managed in the OOMOL console in cloud mode', code: 'cloud_managed' });
-  }
-  try {
-    const meta = await findSidecarProvider(oc.service);
-    if (ocAuthType(meta) !== 'oauth') {
-      return res.status(400).json({ error: 'This app does not use OAuth', code: 'not_oauth' });
-    }
-    const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
-    const clientId = typeof body.clientId === 'string' ? body.clientId.trim() : '';
-    const clientSecret = typeof body.clientSecret === 'string' ? body.clientSecret : '';
-    if (!clientId) return res.status(400).json({ error: 'Missing clientId', code: 'missing_client_id' });
-    const summary = await upsertSidecarOAuthConfig({
-      service: oc.service,
-      clientId,
-      clientSecret,
-      extra: (body.extra && typeof body.extra === 'object' && !Array.isArray(body.extra) ? body.extra : {}) as Record<string, unknown>,
-      secretExtra: (body.secretExtra && typeof body.secretExtra === 'object' && !Array.isArray(body.secretExtra) ? body.secretExtra : {}) as Record<string, unknown>,
-    });
-    const form = ocOAuthAppForm(summary?.auth);
-    return res.json({
-      service: oc.service,
-      configured: summary?.configured === true,
-      clientId: summary?.clientId || null,
-      expectedRedirectUri: summary?.expectedRedirectUri || null,
-      clientSecretRequired: form.clientSecretRequired,
-      extraFields: form.extraFields,
-    });
-  } catch (error) {
-    if (error instanceof SidecarError) {
-      return res.status(error.status).json({ error: error.message, code: error.code });
-    }
-    throw error;
-  }
+  return res.status(400).json({ error: 'OAuth apps are managed in the OOMOL console', code: 'cloud_managed' });
 });

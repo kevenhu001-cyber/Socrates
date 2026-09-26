@@ -1,0 +1,504 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>924</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 win === void 0</description>
+  <highlighted_element>win === null || win === void 0</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>30</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 (&quot;string&quot;==(i=typeof(r=n))||&quot;boolean&quot;===i||function(n){return&quot;number&quot;==typeof n||n instanceof ke}(r)||Ke(r,dr))</description>
+  <highlighted_element>null!=n&amp;&amp;(&quot;string&quot;==(i=typeof(r=n))||&quot;boolean&quot;===i||function(n){return&quot;number&quot;==typeof n||n instance...</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>36974</offset>
+  <length>120</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !Xe(i)</description>
+  <highlighted_element>null==i||!Xe(i)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>73571</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>248</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>If 语句可以简化</description>
+  <highlighted_element>reader</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/offline.ts</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/offline.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !navigator.onLine</description>
+  <highlighted_element>navigator.onLine === false</highlighted_element>
+  <language>TypeScript</language>
+  <offset>42</offset>
+  <length>26</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx</file>
+  <line>173</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 selection[item.id]</description>
+  <highlighted_element>!!selection[item.id]</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>21</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx</file>
+  <line>229</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 data.selection[item.id]</description>
+  <highlighted_element>!!data.selection[item.id]</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>48</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx</file>
+  <line>230</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 data.selection[item.id]</description>
+  <highlighted_element>!!data.selection[item.id]</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>69</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx</file>
+  <line>261</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/pages/workspace/WorkspacePage.tsx" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 data.selection[item.id]</description>
+  <highlighted_element>!!data.selection[item.id]</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>110</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx</file>
+  <line>177</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 disp.showGrid</description>
+  <highlighted_element>disp.showGrid !== false</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>66</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx</file>
+  <line>177</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 disp.showGrid</description>
+  <highlighted_element>disp.showGrid !== false</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>134</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/agentSteps.ts</file>
+  <line>385</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/agentSteps.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !connected</description>
+  <highlighted_element>connected === false</highlighted_element>
+  <language>TypeScript</language>
+  <offset>8</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/keyboard/anchor.ts</file>
+  <line>88</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/keyboard/anchor.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !list.isConnected</description>
+  <highlighted_element>list.isConnected === false</highlighted_element>
+  <language>TypeScript</language>
+  <offset>28</offset>
+  <length>26</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts</file>
+  <line>64</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !connected</description>
+  <highlighted_element>connected === false</highlighted_element>
+  <language>TypeScript</language>
+  <offset>8</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 (&quot;string&quot;===(i=typeof(r=n))||&quot;boolean&quot;===i||function(n){return&quot;number&quot;==typeof n||n instanceof yt}(r)||zr(r,An))</description>
+  <highlighted_element>null!=n&amp;&amp;(&quot;string&quot;===(i=typeof(r=n))||&quot;boolean&quot;===i||function(n){return&quot;number&quot;==typeof n||n instanc...</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>39472</offset>
+  <length>121</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>65818</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=r</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>65928</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 (null==n || true)</description>
+  <highlighted_element>(null==n||null!=n)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>67391</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>67428</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>67524</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 zr(n,gt)</description>
+  <highlighted_element>null!=n&amp;&amp;zr(n,gt)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>67937</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>68383</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 (null==n || true)</description>
+  <highlighted_element>(null==n||null!=n)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>68473</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>68510</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !(null==n||!zr(n,Or)) &amp;&amp; !(!zr(n,jt))</description>
+  <highlighted_element>!(null==n||!zr(n,Or))&amp;&amp;!(null==n||!zr(n,jt))</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>73815</offset>
+  <length>44</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 (null==n || true)</description>
+  <highlighted_element>(null==n||null!=n)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>75605</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>75642</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>78338</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>81826</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 true</description>
+  <highlighted_element>null!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>82251</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 !(null==n||!zr(n,Or)) &amp;&amp; !(!zr(n,jt))</description>
+  <highlighted_element>!(null==n||!zr(n,Or))&amp;&amp;!(null==n||!zr(n,jt))</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>92852</offset>
+  <length>44</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>49</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 user.cancelAtPeriodEnd</description>
+  <highlighted_element>!!user.cancelAtPeriodEnd</highlighted_element>
+  <language>TypeScript</language>
+  <offset>51</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>138</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 user.cancelAtPeriodEnd</description>
+  <highlighted_element>!!user.cancelAtPeriodEnd</highlighted_element>
+  <language>TypeScript</language>
+  <offset>25</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>140</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 user.isGuest</description>
+  <highlighted_element>!!user.isGuest</highlighted_element>
+  <language>TypeScript</language>
+  <offset>15</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>194</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 result.truncated</description>
+  <highlighted_element>!!result.truncated</highlighted_element>
+  <language>TypeScript</language>
+  <offset>18</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/projectConnectors.ts</file>
+  <line>484</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/projectConnectors.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 summary?.configured</description>
+  <highlighted_element />
+  <language />
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/adminAuth.ts</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/adminAuth.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 candidateLong !== null &amp;&amp; entry.ip !== null</description>
+  <highlighted_element>candidateLong !== null &amp;&amp; entry.ip !== null &amp;&amp; entry.prefix !== null</highlighted_element>
+  <language>TypeScript</language>
+  <offset>15</offset>
+  <length>68</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/apiKey.ts</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/apiKey.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 key.isMultimodal</description>
+  <highlighted_element>key.isMultimodal === true</highlighted_element>
+  <language>TypeScript</language>
+  <offset>18</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/attachmentReader.ts</file>
+  <line>218</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/attachmentReader.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 (result &amp;&amp; result.truncated)</description>
+  <highlighted_element>!!(result &amp;&amp; result.truncated)</highlighted_element>
+  <language>TypeScript</language>
+  <offset>19</offset>
+  <length>30</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/auth.ts</file>
+  <line>141</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/auth.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 user.isGuest</description>
+  <highlighted_element>!!user.isGuest</highlighted_element>
+  <language>TypeScript</language>
+  <offset>13</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/auth.ts</file>
+  <line>531</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/auth.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 user.isGuest</description>
+  <highlighted_element>!!user.isGuest</highlighted_element>
+  <language>TypeScript</language>
+  <offset>13</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/statusMonitor.ts</file>
+  <line>133</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/statusMonitor.ts" />
+  <problem_class id="PointlessBooleanExpressionJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">无意义的语句或布尔表达式</problem_class>
+  <description>可以简化为 ok</description>
+  <highlighted_element>!!ok</highlighted_element>
+  <language>TypeScript</language>
+  <offset>52</offset>
+  <length>4</length>
+</problem>
+</problems>

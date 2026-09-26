@@ -1,0 +1,482 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/chat-configuration/ChatConfiguration.tsx</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/chat-configuration/ChatConfiguration.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>63</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/composer-input/RichComposer.tsx</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/composer-input/RichComposer.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/composer-input/RichComposer.tsx</file>
+  <line>799</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/composer-input/RichComposer.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>80</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/confirm/ConfirmDialog.tsx</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/confirm/ConfirmDialog.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>33</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/types.ts</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/types.ts" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript</language>
+  <offset>21</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/useMessageActions.ts</file>
+  <line>68</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/useMessageActions.ts" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript</language>
+  <offset>53</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/useMessageActions.ts</file>
+  <line>120</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/useMessageActions.ts" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript</language>
+  <offset>13</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/profileModal/ProfileModal.tsx</file>
+  <line>24</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/profileModal/ProfileModal.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>44</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx</file>
+  <line>103</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>33</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/tool-run/ToolRunApproval.tsx</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/tool-run/ToolRunApproval.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>53</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/tool-run/TurnStatus.tsx</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/tool-run/TurnStatus.tsx" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>React</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/debug-pool.mjs</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/debug-pool.mjs" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>27</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/debug-pool.mjs</file>
+  <line>76</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/debug-pool.mjs" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/_http.js</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/_http.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/_http.js</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/_http.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>25</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>87</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>107</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>133</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>156</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>158</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>180</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/llm.test.js</file>
+  <line>714</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/llm.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>20</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/llm.test.js</file>
+  <line>736</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/llm.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/loginLockout.test.js</file>
+  <line>80</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/loginLockout.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/middleware-auth.test.js</file>
+  <line>47</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/middleware-auth.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/middleware-auth.test.js</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/middleware-auth.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/middleware-auth.test.js</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/middleware-auth.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/scopes.test.js</file>
+  <line>30</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/scopes.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/searchResultCache.test.js</file>
+  <line>24</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/searchResultCache.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sessionOwnership.test.js</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sessionOwnership.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sessionOwnership.test.js</file>
+  <line>53</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sessionOwnership.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>26</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sessionOwnership.test.js</file>
+  <line>82</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sessionOwnership.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sessionOwnership.test.js</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sessionOwnership.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sse.test.js</file>
+  <line>150</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sse.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sse.test.js</file>
+  <line>163</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sse.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sse.test.js</file>
+  <line>173</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sse.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sse.test.js</file>
+  <line>192</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sse.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/telemetry-export.test.js</file>
+  <line>35</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/telemetry-export.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>22</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/telemetry-export.test.js</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/telemetry-export.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>21</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/telemetry-export.test.js</file>
+  <line>64</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/telemetry-export.test.js" />
+  <problem_class id="TypeScriptUMDGlobal" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">已引用的 UMD 全局变量</problem_class>
+  <description>已引用的 UMD 全局变量</description>
+  <highlighted_element>Promise</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>12</offset>
+  <length>7</length>
+</problem>
+</problems>

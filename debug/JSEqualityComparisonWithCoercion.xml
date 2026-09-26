@@ -1,0 +1,434 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>370</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 platform == 'android' 可能导致意外类型强制</description>
+  <highlighted_element>platform == 'android'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>370</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 platform == 'ios' 可能导致意外类型强制</description>
+  <highlighted_element>platform == 'ios'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>41</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>681</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 this.readyState == 2 可能导致意外类型强制</description>
+  <highlighted_element>this.readyState == 2</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>44</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>763</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 key != 'Set-Cookie' 可能导致意外类型强制</description>
+  <highlighted_element>key != 'Set-Cookie'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>36</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 n!=n 可能导致意外类型强制</description>
+  <highlighted_element>n!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16816</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 t!=t 可能导致意外类型强制</description>
+  <highlighted_element>t!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16821</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 n!=n 可能导致意外类型强制</description>
+  <highlighted_element>n!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17747</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 t!=t 可能导致意外类型强制</description>
+  <highlighted_element>t!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17752</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 1/n==1/t 可能导致意外类型强制</description>
+  <highlighted_element>1/n==1/t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17811</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 (t=n)!=t 可能导致意外类型强制</description>
+  <highlighted_element>(t=n)!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>20795</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 o!=Error.prototype 可能导致意外类型强制</description>
+  <highlighted_element>o!=Error.prototype</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>23233</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 &quot;string&quot;==(i=typeof(r=n)) 可能导致意外类型强制</description>
+  <highlighted_element>&quot;string&quot;==(i=typeof(r=n))</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>36984</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 0!=(u=u&gt;&gt;&gt;1|0) 可能导致意外类型强制</description>
+  <highlighted_element>0!=(u=u&gt;&gt;&gt;1|0)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>54363</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 (3&amp;f)==(3&amp;s) 可能导致意外类型强制</description>
+  <highlighted_element>(3&amp;f)==(3&amp;s)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>60415</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 this.de_1==t.de_1 可能导致意外类型强制</description>
+  <highlighted_element>this.de_1==t.de_1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>93481</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>405</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 arg0 == arg1 可能导致意外类型强制</description>
+  <highlighted_element>arg0 == arg1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>599</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 type == 'number' 可能导致意外类型强制</description>
+  <highlighted_element>type == 'number'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>599</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 type == 'boolean' 可能导致意外类型强制</description>
+  <highlighted_element>type == 'boolean'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>28</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>602</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 type == 'string' 可能导致意外类型强制</description>
+  <highlighted_element>type == 'string'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>605</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 type == 'symbol' 可能导致意外类型强制</description>
+  <highlighted_element>type == 'symbol'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>613</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 type == 'function' 可能导致意外类型强制</description>
+  <highlighted_element>type == 'function'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>8</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>643</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 className == 'Object' 可能导致意外类型强制</description>
+  <highlighted_element>className == 'Object'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>8</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 n!=n 可能导致意外类型强制</description>
+  <highlighted_element>n!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>6403</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 t!=t 可能导致意外类型强制</description>
+  <highlighted_element>t!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>6408</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 0!=i 可能导致意外类型强制</description>
+  <highlighted_element>0!=i</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>7384</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 Symbol.keyFor(t)!=b 可能导致意外类型强制</description>
+  <highlighted_element>Symbol.keyFor(t)!=b</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>7495</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 n!=n 可能导致意外类型强制</description>
+  <highlighted_element>n!=n</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>7987</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 t!=t 可能导致意外类型强制</description>
+  <highlighted_element>t!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>7992</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 1/n==1/t 可能导致意外类型强制</description>
+  <highlighted_element>1/n==1/t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>8051</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 (t=n)!=t 可能导致意外类型强制</description>
+  <highlighted_element>(t=n)!=t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>10885</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 0!=(u=u&gt;&gt;&gt;1|0) 可能导致意外类型强制</description>
+  <highlighted_element>0!=(u=u&gt;&gt;&gt;1|0)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>56241</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 (3&amp;a)==(3&amp;f) 可能导致意外类型强制</description>
+  <highlighted_element>(3&amp;a)==(3&amp;f)</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>62261</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 this.ab_1==t.ab_1 可能导致意外类型强制</description>
+  <highlighted_element>this.ab_1==t.ab_1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>83883</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 this.db_1==t.db_1 可能导致意外类型强制</description>
+  <highlighted_element>this.db_1==t.db_1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>84323</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 this.he_1==t.he_1 可能导致意外类型强制</description>
+  <highlighted_element>this.he_1==t.he_1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>96310</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSEqualityComparisonWithCoercion" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">相等运算符可能导致类型强制</problem_class>
+  <description>比较 this.uf_1==t.uf_1 可能导致意外类型强制</description>
+  <highlighted_element>this.uf_1==t.uf_1</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>101802</offset>
+  <length>17</length>
+</problem>
+</problems>

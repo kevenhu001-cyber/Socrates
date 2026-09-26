@@ -205,7 +205,7 @@ export async function resetApp(options){
     var bd=document.getElementById("sidebarBackdrop");
     if(sb&&!sb.classList.contains("collapsed")){
       sb.classList.add("collapsed");
-      try{window.sidebarOpen=false;}catch(_){};
+      try{window.sidebarOpen=false;}catch(_){}
       if(bd)bd.classList.remove("show");
       try{localStorage.setItem("socrates-sb","0")}catch {}
     }

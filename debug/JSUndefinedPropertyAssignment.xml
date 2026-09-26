@@ -1,0 +1,14 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/toolCards.js</file>
+  <line>553</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/toolCards.js" />
+  <problem_class id="JSUndefinedPropertyAssignment" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">未定义的属性赋值</problem_class>
+  <description>&lt;html&gt;类型 &lt;code&gt;&lt;span style=&quot;&quot;&gt;Document&lt;/span&gt;&lt;/code&gt; 中未定义属性 &lt;code&gt;&lt;span style=&quot;color:#c77dbb;&quot;&gt;__socratesToolCardDelegate&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>__socratesToolCardDelegate</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11</offset>
+  <length>26</length>
+</problem>
+</problems>

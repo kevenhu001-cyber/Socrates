@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/package.json</file>
+  <line>64</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/package.json" />
+  <problem_class id="PackageJsonMismatchedDependency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">package.json 中的依赖关系不匹配</problem_class>
+  <description>安装的版本 &quot;highlight.js@11.9.0&quot; 与版本范围 &quot;^11.12.0&quot; 不匹配</description>
+  <highlighted_element>^11.12.0</highlighted_element>
+  <language>JSON</language>
+  <offset>21</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/packages/core/package.json</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/packages/core/package.json" />
+  <problem_class id="PackageJsonMismatchedDependency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">package.json 中的依赖关系不匹配</problem_class>
+  <description>未安装 &quot;@socrates/contracts&quot; 软件包</description>
+  <highlighted_element>file:../contracts</highlighted_element>
+  <language>JSON</language>
+  <offset>28</offset>
+  <length>17</length>
+</problem>
+</problems>

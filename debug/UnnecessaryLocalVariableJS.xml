@@ -1,0 +1,1046 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>404</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;res&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>res</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>833</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#56a8f5;&quot;&gt;getPlatform&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>getPlatform</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;r&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>73167</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;j&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>j</highlighted_element>
+  <language>JavaScript</language>
+  <offset>107455</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/cg-probe-proxy.mjs</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/cg-probe-proxy.mjs" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;res&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>res</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/probe-home2.mjs</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/probe-home2.mjs" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;all&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>all</highlighted_element>
+  <language>JavaScript</language>
+  <offset>162</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>493</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;label&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>label</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>252</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;r&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>259</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;r2&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>r2</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>123</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;effort&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>effort</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/editBranch.js</file>
+  <line>229</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/editBranch.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;_branchContext&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>_branchContext</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/find-in-session/FindInSession.tsx</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/find-in-session/FindInSession.tsx" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;unsub&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>unsub</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/MessageList.tsx</file>
+  <line>61</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/MessageList.tsx" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;visibleMessages&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>visibleMessages</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/visualization.js</file>
+  <line>463</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/visualization.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;newCardId&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>newCardId</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/persistence.js</file>
+  <line>189</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/persistence.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;payload&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>payload</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/tutor/flow.ts</file>
+  <line>124</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/tutor/flow.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;levelForPrompt&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>levelForPrompt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/voiceInput.js</file>
+  <line>180</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/voiceInput.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;value&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>value</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>30</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>57</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>80</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len0&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len0</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>136</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>175</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len0&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len0</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>218</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len0&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len0</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>248</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len0&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len0</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>276</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len0&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len0</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len1&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len1</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>332</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len0&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len0</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>343</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>347</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>353</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len1&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len1</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>371</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len1&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len1</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>376</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>380</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>384</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>389</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>393</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>397</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>401</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>405</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>418</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;len1&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>len1</highlighted_element>
+  <language>JavaScript</language>
+  <offset>16</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>426</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>430</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>434</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>438</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>442</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>446</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>450</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>460</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>470</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>480</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>484</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>488</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>492</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>496</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>500</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>504</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>508</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>512</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>516</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>520</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>524</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>531</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>541</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>546</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>551</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>556</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>561</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;ret&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>ret</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>123</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;_exhaustiveCheck&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>_exhaustiveCheck</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;i&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>i</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18700</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;u&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>u</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18877</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;u&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>u</highlighted_element>
+  <language>JavaScript</language>
+  <offset>98030</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;C&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>C</highlighted_element>
+  <language>JavaScript</language>
+  <offset>110779</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/tools/toolState.ts</file>
+  <line>66</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/tools/toolState.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;parsed&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>parsed</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/lib/urlCache.ts</file>
+  <line>90</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/lib/urlCache.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;targetBytes&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>targetBytes</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/chat/pipeline/toolExecutors.ts</file>
+  <line>67</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/chat/pipeline/toolExecutors.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#56a8f5;&quot;&gt;runToolCall&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>runToolCall</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/execution.ts</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/execution.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;artifactRows&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>artifactRows</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>216</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;s&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>s</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/status.ts</file>
+  <line>173</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/status.ts" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;series&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>series</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/status.html</file>
+  <line>308</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/status.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;FALLBACK&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>FALLBACK</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/artifacts.test.js</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/artifacts.test.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;db&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>db</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>677</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;svg&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>svg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>677</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;svg&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>svg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>677</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;svg&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>svg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/editorial.js</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/editorial.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;target&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>target</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/editorial.js</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/editorial.js" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;target&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>target</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/account.html</file>
+  <line>607</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/account.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;svg&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>svg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/account.html</file>
+  <line>607</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/account.html" />
+  <problem_class id="UnnecessaryLocalVariableJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余局部变量</problem_class>
+  <description>&lt;html&gt;局部变量 &lt;code&gt;&lt;span style=&quot;color:#a9b7c6;&quot;&gt;svg&lt;/span&gt;&lt;/code&gt; 冗余&lt;/html&gt;</description>
+  <highlighted_element>svg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+</problems>

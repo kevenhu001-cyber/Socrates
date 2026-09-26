@@ -73,7 +73,8 @@
 | 0011 | `frontend/src/vendor-files/` 来源与文档对齐 | Accepted | 0003、F-011 |
 | 0012 | `frontend/src/styles.css` 拆分（按 `styles/` 子目录模块化）| Accepted；拆分完成，级联治理继续 | 0003、F-002/F-010、2026-09-23 前端复核 |
 | 0013 | `frontend/src/` 一级目录合并方案 | Accepted；路线待分阶段实施 | 0003、F-009、2026-09-23 前端复核 |
+| 0014 | 移除 open-connector vendored fork，连接器集成收敛为 cloud-only | Accepted | 0003、0010、F-003 |
 
-> 0004–0008 为预留号段（留给在审/草稿中的 P1 决策），当前未分配。新 ADR 从 0014 起取号。
+> 0004–0008 为预留号段（留给在审/草稿中的 P1 决策），当前未分配。新 ADR 从 0015 起取号。
 
 后续新增 ADR 须在本表追加一行。

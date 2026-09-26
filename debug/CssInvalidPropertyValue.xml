@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="CssInvalidPropertyValue" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">无效的属性值</problem_class>
+  <description>不匹配的属性值 (initial | inherit | unset | revert | revert-layer)</description>
+  <highlighted_element>objects</highlighted_element>
+  <language>CSS</language>
+  <offset>34</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="CssInvalidPropertyValue" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">无效的属性值</problem_class>
+  <description>不匹配的属性值 (none | auto)</description>
+  <highlighted_element>objects</highlighted_element>
+  <language>CSS</language>
+  <offset>34</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssInvalidPropertyValue" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">无效的属性值</problem_class>
+  <description>不匹配的属性值 (&amp;lt;text-wrap-mode&amp;gt; || &amp;lt;text-wrap-style&amp;gt;)</description>
+  <highlighted_element>normal</highlighted_element>
+  <language>CSS</language>
+  <offset>13</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssInvalidPropertyValue" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">无效的属性值</problem_class>
+  <description>不匹配的属性值 (initial | inherit | unset | revert | revert-layer)</description>
+  <highlighted_element>normal</highlighted_element>
+  <language>CSS</language>
+  <offset>13</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="CssInvalidPropertyValue" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">无效的属性值</problem_class>
+  <description>不匹配的属性值 (initial | inherit | unset | revert | revert-layer)</description>
+  <highlighted_element>objects</highlighted_element>
+  <language>CSS</language>
+  <offset>34</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="CssInvalidPropertyValue" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">无效的属性值</problem_class>
+  <description>不匹配的属性值 (none | auto)</description>
+  <highlighted_element>objects</highlighted_element>
+  <language>CSS</language>
+  <offset>34</offset>
+  <length>7</length>
+</problem>
+</problems>

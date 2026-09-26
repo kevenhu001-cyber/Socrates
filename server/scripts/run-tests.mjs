@@ -65,7 +65,7 @@ for (const testFile of testFiles) {
   if (result.status !== 0) {
     console.error(`[test] ${testFile}: exit ${result.status}`);
     failures.push(testFile);
-    continue;
+
   }
 }
 

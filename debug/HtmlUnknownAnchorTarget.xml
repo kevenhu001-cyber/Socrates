@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/site/principles.html</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/principles.html" />
+  <problem_class id="HtmlUnknownAnchorTarget" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">链接中未解析的片段</problem_class>
+  <description>无法解析定位标记 #practice</description>
+  <highlighted_element>practice</highlighted_element>
+  <language>HTML</language>
+  <offset>224</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/principles.html</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/principles.html" />
+  <problem_class id="HtmlUnknownAnchorTarget" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">链接中未解析的片段</problem_class>
+  <description>无法解析定位标记 #practice</description>
+  <highlighted_element>practice</highlighted_element>
+  <language>HTML</language>
+  <offset>131</offset>
+  <length>8</length>
+</problem>
+</problems>

@@ -1,0 +1,480 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/agent/researchAgent.js</file>
+  <line>415</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/agent/researchAgent.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 startDeepResearch 返回的 Promise 被忽略</description>
+  <highlighted_element>startDeepResearch</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>179</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 resendVerification 返回的 Promise 被忽略</description>
+  <highlighted_element>resendVerification</highlighted_element>
+  <language>JavaScript</language>
+  <offset>71</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>186</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 resendAuthCode 返回的 Promise 被忽略</description>
+  <highlighted_element>resendAuthCode</highlighted_element>
+  <language>JavaScript</language>
+  <offset>66</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>189</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 submitAuthSignin 返回的 Promise 被忽略</description>
+  <highlighted_element>submitAuthSignin</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>190</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 submitAuthRegister 返回的 Promise 被忽略</description>
+  <highlighted_element>submitAuthRegister</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>191</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 resendVerification 返回的 Promise 被忽略</description>
+  <highlighted_element>resendVerification</highlighted_element>
+  <language>JavaScript</language>
+  <offset>53</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>192</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 submitAuthForgotPassword 返回的 Promise 被忽略</description>
+  <highlighted_element>submitAuthForgotPassword</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>193</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 submitAuthResetPassword 返回的 Promise 被忽略</description>
+  <highlighted_element>submitAuthResetPassword</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>195</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 submitAuthSendCode 返回的 Promise 被忽略</description>
+  <highlighted_element>submitAuthSendCode</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/index.js</file>
+  <line>196</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/index.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 submitAuthLoginWithCode 返回的 Promise 被忽略</description>
+  <highlighted_element>submitAuthLoginWithCode</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>467</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 generateAllQuestions 返回的 Promise 被忽略</description>
+  <highlighted_element>generateAllQuestions</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/native/capacitorBridge.js</file>
+  <line>80</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/native/capacitorBridge.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 applyStatusBar 返回的 Promise 被忽略</description>
+  <highlighted_element>applyStatusBar</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/native/capacitorBridge.js</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/native/capacitorBridge.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 applyStatusBar 返回的 Promise 被忽略</description>
+  <highlighted_element>applyStatusBar</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/pickers.js</file>
+  <line>580</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/pickers.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 fetchWebContext 返回的 Promise 被忽略</description>
+  <highlighted_element>fetchWebContext</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/pickers.js</file>
+  <line>580</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/pickers.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 fetchWebContext 返回的 Promise 被忽略</description>
+  <highlighted_element>fetchWebContext</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/pickers.js</file>
+  <line>586</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/pickers.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 fetchWebContext 返回的 Promise 被忽略</description>
+  <highlighted_element>fetchWebContext</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/pickers.js</file>
+  <line>586</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/pickers.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 fetchWebContext 返回的 Promise 被忽略</description>
+  <highlighted_element>fetchWebContext</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/organize.js</file>
+  <line>206</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/organize.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 refreshServerSessions 返回的 Promise 被忽略</description>
+  <highlighted_element>refreshServerSessions</highlighted_element>
+  <language>JavaScript</language>
+  <offset>56</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/organize.js</file>
+  <line>343</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/organize.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 apiFetch 返回的 Promise 被忽略</description>
+  <highlighted_element>apiFetch</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/organize.js</file>
+  <line>346</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/organize.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 refreshServerSessions 返回的 Promise 被忽略</description>
+  <highlighted_element>refreshServerSessions</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>411</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 renderLibrary 返回的 Promise 被忽略</description>
+  <highlighted_element>renderLibrary</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>523</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 renderProjects 返回的 Promise 被忽略</description>
+  <highlighted_element>renderProjects</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>555</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 renderScheduled 返回的 Promise 被忽略</description>
+  <highlighted_element>renderScheduled</highlighted_element>
+  <language>JavaScript</language>
+  <offset>52</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>607</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 renderPlugins 返回的 Promise 被忽略</description>
+  <highlighted_element>renderPlugins</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>904</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 openAgentRunDetails 返回的 Promise 被忽略</description>
+  <highlighted_element>openAgentRunDetails</highlighted_element>
+  <language>JavaScript</language>
+  <offset>-5830</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1078</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 loadLibraryFileContent 返回的 Promise 被忽略</description>
+  <highlighted_element>loadLibraryFileContent</highlighted_element>
+  <language>JavaScript</language>
+  <offset>-7927</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1152</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 renderPlugins 返回的 Promise 被忽略</description>
+  <highlighted_element>renderPlugins</highlighted_element>
+  <language>JavaScript</language>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 handleSubmit 返回的 Promise 被忽略</description>
+  <highlighted_element>handleSubmit</highlighted_element>
+  <language>JavaScript</language>
+  <offset>76</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 handleSubmit 返回的 Promise 被忽略</description>
+  <highlighted_element>handleSubmit</highlighted_element>
+  <language>JavaScript</language>
+  <offset>76</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 handleSubmit 返回的 Promise 被忽略</description>
+  <highlighted_element>handleSubmit</highlighted_element>
+  <language>JavaScript</language>
+  <offset>76</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>195</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 load 返回的 Promise 被忽略</description>
+  <highlighted_element>load</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>195</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 load 返回的 Promise 被忽略</description>
+  <highlighted_element>load</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>195</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 load 返回的 Promise 被忽略</description>
+  <highlighted_element>load</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/keyboard/anchor.ts</file>
+  <line>124</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/keyboard/anchor.ts" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 smoothScrollToBottom 返回的 Promise 被忽略</description>
+  <highlighted_element>smoothScrollToBottom</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/knowledgeDetail.js</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/knowledgeDetail.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 jumpToNode 返回的 Promise 被忽略</description>
+  <highlighted_element>jumpToNode</highlighted_element>
+  <language>JavaScript</language>
+  <offset>58</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/messageActions.ts</file>
+  <line>282</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/messageActions.ts" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 mountVisualization 返回的 Promise 被忽略</description>
+  <highlighted_element>mountVisualization</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/messageActions.ts</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/messageActions.ts" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 mountVisualization 返回的 Promise 被忽略</description>
+  <highlighted_element>mountVisualization</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/share.js</file>
+  <line>306</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/share.js" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 mountVisualization 返回的 Promise 被忽略</description>
+  <highlighted_element>mountVisualization</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>455</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 terminate 返回的 Promise 被忽略</description>
+  <highlighted_element>terminate</highlighted_element>
+  <language>JavaScript</language>
+  <offset>24</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/util/cleanupDb.ts</file>
+  <line>156</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/util/cleanupDb.ts" />
+  <problem_class id="JSIgnoredPromiseFromCall" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">返回 promise 的方法调用结果被忽略</problem_class>
+  <description>从 runExpiredCleanup 返回的 Promise 被忽略</description>
+  <highlighted_element>runExpiredCleanup</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>17</length>
+</problem>
+</problems>

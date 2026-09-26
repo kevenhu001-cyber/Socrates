@@ -1,0 +1,86 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _cmdKIndex</description>
+  <highlighted_element>_cmdKIndex</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _cmdKIndexDocs</description>
+  <highlighted_element>_cmdKIndexDocs</highlighted_element>
+  <language>JavaScript</language>
+  <offset>22</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _cmdKResults</description>
+  <highlighted_element>_cmdKResults</highlighted_element>
+  <language>JavaScript</language>
+  <offset>40</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _cmdKSelected</description>
+  <highlighted_element>_cmdKSelected</highlighted_element>
+  <language>JavaScript</language>
+  <offset>56</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _cmdKRecent</description>
+  <highlighted_element>_cmdKRecent</highlighted_element>
+  <language>JavaScript</language>
+  <offset>72</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>346</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _examAnswerSaveTimer</description>
+  <highlighted_element>_examAnswerSaveTimer</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>346</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="JSUndeclaredVariable" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">隐式声明的全局 JavaScript 变量</problem_class>
+  <description>隐式声明变量 _examSaveInFlight</description>
+  <highlighted_element>_examSaveInFlight</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>17</length>
+</problem>
+</problems>

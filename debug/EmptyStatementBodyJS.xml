@@ -1,0 +1,38 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>865</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="EmptyStatementBodyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">带空体的语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句具有空分支</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>16</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="EmptyStatementBodyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">带空体的语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句具有空分支</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46059</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="EmptyStatementBodyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">带空体的语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句具有空分支</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47804</offset>
+  <length>2</length>
+</problem>
+</problems>

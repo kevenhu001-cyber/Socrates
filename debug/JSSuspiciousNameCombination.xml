@@ -1,0 +1,50 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/AppDrawer.tsx</file>
+  <line>764</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/AppDrawer.tsx" />
+  <problem_class id="JSSuspiciousNameCombination" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可疑的变量/形参名称组合</problem_class>
+  <description>'hairlineWidth' 可能不应分配给 'height'</description>
+  <highlighted_element>height: StyleSheet.hairlineWidth</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>4</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ModelPickerModal.tsx</file>
+  <line>249</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ModelPickerModal.tsx" />
+  <problem_class id="JSSuspiciousNameCombination" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可疑的变量/形参名称组合</problem_class>
+  <description>'hairlineWidth' 可能不应分配给 'height'</description>
+  <highlighted_element>height: StyleSheet.hairlineWidth</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>13</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/render/MarkdownView.tsx</file>
+  <line>894</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/render/MarkdownView.tsx" />
+  <problem_class id="JSSuspiciousNameCombination" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可疑的变量/形参名称组合</problem_class>
+  <description>'hairlineWidth' 可能不应分配给 'height'</description>
+  <highlighted_element>height: StyleSheet.hairlineWidth</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>8</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/AuthScreen.tsx</file>
+  <line>305</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/AuthScreen.tsx" />
+  <problem_class id="JSSuspiciousNameCombination" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可疑的变量/形参名称组合</problem_class>
+  <description>'hairlineWidth' 可能不应分配给 'height'</description>
+  <highlighted_element>height: StyleSheet.hairlineWidth</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>28</offset>
+  <length>32</length>
+</problem>
+</problems>

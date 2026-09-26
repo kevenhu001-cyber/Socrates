@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/cg-probe-proxy.mjs</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/cg-probe-proxy.mjs" />
+  <problem_class id="NpmUsedModulesInstalled" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">缺少模块依赖关系</problem_class>
+  <description>未安装模块</description>
+  <highlighted_element>'undici'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>59</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/visualizationAdapters.js</file>
+  <line>277</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/visualizationAdapters.js" />
+  <problem_class id="NpmUsedModulesInstalled" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">缺少模块依赖关系</problem_class>
+  <description>未安装模块</description>
+  <highlighted_element>'tldraw'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>11</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/plugins/withDetoxE2E.js</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/plugins/withDetoxE2E.js" />
+  <problem_class id="NpmUsedModulesInstalled" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">缺少模块依赖关系</problem_class>
+  <description>package.json 依赖关系中未列出模块</description>
+  <highlighted_element>'@expo/config-plugins'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>12</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/plugins/withEdgeToEdge.js</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/plugins/withEdgeToEdge.js" />
+  <problem_class id="NpmUsedModulesInstalled" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">缺少模块依赖关系</problem_class>
+  <description>package.json 依赖关系中未列出模块</description>
+  <highlighted_element>'@expo/config-plugins'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>71</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/plugins/withReleaseSigning.js</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/plugins/withReleaseSigning.js" />
+  <problem_class id="NpmUsedModulesInstalled" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">缺少模块依赖关系</problem_class>
+  <description>package.json 依赖关系中未列出模块</description>
+  <highlighted_element>'@expo/config-plugins'</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>39</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/scripts/seed-test-user.mjs</file>
+  <line>31</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/scripts/seed-test-user.mjs" />
+  <problem_class id="NpmUsedModulesInstalled" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">缺少模块依赖关系</problem_class>
+  <description>未安装模块</description>
+  <highlighted_element>'bcrypt'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>8</length>
+</problem>
+</problems>

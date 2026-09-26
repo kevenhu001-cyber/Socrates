@@ -1,9 +1,10 @@
 /* Reviewed chat tool allow-list for OpenConnector apps.
  *
- * Each entry exposes one reviewed sidecar action to the model. The list
- * was generated from the live sidecar catalog (121 providers, 2026-09-09)
- * by keeping only query-style actions (search/list/get/fetch/…) and was
- * hand-reviewed to exclude state-changing actions, with the sole exception
+ * Each entry exposes one reviewed provider action to the model. The list
+ * was originally generated from the OpenConnector catalog (121 providers,
+ * 2026-09-09) by keeping only query-style actions (search/list/get/fetch/…)
+ * and was hand-reviewed to exclude state-changing actions, with the sole
+ * exception
  * of the bounded Jimeng AI 4.6 image-generation submit action below and its
  * matching result lookup. Bots that can only
  * send messages (dingtalk_bot, wecom_bot, feishu_custom_bot), mail-sending
@@ -12,13 +13,14 @@
  *
  * Registry rule: a tool is offered to the model only when the user has a
  * connected oc_<service> row (see toolRegistry.ts). Execution re-validates
- * arguments Socrates-side and the sidecar enforces its own JSON schema. */
+ * arguments Socrates-side and the OOMOL-hosted runtime enforces its own
+ * provider JSON schema. */
 
 import {
-  SidecarError,
-  connectionNameForUser,
-  executeSidecarAction,
-} from './openConnectorSidecar.js';
+  connectorErrorPayload,
+  externalUserId,
+  getProjectConnector,
+} from './oomolProjectConnector.js';
 
 export interface OpenConnectorChatTool {
   tool: string;
@@ -2277,7 +2279,8 @@ export function getOpenConnectorChatTool(toolName: unknown): OpenConnectorChatTo
  *
  * Validation mirrors the project-connector policy: the model only ever sends
  * known top-level fields, required fields must be present, and payloads are
- * size-capped. The sidecar enforces the full provider JSON schema afterwards.
+ * size-capped. The OOMOL-hosted runtime enforces the full provider JSON
+ * schema afterwards.
  */
 
 const MAX_ARG_JSON_BYTES = 16_384;
@@ -2368,17 +2371,17 @@ export async function executeOpenConnectorTool(
   if (!spec || !connection || connection.status !== 'connected') {
     return { status: 'failed', errorCode: 'app_not_connected', error: 'The required app is not connected.', userMessage: 'Connect this app in Plugin Center first.' };
   }
-  /* Prefer the connectionName persisted on the authenticated row: in
-   * OOMOL-cloud mode rows carry 'socrates', in sidecar mode the
-   * per-user namespaced name. Deriving it from userId would silently
-   * target the wrong sidecar connection for cloud-provisioned rows. */
-  const connectionName = (typeof connection.connectionName === 'string' && connection.connectionName)
-    || connectionNameForUser(userId);
+  const project = getProjectConnector();
+  if (!project) {
+    return { status: 'failed', errorCode: 'project_connector_not_configured', error: 'OOMOL ProjectConnector is not configured.', userMessage: 'The connector service is not configured yet.' };
+  }
   try {
-    const data = await executeSidecarAction({
-      actionId: spec.actionId,
-      input: validated.args,
-      connectionName,
+    /* The OOMOL-hosted runtime owns provider credentials and action execution;
+     * the connection row carries the opaque connectionName/connectedAccountId
+     * recorded when the user linked the app. */
+    const data = await project.execute(externalUserId(userId), spec.actionId, validated.args, {
+      connectionName: connection.connectionName || 'socrates',
+      connectedAccountId: connection.connectedAccountId || undefined,
     });
     const output = JSON.stringify(data);
     return {
@@ -2386,10 +2389,7 @@ export async function executeOpenConnectorTool(
       output: output.length > MAX_OUTPUT_CHARS ? `${output.slice(0, MAX_OUTPUT_CHARS)}…[truncated]` : output,
     };
   } catch (error) {
-    if (error instanceof SidecarError) {
-      return { status: 'failed', errorCode: error.code, error: error.message, userMessage: 'The connected app could not complete that request.' };
-    }
-    const message = error instanceof Error ? error.message : 'OpenConnector tool execution failed.';
-    return { status: 'failed', errorCode: 'openconnector_error', error: message, userMessage: 'The connected app could not complete that request.' };
+    const payload = connectorErrorPayload(error);
+    return { status: 'failed', errorCode: payload.code, error: payload.message, userMessage: 'The connected app could not complete that request.' };
   }
 }

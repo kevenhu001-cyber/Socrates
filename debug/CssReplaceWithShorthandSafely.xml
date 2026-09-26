@@ -1,0 +1,134 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'margin' 速记形式</description>
+  <highlighted_element>margin:0 auto</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'margin' 速记形式</description>
+  <highlighted_element>margin-bottom:6px</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css</file>
+  <line>50</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'margin' 速记形式</description>
+  <highlighted_element>margin-top:0</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css</file>
+  <line>409</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'background' 速记形式</description>
+  <highlighted_element>background:hsl(var(--bg-100))</highlighted_element>
+  <language>CSS</language>
+  <offset>141</offset>
+  <length>29</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css</file>
+  <line>409</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'background' 速记形式</description>
+  <highlighted_element>background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to...</highlighted_element>
+  <language>CSS</language>
+  <offset>171</offset>
+  <length>147</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css</file>
+  <line>423</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'background' 速记形式</description>
+  <highlighted_element>background:hsl(var(--bg-100))</highlighted_element>
+  <language>CSS</language>
+  <offset>135</offset>
+  <length>29</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css</file>
+  <line>423</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/09-viz-markdown.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'background' 速记形式</description>
+  <highlighted_element>background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to...</highlighted_element>
+  <language>CSS</language>
+  <offset>165</offset>
+  <length>147</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'padding' 速记形式</description>
+  <highlighted_element>padding-top:clamp(32px, 6vh, 80px)</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>34</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'padding' 速记形式</description>
+  <highlighted_element>padding-right:max(12px,env(safe-area-inset-right,0px))</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>54</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'padding' 速记形式</description>
+  <highlighted_element>padding-bottom:max(40px,env(safe-area-inset-bottom,0px))</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>56</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css</file>
+  <line>35</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css" />
+  <problem_class id="CssReplaceWithShorthandSafely" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">属性可以安全地替换为速记形式</problem_class>
+  <description>属性可以安全地替换为 'padding' 速记形式</description>
+  <highlighted_element>padding-left:max(12px,env(safe-area-inset-left,0px))</highlighted_element>
+  <language>CSS</language>
+  <offset>2</offset>
+  <length>52</length>
+</problem>
+</problems>

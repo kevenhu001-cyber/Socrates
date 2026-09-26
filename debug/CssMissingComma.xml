@@ -1,0 +1,1358 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/components/sidebar.css</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/components/sidebar.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>103</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css</file>
+  <line>565</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-parity.css</file>
+  <line>218</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>92</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>750</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>751</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>757</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>104</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>758</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>765</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>766</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>768</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>769</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>784</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>85</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>785</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>800</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>68</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>801</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>31</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1019</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1020</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1021</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1023</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1024</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1025</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>64</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1027</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1028</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1029</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1031</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1032</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1033</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>64</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1035</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1036</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1037</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1038</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1040</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1041</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1042</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>64</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1043</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1045</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1046</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1047</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1048</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1050</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1051</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1052</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1053</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1055</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1056</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1057</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>64</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1058</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1060</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1061</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1062</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1064</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1065</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1066</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>64</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1068</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1069</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1070</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>70</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1071</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1073</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>78</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1074</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>29</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1075</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>64</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1076</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>86</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1111</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>31</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1112</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>15</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1122</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>86</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css</file>
+  <line>1127</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/fixes.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>86</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>852</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>881</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>888</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>893</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>898</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>906</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>907</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>85</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>916</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css</file>
+  <line>917</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>85</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>74</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>75</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>11</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>714</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>86</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>715</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>13</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1591</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1592</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1609</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1610</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1612</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>84</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1613</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1628</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1636</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1647</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1653</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1667</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1672</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1679</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1686</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1703</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1717</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1726</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1737</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1745</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1747</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1752</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1754</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1760</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1762</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1768</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>1770</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>80</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2230</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2235</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2240</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2242</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2253</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2254</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>85</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2262</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>62</offset>
+  <length>0</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css</file>
+  <line>2263</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" />
+  <problem_class id="CssMissingComma" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">选择器列表中缺少逗号</problem_class>
+  <description>缺少逗号</description>
+  <highlighted_element />
+  <language>CSS</language>
+  <offset>85</offset>
+  <length>0</length>
+</problem>
+</problems>

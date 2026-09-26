@@ -1,0 +1,1154 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/agent/researchAgent.js</file>
+  <line>429</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/agent/researchAgent.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>7</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/editBranch.js</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/editBranch.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../chat/history.js'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/sendPipeline.js</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/sendPipeline.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>7</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/sessionBootstrap.js</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/sessionBootstrap.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>7</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/turnAnchor.ts</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/turnAnchor.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../ui/keyboard/index.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/turnClient.ts</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/turnClient.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../../packages/core/src/index.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>33</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/extensions/index.ts</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/extensions/index.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/chat-configuration/chatConfiguration.bridge.ts</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/chat-configuration/chatConfiguration.bridge.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../lib/bridge/index.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49</offset>
+  <length>27</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/chatRuntime.bridge.ts</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/chatRuntime.bridge.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../lib/bridge/createImmutableBridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37</offset>
+  <length>40</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/chatRuntime.bridge.ts</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/chatRuntime.bridge.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../lib/bridge/useBridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/composer/ComposerToolsMenu.tsx</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/composer/ComposerToolsMenu.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../extensions/registry'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25</offset>
+  <length>27</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/composer/pluginSelection.ts</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/composer/pluginSelection.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../lib/bridge/index.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49</offset>
+  <length>27</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../composer/ComposerToolsMenu'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41</offset>
+  <length>34</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../cmdk/CommandPalette'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35</offset>
+  <length>27</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../find-in-session/FindInSession'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../sidebar-chrome/sidebarChrome.bridge'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43</offset>
+  <length>43</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../sidebar-chrome/SidebarHeader'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>30</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../sidebar-chrome/SidebarFooter'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../attachments/AttachmentChipsRow'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43</offset>
+  <length>38</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../attachments/attachments.bridge'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41</offset>
+  <length>38</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/lib/boot/specs.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../pages/workspace/workspace.bridge'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39</offset>
+  <length>40</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/MessageItem.tsx</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/MessageItem.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../tool-run/toolRunModel'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>54</offset>
+  <length>26</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/settings/SettingsModal.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../profileModal/profileModal.bridge'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>55</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/thinking-panel/thinkingPanel.bridge.ts</file>
+  <line>31</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/thinking-panel/thinkingPanel.bridge.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../lib/bridge/createImmutableBridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37</offset>
+  <length>43</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/thinking-panel/thinkingPanel.bridge.ts</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/thinking-panel/thinkingPanel.bridge.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../lib/bridge/useBridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>31</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/tool-output/types.ts</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/tool-output/types.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../tool-run/toolRunModel'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>26</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/useChatRuntime.ts</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/useChatRuntime.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../lib/bridge/useBridge'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/loader.js</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/loader.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/recents.js</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/recents.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/composerTools.js</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/composerTools.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../ui/promptTemplates.js'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41</offset>
+  <length>26</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/effortPicker.js</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/effortPicker.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/chat-configuration/chatConfiguration.bridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>57</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/keyboardShortcuts.js</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/keyboardShortcuts.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>72</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/topicSetup.js</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/topicSetup.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>36</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/voiceInput.js</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/voiceInput.js" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../react/composer-input/controller.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>56</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/immutableBridge.test.mjs</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/immutableBridge.test.mjs" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../src/lib/bridge/createImmutableBridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>44</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/thinkingPanel.test.mjs</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/thinkingPanel.test.mjs" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../src/react/thinking-panel/thinkingPanel.bridge.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>7</offset>
+  <length>53</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/toolOutputs.test.mjs</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/toolOutputs.test.mjs" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../src/react/tool-run/toolRunModel.ts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>7</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/cmdK/overlayStores'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45</offset>
+  <length>26</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/cmdK/cmdKStore'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/stores/appStore'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/data/chat/prompts'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/data/preferences'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/native/network'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>59</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/screens/embeddedBridge'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>77</offset>
+  <length>30</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>61</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/navigation/types'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>40</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/App.tsx</file>
+  <line>62</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/App.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'./src/native/appRuntime'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>72</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/cmdK/CmdKPalette.tsx</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/cmdK/CmdKPalette.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/AppDrawer.tsx</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/AppDrawer.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/AppHeader.tsx</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/AppHeader.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/AttachmentChip.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/AttachmentChip.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/CanvasBlock.tsx</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/CanvasBlock.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/Composer.test.tsx</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/Composer.test.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/Composer.tsx</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/Composer.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ComposerToolsMenu.tsx</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ComposerToolsMenu.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/MessageBubble.test.tsx</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/MessageBubble.test.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/MessageBubble.tsx</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/MessageBubble.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ModelConfigSheet.test.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ModelConfigSheet.test.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ModelConfigSheet.tsx</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ModelConfigSheet.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ModelPickerModal.tsx</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ModelPickerModal.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/Overlay.tsx</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/Overlay.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ProfileOverlay.tsx</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ProfileOverlay.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ReasoningEffortPicker.tsx</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ReasoningEffortPicker.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ShareModal.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ShareModal.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/StorageOverlay.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/StorageOverlay.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/Toast.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/Toast.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ToolCard.tsx</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ToolCard.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ToolRunGroup.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ToolRunGroup.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/UsageOverlay.tsx</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/UsageOverlay.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/chat/attachments.ts</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/chat/attachments.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../native/native'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>45</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/chat/attachments.ts</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/chat/attachments.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>22</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/native/voiceInput.ts</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/native/voiceInput.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>30</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/render/MarkdownView.tsx</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/render/MarkdownView.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/render/RichBlock.tsx</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/render/RichBlock.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/ArtifactPreviewScreen.tsx</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/ArtifactPreviewScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/AuthScreen.tsx</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/AuthScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/ChatScreen.tsx</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/ChatScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/DisplaySettingsScreen.tsx</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/DisplaySettingsScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/ExamScreen.tsx</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/ExamScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/KnowledgeScreen.tsx</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/KnowledgeScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/LibraryScreen.tsx</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/LibraryScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/MistakesScreen.tsx</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/MistakesScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/MoreScreen.tsx</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/MoreScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.test.tsx</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.test.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.tsx</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/PluginsScreen.tsx</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/PluginsScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/ProjectsScreen.tsx</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/ProjectsScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/RecentsScreen.tsx</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/RecentsScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/ScheduledScreen.tsx</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/ScheduledScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/SearchScreen.tsx</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/SearchScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/SettingsScreen.tsx</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/SettingsScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/SkillsScreen.tsx</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/SkillsScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/TutorScreen.tsx</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/TutorScreen.tsx" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/stores/appStore.ts</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/stores/appStore.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../i18n'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>22</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/scripts/verify-deploy-schema.ts</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/scripts/verify-deploy-schema.ts" />
+  <problem_class id="ES6PreferShortImport" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以缩短导入</problem_class>
+  <description>可以缩短导入</description>
+  <highlighted_element>'../src/db/index.js'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>20</length>
+</problem>
+</problems>

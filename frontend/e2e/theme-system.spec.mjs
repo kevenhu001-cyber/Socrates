@@ -31,7 +31,7 @@ test('theme selector follows the operating system and persists explicit modes', 
     };
   });
   expect(darkPalette.page).toBe('#000000');
-  expect(darkPalette.raised).toBe('#141310');
+  expect(darkPalette.raised).toBe('#131519');
 
   await themeSegs.locator('[data-theme-option="system"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');

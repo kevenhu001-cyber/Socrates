@@ -2,8 +2,8 @@
  * OpenConnector chat tool executor.
  *
  * Runs the curated OpenConnector allow-list from openConnectorChatTools.ts
- * against the vendored sidecar, using the calling user's namespaced
- * connection. Mirrors executeProjectConnector's result envelope so the
+ * against the OOMOL-hosted runtime, using the calling user's connected
+ * account. Mirrors executeProjectConnector's result envelope so the
  * pipeline treats both connector families identically.
  */
 

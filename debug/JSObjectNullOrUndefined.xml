@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>248</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="JSObjectNullOrUndefined" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">对象为 'null' 或 'undefined'</problem_class>
+  <description>reader 为 null</description>
+  <highlighted_element>reader</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>26</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/llm.test.js</file>
+  <line>798</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/llm.test.js" />
+  <problem_class id="JSObjectNullOrUndefined" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">对象为 'null' 或 'undefined'</problem_class>
+  <description>err 可能为 null</description>
+  <highlighted_element>err</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+</problems>

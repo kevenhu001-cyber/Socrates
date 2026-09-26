@@ -1,0 +1,1466 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>140</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>539</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1192</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1568</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>2175</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>2539</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>3122</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>3502</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>4201</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>4592</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>5229</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>5615</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6286</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6643</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>4700</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>5065</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>5650</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6062</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6741</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>7139</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>7790</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>8176</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>8803</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>9193</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>9879</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>10267</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>10898</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>11292</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>11935</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>12333</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>12984</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>13357</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>14013</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>14394</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>15011</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>15375</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>65775</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>66138</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>66719</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>67080</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>67657</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>68044</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>68673</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>69040</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>69727</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>70102</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>70707</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>71074</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>117</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>75</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>117</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>456</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>805</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1199</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>245</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>75</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>245</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>445</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2763</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>11507</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2763</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>11897</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2810</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>75</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2810</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>479</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2810</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>940</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2810</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1328</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2813</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>63</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2813</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>479</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2813</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>951</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2813</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1343</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2813</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1779</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2813</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>2177</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>63</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>445</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>866</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1254</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1684</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>2070</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>2497</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>2889</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>3325</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>3715</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>4148</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>4534</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>4961</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>5339</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>5754</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6174</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6652</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2818</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>6948</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2835</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>713</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2835</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1011</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2835</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1314</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2835</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1638</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>45</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>341</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>713</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1011</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1314</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1638</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>45</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>371</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>701</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1029</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1362</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/incremental/debug/packageDebugResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1716</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/capacitor.config.js</file>
+  <line>31</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/capacitor.config.js" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>37</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>SVG</language>
+  <offset>27</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/settings.js</file>
+  <line>111</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/settings.js" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>60</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>90</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>383</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>188</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>487</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>793</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>1220</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>29710</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>XML</language>
+  <offset>29941</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/scripts/visual/serve.mjs</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/scripts/visual/serve.mjs" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>41</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/scripts/visual/serve.mjs</file>
+  <line>66</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/scripts/visual/serve.mjs" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>41</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/connectorMarks.ts</file>
+  <line>26</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/connectorMarks.ts" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>TypeScript</language>
+  <offset>544</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/connectorMarks.ts</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/connectorMarks.ts" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>TypeScript</language>
+  <offset>546</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx</file>
+  <line>165</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>42</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx</file>
+  <line>165</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>42</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/app.ts</file>
+  <line>726</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/app.ts" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>TypeScript</language>
+  <offset>86</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/embedding.test.js</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/embedding.test.js" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>40</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/fetchBatch.test.js</file>
+  <line>169</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/fetchBatch.test.js" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>35</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sanitize.test.mjs</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sanitize.test.mjs" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>30</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/sanitize.test.mjs</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/sanitize.test.mjs" />
+  <problem_class id="HttpUrlsUsage" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">采用未加密协议的链接</problem_class>
+  <description>HTTP 链接不安全</description>
+  <highlighted_element>http://</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>53</offset>
+  <length>7</length>
+</problem>
+</problems>

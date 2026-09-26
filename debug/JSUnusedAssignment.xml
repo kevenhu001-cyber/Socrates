@@ -1,0 +1,782 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'ExceptionCode' 的值从未使用</description>
+  <highlighted_element>ExceptionCode</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>25</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'r' 的值从未使用</description>
+  <highlighted_element>r</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>7087</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'u' 的值从未使用</description>
+  <highlighted_element>u</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>7392</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'u' 的值从未使用</description>
+  <highlighted_element>u</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>15225</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>18999</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'a' 的值从未使用</description>
+  <highlighted_element>a</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19008</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19017</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19124</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'l' 的值从未使用</description>
+  <highlighted_element>l</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19139</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19150</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'a' 的值从未使用</description>
+  <highlighted_element>a</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19165</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19687</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'l' 的值从未使用</description>
+  <highlighted_element>l</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19724</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'a' 的值从未使用</description>
+  <highlighted_element>a</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19767</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'a' 的值从未使用</description>
+  <highlighted_element>a</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19770</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19807</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19844</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'a' 的值从未使用</description>
+  <highlighted_element>a</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19950</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'r' 的值从未使用</description>
+  <highlighted_element>r</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>35315</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'i' 的值从未使用</description>
+  <highlighted_element>i</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>35326</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'r' 的值从未使用</description>
+  <highlighted_element>r</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>104597</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/attachments.js</file>
+  <line>529</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/attachments.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>22</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/batchStorage.js</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/batchStorage.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>false</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/pickers.js</file>
+  <line>107</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/pickers.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>&quot;&quot;</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/pickers.js</file>
+  <line>107</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/pickers.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>&quot;&quot;</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/markdown.ts</file>
+  <line>745</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/markdown.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>TypeScript</language>
+  <offset>16</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/markdown.ts</file>
+  <line>1014</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/markdown.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>TypeScript</language>
+  <offset>16</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/visualizationAdapters.js</file>
+  <line>48</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/visualizationAdapters.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>[]</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>15</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/loader.js</file>
+  <line>375</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/loader.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>&quot;&quot;</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>25</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>806</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>&quot;&quot;</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-7946</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/tutor/flow.ts</file>
+  <line>199</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/tutor/flow.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>TypeScript</language>
+  <offset>22</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/toolCards.js</file>
+  <line>212</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/toolCards.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>&quot;&quot;</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/toolCards.js</file>
+  <line>375</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/toolCards.js" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>tcId</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>15</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts</file>
+  <line>292</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>TypeScript</language>
+  <offset>13</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 't' 的值从未使用</description>
+  <highlighted_element>t</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>1949</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 's' 的值从未使用</description>
+  <highlighted_element>s</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9089</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9098</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9107</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9214</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'l' 的值从未使用</description>
+  <highlighted_element>l</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9229</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 's' 的值从未使用</description>
+  <highlighted_element>s</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9240</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9255</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9777</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'l' 的值从未使用</description>
+  <highlighted_element>l</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9814</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9857</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9860</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9897</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'h' 的值从未使用</description>
+  <highlighted_element>h</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9934</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'c' 的值从未使用</description>
+  <highlighted_element>c</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>10040</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'u' 的值从未使用</description>
+  <highlighted_element>u</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24103</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'r' 的值从未使用</description>
+  <highlighted_element>r</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>26641</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'u' 的值从未使用</description>
+  <highlighted_element>u</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>28433</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'r' 的值从未使用</description>
+  <highlighted_element>r</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>107903</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/sse/sseClient.ts</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/sse/sseClient.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>false</highlighted_element>
+  <language>TypeScript</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>111</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>0</highlighted_element>
+  <language>TypeScript</language>
+  <offset>21</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/usage.ts</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/usage.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>0</highlighted_element>
+  <language>TypeScript</language>
+  <offset>21</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>195</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'compatibilityBase' 的值从未使用</description>
+  <highlighted_element>compatibilityBase</highlighted_element>
+  <language>TypeScript</language>
+  <offset>4</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/pyodideWorker.ts</file>
+  <line>724</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/pyodideWorker.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>赋给 'pendingCancelled' 的值从未使用</description>
+  <highlighted_element>pendingCancelled</highlighted_element>
+  <language>TypeScript</language>
+  <offset>6</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/sessionCompressor.ts</file>
+  <line>154</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/sessionCompressor.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>TypeScript</language>
+  <offset>16</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/sessionCompressor.ts</file>
+  <line>185</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/sessionCompressor.ts" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>0</highlighted_element>
+  <language>TypeScript</language>
+  <offset>22</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>239</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>29</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>239</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>29</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>239</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>29</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/account.html</file>
+  <line>213</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/account.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>29</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/account.html</file>
+  <line>213</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/account.html" />
+  <problem_class id="JSUnusedAssignment" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未使用的赋值</problem_class>
+  <description>变量初始值设定项冗余</description>
+  <highlighted_element>''</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>29</offset>
+  <length>2</length>
+</problem>
+</problems>

@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>418</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSJQueryEfficiency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以优化 JQuery 选择器</problem_class>
+  <description>重复的 jQuery 选择器</description>
+  <highlighted_element>$('submitPlanName')</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>45</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>419</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSJQueryEfficiency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以优化 JQuery 选择器</problem_class>
+  <description>重复的 jQuery 选择器</description>
+  <highlighted_element>$('submitPlanName')</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>51</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSJQueryEfficiency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以优化 JQuery 选择器</problem_class>
+  <description>重复的 jQuery 选择器</description>
+  <highlighted_element>$('submitPlanName')</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>39</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSJQueryEfficiency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以优化 JQuery 选择器</problem_class>
+  <description>重复的 jQuery 选择器</description>
+  <highlighted_element>$('submitPlanName')</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>39</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>345</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSJQueryEfficiency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以优化 JQuery 选择器</problem_class>
+  <description>重复的 jQuery 选择器</description>
+  <highlighted_element>$('submitPlanName')</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>41</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>345</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSJQueryEfficiency" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">可以优化 JQuery 选择器</problem_class>
+  <description>重复的 jQuery 选择器</description>
+  <highlighted_element>$('submitPlanName')</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>41</offset>
+  <length>19</length>
+</problem>
+</problems>

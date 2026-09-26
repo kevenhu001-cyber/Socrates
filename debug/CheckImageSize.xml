@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="CheckImageSize" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的图像大小</problem_class>
+  <description>原始图像宽度为256</description>
+  <highlighted_element>&quot;20&quot;</highlighted_element>
+  <language>HTML</language>
+  <offset>31</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="CheckImageSize" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的图像大小</problem_class>
+  <description>原始图像高度为256</description>
+  <highlighted_element>&quot;20&quot;</highlighted_element>
+  <language>HTML</language>
+  <offset>43</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="CheckImageSize" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的图像大小</problem_class>
+  <description>原始图像宽度为256</description>
+  <highlighted_element>&quot;22&quot;</highlighted_element>
+  <language>HTML</language>
+  <offset>33</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="CheckImageSize" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的图像大小</problem_class>
+  <description>原始图像高度为256</description>
+  <highlighted_element>&quot;22&quot;</highlighted_element>
+  <language>HTML</language>
+  <offset>45</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>281</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="CheckImageSize" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的图像大小</problem_class>
+  <description>原始图像宽度为256</description>
+  <highlighted_element>&quot;20&quot;</highlighted_element>
+  <language>HTML</language>
+  <offset>86</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>281</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="CheckImageSize" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的图像大小</problem_class>
+  <description>原始图像高度为256</description>
+  <highlighted_element>&quot;20&quot;</highlighted_element>
+  <language>HTML</language>
+  <offset>98</offset>
+  <length>4</length>
+</problem>
+</problems>

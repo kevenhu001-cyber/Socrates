@@ -1,0 +1,602 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>155</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>ac</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>155</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>ac</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>256</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>256</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>9</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>256</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>256</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>21</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>257</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>44</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>257</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>44</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>258</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>258</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>260</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>22</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>260</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>22</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>261</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>261</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>263</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>full</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>42</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>263</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>full</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>42</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>300</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>flushVisibleThinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>300</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>flushVisibleThinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>419</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>formattedHtml</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>419</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>formattedHtml</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>458</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>18</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>458</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>18</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>462</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>26</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>462</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>26</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>474</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>full</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>52</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>474</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>full</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>52</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>487</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>full</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>51</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>487</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>full</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>51</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>501</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>501</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>505</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>27</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>505</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkTail</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>27</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>573</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>573</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>19</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>582</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkBuf</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>53</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>582</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkBuf</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>53</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>583</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkBuf</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>35</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>583</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkBuf</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>35</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>594</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>hasWarnedMissingThinking</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>594</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>hasWarnedMissingThinking</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>594</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>68</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>594</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkOpen</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>68</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>594</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkBuf</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>79</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>594</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>thinkBuf</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>79</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>622</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>cancelled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>622</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>cancelled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>14</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>622</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>processFrame</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>622</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>processFrame</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/viz.js</file>
+  <line>92</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/viz.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>card</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/viz.js</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/viz.js" />
+  <problem_class id="JSReferencingMutableVariableFromClosure" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">从闭包中引用可变变量</problem_class>
+  <description>可从闭包访问可变变量</description>
+  <highlighted_element>card</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>23</offset>
+  <length>4</length>
+</problem>
+</problems>

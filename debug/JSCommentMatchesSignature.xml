@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/attachments.js</file>
+  <line>604</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/attachments.js" />
+  <problem_class id="JSCommentMatchesSignature" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的 JSDoc 和函数签名</problem_class>
+  <description>JSDoc 中未描述形参 onProgress</description>
+  <highlighted_element>onProgress</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>51</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/searchEngines/bing.ts</file>
+  <line>127</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/searchEngines/bing.ts" />
+  <problem_class id="JSCommentMatchesSignature" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的 JSDoc 和函数签名</problem_class>
+  <description>JSDoc 中未描述形参 signal</description>
+  <highlighted_element>signal: AbortSignal | null = null</highlighted_element>
+  <language>TypeScript</language>
+  <offset>60</offset>
+  <length>33</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/searchEngines/minimax.ts</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/searchEngines/minimax.ts" />
+  <problem_class id="JSCommentMatchesSignature" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的 JSDoc 和函数签名</problem_class>
+  <description>JSDoc 中未描述形参 signal</description>
+  <highlighted_element>signal: AbortSignal | null = null</highlighted_element>
+  <language>TypeScript</language>
+  <offset>63</offset>
+  <length>33</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/searchEngines/searxng.ts</file>
+  <line>68</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/searchEngines/searxng.ts" />
+  <problem_class id="JSCommentMatchesSignature" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的 JSDoc 和函数签名</problem_class>
+  <description>JSDoc 中未描述形参 signal</description>
+  <highlighted_element>signal: AbortSignal | null = null</highlighted_element>
+  <language>TypeScript</language>
+  <offset>63</offset>
+  <length>33</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/toolCallSafety.ts</file>
+  <line>656</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/toolCallSafety.ts" />
+  <problem_class id="JSCommentMatchesSignature" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的 JSDoc 和函数签名</problem_class>
+  <description>JSDoc 中未描述形参 options</description>
+  <highlighted_element>options: { allowFuzzy?: boolean } = {}</highlighted_element>
+  <language>TypeScript</language>
+  <offset>2</offset>
+  <length>38</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/_http.js</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/_http.js" />
+  <problem_class id="JSCommentMatchesSignature" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不匹配的 JSDoc 和函数签名</problem_class>
+  <description>JSDoc 中描述的形参 done 未出现在函数签名中</description>
+  <highlighted_element>done</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>32</offset>
+  <length>4</length>
+</problem>
+</problems>

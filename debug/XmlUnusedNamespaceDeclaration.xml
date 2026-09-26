@@ -1,0 +1,290 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:app=&quot;http://schemas.android.com/apk/res-auto&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>4</offset>
+  <length>51</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/config.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/config.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:cdv=&quot;http://cordova.apache.org/ns/1.0&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>61</offset>
+  <length>44</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/file_paths.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/file_paths.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>7</offset>
+  <length>58</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:app=&quot;http://schemas.android.com/apk/res-auto&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>4</offset>
+  <length>51</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/config.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/config.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:cdv=&quot;http://cordova.apache.org/ns/1.0&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>61</offset>
+  <length>44</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/file_paths.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/file_paths.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>7</offset>
+  <length>58</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:amazon=&quot;http://schemas.amazon.com/apk/res/android&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>10</offset>
+  <length>56</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:amazon=&quot;http://schemas.amazon.com/apk/res/android&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>10</offset>
+  <length>56</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>10</offset>
+  <length>58</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:amazon=&quot;http://schemas.amazon.com/apk/res/android&quot;</highlighted_element>
+  <language>XML</language>
+  <offset>0</offset>
+  <length>56</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/agenty.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/agenty.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>40</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/amap.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/amap.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>40</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/deepseek.svg</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/deepseek.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>53</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/emaillistverify.svg</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/emaillistverify.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>68</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/frontapp.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>105</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googlecalendar.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/googlecalendar.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>69</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/monday.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>105</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/onedrive.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>105</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:x=&quot;http://ns.adobe.com/Extensibility/1.0/&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>34</offset>
+  <length>48</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:i=&quot;http://ns.adobe.com/AdobeIllustrator/10.0/&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>83</offset>
+  <length>52</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:graph=&quot;http://ns.adobe.com/Graphs/1.0/&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>136</offset>
+  <length>45</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>217</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/sendgrid.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>105</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/telegram.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/telegram.svg" />
+  <problem_class id="XmlUnusedNamespaceDeclaration" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的架构声明</problem_class>
+  <description>命名空间声明从未使用过</description>
+  <highlighted_element>xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;</highlighted_element>
+  <language>SVG</language>
+  <offset>77</offset>
+  <length>42</length>
+</problem>
+</problems>

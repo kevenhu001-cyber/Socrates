@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/server/openapi.json</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/openapi.json" />
+  <problem_class id="JsonSchemaCompliance" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">符合 JSON 架构</problem_class>
+  <description>不允许使用属性 'summary'</description>
+  <highlighted_element>&quot;summary&quot;</highlighted_element>
+  <language>JSON</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/openapi.json</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/openapi.json" />
+  <problem_class id="JsonSchemaCompliance" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">符合 JSON 架构</problem_class>
+  <description>不允许使用属性 'summary'</description>
+  <highlighted_element>&quot;summary&quot;</highlighted_element>
+  <language>JSON</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+</problems>

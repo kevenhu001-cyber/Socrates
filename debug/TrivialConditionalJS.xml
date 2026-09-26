@@ -1,0 +1,38 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/displayPrefs.js</file>
+  <line>303</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/displayPrefs.js" />
+  <problem_class id="TrivialConditionalJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余条件表达式</problem_class>
+  <description>'displayPrefs.showGrid === false ? true : false' 可以简化为 'displayPrefs.showGrid === false'</description>
+  <highlighted_element>displayPrefs.showGrid === false ? true : false</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>26</offset>
+  <length>46</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/chat/pipeline/executors/codeInterpreter.ts</file>
+  <line>155</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/chat/pipeline/executors/codeInterpreter.ts" />
+  <problem_class id="TrivialConditionalJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余条件表达式</problem_class>
+  <description>'execResult.retryable === false ? false : true' 可以简化为 'execResult.retryable!==false'</description>
+  <highlighted_element>execResult.retryable === false ? false : true</highlighted_element>
+  <language>TypeScript</language>
+  <offset>15</offset>
+  <length>45</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/connectors.ts</file>
+  <line>48</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/connectors.ts" />
+  <problem_class id="TrivialConditionalJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余条件表达式</problem_class>
+  <description>'connector.id === 'zotero' || connector.id === 'arxiv' ? true : false' 可以简化为 'connector.id === 'zotero' || connector.id === 'arxiv''</description>
+  <highlighted_element>connector.id === 'zotero' || connector.id === 'arxiv' ? true : false</highlighted_element>
+  <language>TypeScript</language>
+  <offset>220</offset>
+  <length>68</length>
+</problem>
+</problems>

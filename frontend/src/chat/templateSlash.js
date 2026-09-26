@@ -424,7 +424,7 @@ export function _handleChatKey(e){
     e.preventDefault();
     if(isSlashCommandPaletteOpen())closeSlashCommandPalette();
     if (typeof window !== "undefined" && typeof window.submitChatMessage === "function") window.submitChatMessage();
-    return;
+
   }
   /* P5.8 — Slash-command palette. The heavy lifting (open,
      filter, close on leading-slash removal) lives in the

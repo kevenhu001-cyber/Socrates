@@ -1,0 +1,1874 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/boot.js</file>
+  <line>167</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/boot.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>166</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>229</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>234</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/diagnosticParser.js</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/diagnosticParser.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx</file>
+  <line>102</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx</file>
+  <line>141</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx</file>
+  <line>163</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx</file>
+  <line>226</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx</file>
+  <line>263</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx</file>
+  <line>285</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>743</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>-3663</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>794</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>-4367</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1031</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>-5092</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>162</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>162</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js</file>
+  <line>162</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/share.js</file>
+  <line>357</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/share.js" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/tutor/tutorFlow.ts</file>
+  <line>159</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/tutor/tutorFlow.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/tutor/tutorFlow.ts</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/tutor/tutorFlow.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>53</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/data/tutor/tutorFlow.ts</file>
+  <line>311</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/data/tutor/tutorFlow.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/PluginsScreen.tsx</file>
+  <line>72</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/PluginsScreen.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>60</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/PluginsScreen.tsx</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/PluginsScreen.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>123</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/SettingsScreen.tsx</file>
+  <line>155</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/SettingsScreen.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx</file>
+  <line>87</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/WebAppScreen.tsx" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/middleware/adminAuth.ts</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/middleware/adminAuth.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/middleware/adminAuth.ts</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/middleware/adminAuth.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>316</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>320</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>552</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>556</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>562</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>563</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>564</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>58</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>573</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>610</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>616</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/adminAuth.ts</file>
+  <line>95</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/adminAuth.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>131</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>142</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>176</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>181</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>187</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>229</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>234</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/artifacts.ts</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/artifacts.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/artifacts.ts</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/artifacts.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/artifacts.ts</file>
+  <line>71</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/artifacts.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/artifacts.ts</file>
+  <line>114</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/artifacts.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/chat/stream.ts</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/chat/stream.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/chat/stream.ts</file>
+  <line>89</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/chat/stream.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/chatTurns.ts</file>
+  <line>93</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/chatTurns.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>23</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/classroom.ts</file>
+  <line>30</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/classroom.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/classroom.ts</file>
+  <line>46</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/classroom.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/classroom.ts</file>
+  <line>58</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/classroom.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>16</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/classroom.ts</file>
+  <line>77</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/classroom.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>16</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>73</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>55</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>73</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>59</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>62</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>51</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>64</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>74</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>73</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>78</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>81</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>51</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>121</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>97</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>73</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>107</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>90</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>120</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>152</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>169</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/creations.ts</file>
+  <line>172</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/creations.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts</file>
+  <line>142</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>21</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts</file>
+  <line>167</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts</file>
+  <line>172</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/embeddingConfig.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/execution.ts</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/execution.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>167</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>267</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>28</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>280</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>33</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>285</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>320</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>324</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>341</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>353</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>355</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>368</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts</file>
+  <line>34</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts</file>
+  <line>101</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts</file>
+  <line>103</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts</file>
+  <line>105</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/knowledgeBoundary.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>55</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>59</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>72</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>83</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>88</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>98</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/memory.ts</file>
+  <line>103</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/memory.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/messages.ts</file>
+  <line>127</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/messages.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/messages.ts</file>
+  <line>167</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/messages.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/messages.ts</file>
+  <line>332</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/messages.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>50</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/minimaxProxy.ts</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/minimaxProxy.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>84</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/mistakes.ts</file>
+  <line>71</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/mistakes.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>33</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/mistakes.ts</file>
+  <line>90</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/mistakes.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/mistakes.ts</file>
+  <line>100</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/mistakes.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/mistakes.ts</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/mistakes.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/mistakes.ts</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/mistakes.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/notifications.ts</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/notifications.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/plugins.ts</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/plugins.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/plugins.ts</file>
+  <line>59</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/plugins.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/projects.ts</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/projects.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/projects.ts</file>
+  <line>50</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/projects.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/prompts.ts</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/prompts.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/prompts.ts</file>
+  <line>56</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/prompts.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/rag.ts</file>
+  <line>54</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/rag.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/rag.ts</file>
+  <line>58</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/rag.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>50</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>55</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>105</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>108</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>113</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>118</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>133</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>136</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts</file>
+  <line>165</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/scheduledTasks.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>775</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>780</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>793</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>798</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>808</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>811</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>29</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>834</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>960</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>965</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>975</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>980</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/share.ts</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/share.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/share.ts</file>
+  <line>76</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/share.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/systemModels.ts</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/systemModels.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/systemModels.ts</file>
+  <line>115</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/systemModels.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/systemModels.ts</file>
+  <line>149</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/systemModels.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/tags.ts</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/tags.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/scripts/seedOAuthClient.ts</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/scripts/seedOAuthClient.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>62</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>487</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>52</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>493</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="ExceptionCaughtLocallyJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">将异常用于本地控制流</problem_class>
+  <description>本地捕获异常的 'throw'</description>
+  <highlighted_element>throw</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+</problems>

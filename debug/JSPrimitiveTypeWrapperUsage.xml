@@ -1,0 +1,50 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPrimitiveTypeWrapperUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">使用了基元类型对象包装器</problem_class>
+  <description>Object 实例化可以简化</description>
+  <highlighted_element>new Object</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>16966</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>504</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSPrimitiveTypeWrapperUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">使用了基元类型对象包装器</problem_class>
+  <description>Array 实例化可以简化</description>
+  <highlighted_element>new Array()</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js</file>
+  <line>516</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/wasm/socrates_wasm.js" />
+  <problem_class id="JSPrimitiveTypeWrapperUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">使用了基元类型对象包装器</problem_class>
+  <description>Object 实例化可以简化</description>
+  <highlighted_element>new Object()</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSPrimitiveTypeWrapperUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">使用了基元类型对象包装器</problem_class>
+  <description>Object 实例化可以简化</description>
+  <highlighted_element>new Object</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>6531</offset>
+  <length>10</length>
+</problem>
+</problems>

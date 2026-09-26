@@ -398,8 +398,8 @@ type WorkspacePlugin = {
   capabilities?: string[];
   authType?: string;
   connection?: { status?: string; displayName?: string } | null;
-  /* OpenConnector apps the sidecar is not serving yet come back with
-     available: false and stay disabled until it comes online. */
+  /* OpenConnector apps the OOMOL-hosted runtime is not serving yet come
+     back with available: false and stay disabled until they do. */
   available?: boolean;
 };
 
@@ -445,9 +445,9 @@ function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch
       return <button type="button" className="plugin-directory-icon-action" aria-label={i18n('plugins.refreshStatus', 'Refresh') + ' ' + plugin.name} title={i18n('plugins.refreshStatus', 'Refresh')} onClick={() => dispatch.refreshPlugin(plugin.id)}><PlusIcon /></button>;
     }
     /* Legacy OOMOL apps need the gateway configured; OpenConnector apps
-       need the sidecar actually serving them (available: true). Stub
-       catalog entries (available: false) stay disabled until the
-       sidecar serves the app. */
+       need the hosted runtime actually serving them (available: true).
+       Stub catalog entries (available: false) stay disabled until the
+       gateway snapshot covers the app. */
     const isOc = plugin.id.startsWith('oc_');
     const connectable = plugin.available !== false && (isOc || configured);
     const connectTitle = connectable ? i18n('plugins.connect', 'Connect') : i18n('plugins.serverSetupNeeded', 'Unavailable');

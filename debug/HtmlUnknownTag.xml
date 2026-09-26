@@ -1,0 +1,602 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/public/index.html</file>
+  <line>488</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/public/index.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>15</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/public/index.html</file>
+  <line>488</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/public/index.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>41</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/assets/public/index.html</file>
+  <line>488</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/assets/public/index.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>15</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/assets/public/index.html</file>
+  <line>488</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/assets/public/index.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>41</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>435</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>15</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/index.html</file>
+  <line>435</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/index.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>41</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/api-keys.html</file>
+  <line>82</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/api-keys.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/api-keys.html</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/api-keys.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>20</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>109</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>84</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>115</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>118</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>119</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>119</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>85</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>125</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>128</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>85</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>432</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 style</description>
+  <highlighted_element>style</highlighted_element>
+  <language>XML</language>
+  <offset>3</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>441</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 style</description>
+  <highlighted_element>style</highlighted_element>
+  <language>XML</language>
+  <offset>4</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/api-keys.html</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/api-keys.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/api-keys.html</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/api-keys.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/api-keys.html</file>
+  <line>87</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/api-keys.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>20</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/api-keys.html</file>
+  <line>87</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/api-keys.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>20</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>112</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>112</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>115</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>115</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>81</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>81</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>124</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>124</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>125</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>125</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>125</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>82</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>125</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>82</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>131</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>131</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>134</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>134</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>82</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlUnknownTag" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未知标记</problem_class>
+  <description>此处不允许使用元素 div</description>
+  <highlighted_element>div</highlighted_element>
+  <language>XML</language>
+  <offset>82</offset>
+  <length>3</length>
+</problem>
+</problems>

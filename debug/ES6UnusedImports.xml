@@ -1,0 +1,770 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/_mock-api.mjs</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/_mock-api.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;fs&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'node:fs'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>import fs from 'node:fs';</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>0</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/_mock-api.mjs</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/_mock-api.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 resolve</description>
+  <highlighted_element>resolve</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>18</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/attachments-compat.spec.mjs</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/attachments-compat.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/boot.spec.mjs</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/boot.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/chat-send.spec.mjs</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/chat-send.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/cmd-k-compat.spec.mjs</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/cmd-k-compat.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/cmd-k.spec.mjs</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/cmd-k.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/composer-tools-compat.spec.mjs</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/composer-tools-compat.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/find-in-session.spec.mjs</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/find-in-session.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/inline-handlers.spec.mjs</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/inline-handlers.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/kb-graph.spec.mjs</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/kb-graph.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/keyboard-viewport.spec.mjs</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/keyboard-viewport.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/message-list-compat.spec.mjs</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/message-list-compat.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/native-visualization.spec.mjs</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/native-visualization.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/react-compat.spec.mjs</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/react-compat.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/repro-input-overlap.spec.mjs</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/repro-input-overlap.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 expect</description>
+  <highlighted_element>expect</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>15</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/session-start.spec.mjs</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/session-start.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/share-view.spec.mjs</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/share-view.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/sidebar-compat.spec.mjs</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/sidebar-compat.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/streaming-render.spec.mjs</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/streaming-render.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/viz-canvas.spec.mjs</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/viz-canvas.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-cross-device.spec.mjs</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-cross-device.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 login</description>
+  <highlighted_element>login</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>24</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/motion.test.mjs</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/motion.test.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 MOTION_VELOCITY_PX_PER_S</description>
+  <highlighted_element>MOTION_VELOCITY_PX_PER_S</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>2</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/thinkingPanel.test.mjs</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/thinkingPanel.test.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 getThinkingPanelSnapshot</description>
+  <highlighted_element>getThinkingPanelSnapshot</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>2</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/wasmParity.test.mjs</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/wasmParity.test.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;path&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'node:path'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>import path from 'node:path';</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>0</offset>
+  <length>29</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/Toast.tsx</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/Toast.tsx" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 useState</description>
+  <highlighted_element>useState</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>35</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/Toast.tsx</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/Toast.tsx" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 Easing</description>
+  <highlighted_element>Easing</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>19</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ToolRunGroup.tsx</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ToolRunGroup.tsx" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 useMemo</description>
+  <highlighted_element>useMemo</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>16</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/packages/theme/src/rn.ts</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/packages/theme/src/rn.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 palettes</description>
+  <highlighted_element>palettes</highlighted_element>
+  <language>TypeScript</language>
+  <offset>2</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/scripts/archive/audit-window-bridges.mjs</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/scripts/archive/audit-window-bridges.mjs" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;{&amp;#32;glob&amp;#32;}&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;&quot;node:fs/promises&quot;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>import { glob } from &quot;node:fs/promises&quot;;</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>0</offset>
+  <length>40</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/db/schema.ts</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/db/schema.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 varchar</description>
+  <highlighted_element>varchar</highlighted_element>
+  <language>TypeScript</language>
+  <offset>59</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/middleware/rateLimit.ts</file>
+  <line>63</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/middleware/rateLimit.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;pre&gt;&lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;{&amp;#32;getTierPlan&amp;#32;}&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'../lib/tiers.js'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/html&gt;</description>
+  <highlighted_element>import { getTierPlan } from '../lib/tiers.js';</highlighted_element>
+  <language>TypeScript</language>
+  <offset>0</offset>
+  <length>46</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/account.ts</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/account.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 workspaces</description>
+  <highlighted_element>workspaces</highlighted_element>
+  <language>TypeScript</language>
+  <offset>9</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/apiKeys.ts</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 decrypt</description>
+  <highlighted_element>decrypt</highlighted_element>
+  <language>TypeScript</language>
+  <offset>18</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/mistakes.ts</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/mistakes.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 sql</description>
+  <highlighted_element>sql</highlighted_element>
+  <language>TypeScript</language>
+  <offset>24</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/nlweb.ts</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/nlweb.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 type Response</description>
+  <highlighted_element>type Response</highlighted_element>
+  <language>TypeScript</language>
+  <offset>31</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/notifications.ts</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/notifications.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 and</description>
+  <highlighted_element>and</highlighted_element>
+  <language>TypeScript</language>
+  <offset>13</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;crypto&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'node:crypto'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>import crypto from 'node:crypto';</highlighted_element>
+  <language>TypeScript</language>
+  <offset>0</offset>
+  <length>33</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 shares</description>
+  <highlighted_element>shares</highlighted_element>
+  <language>TypeScript</language>
+  <offset>2</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/share.ts</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/share.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 BadRequest</description>
+  <highlighted_element>BadRequest</highlighted_element>
+  <language>TypeScript</language>
+  <offset>19</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/systemModels.ts</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/systemModels.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 NotFound</description>
+  <highlighted_element>NotFound</highlighted_element>
+  <language>TypeScript</language>
+  <offset>9</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/auth.ts</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/auth.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 desc</description>
+  <highlighted_element>desc</highlighted_element>
+  <language>TypeScript</language>
+  <offset>27</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/auth.ts</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/auth.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 ApiError</description>
+  <highlighted_element>ApiError</highlighted_element>
+  <language>TypeScript</language>
+  <offset>2</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;{&amp;#32;EventEmitter&amp;#32;}&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'node:events'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>import { EventEmitter } from 'node:events';</highlighted_element>
+  <language>TypeScript</language>
+  <offset>0</offset>
+  <length>43</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>32</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 files</description>
+  <highlighted_element>files</highlighted_element>
+  <language>TypeScript</language>
+  <offset>21</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>35</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;pre&gt;&lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;{&amp;#32;TooManyRequests&amp;#32;}&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'../lib/errors.js'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/html&gt;</description>
+  <highlighted_element>import { TooManyRequests } from '../lib/errors.js';</highlighted_element>
+  <language>TypeScript</language>
+  <offset>0</offset>
+  <length>51</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 getStatus as pubsubStatus</description>
+  <highlighted_element>getStatus as pubsubStatus</highlighted_element>
+  <language>TypeScript</language>
+  <offset>48</offset>
+  <length>25</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 MAX_TOOL_ARGUMENT_CHARS</description>
+  <highlighted_element>MAX_TOOL_ARGUMENT_CHARS</highlighted_element>
+  <language>TypeScript</language>
+  <offset>9</offset>
+  <length>23</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/embedding.ts</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/embedding.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 and</description>
+  <highlighted_element>and</highlighted_element>
+  <language>TypeScript</language>
+  <offset>9</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/loginLockout.ts</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/loginLockout.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 gt</description>
+  <highlighted_element>gt</highlighted_element>
+  <language>TypeScript</language>
+  <offset>39</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/search.ts</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/search.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 or</description>
+  <highlighted_element>or</highlighted_element>
+  <language>TypeScript</language>
+  <offset>13</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/search.ts</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/search.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 users</description>
+  <highlighted_element>users</highlighted_element>
+  <language>TypeScript</language>
+  <offset>9</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/util/cleanupDb.ts</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/util/cleanupDb.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>&lt;html&gt;未使用的 &lt;code&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;import&amp;#32;&lt;/span&gt;&lt;span style=&quot;&quot;&gt;fs&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#cf8e6d;&quot;&gt;from&amp;#32;&lt;/span&gt;&lt;span style=&quot;color:#6aab73;&quot;&gt;'node:fs/promises'&lt;/span&gt;&lt;span style=&quot;&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/html&gt;</description>
+  <highlighted_element>import fs from 'node:fs/promises';</highlighted_element>
+  <language>TypeScript</language>
+  <offset>0</offset>
+  <length>34</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/util/cleanupDb.ts</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/util/cleanupDb.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 files</description>
+  <highlighted_element>files</highlighted_element>
+  <language>TypeScript</language>
+  <offset>40</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/vision.ts</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/vision.ts" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 homedir</description>
+  <highlighted_element>homedir</highlighted_element>
+  <language>TypeScript</language>
+  <offset>17</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/adminAuth.test.js</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/adminAuth.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 beforeEach</description>
+  <highlighted_element>beforeEach</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>25</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/chunkIndex.test.js</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/chunkIndex.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 and</description>
+  <highlighted_element>and</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>13</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/email.test.js</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/email.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 before</description>
+  <highlighted_element>before</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>25</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/email.test.js</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/email.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 after</description>
+  <highlighted_element>after</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>33</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/loginLockout.test.js</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/loginLockout.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 recordSuccess</description>
+  <highlighted_element>recordSuccess</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>38</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/middleware-auth.test.js</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/middleware-auth.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 getDb</description>
+  <highlighted_element>getDb</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>17</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/tiers.test.js</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/tiers.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 TIERS</description>
+  <highlighted_element>TIERS</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>2</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/usageTracker.test.js</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/usageTracker.test.js" />
+  <problem_class id="ES6UnusedImports" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的 import</problem_class>
+  <description>未使用的 导入说明符 mock</description>
+  <highlighted_element>mock</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>25</offset>
+  <length>4</length>
+</problem>
+</problems>

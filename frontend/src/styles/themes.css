@@ -1,68 +1,68 @@
 /* Theme values are the single source of truth for every first-party surface.
-   The ramp is a subtly warm neutral scale (hue ~40), with pure black for the
+   The ramp is a subtly cool neutral scale (hue ~222), with pure black for the
    dark page and text levels that remain readable across the surface steps. */
 [data-mode="dark"] {
   color-scheme: dark;
   --ui-bg-page: #000000;
   /* The rail sits one step above the page so the sidebar reads as a distinct
-     band in dark mode (明度即层级), matching the --cg-ramp step #0d0c0a. */
-  --ui-bg-sidebar: #0d0c0a;
-  --ui-bg-raised: #141310;
-  --ui-bg-surface: #1c1b17;
-  --ui-bg-control: #24231e;
-  --ui-bg-hover: #211f1a;
-  --ui-bg-overlay: #302e28;
-  --ui-text-primary: #f4f1ea;
-  --ui-text-secondary: #dedacf;
-  --ui-text-tertiary: #aaa59a;
-  --ui-text-muted: #9a958a;
-  --ui-text-disabled: #716c62;
-  --ui-border-subtle: rgb(190 181 161 / 8%);
-  --ui-border-default: rgb(190 181 161 / 12%);
-  --ui-border-strong: rgb(190 181 161 / 18%);
+     band in dark mode (明度即层级), matching the --cg-ramp step #0c0d10. */
+  --ui-bg-sidebar: #0c0d10;
+  --ui-bg-raised: #131519;
+  --ui-bg-surface: #1a1d22;
+  --ui-bg-control: #22262d;
+  --ui-bg-hover: #20242b;
+  --ui-bg-overlay: #2d313a;
+  --ui-text-primary: #f2f4f7;
+  --ui-text-secondary: #d8dce3;
+  --ui-text-tertiary: #a6acb8;
+  --ui-text-muted: #959ca8;
+  --ui-text-disabled: #6e747f;
+  --ui-border-subtle: rgb(160 172 192 / 8%);
+  --ui-border-default: rgb(160 172 192 / 12%);
+  --ui-border-strong: rgb(160 172 192 / 18%);
   --ui-backdrop: rgb(0 0 0 / 58%);
   --ui-on-accent: #000;
-  --ui-accent-strong: #f4f1ea;
+  --ui-accent-strong: #f2f4f7;
   --ui-danger: #e77770;
   --ui-success: #67b58d;
   /* The composer capsule sits one step above the page; the small controls
      inside it sit one step above the capsule. */
-  --ui-bg-composer: #25231f;
-  --ui-bg-chip: rgb(190 181 161 / 10%);
-  --ui-bg-chip-hover: rgb(190 181 161 / 16%);
-  --ui-bg-bubble: #24231e;
-  --ui-bg-segment-active: rgb(190 181 161 / 14%);
+  --ui-bg-composer: #23262e;
+  --ui-bg-chip: rgb(160 172 192 / 10%);
+  --ui-bg-chip-hover: rgb(160 172 192 / 16%);
+  --ui-bg-bubble: #22262d;
+  --ui-bg-segment-active: rgb(160 172 192 / 14%);
   --ui-shadow-popover: 0 18px 48px rgb(0 0 0 / 46%), 0 1px 0 rgb(255 255 255 / 5%) inset;
 }
 
 [data-mode="light"] {
   color-scheme: light;
   --ui-bg-page: #ffffff;
-  --ui-bg-sidebar: #f7f5ef;
-  --ui-bg-raised: #f4f2ec;
-  --ui-bg-surface: #eeece5;
-  --ui-bg-control: #e7e4dc;
-  --ui-bg-hover: #eae7df;
+  --ui-bg-sidebar: #f5f6f8;
+  --ui-bg-raised: #f2f4f7;
+  --ui-bg-surface: #eceef2;
+  --ui-bg-control: #e4e7ec;
+  --ui-bg-hover: #e9ebef;
   --ui-bg-overlay: #ffffff;
-  --ui-text-primary: #1b1a17;
-  --ui-text-secondary: #393730;
-  --ui-text-tertiary: #5e5a51;
-  --ui-text-muted: #6c675d;
-  --ui-text-disabled: #989388;
-  --ui-border-subtle: rgb(55 47 31 / 7%);
-  --ui-border-default: rgb(55 47 31 / 10%);
-  --ui-border-strong: rgb(55 47 31 / 16%);
-  --ui-backdrop: rgb(20 17 12 / 32%);
+  --ui-text-primary: #171a1f;
+  --ui-text-secondary: #31353c;
+  --ui-text-tertiary: #565b64;
+  --ui-text-muted: #656b75;
+  --ui-text-disabled: #8f95a0;
+  --ui-border-subtle: rgb(34 43 60 / 7%);
+  --ui-border-default: rgb(34 43 60 / 10%);
+  --ui-border-strong: rgb(34 43 60 / 16%);
+  --ui-backdrop: rgb(13 17 23 / 32%);
   --ui-on-accent: #fff;
-  --ui-accent-strong: #1b1a17;
+  --ui-accent-strong: #171a1f;
   --ui-danger: #a73632;
   --ui-success: #276c49;
   /* Light composer is a white capsule on the white page — the hairline
      border (desktop) and shadow carry the separation, not a fill step. */
   --ui-bg-composer: #fff;
-  --ui-bg-chip: rgb(55 47 31 / 5%);
-  --ui-bg-chip-hover: rgb(55 47 31 / 9%);
-  --ui-bg-bubble: #f0eee8;
+  --ui-bg-chip: rgb(34 43 60 / 5%);
+  --ui-bg-chip-hover: rgb(34 43 60 / 9%);
+  --ui-bg-bubble: #eef0f4;
   --ui-bg-segment-active: #fff;
-  --ui-shadow-popover: 0 18px 48px rgb(35 29 18 / 14%), 0 1px 0 rgb(255 255 255 / 85%) inset;
+  --ui-shadow-popover: 0 18px 48px rgb(20 26 36 / 14%), 0 1px 0 rgb(255 255 255 / 85%) inset;
 }

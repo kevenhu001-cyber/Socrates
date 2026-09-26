@@ -1,0 +1,98 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/04-topbar-menus.css</file>
+  <line>297</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/04-topbar-menus.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>12</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/05-chat-landing.css</file>
+  <line>362</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/05-chat-landing.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>137</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/08-exam.css</file>
+  <line>194</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/08-exam.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>117</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2456</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/home.css</file>
+  <line>278</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/home.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>24</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/home.css</file>
+  <line>278</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/home.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>24</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/home.css</file>
+  <line>282</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/home.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>57</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/home.css</file>
+  <line>282</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/home.css" />
+  <problem_class id="CssRedundantUnit" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余度量单位</problem_class>
+  <description>计量单位 &lt;code&gt;%&lt;/code&gt; 冗余</description>
+  <highlighted_element>%</highlighted_element>
+  <language>CSS</language>
+  <offset>57</offset>
+  <length>1</length>
+</problem>
+</problems>

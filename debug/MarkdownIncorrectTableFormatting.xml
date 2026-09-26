@@ -1,0 +1,1418 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| App home (EN) | App product view | | --- | --- | | ![Home (EN)](screenshot_1_home.png) | ![Product...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>191</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>111</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| App home (中文) | App product view (中文) | | --- | --- | | ![首页 (中文)](screenshot_3_zh_home.png) | ![产...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>203</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>295</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Layer | Technology | Notes | | --- | --- | --- | | Web SPA | React/TypeScript + legacy JS compatib...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2588</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>459</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Var | Required | Default | Purpose | | --- | --- | --- | --- | | `DATABASE_URL` | yes | — | Postgr...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1310</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.md</file>
+  <line>484</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Renderer | Where | Used when | | --- | --- | --- | | `formatMsgProgressive` | [`frontend/src/main....</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>582</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>81</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 应用首页（英文） | 应用产品视图（英文） | | --- | --- | | ![Home (EN)](screenshot_1_home.png) | ![Product (EN)](scre...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>180</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>81</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 应用首页（英文） | 应用产品视图（英文） | | --- | --- | | ![Home (EN)](screenshot_1_home.png) | ![Product (EN)](scre...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>180</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>86</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 应用首页（中文） | 应用产品视图（中文） | | --- | --- | | ![首页 (中文)](screenshot_3_zh_home.png) | ![产品视图 (中文)](screen...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>187</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>86</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 应用首页（中文） | 应用产品视图（中文） | | --- | --- | | ![首页 (中文)](screenshot_3_zh_home.png) | ![产品视图 (中文)](screen...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>187</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>219</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 层 | 技术 | 说明 | | --- | --- | --- | | Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`]...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1654</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>219</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 层 | 技术 | 说明 | | --- | --- | --- | | Web SPA | React/TypeScript + 遗留 JS 兼容层，Vite 构建 | [`frontend/`]...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1654</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>377</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 变量 | 必需 | 默认值 | 用途 | | --- | --- | --- | --- | | `DATABASE_URL` | 是 | — | PostgreSQL 连接字符串 | | `PO...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>611</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>377</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 变量 | 必需 | 默认值 | 用途 | | --- | --- | --- | --- | | `DATABASE_URL` | 是 | — | PostgreSQL 连接字符串 | | `PO...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>611</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>395</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 渲染器 | 位置 | 使用时机 | | --- | --- | --- | | `formatMsgProgressive` | `frontend/src/main.js` | 流式输出中，每帧...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>254</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/README.zh.md</file>
+  <line>395</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/README.zh.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 渲染器 | 位置 | 使用时机 | | --- | --- | --- | | `formatMsgProgressive` | `frontend/src/main.js` | 流式输出中，每帧...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>254</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/STRUCTURE.md</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/STRUCTURE.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 子目录 | 用途 | 何时落这里 | | --- | --- | --- | | `docs/adr/` | **架构决策记录**（Architecture Decision Records） |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>729</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/STRUCTURE.md</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/STRUCTURE.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 子目录 | 用途 | | --- | --- | | `tasks/`（根） | 当下与项目所有者对账的活跃任务列表 | | `tasks/evidence/` | 2026-09-20 之前的一...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>197</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/0003-structural-debt-categories.md</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/0003-structural-debt-categories.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 级别 | 含义 | 时间窗 | 单 PR 约束 | 验证基线 | | --- | --- | --- | --- | --- | | **P0** | &quot;必须&quot;。文档/事实对不上、gitignor...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>649</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/0009-ci-workflow-paths.md</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/0009-ci-workflow-paths.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 路径 | 排除理由 | | --- | --- | | `docs/**` | 全部 docs/ 子目录（api/ spec 除外时见下） | | `README.md`、`README.zh.m...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>266</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/0009-ci-workflow-paths.md</file>
+  <line>83</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/0009-ci-workflow-paths.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| PR 类型 | `changes` | 三个重 job | required checks | | --- | --- | --- | --- | | 纯文档 | 运行（约 10s） | skip...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>206</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/0010-services-subgroup-rename.md</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/0010-services-subgroup-rename.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 子目录 | 范畴 | 典型文件（从现状外推） | | --- | --- | --- | | `services/core/` | 与 LLM proxy / 认证 / 业务流水线紧密耦合的核心服...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1504</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/0011-vendor-files-rationalization.md</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/0011-vendor-files-rationalization.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 文件 | 大小 | 注入入口 | 实际消费者 | | --- | --- | --- | --- | | `plotly.min.js` | 4.7 MB | `vendor/lazy.js:lo...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>587</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/0013-frontend-directory-merge.md</file>
+  <line>54</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/0013-frontend-directory-merge.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| PR | 合并 | 目标目录 | 风险点 | | --- | --- | --- | --- | | 0013.1 | `state/` ∪ `store/` ∪ `lib/`（不含 `lib/b...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>988</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/adr/README.md</file>
+  <line>66</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/adr/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 标题 | 状态 | 关联 | | --- | --- | --- | --- | | 0001 | Web 客户端路线：保留 Vite SPA，React/TS 化并对齐 LobeHub...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>656</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 级别 | 数量 | 单条风险 | 总工作日估算 | | --- | --- | --- | --- | | P0 | 6 | 低（文档修订、gitignore、软删） | 0.5d | | P1 ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>210</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>57</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 路径 | 类型 | 状态 | | --- | --- | --- | | `.claude/worktrees/` | 工具产物（2 个 worktree）| 未跟踪、未忽略 | | `%TEMP...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>452</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>92</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 文件 | 行 | KB | | --- | --- | --- | | `frontend/src/styles.css` | 11 708 | 675 | | `frontend/src/i18...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>566</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>107</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 文件 | MB | | --- | --- | | `vendor-files/plotly.min.js` | 4.7 | | `vendor-files/mermaid.min.js` | 3...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>226</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>169</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| ID | 动作 | 文件 | 验收 | 落地 | | --- | --- | --- | --- | --- | | P0-A | 修 AGENTS.md 事实：main.js / styles....</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1402</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>182</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 动作 | 文件 | | --- | --- | | 给 `ci.yml`、`server-ci.yml`、`mobile-apk.yml`、`build-apk.yml`、`agent-tooli...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>305</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>189</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 动作 | 文件 | | --- | --- | | 写 `docs/STRUCTURE.md` 约定 docs/plans vs docs/adr vs docs/audits vs tasks/...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>362</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>197</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 动作 | 文件 | | --- | --- | | 写 `scripts/README.md` INDEX | `scripts/README.md` | | 一次性脚本归档到 `scripts/...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>193</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>236</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 风险 | 触发条件 | 缓解 | | --- | --- | --- | | README 引图改后视觉变化 | 受众期望 | 选保留 `screenshot_*.png` 路径，避免变更意图 |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>436</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 风险等级 | 含义 | |---------|------| | 高 | 可被直接利用造成数据泄露、远程代码执行、成本失控或核心功能不可用 | | 中 | 在特定条件下可被利用，或对系统稳定性/用...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>139</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 优先级 | 含义 | |-------|------| | P0 | 立即修复（安全关键，应在发布前完成） | | P1 | 短期修复（应在当前迭代或下一迭代完成） | | P2 | 计划修复（纳...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>110</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 类别 | 风险等级 | 实施优先级 | 简述 | |------|------|---------|-----------|------| | S-H1 | 安全 | 高 | P0 | ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2416</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>837</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 顺序 | 编号 | 任务 | 类别 | |------|------|------|------| | 1 | S-H1 | 修复公共分享链接 XSS：引入 DOMPurify 对 marked ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>272</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>849</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 顺序 | 编号 | 任务 | 类别 | |------|------|------|------| | 1 | S-M1 | 修复 /api/fetch-batch SSRF：要求鉴权 + man...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>765</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>872</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 任务 | |------|------| | S-L1 | API key hint 改用 slice(-4) 或哈希 | | S-L2 | POST/PATCH /api/api-ke...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>243</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>882</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 任务 | |------|------| | P-M1 | knowledgeBoundary 加分页/时间窗 + 下推 SQL 聚合 | | P-M2 | messages 加复合索引...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>498</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>899</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 任务 | |------|------| | U-M1 | 子主题推进显示 1/3 进度指示 | | U-M2 | 卡住检测区分&quot;简短&quot;与&quot;卡住&quot;，实质性回答重置 stuckCount ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>493</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>980</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 类别 | 解决方式 | |------|------|----------| | U-H1 | 可用性 | `renderModeBanner()` 在聊天顶部显示当前模式 + 切换按钮...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>466</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/audit-report.md</file>
+  <line>991</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/audit-report.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 编号 | 类别 | 描述 | 优先级 | |------|------|------|--------| | A-R1 | 性能 | `renderKnowledgeBoundaryFile` 每...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>469</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/client-release.md</file>
+  <line>109</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/client-release.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Artifact | Path | Size | SHA-256 | |---|---|---|---| | APK | `mobile/dist/socrates-android-2.0.1.a...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>262</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/p0.1-edit-regenerate-audit.md</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/p0.1-edit-regenerate-audit.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| # | 检查项 | 结果 | 严重度 | | --- | --- | --- | --- | | 1 | 编辑作用域（仅 user 消息） | ✅ 符合预期 | — | | 2 | 带附件消息编辑...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>357</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 位置 | 内容 | 问题 | |---|---|---| | `frontend/src/windowExports.js` | `composeAction` / `researchAction...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>557</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| key | 名称 | kind | 出现位置 | 副作用 | 备注 | |---|---|---|---|---|---| | `upload` | Add files | action | 工具...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>824</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>205</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 状态 | 归属 | 说明 | |---|---|---| | `_activeTemplate` | `main.js`(不变) | 单一激活模板;模板类型扩展通过 `setActiveTempl...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>508</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>216</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 集成点 | 现状 | 改造后 | |---|---|---| | `windowExports.js` | 5 个硬编码 `*Action` | 删除;保留 5 个 window 函数为一行委托(...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>581</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>337</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 阶段 | 发布位置 | 事件 | |---|---|---| | 扩展激活 | `research.ts` / `explore.ts` / `analyze.ts` `onActivate` |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>479</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>354</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 组件 | 文件 | 职责 | |---|---|---| | `ExploreStepper` | `frontend/src/react/extensions/ExploreStepper.ts...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>523</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 层 | 现状 | |---|---| | 构建 | Vite 6.4，ESM，`manualChunks` 按 `src/{i18n,store,render,chat,ui}` 分块；`cssC...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>560</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Tier | 目录 | 行数 | 令牌体系 | |---|---|---|---| | 1 | `tokens.css` + `themes.css` | ~150 | `--ui-*`（hex/...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>483</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Token | Dark | Light | |---|---|---| | bg-page / sidebar | `#000` / `#000`（仅靠 hairline 分隔）| `#fff`...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>772</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>94</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 组件 | 关键值 | |---|---| | `.sidebar-nav-btn` | 235×36，grid `22px 1fr auto`，radius 9px，hover/active `-...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>952</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>170</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 组件 | 改动 | |---|---| | Sidebar | 与 page 同色 + 右 hairline；header 48px；nav 项 32px 高、radius 8、icon 20px...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1104</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>197</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| | Track A：原地换肤（推荐） | Track B：干净重建 | |---|---|---| | 做法 | 新增 Tier-5 `styles/polish/`（import 在 resto...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>383</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md</file>
+  <line>227</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-09-24-frontend-redesign-replication-plan.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 波次 | 表面 | 涉及文件 | 回归 spec | |---|---|---|---| | 3.1 | Sidebar（nav/recents/footer/搜索）| `polish/sideb...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1029</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/feature-gap-analysis.md</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/feature-gap-analysis.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Feature | Beagle/Claude | Socrates | Status | Priority | |---------|--------------|----------|----...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>694</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/feature-gap-analysis.md</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/feature-gap-analysis.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Feature | Status | Effort | |---------|--------|--------| | Citation system | ✅ Implemented | Medi...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>285</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 维度 | 迁移到 mobile/ (当前方案) | 改造 frontend/ (用户提议) | |------|--------------------------|---------------...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>351</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md</file>
+  <line>296</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Web | React Native | 注意事项 | |-----|-------------|---------| | `&lt;div&gt;` | `&lt;View&gt;` | 基础容器 | | `&lt;span...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>440</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md</file>
+  <line>601</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 阶段 | 工作周 | 关键产出 | |------|--------|---------| | Phase 0 | 2-3周 | 依赖审计、脚手架 | | Phase 1 | 4-6周 | 核心架...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>247</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md</file>
+  <line>635</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 维度 | 改造 frontend/ | 继续 mobile/ | |------|---------------|-------------| | **时间** | 4-6 个月 | 2-3 个月...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>257</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/product-roadmap.md</file>
+  <line>35</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/product-roadmap.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 能力 | 函数 | 位置 | 说明 | | --- | --- | --- | --- | | 编辑用户消息 | `editUserMessage` | L4498 | textarea 替换消息...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>520</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/product-roadmap.md</file>
+  <line>49</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/product-roadmap.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 能力 | 现状 | 目标 | | --- | --- | --- | | 会话内查找（Ctrl-F） | 不存在。仅有全局 Cmd-K（`ui/cmdK.js`） | 新建当前会话内查找面板 | ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>311</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/product-roadmap.md</file>
+  <line>193</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/product-roadmap.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 阶段 | 交付物 | 预估工作量 | 验收标准（e2e / 现有规格） | | --- | --- | --- | --- | | P0.1 | 编辑/重生成边界审计报告 + bug 票 | 2-...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>543</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/react-typescript-migration.md</file>
+  <line>329</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/react-typescript-migration.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Metric | Baseline | |---|---| | `src/main.js` lines | 9,902 | | Unique `window.X` bindings in `src...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>359</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M1_REPORT.md</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M1_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| # | Deliverable | Status | |---|---|---| | 1.1 | Design tokens (`src/ui/tokens.ts`, `src/ui/tokens...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1062</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M1_REPORT.md</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M1_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Path | Lines | Purpose | |---|---|---| | `src/ui/tokens.ts` | 255 | Single TS source: spacing, rad...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>3147</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M1_REPORT.md</file>
+  <line>54</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M1_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Path | Change | |---|---| | `index.html` | Boot script now structured so the pre-paint color step ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1807</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M1_REPORT.md</file>
+  <line>187</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M1_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Asset | Before M1 | After M1 | Δ | |---|---|---|---| | Main CSS | 925,081 B (style-Df3MBJQW.css) |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>471</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>11</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| # | Deliverable | Status | |---|---|---| | 3.1 | Six namespace bridges in `src/state/bridges.ts` (...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1413</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>26</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Path | Lines | Purpose | |---|---|---| | `src/state/bridges.ts` | 313 | One `createImmutableBridge...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>515</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Path | Change | |---|---| | `src/state.js` | Replaced the hand-rolled Proxy + stateStore IIFE with...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2456</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Legacy pattern | M3 behaviour | |---|---| | `state.topic` read | `stateStore.read('topic')` → live...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1591</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Surface | File | Action literals | |---|---|---| | React message toolbar | `react/message-list/Mes...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1009</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>155</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Overlay | Change | |---|---| | `#cmdKOverlay` | Inner `#cmdKModal` structure removed; `ui/cmdK.js`...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>619</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>192</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Surface | Change | |---|---| | Auth tabs | Direct click + keyboard listeners for `switchAuthTab` /...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>457</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>215</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| File | Change | |---|---| | `ui/effortPicker.js` | &quot;Manage models…&quot; button no longer emits `data-a...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1371</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>245</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| File | Change | |---|---| | `src/react/message-list/MessageToolbar.tsx` | Dropped the `action` pro...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1428</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/README.md</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Area | Main entry points | Responsibility | |---|---|---| | App startup | `src/main.js`, `src/app/...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>949</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/ATTRIBUTION.md</file>
+  <line>7</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/ATTRIBUTION.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| File | Brand | Source | License / note | | --- | --- | --- | --- | | acculynx.svg | AccuLynx | OOM...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>15714</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/ATTRIBUTION.md</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/ATTRIBUTION.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| File | Brand | Source | License / note | | --- | --- | --- | --- | | 7_shifts.png | 7shifts | Offi...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2328</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/vendor-files/README.md</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/vendor-files/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 文件 | 大小 | 来源（upstream） | 注入入口 | 实际消费者 | | --- | --- | --- | --- | --- | | `plotly.min.js` | 4.7 MB...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>823</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/vendor-files/README.md</file>
+  <line>29</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/vendor-files/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 路径 | 作用 | 内容形式 | | --- | --- | --- | | `frontend/src/vendor/` | 注入逻辑（`init.js`, `lazy.js`） | 项目自有 ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>175</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/vendor-files/README.md</file>
+  <line>52</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/vendor-files/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 上游版本 | 同步日期 | 同步到本目录哪个文件 | 验证 | | --- | --- | --- | --- | | 初次归档 | 2026-09-20 | 全部 6 文件 | — |</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>95</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/docs/frontend-parity.md</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/docs/frontend-parity.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Surface | Feature | State | Visual | Platform exception | Acceptance | |---|---|---|---|---|---| |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>3365</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/docs/ui-gap-audit.md</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/docs/ui-gap-audit.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Priority | Gap | Exit condition | |---|---|---| | ~~P0~~ | ~~Native Prompt Templates manager/repos...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2921</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/scripts/visual/README.md</file>
+  <line>47</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/scripts/visual/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| State | Content | | --- | --- | | 01-auth | signed-out AuthScreen | | 02-home | signed-in empty Ne...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>783</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/scripts/README.md</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/scripts/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 脚本 | 外部引用 | | --- | --- | | `backup-secrets.sh` | 自包含；引用 `scripts/rotate-secrets.sh`、`scripts/rest...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>484</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/.well-known/api-catalog.md</file>
+  <line>12</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/.well-known/api-catalog.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Relation | Resource | Type | | --- | --- | --- | | service-desc | [Socrates OpenAPI specification]...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2964</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/SKILL.md</file>
+  <line>69</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/SKILL.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Capability | Description | | --- | --- | | Socratic dialogue | Ask-then-answer tutoring style. The...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>699</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/SKILL.md</file>
+  <line>82</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/SKILL.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Tool | Purpose | | --- | --- | | `socrates.bootstrap` | Mobile-shell bootstrap contract (cold-star...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>386</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/auth.md</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/auth.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Scheme | Used by | Status | | --- | --- | --- | | Browser session cookie `sid` | Web SPA, third-pa...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>586</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/auth.md</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/auth.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| You are | Use | Section | | --- | --- | --- | | A third-party agent acting for a user | OAuth 2.0 ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>304</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/auth.md</file>
+  <line>81</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/auth.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Attribute | Value | | --- | --- | | Name | `sid` | | Value | 64-hex (256 bits) | | `HttpOnly` | tr...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>309</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/auth.md</file>
+  <line>281</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/auth.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Status | When | | --- | --- | | `200` | Success | | `401` | Missing or invalid bearer, expired ses...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>643</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/developers.md</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/developers.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Resource | URL | Format | | --- | --- | --- | | OpenAPI specification | [/openapi.json](/openapi.j...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1392</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/index.md</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Measure | Value | | --- | --- | | Active learners enrolled | 184 | | Recall prompts logged | 1,247...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>218</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/product.md</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/product.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Measure | Value | | --- | --- | | Active learners | 1,240 | | Median session length | 26 min | | R...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>135</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/research/explanation-evidence/index.md</file>
+  <line>68</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/research/explanation-evidence/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Finding | Share | | --- | --- | | Seam detected before any probe | 61% | | Short re-shape, strong ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>151</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/research/honest-pause/index.md</file>
+  <line>54</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/research/honest-pause/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Context | Next message structurally better | | --- | --- | | After an explicit pause | 68% | | Aft...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>170</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/research/maps-preserve-path/index.md</file>
+  <line>56</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/research/maps-preserve-path/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Measure | Original | Rebuilt | | --- | --- | --- | | Still opening at week 4 | 12% | 58% | | Edges...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>190</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/research/memory-recall/index.md</file>
+  <line>59</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/research/memory-recall/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Prompt condition | One-week delayed recall | | --- | --- | | Verbatim re-ask | 41% | | Re-framed p...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>155</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/research/tutor-curiosity/index.md</file>
+  <line>54</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/research/tutor-curiosity/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Condition | Outcome | | --- | --- | | Error caught, boundary named | 61% | | Error caught, no boun...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>161</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/research/what-learners-keep/index.md</file>
+  <line>56</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/research/what-learners-keep/index.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Kind of moment | Cited a week later | | --- | --- | | Detour moments | 71% | | Explicit uncertaint...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>157</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-07-07-fix-summary.md</file>
+  <line>33</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-07-07-fix-summary.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 域名 | bundle hash | 部署时间 | |---|---|---| | app.topodrive.top | index-Cp-3cDWS.js (462549 bytes) | 2...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>194</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-07-07-fix-summary.md</file>
+  <line>42</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-07-07-fix-summary.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 指标 | 值 | |---|---| | bundleScript | https://app.topodrive.top/assets/index-Cp-3cDWS.js | | userEma...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>429</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-07-07-full-audit.md</file>
+  <line>5</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-07-07-full-audit.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 维度 | 工具 | 状态 | |---|---|---| | Server 路由/服务/中间件 | agent + grep | 87 findings (6 HIGH, 11 MEDIUM) |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>575</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-07-07-full-audit.md</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-07-07-full-audit.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 库 | 当前 | CVE 数 | 最高 | 修复版本 | |---|---|---|---|---| | multer | ^1.4.5-lts.2 | 9 | HIGH (DoS via mal...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>292</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-07-07-full-audit.md</file>
+  <line>132</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-07-07-full-audit.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 优先级 | 任务 | 估计工时 | |---|---|---| | P0 | H1 multer 2.x 升级 | 4h (含测试) | | P0 | H1 nodemailer 9.x 升级 |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>509</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-07-07-p-verify-17-fixes.md</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-07-07-p-verify-17-fixes.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| # | 修复 | 文件:行 | 验证命令 | 结果 | |----|------|---------|----------|------| | 1 | H1.1 drizzle-orm 0.4...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2146</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/2026-08-12-marketing-site-legal-audit.md</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/2026-08-12-marketing-site-legal-audit.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Claim area | Evidence | Published wording | | --- | --- | --- | | API-key encryption | `server/src...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1173</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tasks/evidence/phase1-browser-diagnosis.md</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tasks/evidence/phase1-browser-diagnosis.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| 域名 | EdgeOne 拦截? | bundle 加载? | modelPicker 状态 | |---|---|---|---| | test.topodrive.top | **是** — ...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>215</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tools-rust/README.md</file>
+  <line>45</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tools-rust/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Socrates mechanism | Codex source (reference) | Rust module | WASM binding | Frontend consumer | |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>2943</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tools-rust/README.md</file>
+  <line>152</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tools-rust/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| # | File | What changed | Fallback | |---|---|---|---| | 1 | `frontend/src/chat/toolRunState.ts` |...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>995</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/tools-rust/README.md</file>
+  <line>196</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/tools-rust/README.md" />
+  <problem_class id="MarkdownIncorrectTableFormatting" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">表格式设置不正确</problem_class>
+  <description>表的格式不正确</description>
+  <highlighted_element>| Item | Why deferred | What needs to happen first | |---|---|---| | Wire `StreamController` into `f...</highlighted_element>
+  <language>Markdown</language>
+  <offset>0</offset>
+  <length>1813</length>
+</problem>
+</problems>

@@ -602,7 +602,7 @@ export async function callAPIStream(messages,maxTokens,onDelta,onThinking,opts){
             if((payload.indexOf('"error"')>=0||payload.indexOf("'error'")>=0)
                && /error|fail|unavailable/i.test(payload)){
               streamError=makeStreamError(payload.slice(0,200));
-              return;
+
             }
           }
     };

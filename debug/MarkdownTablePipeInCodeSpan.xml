@@ -1,0 +1,98 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md</file>
+  <line>194</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/audits/2026-09-20-structural-review.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>44</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>49</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>65</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M3_REPORT.md</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M3_REPORT.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>91</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>219</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>90</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>220</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>165</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>220</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>180</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/M4_PLAN.md</file>
+  <line>220</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/M4_PLAN.md" />
+  <problem_class id="MarkdownTablePipeInCodeSpan" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">代码跨度中存在未转义的竖线</problem_class>
+  <description>代码跨度内未转义的 '|' 在表中会被视为列分隔符</description>
+  <highlighted_element>|</highlighted_element>
+  <language>Markdown</language>
+  <offset>195</offset>
+  <length>1</length>
+</problem>
+</problems>

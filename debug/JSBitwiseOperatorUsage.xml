@@ -1,0 +1,38 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSBitwiseOperatorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">按位运算符用法</problem_class>
+  <description>使用了按位运算符</description>
+  <highlighted_element>&amp;</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18098</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSBitwiseOperatorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">按位运算符用法</problem_class>
+  <description>使用了按位运算符</description>
+  <highlighted_element>&amp;</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20688</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSBitwiseOperatorUsage" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">按位运算符用法</problem_class>
+  <description>使用了按位运算符</description>
+  <highlighted_element>&amp;</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10778</offset>
+  <length>1</length>
+</problem>
+</problems>

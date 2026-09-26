@@ -1,0 +1,878 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/boot.js</file>
+  <line>36</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/boot.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>BEAGLE_BUILT_IN</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/boot.js</file>
+  <line>130</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/boot.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>BEAGLE_BUILT_IN</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>280</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>beagleBody</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>301</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>resp</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>beagleBody</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/api.js</file>
+  <line>364</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/api.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>resp</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>104</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>maxTurns</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>105</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>tooMany</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>summary</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>109</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>overflow</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>112</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>out</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>116</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>i</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>117</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>m</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>125</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>txt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>181</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>maxTurns</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>182</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>tooMany</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>183</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>summary</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>185</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>overflow</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>188</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>out</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>193</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>m</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>195</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>txt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>205</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>out</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>207</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>i</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/history.js</file>
+  <line>213</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/history.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>txt</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>421</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>probe</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/stream.js</file>
+  <line>462</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/stream.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>probe</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js</file>
+  <line>821</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>_fvi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js</file>
+  <line>822</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>_fvr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js</file>
+  <line>828</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>_fvi</highlighted_element>
+  <language>JavaScript</language>
+  <offset>22</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js</file>
+  <line>829</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>_fvr</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webLinks.js</file>
+  <line>109</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webLinks.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>results</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webLinks.js</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webLinks.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>blocks</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webLinks.js</file>
+  <line>129</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webLinks.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>blocks</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webLinks.js</file>
+  <line>130</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webLinks.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>results</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webSearch.js</file>
+  <line>119</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webSearch.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>emsg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webSearch.js</file>
+  <line>239</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webSearch.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>emsg</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>409</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>458</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>993</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>ua</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>996</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>ua</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>1031</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>ic</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/exam.js</file>
+  <line>1035</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/exam.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>ic</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/viz.js</file>
+  <line>421</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/viz.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>el</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/viz.js</file>
+  <line>423</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/viz.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/viz.js</file>
+  <line>461</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/viz.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>el</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/viz.js</file>
+  <line>463</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/viz.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/composerTools.js</file>
+  <line>85</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/composerTools.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>wrap</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/composerTools.js</file>
+  <line>86</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/composerTools.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>wrapRect</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/composerTools.js</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/composerTools.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>wrap</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/composerTools.js</file>
+  <line>111</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/composerTools.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>wrapRect</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/mistakeBook.js</file>
+  <line>184</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/mistakeBook.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>parsed</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/mistakeBook.js</file>
+  <line>209</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/mistakeBook.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>parsed</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/settings.js</file>
+  <line>235</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/settings.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>id</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/settings.js</file>
+  <line>240</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/settings.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>id</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/settings.js</file>
+  <line>455</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/settings.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/settings.js</file>
+  <line>461</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/settings.js" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/status.html</file>
+  <line>232</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/status.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>saved</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/status.html</file>
+  <line>488</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/status.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>saved</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>308</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>315</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>323</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>329</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>336</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>275</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>28</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>275</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>28</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>276</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>276</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>277</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>277</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>278</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>278</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>279</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>279</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="JSDuplicatedDeclaration" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">重复声明</problem_class>
+  <description>重复声明</description>
+  <highlighted_element>v</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>1</length>
+</problem>
+</problems>

@@ -1,0 +1,182 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/offline.ts</file>
+  <line>39</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/offline.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/retryPolicy.ts</file>
+  <line>121</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/retryPolicy.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js</file>
+  <line>201</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/turnUi.js</file>
+  <line>28</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/turnUi.js" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/webLinks.js</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/webLinks.js" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/displayPrefs.js</file>
+  <line>139</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/displayPrefs.js" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/MessageItem.tsx</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/MessageItem.tsx" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/message-list/MessageList.tsx</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/message-list/MessageList.tsx" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/react/tool-run/toolRunModel.ts</file>
+  <line>816</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/react/tool-run/toolRunModel.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/helpers.ts</file>
+  <line>288</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/helpers.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/render/streaming.ts</file>
+  <line>66</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/render/streaming.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/mobileModeSwitch.js</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/mobileModeSwitch.js" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/topicFocusAssist.js</file>
+  <line>19</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/topicFocusAssist.js" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/adminAuth.ts</file>
+  <line>230</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/adminAuth.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/attachmentReader.ts</file>
+  <line>192</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/attachmentReader.ts" />
+  <problem_class id="TrivialIfJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">冗余的 'if' 语句</problem_class>
+  <description>&lt;code&gt;if&lt;/code&gt; 语句可以简化</description>
+  <highlighted_element>if</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>2</length>
+</problem>
+</problems>

@@ -1,0 +1,617 @@
+<root>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" line="719" start="38143" end="38948" />
+  <fragment file="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/assets/debug/mergeDebugAssets/native-bridge.js" line="741" start="39421" end="40130" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze.mjs" line="34" start="1697" end="2021" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze2.mjs" line="23" start="1116" end="1440" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/shots-polish.mjs" line="22" start="1019" end="1343" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze.mjs" line="40" start="2163" end="2820" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/shots-polish.mjs" line="27" start="1389" end="2046" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze.mjs" line="259" start="13842" end="14184" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/shots-polish.mjs" line="112" start="5184" end="5526" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze2.mjs" line="15" start="676" end="1060" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze3.mjs" line="24" start="1411" end="1795" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/shots-polish.mjs" line="14" start="579" end="963" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze2.mjs" line="45" start="2651" end="3974" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze3.mjs" line="46" start="2688" end="4010" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze2.mjs" line="62" start="3428" end="3837" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/cdp-analyze3.mjs" line="63" start="3465" end="3874" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/shots-polish.mjs" line="41" start="2171" end="2580" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/probe-ext-chain.mjs" line="12" start="654" end="1020" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/probe-reply.mjs" line="8" start="410" end="775" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/probe-tap.mjs" line="1" start="0" end="445" />
+  <fragment file="file://$PROJECT_DIR$/frontend/analysis/probe-tap2.mjs" line="1" start="0" end="445" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="7" start="167" end="821" />
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="7" start="167" end="822" />
+  <fragment file="file://$PROJECT_DIR$/frontend/mic-fix-shot.mjs" line="7" start="194" end="848" />
+  <fragment file="file://$PROJECT_DIR$/frontend/mic-fix-shot.mjs" line="7" start="194" end="849" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="35" start="1376" end="1809" />
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="35" start="1376" end="1810" />
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="49" start="2002" end="2435" />
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="49" start="2002" end="2436" />
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="63" start="2607" end="3040" />
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg-shot.mjs" line="63" start="2607" end="3041" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/dbg.mjs" line="7" start="416" end="699" />
+  <fragment file="file://$PROJECT_DIR$/frontend/shot-compare.mjs" line="16" start="603" end="912" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/compare-plugins.mjs" line="11" start="442" end="1103" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/compare-shell.mjs" line="25" start="2122" end="2783" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/compare-plugins.mjs" line="71" start="4492" end="4810" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-plugins-mock.mjs" line="31" start="2182" end="2500" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-attach-width.mjs" line="2" start="70" end="638" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-topic-chips.mjs" line="2" start="69" end="637" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-chips-guard.mjs" line="2" start="76" end="612" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-editor-box.mjs" line="2" start="67" end="603" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-editor-identity.mjs" line="2" start="73" end="609" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-flips.mjs" line="2" start="73" end="609" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-matched-styles.mjs" line="3" start="151" end="687" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-measure-detail.mjs" line="2" start="66" end="602" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-real-flow.mjs" line="3" start="144" end="680" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-topic-height.mjs" line="2" start="66" end="602" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-chips-guard.mjs" line="2" start="76" end="817" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-matched-styles.mjs" line="3" start="151" end="892" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-controller-measure.mjs" line="2" start="82" end="653" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-shrink.mjs" line="3" start="149" end="721" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-editor-box.mjs" line="2" start="67" end="923" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-measure-detail.mjs" line="2" start="66" end="922" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-editor-identity.mjs" line="38" start="1512" end="1964" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-flips.mjs" line="50" start="2300" end="2752" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-matched-styles.mjs" line="15" start="689" end="1141" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-installed.mjs" line="1" start="0" end="428" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-plugins-mock.mjs" line="1" start="0" end="428" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-startbtn.mjs" line="1" start="0" end="418" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/verify-fixes.mjs" line="1" start="0" end="428" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-installed.mjs" line="16" start="1024" end="1483" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-plugins-mock.mjs" line="20" start="1579" end="2038" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/verify-fixes.mjs" line="23" start="1549" end="2008" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-installed.mjs" line="16" start="1024" end="1553" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-plugins-mock.mjs" line="20" start="1579" end="2108" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-ref-lib.mjs" line="8" start="463" end="674" />
+  <fragment file="file://$PROJECT_DIR$/frontend/debug/probe-ref-sched.mjs" line="8" start="486" end="697" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-autoscroll.spec.mjs" line="124" start="5938" end="6496" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-autoscroll.spec.mjs" line="153" start="7657" end="7969" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-autoscroll.spec.mjs" line="339" start="16751" end="17123" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-send.spec.mjs" line="123" start="5515" end="5887" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="26" start="1173" end="1947" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/repro-kb-content.spec.mjs" line="11" start="433" end="1141" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="121" start="4622" end="4907" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="121" start="4622" end="4908" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/repro-kb-content.spec.mjs" line="69" start="3045" end="3330" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/repro-kb-content.spec.mjs" line="69" start="3045" end="3331" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tmp-kb-probe.spec.mjs" line="86" start="3750" end="4035" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tmp-kb-probe.spec.mjs" line="86" start="3750" end="4036" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="131" start="5021" end="5321" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="201" start="8174" end="8474" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="263" start="10911" end="11211" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="340" start="14189" end="14575" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="491" start="21208" end="21594" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="393" start="16622" end="17056" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="519" start="22313" end="22675" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="714" start="31123" end="31553" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="394" start="16646" end="17102" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="614" start="26839" end="27223" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="404" start="17106" end="17405" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="528" start="22679" end="22978" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="465" start="20023" end="20302" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-send.spec.mjs" line="344" start="16165" end="16444" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="519" start="22313" end="22782" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-keyboard-anchor.spec.mjs" line="714" start="31123" end="31660" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-stop-resend.spec.mjs" line="81" start="3862" end="4258" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/chat-stop-resend.spec.mjs" line="118" start="5254" end="5577" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/composer-auto-resize.spec.mjs" line="96" start="3866" end="4289" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/composer-auto-resize.spec.mjs" line="145" start="6250" end="6673" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/composer-tools-compat.spec.mjs" line="12" start="651" end="1026" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/composer-tools-compat.spec.mjs" line="146" start="7041" end="7339" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-jump.spec.mjs" line="12" start="428" end="1600" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/stream-finish-stability.spec.mjs" line="60" start="1945" end="3118" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-jump.spec.mjs" line="13" start="481" end="1812" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/streaming-render.spec.mjs" line="20" start="849" end="2180" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic-desktop.spec.mjs" line="6" start="203" end="852" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="19" start="623" end="1272" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic-desktop.spec.mjs" line="50" start="2247" end="2676" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/katex-retry.spec.mjs" line="23" start="1011" end="1440" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic-desktop.spec.mjs" line="55" start="2424" end="2773" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="81" start="3431" end="3778" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="38" start="1431" end="1939" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="92" start="3981" end="4489" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="40" start="1522" end="1877" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="94" start="4072" end="4427" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/debug-topic.spec.mjs" line="125" start="5533" end="5888" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/katex-retry.spec.mjs" line="28" start="1188" end="1525" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/keyboard-viewport.spec.mjs" line="243" start="11168" end="11503" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/keyboard-viewport.spec.mjs" line="138" start="6550" end="7031" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/keyboard-viewport.spec.mjs" line="183" start="8596" end="9077" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/library-directory.spec.mjs" line="95" start="4088" end="4376" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/reference-ui-visual.spec.mjs" line="63" start="3429" end="3717" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/message-list-compat.spec.mjs" line="7" start="249" end="723" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/message-list-compat.spec.mjs" line="47" start="2278" end="2594" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/message-list-compat.spec.mjs" line="88" start="4272" end="4588" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/plugin-directory.spec.mjs" line="80" start="3035" end="3347" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/plugin-directory.spec.mjs" line="133" start="5771" end="6014" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/recents-archive-mobile.spec.mjs" line="47" start="1509" end="3376" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/recents-archive.spec.mjs" line="30" start="961" end="2828" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/repro-kb-content.spec.mjs" line="34" start="1358" end="1842" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tmp-kb-probe.spec.mjs" line="34" start="1377" end="1861" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/rn-web-smoke.spec.mjs" line="4" start="150" end="440" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/rn-web-smoke.spec.mjs" line="34" start="1536" end="1826" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/sidebar-compat.spec.mjs" line="12" start="600" end="1287" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/sidebar-compat.spec.mjs" line="119" start="5033" end="5693" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/thinking-panel.spec.mjs" line="96" start="4085" end="4391" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/thinking-panel.spec.mjs" line="119" start="4908" end="5215" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tool-card-lifecycle.spec.mjs" line="60" start="3055" end="3595" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tool-card-lifecycle.spec.mjs" line="103" start="5094" end="5418" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tool-cards.spec.mjs" line="356" start="19006" end="19321" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/tool-cards.spec.mjs" line="428" start="23480" end="23796" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-cross-device.spec.mjs" line="25" start="1878" end="2601" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" line="25" start="1165" end="1888" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" line="127" start="6378" end="7101" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-cross-device.spec.mjs" line="43" start="2807" end="3244" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" line="46" start="2271" end="2708" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" line="152" start="7666" end="8103" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" line="53" start="2718" end="3463" />
+  <fragment file="file://$PROJECT_DIR$/frontend/e2e/zz-test-recent-silent-error.spec.mjs" line="159" start="8113" end="8686" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/probe-composer.mjs" line="5" start="166" end="1389" />
+  <fragment file="file://$PROJECT_DIR$/frontend/probe-nav.mjs" line="5" start="167" end="1390" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/probe-parent.mjs" line="2" start="45" end="433" />
+  <fragment file="file://$PROJECT_DIR$/frontend/shoot-mobile-align.mjs" line="30" start="1212" end="1601" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/shot-verify.mjs" line="5" start="133" end="1025" />
+  <fragment file="file://$PROJECT_DIR$/frontend/shot-verify.mjs" line="50" start="2242" end="3134" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" line="30" start="1725" end="2128" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/session/organize.js" line="14" start="657" end="1060" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/session/recents.js" line="23" start="1323" end="1726" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" line="122" start="6705" end="7448" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" line="430" start="22084" end="22411" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/attachments/render.js" line="296" start="11638" end="11880" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/attachments/render.js" line="317" start="12389" end="12631" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/attachments/render.js" line="337" start="13071" end="13313" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/diagnosticParser.js" line="156" start="5837" end="6047" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/diagnosticParser.js" line="233" start="8315" end="8505" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/diagnosticParser.js" line="163" start="6133" end="6296" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/diagnosticParser.js" line="239" start="8549" end="8692" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/sendPipeline.js" line="36" start="1660" end="2051" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/streamingTurn.js" line="41" start="2018" end="2409" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/session/loader.js" line="43" start="2139" end="2530" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/stream.js" line="736" start="35069" end="35430" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/stream.js" line="751" start="35550" end="35911" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/toolRuntime.ts" line="814" start="34105" end="34484" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/toolRuntime.ts" line="850" start="35703" end="36082" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/turnAnchor.ts" line="504" start="21888" end="22154" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/chat/turnAnchor.ts" line="587" start="25794" end="26076" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/exam.js" line="775" start="38333" end="38619" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/exam.js" line="858" start="41803" end="42085" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/lib/bridge/createImmutableBridge.ts" line="109" start="4244" end="4674" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/store/createDomainStore.ts" line="96" start="3628" end="4058" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/lib/bridge/createImmutableBridge.ts" line="137" start="5139" end="5439" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/store/createDomainStore.ts" line="127" start="4704" end="5004" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/pickers.js" line="261" start="14139" end="14714" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/pickers.js" line="361" start="18278" end="18845" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" line="56" start="2251" end="2712" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" line="177" start="6426" end="6871" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" line="100" start="3784" end="4132" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" line="224" start="8012" end="8360" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" line="139" start="5255" end="5610" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" line="261" start="9363" end="9718" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" line="161" start="6081" end="6400" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" line="283" start="10214" end="10533" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" line="201" start="7828" end="10317" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" line="316" start="11597" end="13512" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminModal.tsx" line="281" start="11284" end="14326" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/adminModal/AdminPage.tsx" line="371" start="14328" end="16708" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/attachments/fileIcons.tsx" line="91" start="4849" end="5171" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/components/AttachmentChip.tsx" line="38" start="2237" end="2565" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/session-list/SessionList.tsx" line="38" start="2131" end="2719" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/components/AppDrawer.tsx" line="134" start="4537" end="5125" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/session-list/SessionList.tsx" line="40" start="2238" end="2719" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/components/AppDrawer.tsx" line="136" start="4644" end="5125" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/screens/RecentsScreen.tsx" line="33" start="1605" end="2086" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/tool-run/toolRunModel.ts" line="460" start="16898" end="17152" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/data/tools/turnLayout.ts" line="188" start="7671" end="7925" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/tool-run/toolRunModel.ts" line="482" start="17788" end="18855" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/data/tools/turnLayout.ts" line="119" start="4632" end="5463" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/react/tool-run/toolRunModel.ts" line="723" start="26835" end="27184" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts" line="279" start="11680" end="12029" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/helpers.ts" line="63" start="2389" end="3539" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/render/markdown.ts" line="45" start="1991" end="2485" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/helpers.ts" line="387" start="17385" end="17728" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/render/markdown.ts" line="114" start="5382" end="5725" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/markdown.ts" line="815" start="33858" end="34656" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/markdown.ts" line="1052" start="45595" end="46393" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/preprocess.ts" line="46" start="2150" end="2487" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/preprocess.ts" line="189" start="7598" end="7935" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/preprocess.ts" line="69" start="2885" end="3147" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/preprocess.ts" line="205" start="8158" end="8420" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/preprocess.ts" line="150" start="6154" end="7050" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/preprocess.ts" line="236" start="9665" end="10560" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/streaming.ts" line="97" start="4379" end="4618" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/data/tools/turnLayout.ts" line="46" start="1898" end="2137" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/streaming.ts" line="112" start="4987" end="6364" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/data/tools/turnLayout.ts" line="51" start="2140" end="3441" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/streaming.ts" line="152" start="6368" end="8383" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/data/tools/turnLayout.ts" line="90" start="3445" end="4630" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1022" start="51013" end="51597" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1084" start="53501" end="54085" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1025" start="51139" end="51597" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1087" start="53627" end="54085" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1045" start="51918" end="52448" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1106" start="54411" end="54941" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1047" start="51948" end="52448" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1108" start="54441" end="54941" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/render/viz.js" line="1168" start="56890" end="57385" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/session/loader.js" line="58" start="2531" end="2927" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/session/persistence.js" line="25" start="988" end="1384" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/components/composer.css" line="641" start="22027" end="22963" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/components/composer.css" line="684" start="23459" end="24327" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/legacy/05-chat-landing.css" line="88" start="6950" end="7258" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/legacy/05-chat-landing.css" line="286" start="18820" end="19128" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" line="516" start="25328" end="25609" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/legacy/06-chat-transcript.css" line="526" start="26304" end="26585" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/legacy/10-tutor-scaffolds.css" line="77" start="5365" end="5672" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/legacy/10-tutor-scaffolds.css" line="88" start="6498" end="6805" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" line="47" start="2131" end="3401" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/restore/ref-baseline.css" line="838" start="29776" end="31048" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" line="275" start="10674" end="11052" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" line="650" start="21554" end="21933" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" line="244" start="9375" end="9734" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/styles/restore/mobile-parity.css" line="306" start="11752" end="12111" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" line="132" start="16323" end="16646" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/creationSurfaces.js" line="140" start="17052" end="17375" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/tokens.ts" line="39" start="1830" end="4214" />
+  <fragment file="file://$PROJECT_DIR$/packages/theme/src/tokens.ts" line="1" start="0" end="2981" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts" line="370" start="15164" end="15533" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/toolInline.ts" line="562" start="22954" end="23323" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/topicSetup.js" line="34" start="1591" end="2309" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/ui/topicSetup.js" line="59" start="2823" end="3335" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/src/util/api.js" line="75" start="2821" end="3228" />
+  <fragment file="file://$PROJECT_DIR$/frontend/src/util/api.js" line="135" start="5670" end="6077" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/test/agentSteps.test.mjs" line="1" start="0" end="458" />
+  <fragment file="file://$PROJECT_DIR$/frontend/test/toolRunSingleSource.test.mjs" line="1" start="0" end="328" />
+  <fragment file="file://$PROJECT_DIR$/frontend/test/toolRuntime.test.mjs" line="1" start="0" end="612" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/test/assistantHtml.test.mjs" line="1" start="0" end="568" />
+  <fragment file="file://$PROJECT_DIR$/frontend/test/messageOps.test.mjs" line="1" start="0" end="496" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/test/toolCardViewProperties.test.mjs" line="96" start="3737" end="4045" />
+  <fragment file="file://$PROJECT_DIR$/frontend/test/toolCardViewProperties.test.mjs" line="122" start="4790" end="5098" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/frontend/test/toolInlineErrors.test.mjs" line="1" start="0" end="649" />
+  <fragment file="file://$PROJECT_DIR$/frontend/test/toolInlineFileSummary.test.mjs" line="1" start="0" end="462" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/mobile/scripts/visual/capture.mjs" line="279" start="11419" end="11758" />
+  <fragment file="file://$PROJECT_DIR$/mobile/scripts/visual/capture.mjs" line="294" start="12213" end="12552" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/mobile/src/components/ZoomableImage.tsx" line="99" start="3604" end="3925" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/components/ZoomableImage.tsx" line="116" start="4279" end="4600" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/mobile/src/data/exam/examGenerator.ts" line="14" start="390" end="615" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/stores/appStore.ts" line="103" start="4119" end="4344" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/mobile/src/screens/ChatScreen.tsx" line="208" start="10249" end="10876" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.tsx" line="116" start="6577" end="7204" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.test.tsx" line="87" start="3292" end="3825" />
+  <fragment file="file://$PROJECT_DIR$/mobile/src/screens/NewChatScreen.test.tsx" line="123" start="4697" end="5230" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/open-connector/src/providers/spotify/runtime.ts" line="0" start="17894" end="18119" />
+  <fragment file="file://$PROJECT_DIR$/server/src/services/githubConnector.ts" line="66" start="2105" end="2758" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/scripts/utils/css-dead-code-audit.mjs" line="10" start="477" end="1067" />
+  <fragment file="file://$PROJECT_DIR$/scripts/utils/css-dead-code-prune.mjs" line="11" start="494" end="1087" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/lib/spawnFirecrawl.ts" line="96" start="3473" end="3855" />
+  <fragment file="file://$PROJECT_DIR$/server/src/lib/spawnMmx.ts" line="113" start="3889" end="4271" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" line="47" start="2140" end="3606" />
+  <fragment file="file://$PROJECT_DIR$/server/src/services/embedding.ts" line="71" start="2723" end="3960" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" line="76" start="3832" end="4148" />
+  <fragment file="file://$PROJECT_DIR$/server/src/services/embedding.ts" line="95" start="4116" end="4408" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" line="176" start="8101" end="8407" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/apiKeys.ts" line="229" start="10425" end="10731" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/creations.ts" line="59" start="3481" end="3931" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/creations.ts" line="81" start="4840" end="5272" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/creations.ts" line="158" start="9622" end="10151" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/creations.ts" line="183" start="11466" end="11995" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/mcp.ts" line="188" start="8461" end="8758" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/mcpDocs.ts" line="117" start="5908" end="6205" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/mcp.ts" line="205" start="8990" end="9373" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/mcp.ts" line="219" start="9429" end="9812" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/memory.ts" line="55" start="1976" end="2262" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/memory.ts" line="83" start="3167" end="3460" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/memory.ts" line="98" start="3734" end="4027" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/oauth.ts" line="354" start="12987" end="13449" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/oauth.ts" line="454" start="18497" end="18959" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="775" start="38344" end="38592" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="793" start="38978" end="39227" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="960" start="46761" end="47009" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="975" start="47365" end="47613" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="775" start="38344" end="38651" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="960" start="46761" end="47068" />
+  <fragment file="file://$PROJECT_DIR$/server/src/routes/sessions.ts" line="975" start="47365" end="47672" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" line="476" start="24424" end="25980" />
+  <fragment file="file://$PROJECT_DIR$/server/src/services/contentExtractor.ts" line="222" start="7918" end="8380" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/services/connectorTools.ts" line="312" start="14881" end="15325" />
+  <fragment file="file://$PROJECT_DIR$/server/src/services/connectorTools.ts" line="337" start="16378" end="16822" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/src/services/llm.ts" line="667" start="31885" end="33812" />
+  <fragment file="file://$PROJECT_DIR$/server/src/services/llm.ts" line="722" start="34815" end="35720" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/test/.tmp-pdf-check.mjs" line="2" start="54" end="614" />
+  <fragment file="file://$PROJECT_DIR$/server/test/.tmp-pdf-debug.mjs" line="3" start="98" end="658" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/test/.tmp-pdf-check.mjs" line="21" start="816" end="1161" />
+  <fragment file="file://$PROJECT_DIR$/server/test/.tmp-pdf-debug.mjs" line="17" start="661" end="1006" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/test/embeddingConfig.test.js" line="36" start="1636" end="1951" />
+  <fragment file="file://$PROJECT_DIR$/server/test/systemModels.test.js" line="34" start="1405" end="1720" />
+</duplicate>
+<duplicate cost="1" hash="0">
+  <fragment file="file://$PROJECT_DIR$/server/test/rateLimit.test.js" line="111" start="3820" end="4147" />
+  <fragment file="file://$PROJECT_DIR$/server/test/rateLimit.test.js" line="126" start="4312" end="4639" />
+</duplicate>
+</root>

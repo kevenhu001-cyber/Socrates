@@ -1,0 +1,3174 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>31</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/incremental/debug/mergeDebugResources/merger.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>81</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_manifests/debug/processDebugManifestForPackage/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_manifests/debug/processDebugManifestForPackage/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/drawable/ic_launcher_background.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/drawable/ic_launcher_background.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/drawable/socrates_splash.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/drawable/socrates_splash.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>27</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/drawable-v24/ic_launcher_foreground.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/drawable-v24/ic_launcher_foreground.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>23</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>68</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res-auto</highlighted_element>
+  <language>XML</language>
+  <offset>15</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/layout/activity_main.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/mipmap-anydpi-v26/ic_launcher.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/mipmap-anydpi-v26/ic_launcher.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/mipmap-anydpi-v26/ic_launcher_round.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/mipmap-anydpi-v26/ic_launcher_round.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/config.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/config.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://www.w3.org/ns/widgets</highlighted_element>
+  <language>XML</language>
+  <offset>31</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/config.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/config.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://cordova.apache.org/ns/1.0</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/file_paths.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/build/intermediates/packaged_res/debug/packageDebugResources/xml/file_paths.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/debug/AndroidManifest.xml</file>
+  <line>9</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/debug/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/drawable/ic_launcher_background.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/drawable/ic_launcher_background.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>23</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>23</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/aapt</highlighted_element>
+  <language>XML</language>
+  <offset>16</offset>
+  <length>31</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>68</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res-auto</highlighted_element>
+  <language>XML</language>
+  <offset>15</offset>
+  <length>39</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml</file>
+  <line>4</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/layout/activity_main.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/config.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/config.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://www.w3.org/ns/widgets</highlighted_element>
+  <language>XML</language>
+  <offset>31</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/config.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/config.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://cordova.apache.org/ns/1.0</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/file_paths.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/app/src/main/res/xml/file_paths.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.amazon.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>24</offset>
+  <length>41</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.amazon.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>24</offset>
+  <length>41</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.amazon.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>14</offset>
+  <length>41</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://purl.org/dc/elements/1.1/</highlighted_element>
+  <language>SVG</language>
+  <offset>123</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://www.w3.org/1999/02/22-rdf-syntax-ns#</highlighted_element>
+  <language>SVG</language>
+  <offset>168</offset>
+  <length>43</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg</file>
+  <line>13</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用元素 rdf:RDF #loc</description>
+  <highlighted_element>rdf:RDF</highlighted_element>
+  <language>SVG</language>
+  <offset>3</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/discord.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用元素 rdf:RDF #loc</description>
+  <highlighted_element>rdf:RDF</highlighted_element>
+  <language>SVG</language>
+  <offset>4</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/emaillistverify.svg</file>
+  <line>3</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/emaillistverify.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd</highlighted_element>
+  <language>SVG</language>
+  <offset>48</offset>
+  <length>48</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://ns.adobe.com/Extensibility/1.0/</highlighted_element>
+  <language>SVG</language>
+  <offset>43</offset>
+  <length>38</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://ns.adobe.com/AdobeIllustrator/10.0/</highlighted_element>
+  <language>SVG</language>
+  <offset>92</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://ns.adobe.com/Graphs/1.0/</highlighted_element>
+  <language>SVG</language>
+  <offset>149</offset>
+  <length>31</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>15</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>35</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>17</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>20</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>21</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>20</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>20</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>21</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>20</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>20</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/outlook.svg" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>此处不允许使用特性 enable-background #loc</description>
+  <highlighted_element>enable-background</highlighted_element>
+  <language>SVG</language>
+  <offset>20</offset>
+  <length>17</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/generated/res/react/release/raw/keep.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/generated/res/react/release/raw/keep.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>24</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values/values.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values/values.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values/values.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values/values.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>67</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-af/values-af.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-af/values-af.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-af/values-af.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-af/values-af.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-am/values-am.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-am/values-am.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-am/values-am.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-am/values-am.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ar/values-ar.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ar/values-ar.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ar/values-ar.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ar/values-ar.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-as/values-as.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-as/values-as.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-as/values-as.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-as/values-as.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-az/values-az.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-az/values-az.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-az/values-az.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-az/values-az.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-b+es+419/values-b+es+419.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-b+es+419/values-b+es+419.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-b+sr+Latn/values-b+sr+Latn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-b+sr+Latn/values-b+sr+Latn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-b+sr+Latn/values-b+sr+Latn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-b+sr+Latn/values-b+sr+Latn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-be/values-be.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-be/values-be.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-be/values-be.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-be/values-be.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bg/values-bg.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bg/values-bg.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bg/values-bg.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bg/values-bg.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bn/values-bn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bn/values-bn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bn/values-bn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bn/values-bn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bs/values-bs.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bs/values-bs.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bs/values-bs.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-bs/values-bs.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ca/values-ca.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ca/values-ca.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ca/values-ca.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ca/values-ca.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-cs/values-cs.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-cs/values-cs.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-cs/values-cs.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-cs/values-cs.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-da/values-da.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-da/values-da.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-da/values-da.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-da/values-da.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-de/values-de.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-de/values-de.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-de/values-de.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-de/values-de.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-el/values-el.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-el/values-el.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-el/values-el.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-el/values-el.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rAU/values-en-rAU.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rAU/values-en-rAU.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rCA/values-en-rCA.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rCA/values-en-rCA.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rGB/values-en-rGB.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rGB/values-en-rGB.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rGB/values-en-rGB.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rGB/values-en-rGB.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rIN/values-en-rIN.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rIN/values-en-rIN.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rXC/values-en-rXC.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-en-rXC/values-en-rXC.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es/values-es.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es/values-es.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es/values-es.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es/values-es.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es-rUS/values-es-rUS.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es-rUS/values-es-rUS.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es-rUS/values-es-rUS.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-es-rUS/values-es-rUS.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-et/values-et.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-et/values-et.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-et/values-et.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-et/values-et.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-eu/values-eu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-eu/values-eu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-eu/values-eu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-eu/values-eu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fa/values-fa.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fa/values-fa.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fa/values-fa.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fa/values-fa.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fi/values-fi.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fi/values-fi.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fi/values-fi.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fi/values-fi.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr/values-fr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr/values-fr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr/values-fr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr/values-fr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr-rCA/values-fr-rCA.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr-rCA/values-fr-rCA.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr-rCA/values-fr-rCA.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-fr-rCA/values-fr-rCA.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gl/values-gl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gl/values-gl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gl/values-gl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gl/values-gl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gu/values-gu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gu/values-gu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gu/values-gu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-gu/values-gu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hi/values-hi.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hi/values-hi.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hi/values-hi.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hi/values-hi.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hr/values-hr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hr/values-hr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hr/values-hr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hr/values-hr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hu/values-hu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hu/values-hu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hu/values-hu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hu/values-hu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hy/values-hy.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hy/values-hy.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hy/values-hy.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-hy/values-hy.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-in/values-in.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-in/values-in.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-in/values-in.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-in/values-in.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-is/values-is.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-is/values-is.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-is/values-is.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-is/values-is.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-it/values-it.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-it/values-it.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-it/values-it.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-it/values-it.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-iw/values-iw.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-iw/values-iw.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-iw/values-iw.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-iw/values-iw.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ja/values-ja.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ja/values-ja.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ja/values-ja.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ja/values-ja.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ka/values-ka.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ka/values-ka.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ka/values-ka.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ka/values-ka.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kk/values-kk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kk/values-kk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kk/values-kk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kk/values-kk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-km/values-km.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-km/values-km.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-km/values-km.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-km/values-km.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kn/values-kn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kn/values-kn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kn/values-kn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-kn/values-kn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ko/values-ko.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ko/values-ko.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ko/values-ko.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ko/values-ko.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ky/values-ky.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ky/values-ky.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ky/values-ky.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ky/values-ky.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lo/values-lo.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lo/values-lo.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lo/values-lo.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lo/values-lo.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lt/values-lt.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lt/values-lt.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lt/values-lt.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lt/values-lt.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lv/values-lv.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lv/values-lv.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lv/values-lv.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-lv/values-lv.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mk/values-mk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mk/values-mk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mk/values-mk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mk/values-mk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ml/values-ml.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ml/values-ml.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ml/values-ml.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ml/values-ml.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mn/values-mn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mn/values-mn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mn/values-mn.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mn/values-mn.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mr/values-mr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mr/values-mr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mr/values-mr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-mr/values-mr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ms/values-ms.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ms/values-ms.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ms/values-ms.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ms/values-ms.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-my/values-my.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-my/values-my.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-my/values-my.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-my/values-my.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nb/values-nb.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nb/values-nb.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nb/values-nb.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nb/values-nb.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ne/values-ne.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ne/values-ne.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ne/values-ne.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ne/values-ne.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nl/values-nl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nl/values-nl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nl/values-nl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-nl/values-nl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-or/values-or.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-or/values-or.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-or/values-or.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-or/values-or.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pa/values-pa.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pa/values-pa.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pa/values-pa.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pa/values-pa.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pl/values-pl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pl/values-pl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pl/values-pl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pl/values-pl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt/values-pt.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt/values-pt.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rBR/values-pt-rBR.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rBR/values-pt-rBR.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rBR/values-pt-rBR.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rBR/values-pt-rBR.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rPT/values-pt-rPT.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rPT/values-pt-rPT.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rPT/values-pt-rPT.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-pt-rPT/values-pt-rPT.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ro/values-ro.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ro/values-ro.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ro/values-ro.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ro/values-ro.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ru/values-ru.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ru/values-ru.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ru/values-ru.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ru/values-ru.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-si/values-si.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-si/values-si.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-si/values-si.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-si/values-si.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sk/values-sk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sk/values-sk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sk/values-sk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sk/values-sk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sl/values-sl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sl/values-sl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sl/values-sl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sl/values-sl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sq/values-sq.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sq/values-sq.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sq/values-sq.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sq/values-sq.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sr/values-sr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sr/values-sr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sr/values-sr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sr/values-sr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sv/values-sv.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sv/values-sv.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sv/values-sv.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sv/values-sv.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sw/values-sw.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sw/values-sw.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sw/values-sw.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-sw/values-sw.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ta/values-ta.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ta/values-ta.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ta/values-ta.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ta/values-ta.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-te/values-te.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-te/values-te.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-te/values-te.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-te/values-te.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-th/values-th.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-th/values-th.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-th/values-th.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-th/values-th.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tl/values-tl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tl/values-tl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tl/values-tl.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tl/values-tl.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tr/values-tr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tr/values-tr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tr/values-tr.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-tr/values-tr.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uk/values-uk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uk/values-uk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uk/values-uk.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uk/values-uk.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ur/values-ur.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ur/values-ur.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ur/values-ur.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-ur/values-ur.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uz/values-uz.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uz/values-uz.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uz/values-uz.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-uz/values-uz.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-vi/values-vi.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-vi/values-vi.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-vi/values-vi.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-vi/values-vi.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rCN/values-zh-rCN.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rCN/values-zh-rCN.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rCN/values-zh-rCN.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rCN/values-zh-rCN.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rHK/values-zh-rHK.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rHK/values-zh-rHK.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rHK/values-zh-rHK.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rHK/values-zh-rHK.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rTW/values-zh-rTW.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rTW/values-zh-rTW.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rTW/values-zh-rTW.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zh-rTW/values-zh-rTW.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zu/values-zu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zu/values-zu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>urn:oasis:names:tc:xliff:document:1.2</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>37</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zu/values-zu.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/mergeReleaseResources/merged.dir/values-zu/values-zu.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>72</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merged.dir/values/values.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merged.dir/values/values.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/incremental/release/packageReleaseResources/merger.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>31</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/merged_manifest/release/expoReleaseOverrideMaxSdkConflicts/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/merged_manifest/release/expoReleaseOverrideMaxSdkConflicts/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_manifests/release/processReleaseManifestForPackage/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/drawable/ic_launcher_background.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/drawable/ic_launcher_background.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>27</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/drawable/rn_edit_text_material.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/drawable/rn_edit_text_material.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/mipmap-anydpi-v26/ic_launcher.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/mipmap-anydpi-v26/ic_launcher.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/mipmap-anydpi-v26/ic_launcher_round.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/mipmap-anydpi-v26/ic_launcher_round.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/raw/keep.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/raw/keep.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>24</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/values/values.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/build/intermediates/packaged_res/release/packageReleaseResources/values/values.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/debug/AndroidManifest.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/debug/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/debug/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/debug/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/debugOptimized/AndroidManifest.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/debugOptimized/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/debugOptimized/AndroidManifest.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/debugOptimized/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>17</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/AndroidManifest.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>25</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/AndroidManifest.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/AndroidManifest.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>82</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/res/drawable/ic_launcher_background.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/res/drawable/ic_launcher_background.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>27</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/res/drawable/rn_edit_text_material.xml</file>
+  <line>16</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/res/drawable/rn_edit_text_material.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>22</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/apk/res/android</highlighted_element>
+  <language>XML</language>
+  <offset>30</offset>
+  <length>42</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/app/src/main/res/values/styles.xml</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/app/src/main/res/values/styles.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://schemas.android.com/tools</highlighted_element>
+  <language>XML</language>
+  <offset>24</offset>
+  <length>32</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/schemamap.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/schemamap.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>https://nlw.ai/schemas/schemamap/0.1</highlighted_element>
+  <language>XML</language>
+  <offset>18</offset>
+  <length>36</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/sitemap.xml</file>
+  <line>2</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/sitemap.xml" />
+  <problem_class id="XmlHighlighting" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">XML 高亮显示</problem_class>
+  <hints />
+  <description>URI 未注册(设置 | 语言和框架 | 架构和 DTD) #loc</description>
+  <highlighted_element>http://www.sitemaps.org/schemas/sitemap/0.9</highlighted_element>
+  <language>XML</language>
+  <offset>15</offset>
+  <length>43</length>
+</problem>
+</problems>

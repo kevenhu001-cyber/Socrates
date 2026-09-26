@@ -1,0 +1,398 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/components/composer.css</file>
+  <line>314</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/components/composer.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--voice-bar-height&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--voice-bar-height</highlighted_element>
+  <language>CSS</language>
+  <offset>14</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css</file>
+  <line>81</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--text-350&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--text-350</highlighted_element>
+  <language>CSS</language>
+  <offset>33</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css</file>
+  <line>83</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--text-350&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--text-350</highlighted_element>
+  <language>CSS</language>
+  <offset>27</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css</file>
+  <line>108</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--text-350&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--text-350</highlighted_element>
+  <language>CSS</language>
+  <offset>33</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css</file>
+  <line>110</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/00-foundations.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--text-350&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--text-350</highlighted_element>
+  <language>CSS</language>
+  <offset>27</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/04-topbar-menus.css</file>
+  <line>165</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/04-topbar-menus.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--seg-x&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--seg-x</highlighted_element>
+  <language>CSS</language>
+  <offset>11</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/04-topbar-menus.css</file>
+  <line>166</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/04-topbar-menus.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--seg-w&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--seg-w</highlighted_element>
+  <language>CSS</language>
+  <offset>12</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/05-chat-landing.css</file>
+  <line>295</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/05-chat-landing.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--border-500&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--border-500</highlighted_element>
+  <language>CSS</language>
+  <offset>103</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css</file>
+  <line>118</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-placeholder&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-placeholder</highlighted_element>
+  <language>CSS</language>
+  <offset>14</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css</file>
+  <line>168</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-editor-max&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-editor-max</highlighted_element>
+  <language>CSS</language>
+  <offset>49</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css</file>
+  <line>256</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-editor-max-mobile&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-editor-max-mobile</highlighted_element>
+  <language>CSS</language>
+  <offset>35</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css</file>
+  <line>261</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-focused-min&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-focused-min</highlighted_element>
+  <language>CSS</language>
+  <offset>19</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css</file>
+  <line>283</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-editor-max-mobile&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-editor-max-mobile</highlighted_element>
+  <language>CSS</language>
+  <offset>35</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css</file>
+  <line>296</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/13-composer-rich.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-editor-max-mobile&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-editor-max-mobile</highlighted_element>
+  <language>CSS</language>
+  <offset>23</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/14-tool-surfaces.css</file>
+  <line>883</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/14-tool-surfaces.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--accent-300&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--accent-300</highlighted_element>
+  <language>CSS</language>
+  <offset>16</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css</file>
+  <line>203</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-editor-max-mobile&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-editor-max-mobile</highlighted_element>
+  <language>CSS</language>
+  <offset>19</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css</file>
+  <line>259</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/legacy/16-final-contract.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--composer-editor-max-mobile&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--composer-editor-max-mobile</highlighted_element>
+  <language>CSS</language>
+  <offset>19</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css</file>
+  <line>119</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chat-surface.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--conversation-text-secondary&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--conversation-text-secondary</highlighted_element>
+  <language>CSS</language>
+  <offset>13</offset>
+  <length>29</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css</file>
+  <line>1795</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-ui.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--cgv-composer-surface&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--cgv-composer-surface</highlighted_element>
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>351</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--cgv-composer-surface&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--cgv-composer-surface</highlighted_element>
+  <language>CSS</language>
+  <offset>18</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>363</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--cgv-composer-surface&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--cgv-composer-surface</highlighted_element>
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css</file>
+  <line>847</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/styles/restore/chatgpt-v2.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--cgv-composer-surface&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--cgv-composer-surface</highlighted_element>
+  <language>CSS</language>
+  <offset>20</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2429</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--parallax-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--parallax-y</highlighted_element>
+  <language>CSS</language>
+  <offset>28</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2444</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--spot-x&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--spot-x</highlighted_element>
+  <language>CSS</language>
+  <offset>56</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2444</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--spot-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--spot-y</highlighted_element>
+  <language>CSS</language>
+  <offset>75</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2448</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--spot-x&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--spot-x</highlighted_element>
+  <language>CSS</language>
+  <offset>56</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2448</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--spot-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--spot-y</highlighted_element>
+  <language>CSS</language>
+  <offset>75</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2607</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--parallax-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--parallax-y</highlighted_element>
+  <language>CSS</language>
+  <offset>28</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2617</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--parallax-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--parallax-y</highlighted_element>
+  <language>CSS</language>
+  <offset>30</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2637</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--sv-tilt-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--sv-tilt-y</highlighted_element>
+  <language>CSS</language>
+  <offset>49</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2638</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--sv-tilt-x&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--sv-tilt-x</highlighted_element>
+  <language>CSS</language>
+  <offset>49</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2650</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--sv-tilt-y&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--sv-tilt-y</highlighted_element>
+  <language>CSS</language>
+  <offset>49</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/brand.css</file>
+  <line>2651</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/brand.css" />
+  <problem_class id="CssUnresolvedCustomProperty" severity="ERROR" attribute_key="ERRORS_ATTRIBUTES">未解析的自定义属性</problem_class>
+  <description>无法解析 &lt;code&gt;--sv-tilt-x&lt;/code&gt; 自定义属性</description>
+  <highlighted_element>--sv-tilt-x</highlighted_element>
+  <language>CSS</language>
+  <offset>49</offset>
+  <length>11</length>
+</problem>
+</problems>

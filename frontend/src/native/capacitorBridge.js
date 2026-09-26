@@ -188,7 +188,7 @@ function setupDeepLinkHandler() {
       // OAuth result and redirects with cookies set).
       if (url.startsWith('https://app.topodrive.top')) {
         window.location.href = url;
-        return;
+
       }
     } catch (_) { /* ignore listener errors */ }
   });

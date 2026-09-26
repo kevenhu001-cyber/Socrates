@@ -1,9 +1,9 @@
 /* Screenshot app inventory for the OpenConnector integration (phase 1).
  *
- * Each entry maps one app shown in the reference screenshots to its provider
- * directory under open-connector/src/providers. Entries with
- * ocService === null do not exist upstream yet and are phase-2 work (new
- * provider definitions following open-connector/AGENTS.md).
+ * Each entry maps one app shown in the reference screenshots to its
+ * provider id on the OOMOL-hosted runtime (ocService). Entries with
+ * ocService === null do not exist on the gateway yet and are phase-2
+ * work (requesting the provider upstream).
  *
  * Display rule confirmed with the user: apps that originally have a Chinese
  * name show the Chinese name, English-origin apps keep their native name.
@@ -12,7 +12,7 @@
 export interface OpenConnectorAppEntry {
   /** Label exactly as shown in the reference screenshots. */
   label: string;
-  /** Provider directory under open-connector/src/providers, or null when missing upstream. */
+  /** Provider id on the OOMOL-hosted runtime, or null when not offered yet. */
   ocService: string | null;
   /** Final directory display name shown in the Socrates plugin directory. */
   displayName: string;

@@ -1,0 +1,374 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10501</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10885</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11536</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11599</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>13552</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14261</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15059</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37105</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>37410</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>41383</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>42443</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>61310</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>94234</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>95309</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6834</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>15899</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>16734</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18070</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18269</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20476</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20548</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39604</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>39896</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>43649</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44713</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>74368</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>76630</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>76641</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>97064</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>98144</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="UnreachableCodeJS" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">不可到达的代码</problem_class>
+  <description>不可到达的代码</description>
+  <highlighted_element>var</highlighted_element>
+  <language>JavaScript</language>
+  <offset>112775</offset>
+  <length>3</length>
+</problem>
+</problems>

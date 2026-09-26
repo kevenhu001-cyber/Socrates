@@ -1,0 +1,146 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>103</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>缺少函数实现或此声明之后未紧随函数实现 #loc</description>
+  <highlighted_element>register</highlighted_element>
+  <language>Markdown</language>
+  <offset>2</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>104</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>缺少函数实现或此声明之后未紧随函数实现 #loc</description>
+  <highlighted_element>get</highlighted_element>
+  <language>Markdown</language>
+  <offset>2</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>105</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>缺少函数实现或此声明之后未紧随函数实现 #loc</description>
+  <highlighted_element>byPlacement</highlighted_element>
+  <language>Markdown</language>
+  <offset>2</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>缺少函数实现或此声明之后未紧随函数实现 #loc</description>
+  <highlighted_element>has</highlighted_element>
+  <language>Markdown</language>
+  <offset>2</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>tsconfig.json 中不包含相应文件 #loc</description>
+  <highlighted_element>event</highlighted_element>
+  <language>Markdown</language>
+  <offset>27</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>tsconfig.json 中不包含相应文件 #loc</description>
+  <highlighted_element>ts</highlighted_element>
+  <language>Markdown</language>
+  <offset>40</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>318</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>tsconfig.json 中不包含相应文件 #loc</description>
+  <highlighted_element>event</highlighted_element>
+  <language>Markdown</language>
+  <offset>15</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md</file>
+  <line>318</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/2026-08-01-extension-scaffold-design.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>tsconfig.json 中不包含相应文件 #loc</description>
+  <highlighted_element>ts</highlighted_element>
+  <language>Markdown</language>
+  <offset>22</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md</file>
+  <line>200</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>赋值模式必须位于赋值的左侧 #loc</description>
+  <highlighted_element>block={block}</highlighted_element>
+  <language>Markdown</language>
+  <offset>35</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md</file>
+  <line>449</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/docs/plans/frontend-to-rn-migration.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>赋值模式必须位于赋值的左侧 #loc</description>
+  <highlighted_element>block={block}</highlighted_element>
+  <language>Markdown</language>
+  <offset>33</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/toolRuntime.test.mjs</file>
+  <line>44</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/toolRuntime.test.mjs" />
+  <problem_class id="JSAnnotator" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>不允许引用 'arguments' 函数属性 #loc</description>
+  <highlighted_element>arguments</highlighted_element>
+  <language>JavaScript</language>
+  <offset>46</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test-results.bak/keyboard-viewport-keyboard-5c858-without-an-engagement-write-chromium/error-context.md</file>
+  <line>313</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test-results.bak/keyboard-viewport-keyboard-5c858-without-an-engagement-write-chromium/error-context.md" />
+  <problem_class id="JSAnnotator" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">未遵循 ECMAScript 规范</problem_class>
+  <description>assignment expression 中的左侧无效 #loc</description>
+  <highlighted_element>367 | list.scrollTop</highlighted_element>
+  <language>Markdown</language>
+  <offset>2</offset>
+  <length>24</length>
+</problem>
+</problems>

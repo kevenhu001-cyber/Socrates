@@ -1,0 +1,170 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/verify-parity.mjs</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/verify-parity.mjs" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'greeting &lt;span style=&quot;color: red&quot;&gt;→&lt;/span&gt; capsule gap'&lt;/html&gt;</description>
+  <highlighted_element>'greeting → capsule gap'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/verify-parity.mjs</file>
+  <line>117</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/verify-parity.mjs" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'greeting &lt;span style=&quot;color: red&quot;&gt;→&lt;/span&gt; capsule gap'&lt;/html&gt;</description>
+  <highlighted_element>'greeting → capsule gap'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>24</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>553</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'Google &lt;span style=&quot;color: red&quot;&gt;日&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;历&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'Google 日历'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>554</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'ima &lt;span style=&quot;color: red&quot;&gt;知&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;识&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;库&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'ima 知识库'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>556</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'&lt;span style=&quot;color: red&quot;&gt;即&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;梦&lt;/span&gt; AI'&lt;/html&gt;</description>
+  <highlighted_element>'即梦 AI'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>559</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'Lingvanex &lt;span style=&quot;color: red&quot;&gt;翻&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;译&lt;/span&gt; API'&lt;/html&gt;</description>
+  <highlighted_element>'Lingvanex 翻译 API'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>560</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'&lt;span style=&quot;color: red&quot;&gt;麦&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;当&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;劳&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;中&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;国&lt;/span&gt; MCP'&lt;/html&gt;</description>
+  <highlighted_element>'麦当劳中国 MCP'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>566</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'QQ &lt;span style=&quot;color: red&quot;&gt;邮&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;箱&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'QQ 邮箱'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>569</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'Torii &lt;span style=&quot;color: red&quot;&gt;图&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;片&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;翻&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;译&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;器&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'Torii 图片翻译器'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>576</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'QQ&lt;span style=&quot;color: red&quot;&gt;邮&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;箱&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'QQ邮箱'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>582</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'ima&lt;span style=&quot;color: red&quot;&gt;知&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;识&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;库&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'ima知识库'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>585</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'&lt;span style=&quot;color: red&quot;&gt;即&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;梦&lt;/span&gt;AI'&lt;/html&gt;</description>
+  <highlighted_element>'即梦AI'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>591</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'Discord&lt;span style=&quot;color: red&quot;&gt;机&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;器&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;人&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'Discord机器人'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/connector-icons.ts</file>
+  <line>592</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/connector-icons.ts" />
+  <problem_class id="JSNonASCIINames" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">包含非 ASCII 符号的标识符</problem_class>
+  <description>&lt;html&gt;名称同时包含 ASCII 和非 ASCII 符号: &lt;span&gt;'Discord &lt;span style=&quot;color: red&quot;&gt;机&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;器&lt;/span&gt;&lt;span style=&quot;color: red&quot;&gt;人&lt;/span&gt;'&lt;/html&gt;</description>
+  <highlighted_element>'Discord 机器人'</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>13</length>
+</problem>
+</problems>

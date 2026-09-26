@@ -1,0 +1,320 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/app/lifecycle.js</file>
+  <line>471</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/app/lifecycle.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>resetApp</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>4</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/auth/boot.js</file>
+  <line>103</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/auth/boot.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>(async function(){ try{ var info=await apiFetch(&quot;/api/auth/reset-info?token=&quot;+encodeUR...</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>4</offset>
+  <length>297</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/sendPipeline.js</file>
+  <line>220</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/sendPipeline.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>fetchWebContext</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>4</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/sessionBootstrap.js</file>
+  <line>247</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/sessionBootstrap.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>buildMessageContent</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>10</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/loader.js</file>
+  <line>340</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/loader.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>loadExamSession</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>6</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>473</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderLibrary</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>4</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>795</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderPlugins</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-6349</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>857</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderProjects</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-4534</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>859</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderProjects</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-3743</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1000</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderScheduled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-4660</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1004</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderScheduled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-4514</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1005</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderScheduled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-4264</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1005</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderScheduled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-4050</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1006</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderScheduled</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-3716</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1081</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderLibrary</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-7836</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1083</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderLibrary</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>-7240</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1119</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderPlugins</highlighted_element>
+  <language>ECMAScript 6</language>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1144</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>load</highlighted_element>
+  <language>ECMAScript 6</language>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/sidebar/nav.js</file>
+  <line>1149</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/sidebar/nav.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>renderPlugins</highlighted_element>
+  <language>ECMAScript 6</language>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/share.js</file>
+  <line>381</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/share.js" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>loadSharedExamSession</highlighted_element>
+  <language>ECMAScript 6</language>
+  <offset>6</offset>
+  <length>21</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/native/native.ts</file>
+  <line>65</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/native/native.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>DocumentPicker.getDocumentAsync</highlighted_element>
+  <language>TypeScript</language>
+  <offset>11</offset>
+  <length>31</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/native/native.ts</file>
+  <line>68</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/native/native.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>ImagePicker.launchImageLibraryAsync</highlighted_element>
+  <language>TypeScript</language>
+  <offset>11</offset>
+  <length>35</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/native/native.ts</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/native/native.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>ImagePicker.launchCameraAsync</highlighted_element>
+  <language>TypeScript</language>
+  <offset>11</offset>
+  <length>29</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/stores/appStore.ts</file>
+  <line>1100</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/stores/appStore.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>sessionRepository.save</highlighted_element>
+  <language>TypeScript</language>
+  <offset>8</offset>
+  <length>22</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/boot/startup.ts</file>
+  <line>214</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/boot/startup.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>startStatusMonitor</highlighted_element>
+  <language>TypeScript</language>
+  <offset>6</offset>
+  <length>18</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/githubConnector.ts</file>
+  <line>89</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/githubConnector.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>response.json</highlighted_element>
+  <language>TypeScript</language>
+  <offset>9</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/sessionExecutionLock.ts</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/sessionExecutionLock.ts" />
+  <problem_class id="ES6MissingAwait" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">异步函数调用缺少 await</problem_class>
+  <description>异步函数调用缺少 await</description>
+  <highlighted_element>Promise.resolve</highlighted_element>
+  <language>TypeScript</language>
+  <offset>45</offset>
+  <length>15</length>
+</problem>
+</problems>

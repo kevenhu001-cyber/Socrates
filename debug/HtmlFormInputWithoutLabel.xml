@@ -1,0 +1,122 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/status.html</file>
+  <line>215</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/status.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>7</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/api-keys.html</file>
+  <line>135</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/api-keys.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>154</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/checkout.html</file>
+  <line>155</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/checkout.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/api-keys.html</file>
+  <line>118</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/api-keys.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>63</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/api-keys.html</file>
+  <line>118</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/api-keys.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>63</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>160</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>160</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/checkout.html</file>
+  <line>161</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/checkout.html" />
+  <problem_class id="HtmlFormInputWithoutLabel" severity="WARNING" attribute_key="WARNING_ATTRIBUTES">表单输入没有相关的label</problem_class>
+  <description>表单输入没有相关的label</description>
+  <highlighted_element>input</highlighted_element>
+  <language>XML</language>
+  <offset>19</offset>
+  <length>5</length>
+</problem>
+</problems>

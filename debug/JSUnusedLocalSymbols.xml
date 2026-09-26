@@ -1,0 +1,1166 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>11556</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 t</description>
+  <highlighted_element>t</highlighted_element>
+  <language>JavaScript</language>
+  <offset>31438</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 t</description>
+  <highlighted_element>t</highlighted_element>
+  <language>JavaScript</language>
+  <offset>49863</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 r</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>52278</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 r</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>54082</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>69759</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>70148</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>71980</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>74243</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html</file>
+  <line>658</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/capacitor/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 r</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>79296</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/analysis/probe-tap2.mjs</file>
+  <line>31</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/analysis/probe-tap2.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 wrap2</description>
+  <highlighted_element>wrap2</highlighted_element>
+  <language>JavaScript</language>
+  <offset>20</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/compare-home.mjs</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/compare-home.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 g</description>
+  <highlighted_element>g</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/probe-home2.mjs</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/probe-home2.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 el</description>
+  <highlighted_element>el</highlighted_element>
+  <language>JavaScript</language>
+  <offset>40</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/probe-ref-home.mjs</file>
+  <line>8</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/probe-ref-home.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 boxes</description>
+  <highlighted_element>boxes</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/debug/probe-shrink.mjs</file>
+  <line>27</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/debug/probe-shrink.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 samples</description>
+  <highlighted_element>samples</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/_mock-api.mjs</file>
+  <line>14</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/_mock-api.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 __dirname</description>
+  <highlighted_element>__dirname</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/debug-jump.spec.mjs</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/debug-jump.spec.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 proto</description>
+  <highlighted_element>proto</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/e2e/reference-ui-visual.spec.mjs</file>
+  <line>186</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/e2e/reference-ui-visual.spec.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 chatEditorBox</description>
+  <highlighted_element>chatEditorBox</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/agent/researchAgent.js</file>
+  <line>377</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/agent/researchAgent.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _truncate</description>
+  <highlighted_element>_truncate</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/chat/turnController.js</file>
+  <line>37</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/chat/turnController.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _t</description>
+  <highlighted_element>_t</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/main.js</file>
+  <line>356</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/main.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 _deletedSessionGuard</description>
+  <highlighted_element>_deletedSessionGuard</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4</offset>
+  <length>20</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/main.js</file>
+  <line>644</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/main.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 _customInstructionsSaveTimer</description>
+  <highlighted_element>_customInstructionsSaveTimer</highlighted_element>
+  <language>JavaScript</language>
+  <offset>4</offset>
+  <length>28</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/recents.js</file>
+  <line>38</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/recents.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _resetApp</description>
+  <highlighted_element>_resetApp</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/session/recents.js</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/session/recents.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _saveCurrentSession</description>
+  <highlighted_element>_saveCurrentSession</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>19</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/keyboardShortcuts.js</file>
+  <line>22</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/keyboardShortcuts.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _t</description>
+  <highlighted_element>_t</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>2</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/share.js</file>
+  <line>98</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/share.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _show</description>
+  <highlighted_element>_show</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/ui/share.js</file>
+  <line>99</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/ui/share.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 _hide</description>
+  <highlighted_element>_hide</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/test/streamScheduler.test.mjs</file>
+  <line>70</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/test/streamScheduler.test.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 pending</description>
+  <highlighted_element>pending</highlighted_element>
+  <language>JavaScript</language>
+  <offset>25</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 t</description>
+  <highlighted_element>t</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34144</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 t</description>
+  <highlighted_element>t</highlighted_element>
+  <language>JavaScript</language>
+  <offset>51609</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 r</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>54155</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 r</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>55963</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>67464</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>67560</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>67983</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>68079</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>68291</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html</file>
+  <line>654</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/android/build/reports/problems/problems-report.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 r</description>
+  <highlighted_element>r</highlighted_element>
+  <language>JavaScript</language>
+  <offset>81646</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/cmdK/CmdKPalette.tsx</file>
+  <line>64</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/cmdK/CmdKPalette.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 radius</description>
+  <highlighted_element>radius</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/cmdK/CmdKPalette.tsx</file>
+  <line>64</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/cmdK/CmdKPalette.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 contentWidth</description>
+  <highlighted_element>contentWidth</highlighted_element>
+  <language>JavaScript</language>
+  <offset>47</offset>
+  <length>12</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/MessageBubble.tsx</file>
+  <line>382</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/MessageBubble.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 radius</description>
+  <highlighted_element>radius</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/render/MarkdownView.tsx</file>
+  <line>400</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/render/MarkdownView.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 radius</description>
+  <highlighted_element>radius</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/AuthScreen.tsx</file>
+  <line>61</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/AuthScreen.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 radius</description>
+  <highlighted_element>radius</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/KnowledgeScreen.tsx</file>
+  <line>170</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/KnowledgeScreen.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 graphHeight</description>
+  <highlighted_element>graphHeight</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/MistakesScreen.tsx</file>
+  <line>82</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/MistakesScreen.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 radius</description>
+  <highlighted_element>radius</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/screens/TutorScreen.tsx</file>
+  <line>60</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/screens/TutorScreen.tsx" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 spacing</description>
+  <highlighted_element>spacing</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/packages/core/src/toolRun.ts</file>
+  <line>84</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/packages/core/src/toolRun.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 hasWasm</description>
+  <highlighted_element>hasWasm</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/scripts/seed-test-user.mjs</file>
+  <line>51</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/scripts/seed-test-user.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 getDb</description>
+  <highlighted_element>getDb</highlighted_element>
+  <language>JavaScript</language>
+  <offset>18</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/lib/log.ts</file>
+  <line>65</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/lib/log.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 rawVal</description>
+  <highlighted_element>rawVal</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/lib/pubsub.ts</file>
+  <line>65</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/lib/pubsub.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 decodeChannel</description>
+  <highlighted_element>decodeChannel</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/middleware/rateLimit.ts</file>
+  <line>18</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/middleware/rateLimit.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 codeKey</description>
+  <highlighted_element>codeKey</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/middleware/rateLimit.ts</file>
+  <line>24</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/middleware/rateLimit.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 tokenKey</description>
+  <highlighted_element>tokenKey</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/auth.ts</file>
+  <line>449</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/auth.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 next</description>
+  <highlighted_element>next</highlighted_element>
+  <language>JavaScript</language>
+  <offset>54</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/chat/pipeline/runChatStreamPipeline.ts</file>
+  <line>277</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/chat/pipeline/runChatStreamPipeline.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 writeSse</description>
+  <highlighted_element>writeSse</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/execution.ts</file>
+  <line>106</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/execution.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 onError</description>
+  <highlighted_element>onError</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/files.ts</file>
+  <line>158</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/files.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 next</description>
+  <highlighted_element>next</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/minimaxProxy.ts</file>
+  <line>43</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/minimaxProxy.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 model</description>
+  <highlighted_element>model</highlighted_element>
+  <language>JavaScript</language>
+  <offset>35</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/oauth.ts</file>
+  <line>483</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/oauth.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 类型别名 TokenRow</description>
+  <highlighted_element>TokenRow</highlighted_element>
+  <language>JavaScript</language>
+  <offset>5</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/sessions.ts</file>
+  <line>25</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/sessions.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 UPLOAD_DIR</description>
+  <highlighted_element>UPLOAD_DIR</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/routes/status.ts</file>
+  <line>173</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/routes/status.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 idx</description>
+  <highlighted_element>idx</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/agentRuntime.ts</file>
+  <line>694</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/agentRuntime.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 options</description>
+  <highlighted_element>options</highlighted_element>
+  <language>JavaScript</language>
+  <offset>2</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/agentStepProjection.ts</file>
+  <line>158</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/agentStepProjection.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 changeKind</description>
+  <highlighted_element>changeKind</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>320</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 wasBusy</description>
+  <highlighted_element>wasBusy</highlighted_element>
+  <language>JavaScript</language>
+  <offset>12</offset>
+  <length>7</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>512</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 slot</description>
+  <highlighted_element>slot</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>512</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 code</description>
+  <highlighted_element>code</highlighted_element>
+  <language>JavaScript</language>
+  <offset>32</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>584</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 emit</description>
+  <highlighted_element>emit</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts</file>
+  <line>971</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/codeInterpreter.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 sha256</description>
+  <highlighted_element>sha256</highlighted_element>
+  <language>JavaScript</language>
+  <offset>26</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/contentExtractor.ts</file>
+  <line>292</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/contentExtractor.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 err</description>
+  <highlighted_element>err</highlighted_element>
+  <language>JavaScript</language>
+  <offset>28</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/email.ts</file>
+  <line>184</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/email.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 函数 hairline</description>
+  <highlighted_element>hairline</highlighted_element>
+  <language>JavaScript</language>
+  <offset>9</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 model</description>
+  <highlighted_element>model</highlighted_element>
+  <language>JavaScript</language>
+  <offset>27</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 messages</description>
+  <highlighted_element>messages</highlighted_element>
+  <language>JavaScript</language>
+  <offset>34</offset>
+  <length>8</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 maxTokens</description>
+  <highlighted_element>maxTokens</highlighted_element>
+  <language>JavaScript</language>
+  <offset>44</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 temperature</description>
+  <highlighted_element>temperature</highlighted_element>
+  <language>JavaScript</language>
+  <offset>55</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 reasoning_effort</description>
+  <highlighted_element>reasoning_effort</highlighted_element>
+  <language>JavaScript</language>
+  <offset>82</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 extra_body</description>
+  <highlighted_element>extra_body</highlighted_element>
+  <language>JavaScript</language>
+  <offset>100</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>378</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 tool_choice</description>
+  <highlighted_element>tool_choice</highlighted_element>
+  <language>JavaScript</language>
+  <offset>119</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/llm.ts</file>
+  <line>551</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/llm.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 full</description>
+  <highlighted_element>full</highlighted_element>
+  <language>JavaScript</language>
+  <offset>116</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/loginLockout.ts</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/loginLockout.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 ADMIN_THRESHOLD</description>
+  <highlighted_element>ADMIN_THRESHOLD</highlighted_element>
+  <language>JavaScript</language>
+  <offset>6</offset>
+  <length>15</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/toolRegistry.ts</file>
+  <line>52</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/toolRegistry.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 mode</description>
+  <highlighted_element>mode</highlighted_element>
+  <language>JavaScript</language>
+  <offset>61</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/webSearch.ts</file>
+  <line>341</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/webSearch.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 mmxResults</description>
+  <highlighted_element>mmxResults</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>10</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/webSearch.ts</file>
+  <line>342</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/webSearch.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 firecrawlResults</description>
+  <highlighted_element>firecrawlResults</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>16</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/webSearch.ts</file>
+  <line>343</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/webSearch.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 minimaxResults</description>
+  <highlighted_element>minimaxResults</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>14</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/src/services/webSearch.ts</file>
+  <line>344</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/src/services/webSearch.ts" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 bingResults</description>
+  <highlighted_element>bingResults</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/.tmp-pdf-debug.mjs</file>
+  <line>40</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/.tmp-pdf-debug.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 bytes</description>
+  <highlighted_element>bytes</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/.tmp-pdf-debug.mjs</file>
+  <line>41</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/.tmp-pdf-debug.mjs" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 n</description>
+  <highlighted_element>n</highlighted_element>
+  <language>JavaScript</language>
+  <offset>14</offset>
+  <length>1</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>82</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 常量 origTimeout</description>
+  <highlighted_element>origTimeout</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/error-middleware.test.js</file>
+  <line>83</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/error-middleware.test.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 pendingTimers</description>
+  <highlighted_element>pendingTimers</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>13</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/fetchBatch.test.js</file>
+  <line>292</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/fetchBatch.test.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 url</description>
+  <highlighted_element>url</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/fetchBatch.test.js</file>
+  <line>572</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/fetchBatch.test.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 形参 url</description>
+  <highlighted_element>url</highlighted_element>
+  <language>JavaScript</language>
+  <offset>38</offset>
+  <length>3</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/server/test/middleware-auth.test.js</file>
+  <line>105</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/server/test/middleware-auth.test.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 capturedReq</description>
+  <highlighted_element>capturedReq</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>11</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>544</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 sumEl</description>
+  <highlighted_element>sumEl</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>544</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 sumEl</description>
+  <highlighted_element>sumEl</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/account.html</file>
+  <line>544</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/account.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 sumEl</description>
+  <highlighted_element>sumEl</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/editorial.js</file>
+  <line>306</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/editorial.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 prefix</description>
+  <highlighted_element>prefix</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/editorial.js</file>
+  <line>306</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/editorial.js" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 prefix</description>
+  <highlighted_element>prefix</highlighted_element>
+  <language>JavaScript</language>
+  <offset>8</offset>
+  <length>6</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/account.html</file>
+  <line>482</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/account.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 sumEl</description>
+  <highlighted_element>sumEl</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/site/zh/account.html</file>
+  <line>482</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/site/zh/account.html" />
+  <problem_class id="JSUnusedLocalSymbols" severity="WARNING" attribute_key="NOT_USED_ELEMENT_ATTRIBUTES">未使用的局部符号</problem_class>
+  <description>未使用的 局部变量 sumEl</description>
+  <highlighted_element>sumEl</highlighted_element>
+  <language>JavaScript</language>
+  <offset>10</offset>
+  <length>5</length>
+</problem>
+</problems>

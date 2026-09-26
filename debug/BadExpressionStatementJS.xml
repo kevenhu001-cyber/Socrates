@@ -1,0 +1,26 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ZoomableImage.tsx</file>
+  <line>30</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ZoomableImage.tsx" />
+  <problem_class id="BadExpressionStatementJS" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">非赋值或调用的表达式语句</problem_class>
+  <description>表达式语句不是赋值或调用</description>
+  <highlighted_element>'worklet'</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>2</offset>
+  <length>9</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/mobile/src/components/ZoomableImage.tsx</file>
+  <line>73</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/mobile/src/components/ZoomableImage.tsx" />
+  <problem_class id="BadExpressionStatementJS" severity="WEAK WARNING" attribute_key="INFO_ATTRIBUTES">非赋值或调用的表达式语句</problem_class>
+  <description>表达式语句不是赋值或调用</description>
+  <highlighted_element>'worklet'</highlighted_element>
+  <language>TypeScript JSX</language>
+  <offset>4</offset>
+  <length>9</length>
+</problem>
+</problems>

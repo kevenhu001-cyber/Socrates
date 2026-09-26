@@ -1,0 +1,74 @@
+<problems>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/atlas_so.svg</file>
+  <line>6</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/atlas_so.svg" />
+  <problem_class id="RequiredAttributes" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">缺少必要的特性</problem_class>
+  <description>元素 stop 没有必需特性 offset</description>
+  <highlighted_element>stop</highlighted_element>
+  <language>XML</language>
+  <offset>7</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/botsonic.svg</file>
+  <line>23</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/botsonic.svg" />
+  <problem_class id="RequiredAttributes" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">缺少必要的特性</problem_class>
+  <description>元素 stop 没有必需特性 offset</description>
+  <highlighted_element>stop</highlighted_element>
+  <language>XML</language>
+  <offset>7</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/clickup.svg</file>
+  <line>10</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/clickup.svg" />
+  <problem_class id="RequiredAttributes" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">缺少必要的特性</problem_class>
+  <description>元素 stop 没有必需特性 offset</description>
+  <highlighted_element>stop</highlighted_element>
+  <language>XML</language>
+  <offset>1</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gemini.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/gemini.svg" />
+  <problem_class id="RequiredAttributes" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">缺少必要的特性</problem_class>
+  <description>元素 stop 没有必需特性 offset</description>
+  <highlighted_element>stop</highlighted_element>
+  <language>XML</language>
+  <offset>8533</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="RequiredAttributes" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">缺少必要的特性</problem_class>
+  <description>元素 stop 没有必需特性 offset</description>
+  <highlighted_element>stop</highlighted_element>
+  <language>XML</language>
+  <offset>2851</offset>
+  <length>4</length>
+</problem>
+<problem>
+  <file>file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg</file>
+  <line>1</line>
+  <module>Socrates</module>
+  <entry_point TYPE="file" FQNAME="file://$PROJECT_DIR$/frontend/src/assets/connector-icons/jimeng_ai.svg" />
+  <problem_class id="RequiredAttributes" severity="ERROR" attribute_key="WRONG_REFERENCES_ATTRIBUTES">缺少必要的特性</problem_class>
+  <description>元素 stop 没有必需特性 offset</description>
+  <highlighted_element>stop</highlighted_element>
+  <language>XML</language>
+  <offset>3265</offset>
+  <length>4</length>
+</problem>
+</problems>
