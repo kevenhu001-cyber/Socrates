@@ -288,7 +288,7 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           # `tools` is an obsolete SDK package and is no longer present in
           # Google's repository. Keep the runner setup limited to the package
@@ -720,7 +720,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           # `tools` is an obsolete SDK package and is no longer present in
           # Google's repository. Keep the runner setup limited to the package
